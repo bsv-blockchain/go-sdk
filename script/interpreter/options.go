@@ -1,9 +1,9 @@
 package interpreter
 
 import (
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/script/interpreter/scriptflag"
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 // ExecutionOptionFunc for setting execution options.

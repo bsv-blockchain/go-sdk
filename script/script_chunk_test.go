@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	script "github.com/bitcoin-sv/go-sdk/script"
+	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
 )
 

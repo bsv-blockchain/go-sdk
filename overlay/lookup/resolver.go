@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bitcoin-sv/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/overlay"
 )
 
 const MAX_TRACKER_WAIT_TIME = time.Second

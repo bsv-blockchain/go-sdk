@@ -7,9 +7,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
-	sighash "github.com/bitcoin-sv/go-sdk/transaction/sighash"
-	transaction "github.com/bitcoin-sv/go-sdk/transaction/sighash"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	transaction "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"io"
 )
 
@@ -234,10 +234,10 @@ func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (
 
 type VerifySignatureArgs struct {
 	WalletEncryptionArgs
-	Data                []byte
+	Data                 []byte
 	DashToDirectlyVerify []byte
-	Signature           ec.Signature
-	ForSelf             bool
+	Signature            ec.Signature
+	ForSelf              bool
 }
 
 type VerifySignatureResult struct {

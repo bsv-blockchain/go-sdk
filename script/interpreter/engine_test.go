@@ -8,11 +8,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/script/interpreter/errs"
-	"github.com/bitcoin-sv/go-sdk/script/interpreter/scriptflag"
-	"github.com/bitcoin-sv/go-sdk/transaction"
-	sighash "github.com/bitcoin-sv/go-sdk/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/stretchr/testify/require"
 )
 

@@ -9,10 +9,10 @@ import (
 	"log"
 	"slices"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	crypto "github.com/bitcoin-sv/go-sdk/primitives/hash"
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/pkg/errors"
 )
 
@@ -561,8 +561,9 @@ func (t *Transaction) AtomicBEEF(allowPartial bool) ([]byte, error) {
 // NewTransactionFromBEEF creates a new Transaction from BEEF bytes.
 func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 	reader := bytes.NewReader(beef)
-	version, err := readVersion(reader)
-	if err != nil {
+
+	var version uint32
+	if err := binary.Read(reader, binary.LittleEndian, &version); err != nil {
 		return nil, err
 	}
 
@@ -590,7 +591,7 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 
 		return transaction, nil
 	} else {
-		return nil, fmt.Errorf("use NewBeefFromBytes to parse anything which isn't V1 BEEF")
+		return nil, fmt.Errorf("use NewBeefFromBytes to parse anything which isn't V1 BEEF or AtomicBEEF")
 	}
 
 }

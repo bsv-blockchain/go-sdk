@@ -11,10 +11,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/script/interpreter/errs"
-	"github.com/bitcoin-sv/go-sdk/script/interpreter/scriptflag"
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 // hexToBytes converts the passed hex string into bytes and will panic if there

@@ -6,10 +6,10 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/bitcoin-sv/go-sdk/overlay"
-	"github.com/bitcoin-sv/go-sdk/overlay/lookup"
-	"github.com/bitcoin-sv/go-sdk/transaction"
-	"github.com/bitcoin-sv/go-sdk/transaction/template/overlayadmintoken"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/overlayadmintoken"
 )
 
 const MAX_SHIP_QUERY_TIMEOUT = 1000

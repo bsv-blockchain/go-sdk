@@ -12,8 +12,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	script "github.com/bitcoin-sv/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,6 +39,14 @@ func TestFromBEEF(t *testing.T) {
 
 	_, err = tx.collectAncestors(map[string]*Transaction{}, true)
 	require.NoError(t, err, "collectAncestors method failed")
+
+	atomic, err := tx.AtomicBEEF(false)
+	require.NoError(t, err, "AtomicBEEF method failed")
+
+	tx2, err := NewTransactionFromBEEF(atomic)
+	require.NoError(t, err, "NewTransactionFromBEEF method failed")
+	require.Equal(t, tx.TxID().String(), tx2.TxID().String(), "Transaction ID does not match")
+
 }
 
 func TestNewBEEFFromBytes(t *testing.T) {
@@ -54,6 +62,10 @@ func TestNewBEEFFromBytes(t *testing.T) {
 	require.Equal(t, uint32(4022206466), beef.Version, "Version does not match")
 	require.Len(t, beef.BUMPs, 3, "BUMPs length does not match")
 	require.Len(t, beef.Transactions, 3, "Transactions length does not match")
+
+	binary.LittleEndian.PutUint32(beefBytes[0:4], 0xdeadbeef)
+	_, err = NewTransactionFromBEEF(beefBytes)
+	require.Error(t, err, "use NewBeefFromBytes to parse anything which isn't V1 BEEF or AtomicBEEF")
 }
 
 func TestBeefTransactionFinding(t *testing.T) {

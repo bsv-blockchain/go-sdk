@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math/big"
 
-	crypto "github.com/bitcoin-sv/go-sdk/primitives/hash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 )
 
 // These constants define the lengths of serialized public keys.

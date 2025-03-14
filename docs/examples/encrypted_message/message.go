@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/bitcoin-sv/go-sdk/message"
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/message"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 func main() {

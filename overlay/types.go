@@ -1,8 +1,8 @@
 package overlay
 
 import (
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 type Protocol string
@@ -49,8 +49,8 @@ type Admittance struct {
 	OutputsToAdmit []uint32
 	CoinsToRetain  []uint32
 	CoinsRemoved   []uint32
-	InputData      []*TopicData
-	OutputData     []*TopicData
+	InputData      map[uint32]any
+	OutputData     map[uint32]any
 }
 
 type Network int
