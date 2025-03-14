@@ -2,7 +2,7 @@ interpreter
 ========
 
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://pkg.go.dev/badge/github.com/bitcoin-sv/go-sdk/script/interpreter?utm_source=godoc)](http://godoc.org/github.com/bitcoin-sv/go-sdk/script/interpreter)
+[![GoDoc](https://pkg.go.dev/badge/github.com/bsv-blockchain/go-sdk/script/interpreter?utm_source=godoc)](http://godoc.org/github.com/bsv-blockchain/go-sdk/script/interpreter)
 
 Package interpreter implements the an interpreter for the bitcoin transaction language.  There is
 a comprehensive test suite.
@@ -20,12 +20,12 @@ can be found at https://wiki.bitcoinsv.io/index.php/Script
 ## Installation and Updating
 
 ```bash
-$ go get -u github.com/bitcoin-sv/go-sdk/script/interpreter
+$ go get -u github.com/bsv-blockchain/go-sdk/script/interpreter
 ```
 
 ## Examples
 
-* [Standard Pay-to-pubkey-hash Script](http://github.com/bitcoin-sv/go-sdk/script/interpreter#example-PayToAddrScript)  
+* [Standard Pay-to-pubkey-hash Script](http://github.com/bsv-blockchain/go-sdk/script/interpreter#example-PayToAddrScript)  
   Demonstrates creating a script which pays to a bitcoin address.  It also
   prints the created script hex and uses the DisasmString function to display
   the disassembled script.

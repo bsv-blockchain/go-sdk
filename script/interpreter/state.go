@@ -1,6 +1,6 @@
 package interpreter
 
-import "github.com/bitcoin-sv/go-sdk/script/interpreter/scriptflag"
+import "github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 
 // State a snapshot of a threads state during execution.
 type State struct {

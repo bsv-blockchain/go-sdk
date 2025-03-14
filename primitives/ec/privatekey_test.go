@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	keyshares "github.com/bitcoin-sv/go-sdk/primitives/keyshares"
-	"github.com/bitcoin-sv/go-sdk/util"
+	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,7 +3,7 @@
 Welcome to the BSV Blockchain Libraries Project, the comprehensive Go SDK designed to provide an updated and unified layer for developing scalable applications on the BSV Blockchain. This SDK addresses the limitations of previous tools by offering a fresh, peer-to-peer approach, adhering to SPV, and ensuring privacy and scalability.
 
 # Status
-![golangci-lint](https://github.com/bitcoin-sv/go-sdk/workflows/golangci-lint/badge.svg)
+![golangci-lint](https://github.com/bsv-blockchain/go-sdk/workflows/golangci-lint/badge.svg)
 
 ## Table of Contents
 
@@ -31,7 +31,7 @@ The BSV Blockchain Libraries Project aims to structure and maintain a middleware
 To install the SDK, run:
 
 ```bash
-go install github.com/bitcoin-sv/go-sdk
+go install github.com/bsv-blockchain/go-sdk
 ```
 
 ### Basic Usage
@@ -45,9 +45,9 @@ import (
 	"context"
 	"log"
 
-	wif "github.com/bitcoin-sv/go-sdk/compat/wif"
-	"github.com/bitcoin-sv/go-sdk/transaction"
-	"github.com/bitcoin-sv/go-sdk/transaction/unlocker"
+	wif "github.com/bsv-blockchain/go-sdk/compat/wif"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction/unlocker"
 )
 
 func main() {
@@ -76,7 +76,7 @@ func main() {
 
 ```
 
-See the [Go Doc](https://pkg.go.dev/github.com/bitcoin-sv/go-sdk) for a complete list of available modules and functions.
+See the [Go Doc](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk) for a complete list of available modules and functions.
 
 ### Examples & Usage Guides
 
@@ -115,7 +115,7 @@ Our examples are organized by category to help you find what you need. Each exam
 - [Converting from go-bt](./docs/examples/GO_BT.md) - Guide for migrating from go-bt
 
 
-Check out the [examples folder](https://github.com/bitcoin-sv/go-sdk/tree/master/docs/examples) for more examples.
+Check out the [examples folder](https://github.com/bsv-blockchain/go-sdk/tree/master/docs/examples) for more examples.
 
 ## Features
 
@@ -138,7 +138,7 @@ This SDK is supported by multiple layers of documentation:
 - [Examples](./docs/examples/README.md) - Common usage examples and code samples
 - [Concepts](./docs/concepts/README.md) - High-level concepts and architectural decisions
 - [Low-Level Details](./docs/low-level/README.md) - Implementation details and technical specifications
-- [Go Doc](https://pkg.go.dev/github.com/bitcoin-sv/go-sdk) - Complete API reference
+- [Go Doc](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk) - Complete API reference
 
 ### Component-Specific Documentation
 - [Script Interpreter](./script/interpreter/README.md) - Comprehensive documentation of the Bitcoin script interpreter
@@ -163,7 +163,7 @@ For hands-on examples, visit our [examples directory](./docs/examples/).
 We're always looking for contributors to help us improve the SDK. Whether it's bug reports, feature requests, or pull requests - all contributions are welcome.
 
 1. **Fork & Clone**: Fork this repository and clone it to your local machine.
-2. **Set Up**: Run `go get github.com/bitcoin-sv/go-sdk` to get all the modules.
+2. **Set Up**: Run `go get github.com/bsv-blockchain/go-sdk` to get all the modules.
 3. **Make Changes**: Create a new branch and make your changes.
 4. **Test**: Ensure all tests pass by running `go test ./...`.
 5. **Commit**: Commit your changes and push to your fork.

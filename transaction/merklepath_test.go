@@ -5,8 +5,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	"github.com/bitcoin-sv/go-sdk/transaction/testdata"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction/testdata"
 	"github.com/stretchr/testify/require"
 )
 

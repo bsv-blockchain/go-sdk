@@ -17,9 +17,9 @@ import (
  "context"
  "log"
 
- wif "github.com/bitcoin-sv/go-sdk/compat/wif"
- "github.com/bitcoin-sv/go-sdk/transaction"
- "github.com/bitcoin-sv/go-sdk/transaction/unlocker"
+ wif "github.com/bsv-blockchain/go-sdk/compat/wif"
+ "github.com/bsv-blockchain/go-sdk/transaction"
+ "github.com/bsv-blockchain/go-sdk/transaction/unlocker"
 )
 
 // https://goplay.tools/snippet/bnsS-pA56ob
