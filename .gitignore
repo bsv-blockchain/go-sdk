@@ -38,3 +38,4 @@ coverage.out
 golangci-lint-report.xml
 
 # Ignore any other files or directories specific to your project
+
