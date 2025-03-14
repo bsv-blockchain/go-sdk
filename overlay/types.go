@@ -49,8 +49,8 @@ type Admittance struct {
 	OutputsToAdmit []uint32
 	CoinsToRetain  []uint32
 	CoinsRemoved   []uint32
-	InputData      []*TopicData
-	OutputData     []*TopicData
+	InputData      map[uint32]any
+	OutputData     map[uint32]any
 }
 
 type Network int
