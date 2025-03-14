@@ -3,10 +3,10 @@ package overlayadmintoken
 import (
 	"encoding/hex"
 
-	"github.com/bitcoin-sv/go-sdk/overlay"
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/transaction/template/pushdrop"
-	"github.com/bitcoin-sv/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 type OverlayAdminTokenData struct {

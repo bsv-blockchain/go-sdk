@@ -1,6 +1,6 @@
 package topic
 
-import "github.com/bitcoin-sv/go-sdk/overlay"
+import "github.com/bsv-blockchain/go-sdk/overlay"
 
 type TaggedBEEF struct {
 	Beef   []byte

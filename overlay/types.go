@@ -1,8 +1,8 @@
 package overlay
 
 import (
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 type Protocol string

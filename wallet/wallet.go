@@ -1,9 +1,9 @@
 package wallet
 
 import (
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
-	sighash "github.com/bitcoin-sv/go-sdk/transaction/sighash"
-	transaction "github.com/bitcoin-sv/go-sdk/transaction/sighash"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	transaction "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
 
 type SecurityLevel int

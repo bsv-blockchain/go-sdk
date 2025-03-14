@@ -1,7 +1,7 @@
 package topic
 
 import (
-	"github.com/bitcoin-sv/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/overlay"
 )
 
 type TopicManager interface {
