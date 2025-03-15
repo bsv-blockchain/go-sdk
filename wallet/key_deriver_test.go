@@ -1,10 +1,10 @@
 package wallet_test
 
 import (
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"testing"
 
-	"github.com/bitcoin-sv/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 )
 
