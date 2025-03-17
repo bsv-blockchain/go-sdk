@@ -12,6 +12,11 @@ const (
 	ProtocolSLAP Protocol = "SLAP"
 )
 
+type TaggedBEEF struct {
+	Beef   []byte
+	Topics []string
+}
+
 type Output struct {
 	Outpoint        *Outpoint
 	Script          []byte
