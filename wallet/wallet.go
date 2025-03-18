@@ -234,10 +234,10 @@ func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (
 
 type VerifySignatureArgs struct {
 	WalletEncryptionArgs
-	Data                []byte
+	Data                 []byte
 	DashToDirectlyVerify []byte
-	Signature           ec.Signature
-	ForSelf             bool
+	Signature            ec.Signature
+	ForSelf              bool
 }
 
 type VerifySignatureResult struct {
