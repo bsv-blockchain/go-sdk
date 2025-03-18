@@ -60,8 +60,8 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, 
 }
 
 func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error) {
-	counterpartyKey := kd.NormalizeCounterparty(counterparty)
-	invoiceNumber, err := kd.ComputeInvoiceNumber(protocol, keyID)
+	counterpartyKey := kd.normalizeCounterparty(counterparty)
+	invoiceNumber, err := kd.computeInvoiceNumber(protocol, keyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute invoice number: %w", err)
 	}
@@ -83,8 +83,8 @@ func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, cou
 }
 
 func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error) {
-	counterpartyKey := kd.NormalizeCounterparty(counterparty)
-	invoiceNumber, err := kd.ComputeInvoiceNumber(protocol, keyID)
+	counterpartyKey := kd.normalizeCounterparty(counterparty)
+	invoiceNumber, err := kd.computeInvoiceNumber(protocol, keyID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, co
 	return k, nil
 }
 
-func (kd *KeyDeriver) NormalizeCounterparty(counterparty WalletCounterparty) *ec.PublicKey {
+func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) *ec.PublicKey {
 	switch counterparty.Type {
 	case CounterpartyTypeSelf:
 		return kd.privateKey.PubKey()
@@ -110,7 +110,7 @@ func (kd *KeyDeriver) NormalizeCounterparty(counterparty WalletCounterparty) *ec
 	}
 }
 
-func (kd *KeyDeriver) ComputeInvoiceNumber(protocol WalletProtocol, keyID string) (string, error) {
+func (kd *KeyDeriver) computeInvoiceNumber(protocol WalletProtocol, keyID string) (string, error) {
 	// Validate protocol security level
 	if protocol.SecurityLevel < 0 || protocol.SecurityLevel > 2 {
 		return "", fmt.Errorf("protocol security level must be 0, 1, or 2")
