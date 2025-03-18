@@ -173,10 +173,9 @@ func TestKeyDeriver(t *testing.T) {
 
 	t.Run("should throw an error for invalid protocol names", func(t *testing.T) {
 		testCases := []struct {
-			name        string
-			protocol    wallet.WalletProtocol
-			keyID       string
-			expectError bool
+			name     string
+			protocol wallet.WalletProtocol
+			keyID    string
 		}{
 			{
 				name: "long key ID",
@@ -184,8 +183,7 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: 2,
 					Protocol:      "test",
 				},
-				keyID:       "long" + string(make([]byte, 800)),
-				expectError: true,
+				keyID: "long" + string(make([]byte, 800)),
 			},
 			{
 				name: "empty key ID",
@@ -193,8 +191,7 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: 2,
 					Protocol:      "test",
 				},
-				keyID:       "",
-				expectError: true,
+				keyID: "",
 			},
 			{
 				name: "invalid security level",
@@ -202,8 +199,7 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: -3,
 					Protocol:      "otherwise valid",
 				},
-				keyID:       keyID,
-				expectError: true,
+				keyID: keyID,
 			},
 			{
 				name: "double space in protocol name",
@@ -211,8 +207,7 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: 2,
 					Protocol:      "double  space",
 				},
-				keyID:       keyID,
-				expectError: true,
+				keyID: keyID,
 			},
 			{
 				name: "empty protocol name",
@@ -220,8 +215,7 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: 0,
 					Protocol:      "",
 				},
-				keyID:       keyID,
-				expectError: true,
+				keyID: keyID,
 			},
 			{
 				name: "long protocol name",
@@ -229,8 +223,7 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: 0,
 					Protocol:      "long" + string(make([]byte, 400)),
 				},
-				keyID:       keyID,
-				expectError: true,
+				keyID: keyID,
 			},
 			{
 				name: "redundant protocol suffix",
@@ -238,8 +231,7 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: 2,
 					Protocol:      "redundant protocol protocol",
 				},
-				keyID:       keyID,
-				expectError: true,
+				keyID: keyID,
 			},
 			{
 				name: "invalid characters in protocol name",
@@ -247,19 +239,14 @@ func TestKeyDeriver(t *testing.T) {
 					SecurityLevel: 2,
 					Protocol:      "üñî√é®sål ©0på",
 				},
-				keyID:       keyID,
-				expectError: true,
+				keyID: keyID,
 			},
 		}
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				_, err := keyDeriver.ComputeInvoiceNumber(tc.protocol, tc.keyID)
-				if tc.expectError {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
-				}
+				assert.Error(t, err)
 			})
 		}
 	})
