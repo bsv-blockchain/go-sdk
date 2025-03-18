@@ -15,11 +15,6 @@ type PushDropData struct {
 	Fields           [][]byte
 }
 
-type PushDropTemplate struct {
-	Wallet     wallet.Wallet
-	Originator string
-}
-
 func Decode(s *script.Script) (*PushDropData, error) {
 	pushDrop := &PushDropData{}
 	if chunks, err := s.Chunks(); err != nil {
@@ -46,6 +41,11 @@ func Decode(s *script.Script) (*PushDropData, error) {
 		}
 		return pushDrop, nil
 	}
+}
+
+type PushDropTemplate struct {
+	Wallet     wallet.Wallet
+	Originator string
 }
 
 func (p *PushDropTemplate) Lock(
