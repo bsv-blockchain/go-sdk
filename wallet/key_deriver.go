@@ -66,18 +66,17 @@ func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, cou
 		return nil, fmt.Errorf("failed to compute invoice number: %w", err)
 	}
 
-	var pubKey *ec.PublicKey
 	if forSelf {
 		privKey, err := kd.privateKey.DeriveChild(counterpartyKey, invoiceNumber)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive child private key: %w", err)
 		}
-		pubKey = privKey.PubKey()
-	} else {
-		pubKey, err = counterpartyKey.DeriveChild(kd.privateKey, invoiceNumber)
-		if err != nil {
-			return nil, fmt.Errorf("failed to derive child public key: %w", err)
-		}
+		return privKey.PubKey(), nil
+	}
+
+	pubKey, err := counterpartyKey.DeriveChild(kd.privateKey, invoiceNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive child public key: %w", err)
 	}
 	return pubKey, nil
 }
