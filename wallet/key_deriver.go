@@ -26,7 +26,7 @@ func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
 
 // DeriveSymmetricKey creates a symmetric key based on protocol ID, key ID, and counterparty.
 // Note: Symmetric keys should not be derivable by everyone due to security risks.
-func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) ([]byte, error) {
+func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.SymmetricKey, error) {
 	// Prevent deriving symmetric key for self
 	if counterparty.Type == CounterpartyTypeSelf {
 		return nil, fmt.Errorf("cannot derive symmetric key for self")
@@ -62,7 +62,7 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, 
 	}
 
 	// Return the x coordinate of the shared secret point
-	return sharedSecret.X.Bytes(), nil
+	return ec.NewSymmetricKey(sharedSecret.X.Bytes()), nil
 }
 
 // DerivePublicKey creates a public key based on protocol ID, key ID, and counterparty.

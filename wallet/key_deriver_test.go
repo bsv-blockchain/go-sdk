@@ -120,7 +120,7 @@ func TestKeyDeriver(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, derivedSymmetricKey)
-		assert.Equal(t, "4ce8e868f2006e3fa8fc61ea4bc4be77d397b412b44b4dca047fb7ec3ca7cfd8", hex.EncodeToString(derivedSymmetricKey))
+		assert.Equal(t, "4ce8e868f2006e3fa8fc61ea4bc4be77d397b412b44b4dca047fb7ec3ca7cfd8", hex.EncodeToString(derivedSymmetricKey.ToBytes()))
 	})
 
 	t.Run("should be able to derive symmetric key with anyone", func(t *testing.T) {

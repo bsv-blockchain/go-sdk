@@ -27,6 +27,7 @@ func TestWallet(t *testing.T) {
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 		Protocol:      "tests",
 	}
+
 	keyID := "4"
 
 	t.Run("encrypts and decrypts messages", func(t *testing.T) {
@@ -116,6 +117,38 @@ func TestWallet(t *testing.T) {
 			_, err := counterpartyWallet.Decrypt(&invalidSecurityArgs)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "protocol security level must be 0, 1, or 2")
+		})
+
+		t.Run("validates BRC-2 encryption compliance vector", func(t *testing.T) {
+			privKey, err := ec.PrivateKeyFromHex("6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8")
+			assert.NoError(t, err)
+
+			counterparty, err := ec.PublicKeyFromString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+			assert.NoError(t, err)
+
+			result, err := wallet.NewWallet(privKey).Decrypt(&wallet.WalletDecryptArgs{
+				WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+					ProtocolID: wallet.WalletProtocol{
+						SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+						Protocol:      "BRC2 Test",
+					},
+					KeyID: "42",
+					Counterparty: wallet.WalletCounterparty{
+						Type:         wallet.CounterpartyTypeOther,
+						Counterparty: counterparty,
+					},
+				},
+				Ciphertext: []byte{
+					252, 203, 216, 184, 29, 161, 223, 212, 16, 193, 94, 99, 31, 140, 99, 43,
+					61, 236, 184, 67, 54, 105, 199, 47, 11, 19, 184, 127, 2, 165, 125, 9,
+					188, 195, 196, 39, 120, 130, 213, 95, 186, 89, 64, 28, 1, 80, 20, 213,
+					159, 133, 98, 253, 128, 105, 113, 247, 197, 152, 236, 64, 166, 207, 113,
+					134, 65, 38, 58, 24, 127, 145, 140, 206, 47, 70, 146, 84, 186, 72, 95,
+					35, 154, 112, 178, 55, 72, 124,
+				},
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, []byte("BRC-2 Encryption Compliance Validated!"), result.Plaintext)
 		})
 	})
 

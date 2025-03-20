@@ -1,16 +1,12 @@
 package wallet
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	transaction "github.com/bsv-blockchain/go-sdk/transaction/sighash"
-	"io"
 )
 
 // SecurityLevel defines the access control level for wallet operations.
@@ -102,7 +98,7 @@ func (w *Wallet) Encrypt(args *WalletEncryptArgs) (*WalletEncryptResult, error) 
 		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
-	ciphertext, err := encryptData(key, args.Plaintext)
+	ciphertext, err := key.Encrypt(args.Plaintext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt data: %w", err)
 	}
@@ -121,60 +117,11 @@ func (w *Wallet) Decrypt(args *WalletDecryptArgs) (*WalletDecryptResult, error) 
 		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
-	plaintext, err := decryptData(key, args.Ciphertext)
+	plaintext, err := key.Decrypt(args.Ciphertext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt data: %w", err)
 	}
 	return &WalletDecryptResult{Plaintext: plaintext}, nil
-}
-
-func encryptData(key, plaintext []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AES cipher: %w", err)
-	}
-
-	// Create a GCM cipher
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create GCM cipher: %w", err)
-	}
-
-	// Create a nonce
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, fmt.Errorf("failed to generate nonce: %w", err)
-	}
-
-	// Encrypt the data
-	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
-	return ciphertext, nil
-}
-
-func decryptData(key, ciphertext []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AES cipher: %w", err)
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create GCM cipher: %w", err)
-	}
-
-	// Extract nonce from ciphertext
-	nonceSize := gcm.NonceSize()
-	if len(ciphertext) < nonceSize {
-		return nil, fmt.Errorf("ciphertext too short: expected at least %d bytes, got %d", nonceSize, len(ciphertext))
-	}
-
-	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt data: %w", err)
-	}
-
-	return plaintext, nil
 }
 
 type GetPublicKeyArgs struct {
