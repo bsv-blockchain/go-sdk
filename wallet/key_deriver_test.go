@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"testing"
 
@@ -8,15 +9,15 @@ import (
 )
 
 func TestKeyDeriver(t *testing.T) {
-	rootPrivateKey, _ := ec.NewPrivateKey()
+	rootPrivateKey, _ := ec.PrivateKeyFromBytes([]byte{42})
 	rootPublicKey := rootPrivateKey.PubKey()
-	counterpartyPrivateKey, _ := ec.NewPrivateKey()
+	counterpartyPrivateKey, _ := ec.PrivateKeyFromBytes([]byte{69})
 	counterpartyPublicKey := counterpartyPrivateKey.PubKey()
 	anyonePrivateKey, _ := ec.PrivateKeyFromBytes([]byte{1})
 	anyonePublicKey := anyonePrivateKey.PubKey()
 
 	protocolID := WalletProtocol{
-		SecurityLevel: SecurityLevelEveryAppAndCounterparty,
+		SecurityLevel: SecurityLevelSilent,
 		Protocol:      "testprotocol",
 	}
 	keyID := "12345"
@@ -27,7 +28,7 @@ func TestKeyDeriver(t *testing.T) {
 		keyDeriver = NewKeyDeriver(rootPrivateKey)
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
 		assert.NoError(t, err)
-		assert.Equal(t, "2-testprotocol-12345", invoiceNumber)
+		assert.Equal(t, "0-testprotocol-12345", invoiceNumber)
 	})
 
 	t.Run("should normalize counterparty correctly for self", func(t *testing.T) {
@@ -119,6 +120,7 @@ func TestKeyDeriver(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, derivedSymmetricKey)
+		assert.Equal(t, "4ce8e868f2006e3fa8fc61ea4bc4be77d397b412b44b4dca047fb7ec3ca7cfd8", hex.EncodeToString(derivedSymmetricKey))
 	})
 
 	t.Run("should be able to derive symmetric key with anyone", func(t *testing.T) {
