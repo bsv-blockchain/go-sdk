@@ -117,6 +117,14 @@ func (kd *KeyDeriver) computeInvoiceNumber(protocol WalletProtocol, keyID string
 		return "", fmt.Errorf("protocol security level must be 0, 1, or 2")
 	}
 
+	// Validate key ID
+	if len(keyID) > 800 {
+		return "", fmt.Errorf("key IDs must be 800 characters or less")
+	}
+	if len(keyID) < 1 {
+		return "", fmt.Errorf("key IDs must be 1 character or more")
+	}
+
 	// Validate protocol name
 	protocolName := strings.ToLower(strings.TrimSpace(protocol.Protocol))
 	if len(protocolName) > 400 {
@@ -140,14 +148,6 @@ func (kd *KeyDeriver) computeInvoiceNumber(protocol WalletProtocol, keyID string
 	}
 	if strings.HasSuffix(protocolName, " protocol") {
 		return "", fmt.Errorf("no need to end your protocol name with \" protocol\"")
-	}
-
-	// Validate key ID
-	if len(keyID) > 800 {
-		return "", fmt.Errorf("key IDs must be 800 characters or less")
-	}
-	if len(keyID) < 1 {
-		return "", fmt.Errorf("key IDs must be 1 character or more")
 	}
 
 	return fmt.Sprintf("%d-%s-%s", protocol.SecurityLevel, protocolName, keyID), nil
