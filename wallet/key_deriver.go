@@ -8,11 +8,15 @@ import (
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
+// KeyDeriver is responsible for deriving various types of keys using a root private key.
+// It supports deriving public and private keys, symmetric keys, and revealing key linkages.
 type KeyDeriver struct {
 	privateKey *ec.PrivateKey
 	publicKey  *ec.PublicKey
 }
 
+// NewKeyDeriver creates a new KeyDeriver instance with a root private key.
+// The root key can be either a specific private key or the special 'anyone' key.
 func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
 	return &KeyDeriver{
 		privateKey: privateKey,
@@ -20,6 +24,8 @@ func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
 	}
 }
 
+// DeriveSymmetricKey creates a symmetric key based on protocol ID, key ID, and counterparty.
+// Note: Symmetric keys should not be derivable by everyone due to security risks.
 func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) ([]byte, error) {
 	// Prevent deriving symmetric key for self
 	if counterparty.Type == CounterpartyTypeSelf {
@@ -59,6 +65,8 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, 
 	return sharedSecret.X.Bytes(), nil
 }
 
+// DerivePublicKey creates a public key based on protocol ID, key ID, and counterparty.
+// The forSelf parameter determines whether the key is derived for the user's own identity.
 func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error) {
 	counterpartyKey := kd.normalizeCounterparty(counterparty)
 	invoiceNumber, err := kd.computeInvoiceNumber(protocol, keyID)
@@ -81,6 +89,8 @@ func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, cou
 	return pubKey, nil
 }
 
+// DerivePrivateKey creates a private key based on protocol ID, key ID, and counterparty.
+// The derived key can be used for signing or other cryptographic operations.
 func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error) {
 	counterpartyKey := kd.normalizeCounterparty(counterparty)
 	invoiceNumber, err := kd.computeInvoiceNumber(protocol, keyID)
@@ -95,6 +105,8 @@ func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, co
 	return k, nil
 }
 
+// normalizeCounterparty converts the counterparty parameter into a standard public key format.
+// It handles special cases like 'self' and 'anyone' by converting them to their corresponding public keys.
 func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) *ec.PublicKey {
 	switch counterparty.Type {
 	case CounterpartyTypeSelf:
@@ -111,6 +123,8 @@ func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) *ec
 
 var regexOnlyLettersNumbersSpaces = regexp.MustCompile(`^[a-z0-9 ]+$`)
 
+// computeInvoiceNumber generates a unique identifier string based on the protocol and key ID.
+// This string is used as part of the key derivation process to ensure unique keys for different contexts.
 func (kd *KeyDeriver) computeInvoiceNumber(protocol WalletProtocol, keyID string) (string, error) {
 	// Validate protocol security level
 	if protocol.SecurityLevel < 0 || protocol.SecurityLevel > 2 {

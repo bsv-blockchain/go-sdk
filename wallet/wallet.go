@@ -13,6 +13,8 @@ import (
 	"io"
 )
 
+// SecurityLevel defines the access control level for wallet operations.
+// It determines how strictly the wallet enforces user confirmation for operations.
 type SecurityLevel int
 
 var (
@@ -21,6 +23,8 @@ var (
 	SecurityLevelEveryAppAndCounterparty SecurityLevel = 2
 )
 
+// WalletProtocol defines a protocol with its security level and name.
+// The security level determines how strictly the wallet enforces user confirmation.
 type WalletProtocol struct {
 	SecurityLevel SecurityLevel
 	Protocol      string
@@ -34,17 +38,23 @@ const (
 	CounterpartyTypeOther  CounterpartyType = 2
 )
 
+// WalletCounterparty represents the other party in a cryptographic operation.
+// It can be a specific public key, or one of the special values 'self' or 'anyone'.
 type WalletCounterparty struct {
 	Type         CounterpartyType
 	Counterparty *ec.PublicKey
 }
 
+// Wallet provides cryptographic operations for a specific identity.
+// It can encrypt/decrypt data, create/verify signatures, and manage keys.
 type Wallet struct {
 	privateKey *ec.PrivateKey
 	publicKey  *ec.PublicKey
 	keyDeriver *KeyDeriver
 }
 
+// NewWallet creates a new wallet instance using the provided private key.
+// The private key serves as the root of trust for all cryptographic operations.
 func NewWallet(privateKey *ec.PrivateKey) *Wallet {
 	return &Wallet{
 		privateKey: privateKey,
@@ -80,6 +90,8 @@ type WalletDecryptResult struct {
 	Plaintext []byte
 }
 
+// Encrypt data using a symmetric key derived from the protocol, key ID, and counterparty.
+// The encrypted data can only be decrypted by the intended recipient.
 func (w *Wallet) Encrypt(args *WalletEncryptArgs) (*WalletEncryptResult, error) {
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
@@ -97,6 +109,8 @@ func (w *Wallet) Encrypt(args *WalletEncryptArgs) (*WalletEncryptResult, error) 
 	return &WalletEncryptResult{Ciphertext: ciphertext}, nil
 }
 
+// Decrypt data that was encrypted using the Encrypt method.
+// The protocol, key ID, and counterparty must match those used during encryption.
 func (w *Wallet) Decrypt(args *WalletDecryptArgs) (*WalletDecryptResult, error) {
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
@@ -197,6 +211,8 @@ var (
 	SignOutputsSingle SignOutputs = SignOutputs(sighash.Single)
 )
 
+// CreateSignature generates a cryptographic signature over the provided data.
+// The signature is created using a private key derived from the protocol and key ID.
 func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
 	if len(args.Data) == 0 && len(args.DashToDirectlySign) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
@@ -244,6 +260,8 @@ type VerifySignatureResult struct {
 	Valid bool
 }
 
+// VerifySignature checks the validity of a cryptographic signature.
+// It verifies that the signature was created using the expected protocol and key ID.
 func (w *Wallet) VerifySignature(args *VerifySignatureArgs, originator string) (*VerifySignatureResult, error) {
 	if len(args.Data) == 0 && len(args.DashToDirectlyVerify) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlyVerify must be valid")
