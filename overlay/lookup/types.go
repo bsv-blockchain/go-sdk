@@ -1,9 +1,5 @@
 package lookup
 
-import (
-	"github.com/bsv-blockchain/go-sdk/overlay"
-)
-
 type AnswerType string
 
 var (
@@ -28,13 +24,4 @@ type LookupAnswer struct {
 	Type    AnswerType
 	Outputs []*OutputListItem
 	Result  any
-}
-
-type LookupService interface {
-	OutputAdded(ctx overlay.SubmitContext, outputIndex uint32, topic string) error
-	OutputSpent(ctx overlay.SubmitContext, inputIndex uint32, topic string) error
-	OutputDeleted(outpoint *overlay.Outpoint, topic string) error
-	Lookup(question LookupQuestion) (LookupAnswer, error)
-	GetDocumentation() string
-	GetMetaData() overlay.MetaData
 }

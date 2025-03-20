@@ -2,7 +2,6 @@ package overlay
 
 import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 type Protocol string
@@ -17,32 +16,9 @@ type TaggedBEEF struct {
 	Topics []string
 }
 
-type Output struct {
-	Outpoint        *Outpoint
-	Script          []byte
-	Satoshis        uint64
-	Topic           string
-	Spent           *chainhash.Hash
-	OutputsConsumed []*Outpoint
-	ConsumedBy      []*Outpoint
-	Beef            []byte
-	BlockHeight     uint32
-	BlockIdx        uint64
-}
-
 type AppliedTransaction struct {
 	Txid  *chainhash.Hash
 	Topic string
-}
-
-type Steak map[string]*Admittance
-
-type SubmitContext struct {
-	Txid            *chainhash.Hash
-	Tx              *transaction.Transaction
-	Beef            []byte
-	TopicAdmittance Steak
-	TopicInputs     map[string][]*Output
 }
 
 type TopicData struct {
@@ -50,13 +26,12 @@ type TopicData struct {
 	Deps []*Outpoint
 }
 
-type Admittance struct {
+type AdmittanceInstructions struct {
 	OutputsToAdmit []uint32
 	CoinsToRetain  []uint32
 	CoinsRemoved   []uint32
-	InputData      map[uint32]any
-	OutputData     map[uint32]any
 }
+type Steak map[string]*AdmittanceInstructions
 
 type Network int
 
