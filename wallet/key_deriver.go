@@ -109,6 +109,8 @@ func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) *ec
 	}
 }
 
+var regexOnlyLettersNumbersSpaces = regexp.MustCompile(`^[a-z0-9 ]+$`)
+
 func (kd *KeyDeriver) computeInvoiceNumber(protocol WalletProtocol, keyID string) (string, error) {
 	// Validate protocol security level
 	if protocol.SecurityLevel < 0 || protocol.SecurityLevel > 2 {
@@ -133,7 +135,7 @@ func (kd *KeyDeriver) computeInvoiceNumber(protocol WalletProtocol, keyID string
 	if strings.Contains(protocolName, "  ") {
 		return "", fmt.Errorf("protocol names cannot contain multiple consecutive spaces (\"  \")")
 	}
-	if !regexp.MustCompile(`^[a-z0-9 ]+$`).MatchString(protocolName) {
+	if !regexOnlyLettersNumbersSpaces.MatchString(protocolName) {
 		return "", fmt.Errorf("protocol names can only contain letters, numbers and spaces")
 	}
 	if strings.HasSuffix(protocolName, " protocol") {
