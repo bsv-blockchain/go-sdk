@@ -44,8 +44,11 @@ func TestWallet(t *testing.T) {
 		}
 
 		encryptResult, err := userWallet.Encrypt(encryptArgs)
-		assert.NoError(t, err)
-		assert.NotEqual(t, sampleData, encryptResult.Ciphertext)
+
+		t.Run("successfully encrypts message", func(t *testing.T) {
+			assert.NoError(t, err)
+			assert.NotEqual(t, sampleData, encryptResult.Ciphertext)
+		})
 
 		// Decrypt message
 		decryptArgs := &wallet.WalletDecryptArgs{
@@ -60,9 +63,11 @@ func TestWallet(t *testing.T) {
 			Ciphertext: encryptResult.Ciphertext,
 		}
 
-		decryptResult, err := counterpartyWallet.Decrypt(decryptArgs)
-		assert.NoError(t, err)
-		assert.Equal(t, sampleData, decryptResult.Plaintext)
+		t.Run("successfully decrypts message", func(t *testing.T) {
+			decryptResult, err := counterpartyWallet.Decrypt(decryptArgs)
+			assert.NoError(t, err)
+			assert.Equal(t, sampleData, decryptResult.Plaintext)
+		})
 
 		// Test error cases
 		t.Run("wrong protocol", func(t *testing.T) {
