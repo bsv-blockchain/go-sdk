@@ -198,7 +198,7 @@ func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (
 type VerifySignatureArgs struct {
 	WalletEncryptionArgs
 	Data                 []byte
-	DashToDirectlyVerify []byte
+	HashToDirectlyVerify []byte
 	Signature            ec.Signature
 	ForSelf              bool
 }
@@ -210,14 +210,14 @@ type VerifySignatureResult struct {
 // VerifySignature checks the validity of a cryptographic signature.
 // It verifies that the signature was created using the expected protocol and key ID.
 func (w *Wallet) VerifySignature(args *VerifySignatureArgs, originator string) (*VerifySignatureResult, error) {
-	if len(args.Data) == 0 && len(args.DashToDirectlyVerify) == 0 {
+	if len(args.Data) == 0 && len(args.HashToDirectlyVerify) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlyVerify must be valid")
 	}
 
 	// Get hash to verify
 	var hash []byte
-	if len(args.DashToDirectlyVerify) > 0 {
-		hash = args.DashToDirectlyVerify
+	if len(args.HashToDirectlyVerify) > 0 {
+		hash = args.HashToDirectlyVerify
 	} else {
 		sum := sha256.Sum256(args.Data)
 		hash = sum[:]

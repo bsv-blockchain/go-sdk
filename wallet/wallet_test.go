@@ -203,7 +203,7 @@ func TestWallet(t *testing.T) {
 			// Verify signature with data
 			verifyArgsWithData := *verifyArgs
 			verifyArgsWithData.Data = sampleData
-			verifyArgsWithData.DashToDirectlyVerify = nil
+			verifyArgsWithData.HashToDirectlyVerify = nil
 
 			verifyResult, err := counterpartyWallet.VerifySignature(&verifyArgsWithData, "")
 			assert.NoError(t, err)
@@ -211,7 +211,7 @@ func TestWallet(t *testing.T) {
 
 			// Verify signature with hash directly
 			verifyArgsWithData.Data = nil
-			verifyArgsWithData.DashToDirectlyVerify = hash[:]
+			verifyArgsWithData.HashToDirectlyVerify = hash[:]
 
 			verifyHashResult, err := counterpartyWallet.VerifySignature(&verifyArgsWithData, "")
 			assert.NoError(t, err)
@@ -246,6 +246,40 @@ func TestWallet(t *testing.T) {
 			invalidVerifySignatureArgs.Counterparty.Counterparty = wrongKey.PubKey()
 			_, err = counterpartyWallet.VerifySignature(&invalidVerifySignatureArgs, "")
 			assert.Error(t, err)
+		})
+		t.Run("validates the BRC-3 compliance vector", func(t *testing.T) {
+			anyoneKey, _ := ec.PrivateKeyFromBytes([]byte{1})
+			anyoneWallet := wallet.NewWallet(anyoneKey)
+
+			counterparty, err := ec.PublicKeyFromString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+			assert.NoError(t, err)
+
+			signature, err := ec.FromDER([]byte{
+				48, 68, 2, 32, 43, 34, 58, 156, 219, 32, 50, 70, 29, 240, 155, 137, 88,
+				60, 200, 95, 243, 198, 201, 21, 56, 82, 141, 112, 69, 196, 170, 73, 156,
+				6, 44, 48, 2, 32, 118, 125, 254, 201, 44, 87, 177, 170, 93, 11, 193,
+				134, 18, 70, 9, 31, 234, 27, 170, 177, 54, 96, 181, 140, 166, 196, 144,
+				14, 230, 118, 106, 105,
+			})
+			assert.NoError(t, err)
+
+			verifyResult, err := anyoneWallet.VerifySignature(&wallet.VerifySignatureArgs{
+				WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+					ProtocolID: wallet.WalletProtocol{
+						SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+						Protocol:      "BRC3 Test",
+					},
+					KeyID: "42",
+					Counterparty: wallet.WalletCounterparty{
+						Type:         wallet.CounterpartyTypeOther,
+						Counterparty: counterparty,
+					},
+				},
+				Signature: *signature,
+				Data:      []byte("BRC-3 Compliance Validated!"),
+			}, "")
+			assert.NoError(t, err)
+			assert.True(t, verifyResult.Valid)
 		})
 	})
 }
