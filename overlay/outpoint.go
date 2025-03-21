@@ -12,32 +12,32 @@ import (
 )
 
 type Outpoint struct {
-	Txid *chainhash.Hash
-	Vout uint32
+	Txid        *chainhash.Hash `json:"txid"`
+	OutputIndex uint32          `json:"outputIndex"`
 }
 
 func NewOutpointFromTxBytes(b [36]byte) (o *Outpoint) {
 	o = &Outpoint{
-		Vout: binary.LittleEndian.Uint32(b[32:]),
+		OutputIndex: binary.LittleEndian.Uint32(b[32:]),
 	}
 	o.Txid, _ = chainhash.NewHash(b[:32])
 	return
 }
 
 func (o *Outpoint) TxBytes() []byte {
-	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.Vout)
+	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.OutputIndex)
 }
 
 func NewOutpointFromBytes(b [36]byte) (o *Outpoint) {
 	o = &Outpoint{
-		Vout: binary.BigEndian.Uint32(b[32:]),
+		OutputIndex: binary.BigEndian.Uint32(b[32:]),
 	}
 	o.Txid, _ = chainhash.NewHash(util.ReverseBytes(b[:32]))
 	return
 }
 
 func (o *Outpoint) Bytes() []byte {
-	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.Vout)
+	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.OutputIndex)
 }
 
 func NewOutpointFromString(s string) (o *Outpoint, err error) {
@@ -48,14 +48,14 @@ func NewOutpointFromString(s string) (o *Outpoint, err error) {
 	o = &Outpoint{}
 	if o.Txid, err = chainhash.NewHashFromHex(s[:64]); err == nil {
 		if vout, err := strconv.ParseUint(s[65:], 10, 32); err == nil {
-			o.Vout = uint32(vout)
+			o.OutputIndex = uint32(vout)
 		}
 	}
 	return
 }
 
 func (o *Outpoint) String() string {
-	return fmt.Sprintf("%x_%d", o.Txid.String(), o.Vout)
+	return fmt.Sprintf("%x_%d", o.Txid.String(), o.OutputIndex)
 }
 
 func (o Outpoint) MarshalJSON() (bytes []byte, err error) {

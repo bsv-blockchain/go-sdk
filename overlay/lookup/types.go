@@ -1,5 +1,7 @@
 package lookup
 
+import "github.com/bsv-blockchain/go-sdk/overlay"
+
 type AnswerType string
 
 var (
@@ -9,19 +11,24 @@ var (
 )
 
 type OutputListItem struct {
-	Beef        []byte
-	OutputIndex uint32
+	Beef        []byte `json:"beef"`
+	OutputIndex uint32 `json:"vout"`
 }
 
 type LookupQuestion struct {
-	Service string
-	Query   any
+	Service string `json:"service"`
+	Query   any    `json:"query"`
 }
 
-type LookupFormula interface{}
+type LookupFormula struct {
+	Outpoint *overlay.Outpoint
+	Histoy   func(beef []byte, outputIndex uint32, currentDepth uint32) bool
+	// HistoryDepth uint32
+}
 
 type LookupAnswer struct {
-	Type    AnswerType
-	Outputs []*OutputListItem
-	Result  any
+	Type     AnswerType
+	Outputs  []*OutputListItem
+	Formulas []LookupFormula
+	Result   any
 }
