@@ -374,6 +374,14 @@ func (b *Beef) FindBump(txid string) *MerklePath {
 	return nil
 }
 
+func (b *Beef) FindTransaction(txid string) *Transaction {
+	if beefTx := b.findTxid(txid); beefTx == nil {
+		return nil
+	} else {
+		return beefTx.Transaction
+	}
+}
+
 func (b *Beef) FindTransactionForSigning(txid string) *Transaction {
 	beefTx := b.findTxid(txid)
 	if beefTx == nil {
@@ -947,4 +955,24 @@ func (b *Beef) Bytes() ([]byte, error) {
 	}
 
 	return beef, nil
+}
+
+func (b *Beef) TxidOnlyBytes() ([]byte, error) {
+	c := &Beef{
+		Version:      b.Version,
+		BUMPs:        append([]*MerklePath(nil), b.BUMPs...),
+		Transactions: make(map[string]*BeefTx, len(b.Transactions)),
+	}
+	for i, tx := range b.Transactions {
+		idOnly := &BeefTx{
+			DataFormat: TxIDOnly,
+		}
+		if tx.DataFormat == TxIDOnly {
+			idOnly.KnownTxID = tx.KnownTxID
+		} else {
+			idOnly.KnownTxID = tx.Transaction.TxID()
+		}
+		c.Transactions[i] = idOnly
+	}
+	return c.Bytes()
 }
