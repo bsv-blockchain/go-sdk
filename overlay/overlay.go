@@ -30,6 +30,7 @@ type AdmittanceInstructions struct {
 	OutputsToAdmit []uint32
 	CoinsToRetain  []uint32
 	CoinsRemoved   []uint32
+	Dependencies   map[uint32][]*chainhash.Hash
 }
 type Steak map[string]*AdmittanceInstructions
 

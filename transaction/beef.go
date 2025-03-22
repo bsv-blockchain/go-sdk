@@ -166,6 +166,20 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 	}, nil
 }
 
+func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
+	if len(beef) < 36 {
+		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+	} else if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
+		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+	} else if txid, err := chainhash.NewHash(beef[4:36]); err != nil {
+		return nil, nil, err
+	} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
+		return nil, nil, err
+	} else {
+		return b, txid, nil
+	}
+}
+
 func readVersion(reader *bytes.Reader) (uint32, error) {
 	var version uint32
 	err := binary.Read(reader, binary.LittleEndian, &version)
