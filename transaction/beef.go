@@ -375,11 +375,10 @@ func (b *Beef) FindBump(txid string) *MerklePath {
 }
 
 func (b *Beef) FindTransaction(txid string) *Transaction {
-	if beefTx := b.findTxid(txid); beefTx == nil {
-		return nil
-	} else {
+	if beefTx := b.findTxid(txid); beefTx != nil {
 		return beefTx.Transaction
 	}
+	return nil
 }
 
 func (b *Beef) FindTransactionForSigning(txid string) *Transaction {
@@ -957,7 +956,15 @@ func (b *Beef) Bytes() ([]byte, error) {
 	return beef, nil
 }
 
-func (b *Beef) TxidOnlyBytes() ([]byte, error) {
+func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
+	beef, err := b.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	return append(append(util.LittleEndianBytes(ATOMIC_BEEF, 4), txid[:]...), beef...), nil
+}
+
+func (b *Beef) TxidOnly() ([]*Beef, error) {
 	c := &Beef{
 		Version:      b.Version,
 		BUMPs:        append([]*MerklePath(nil), b.BUMPs...),
@@ -974,5 +981,5 @@ func (b *Beef) TxidOnlyBytes() ([]byte, error) {
 		}
 		c.Transactions[i] = idOnly
 	}
-	return c.Bytes()
+	return c
 }
