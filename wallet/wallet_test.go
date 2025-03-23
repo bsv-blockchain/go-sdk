@@ -380,6 +380,102 @@ func TestWallet(t *testing.T) {
 			assert.NotNil(t, explicitPubKeyResult.PublicKey)
 			assert.Equal(t, pubKeyResult.PublicKey, explicitPubKeyResult.PublicKey)
 		})
+		t.Run("computes HMAC over messages verifiable by counterparty", func(t *testing.T) {
+			// Create base args
+			baseArgs := wallet.WalletEncryptionArgs{
+				ProtocolID: protocol,
+				KeyID:      keyID,
+			}
+
+			// Create HMAC
+			createHmacArgs := &wallet.CreateHmacArgs{
+				WalletEncryptionArgs: baseArgs,
+				Data:                 sampleData,
+			}
+			createHmacArgs.Counterparty = wallet.WalletCounterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: counterpartyKey.PubKey(),
+			}
+
+			createHmacResult, err := userWallet.CreateHmac(createHmacArgs, "")
+			assert.NoError(t, err)
+			assert.Len(t, createHmacResult.Hmac, 32)
+
+			// Verify HMAC
+			verifyHmacArgs := &wallet.VerifyHmacArgs{
+				WalletEncryptionArgs: baseArgs,
+				Hmac:                 createHmacResult.Hmac,
+				Data:                 sampleData,
+			}
+			verifyHmacArgs.Counterparty = wallet.WalletCounterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: userKey.PubKey(),
+			}
+
+			verifyHmacResult, err := counterpartyWallet.VerifyHmac(verifyHmacArgs, "")
+			assert.NoError(t, err)
+			assert.True(t, verifyHmacResult.Valid)
+
+			// Test error cases
+			t.Run("fails to verify HMAC with wrong data", func(t *testing.T) {
+				invalidVerifyHmacArgs := *verifyHmacArgs
+				invalidVerifyHmacArgs.Data = append([]byte{0}, sampleData...)
+				_, err = counterpartyWallet.VerifyHmac(&invalidVerifyHmacArgs, "")
+				assert.Error(t, err)
+			})
+
+			t.Run("fails to verify HMAC with wrong protocol", func(t *testing.T) {
+				invalidVerifyHmacArgs := *verifyHmacArgs
+				invalidVerifyHmacArgs.ProtocolID.Protocol = "wrong"
+				_, err = counterpartyWallet.VerifyHmac(&invalidVerifyHmacArgs, "")
+				assert.Error(t, err)
+			})
+
+			t.Run("fails to verify HMAC with wrong key ID", func(t *testing.T) {
+				invalidVerifyHmacArgs := *verifyHmacArgs
+				invalidVerifyHmacArgs.KeyID = "wrong"
+				_, err = counterpartyWallet.VerifyHmac(&invalidVerifyHmacArgs, "")
+				assert.Error(t, err)
+			})
+
+			t.Run("fails to verify HMAC with wrong counterparty", func(t *testing.T) {
+				invalidVerifyHmacArgs := *verifyHmacArgs
+				wrongKey, _ := ec.NewPrivateKey()
+				invalidVerifyHmacArgs.Counterparty.Counterparty = wrongKey.PubKey()
+				_, err = counterpartyWallet.VerifyHmac(&invalidVerifyHmacArgs, "")
+				assert.Error(t, err)
+			})
+
+			t.Run("validates BRC-2 HMAC compliance vector", func(t *testing.T) {
+				privKey, err := ec.PrivateKeyFromHex("6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8")
+				assert.NoError(t, err)
+
+				counterparty, err := ec.PublicKeyFromString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+				assert.NoError(t, err)
+
+				verifyResult, err := wallet.NewWallet(privKey).VerifyHmac(&wallet.VerifyHmacArgs{
+					WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+						ProtocolID: wallet.WalletProtocol{
+							SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+							Protocol:      "BRC2 Test",
+						},
+						KeyID: "42",
+						Counterparty: wallet.WalletCounterparty{
+							Type:         wallet.CounterpartyTypeOther,
+							Counterparty: counterparty,
+						},
+					},
+					Data: []byte("BRC-2 HMAC Compliance Validated!"),
+					Hmac: []byte{
+						81, 240, 18, 153, 163, 45, 174, 85, 9, 246, 142, 125, 209, 133, 82, 76,
+						254, 103, 46, 182, 86, 59, 219, 61, 126, 30, 176, 232, 233, 100, 234, 14,
+					},
+				}, "")
+				assert.NoError(t, err)
+				assert.True(t, verifyResult.Valid)
+			})
+		})
+
 		t.Run("test encrypt/decrypt with implicit self", func(t *testing.T) {
 			// Test encryption/decryption with implicit self
 			encryptArgs := &wallet.WalletEncryptArgs{
