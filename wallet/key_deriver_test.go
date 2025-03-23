@@ -65,6 +65,7 @@ func TestKeyDeriver(t *testing.T) {
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
+			false,
 		)
 		assert.NoError(t, err)
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
@@ -78,6 +79,7 @@ func TestKeyDeriver(t *testing.T) {
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
+			false,
 		)
 		assert.NoError(t, err)
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
@@ -91,6 +93,7 @@ func TestKeyDeriver(t *testing.T) {
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
+			true,
 		)
 		assert.NoError(t, err)
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
