@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -27,22 +29,17 @@ func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
 // DeriveSymmetricKey creates a symmetric key based on protocol ID, key ID, and counterparty.
 // Note: Symmetric keys should not be derivable by everyone due to security risks.
 func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.SymmetricKey, error) {
-	// Prevent deriving symmetric key for self
-	if counterparty.Type == CounterpartyTypeSelf {
-		return nil, fmt.Errorf("cannot derive symmetric key for self")
-	}
-
 	// If counterparty is 'anyone', use a fixed public key
 	if counterparty.Type == CounterpartyTypeAnyone {
-		_, fixedKey := ec.PrivateKeyFromBytes([]byte{1})
+		_, anyonePubKey := AnyoneKey()
 		counterparty = WalletCounterparty{
 			Type:         CounterpartyTypeOther,
-			Counterparty: fixedKey,
+			Counterparty: anyonePubKey,
 		}
 	}
 
 	// Derive both public and private keys
-	derivedPublicKey, err := kd.DerivePublicKey(protocol, keyID, counterparty, false)
+	derivedPublicKey, err := kd.DerivePublicKey(protocol, keyID, counterparty)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive public key: %w", err)
 	}
@@ -66,15 +63,17 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, 
 }
 
 // DerivePublicKey creates a public key based on protocol ID, key ID, and counterparty.
-// The forSelf parameter determines whether the key is derived for the user's own identity.
-func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error) {
-	counterpartyKey := kd.normalizeCounterparty(counterparty)
+func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PublicKey, error) {
+	counterpartyKey, err := kd.normalizeCounterparty(counterparty)
+	if err != nil {
+		return nil, err
+	}
 	invoiceNumber, err := kd.computeInvoiceNumber(protocol, keyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute invoice number: %w", err)
 	}
 
-	if forSelf {
+	if counterparty.Type == CounterpartyTypeSelf {
 		privKey, err := kd.privateKey.DeriveChild(counterpartyKey, invoiceNumber)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive child private key: %w", err)
@@ -92,7 +91,10 @@ func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, cou
 // DerivePrivateKey creates a private key based on protocol ID, key ID, and counterparty.
 // The derived key can be used for signing or other cryptographic operations.
 func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error) {
-	counterpartyKey := kd.normalizeCounterparty(counterparty)
+	counterpartyKey, err := kd.normalizeCounterparty(counterparty)
+	if err != nil {
+		return nil, err
+	}
 	invoiceNumber, err := kd.computeInvoiceNumber(protocol, keyID)
 	if err != nil {
 		return nil, err
@@ -107,18 +109,54 @@ func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, co
 
 // normalizeCounterparty converts the counterparty parameter into a standard public key format.
 // It handles special cases like 'self' and 'anyone' by converting them to their corresponding public keys.
-func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) *ec.PublicKey {
+func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) (*ec.PublicKey, error) {
 	switch counterparty.Type {
 	case CounterpartyTypeSelf:
-		return kd.privateKey.PubKey()
+		return kd.privateKey.PubKey(), nil
 	case CounterpartyTypeOther:
-		return counterparty.Counterparty
+		return counterparty.Counterparty, nil
 	case CounterpartyTypeAnyone:
-		_, pub := ec.PrivateKeyFromBytes([]byte{1})
-		return pub
+		_, pub := AnyoneKey()
+		return pub, nil
 	default:
-		return nil
+		return nil, errors.New("invalid counterparty, must be self, other, or anyone")
 	}
+}
+
+// RevealCounterpartySecret reveals the shared secret between the root key and the counterparty.
+// Note: This should not be used for 'self'.
+func (kd *KeyDeriver) RevealCounterpartySecret(counterparty WalletCounterparty) (*ec.PublicKey, error) {
+	if counterparty.Type == CounterpartyTypeSelf {
+		return nil, errors.New("counterparty secrets cannot be revealed for counterparty=self")
+	}
+
+	counterpartyKey, err := kd.normalizeCounterparty(counterparty)
+	if err != nil {
+		return nil, fmt.Errorf("failed to normalize counterparty: %w", err)
+	}
+
+	// Double-check to ensure not revealing the secret for 'self'
+	self := kd.privateKey.PubKey()
+	keyDerivedBySelf, err := kd.privateKey.DeriveChild(self, "test")
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive self key: %w", err)
+	}
+
+	keyDerivedByCounterparty, err := kd.privateKey.DeriveChild(counterpartyKey, "test")
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive counterparty key: %w", err)
+	}
+
+	if bytes.Equal(keyDerivedBySelf.Serialize(), keyDerivedByCounterparty.Serialize()) {
+		return nil, errors.New("counterparty secrets cannot be revealed if counterparty key is self")
+	}
+
+	sharedSecret, err := kd.privateKey.DeriveSharedSecret(counterpartyKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive shared secret: %w", err)
+	}
+
+	return sharedSecret, nil
 }
 
 var regexOnlyLettersNumbersSpaces = regexp.MustCompile(`^[a-z0-9 ]+$`)

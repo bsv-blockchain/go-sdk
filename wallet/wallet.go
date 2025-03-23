@@ -29,9 +29,10 @@ type WalletProtocol struct {
 type CounterpartyType int
 
 const (
-	CounterpartyTypeAnyone CounterpartyType = 0
-	CounterpartyTypeSelf   CounterpartyType = 1
-	CounterpartyTypeOther  CounterpartyType = 2
+	CounterpartyUninitialized CounterpartyType = 0
+	CounterpartyTypeAnyone    CounterpartyType = 1
+	CounterpartyTypeSelf      CounterpartyType = 2
+	CounterpartyTypeOther     CounterpartyType = 3
 )
 
 // WalletCounterparty represents the other party in a cryptographic operation.
@@ -92,6 +93,11 @@ func (w *Wallet) Encrypt(args *WalletEncryptArgs) (*WalletEncryptResult, error) 
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
 	}
+	if args.Counterparty.Type == CounterpartyUninitialized {
+		args.Counterparty = WalletCounterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
 
 	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
 	if err != nil {
@@ -110,6 +116,11 @@ func (w *Wallet) Encrypt(args *WalletEncryptArgs) (*WalletEncryptResult, error) 
 func (w *Wallet) Decrypt(args *WalletDecryptArgs) (*WalletDecryptResult, error) {
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
+	}
+	if args.Counterparty.Type == CounterpartyUninitialized {
+		args.Counterparty = WalletCounterparty{
+			Type: CounterpartyTypeSelf,
+		}
 	}
 
 	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
@@ -174,11 +185,21 @@ func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (
 		hash = sum[:]
 	}
 
+	// Handle default counterparty (anyone for signing)
+	counterparty := args.Counterparty
+	if counterparty.Type == CounterpartyUninitialized {
+		counterparty = WalletCounterparty{
+			Type: CounterpartyTypeAnyone,
+		}
+	} else if counterparty.Type == CounterpartyTypeOther && counterparty.Counterparty == nil {
+		return nil, errors.New("counterparty public key required for other")
+	}
+
 	// Derive private key
 	privKey, err := w.keyDeriver.DerivePrivateKey(
 		args.ProtocolID,
 		args.KeyID,
-		args.Counterparty,
+		counterparty,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive private key: %w", err)
@@ -200,7 +221,6 @@ type VerifySignatureArgs struct {
 	Data                 []byte
 	HashToDirectlyVerify []byte
 	Signature            ec.Signature
-	ForSelf              bool
 }
 
 type VerifySignatureResult struct {
@@ -223,12 +243,21 @@ func (w *Wallet) VerifySignature(args *VerifySignatureArgs, originator string) (
 		hash = sum[:]
 	}
 
+	// Handle default counterparty (self for verification)
+	counterparty := args.Counterparty
+	if counterparty.Type == CounterpartyUninitialized {
+		counterparty = WalletCounterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	} else if counterparty.Type == CounterpartyTypeOther && counterparty.Counterparty == nil {
+		return nil, errors.New("counterparty public key required for other")
+	}
+
 	// Derive public key
 	pubKey, err := w.keyDeriver.DerivePublicKey(
 		args.ProtocolID,
 		args.KeyID,
-		args.Counterparty,
-		args.ForSelf,
+		counterparty,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive public key: %w", err)
@@ -243,4 +272,8 @@ func (w *Wallet) VerifySignature(args *VerifySignatureArgs, originator string) (
 	return &VerifySignatureResult{
 		Valid: valid,
 	}, nil
+}
+
+func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
+	return ec.PrivateKeyFromBytes([]byte{1})
 }

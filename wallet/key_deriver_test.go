@@ -32,24 +32,27 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should normalize counterparty correctly for self", func(t *testing.T) {
-		normalized := keyDeriver.normalizeCounterparty(WalletCounterparty{
+		normalized, err := keyDeriver.normalizeCounterparty(WalletCounterparty{
 			Type: CounterpartyTypeSelf,
 		})
+		assert.NoError(t, err)
 		assert.Equal(t, rootPublicKey.ToDERHex(), normalized.ToDERHex())
 	})
 
 	t.Run("should normalize counterparty correctly for anyone", func(t *testing.T) {
-		normalized := keyDeriver.normalizeCounterparty(WalletCounterparty{
+		normalized, err := keyDeriver.normalizeCounterparty(WalletCounterparty{
 			Type: CounterpartyTypeAnyone,
 		})
+		assert.NoError(t, err)
 		assert.Equal(t, anyonePublicKey.ToDERHex(), normalized.ToDERHex())
 	})
 
 	t.Run("should normalize counterparty correctly when given as a public key", func(t *testing.T) {
-		normalized := keyDeriver.normalizeCounterparty(WalletCounterparty{
+		normalized, err := keyDeriver.normalizeCounterparty(WalletCounterparty{
 			Type:         CounterpartyTypeOther,
 			Counterparty: counterpartyPublicKey,
 		})
+		assert.NoError(t, err)
 		assert.Equal(t, counterpartyPublicKey.ToDERHex(), normalized.ToDERHex())
 	})
 
@@ -62,7 +65,6 @@ func TestKeyDeriver(t *testing.T) {
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
-			false,
 		)
 		assert.NoError(t, err)
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
@@ -76,7 +78,6 @@ func TestKeyDeriver(t *testing.T) {
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
-			false,
 		)
 		assert.NoError(t, err)
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
@@ -90,7 +91,6 @@ func TestKeyDeriver(t *testing.T) {
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
-			true,
 		)
 		assert.NoError(t, err)
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
@@ -148,15 +148,29 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should not reveal shared secret for self", func(t *testing.T) {
-		_, err := keyDeriver.DeriveSymmetricKey(
-			protocolID,
-			keyID,
-			WalletCounterparty{
-				Type: CounterpartyTypeSelf,
-			},
-		)
-		assert.Error(t, err)
-		assert.EqualError(t, err, "cannot derive symmetric key for self")
+		_, err := keyDeriver.RevealCounterpartySecret(WalletCounterparty{
+			Type: CounterpartyTypeSelf,
+		})
+		assert.EqualError(t, err, "counterparty secrets cannot be revealed for counterparty=self")
+
+		_, err = keyDeriver.RevealCounterpartySecret(WalletCounterparty{
+			Type: CounterpartyTypeOther,
+			Counterparty: rootPublicKey,
+		})
+		assert.EqualError(t, err, "counterparty secrets cannot be revealed if counterparty key is self")
+	})
+
+	t.Run("should reveal the correct counterparty shared secret", func(t *testing.T) {
+		sharedSecret, err := keyDeriver.RevealCounterpartySecret(WalletCounterparty{
+			Type:         CounterpartyTypeOther,
+			Counterparty: counterpartyPublicKey,
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, sharedSecret)
+
+		expected, err := rootPrivateKey.DeriveSharedSecret(counterpartyPublicKey)
+		assert.NoError(t, err)
+		assert.Equal(t, expected.ToDER(), sharedSecret.ToDER())
 	})
 
 	t.Run("should reveal the specific key association", func(t *testing.T) {

@@ -248,7 +248,7 @@ func TestWallet(t *testing.T) {
 			assert.Error(t, err)
 		})
 		t.Run("validates the BRC-3 compliance vector", func(t *testing.T) {
-			anyoneKey, _ := ec.PrivateKeyFromBytes([]byte{1})
+			anyoneKey, _ := wallet.AnyoneKey()
 			anyoneWallet := wallet.NewWallet(anyoneKey)
 
 			counterparty, err := ec.PublicKeyFromString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
@@ -280,6 +280,124 @@ func TestWallet(t *testing.T) {
 			}, "")
 			assert.NoError(t, err)
 			assert.True(t, verifyResult.Valid)
+		})
+	})
+
+	t.Run("uses anyone for creating signatures and self for other operations if no counterparty is provided", func(t *testing.T) {
+		userKey, err := ec.NewPrivateKey()
+		assert.NoError(t, err)
+		userWallet := wallet.NewWallet(userKey)
+
+		anyoneKey, _ := wallet.AnyoneKey()
+		anyoneWallet := wallet.NewWallet(anyoneKey)
+
+		// Base encryption args
+		walletEncryptionArgs := wallet.WalletEncryptionArgs{
+			ProtocolID: wallet.WalletProtocol{
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      "tests",
+			},
+			KeyID: "4",
+		}
+
+		t.Run("verify self sign signature", func(t *testing.T) {
+			// Create signature with self sign
+			selfSignArgs := &wallet.CreateSignatureArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+				Data:                 sampleData,
+			}
+			selfSignArgs.Counterparty = wallet.WalletCounterparty{
+				Type: wallet.CounterpartyTypeSelf,
+			}
+			selfSignResult, err := userWallet.CreateSignature(selfSignArgs, "")
+			assert.NoError(t, err)
+			assert.NotEmpty(t, selfSignResult.Signature)
+
+			// Verify signature with explicit self
+			selfVerifyExplicitArgs := &wallet.VerifySignatureArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+				Signature:            selfSignResult.Signature,
+				Data:                 sampleData,
+			}
+			selfVerifyExplicitArgs.Counterparty = wallet.WalletCounterparty{
+				Type: wallet.CounterpartyTypeSelf,
+			}
+			selfVerifyExplicitResult, err := userWallet.VerifySignature(selfVerifyExplicitArgs, "")
+			assert.NoError(t, err)
+			assert.True(t, selfVerifyExplicitResult.Valid)
+
+			// Verify signature with implicit self
+			selfVerifyArgs := &wallet.VerifySignatureArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+				Signature:            selfSignResult.Signature,
+				Data:                 sampleData,
+			}
+			selfVerifyArgs.Counterparty = wallet.WalletCounterparty{}
+			selfVerifyResult, err := userWallet.VerifySignature(selfVerifyArgs, "")
+			assert.NoError(t, err)
+			assert.True(t, selfVerifyResult.Valid)
+		})
+
+		t.Run("verify anyone sign signature", func(t *testing.T) {
+			// Create signature with implicit anyone
+			anyoneSignArgs := &wallet.CreateSignatureArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+				Data:                 sampleData,
+			}
+			anyoneSignResult, err := userWallet.CreateSignature(anyoneSignArgs, "")
+			assert.NoError(t, err)
+			assert.NotEmpty(t, anyoneSignResult.Signature)
+
+			// Verify signature with explicit counterparty
+			verifyArgs := &wallet.VerifySignatureArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+				Signature:            anyoneSignResult.Signature,
+				Data:                 sampleData,
+			}
+			verifyArgs.Counterparty = wallet.WalletCounterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: userKey.PubKey(),
+			}
+			verifyResult, err := anyoneWallet.VerifySignature(verifyArgs, "")
+			assert.NoError(t, err)
+			assert.True(t, verifyResult.Valid)
+		})
+		t.Run("test get public key", func(t *testing.T) {
+			// Test public key derivation with implicit self
+			getPubKeyArgs := &wallet.GetPublicKeyArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+			}
+			pubKeyResult := userWallet.GetPublicKey(getPubKeyArgs, "")
+			assert.NotNil(t, pubKeyResult.PublicKey)
+			// Test public key derivation with explicit self
+			getExplicitPubKeyArgs := &wallet.GetPublicKeyArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+			}
+			getExplicitPubKeyArgs.Counterparty = wallet.WalletCounterparty{
+				Type: wallet.CounterpartyTypeSelf,
+			}
+			explicitPubKeyResult := userWallet.GetPublicKey(getExplicitPubKeyArgs, "")
+			assert.NotNil(t, explicitPubKeyResult.PublicKey)
+			assert.Equal(t, pubKeyResult.PublicKey, explicitPubKeyResult.PublicKey)
+		})
+		t.Run("test encrypt/decrypt with implicit self", func(t *testing.T) {
+			// Test encryption/decryption with implicit self
+			encryptArgs := &wallet.WalletEncryptArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+				Plaintext:            sampleData,
+			}
+			encryptResult, err := userWallet.Encrypt(encryptArgs)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, encryptResult.Ciphertext)
+
+			// Decrypt message with implicit self
+			decryptArgs := &wallet.WalletDecryptArgs{
+				WalletEncryptionArgs: walletEncryptionArgs,
+				Ciphertext:           encryptResult.Ciphertext,
+			}
+			decryptResult, err := userWallet.Decrypt(decryptArgs)
+			assert.NoError(t, err)
+			assert.Equal(t, sampleData, decryptResult.Plaintext)
 		})
 	})
 }
