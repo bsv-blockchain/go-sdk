@@ -964,7 +964,7 @@ func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
 	return append(append(util.LittleEndianBytes(ATOMIC_BEEF, 4), txid[:]...), beef...), nil
 }
 
-func (b *Beef) TxidOnly() ([]*Beef, error) {
+func (b *Beef) TxidOnly() (*Beef, error) {
 	c := &Beef{
 		Version:      b.Version,
 		BUMPs:        append([]*MerklePath(nil), b.BUMPs...),
@@ -981,5 +981,5 @@ func (b *Beef) TxidOnly() ([]*Beef, error) {
 		}
 		c.Transactions[i] = idOnly
 	}
-	return c
+	return c, nil
 }
