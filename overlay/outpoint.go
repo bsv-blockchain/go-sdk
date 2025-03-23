@@ -62,6 +62,10 @@ func NewOutpointFromString(s string) (*Outpoint, error) {
 }
 
 func (o *Outpoint) String() string {
+	return fmt.Sprintf("%x.%d", o.Txid.String(), o.OutputIndex)
+}
+
+func (o *Outpoint) OrdinalString() string {
 	return fmt.Sprintf("%x_%d", o.Txid.String(), o.OutputIndex)
 }
 
