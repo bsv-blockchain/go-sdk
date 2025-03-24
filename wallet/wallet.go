@@ -61,7 +61,7 @@ func NewWallet(privateKey *ec.PrivateKey) *Wallet {
 	}
 }
 
-type WalletEncryptionArgs struct {
+type EncryptionArgs struct {
 	ProtocolID       WalletProtocol
 	KeyID            string
 	Counterparty     WalletCounterparty
@@ -70,27 +70,27 @@ type WalletEncryptionArgs struct {
 	SeekPermission   bool
 }
 
-type WalletEncryptArgs struct {
-	WalletEncryptionArgs
+type EncryptArgs struct {
+	EncryptionArgs
 	Plaintext []byte
 }
 
-type WalletDecryptArgs struct {
-	WalletEncryptionArgs
+type DecryptArgs struct {
+	EncryptionArgs
 	Ciphertext []byte
 }
 
-type WalletEncryptResult struct {
+type EncryptResult struct {
 	Ciphertext []byte
 }
 
-type WalletDecryptResult struct {
+type DecryptResult struct {
 	Plaintext []byte
 }
 
 // Encrypt data using a symmetric key derived from the protocol, key ID, and counterparty.
 // The encrypted data can only be decrypted by the intended recipient.
-func (w *Wallet) Encrypt(args *WalletEncryptArgs) (*WalletEncryptResult, error) {
+func (w *Wallet) Encrypt(args EncryptArgs) (*EncryptResult, error) {
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
 	}
@@ -109,12 +109,12 @@ func (w *Wallet) Encrypt(args *WalletEncryptArgs) (*WalletEncryptResult, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt data: %w", err)
 	}
-	return &WalletEncryptResult{Ciphertext: ciphertext}, nil
+	return &EncryptResult{Ciphertext: ciphertext}, nil
 }
 
 // Decrypt data that was encrypted using the Encrypt method.
 // The protocol, key ID, and counterparty must match those used during encryption.
-func (w *Wallet) Decrypt(args *WalletDecryptArgs) (*WalletDecryptResult, error) {
+func (w *Wallet) Decrypt(args DecryptArgs) (*DecryptResult, error) {
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
 	}
@@ -133,11 +133,11 @@ func (w *Wallet) Decrypt(args *WalletDecryptArgs) (*WalletDecryptResult, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt data: %w", err)
 	}
-	return &WalletDecryptResult{Plaintext: plaintext}, nil
+	return &DecryptResult{Plaintext: plaintext}, nil
 }
 
 type GetPublicKeyArgs struct {
-	WalletEncryptionArgs
+	EncryptionArgs
 	IdentityKey bool
 	ForSelf     bool
 }
@@ -146,7 +146,7 @@ type GetPublicKeyResult struct {
 	PublicKey *ec.PublicKey `json:"publicKey"`
 }
 
-func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
+func (w *Wallet) GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
 	if args.IdentityKey {
 		return &GetPublicKeyResult{
 			PublicKey: w.keyDeriver.rootKey.PubKey(),
@@ -183,7 +183,7 @@ func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPu
 }
 
 type CreateSignatureArgs struct {
-	WalletEncryptionArgs
+	EncryptionArgs
 	Data               []byte
 	DashToDirectlySign []byte
 }
@@ -202,7 +202,7 @@ var (
 
 // CreateSignature generates a cryptographic signature over the provided data.
 // The signature is created using a private key derived from the protocol and key ID.
-func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
+func (w *Wallet) CreateSignature(args CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
 	if len(args.Data) == 0 && len(args.DashToDirectlySign) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
 	}
@@ -248,7 +248,7 @@ func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (
 }
 
 type VerifySignatureArgs struct {
-	WalletEncryptionArgs
+	EncryptionArgs
 	Data                 []byte
 	HashToDirectlyVerify []byte
 	Signature            ec.Signature
@@ -256,7 +256,7 @@ type VerifySignatureArgs struct {
 }
 
 type CreateHmacArgs struct {
-	WalletEncryptionArgs
+	EncryptionArgs
 	Data []byte
 }
 
@@ -265,7 +265,7 @@ type CreateHmacResult struct {
 }
 
 type VerifyHmacArgs struct {
-	WalletEncryptionArgs
+	EncryptionArgs
 	Data []byte
 	Hmac []byte
 }
@@ -280,7 +280,7 @@ type VerifySignatureResult struct {
 
 // VerifySignature checks the validity of a cryptographic signature.
 // It verifies that the signature was created using the expected protocol and key ID.
-func (w *Wallet) VerifySignature(args *VerifySignatureArgs) (*VerifySignatureResult, error) {
+func (w *Wallet) VerifySignature(args VerifySignatureArgs) (*VerifySignatureResult, error) {
 	if len(args.Data) == 0 && len(args.HashToDirectlyVerify) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlyVerify must be valid")
 	}
@@ -332,7 +332,7 @@ func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
 
 // CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
 // using a symmetric key derived from the protocol, key ID, and counterparty.
-func (w *Wallet) CreateHmac(args *CreateHmacArgs, originator string) (*CreateHmacResult, error) {
+func (w *Wallet) CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error) {
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
 	}
@@ -356,7 +356,7 @@ func (w *Wallet) CreateHmac(args *CreateHmacArgs, originator string) (*CreateHma
 
 // VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
 // The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
-func (w *Wallet) VerifyHmac(args *VerifyHmacArgs, originator string) (*VerifyHmacResult, error) {
+func (w *Wallet) VerifyHmac(args VerifyHmacArgs) (*VerifyHmacResult, error) {
 	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
 		return nil, errors.New("counterparty public key required for other")
 	}
