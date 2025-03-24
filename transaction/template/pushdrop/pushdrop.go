@@ -2,6 +2,7 @@ package pushdrop
 
 import (
 	"crypto/sha256"
+	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
@@ -91,7 +92,7 @@ func (p *PushDropTemplate) Lock(
 			Data: dataToSign,
 		}, p.Originator)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error creating wallet signature for lock: %w", err)
 		}
 		fields = append(fields, sig.Signature.Serialize())
 	}
@@ -174,7 +175,7 @@ func (p *PushDropUnlocker) Sign(
 			Data: preimageHash[:],
 		}, p.pushDrop.Originator)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to create wallet signature for sign: %w", err)
 		}
 		s := (&script.Script{})
 		s.AppendPushData(sig.Signature.Serialize())
