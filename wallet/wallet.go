@@ -91,9 +91,6 @@ type DecryptResult struct {
 // Encrypt data using a symmetric key derived from the protocol, key ID, and counterparty.
 // The encrypted data can only be decrypted by the intended recipient.
 func (w *Wallet) Encrypt(args EncryptArgs) (*EncryptResult, error) {
-	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
-		return nil, errors.New("counterparty public key required for other")
-	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
@@ -115,9 +112,6 @@ func (w *Wallet) Encrypt(args EncryptArgs) (*EncryptResult, error) {
 // Decrypt data that was encrypted using the Encrypt method.
 // The protocol, key ID, and counterparty must match those used during encryption.
 func (w *Wallet) Decrypt(args DecryptArgs) (*DecryptResult, error) {
-	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
-		return nil, errors.New("counterparty public key required for other")
-	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
@@ -163,8 +157,6 @@ func (w *Wallet) GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPub
 		counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
 		}
-	} else if counterparty.Type == CounterpartyTypeOther && counterparty.Counterparty == nil {
-		return nil, errors.New("counterparty public key required for other")
 	}
 
 	pubKey, err := w.keyDeriver.DerivePublicKey(
@@ -222,8 +214,6 @@ func (w *Wallet) CreateSignature(args CreateSignatureArgs, originator string) (*
 		counterparty = WalletCounterparty{
 			Type: CounterpartyTypeAnyone,
 		}
-	} else if counterparty.Type == CounterpartyTypeOther && counterparty.Counterparty == nil {
-		return nil, errors.New("counterparty public key required for other")
 	}
 
 	// Derive private key
@@ -300,8 +290,6 @@ func (w *Wallet) VerifySignature(args VerifySignatureArgs) (*VerifySignatureResu
 		counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
 		}
-	} else if counterparty.Type == CounterpartyTypeOther && counterparty.Counterparty == nil {
-		return nil, errors.New("counterparty public key required for other")
 	}
 
 	// Derive public key

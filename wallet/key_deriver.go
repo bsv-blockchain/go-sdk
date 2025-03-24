@@ -112,6 +112,9 @@ func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) (*e
 	case CounterpartyTypeSelf:
 		return kd.rootKey.PubKey(), nil
 	case CounterpartyTypeOther:
+		if counterparty.Counterparty == nil {
+			return nil, errors.New("counterparty public key required for other")
+		}
 		return counterparty.Counterparty, nil
 	case CounterpartyTypeAnyone:
 		_, pub := AnyoneKey()
