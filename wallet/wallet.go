@@ -321,9 +321,6 @@ func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
 // CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
 // using a symmetric key derived from the protocol, key ID, and counterparty.
 func (w *Wallet) CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error) {
-	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
-		return nil, errors.New("counterparty public key required for other")
-	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
@@ -345,9 +342,6 @@ func (w *Wallet) CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error) {
 // VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
 // The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
 func (w *Wallet) VerifyHmac(args VerifyHmacArgs) (*VerifyHmacResult, error) {
-	if args.Counterparty.Type == CounterpartyTypeOther && args.Counterparty.Counterparty == nil {
-		return nil, errors.New("counterparty public key required for other")
-	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
