@@ -22,10 +22,9 @@ func TestKeyDeriver(t *testing.T) {
 	}
 	keyID := "12345"
 
-	var keyDeriver *KeyDeriver
+	keyDeriver := NewKeyDeriver(rootPrivateKey)
 
 	t.Run("should compute the correct invoice number", func(t *testing.T) {
-		keyDeriver = NewKeyDeriver(rootPrivateKey)
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
 		assert.NoError(t, err)
 		assert.Equal(t, "0-testprotocol-12345", invoiceNumber)
