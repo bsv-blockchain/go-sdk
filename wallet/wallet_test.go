@@ -32,8 +32,8 @@ func TestWallet(t *testing.T) {
 
 	t.Run("encrypts and decrypts messages", func(t *testing.T) {
 		// Encrypt message
-		encryptArgs := &wallet.WalletEncryptArgs{
-			WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+		encryptArgs := wallet.EncryptArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: protocol,
 				KeyID:      keyID,
 				Counterparty: wallet.WalletCounterparty{
@@ -52,8 +52,8 @@ func TestWallet(t *testing.T) {
 		})
 
 		// Decrypt message
-		decryptArgs := &wallet.WalletDecryptArgs{
-			WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+		decryptArgs := wallet.DecryptArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: protocol,
 				KeyID:      "4",
 				Counterparty: wallet.WalletCounterparty{
@@ -72,49 +72,49 @@ func TestWallet(t *testing.T) {
 
 		// Test error cases
 		t.Run("wrong protocol", func(t *testing.T) {
-			wrongProtocolArgs := *decryptArgs
+			wrongProtocolArgs := decryptArgs
 			wrongProtocolArgs.ProtocolID.Protocol = "wrong"
-			_, err := counterpartyWallet.Decrypt(&wrongProtocolArgs)
+			_, err := counterpartyWallet.Decrypt(wrongProtocolArgs)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "cipher: message authentication failed")
 		})
 
 		t.Run("wrong key ID", func(t *testing.T) {
-			wrongKeyArgs := *decryptArgs
+			wrongKeyArgs := decryptArgs
 			wrongKeyArgs.KeyID = "5"
-			_, err := counterpartyWallet.Decrypt(&wrongKeyArgs)
+			_, err := counterpartyWallet.Decrypt(wrongKeyArgs)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "cipher: message authentication failed")
 		})
 
 		t.Run("wrong counterparty", func(t *testing.T) {
-			wrongCounterpartyArgs := *decryptArgs
+			wrongCounterpartyArgs := decryptArgs
 			wrongCounterpartyArgs.Counterparty.Counterparty = counterpartyKey.PubKey()
-			_, err := counterpartyWallet.Decrypt(&wrongCounterpartyArgs)
+			_, err := counterpartyWallet.Decrypt(wrongCounterpartyArgs)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "cipher: message authentication failed")
 		})
 
 		t.Run("invalid protocol name", func(t *testing.T) {
-			invalidProtocolArgs := *decryptArgs
+			invalidProtocolArgs := decryptArgs
 			invalidProtocolArgs.ProtocolID.Protocol = "x"
-			_, err := counterpartyWallet.Decrypt(&invalidProtocolArgs)
+			_, err := counterpartyWallet.Decrypt(invalidProtocolArgs)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "protocol names must be 5 characters or more")
 		})
 
 		t.Run("invalid key ID", func(t *testing.T) {
-			invalidKeyArgs := *decryptArgs
+			invalidKeyArgs := decryptArgs
 			invalidKeyArgs.KeyID = ""
-			_, err := counterpartyWallet.Decrypt(&invalidKeyArgs)
+			_, err := counterpartyWallet.Decrypt(invalidKeyArgs)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "key IDs must be 1 character or more")
 		})
 
 		t.Run("invalid security level", func(t *testing.T) {
-			invalidSecurityArgs := *decryptArgs
+			invalidSecurityArgs := decryptArgs
 			invalidSecurityArgs.ProtocolID.SecurityLevel = -1
-			_, err := counterpartyWallet.Decrypt(&invalidSecurityArgs)
+			_, err := counterpartyWallet.Decrypt(invalidSecurityArgs)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "protocol security level must be 0, 1, or 2")
 		})
@@ -128,8 +128,8 @@ func TestWallet(t *testing.T) {
 				"0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
 			assert.NoError(t, err)
 
-			result, err := wallet.NewWallet(privKey).Decrypt(&wallet.WalletDecryptArgs{
-				WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+			result, err := wallet.NewWallet(privKey).Decrypt(wallet.DecryptArgs{
+				EncryptionArgs: wallet.EncryptionArgs{
 					ProtocolID: wallet.WalletProtocol{
 						SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 						Protocol:      "BRC2 Test",
@@ -156,17 +156,17 @@ func TestWallet(t *testing.T) {
 
 	t.Run("signs messages verifiable by counterparty", func(t *testing.T) {
 		// Create base args
-		baseArgs := wallet.WalletEncryptionArgs{
+		baseArgs := wallet.EncryptionArgs{
 			ProtocolID: protocol,
 			KeyID:      keyID,
 		}
 
 		// Create signature
-		signArgs := &wallet.CreateSignatureArgs{
-			WalletEncryptionArgs: baseArgs,
-			Data:                 sampleData,
+		signArgs := wallet.CreateSignatureArgs{
+			EncryptionArgs: baseArgs,
+			Data:           sampleData,
 		}
-		signArgs.WalletEncryptionArgs.Counterparty = wallet.WalletCounterparty{
+		signArgs.EncryptionArgs.Counterparty = wallet.WalletCounterparty{
 			Type:         wallet.CounterpartyTypeOther,
 			Counterparty: counterpartyKey.PubKey(),
 		}
@@ -176,12 +176,12 @@ func TestWallet(t *testing.T) {
 		assert.NotEmpty(t, signResult.Signature)
 
 		// Verify signature
-		verifyArgs := &wallet.VerifySignatureArgs{
-			WalletEncryptionArgs: baseArgs,
-			Signature:            signResult.Signature,
-			Data:                 sampleData,
+		verifyArgs := wallet.VerifySignatureArgs{
+			EncryptionArgs: baseArgs,
+			Signature:      signResult.Signature,
+			Data:           sampleData,
 		}
-		verifyArgs.WalletEncryptionArgs.Counterparty = wallet.WalletCounterparty{
+		verifyArgs.EncryptionArgs.Counterparty = wallet.WalletCounterparty{
 			Type:         wallet.CounterpartyTypeOther,
 			Counterparty: userKey.PubKey(),
 		}
@@ -203,11 +203,11 @@ func TestWallet(t *testing.T) {
 			assert.NotEmpty(t, signResult.Signature)
 
 			// Verify signature with data
-			verifyArgsWithData := *verifyArgs
+			verifyArgsWithData := verifyArgs
 			verifyArgsWithData.Data = sampleData
 			verifyArgsWithData.HashToDirectlyVerify = nil
 
-			verifyResult, err := counterpartyWallet.VerifySignature(&verifyArgsWithData)
+			verifyResult, err := counterpartyWallet.VerifySignature(verifyArgsWithData)
 			assert.NoError(t, err)
 			assert.True(t, verifyResult.Valid)
 
@@ -215,38 +215,38 @@ func TestWallet(t *testing.T) {
 			verifyArgsWithData.Data = nil
 			verifyArgsWithData.HashToDirectlyVerify = hash[:]
 
-			verifyHashResult, err := counterpartyWallet.VerifySignature(&verifyArgsWithData)
+			verifyHashResult, err := counterpartyWallet.VerifySignature(verifyArgsWithData)
 			assert.NoError(t, err)
 			assert.True(t, verifyHashResult.Valid)
 		})
 
 		t.Run("fails to verify signature with wrong data", func(t *testing.T) {
 			// Verify with wrong data
-			invalidVerifySignatureArgs := *verifyArgs
+			invalidVerifySignatureArgs := verifyArgs
 			invalidVerifySignatureArgs.Data = append([]byte{0}, sampleData...)
-			_, err = counterpartyWallet.VerifySignature(&invalidVerifySignatureArgs)
+			_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs)
 			assert.Error(t, err)
 		})
 
 		t.Run("fails to verify signature with wrong protocol", func(t *testing.T) {
-			invalidVerifySignatureArgs := *verifyArgs
+			invalidVerifySignatureArgs := verifyArgs
 			invalidVerifySignatureArgs.ProtocolID.Protocol = "wrong"
-			_, err = counterpartyWallet.VerifySignature(&invalidVerifySignatureArgs)
+			_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs)
 			assert.Error(t, err)
 		})
 
 		t.Run("fails to verify signature with wrong key ID", func(t *testing.T) {
-			invalidVerifySignatureArgs := *verifyArgs
+			invalidVerifySignatureArgs := verifyArgs
 			invalidVerifySignatureArgs.KeyID = "wrong"
-			_, err = counterpartyWallet.VerifySignature(&invalidVerifySignatureArgs)
+			_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs)
 			assert.Error(t, err)
 		})
 
 		t.Run("fails to verify signature with wrong counterparty", func(t *testing.T) {
-			invalidVerifySignatureArgs := *verifyArgs
+			invalidVerifySignatureArgs := verifyArgs
 			wrongKey, _ := ec.NewPrivateKey()
 			invalidVerifySignatureArgs.Counterparty.Counterparty = wrongKey.PubKey()
-			_, err = counterpartyWallet.VerifySignature(&invalidVerifySignatureArgs)
+			_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs)
 			assert.Error(t, err)
 		})
 		t.Run("validates the BRC-3 compliance vector", func(t *testing.T) {
@@ -266,8 +266,8 @@ func TestWallet(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			verifyResult, err := anyoneWallet.VerifySignature(&wallet.VerifySignatureArgs{
-				WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+			verifyResult, err := anyoneWallet.VerifySignature(wallet.VerifySignatureArgs{
+				EncryptionArgs: wallet.EncryptionArgs{
 					ProtocolID: wallet.WalletProtocol{
 						SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 						Protocol:      "BRC3 Test",
@@ -295,7 +295,7 @@ func TestWallet(t *testing.T) {
 		anyoneWallet := wallet.NewWallet(anyoneKey)
 
 		// Base encryption args
-		walletEncryptionArgs := wallet.WalletEncryptionArgs{
+		walletEncryptionArgs := wallet.EncryptionArgs{
 			ProtocolID: wallet.WalletProtocol{
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "tests",
@@ -305,9 +305,9 @@ func TestWallet(t *testing.T) {
 
 		t.Run("verify self sign signature", func(t *testing.T) {
 			// Create signature with self sign
-			selfSignArgs := &wallet.CreateSignatureArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				Data:                 sampleData,
+			selfSignArgs := wallet.CreateSignatureArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				Data:           sampleData,
 			}
 			selfSignArgs.Counterparty = wallet.WalletCounterparty{
 				Type: wallet.CounterpartyTypeSelf,
@@ -317,10 +317,10 @@ func TestWallet(t *testing.T) {
 			assert.NotEmpty(t, selfSignResult.Signature)
 
 			// Verify signature with explicit self
-			selfVerifyExplicitArgs := &wallet.VerifySignatureArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				Signature:            selfSignResult.Signature,
-				Data:                 sampleData,
+			selfVerifyExplicitArgs := wallet.VerifySignatureArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				Signature:      selfSignResult.Signature,
+				Data:           sampleData,
 			}
 			selfVerifyExplicitArgs.Counterparty = wallet.WalletCounterparty{
 				Type: wallet.CounterpartyTypeSelf,
@@ -330,10 +330,10 @@ func TestWallet(t *testing.T) {
 			assert.True(t, selfVerifyExplicitResult.Valid)
 
 			// Verify signature with implicit self
-			selfVerifyArgs := &wallet.VerifySignatureArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				Signature:            selfSignResult.Signature,
-				Data:                 sampleData,
+			selfVerifyArgs := wallet.VerifySignatureArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				Signature:      selfSignResult.Signature,
+				Data:           sampleData,
 			}
 			selfVerifyArgs.Counterparty = wallet.WalletCounterparty{}
 			selfVerifyResult, err := userWallet.VerifySignature(selfVerifyArgs)
@@ -343,19 +343,19 @@ func TestWallet(t *testing.T) {
 
 		t.Run("verify anyone sign signature", func(t *testing.T) {
 			// Create signature with implicit anyone
-			anyoneSignArgs := &wallet.CreateSignatureArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				Data:                 sampleData,
+			anyoneSignArgs := wallet.CreateSignatureArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				Data:           sampleData,
 			}
 			anyoneSignResult, err := userWallet.CreateSignature(anyoneSignArgs, "")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, anyoneSignResult.Signature)
 
 			// Verify signature with explicit counterparty
-			verifyArgs := &wallet.VerifySignatureArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				Signature:            anyoneSignResult.Signature,
-				Data:                 sampleData,
+			verifyArgs := wallet.VerifySignatureArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				Signature:      anyoneSignResult.Signature,
+				Data:           sampleData,
 			}
 			verifyArgs.Counterparty = wallet.WalletCounterparty{
 				Type:         wallet.CounterpartyTypeOther,
@@ -367,16 +367,16 @@ func TestWallet(t *testing.T) {
 		})
 		t.Run("test get self public key", func(t *testing.T) {
 			// Test public key derivation with implicit self
-			getPubKeyArgs := &wallet.GetPublicKeyArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
+			getPubKeyArgs := wallet.GetPublicKeyArgs{
+				EncryptionArgs: walletEncryptionArgs,
 			}
 			pubKeyResult, err := userWallet.GetPublicKey(getPubKeyArgs, "")
 			assert.NoError(t, err)
 			assert.NotNil(t, pubKeyResult.PublicKey)
 
 			// Test public key derivation with explicit self
-			getExplicitPubKeyArgs := &wallet.GetPublicKeyArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
+			getExplicitPubKeyArgs := wallet.GetPublicKeyArgs{
+				EncryptionArgs: walletEncryptionArgs,
 			}
 			getExplicitPubKeyArgs.Counterparty = wallet.WalletCounterparty{
 				Type: wallet.CounterpartyTypeSelf,
@@ -388,16 +388,16 @@ func TestWallet(t *testing.T) {
 			assert.Equal(t, pubKeyResult.PublicKey, explicitPubKeyResult.PublicKey)
 		})
 		t.Run("test get counterparty public key", func(t *testing.T) {
-			getIdentityPubKeyArgs := &wallet.GetPublicKeyArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				IdentityKey:          true,
+			getIdentityPubKeyArgs := wallet.GetPublicKeyArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				IdentityKey:    true,
 			}
 			identityPubKeyResult, err := userWallet.GetPublicKey(getIdentityPubKeyArgs, "")
 			assert.NoError(t, err)
 			assert.Equal(t, identityPubKeyResult.PublicKey, userKey.PubKey())
 
-			getForCounterpartyPubKeyArgs := &wallet.GetPublicKeyArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
+			getForCounterpartyPubKeyArgs := wallet.GetPublicKeyArgs{
+				EncryptionArgs: walletEncryptionArgs,
 			}
 			getForCounterpartyPubKeyArgs.Counterparty = wallet.WalletCounterparty{
 				Type:         wallet.CounterpartyTypeOther,
@@ -406,9 +406,9 @@ func TestWallet(t *testing.T) {
 			forCounterpartyPubKeyResult, err := userWallet.GetPublicKey(getForCounterpartyPubKeyArgs, "")
 			assert.NoError(t, err)
 
-			getByCounterpartyPubKeyArgs := &wallet.GetPublicKeyArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				ForSelf:              true,
+			getByCounterpartyPubKeyArgs := wallet.GetPublicKeyArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				ForSelf:        true,
 			}
 			getByCounterpartyPubKeyArgs.Counterparty = wallet.WalletCounterparty{
 				Type:         wallet.CounterpartyTypeOther,
@@ -423,18 +423,18 @@ func TestWallet(t *testing.T) {
 		})
 		t.Run("test encrypt/decrypt with implicit self", func(t *testing.T) {
 			// Test encryption/decryption with implicit self
-			encryptArgs := &wallet.WalletEncryptArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				Plaintext:            sampleData,
+			encryptArgs := wallet.EncryptArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				Plaintext:      sampleData,
 			}
 			encryptResult, err := userWallet.Encrypt(encryptArgs)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, encryptResult.Ciphertext)
 
 			// Decrypt message with implicit self
-			decryptArgs := &wallet.WalletDecryptArgs{
-				WalletEncryptionArgs: walletEncryptionArgs,
-				Ciphertext:           encryptResult.Ciphertext,
+			decryptArgs := wallet.DecryptArgs{
+				EncryptionArgs: walletEncryptionArgs,
+				Ciphertext:     encryptResult.Ciphertext,
 			}
 			decryptResult, err := userWallet.Decrypt(decryptArgs)
 			assert.NoError(t, err)
