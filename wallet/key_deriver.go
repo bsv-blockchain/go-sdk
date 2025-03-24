@@ -13,16 +13,14 @@ import (
 // KeyDeriver is responsible for deriving various types of keys using a root private key.
 // It supports deriving public and private keys, symmetric keys, and revealing key linkages.
 type KeyDeriver struct {
-	privateKey *ec.PrivateKey
-	publicKey  *ec.PublicKey
+	rootKey *ec.PrivateKey
 }
 
 // NewKeyDeriver creates a new KeyDeriver instance with a root private key.
 // The root key can be either a specific private key or the special 'anyone' key.
 func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
 	return &KeyDeriver{
-		privateKey: privateKey,
-		publicKey:  privateKey.PubKey(),
+		rootKey: privateKey,
 	}
 }
 
@@ -39,7 +37,7 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, 
 	}
 
 	// Derive both public and private keys
-	derivedPublicKey, err := kd.DerivePublicKey(protocol, keyID, counterparty)
+	derivedPublicKey, err := kd.DerivePublicKey(protocol, keyID, counterparty, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive public key: %w", err)
 	}
@@ -63,7 +61,7 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, 
 }
 
 // DerivePublicKey creates a public key based on protocol ID, key ID, and counterparty.
-func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PublicKey, error) {
+func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error) {
 	counterpartyKey, err := kd.normalizeCounterparty(counterparty)
 	if err != nil {
 		return nil, err
@@ -73,15 +71,15 @@ func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, cou
 		return nil, fmt.Errorf("failed to compute invoice number: %w", err)
 	}
 
-	if counterparty.Type == CounterpartyTypeSelf {
-		privKey, err := kd.privateKey.DeriveChild(counterpartyKey, invoiceNumber)
+	if forSelf {
+		privKey, err := kd.rootKey.DeriveChild(counterpartyKey, invoiceNumber)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive child private key: %w", err)
 		}
 		return privKey.PubKey(), nil
 	}
 
-	pubKey, err := counterpartyKey.DeriveChild(kd.privateKey, invoiceNumber)
+	pubKey, err := counterpartyKey.DeriveChild(kd.rootKey, invoiceNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive child public key: %w", err)
 	}
@@ -100,7 +98,7 @@ func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, co
 		return nil, err
 	}
 
-	k, err := kd.privateKey.DeriveChild(counterpartyKey, invoiceNumber)
+	k, err := kd.rootKey.DeriveChild(counterpartyKey, invoiceNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive child key: %w", err)
 	}
@@ -112,7 +110,7 @@ func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, co
 func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) (*ec.PublicKey, error) {
 	switch counterparty.Type {
 	case CounterpartyTypeSelf:
-		return kd.privateKey.PubKey(), nil
+		return kd.rootKey.PubKey(), nil
 	case CounterpartyTypeOther:
 		return counterparty.Counterparty, nil
 	case CounterpartyTypeAnyone:
@@ -136,13 +134,13 @@ func (kd *KeyDeriver) RevealCounterpartySecret(counterparty WalletCounterparty) 
 	}
 
 	// Double-check to ensure not revealing the secret for 'self'
-	self := kd.privateKey.PubKey()
-	keyDerivedBySelf, err := kd.privateKey.DeriveChild(self, "test")
+	self := kd.rootKey.PubKey()
+	keyDerivedBySelf, err := kd.rootKey.DeriveChild(self, "test")
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive self key: %w", err)
 	}
 
-	keyDerivedByCounterparty, err := kd.privateKey.DeriveChild(counterpartyKey, "test")
+	keyDerivedByCounterparty, err := kd.rootKey.DeriveChild(counterpartyKey, "test")
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive counterparty key: %w", err)
 	}
@@ -151,7 +149,7 @@ func (kd *KeyDeriver) RevealCounterpartySecret(counterparty WalletCounterparty) 
 		return nil, errors.New("counterparty secrets cannot be revealed if counterparty key is self")
 	}
 
-	sharedSecret, err := kd.privateKey.DeriveSharedSecret(counterpartyKey)
+	sharedSecret, err := kd.rootKey.DeriveSharedSecret(counterpartyKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive shared secret: %w", err)
 	}

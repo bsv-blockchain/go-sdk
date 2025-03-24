@@ -57,7 +57,7 @@ func (p *PushDropTemplate) Lock(
 	includeSignatures bool,
 	lockPosBefore bool,
 ) (*script.Script, error) {
-	pub := p.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	pub, err := p.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
 		WalletEncryptionArgs: wallet.WalletEncryptionArgs{
 			ProtocolID:   protocolID,
 			KeyID:        keyID,
@@ -65,6 +65,9 @@ func (p *PushDropTemplate) Lock(
 		},
 		ForSelf: forSelf,
 	}, p.Originator)
+	if err != nil {
+		return nil, err
+	}
 	lockChunks := make([]*script.ScriptChunk, 0)
 	pubKeyBytes := pub.PublicKey.Compressed()
 	lockChunks = append(lockChunks, &script.ScriptChunk{

@@ -146,10 +146,40 @@ type GetPublicKeyResult struct {
 	PublicKey *ec.PublicKey `json:"publicKey"`
 }
 
-func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) GetPublicKeyResult {
-	return GetPublicKeyResult{
-		PublicKey: &ec.PublicKey{},
+func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
+	if args.IdentityKey {
+		return &GetPublicKeyResult{
+			PublicKey: w.keyDeriver.rootKey.PubKey(),
+		}, nil
 	}
+
+	if args.ProtocolID.Protocol == "" || args.KeyID == "" {
+		return nil, errors.New("protocolID and keyID are required if identityKey is false or undefined")
+	}
+
+	// Handle default counterparty (self)
+	counterparty := args.Counterparty
+	if counterparty.Type == CounterpartyUninitialized {
+		counterparty = WalletCounterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	} else if counterparty.Type == CounterpartyTypeOther && counterparty.Counterparty == nil {
+		return nil, errors.New("counterparty public key required for other")
+	}
+
+	pubKey, err := w.keyDeriver.DerivePublicKey(
+		args.ProtocolID,
+		args.KeyID,
+		counterparty,
+		args.ForSelf,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetPublicKeyResult{
+		PublicKey: pubKey,
+	}, nil
 }
 
 type CreateSignatureArgs struct {
@@ -222,6 +252,7 @@ type VerifySignatureArgs struct {
 	Data                 []byte
 	HashToDirectlyVerify []byte
 	Signature            ec.Signature
+	ForSelf              bool
 }
 
 type CreateHmacArgs struct {
@@ -249,7 +280,7 @@ type VerifySignatureResult struct {
 
 // VerifySignature checks the validity of a cryptographic signature.
 // It verifies that the signature was created using the expected protocol and key ID.
-func (w *Wallet) VerifySignature(args *VerifySignatureArgs, originator string) (*VerifySignatureResult, error) {
+func (w *Wallet) VerifySignature(args *VerifySignatureArgs) (*VerifySignatureResult, error) {
 	if len(args.Data) == 0 && len(args.HashToDirectlyVerify) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlyVerify must be valid")
 	}
@@ -278,6 +309,7 @@ func (w *Wallet) VerifySignature(args *VerifySignatureArgs, originator string) (
 		args.ProtocolID,
 		args.KeyID,
 		counterparty,
+		args.ForSelf,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive public key: %w", err)
