@@ -27,10 +27,9 @@ type TopicData struct {
 }
 
 type AdmittanceInstructions struct {
-	OutputsToAdmit   []uint32
-	CoinsToRetain    []uint32
-	CoinsRemoved     []uint32
-	CoinDependencies map[uint32][]*chainhash.Hash
+	OutputsToAdmit []uint32
+	CoinsToRetain  []uint32
+	CoinsRemoved   []uint32
 }
 type Steak map[string]*AdmittanceInstructions
 
