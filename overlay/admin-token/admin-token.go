@@ -1,4 +1,4 @@
-package overlayadmintoken
+package admintoken
 
 import (
 	"encoding/hex"
