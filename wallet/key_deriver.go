@@ -10,6 +10,12 @@ import (
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
+type keyDeriverInterface interface {
+	DerivePrivateKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error)
+	DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error)
+	DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.SymmetricKey, error)
+}
+
 // KeyDeriver is responsible for deriving various types of keys using a root private key.
 // It supports deriving public and private keys, symmetric keys, and revealing key linkages.
 type KeyDeriver struct {
@@ -19,6 +25,9 @@ type KeyDeriver struct {
 // NewKeyDeriver creates a new KeyDeriver instance with a root private key.
 // The root key can be either a specific private key or the special 'anyone' key.
 func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
+	if privateKey == nil {
+		privateKey, _ = AnyoneKey()
+	}
 	return &KeyDeriver{
 		rootKey: privateKey,
 	}

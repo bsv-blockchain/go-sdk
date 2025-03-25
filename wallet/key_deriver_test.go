@@ -56,7 +56,7 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should allow public key derivation as anyone", func(t *testing.T) {
-		anyoneDeriver := NewKeyDeriver(anyonePrivateKey)
+		anyoneDeriver := NewKeyDeriver(nil)
 		derivedPublicKey, err := anyoneDeriver.DerivePublicKey(
 			protocolID,
 			keyID,
@@ -156,7 +156,7 @@ func TestKeyDeriver(t *testing.T) {
 		assert.EqualError(t, err, "counterparty secrets cannot be revealed for counterparty=self")
 
 		_, err = keyDeriver.RevealCounterpartySecret(WalletCounterparty{
-			Type: CounterpartyTypeOther,
+			Type:         CounterpartyTypeOther,
 			Counterparty: rootPublicKey,
 		})
 		assert.EqualError(t, err, "counterparty secrets cannot be revealed if counterparty key is self")
