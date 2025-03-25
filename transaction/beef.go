@@ -166,6 +166,20 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 	}, nil
 }
 
+func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
+	if len(beef) < 36 {
+		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+	} else if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
+		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+	} else if txid, err := chainhash.NewHash(beef[4:36]); err != nil {
+		return nil, nil, err
+	} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
+		return nil, nil, err
+	} else {
+		return b, txid, nil
+	}
+}
+
 func readVersion(reader *bytes.Reader) (uint32, error) {
 	var version uint32
 	err := binary.Read(reader, binary.LittleEndian, &version)
@@ -356,6 +370,13 @@ func (b *Beef) FindBump(txid string) *MerklePath {
 				return bump
 			}
 		}
+	}
+	return nil
+}
+
+func (b *Beef) FindTransaction(txid string) *Transaction {
+	if beefTx := b.findTxid(txid); beefTx != nil {
+		return beefTx.Transaction
 	}
 	return nil
 }
@@ -933,4 +954,32 @@ func (b *Beef) Bytes() ([]byte, error) {
 	}
 
 	return beef, nil
+}
+
+func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
+	beef, err := b.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	return append(append(util.LittleEndianBytes(ATOMIC_BEEF, 4), txid[:]...), beef...), nil
+}
+
+func (b *Beef) TxidOnly() (*Beef, error) {
+	c := &Beef{
+		Version:      b.Version,
+		BUMPs:        append([]*MerklePath(nil), b.BUMPs...),
+		Transactions: make(map[string]*BeefTx, len(b.Transactions)),
+	}
+	for i, tx := range b.Transactions {
+		idOnly := &BeefTx{
+			DataFormat: TxIDOnly,
+		}
+		if tx.DataFormat == TxIDOnly {
+			idOnly.KnownTxID = tx.KnownTxID
+		} else {
+			idOnly.KnownTxID = tx.Transaction.TxID()
+		}
+		c.Transactions[i] = idOnly
+	}
+	return c, nil
 }

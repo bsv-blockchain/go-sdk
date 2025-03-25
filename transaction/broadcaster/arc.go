@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type ArcStatus string
@@ -41,7 +42,7 @@ type Arc struct {
 	CumulativeFeeValidation bool
 	WaitForStatus           string
 	WaitFor                 ArcStatus
-	Client                  HTTPClient // Added for testing
+	Client                  util.HTTPClient // Added for testing
 	Verbose                 bool
 }
 
