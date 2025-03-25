@@ -58,7 +58,7 @@ func (p *PushDropTemplate) Lock(
 	includeSignatures bool,
 	lockPosBefore bool,
 ) (*script.Script, error) {
-	pub, err := p.Wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	pub, err := p.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID:   protocolID,
 			KeyID:        keyID,
@@ -83,7 +83,7 @@ func (p *PushDropTemplate) Lock(
 		for _, e := range fields {
 			dataToSign = append(dataToSign, e...)
 		}
-		sig, err := p.Wallet.CreateSignature(wallet.CreateSignatureArgs{
+		sig, err := p.Wallet.CreateSignature(&wallet.CreateSignatureArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:   protocolID,
 				KeyID:        keyID,
@@ -166,7 +166,7 @@ func (p *PushDropUnlocker) Sign(
 		return nil, err
 	} else {
 		preimageHash := sha256.Sum256(sh)
-		sig, err := p.pushDrop.Wallet.CreateSignature(wallet.CreateSignatureArgs{
+		sig, err := p.pushDrop.Wallet.CreateSignature(&wallet.CreateSignatureArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:   p.protocolID,
 				KeyID:        p.keyID,

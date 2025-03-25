@@ -89,7 +89,10 @@ type DecryptResult struct {
 
 // Encrypt data using a symmetric key derived from the protocol, key ID, and counterparty.
 // The encrypted data can only be decrypted by the intended recipient.
-func (w *Wallet) Encrypt(args EncryptArgs) (*EncryptResult, error) {
+func (w *Wallet) Encrypt(args *EncryptArgs) (*EncryptResult, error) {
+	if args == nil {
+		return nil, errors.New("args must be provided")
+	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
@@ -110,7 +113,10 @@ func (w *Wallet) Encrypt(args EncryptArgs) (*EncryptResult, error) {
 
 // Decrypt data that was encrypted using the Encrypt method.
 // The protocol, key ID, and counterparty must match those used during encryption.
-func (w *Wallet) Decrypt(args DecryptArgs) (*DecryptResult, error) {
+func (w *Wallet) Decrypt(args *DecryptArgs) (*DecryptResult, error) {
+	if args == nil {
+		return nil, errors.New("args must be provided")
+	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = WalletCounterparty{
 			Type: CounterpartyTypeSelf,
@@ -139,7 +145,10 @@ type GetPublicKeyResult struct {
 	PublicKey *ec.PublicKey `json:"publicKey"`
 }
 
-func (w *Wallet) GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
+func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
+	if args == nil {
+		return nil, errors.New("args must be provided")
+	}
 	if args.IdentityKey {
 		return &GetPublicKeyResult{
 			PublicKey: w.keyDeriver.rootKey.PubKey(),
@@ -193,7 +202,10 @@ var (
 
 // CreateSignature generates a cryptographic signature over the provided data.
 // The signature is created using a private key derived from the protocol and key ID.
-func (w *Wallet) CreateSignature(args CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
+func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
+	if args == nil {
+		return nil, errors.New("args must be provided")
+	}
 	if len(args.Data) == 0 && len(args.DashToDirectlySign) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
 	}
@@ -250,7 +262,10 @@ type VerifySignatureResult struct {
 
 // VerifySignature checks the validity of a cryptographic signature.
 // It verifies that the signature was created using the expected protocol and key ID.
-func (w *Wallet) VerifySignature(args VerifySignatureArgs) (*VerifySignatureResult, error) {
+func (w *Wallet) VerifySignature(args *VerifySignatureArgs) (*VerifySignatureResult, error) {
+	if args == nil {
+		return nil, errors.New("args must be provided")
+	}
 	if len(args.Data) == 0 && len(args.HashToDirectlyVerify) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlyVerify must be valid")
 	}
