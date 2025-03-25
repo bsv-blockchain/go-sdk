@@ -11,9 +11,9 @@ import (
 )
 
 type keyDeriverInterface interface {
-	DerivePrivateKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error)
-	DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error)
-	DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.SymmetricKey, error)
+	DerivePrivateKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.PrivateKey, error)
+	DerivePublicKey(protocol Protocol, keyID string, counterparty Counterparty, forSelf bool) (*ec.PublicKey, error)
+	DeriveSymmetricKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.SymmetricKey, error)
 }
 
 // KeyDeriver is responsible for deriving various types of keys using a root private key.
@@ -35,11 +35,11 @@ func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
 
 // DeriveSymmetricKey creates a symmetric key based on protocol ID, key ID, and counterparty.
 // Note: Symmetric keys should not be derivable by everyone due to security risks.
-func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.SymmetricKey, error) {
+func (kd *KeyDeriver) DeriveSymmetricKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.SymmetricKey, error) {
 	// If counterparty is 'anyone', use a fixed public key
 	if counterparty.Type == CounterpartyTypeAnyone {
 		_, anyonePubKey := AnyoneKey()
-		counterparty = WalletCounterparty{
+		counterparty = Counterparty{
 			Type:         CounterpartyTypeOther,
 			Counterparty: anyonePubKey,
 		}
@@ -70,7 +70,7 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, 
 }
 
 // DerivePublicKey creates a public key based on protocol ID, key ID, and counterparty.
-func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error) {
+func (kd *KeyDeriver) DerivePublicKey(protocol Protocol, keyID string, counterparty Counterparty, forSelf bool) (*ec.PublicKey, error) {
 	counterpartyKey, err := kd.normalizeCounterparty(counterparty)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (kd *KeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, cou
 
 // DerivePrivateKey creates a private key based on protocol ID, key ID, and counterparty.
 // The derived key can be used for signing or other cryptographic operations.
-func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error) {
+func (kd *KeyDeriver) DerivePrivateKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.PrivateKey, error) {
 	counterpartyKey, err := kd.normalizeCounterparty(counterparty)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (kd *KeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, co
 
 // normalizeCounterparty converts the counterparty parameter into a standard public key format.
 // It handles special cases like 'self' and 'anyone' by converting them to their corresponding public keys.
-func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) (*ec.PublicKey, error) {
+func (kd *KeyDeriver) normalizeCounterparty(counterparty Counterparty) (*ec.PublicKey, error) {
 	switch counterparty.Type {
 	case CounterpartyTypeSelf:
 		return kd.rootKey.PubKey(), nil
@@ -135,7 +135,7 @@ func (kd *KeyDeriver) normalizeCounterparty(counterparty WalletCounterparty) (*e
 
 // RevealCounterpartySecret reveals the shared secret between the root key and the counterparty.
 // Note: This should not be used for 'self'.
-func (kd *KeyDeriver) RevealCounterpartySecret(counterparty WalletCounterparty) (*ec.PublicKey, error) {
+func (kd *KeyDeriver) RevealCounterpartySecret(counterparty Counterparty) (*ec.PublicKey, error) {
 	if counterparty.Type == CounterpartyTypeSelf {
 		return nil, errors.New("counterparty secrets cannot be revealed for counterparty=self")
 	}
@@ -173,7 +173,7 @@ var regexOnlyLettersNumbersSpaces = regexp.MustCompile(`^[a-z0-9 ]+$`)
 
 // computeInvoiceNumber generates a unique identifier string based on the protocol and key ID.
 // This string is used as part of the key derivation process to ensure unique keys for different contexts.
-func (kd *KeyDeriver) computeInvoiceNumber(protocol WalletProtocol, keyID string) (string, error) {
+func (kd *KeyDeriver) computeInvoiceNumber(protocol Protocol, keyID string) (string, error) {
 	// Validate protocol security level
 	if protocol.SecurityLevel < 0 || protocol.SecurityLevel > 2 {
 		return "", fmt.Errorf("protocol security level must be 0, 1, or 2")

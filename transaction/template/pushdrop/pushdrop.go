@@ -51,9 +51,9 @@ type PushDropTemplate struct {
 
 func (p *PushDropTemplate) Lock(
 	fields [][]byte,
-	protocolID wallet.WalletProtocol,
+	protocolID wallet.Protocol,
 	keyID string,
-	counterparty wallet.WalletCounterparty,
+	counterparty wallet.Counterparty,
 	forSelf bool,
 	includeSignatures bool,
 	lockPosBefore bool,
@@ -120,9 +120,9 @@ func (p *PushDropTemplate) Lock(
 }
 
 func (p *PushDropTemplate) Unlock(
-	protocolID wallet.WalletProtocol,
+	protocolID wallet.Protocol,
 	keyID string,
-	counterparty wallet.WalletCounterparty,
+	counterparty wallet.Counterparty,
 	signOutputs wallet.SignOutputs,
 	anyoneCanPay bool,
 ) *PushDropUnlocker {
@@ -137,9 +137,9 @@ func (p *PushDropTemplate) Unlock(
 }
 
 type PushDropUnlocker struct {
-	protocolID   wallet.WalletProtocol
+	protocolID   wallet.Protocol
 	keyID        string
-	counterparty wallet.WalletCounterparty
+	counterparty wallet.Counterparty
 	signOutputs  wallet.SignOutputs
 	anyoneCanPay bool
 	pushDrop     *PushDropTemplate

@@ -19,9 +19,9 @@ type CachedKeyDeriver struct {
 
 type cacheKey struct {
 	method      string
-	protocol    WalletProtocol
+	protocol    Protocol
 	keyID       string
-	counterparty WalletCounterparty
+	counterparty Counterparty
 	forSelf     bool
 }
 
@@ -55,7 +55,7 @@ func NewCachedKeyDeriver(rootKey *ec.PrivateKey, maxCacheSize int) *CachedKeyDer
 }
 
 // DerivePublicKey derives a public key with caching.
-func (c *CachedKeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error) {
+func (c *CachedKeyDeriver) DerivePublicKey(protocol Protocol, keyID string, counterparty Counterparty, forSelf bool) (*ec.PublicKey, error) {
 	key := cacheKey{
 		method:      "derivePublicKey",
 		protocol:    protocol,
@@ -80,7 +80,7 @@ func (c *CachedKeyDeriver) DerivePublicKey(protocol WalletProtocol, keyID string
 }
 
 // DerivePrivateKey derives a private key with caching.
-func (c *CachedKeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error) {
+func (c *CachedKeyDeriver) DerivePrivateKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.PrivateKey, error) {
 	key := cacheKey{
 		method:      "derivePrivateKey",
 		protocol:    protocol,
@@ -104,7 +104,7 @@ func (c *CachedKeyDeriver) DerivePrivateKey(protocol WalletProtocol, keyID strin
 }
 
 // DeriveSymmetricKey derives a symmetric key with caching.
-func (c *CachedKeyDeriver) DeriveSymmetricKey(protocol WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.SymmetricKey, error) {
+func (c *CachedKeyDeriver) DeriveSymmetricKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.SymmetricKey, error) {
 	key := cacheKey{
 		method:      "deriveSymmetricKey",
 		protocol:    protocol,

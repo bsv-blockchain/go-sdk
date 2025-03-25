@@ -2,17 +2,18 @@ package wallet_test
 
 import (
 	"crypto/sha256"
+	"testing"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 // Create test data
 var sampleData = []byte{3, 1, 4, 1, 5, 9}
 
 // Define protocol and key ID
-var protocol = wallet.WalletProtocol{
+var protocol = wallet.Protocol{
 	SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 	Protocol:      "tests",
 }
@@ -35,7 +36,7 @@ func TestEncryptDecryptMessage(t *testing.T) {
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: protocol,
 			KeyID:      keyID,
-			Counterparty: wallet.WalletCounterparty{
+			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: counterpartyKey.PubKey(),
 			},
@@ -50,7 +51,7 @@ func TestEncryptDecryptMessage(t *testing.T) {
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: protocol,
 			KeyID:      keyID,
-			Counterparty: wallet.WalletCounterparty{
+			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: userKey.PubKey(),
 			},
@@ -121,12 +122,12 @@ func TestEncryptDecryptMessage(t *testing.T) {
 
 		result, err := wallet.NewWallet(privKey).Decrypt(&wallet.DecryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID: wallet.WalletProtocol{
+				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 					Protocol:      "BRC2 Test",
 				},
 				KeyID: "42",
-				Counterparty: wallet.WalletCounterparty{
+				Counterparty: wallet.Counterparty{
 					Type:         wallet.CounterpartyTypeOther,
 					Counterparty: counterparty,
 				},
@@ -200,7 +201,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		EncryptionArgs: baseArgs,
 		Data:           sampleData,
 	}
-	signArgs.EncryptionArgs.Counterparty = wallet.WalletCounterparty{
+	signArgs.EncryptionArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: counterpartyKey.PubKey(),
 	}
@@ -215,7 +216,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		Signature:      signResult.Signature,
 		Data:           sampleData,
 	}
-	verifyArgs.EncryptionArgs.Counterparty = wallet.WalletCounterparty{
+	verifyArgs.EncryptionArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: userKey.PubKey(),
 	}
@@ -303,12 +304,12 @@ func TestCreateVerifySignature(t *testing.T) {
 
 		verifyResult, err := anyoneWallet.VerifySignature(&wallet.VerifySignatureArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID: wallet.WalletProtocol{
+				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 					Protocol:      "BRC3 Test",
 				},
 				KeyID: "42",
-				Counterparty: wallet.WalletCounterparty{
+				Counterparty: wallet.Counterparty{
 					Type:         wallet.CounterpartyTypeOther,
 					Counterparty: counterparty,
 				},
@@ -342,7 +343,7 @@ func TestDefaultSignatureOperations(t *testing.T) {
 			EncryptionArgs: baseArgs,
 			Data:           sampleData,
 		}
-		selfSignArgs.Counterparty = wallet.WalletCounterparty{
+		selfSignArgs.Counterparty = wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		}
 		selfSignResult, err := userWallet.CreateSignature(selfSignArgs, "")
@@ -355,7 +356,7 @@ func TestDefaultSignatureOperations(t *testing.T) {
 			Signature:      selfSignResult.Signature,
 			Data:           sampleData,
 		}
-		selfVerifyExplicitArgs.Counterparty = wallet.WalletCounterparty{
+		selfVerifyExplicitArgs.Counterparty = wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		}
 		selfVerifyExplicitResult, err := userWallet.VerifySignature(selfVerifyExplicitArgs)
@@ -368,7 +369,7 @@ func TestDefaultSignatureOperations(t *testing.T) {
 			Signature:      selfSignResult.Signature,
 			Data:           sampleData,
 		}
-		selfVerifyArgs.Counterparty = wallet.WalletCounterparty{}
+		selfVerifyArgs.Counterparty = wallet.Counterparty{}
 		selfVerifyResult, err := userWallet.VerifySignature(selfVerifyArgs)
 		assert.NoError(t, err)
 		assert.True(t, selfVerifyResult.Valid)
@@ -390,7 +391,7 @@ func TestDefaultSignatureOperations(t *testing.T) {
 			Signature:      anyoneSignResult.Signature,
 			Data:           sampleData,
 		}
-		verifyArgs.Counterparty = wallet.WalletCounterparty{
+		verifyArgs.Counterparty = wallet.Counterparty{
 			Type:         wallet.CounterpartyTypeOther,
 			Counterparty: userKey.PubKey(),
 		}
@@ -411,7 +412,7 @@ func TestDefaultSignatureOperations(t *testing.T) {
 		getExplicitPubKeyArgs := &wallet.GetPublicKeyArgs{
 			EncryptionArgs: baseArgs,
 		}
-		getExplicitPubKeyArgs.Counterparty = wallet.WalletCounterparty{
+		getExplicitPubKeyArgs.Counterparty = wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		}
 		explicitPubKeyResult, err := userWallet.GetPublicKey(getExplicitPubKeyArgs, "")
@@ -452,7 +453,7 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 	getForCounterpartyPubKeyArgs := &wallet.GetPublicKeyArgs{
 		EncryptionArgs: baseArgs,
 	}
-	getForCounterpartyPubKeyArgs.Counterparty = wallet.WalletCounterparty{
+	getForCounterpartyPubKeyArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: counterpartyKey.PubKey(),
 	}
@@ -464,7 +465,7 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 		EncryptionArgs: baseArgs,
 		ForSelf:        true,
 	}
-	getByCounterpartyPubKeyArgs.Counterparty = wallet.WalletCounterparty{
+	getByCounterpartyPubKeyArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: userKey.PubKey(),
 	}
@@ -498,7 +499,7 @@ func TestHmacCreateVerify(t *testing.T) {
 		EncryptionArgs: baseArgs,
 		Data:           sampleData,
 	}
-	createHmacArgs.Counterparty = wallet.WalletCounterparty{
+	createHmacArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: counterpartyKey.PubKey(),
 	}
@@ -513,7 +514,7 @@ func TestHmacCreateVerify(t *testing.T) {
 		Hmac:                 createHmacResult.Hmac,
 		Data:                 sampleData,
 	}
-	verifyHmacArgs.Counterparty = wallet.WalletCounterparty{
+	verifyHmacArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: userKey.PubKey(),
 	}
@@ -561,12 +562,12 @@ func TestHmacCreateVerify(t *testing.T) {
 
 		verifyResult, err := wallet.NewWallet(privKey).VerifyHmac(wallet.VerifyHmacArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID: wallet.WalletProtocol{
+				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 					Protocol:      "BRC2 Test",
 				},
 				KeyID: "42",
-				Counterparty: wallet.WalletCounterparty{
+				Counterparty: wallet.Counterparty{
 					Type:         wallet.CounterpartyTypeOther,
 					Counterparty: counterparty,
 				},

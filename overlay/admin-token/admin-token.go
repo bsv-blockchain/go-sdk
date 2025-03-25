@@ -45,7 +45,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 		return nil, err
 	}
 
-	protocolId := wallet.WalletProtocol{
+	protocolId := wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 	}
 	if protocol == overlay.ProtocolSHIP {
@@ -63,7 +63,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 		},
 		protocolId,
 		"1",
-		wallet.WalletCounterparty{
+		wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		},
 		false,
@@ -75,7 +75,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 func (o *OverlayAdminTokenTemplate) Unlock(
 	protocol overlay.Protocol,
 ) *pushdrop.PushDropUnlocker {
-	protocolId := wallet.WalletProtocol{
+	protocolId := wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 	}
 	if protocol == overlay.ProtocolSHIP {
@@ -86,7 +86,7 @@ func (o *OverlayAdminTokenTemplate) Unlock(
 	return o.PushDrop.Unlock(
 		protocolId,
 		"1",
-		wallet.WalletCounterparty{
+		wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		},
 		wallet.SignOutputsAll,

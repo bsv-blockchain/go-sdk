@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	transaction "github.com/bsv-blockchain/go-sdk/transaction/sighash"
@@ -20,9 +21,9 @@ var (
 	SecurityLevelEveryAppAndCounterparty SecurityLevel = 2
 )
 
-// WalletProtocol defines a protocol with its security level and name.
+// Protocol defines a protocol with its security level and name.
 // The security level determines how strictly the wallet enforces user confirmation.
-type WalletProtocol struct {
+type Protocol struct {
 	SecurityLevel SecurityLevel
 	Protocol      string
 }
@@ -36,9 +37,9 @@ const (
 	CounterpartyTypeOther     CounterpartyType = 3
 )
 
-// WalletCounterparty represents the other party in a cryptographic operation.
+// Counterparty represents the other party in a cryptographic operation.
 // It can be a specific public key, or one of the special values 'self' or 'anyone'.
-type WalletCounterparty struct {
+type Counterparty struct {
 	Type         CounterpartyType
 	Counterparty *ec.PublicKey
 }
@@ -62,9 +63,9 @@ func NewWallet(privateKey *ec.PrivateKey) *Wallet {
 }
 
 type EncryptionArgs struct {
-	ProtocolID       WalletProtocol
+	ProtocolID       Protocol
 	KeyID            string
-	Counterparty     WalletCounterparty
+	Counterparty     Counterparty
 	Privileged       bool
 	PrivilegedReason string
 	SeekPermission   bool
@@ -95,7 +96,7 @@ func (w *Wallet) Encrypt(args *EncryptArgs) (*EncryptResult, error) {
 		return nil, errors.New("args must be provided")
 	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = WalletCounterparty{
+		args.Counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
@@ -119,7 +120,7 @@ func (w *Wallet) Decrypt(args *DecryptArgs) (*DecryptResult, error) {
 		return nil, errors.New("args must be provided")
 	}
 	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = WalletCounterparty{
+		args.Counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
@@ -163,7 +164,7 @@ func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPu
 	// Handle default counterparty (self)
 	counterparty := args.Counterparty
 	if counterparty.Type == CounterpartyUninitialized {
-		counterparty = WalletCounterparty{
+		counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
@@ -223,7 +224,7 @@ func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (
 	// Handle default counterparty (anyone for signing)
 	counterparty := args.Counterparty
 	if counterparty.Type == CounterpartyUninitialized {
-		counterparty = WalletCounterparty{
+		counterparty = Counterparty{
 			Type: CounterpartyTypeAnyone,
 		}
 	}
@@ -302,7 +303,7 @@ func (w *Wallet) VerifySignature(args *VerifySignatureArgs) (*VerifySignatureRes
 	// Handle default counterparty (self for verification)
 	counterparty := args.Counterparty
 	if counterparty.Type == CounterpartyUninitialized {
-		counterparty = WalletCounterparty{
+		counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
@@ -337,7 +338,7 @@ func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
 // using a symmetric key derived from the protocol, key ID, and counterparty.
 func (w *Wallet) CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error) {
 	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = WalletCounterparty{
+		args.Counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
@@ -358,7 +359,7 @@ func (w *Wallet) CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error) {
 // The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
 func (w *Wallet) VerifyHmac(args VerifyHmacArgs) (*VerifyHmacResult, error) {
 	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = WalletCounterparty{
+		args.Counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}

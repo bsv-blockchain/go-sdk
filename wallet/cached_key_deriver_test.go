@@ -19,17 +19,17 @@ type MockKeyDeriver struct {
 	symmetricKeyErrorToReturn error
 }
 
-func (m *MockKeyDeriver) DerivePublicKey(protocolID WalletProtocol, keyID string, counterparty WalletCounterparty, forSelf bool) (*ec.PublicKey, error) {
+func (m *MockKeyDeriver) DerivePublicKey(protocolID Protocol, keyID string, counterparty Counterparty, forSelf bool) (*ec.PublicKey, error) {
 	m.publicKeyCallCount++
 	return m.publicKeyToReturn, nil
 }
 
-func (m *MockKeyDeriver) DerivePrivateKey(protocolID WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.PrivateKey, error) {
+func (m *MockKeyDeriver) DerivePrivateKey(protocolID Protocol, keyID string, counterparty Counterparty) (*ec.PrivateKey, error) {
 	m.privateKeyCallCount++
 	return m.privateKeyToReturn, nil
 }
 
-func (m *MockKeyDeriver) DeriveSymmetricKey(protocolID WalletProtocol, keyID string, counterparty WalletCounterparty) (*ec.SymmetricKey, error) {
+func (m *MockKeyDeriver) DeriveSymmetricKey(protocolID Protocol, keyID string, counterparty Counterparty) (*ec.SymmetricKey, error) {
 	m.symmetricKeyCallCount++
 	return m.symmetricKeyToReturn, m.symmetricKeyErrorToReturn
 
@@ -41,12 +41,12 @@ func TestDerivePublicKey(t *testing.T) {
 	publicKey := &ec.PublicKey{X: big.NewInt(0), Y: big.NewInt(0), Curve: ec.S256()}
 
 	// Create parameters
-	protocol := WalletProtocol{
+	protocol := Protocol{
 		SecurityLevel: SecurityLevelSilent,
 		Protocol:      "testprotocol",
 	}
 	keyID := "key1"
-	counterparty := WalletCounterparty{
+	counterparty := Counterparty{
 		Type: CounterpartyTypeSelf,
 	}
 
@@ -76,20 +76,20 @@ func TestDerivePublicKey(t *testing.T) {
 		cachedDeriver.keyDeriver = mockKeyDeriver
 
 		// Call with first set of params
-		pubKey1, err := cachedDeriver.DerivePublicKey(WalletProtocol{
+		pubKey1, err := cachedDeriver.DerivePublicKey(Protocol{
 			SecurityLevel: SecurityLevelSilent,
 			Protocol:      "protocol1",
-		}, "key1", WalletCounterparty{
+		}, "key1", Counterparty{
 			Type: CounterpartyTypeSelf,
 		}, false)
 		assert.NoError(t, err)
 		assert.Equal(t, publicKey.ToDERHex(), pubKey1.ToDERHex())
 
 		// Call with different params
-		pubKey2, err := cachedDeriver.DerivePublicKey(WalletProtocol{
+		pubKey2, err := cachedDeriver.DerivePublicKey(Protocol{
 			SecurityLevel: SecurityLevelEveryApp,
 			Protocol:      "protocol2",
-		}, "key2", WalletCounterparty{
+		}, "key2", Counterparty{
 			Type: CounterpartyTypeAnyone,
 		}, false)
 		assert.NoError(t, err)
@@ -102,12 +102,12 @@ func TestDerivePrivateKey(t *testing.T) {
 	rootKey, _ := ec.PrivateKeyFromBytes([]byte{1})
 
 	// Create parameters
-	protocol := WalletProtocol{
+	protocol := Protocol{
 		SecurityLevel: SecurityLevelEveryApp,
 		Protocol:      "testprotocol",
 	}
 	keyID := "key1"
-	counterparty := WalletCounterparty{
+	counterparty := Counterparty{
 		Type: CounterpartyTypeAnyone,
 	}
 
@@ -166,12 +166,12 @@ func TestDeriveSymmetricKey(t *testing.T) {
 	counterpartyKey := &ec.PublicKey{X: big.NewInt(0), Y: big.NewInt(0), Curve: ec.S256()}
 
 	// Create parameters
-	protocol := WalletProtocol{
+	protocol := Protocol{
 		SecurityLevel: SecurityLevelEveryAppAndCounterparty,
 		Protocol:      "testprotocol",
 	}
 	keyID := "key1"
-	counterparty := WalletCounterparty{
+	counterparty := Counterparty{
 		Type:         CounterpartyTypeOther,
 		Counterparty: counterpartyKey,
 	}
