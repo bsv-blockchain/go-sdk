@@ -2,8 +2,9 @@ package wallet
 
 import (
 	"encoding/hex"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"testing"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,7 @@ func TestKeyDeriver(t *testing.T) {
 	anyonePrivateKey, _ := ec.PrivateKeyFromBytes([]byte{1})
 	anyonePublicKey := anyonePrivateKey.PubKey()
 
-	protocolID := WalletProtocol{
+	protocolID := Protocol{
 		SecurityLevel: SecurityLevelSilent,
 		Protocol:      "testprotocol",
 	}
@@ -31,7 +32,7 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should normalize counterparty correctly for self", func(t *testing.T) {
-		normalized, err := keyDeriver.normalizeCounterparty(WalletCounterparty{
+		normalized, err := keyDeriver.normalizeCounterparty(Counterparty{
 			Type: CounterpartyTypeSelf,
 		})
 		assert.NoError(t, err)
@@ -39,7 +40,7 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should normalize counterparty correctly for anyone", func(t *testing.T) {
-		normalized, err := keyDeriver.normalizeCounterparty(WalletCounterparty{
+		normalized, err := keyDeriver.normalizeCounterparty(Counterparty{
 			Type: CounterpartyTypeAnyone,
 		})
 		assert.NoError(t, err)
@@ -47,7 +48,7 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should normalize counterparty correctly when given as a public key", func(t *testing.T) {
-		normalized, err := keyDeriver.normalizeCounterparty(WalletCounterparty{
+		normalized, err := keyDeriver.normalizeCounterparty(Counterparty{
 			Type:         CounterpartyTypeOther,
 			Counterparty: counterpartyPublicKey,
 		})
@@ -60,7 +61,7 @@ func TestKeyDeriver(t *testing.T) {
 		derivedPublicKey, err := anyoneDeriver.DerivePublicKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
@@ -74,7 +75,7 @@ func TestKeyDeriver(t *testing.T) {
 		derivedPublicKey, err := keyDeriver.DerivePublicKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
@@ -88,7 +89,7 @@ func TestKeyDeriver(t *testing.T) {
 		derivedPublicKey, err := keyDeriver.DerivePublicKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
@@ -102,7 +103,7 @@ func TestKeyDeriver(t *testing.T) {
 		derivedPrivateKey, err := keyDeriver.DerivePrivateKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
@@ -115,7 +116,7 @@ func TestKeyDeriver(t *testing.T) {
 		derivedSymmetricKey, err := keyDeriver.DeriveSymmetricKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
@@ -129,7 +130,7 @@ func TestKeyDeriver(t *testing.T) {
 		_, err := keyDeriver.DeriveSymmetricKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type: CounterpartyTypeAnyone,
 			},
 		)
@@ -140,7 +141,7 @@ func TestKeyDeriver(t *testing.T) {
 		sharedSecret, err := keyDeriver.DeriveSymmetricKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
@@ -150,20 +151,20 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should not reveal shared secret for self", func(t *testing.T) {
-		_, err := keyDeriver.RevealCounterpartySecret(WalletCounterparty{
+		_, err := keyDeriver.RevealCounterpartySecret(Counterparty{
 			Type: CounterpartyTypeSelf,
 		})
 		assert.EqualError(t, err, "counterparty secrets cannot be revealed for counterparty=self")
 
-		_, err = keyDeriver.RevealCounterpartySecret(WalletCounterparty{
-			Type: CounterpartyTypeOther,
+		_, err = keyDeriver.RevealCounterpartySecret(Counterparty{
+			Type:         CounterpartyTypeOther,
 			Counterparty: rootPublicKey,
 		})
 		assert.EqualError(t, err, "counterparty secrets cannot be revealed if counterparty key is self")
 	})
 
 	t.Run("should reveal the correct counterparty shared secret", func(t *testing.T) {
-		sharedSecret, err := keyDeriver.RevealCounterpartySecret(WalletCounterparty{
+		sharedSecret, err := keyDeriver.RevealCounterpartySecret(Counterparty{
 			Type:         CounterpartyTypeOther,
 			Counterparty: counterpartyPublicKey,
 		})
@@ -179,7 +180,7 @@ func TestKeyDeriver(t *testing.T) {
 		sharedSecret, err := keyDeriver.DeriveSymmetricKey(
 			protocolID,
 			keyID,
-			WalletCounterparty{
+			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
@@ -191,12 +192,12 @@ func TestKeyDeriver(t *testing.T) {
 	t.Run("should throw an error for invalid protocol names", func(t *testing.T) {
 		testCases := []struct {
 			name     string
-			protocol WalletProtocol
+			protocol Protocol
 			keyID    string
 		}{
 			{
 				name: "long key ID",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: 2,
 					Protocol:      "test",
 				},
@@ -204,7 +205,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			{
 				name: "empty key ID",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: 2,
 					Protocol:      "test",
 				},
@@ -212,7 +213,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			{
 				name: "invalid security level",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: -3,
 					Protocol:      "otherwise valid",
 				},
@@ -220,7 +221,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			{
 				name: "double space in protocol name",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: 2,
 					Protocol:      "double  space",
 				},
@@ -228,7 +229,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			{
 				name: "empty protocol name",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: 0,
 					Protocol:      "",
 				},
@@ -236,7 +237,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			{
 				name: "long protocol name",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: 0,
 					Protocol:      "long" + string(make([]byte, 400)),
 				},
@@ -244,7 +245,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			{
 				name: "redundant protocol suffix",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: 2,
 					Protocol:      "redundant protocol protocol",
 				},
@@ -252,7 +253,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			{
 				name: "invalid characters in protocol name",
-				protocol: WalletProtocol{
+				protocol: Protocol{
 					SecurityLevel: 2,
 					Protocol:      "üñî√é®sål ©0på",
 				},
