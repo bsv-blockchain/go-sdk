@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -236,6 +237,59 @@ func TestDeriveSymmetricKey(t *testing.T) {
 		result1, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
 		assert.Nil(t, result1)
 		assert.Error(t, err, testErrorText)
+	})
+}
+
+func TestCacheManagement(t *testing.T) {
+	// Create keys and cached key deriver
+	rootKey, _ := ec.PrivateKeyFromBytes([]byte{1})
+	t.Run("should not exceed the max cache size and evict least recently used items", func(t *testing.T) {
+		maxCacheSize := 5
+		cachedDeriver := NewCachedKeyDeriver(rootKey, maxCacheSize)
+
+		// Create mock key deriver that returns unique public keys
+		mockKeyDeriver := &MockKeyDeriver{}
+		cachedDeriver.keyDeriver = mockKeyDeriver
+
+		protocol := Protocol{SecurityLevel: SecurityLevelSilent, Protocol: "testprotocol"}
+		counterparty := Counterparty{Type: CounterpartyTypeSelf}
+
+		// Add entries to fill the cache
+		for i := 0; i < maxCacheSize; i++ {
+			mockKeyDeriver.publicKeyToReturn = &ec.PublicKey{X: big.NewInt(int64(i)), Y: big.NewInt(0), Curve: ec.S256()}
+			_, err := cachedDeriver.DerivePublicKey(protocol, fmt.Sprintf("key%d", i), counterparty, false)
+			assert.NoError(t, err)
+		}
+
+		// Cache should be full now
+		assert.Equal(t, maxCacheSize, cachedDeriver.cache.list.Len())
+
+		// Access one of the earlier keys to make it recently used
+		_, err := cachedDeriver.DerivePublicKey(protocol, "key0", counterparty, false)
+		assert.NoError(t, err)
+
+		// Add one more entry to exceed the cache size
+		mockKeyDeriver.publicKeyToReturn = &ec.PublicKey{X: big.NewInt(int64(maxCacheSize)), Y: big.NewInt(0), Curve: ec.S256()}
+		_, err = cachedDeriver.DerivePublicKey(protocol, "key5", counterparty, false)
+		assert.NoError(t, err)
+
+		// Cache size should still be maxCacheSize
+		assert.Equal(t, maxCacheSize, cachedDeriver.cache.list.Len())
+
+		// The least recently used item (key1) should have been evicted
+		// The cache should contain keys: key0, key2, key3, key4, key5
+		// Verify by checking cache keys
+		cacheKeys := make([]string, 0)
+		for elem := cachedDeriver.cache.list.Front(); elem != nil; elem = elem.Next() {
+			key := elem.Value.(cacheKey)
+			cacheKeys = append(cacheKeys, key.keyID)
+		}
+		assert.Contains(t, cacheKeys, "key0")
+		assert.Contains(t, cacheKeys, "key2")
+		assert.Contains(t, cacheKeys, "key3")
+		assert.Contains(t, cacheKeys, "key4")
+		assert.Contains(t, cacheKeys, "key5")
+		assert.Len(t, cacheKeys, maxCacheSize)
 	})
 }
 
