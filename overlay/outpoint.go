@@ -25,6 +25,10 @@ func NewOutpointFromTxBytes(b [36]byte) (o *Outpoint) {
 	return
 }
 
+func (o *Outpoint) Equal(other *Outpoint) bool {
+	return o.Txid.Equal(other.Txid) && o.OutputIndex == other.OutputIndex
+}
+
 func (o *Outpoint) TxBytes() []byte {
 	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.OutputIndex)
 }

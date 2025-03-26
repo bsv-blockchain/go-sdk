@@ -180,6 +180,49 @@ func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	}
 }
 
+func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
+	beef := &Beef{
+		Version:      BEEF_V2,
+		BUMPs:        []*MerklePath{},
+		Transactions: map[string]*BeefTx{},
+	}
+	b := new(bytes.Buffer)
+	err := binary.Write(b, binary.LittleEndian, BEEF_V1)
+	if err != nil {
+		return nil, err
+	}
+	bumpMap := map[uint32]int{}
+	txns := map[string]*Transaction{t.TxID().String(): t}
+	ancestors, err := t.collectAncestors(txns, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, txid := range ancestors {
+		tx := txns[txid]
+		if tx.MerklePath == nil {
+			continue
+		}
+		if _, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
+			bumpMap[tx.MerklePath.BlockHeight] = len(beef.BUMPs)
+			beef.BUMPs = append(beef.BUMPs, tx.MerklePath)
+		} else {
+			err := beef.BUMPs[bumpMap[tx.MerklePath.BlockHeight]].Combine(tx.MerklePath)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	for _, txid := range ancestors {
+		tx := txns[txid]
+		beef.Transactions[txid] = &BeefTx{
+			DataFormat:  RawTx,
+			Transaction: tx,
+			BumpIndex:   bumpMap[tx.MerklePath.BlockHeight],
+		}
+	}
+	return beef, nil
+}
+
 func readVersion(reader *bytes.Reader) (uint32, error) {
 	var version uint32
 	err := binary.Read(reader, binary.LittleEndian, &version)
