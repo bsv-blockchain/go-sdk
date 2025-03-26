@@ -238,3 +238,67 @@ func TestDeriveSymmetricKey(t *testing.T) {
 		assert.Error(t, err, testErrorText)
 	})
 }
+
+func TestRevealSpecificSecret(t *testing.T) {
+	// Create keys and cached key deriver
+	rootKey, _ := ec.PrivateKeyFromBytes([]byte{1})
+	counterpartyKey := &ec.PublicKey{X: big.NewInt(0), Y: big.NewInt(0), Curve: ec.S256()}
+
+	// Create parameters
+	protocol := Protocol{
+		SecurityLevel: SecurityLevelEveryAppAndCounterparty,
+		Protocol:      "testprotocol",
+	}
+	keyID := "key1"
+	counterparty := Counterparty{
+		Type:         CounterpartyTypeOther,
+		Counterparty: counterpartyKey,
+	}
+
+	t.Run("should call RevealSpecificSecret on KeyDeriver and cache the result", func(t *testing.T) {
+		// Create test secret
+		testSecret := []byte{1, 2, 3, 4, 5}
+
+		// Create a mock key deriver that returns a fixed secret
+		cachedDeriver := NewCachedKeyDeriver(rootKey, 0)
+		mockKeyDeriver := &MockKeyDeriver{specificSecretToReturn: testSecret}
+		cachedDeriver.keyDeriver = mockKeyDeriver
+
+		// First call - should call through to real deriver
+		secret1, err := cachedDeriver.RevealSpecificSecret(counterparty, protocol, keyID)
+		assert.NoError(t, err)
+		assert.Equal(t, testSecret, secret1)
+		assert.Equal(t, 1, mockKeyDeriver.specificSecretCallCount)
+
+		// Second call with same parameters - should return cached value
+		secret2, err := cachedDeriver.RevealSpecificSecret(counterparty, protocol, keyID)
+		assert.NoError(t, err)
+		assert.Equal(t, secret1, secret2)
+		assert.Equal(t, 1, mockKeyDeriver.specificSecretCallCount) // No additional calls
+	})
+
+	t.Run("should handle different parameters correctly", func(t *testing.T) {
+		// Create test secrets
+		secret1 := []byte{1, 2, 3, 4, 5}
+		secret2 := []byte{6, 7, 8, 9, 10}
+
+		// Create a mock key deriver that returns different secrets
+		cachedDeriver := NewCachedKeyDeriver(rootKey, 0)
+		mockKeyDeriver := &MockKeyDeriver{
+			specificSecretToReturn: secret1,
+		}
+		cachedDeriver.keyDeriver = mockKeyDeriver
+
+		// First call
+		result1, err := cachedDeriver.RevealSpecificSecret(counterparty, protocol, keyID)
+		assert.NoError(t, err)
+		assert.Equal(t, secret1, result1)
+
+		// Second call with different keyID
+		mockKeyDeriver.specificSecretToReturn = secret2
+		result2, err := cachedDeriver.RevealSpecificSecret(counterparty, protocol, "key2")
+		assert.NoError(t, err)
+		assert.Equal(t, secret2, result2)
+		assert.Equal(t, 2, mockKeyDeriver.specificSecretCallCount)
+	})
+}
