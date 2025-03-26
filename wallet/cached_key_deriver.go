@@ -11,18 +11,18 @@ import (
 // to improve performance for repeated derivations with the same parameters.
 // It uses an LRU cache with configurable size.
 type CachedKeyDeriver struct {
-	keyDeriver  keyDeriverInterface
-	cache       *lruCache
+	keyDeriver   keyDeriverInterface
+	cache        *lruCache
 	maxCacheSize int
-	mu          sync.Mutex
+	mu           sync.Mutex
 }
 
 type cacheKey struct {
-	method      string
-	protocol    Protocol
-	keyID       string
+	method       string
+	protocol     Protocol
+	keyID        string
 	counterparty Counterparty
-	forSelf     bool
+	forSelf      bool
 }
 
 type cacheValue struct {
@@ -45,7 +45,7 @@ func NewCachedKeyDeriver(rootKey *ec.PrivateKey, maxCacheSize int) *CachedKeyDer
 	}
 
 	return &CachedKeyDeriver{
-		keyDeriver:  NewKeyDeriver(rootKey),
+		keyDeriver: NewKeyDeriver(rootKey),
 		cache: &lruCache{
 			items: make(map[cacheKey]*cacheValue),
 			list:  list.New(),
@@ -57,11 +57,11 @@ func NewCachedKeyDeriver(rootKey *ec.PrivateKey, maxCacheSize int) *CachedKeyDer
 // DerivePublicKey derives a public key with caching.
 func (c *CachedKeyDeriver) DerivePublicKey(protocol Protocol, keyID string, counterparty Counterparty, forSelf bool) (*ec.PublicKey, error) {
 	key := cacheKey{
-		method:      "derivePublicKey",
-		protocol:    protocol,
-		keyID:       keyID,
+		method:       "derivePublicKey",
+		protocol:     protocol,
+		keyID:        keyID,
 		counterparty: counterparty,
-		forSelf:     forSelf,
+		forSelf:      forSelf,
 	}
 
 	if val, ok := c.cacheGet(key); ok {
@@ -82,9 +82,9 @@ func (c *CachedKeyDeriver) DerivePublicKey(protocol Protocol, keyID string, coun
 // DerivePrivateKey derives a private key with caching.
 func (c *CachedKeyDeriver) DerivePrivateKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.PrivateKey, error) {
 	key := cacheKey{
-		method:      "derivePrivateKey",
-		protocol:    protocol,
-		keyID:       keyID,
+		method:       "derivePrivateKey",
+		protocol:     protocol,
+		keyID:        keyID,
 		counterparty: counterparty,
 	}
 
@@ -106,9 +106,9 @@ func (c *CachedKeyDeriver) DerivePrivateKey(protocol Protocol, keyID string, cou
 // DeriveSymmetricKey derives a symmetric key with caching.
 func (c *CachedKeyDeriver) DeriveSymmetricKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.SymmetricKey, error) {
 	key := cacheKey{
-		method:      "deriveSymmetricKey",
-		protocol:    protocol,
-		keyID:       keyID,
+		method:       "deriveSymmetricKey",
+		protocol:     protocol,
+		keyID:        keyID,
 		counterparty: counterparty,
 	}
 
@@ -125,6 +125,30 @@ func (c *CachedKeyDeriver) DeriveSymmetricKey(protocol Protocol, keyID string, c
 
 	c.cacheSet(key, symKey)
 	return symKey, nil
+}
+
+// RevealSpecificSecret reveals the specific key association with caching.
+func (c *CachedKeyDeriver) RevealSpecificSecret(counterparty Counterparty, protocol Protocol, keyID string) ([]byte, error) {
+	key := cacheKey{
+		method:       "revealSpecificSecret",
+		protocol:     protocol,
+		keyID:        keyID,
+		counterparty: counterparty,
+	}
+
+	if val, ok := c.cacheGet(key); ok {
+		if secret, ok := val.([]byte); ok {
+			return secret, nil
+		}
+	}
+
+	secret, err := c.keyDeriver.RevealSpecificSecret(counterparty, protocol, keyID)
+	if err != nil {
+		return nil, err
+	}
+
+	c.cacheSet(key, secret)
+	return secret, nil
 }
 
 // cacheGet retrieves a value from cache and updates its LRU position.

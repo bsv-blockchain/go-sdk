@@ -13,9 +13,11 @@ type MockKeyDeriver struct {
 	publicKeyCallCount        int
 	privateKeyCallCount       int
 	symmetricKeyCallCount     int
+	specificSecretCallCount   int
 	publicKeyToReturn         *ec.PublicKey
 	privateKeyToReturn        *ec.PrivateKey
 	symmetricKeyToReturn      *ec.SymmetricKey
+	specificSecretToReturn    []byte
 	symmetricKeyErrorToReturn error
 }
 
@@ -32,7 +34,10 @@ func (m *MockKeyDeriver) DerivePrivateKey(protocolID Protocol, keyID string, cou
 func (m *MockKeyDeriver) DeriveSymmetricKey(protocolID Protocol, keyID string, counterparty Counterparty) (*ec.SymmetricKey, error) {
 	m.symmetricKeyCallCount++
 	return m.symmetricKeyToReturn, m.symmetricKeyErrorToReturn
-
+}
+func (m *MockKeyDeriver) RevealSpecificSecret(counterparty Counterparty, protocol Protocol, keyID string) ([]byte, error) {
+	m.specificSecretCallCount++
+	return m.specificSecretToReturn, nil
 }
 
 func TestDerivePublicKey(t *testing.T) {
@@ -97,6 +102,7 @@ func TestDerivePublicKey(t *testing.T) {
 		assert.Equal(t, mockKeyDeriver.publicKeyCallCount, 2)
 	})
 }
+
 func TestDerivePrivateKey(t *testing.T) {
 	// Create keys and cached key deriver
 	rootKey, _ := ec.PrivateKeyFromBytes([]byte{1})
@@ -219,6 +225,7 @@ func TestDeriveSymmetricKey(t *testing.T) {
 		assert.Equal(t, result2.ToBytes(), symmetricKey2.ToBytes())
 		assert.Equal(t, mockKeyDeriver.symmetricKeyCallCount, 2)
 	})
+
 	t.Run("should return an error when KeyDeriver returns an error", func(t *testing.T) {
 		const testErrorText = "test error"
 		// Create a mock key deriver that returns an error
