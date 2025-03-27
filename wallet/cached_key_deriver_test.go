@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +16,7 @@ type MockKeyDeriver struct {
 	privateKeyCallCount       int
 	symmetricKeyCallCount     int
 	specificSecretCallCount   int
+	publicKeySleepTime        time.Duration
 	publicKeyToReturn         *ec.PublicKey
 	privateKeyToReturn        *ec.PrivateKey
 	symmetricKeyToReturn      *ec.SymmetricKey
@@ -23,6 +25,9 @@ type MockKeyDeriver struct {
 }
 
 func (m *MockKeyDeriver) DerivePublicKey(protocolID Protocol, keyID string, counterparty Counterparty, forSelf bool) (*ec.PublicKey, error) {
+	if m.publicKeySleepTime > 0 {
+		time.Sleep(m.publicKeySleepTime)
+	}
 	m.publicKeyCallCount++
 	return m.publicKeyToReturn, nil
 }
@@ -243,6 +248,7 @@ func TestDeriveSymmetricKey(t *testing.T) {
 func TestCacheManagement(t *testing.T) {
 	// Create keys and cached key deriver
 	rootKey, _ := ec.PrivateKeyFromBytes([]byte{1})
+
 	t.Run("should not exceed the max cache size and evict least recently used items", func(t *testing.T) {
 		maxCacheSize := 5
 		cachedDeriver := NewCachedKeyDeriver(rootKey, maxCacheSize)
@@ -358,5 +364,41 @@ func TestRevealSpecificSecret(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, secret2, result2)
 		assert.Equal(t, 2, mockKeyDeriver.specificSecretCallCount)
+	})
+}
+
+func TestPerformanceConsiderations(t *testing.T) {
+	// Create keys and cached key deriver
+	rootKey, _ := ec.PrivateKeyFromBytes([]byte{1})
+
+	t.Run("should improve performance by caching expensive operations", func(t *testing.T) {
+		protocol := Protocol{SecurityLevel: SecurityLevelSilent, Protocol: "testprotocol"}
+		keyID := "key1"
+		counterparty := Counterparty{Type: CounterpartyTypeSelf}
+
+		// Create a cached key deriver
+		cachedKeyDeriver := NewCachedKeyDeriver(rootKey, 0)
+		mockKeyDeriver := &MockKeyDeriver{}
+		cachedKeyDeriver.keyDeriver = mockKeyDeriver
+
+		// Simulate an expensive operation (50ms)
+		mockKeyDeriver.publicKeySleepTime = 50 * time.Millisecond
+		mockKeyDeriver.publicKeyToReturn = &ec.PublicKey{X: big.NewInt(0), Y: big.NewInt(0), Curve: ec.S256()}
+
+		// First call - should be slow
+		startTime := time.Now()
+		_, err := cachedKeyDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
+		assert.NoError(t, err)
+		firstCallDuration := time.Since(startTime)
+
+		// Second call - should be fast due to caching
+		startTime = time.Now()
+		_, err = cachedKeyDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
+		assert.NoError(t, err)
+		secondCallDuration := time.Since(startTime)
+
+		// Verify performance improvement
+		assert.GreaterOrEqual(t, firstCallDuration.Milliseconds(), int64(50))
+		assert.Less(t, secondCallDuration.Milliseconds(), int64(10)) // Should be much faster
 	})
 }
