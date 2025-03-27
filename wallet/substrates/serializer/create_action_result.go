@@ -145,6 +145,10 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 		return nil, fmt.Errorf("error reading noSendChange length: %v", err)
 	}
 	if noSendChangeLen != math.MaxUint64 {
+		// Limit slice capacity to prevent potential memory exhaustion
+		if noSendChangeLen > 1000 {
+			return nil, fmt.Errorf("noSendChange length %d exceeds maximum allowed (1000)", noSendChangeLen)
+		}
 		result.NoSendChange = make([]string, 0, noSendChangeLen)
 		for i := uint64(0); i < noSendChangeLen; i++ {
 			outpointBytes, err := resultReader.readBytes(36) // 32 txid + 4 index
@@ -165,6 +169,10 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 		return nil, fmt.Errorf("error reading sendWithResults length: %v", err)
 	}
 	if sendWithResultsLen != math.MaxUint64 {
+		// Limit slice capacity to prevent potential memory exhaustion
+		if sendWithResultsLen > 1000 {
+			return nil, fmt.Errorf("sendWithResults length %d exceeds maximum allowed (1000)", sendWithResultsLen)
+		}
 		result.SendWithResults = make([]wallet.SendWithResult, 0, sendWithResultsLen)
 		for i := uint64(0); i < sendWithResultsLen; i++ {
 			txidBytes, err := resultReader.readBytes(32)

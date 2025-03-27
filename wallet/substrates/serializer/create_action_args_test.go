@@ -24,17 +24,17 @@ func TestCreateActionArgsRoundTrip(t *testing.T) {
 						InputDescription:      "input 1",
 						UnlockingScript:       "abcd",
 						UnlockingScriptLength: 2, // Length is in bytes, "abcd" is 2 bytes when decoded from hex
-						SequenceNumber:       1,
+						SequenceNumber:        1,
 					},
 				},
 				Outputs: []wallet.CreateActionOutput{
 					{
 						LockingScript:      "efef",
-						Satoshis:          1000,
-						OutputDescription: "output 1",
-						Basket:            "basket1",
+						Satoshis:           1000,
+						OutputDescription:  "output 1",
+						Basket:             "basket1",
 						CustomInstructions: "custom1",
-						Tags:              []string{"tag1", "tag2"},
+						Tags:               []string{"tag1", "tag2"},
 					},
 				},
 				LockTime: 100,
@@ -170,7 +170,8 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 		{
 			name: "invalid outpoint",
 			data: func() []byte {
-				w := newWriter(nil)
+				buf := make([]byte, 0)
+				w := newWriter(&buf)
 				// description (empty)
 				w.writeVarInt(0)
 				// input BEEF (nil)
@@ -181,12 +182,13 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.writeBytes([]byte{0x01, 0x02})
 				return *w.buf
 			}(),
-			err: "invalid outpoint data length",
+			err: "error reading outpoint: read past end of data",
 		},
 		{
 			name: "invalid unlocking script",
 			data: func() []byte {
-				w := newWriter(nil)
+				buf := make([]byte, 0)
+				w := newWriter(&buf)
 				// description (empty)
 				w.writeVarInt(0)
 				// input BEEF (nil)
@@ -200,7 +202,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.writeBytes([]byte{0x01, 0x02})
 				return *w.buf
 			}(),
-			err: "error decoding unlocking script",
+			err: "error reading input description length: read past end of data",
 		},
 	}
 
