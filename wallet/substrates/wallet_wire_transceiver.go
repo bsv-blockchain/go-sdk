@@ -2,7 +2,7 @@ package substrates
 
 import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/bsv-blockchain/go-sdk/wallet/substrates/serializer"
+	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
 
 // WalletWireTransceiver implements wallet.Interface
