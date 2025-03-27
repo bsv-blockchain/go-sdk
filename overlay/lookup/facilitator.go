@@ -19,8 +19,8 @@ type HTTPSOverlayLookupFacilitator struct {
 	Client util.HTTPClient
 }
 
-func (f *HTTPSOverlayLookupFacilitator) Lookup(url string, question *LookupQuestion, timeout time.Duration) (*LookupAnswer, error) {
-	timeoutContext, cancel := context.WithTimeout(context.Background(), timeout)
+func (f *HTTPSOverlayLookupFacilitator) Lookup(ctx context.Context, url string, question *LookupQuestion, timeout time.Duration) (*LookupAnswer, error) {
+	timeoutContext, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	if q, err := json.Marshal(question); err != nil {
 		return nil, err

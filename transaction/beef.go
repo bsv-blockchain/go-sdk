@@ -409,7 +409,7 @@ func (t *Transaction) collectAncestors(txns map[string]*Transaction, allowPartia
 func (b *Beef) FindBump(txid string) *MerklePath {
 	for _, bump := range b.BUMPs {
 		for _, leaf := range bump.Path[0] {
-			if leaf.Hash.String() == txid {
+			if leaf.Hash != nil && leaf.Hash.String() == txid {
 				return bump
 			}
 		}

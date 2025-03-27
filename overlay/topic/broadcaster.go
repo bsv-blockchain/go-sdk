@@ -178,12 +178,16 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 
 func (b *Broadcaster) FindInterestedHosts(ctx context.Context) ([]string, error) {
 	results := make(map[string]map[string]struct{})
-	answer, err := b.Resolver.Query(ctx, &lookup.LookupQuestion{
-		Service: "ls_ship",
-		Query: map[string][]string{
-			"topics": b.Topics,
+	answer, err := b.Resolver.Query(
+		ctx,
+		&lookup.LookupQuestion{
+			Service: "ls_ship",
+			Query: map[string][]string{
+				"topics": b.Topics,
+			},
 		},
-	}, MAX_SHIP_QUERY_TIMEOUT)
+		MAX_SHIP_QUERY_TIMEOUT,
+	)
 	if err != nil {
 		return nil, err
 	}
