@@ -124,7 +124,7 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 				idx := -1
 				for i, bump := range BUMPs {
 					for _, leaf := range bump.Path[0] {
-						if leaf.Hash.String() == tx.TxID().String() {
+						if leaf.Hash != nil && tx.TxID().Equal(*leaf.Hash) {
 							idx = i
 						}
 					}
@@ -185,11 +185,6 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 		Version:      BEEF_V2,
 		BUMPs:        []*MerklePath{},
 		Transactions: map[string]*BeefTx{},
-	}
-	b := new(bytes.Buffer)
-	err := binary.Write(b, binary.LittleEndian, BEEF_V1)
-	if err != nil {
-		return nil, err
 	}
 	bumpMap := map[uint32]int{}
 	txns := map[string]*Transaction{t.TxID().String(): t}
