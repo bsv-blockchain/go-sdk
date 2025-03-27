@@ -63,11 +63,11 @@ func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
 
 	switch Call(callType) {
 	case CallCreateAction:
-		args, err := w.deserializeCreateActionArgs(message[1:])
+		args, err := DeserializeCreateActionArgs(message[1:])
 		if err != nil {
 			return nil, err
 		}
-		return w.processCreateAction(args)
+		return w.processCreateAction(*args)
 	default:
 		return nil, fmt.Errorf("unknown call type: %d", callType)
 	}
@@ -78,15 +78,5 @@ func (w *WalletWireProcessor) processCreateAction(args wallet.CreateActionArgs) 
 	if err != nil {
 		return nil, err
 	}
-	return w.serializeCreateActionResult(result)
-}
-
-func (w *WalletWireProcessor) deserializeCreateActionArgs(data []byte) (wallet.CreateActionArgs, error) {
-	// TODO: Implement args deserialization matching TS format
-	return wallet.CreateActionArgs{}, nil
-}
-
-func (w *WalletWireProcessor) serializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, error) {
-	// TODO: Implement result serialization matching TS format
-	return nil, nil
+	return SerializeCreateActionResult(result)
 }

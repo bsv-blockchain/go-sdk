@@ -16,7 +16,7 @@ func NewWalletWireTransceiver(processor *WalletWireProcessor) *WalletWireTransce
 
 func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wallet.CreateActionResult, error) {
 	// Serialize the request
-	data, err := t.serializeCreateAction(args)
+	data, err := SerializeCreateActionArgs(&args)
 	if err != nil {
 		return nil, err
 	}
@@ -28,19 +28,5 @@ func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wal
 	}
 
 	// Deserialize response
-	return t.deserializeCreateActionResult(resp)
-}
-
-func (t *WalletWireTransceiver) serializeCreateAction(args wallet.CreateActionArgs) ([]byte, error) {
-	// TODO: Implement full serialization similar to TS version
-	// This will need to match the binary format from the TS implementation
-	// For now just a placeholder
-	return nil, nil
-}
-
-func (t *WalletWireTransceiver) deserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, error) {
-	// TODO: Implement full deserialization similar to TS version
-	// This will need to match the binary format from the TS implementation
-	// For now just a placeholder
-	return nil, nil
+	return DeserializeCreateActionResult(resp)
 }
