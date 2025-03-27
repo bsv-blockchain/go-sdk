@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/substrates/serializer"
 )
 
 // WalletWireProcessor implements the WalletWire interface
@@ -25,7 +26,7 @@ func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
 
 	switch Call(callType) {
 	case CallCreateAction:
-		args, err := DeserializeCreateActionArgs(message[1:])
+		args, err := serializer.DeserializeCreateActionArgs(message[1:])
 		if err != nil {
 			return nil, err
 		}
@@ -40,5 +41,5 @@ func (w *WalletWireProcessor) processCreateAction(args wallet.CreateActionArgs) 
 	if err != nil {
 		return nil, err
 	}
-	return SerializeCreateActionResult(result)
+	return serializer.SerializeCreateActionResult(result)
 }

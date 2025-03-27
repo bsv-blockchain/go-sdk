@@ -2,6 +2,7 @@ package substrates
 
 import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/substrates/serializer"
 )
 
 // WalletWireTransceiver implements wallet.Interface
@@ -16,7 +17,7 @@ func NewWalletWireTransceiver(processor *WalletWireProcessor) *WalletWireTransce
 
 func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wallet.CreateActionResult, error) {
 	// Serialize the request
-	data, err := SerializeCreateActionArgs(&args)
+	data, err := serializer.SerializeCreateActionArgs(&args)
 	if err != nil {
 		return nil, err
 	}
@@ -28,5 +29,5 @@ func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wal
 	}
 
 	// Deserialize response
-	return DeserializeCreateActionResult(resp)
+	return serializer.DeserializeCreateActionResult(resp)
 }
