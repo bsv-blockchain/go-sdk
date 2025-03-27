@@ -3,6 +3,7 @@ package substrates
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"strings"
@@ -31,10 +32,11 @@ func (w *writer) writeVarInt(n uint64) {
 	w.writeBytes(buf[:size])
 }
 
+// encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint string) ([]byte, error) {
 	parts := strings.Split(outpoint, ".")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid outpoint format")
+		return nil, errors.New("invalid outpoint format")
 	}
 
 	txid, err := hex.DecodeString(parts[0])
@@ -52,6 +54,17 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 	binary.BigEndian.PutUint32(buf[32:36], index)
 
 	return buf, nil
+}
+
+// decodeOutpoint converts binary outpoint data to string format "txid.index"
+func decodeOutpoint(data []byte) (string, error) {
+	if len(data) < 32 {
+		return "", errors.New("invalid outpoint data length")
+	}
+
+	txid := hex.EncodeToString(data[:32])
+	index := binary.BigEndian.Uint32(data[32:36])
+	return fmt.Sprintf("%s.%d", txid, index), nil
 }
 
 func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
@@ -86,7 +99,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			if input.UnlockingScript != "" {
 				script, err := hex.DecodeString(input.UnlockingScript)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("error decoding unlocking script: %v", err)
 				}
 				paramWriter.writeVarInt(uint64(len(script)))
 				paramWriter.writeBytes(script)
@@ -118,7 +131,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			// Serialize locking script
 			script, err := hex.DecodeString(output.LockingScript)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error decoding locking script: %v", err)
 			}
 			paramWriter.writeVarInt(uint64(len(script)))
 			paramWriter.writeBytes(script)
@@ -230,7 +243,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			for _, txid := range args.Options.KnownTxids {
 				txidBytes, err := hex.DecodeString(txid)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("error decoding known txid: %v", err)
 				}
 				paramWriter.writeBytes(txidBytes)
 			}
@@ -280,7 +293,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			for _, txid := range args.Options.SendWith {
 				txidBytes, err := hex.DecodeString(txid)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("error decoding send with txid: %v", err)
 				}
 				paramWriter.writeBytes(txidBytes)
 			}
