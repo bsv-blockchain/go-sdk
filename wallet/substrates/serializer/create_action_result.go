@@ -9,8 +9,88 @@ import (
 
 // SerializeCreateActionResult serializes a wallet.CreateActionResult to a byte slice
 func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, error) {
-	// TODO: Implement result serialization matching TS format
-	return nil, errors.New("not implemented")
+	buf := make([]byte, 0)
+	writer := newWriter(&buf)
+
+	// Write success byte (0 for success)
+	writer.writeByte(0)
+
+	// Write txid if present
+	if result.Txid != "" {
+		writer.writeByte(1) // flag present
+		txidBytes, err := hex.DecodeString(result.Txid)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding txid: %v", err)
+		}
+		writer.writeBytes(txidBytes)
+	} else {
+		writer.writeByte(0) // flag not present
+	}
+
+	// Write tx if present
+	if len(result.Tx) > 0 {
+		writer.writeByte(1) // flag present
+		writer.writeVarInt(uint64(len(result.Tx)))
+		writer.writeBytes(result.Tx)
+	} else {
+		writer.writeByte(0) // flag not present
+	}
+
+	// Write noSendChange
+	if result.NoSendChange != nil {
+		writer.writeVarInt(uint64(len(result.NoSendChange)))
+		for _, outpoint := range result.NoSendChange {
+			opBytes, err := encodeOutpoint(outpoint)
+			if err != nil {
+				return nil, fmt.Errorf("error encoding outpoint: %v", err)
+			}
+			writer.writeBytes(opBytes)
+		}
+	} else {
+		writer.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1 for nil
+	}
+
+	// Write sendWithResults
+	if result.SendWithResults != nil {
+		writer.writeVarInt(uint64(len(result.SendWithResults)))
+		for _, res := range result.SendWithResults {
+			txidBytes, err := hex.DecodeString(res.Txid)
+			if err != nil {
+				return nil, fmt.Errorf("error decoding sendWith txid: %v", err)
+			}
+			writer.writeBytes(txidBytes)
+
+			var statusCode byte
+			switch res.Status {
+			case "unproven":
+				statusCode = 1
+			case "sending":
+				statusCode = 2
+			case "failed":
+				statusCode = 3
+			default:
+				return nil, fmt.Errorf("invalid status: %s", res.Status)
+			}
+			writer.writeByte(statusCode)
+		}
+	} else {
+		writer.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1 for nil
+	}
+
+	// Write signableTransaction
+	if result.SignableTransaction != nil {
+		writer.writeByte(1) // flag present
+		writer.writeVarInt(uint64(len(result.SignableTransaction.Tx)))
+		writer.writeBytes(result.SignableTransaction.Tx)
+
+		refBytes := []byte(result.SignableTransaction.Reference)
+		writer.writeVarInt(uint64(len(refBytes)))
+		writer.writeBytes(refBytes)
+	} else {
+		writer.writeByte(0) // flag not present
+	}
+
+	return buf, nil
 }
 
 // DeserializeCreateActionResult deserializes a byte slice to a wallet.CreateActionResult

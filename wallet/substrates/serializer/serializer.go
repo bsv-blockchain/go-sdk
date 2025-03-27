@@ -67,6 +67,13 @@ func (r *reader) ReadByte() (byte, error) {
 	return r.readByte()
 }
 
+func (r *reader) readRemaining() []byte {
+	if r.pos >= len(r.data) {
+		return nil
+	}
+	return r.data[r.pos:]
+}
+
 // encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint string) ([]byte, error) {
 	parts := strings.Split(outpoint, ".")

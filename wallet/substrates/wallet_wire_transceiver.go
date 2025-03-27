@@ -15,6 +15,20 @@ func NewWalletWireTransceiver(processor *WalletWireProcessor) *WalletWireTransce
 	return &WalletWireTransceiver{Processor: processor}
 }
 
+func (t *WalletWireTransceiver) Transmit(call Call, originator string, params []byte) ([]byte, error) {
+	// Create frame
+	frame := serializer.WriteRequestFrame(byte(call), originator, params)
+
+	// Transmit frame to processor
+	result, err := t.Processor.TransmitToWallet(frame)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse response
+	return serializer.ReadResultFrame(result)
+}
+
 func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wallet.CreateActionResult, error) {
 	// Serialize the request
 	data, err := serializer.SerializeCreateActionArgs(&args)
@@ -23,7 +37,7 @@ func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wal
 	}
 
 	// Send to processor
-	resp, err := t.Processor.TransmitToWallet(data)
+	resp, err := t.Transmit(CallCreateAction, "", data)
 	if err != nil {
 		return nil, err
 	}
