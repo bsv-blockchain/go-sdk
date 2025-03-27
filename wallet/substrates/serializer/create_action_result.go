@@ -5,60 +5,61 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"math"
 )
 
 // SerializeCreateActionResult serializes a wallet.CreateActionResult to a byte slice
 func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, error) {
 	buf := make([]byte, 0)
-	writer := newWriter(&buf)
+	resultWriter := newWriter(&buf)
 
 	// Write success byte (0 for success)
-	writer.writeByte(0)
+	resultWriter.writeByte(0)
 
 	// Write txid if present
 	if result.Txid != "" {
-		writer.writeByte(1) // flag present
+		resultWriter.writeByte(1) // flag present
 		txidBytes, err := hex.DecodeString(result.Txid)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding txid: %v", err)
 		}
-		writer.writeBytes(txidBytes)
+		resultWriter.writeBytes(txidBytes)
 	} else {
-		writer.writeByte(0) // flag not present
+		resultWriter.writeByte(0) // flag not present
 	}
 
 	// Write tx if present
 	if len(result.Tx) > 0 {
-		writer.writeByte(1) // flag present
-		writer.writeVarInt(uint64(len(result.Tx)))
-		writer.writeBytes(result.Tx)
+		resultWriter.writeByte(1) // flag present
+		resultWriter.writeVarInt(uint64(len(result.Tx)))
+		resultWriter.writeBytes(result.Tx)
 	} else {
-		writer.writeByte(0) // flag not present
+		resultWriter.writeByte(0) // flag not present
 	}
 
 	// Write noSendChange
 	if result.NoSendChange != nil {
-		writer.writeVarInt(uint64(len(result.NoSendChange)))
+		resultWriter.writeVarInt(uint64(len(result.NoSendChange)))
 		for _, outpoint := range result.NoSendChange {
 			opBytes, err := encodeOutpoint(outpoint)
 			if err != nil {
 				return nil, fmt.Errorf("error encoding outpoint: %v", err)
 			}
-			writer.writeBytes(opBytes)
+			resultWriter.writeBytes(opBytes)
 		}
 	} else {
-		writer.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1 for nil
+		resultWriter.writeVarInt(math.MaxUint64) // -1 for nil
 	}
 
 	// Write sendWithResults
 	if result.SendWithResults != nil {
-		writer.writeVarInt(uint64(len(result.SendWithResults)))
+		resultWriter.writeVarInt(uint64(len(result.SendWithResults)))
 		for _, res := range result.SendWithResults {
 			txidBytes, err := hex.DecodeString(res.Txid)
 			if err != nil {
 				return nil, fmt.Errorf("error decoding sendWith txid: %v", err)
 			}
-			writer.writeBytes(txidBytes)
+			resultWriter.writeBytes(txidBytes)
 
 			var statusCode byte
 			switch res.Status {
@@ -71,23 +72,23 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 			default:
 				return nil, fmt.Errorf("invalid status: %s", res.Status)
 			}
-			writer.writeByte(statusCode)
+			resultWriter.writeByte(statusCode)
 		}
 	} else {
-		writer.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1 for nil
+		resultWriter.writeVarInt(math.MaxUint64) // -1 for nil
 	}
 
 	// Write signableTransaction
 	if result.SignableTransaction != nil {
-		writer.writeByte(1) // flag present
-		writer.writeVarInt(uint64(len(result.SignableTransaction.Tx)))
-		writer.writeBytes(result.SignableTransaction.Tx)
+		resultWriter.writeByte(1) // flag present
+		resultWriter.writeVarInt(uint64(len(result.SignableTransaction.Tx)))
+		resultWriter.writeBytes(result.SignableTransaction.Tx)
 
 		refBytes := []byte(result.SignableTransaction.Reference)
-		writer.writeVarInt(uint64(len(refBytes)))
-		writer.writeBytes(refBytes)
+		resultWriter.writeVarInt(uint64(len(refBytes)))
+		resultWriter.writeBytes(refBytes)
 	} else {
-		writer.writeByte(0) // flag not present
+		resultWriter.writeByte(0) // flag not present
 	}
 
 	return buf, nil
@@ -102,35 +103,10 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	resultReader := newReader(data)
 	result := &wallet.CreateActionResult{}
 
-	// Read error byte (first byte indicates success/failure)
-	errorByte, err := resultReader.readByte()
+	// Read success byte (0 for success)
+	_, err := resultReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading error byte: %v", err)
-	}
-
-	if errorByte != 0 {
-		// Handle error case
-		errorMsgLen, err := resultReader.readVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("error reading error message length: %v", err)
-		}
-		errorMsgBytes, err := resultReader.readBytes(int(errorMsgLen))
-		if err != nil {
-			return nil, fmt.Errorf("error reading error message: %v", err)
-		}
-		errorMsg := string(errorMsgBytes)
-
-		stackTraceLen, err := resultReader.readVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("error reading stack trace length: %v", err)
-		}
-		stackTraceBytes, err := resultReader.readBytes(int(stackTraceLen))
-		if err != nil {
-			return nil, fmt.Errorf("error reading stack trace: %v", err)
-		}
-		stackTrace := string(stackTraceBytes)
-
-		return nil, fmt.Errorf("wallet error %d: %s\n%s", errorByte, errorMsg, stackTrace)
+		return nil, fmt.Errorf("error reading success byte: %v", err)
 	}
 
 	// Parse txid
@@ -168,7 +144,7 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	if err != nil {
 		return nil, fmt.Errorf("error reading noSendChange length: %v", err)
 	}
-	if noSendChangeLen >= 0 {
+	if noSendChangeLen != math.MaxUint64 {
 		result.NoSendChange = make([]string, 0, noSendChangeLen)
 		for i := uint64(0); i < noSendChangeLen; i++ {
 			outpointBytes, err := resultReader.readBytes(36) // 32 txid + 4 index
@@ -188,7 +164,7 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	if err != nil {
 		return nil, fmt.Errorf("error reading sendWithResults length: %v", err)
 	}
-	if sendWithResultsLen >= 0 {
+	if sendWithResultsLen != math.MaxUint64 {
 		result.SendWithResults = make([]wallet.SendWithResult, 0, sendWithResultsLen)
 		for i := uint64(0); i < sendWithResultsLen; i++ {
 			txidBytes, err := resultReader.readBytes(32)
