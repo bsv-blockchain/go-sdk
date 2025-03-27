@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"math"
 )
 
 // SerializeCreateActionArgs serializes a wallet.CreateActionArgs object into a byte slice
@@ -22,7 +23,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 		paramWriter.writeVarInt(uint64(len(args.InputBEEF)))
 		paramWriter.writeBytes(args.InputBEEF)
 	} else {
-		paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1 in varint
+		paramWriter.writeVarInt(math.MaxUint64) // -1 in varint
 	}
 
 	// Serialize inputs
@@ -45,7 +46,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 				paramWriter.writeVarInt(uint64(len(script)))
 				paramWriter.writeBytes(script)
 			} else {
-				paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+				paramWriter.writeVarInt(math.MaxUint64) // -1
 				paramWriter.writeVarInt(uint64(input.UnlockingScriptLength))
 			}
 
@@ -58,11 +59,11 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			if input.SequenceNumber > 0 {
 				paramWriter.writeVarInt(uint64(input.SequenceNumber))
 			} else {
-				paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+				paramWriter.writeVarInt(math.MaxUint64) // -1
 			}
 		}
 	} else {
-		paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+		paramWriter.writeVarInt(math.MaxUint64) // -1
 	}
 
 	// Serialize outputs
@@ -91,7 +92,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 				paramWriter.writeVarInt(uint64(len(basket)))
 				paramWriter.writeBytes(basket)
 			} else {
-				paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+				paramWriter.writeVarInt(math.MaxUint64) // -1
 			}
 
 			// Serialize custom instructions
@@ -100,7 +101,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 				paramWriter.writeVarInt(uint64(len(ci)))
 				paramWriter.writeBytes(ci)
 			} else {
-				paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+				paramWriter.writeVarInt(math.MaxUint64) // -1
 			}
 
 			// Serialize tags
@@ -112,25 +113,25 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 					paramWriter.writeBytes(tagBytes)
 				}
 			} else {
-				paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+				paramWriter.writeVarInt(math.MaxUint64) // -1
 			}
 		}
 	} else {
-		paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+		paramWriter.writeVarInt(math.MaxUint64) // -1
 	}
 
 	// Serialize lockTime
 	if args.LockTime > 0 {
 		paramWriter.writeVarInt(uint64(args.LockTime))
 	} else {
-		paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+		paramWriter.writeVarInt(math.MaxUint64) // -1
 	}
 
 	// Serialize version
 	if args.Version > 0 {
 		paramWriter.writeVarInt(uint64(args.Version))
 	} else {
-		paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+		paramWriter.writeVarInt(math.MaxUint64) // -1
 	}
 
 	// Serialize labels
@@ -142,7 +143,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			paramWriter.writeBytes(labelBytes)
 		}
 	} else {
-		paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+		paramWriter.writeVarInt(math.MaxUint64) // -1
 	}
 
 	// Serialize options
@@ -189,7 +190,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 				paramWriter.writeBytes(txidBytes)
 			}
 		} else {
-			paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+			paramWriter.writeVarInt(math.MaxUint64) // -1
 		}
 
 		// returnTXIDOnly
@@ -225,7 +226,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 				paramWriter.writeBytes(op)
 			}
 		} else {
-			paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+			paramWriter.writeVarInt(math.MaxUint64) // -1
 		}
 
 		// sendWith
@@ -239,7 +240,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 				paramWriter.writeBytes(txidBytes)
 			}
 		} else {
-			paramWriter.writeVarInt(0xFFFFFFFFFFFFFFFF) // -1
+			paramWriter.writeVarInt(math.MaxUint64) // -1
 		}
 
 		// randomizeOutputs
@@ -284,7 +285,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error reading input BEEF length: %v", err)
 	}
-	if inputBeefLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+	if inputBeefLen != math.MaxUint64 { // -1 means nil
 		args.InputBEEF, err = messageReader.readBytes(int(inputBeefLen))
 		if err != nil {
 			return nil, fmt.Errorf("error reading input BEEF: %v", err)
@@ -296,7 +297,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error reading inputs length: %v", err)
 	}
-	if inputsLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+	if inputsLen != math.MaxUint64 { // -1 means nil
 		args.Inputs = make([]wallet.CreateActionInput, 0, inputsLen)
 		for i := uint64(0); i < inputsLen; i++ {
 			input := wallet.CreateActionInput{}
@@ -316,12 +317,13 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			if err != nil {
 				return nil, fmt.Errorf("error reading unlocking script length: %v", err)
 			}
-			if unlockingScriptLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+			if unlockingScriptLen != math.MaxUint64 { // -1 means nil
 				scriptBytes, err := messageReader.readBytes(int(unlockingScriptLen))
 				if err != nil {
 					return nil, fmt.Errorf("error reading unlocking script: %v", err)
 				}
 				input.UnlockingScript = hex.EncodeToString(scriptBytes)
+				input.UnlockingScriptLength = uint32(len(scriptBytes))
 			} else {
 				// Read unlocking script length value
 				length, err := messageReader.readVarInt()
@@ -347,7 +349,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			if err != nil {
 				return nil, fmt.Errorf("error reading sequence number: %v", err)
 			}
-			if seqNum != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+			if seqNum != math.MaxUint64 { // -1 means nil
 				input.SequenceNumber = uint32(seqNum)
 			}
 
@@ -360,7 +362,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error reading outputs length: %v", err)
 	}
-	if outputsLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+	if outputsLen != math.MaxUint64 { // -1 means nil
 		args.Outputs = make([]wallet.CreateActionOutput, 0, outputsLen)
 		for i := uint64(0); i < outputsLen; i++ {
 			output := wallet.CreateActionOutput{}
@@ -399,7 +401,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			if err != nil {
 				return nil, fmt.Errorf("error reading basket length: %v", err)
 			}
-			if basketLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+			if basketLen != math.MaxUint64 { // -1 means nil
 				basketBytes, err := messageReader.readBytes(int(basketLen))
 				if err != nil {
 					return nil, fmt.Errorf("error reading basket: %v", err)
@@ -412,7 +414,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			if err != nil {
 				return nil, fmt.Errorf("error reading custom instructions length: %v", err)
 			}
-			if customInstLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+			if customInstLen != math.MaxUint64 { // -1 means nil
 				customInstBytes, err := messageReader.readBytes(int(customInstLen))
 				if err != nil {
 					return nil, fmt.Errorf("error reading custom instructions: %v", err)
@@ -425,7 +427,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			if err != nil {
 				return nil, fmt.Errorf("error reading tags length: %v", err)
 			}
-			if tagsLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+			if tagsLen != math.MaxUint64 { // -1 means nil
 				output.Tags = make([]string, 0, tagsLen)
 				for j := uint64(0); j < tagsLen; j++ {
 					tagLen, err := messageReader.readVarInt()
@@ -449,7 +451,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error reading lockTime: %v", err)
 	}
-	if lockTime != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+	if lockTime != math.MaxUint64 { // -1 means nil
 		args.LockTime = uint32(lockTime)
 	}
 
@@ -458,7 +460,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %v", err)
 	}
-	if version != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+	if version != math.MaxUint64 { // -1 means nil
 		args.Version = uint32(version)
 	}
 
@@ -467,7 +469,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error reading labels length: %v", err)
 	}
-	if labelsLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+	if labelsLen != math.MaxUint64 { // -1 means nil
 		args.Labels = make([]string, 0, labelsLen)
 		for i := uint64(0); i < labelsLen; i++ {
 			labelLen, err := messageReader.readVarInt()
@@ -524,7 +526,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		if err != nil {
 			return nil, fmt.Errorf("error reading knownTxids length: %v", err)
 		}
-		if knownTxidsLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+		if knownTxidsLen != math.MaxUint64 { // -1 means nil
 			args.Options.KnownTxids = make([]string, 0, knownTxidsLen)
 			for i := uint64(0); i < knownTxidsLen; i++ {
 				txidBytes, err := messageReader.readBytes(32)
@@ -560,7 +562,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		if err != nil {
 			return nil, fmt.Errorf("error reading noSendChange length: %v", err)
 		}
-		if noSendChangeLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+		if noSendChangeLen != math.MaxUint64 { // -1 means nil
 			args.Options.NoSendChange = make([]string, 0, noSendChangeLen)
 			for i := uint64(0); i < noSendChangeLen; i++ {
 				outpointBytes, err := messageReader.readBytes(36) // 32 txid + 4 index
@@ -580,7 +582,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		if err != nil {
 			return nil, fmt.Errorf("error reading sendWith length: %v", err)
 		}
-		if sendWithLen != 0xFFFFFFFFFFFFFFFF { // -1 means nil
+		if sendWithLen != math.MaxUint64 { // -1 means nil
 			args.Options.SendWith = make([]string, 0, sendWithLen)
 			for i := uint64(0); i < sendWithLen; i++ {
 				txidBytes, err := messageReader.readBytes(32)
