@@ -19,35 +19,48 @@ type CreateActionOutput struct {
 	Tags               []string
 }
 
+// CreateActionOptions contains optional parameters for creating a new transaction
+type CreateActionOptions struct {
+	SignAndProcess         *bool
+	AcceptDelayedBroadcast *bool
+	TrustSelf              string // "known" or ""
+	KnownTxids             []string
+	ReturnTXIDOnly         *bool
+	NoSend                 *bool
+	NoSendChange           []string
+	SendWith               []string
+	RandomizeOutputs       *bool
+}
+
 // CreateActionArgs contains all data needed to create a new transaction
 type CreateActionArgs struct {
-	Description            string
-	Inputs                 []CreateActionInput
-	Outputs                []CreateActionOutput
-	LockTime               uint32
-	Version                uint32
-	Labels                 []string
-	SignAndProcess         bool
-	AcceptDelayedBroadcast bool
-	ReturnTXIDOnly         bool
-	NoSend                 bool
-	RandomizeOutputs       bool
+	Description string
+	InputBEEF   []byte
+	Inputs      []CreateActionInput
+	Outputs     []CreateActionOutput
+	LockTime    uint32
+	Version     uint32
+	Labels      []string
+	Options     *CreateActionOptions
 }
 
 // CreateActionResult contains the results of creating a transaction
 type CreateActionResult struct {
-	Txid            string
-	Tx              []byte // Serialized transaction
-	Status          string // "completed", "unprocessed", etc.
-	NoSendChange    []string
-	SendWithResults []struct {
-		Txid   string
-		Status string
-	}
-	SignableTransaction *struct {
-		Tx        []byte
-		Reference string
-	}
+	Txid                string
+	Tx                  []byte
+	NoSendChange        []string
+	SendWithResults     []SendWithResult
+	SignableTransaction *SignableTransaction
+}
+
+type SendWithResult struct {
+	Txid   string
+	Status string // "unproven" | "sending" | "failed"
+}
+
+type SignableTransaction struct {
+	Tx        []byte
+	Reference string
 }
 
 type Interface interface {

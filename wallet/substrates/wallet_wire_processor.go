@@ -53,8 +53,40 @@ func (w *WalletWireProcessor) encodeOutpoint(outpoint string) ([]byte, error) {
 	return buf, nil
 }
 
-// TransmitToWallet processes incoming wallet messages
 func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
-	// TODO: Implement message processing
-	return nil, errors.New("not implemented")
+	if len(message) == 0 {
+		return nil, errors.New("empty message")
+	}
+
+	// First byte is call type
+	callType := message[0]
+
+	switch Call(callType) {
+	case CallCreateAction:
+		args, err := w.deserializeCreateActionArgs(message[1:])
+		if err != nil {
+			return nil, err
+		}
+		return w.processCreateAction(args)
+	default:
+		return nil, fmt.Errorf("unknown call type: %d", callType)
+	}
+}
+
+func (w *WalletWireProcessor) processCreateAction(args wallet.CreateActionArgs) ([]byte, error) {
+	result, err := w.Wallet.CreateAction(args)
+	if err != nil {
+		return nil, err
+	}
+	return w.serializeCreateActionResult(result)
+}
+
+func (w *WalletWireProcessor) deserializeCreateActionArgs(data []byte) (wallet.CreateActionArgs, error) {
+	// TODO: Implement args deserialization matching TS format
+	return wallet.CreateActionArgs{}, nil
+}
+
+func (w *WalletWireProcessor) serializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, error) {
+	// TODO: Implement result serialization matching TS format
+	return nil, nil
 }
