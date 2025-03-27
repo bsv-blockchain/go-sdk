@@ -8,7 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type WOCNetwork string
@@ -18,14 +19,10 @@ var (
 	WOCTestnet WOCNetwork = "test"
 )
 
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
 type WhatsOnChain struct {
 	Network WOCNetwork
 	ApiKey  string
-	Client  HTTPClient
+	Client  util.HTTPClient
 }
 
 func (b *WhatsOnChain) Broadcast(t *transaction.Transaction) (

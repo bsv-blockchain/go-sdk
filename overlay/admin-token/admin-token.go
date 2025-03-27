@@ -1,12 +1,12 @@
-package overlayadmintoken
+package admintoken
 
 import (
 	"encoding/hex"
 
-	"github.com/bitcoin-sv/go-sdk/overlay"
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/transaction/template/pushdrop"
-	"github.com/bitcoin-sv/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 type OverlayAdminTokenData struct {
@@ -38,11 +38,14 @@ func (o *OverlayAdminTokenTemplate) Lock(
 	domain string,
 	topicOrService string,
 ) (*script.Script, error) {
-	pub := o.PushDrop.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	pub, err := o.PushDrop.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, o.PushDrop.Originator)
+	if err != nil {
+		return nil, err
+	}
 
-	protocolId := wallet.WalletProtocol{
+	protocolId := wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 	}
 	if protocol == overlay.ProtocolSHIP {
@@ -60,7 +63,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 		},
 		protocolId,
 		"1",
-		wallet.WalletCounterparty{
+		wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		},
 		false,
@@ -72,7 +75,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 func (o *OverlayAdminTokenTemplate) Unlock(
 	protocol overlay.Protocol,
 ) *pushdrop.PushDropUnlocker {
-	protocolId := wallet.WalletProtocol{
+	protocolId := wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 	}
 	if protocol == overlay.ProtocolSHIP {
@@ -83,7 +86,7 @@ func (o *OverlayAdminTokenTemplate) Unlock(
 	return o.PushDrop.Unlock(
 		protocolId,
 		"1",
-		wallet.WalletCounterparty{
+		wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		},
 		wallet.SignOutputsAll,

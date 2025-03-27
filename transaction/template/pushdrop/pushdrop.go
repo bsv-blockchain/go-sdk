@@ -2,22 +2,18 @@ package pushdrop
 
 import (
 	"crypto/sha256"
+	"fmt"
 
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/transaction"
-	sighash "github.com/bitcoin-sv/go-sdk/transaction/sighash"
-	"github.com/bitcoin-sv/go-sdk/wallet"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 type PushDropData struct {
 	LockingPublicKey *ec.PublicKey
 	Fields           [][]byte
-}
-
-type PushDropTemplate struct {
-	Wallet     wallet.Wallet
-	Originator string
 }
 
 func Decode(s *script.Script) (*PushDropData, error) {
@@ -48,23 +44,31 @@ func Decode(s *script.Script) (*PushDropData, error) {
 	}
 }
 
+type PushDropTemplate struct {
+	Wallet     wallet.Wallet
+	Originator string
+}
+
 func (p *PushDropTemplate) Lock(
 	fields [][]byte,
-	protocolID wallet.WalletProtocol,
+	protocolID wallet.Protocol,
 	keyID string,
-	counterparty wallet.WalletCounterparty,
+	counterparty wallet.Counterparty,
 	forSelf bool,
 	includeSignatures bool,
 	lockPosBefore bool,
 ) (*script.Script, error) {
-	pub := p.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+	pub, err := p.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID:   protocolID,
 			KeyID:        keyID,
 			Counterparty: counterparty,
 		},
 		ForSelf: forSelf,
 	}, p.Originator)
+	if err != nil {
+		return nil, err
+	}
 	lockChunks := make([]*script.ScriptChunk, 0)
 	pubKeyBytes := pub.PublicKey.Compressed()
 	lockChunks = append(lockChunks, &script.ScriptChunk{
@@ -79,14 +83,17 @@ func (p *PushDropTemplate) Lock(
 		for _, e := range fields {
 			dataToSign = append(dataToSign, e...)
 		}
-		sig := p.Wallet.CreateSignature(&wallet.CreateSignatureArgs{
-			WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+		sig, err := p.Wallet.CreateSignature(&wallet.CreateSignatureArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:   protocolID,
 				KeyID:        keyID,
 				Counterparty: counterparty,
 			},
 			Data: dataToSign,
 		}, p.Originator)
+		if err != nil {
+			return nil, fmt.Errorf("error creating wallet signature for lock: %w", err)
+		}
 		fields = append(fields, sig.Signature.Serialize())
 	}
 	pushDropChunks := make([]*script.ScriptChunk, 0)
@@ -113,9 +120,9 @@ func (p *PushDropTemplate) Lock(
 }
 
 func (p *PushDropTemplate) Unlock(
-	protocolID wallet.WalletProtocol,
+	protocolID wallet.Protocol,
 	keyID string,
-	counterparty wallet.WalletCounterparty,
+	counterparty wallet.Counterparty,
 	signOutputs wallet.SignOutputs,
 	anyoneCanPay bool,
 ) *PushDropUnlocker {
@@ -130,9 +137,9 @@ func (p *PushDropTemplate) Unlock(
 }
 
 type PushDropUnlocker struct {
-	protocolID   wallet.WalletProtocol
+	protocolID   wallet.Protocol
 	keyID        string
-	counterparty wallet.WalletCounterparty
+	counterparty wallet.Counterparty
 	signOutputs  wallet.SignOutputs
 	anyoneCanPay bool
 	pushDrop     *PushDropTemplate
@@ -159,14 +166,17 @@ func (p *PushDropUnlocker) Sign(
 		return nil, err
 	} else {
 		preimageHash := sha256.Sum256(sh)
-		sig := p.pushDrop.Wallet.CreateSignature(&wallet.CreateSignatureArgs{
-			WalletEncryptionArgs: wallet.WalletEncryptionArgs{
+		sig, err := p.pushDrop.Wallet.CreateSignature(&wallet.CreateSignatureArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:   p.protocolID,
 				KeyID:        p.keyID,
 				Counterparty: p.counterparty,
 			},
 			Data: preimageHash[:],
 		}, p.pushDrop.Originator)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create wallet signature for sign: %w", err)
+		}
 		s := (&script.Script{})
 		s.AppendPushData(sig.Signature.Serialize())
 		return s, nil

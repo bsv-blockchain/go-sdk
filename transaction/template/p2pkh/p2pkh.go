@@ -3,16 +3,30 @@ package p2pkh
 import (
 	"errors"
 
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/transaction"
-	sighash "github.com/bitcoin-sv/go-sdk/transaction/sighash"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
 
 var (
 	ErrBadPublicKeyHash = errors.New("invalid public key hash")
 	ErrNoPrivateKey     = errors.New("private key not supplied")
 )
+
+func Decode(s *script.Script, mainnet bool) *script.Address {
+	if len(*s) != 25 {
+		return nil
+	}
+	if chunks, err := s.Chunks(); err != nil {
+		return nil
+	} else if chunks[0].Op != script.OpDUP || chunks[1].Op != script.OpHASH160 || len(chunks[2].Data) != 20 || chunks[3].Op != script.OpEQUALVERIFY || chunks[4].Op != script.OpCHECKSIG {
+		return nil
+	} else {
+		address, _ := script.NewAddressFromPublicKeyHash(chunks[2].Data, mainnet)
+		return address
+	}
+}
 
 func Lock(a *script.Address) (*script.Script, error) {
 	if len(a.PublicKeyHash) != 20 {

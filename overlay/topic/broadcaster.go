@@ -7,13 +7,11 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/bitcoin-sv/go-sdk/overlay"
-	"github.com/bitcoin-sv/go-sdk/overlay/lookup"
-	"github.com/bitcoin-sv/go-sdk/transaction"
-	"github.com/bitcoin-sv/go-sdk/transaction/template/overlayadmintoken"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	admintoken "github.com/bsv-blockchain/go-sdk/overlay/admin-token"
+	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
-
-const MAX_SHIP_QUERY_TIMEOUT = 1000
 
 type RequireAck int
 
@@ -29,7 +27,7 @@ type AckFrom struct {
 	Topics     []string
 }
 
-type TopicBroadcaster struct {
+type Broadcaster struct {
 	Topics        []string
 	Facilitator   Facilitator
 	Resolver      lookup.LookupResolver
@@ -46,13 +44,13 @@ type Response struct {
 	Error   error
 }
 
-func (t *TopicBroadcaster) Broadcast(tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
-	return t.BroadcastCtx(context.Background(), tx)
+func (b *Broadcaster) Broadcast(tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+	return b.BroadcastCtx(context.Background(), tx)
 }
 
-func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
-	taggedBeef := &TaggedBEEF{
-		Topics: t.Topics,
+func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+	taggedBeef := &overlay.TaggedBEEF{
+		Topics: b.Topics,
 	}
 	var err error
 	var interestedHosts []string
@@ -61,9 +59,9 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 			Code:        "400",
 			Description: err.Error(),
 		}
-	} else if t.NetworkPreset == overlay.NetworkLocal {
+	} else if b.NetworkPreset == overlay.NetworkLocal {
 		interestedHosts = append(interestedHosts, "http://localhost:8080")
-	} else if interestedHosts, err = t.FindInterestedHosts(ctx); err != nil {
+	} else if interestedHosts, err = b.FindInterestedHosts(ctx); err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
 			Description: err.Error(),
@@ -73,7 +71,7 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 	if len(interestedHosts) == 0 {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "ERR_NO_HOSTS_INTERESTED",
-			Description: fmt.Sprintf("No %s hosts are interested in receiving this transaction.", overlay.NetworkNames[t.NetworkPreset]),
+			Description: fmt.Sprintf("No %s hosts are interested in receiving this transaction.", overlay.NetworkNames[b.NetworkPreset]),
 		}
 	}
 	var wg sync.WaitGroup
@@ -82,7 +80,7 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			if steak, err := t.Facilitator.Send(host, taggedBeef); err != nil {
+			if steak, err := b.Facilitator.Send(host, taggedBeef); err != nil {
 				results <- &Response{
 					Host:  host,
 					Error: err,
@@ -107,7 +105,7 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 	if len(successfulHosts) == 0 {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "ERR_ALL_HOSTS_REJECTED",
-			Description: fmt.Sprintf("`All %s topical hosts have rejected the transaction.", overlay.NetworkNames[t.NetworkPreset]),
+			Description: fmt.Sprintf("`All %s topical hosts have rejected the transaction.", overlay.NetworkNames[b.NetworkPreset]),
 		}
 	}
 	hostAcks := make(map[string]map[string]struct{})
@@ -123,19 +121,19 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 
 	var requireTopics []string
 	var requireHosts RequireAck
-	switch t.AckFromAll.RequireAck {
+	switch b.AckFromAll.RequireAck {
 	case RequireAckAny:
-		requireTopics = t.Topics
+		requireTopics = b.Topics
 		requireHosts = RequireAckAny
 	case RequireAckSome:
-		requireTopics = t.AckFromAll.Topics
+		requireTopics = b.AckFromAll.Topics
 		requireHosts = RequireAckAll
 	default:
-		requireTopics = t.Topics
+		requireTopics = b.Topics
 		requireHosts = RequireAckAll
 	}
 	if len(requireTopics) > 0 {
-		if !t.checkAcknowledgmentFromAllHosts(hostAcks, requireTopics, requireHosts) {
+		if !b.checkAcknowledgmentFromAllHosts(hostAcks, requireTopics, requireHosts) {
 			return nil, &transaction.BroadcastFailure{
 				Code:        "ERR_REQUIRE_ACK_FROM_ALL_HOSTS_FAILED",
 				Description: "Not all hosts acknowledged the required topics.",
@@ -143,19 +141,19 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 		}
 	}
 
-	switch t.AckFromAny.RequireAck {
+	switch b.AckFromAny.RequireAck {
 	case RequireAckAny:
-		requireTopics = t.Topics
+		requireTopics = b.Topics
 		requireHosts = RequireAckAny
 	case RequireAckSome:
-		requireTopics = t.AckFromAny.Topics
+		requireTopics = b.AckFromAny.Topics
 		requireHosts = RequireAckAll
 	default:
-		requireTopics = t.Topics
+		requireTopics = b.Topics
 		requireHosts = RequireAckAll
 	}
 	if len(requireTopics) > 0 {
-		if !t.checkAcknowledgmentFromAnyHost(hostAcks, requireTopics, requireHosts) {
+		if !b.checkAcknowledgmentFromAnyHost(hostAcks, requireTopics, requireHosts) {
 			return nil, &transaction.BroadcastFailure{
 				Code:        "ERR_REQUIRE_ACK_FROM_ANY_HOST_FAILED",
 				Description: "No host acknowledged the required topics.",
@@ -163,8 +161,8 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 		}
 	}
 
-	if len(t.AckFromHost) > 0 {
-		if !t.checkAcknowledgmentFromSpecificHosts(hostAcks, t.AckFromHost) {
+	if len(b.AckFromHost) > 0 {
+		if !b.checkAcknowledgmentFromSpecificHosts(hostAcks, b.AckFromHost) {
 			return nil, &transaction.BroadcastFailure{
 				Code:        "ERR_REQUIRE_ACK_FROM_SPECIFIC_HOSTS_FAILED",
 				Description: "Specific hosts did not acknowledge the required topics.",
@@ -178,12 +176,12 @@ func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tra
 	}, nil
 }
 
-func (t *TopicBroadcaster) FindInterestedHosts(ctx context.Context) ([]string, error) {
+func (b *Broadcaster) FindInterestedHosts(ctx context.Context) ([]string, error) {
 	results := make(map[string]map[string]struct{})
-	answer, err := t.Resolver.Query(ctx, lookup.LookupQuestion{
+	answer, err := b.Resolver.Query(ctx, &lookup.LookupQuestion{
 		Service: "ls_ship",
 		Query: map[string][]string{
-			"topics": t.Topics,
+			"topics": b.Topics,
 		},
 	}, MAX_SHIP_QUERY_TIMEOUT)
 	if err != nil {
@@ -198,11 +196,11 @@ func (t *TopicBroadcaster) FindInterestedHosts(ctx context.Context) ([]string, e
 			continue
 		}
 		script := tx.Outputs[output.OutputIndex].LockingScript
-		parsed, err := overlayadmintoken.Decode(script)
+		parsed, err := admintoken.Decode(script)
 		if err != nil {
 			log.Println(err)
 			continue
-		} else if !slices.Contains(t.Topics, parsed.TopicOrService) || parsed.Protocol != "SHIP" {
+		} else if !slices.Contains(b.Topics, parsed.TopicOrService) || parsed.Protocol != "SHIP" {
 			continue
 		} else if _, ok := results[parsed.Domain]; !ok {
 			results[parsed.Domain] = make(map[string]struct{})
@@ -216,7 +214,7 @@ func (t *TopicBroadcaster) FindInterestedHosts(ctx context.Context) ([]string, e
 	return interestedHosts, nil
 }
 
-func (t *TopicBroadcaster) checkAcknowledgmentFromAllHosts(hostAcks map[string]map[string]struct{}, topics []string, requireHost RequireAck) bool {
+func (t *Broadcaster) checkAcknowledgmentFromAllHosts(hostAcks map[string]map[string]struct{}, topics []string, requireHost RequireAck) bool {
 	for _, acknowledgedTopics := range hostAcks {
 		if requireHost == RequireAckAll {
 			for _, topic := range topics {
@@ -240,7 +238,7 @@ func (t *TopicBroadcaster) checkAcknowledgmentFromAllHosts(hostAcks map[string]m
 	return true
 }
 
-func (t *TopicBroadcaster) checkAcknowledgmentFromAnyHost(hostAcks map[string]map[string]struct{}, topics []string, requireHost RequireAck) bool {
+func (t *Broadcaster) checkAcknowledgmentFromAnyHost(hostAcks map[string]map[string]struct{}, topics []string, requireHost RequireAck) bool {
 	for _, acknowledgedTopics := range hostAcks {
 		if requireHost == RequireAckAll {
 			for _, topic := range topics {
@@ -260,7 +258,7 @@ func (t *TopicBroadcaster) checkAcknowledgmentFromAnyHost(hostAcks map[string]ma
 	return false
 }
 
-func (t *TopicBroadcaster) checkAcknowledgmentFromSpecificHosts(hostAcks map[string]map[string]struct{}, requirements map[string]AckFrom) bool {
+func (t *Broadcaster) checkAcknowledgmentFromSpecificHosts(hostAcks map[string]map[string]struct{}, requirements map[string]AckFrom) bool {
 	for host, requiredHost := range requirements {
 		acknowledgedTopics, ok := hostAcks[host]
 		if !ok {

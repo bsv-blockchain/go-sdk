@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type TAALResponse struct {
@@ -19,7 +20,7 @@ type TAALResponse struct {
 
 type TAALBroadcast struct {
 	ApiKey string
-	Client HTTPClient
+	Client util.HTTPClient
 }
 
 func (b *TAALBroadcast) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {

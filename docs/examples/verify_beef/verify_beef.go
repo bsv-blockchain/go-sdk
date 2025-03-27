@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/bitcoin-sv/go-sdk/spv"
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/spv"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 // Replace with the BEEF structure you'd like to check

@@ -3,80 +3,80 @@ package overlay
 import (
 	"database/sql/driver"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	"github.com/bitcoin-sv/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
-type Outpoint []byte
-
-func NewOutpoint(txid []byte, vout uint32) *Outpoint {
-	o := Outpoint(binary.LittleEndian.AppendUint32(util.ReverseBytes(txid), vout))
-	return &o
+type Outpoint struct {
+	Txid        chainhash.Hash `json:"txid"`
+	OutputIndex uint32         `json:"outputIndex"`
 }
 
-func NewOutpointFromHash(txid *chainhash.Hash, vout uint32) *Outpoint {
-	o := Outpoint(binary.LittleEndian.AppendUint32(txid.CloneBytes(), vout))
-	return &o
-}
-
-func NewOutpointFromBytes(b []byte) *Outpoint {
-	buf := make([]byte, 36)
-	copy(buf, b)
-	o := Outpoint(buf)
-	return &o
-}
-
-func NewOutpointFromString(s string) (o *Outpoint, err error) {
-	if len(s) < 66 {
-		return nil, fmt.Errorf("invalid-string")
+func NewOutpointFromTxBytes(b [36]byte) (o *Outpoint) {
+	o = &Outpoint{
+		OutputIndex: binary.LittleEndian.Uint32(b[32:]),
 	}
-	txid, err := hex.DecodeString(s[:64])
-	if err != nil {
-		return
-	}
-	vout, err := strconv.ParseUint(s[65:], 10, 32)
-	if err != nil {
-		return
-	}
-	origin := Outpoint(binary.LittleEndian.AppendUint32(util.ReverseBytes(txid), uint32(vout)))
-	o = &origin
+	txid, _ := chainhash.NewHash(b[:32])
+	o.Txid = *txid
 	return
 }
 
+func (o *Outpoint) Equal(other *Outpoint) bool {
+	return o.Txid.Equal(other.Txid) && o.OutputIndex == other.OutputIndex
+}
+
+func (o *Outpoint) TxBytes() []byte {
+	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.OutputIndex)
+}
+
+func NewOutpointFromBytes(b [36]byte) (o *Outpoint) {
+	o = &Outpoint{
+		OutputIndex: binary.BigEndian.Uint32(b[32:]),
+	}
+	txid, _ := chainhash.NewHash(util.ReverseBytes(b[:32]))
+	o.Txid = *txid
+	return
+}
+
+func (o *Outpoint) Bytes() []byte {
+	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.OutputIndex)
+}
+
+func NewOutpointFromString(s string) (*Outpoint, error) {
+	if len(s) < 66 {
+		return nil, fmt.Errorf("invalid-string")
+	}
+
+	o := &Outpoint{}
+	if txid, err := chainhash.NewHashFromHex(s[:64]); err != nil {
+		return nil, err
+	} else {
+		o.Txid = *txid
+		if vout, err := strconv.ParseUint(s[65:], 10, 32); err != nil {
+			return nil, err
+		} else {
+			o.OutputIndex = uint32(vout)
+		}
+	}
+	return o, nil
+}
+
 func (o *Outpoint) String() string {
-	return fmt.Sprintf("%x_%d", util.ReverseBytes((*o)[:32]), binary.LittleEndian.Uint32((*o)[32:]))
+	return fmt.Sprintf("%s.%d", o.Txid.String(), o.OutputIndex)
 }
 
-func (o *Outpoint) Txid() []byte {
-	return util.ReverseBytes((*o)[:32])
-}
-
-func (o *Outpoint) TxidHash() *chainhash.Hash {
-	hash, _ := chainhash.NewHash((*o)[:32])
-	return hash
-}
-
-func (o *Outpoint) TxidHex() string {
-	return hex.EncodeToString(o.Txid())
-}
-
-func (o *Outpoint) Vout() uint32 {
-	return binary.LittleEndian.Uint32((*o)[32:])
+func (o *Outpoint) OrdinalString() string {
+	return fmt.Sprintf("%s_%d", o.Txid.String(), o.OutputIndex)
 }
 
 func (o Outpoint) MarshalJSON() (bytes []byte, err error) {
-	if len(o) != 36 {
-		return []byte("null"), nil
-	}
 	return json.Marshal(o.String())
 }
 
-// UnmarshalJSON deserializes Origin to string
 func (o *Outpoint) UnmarshalJSON(data []byte) error {
 	var x string
 	err := json.Unmarshal(data, &x)
@@ -91,18 +91,15 @@ func (o *Outpoint) UnmarshalJSON(data []byte) error {
 }
 
 func (o Outpoint) Value() (driver.Value, error) {
-	b := make([]byte, 36)
-	copy(b, o.Txid())
-	binary.BigEndian.PutUint32(b[32:], o.Vout())
-	return b, nil
+	return o.Bytes(), nil
 }
 
 func (o *Outpoint) Scan(value interface{}) error {
 	if b, ok := value.([]byte); !ok || len(b) != 36 {
 		return fmt.Errorf("invalid-outpoint")
 	} else {
-		outpoint := NewOutpoint(b[:32], binary.BigEndian.Uint32(b[32:]))
-		*o = *outpoint
+		op := NewOutpointFromBytes([36]byte(b))
+		*o = *op
 		return nil
 	}
 }

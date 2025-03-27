@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	"github.com/bitcoin-sv/go-sdk/transaction/chaintracker"
-	"github.com/bitcoin-sv/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // Beef is a set of Transactions and their MerklePaths.
@@ -164,6 +164,63 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 		BUMPs:        BUMPs,
 		Transactions: *txs,
 	}, nil
+}
+
+func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
+	if len(beef) < 36 {
+		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+	} else if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
+		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+	} else if txid, err := chainhash.NewHash(beef[4:36]); err != nil {
+		return nil, nil, err
+	} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
+		return nil, nil, err
+	} else {
+		return b, txid, nil
+	}
+}
+
+func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
+	beef := &Beef{
+		Version:      BEEF_V2,
+		BUMPs:        []*MerklePath{},
+		Transactions: map[string]*BeefTx{},
+	}
+	b := new(bytes.Buffer)
+	err := binary.Write(b, binary.LittleEndian, BEEF_V1)
+	if err != nil {
+		return nil, err
+	}
+	bumpMap := map[uint32]int{}
+	txns := map[string]*Transaction{t.TxID().String(): t}
+	ancestors, err := t.collectAncestors(txns, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, txid := range ancestors {
+		tx := txns[txid]
+		if tx.MerklePath == nil {
+			continue
+		}
+		if _, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
+			bumpMap[tx.MerklePath.BlockHeight] = len(beef.BUMPs)
+			beef.BUMPs = append(beef.BUMPs, tx.MerklePath)
+		} else {
+			err := beef.BUMPs[bumpMap[tx.MerklePath.BlockHeight]].Combine(tx.MerklePath)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	for _, txid := range ancestors {
+		tx := txns[txid]
+		beef.Transactions[txid] = &BeefTx{
+			DataFormat:  RawTx,
+			Transaction: tx,
+			BumpIndex:   bumpMap[tx.MerklePath.BlockHeight],
+		}
+	}
+	return beef, nil
 }
 
 func readVersion(reader *bytes.Reader) (uint32, error) {
@@ -356,6 +413,13 @@ func (b *Beef) FindBump(txid string) *MerklePath {
 				return bump
 			}
 		}
+	}
+	return nil
+}
+
+func (b *Beef) FindTransaction(txid string) *Transaction {
+	if beefTx := b.findTxid(txid); beefTx != nil {
+		return beefTx.Transaction
 	}
 	return nil
 }
@@ -933,4 +997,32 @@ func (b *Beef) Bytes() ([]byte, error) {
 	}
 
 	return beef, nil
+}
+
+func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
+	beef, err := b.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	return append(append(util.LittleEndianBytes(ATOMIC_BEEF, 4), txid[:]...), beef...), nil
+}
+
+func (b *Beef) TxidOnly() (*Beef, error) {
+	c := &Beef{
+		Version:      b.Version,
+		BUMPs:        append([]*MerklePath(nil), b.BUMPs...),
+		Transactions: make(map[string]*BeefTx, len(b.Transactions)),
+	}
+	for i, tx := range b.Transactions {
+		idOnly := &BeefTx{
+			DataFormat: TxIDOnly,
+		}
+		if tx.DataFormat == TxIDOnly {
+			idOnly.KnownTxID = tx.KnownTxID
+		} else {
+			idOnly.KnownTxID = tx.Transaction.TxID()
+		}
+		c.Transactions[i] = idOnly
+	}
+	return c, nil
 }

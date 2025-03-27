@@ -1,8 +1,7 @@
 package overlay
 
 import (
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	"github.com/bitcoin-sv/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 type Protocol string
@@ -12,17 +11,9 @@ const (
 	ProtocolSLAP Protocol = "SLAP"
 )
 
-type Output struct {
-	Outpoint        *Outpoint
-	Script          []byte
-	Satoshis        uint64
-	Topic           string
-	Spent           *chainhash.Hash
-	OutputsConsumed []*Outpoint
-	ConsumedBy      []*Outpoint
-	Beef            []byte
-	BlockHeight     uint32
-	BlockIdx        uint64
+type TaggedBEEF struct {
+	Beef   []byte
+	Topics []string
 }
 
 type AppliedTransaction struct {
@@ -30,28 +21,17 @@ type AppliedTransaction struct {
 	Topic string
 }
 
-type Steak map[string]*Admittance
-
-type SubmitContext struct {
-	Txid            *chainhash.Hash
-	Tx              *transaction.Transaction
-	Beef            []byte
-	TopicAdmittance Steak
-	TopicInputs     map[string][]*Output
-}
-
 type TopicData struct {
 	Data any
 	Deps []*Outpoint
 }
 
-type Admittance struct {
+type AdmittanceInstructions struct {
 	OutputsToAdmit []uint32
 	CoinsToRetain  []uint32
 	CoinsRemoved   []uint32
-	InputData      []*TopicData
-	OutputData     []*TopicData
 }
+type Steak map[string]*AdmittanceInstructions
 
 type Network int
 

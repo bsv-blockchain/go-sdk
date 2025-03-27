@@ -1,6 +1,6 @@
 package spv
 
-import "github.com/bitcoin-sv/go-sdk/chainhash"
+import "github.com/bsv-blockchain/go-sdk/chainhash"
 
 type GullibleHeadersClient struct{}
 

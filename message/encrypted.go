@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // BRC-78: https://github.com/bitcoin-sv/BRCs/blob/master/peer-to-peer/0078.md
@@ -70,19 +70,19 @@ func Decrypt(message []byte, recipient *ec.PrivateKey) ([]byte, error) {
 	if len(message) < minLength {
 		return nil, fmt.Errorf("message too short: expected at least %d bytes, got %d bytes", minLength, len(message))
 	}
-	
+
 	reader := bytes.NewReader(message)
 	messageVersion := make([]byte, 4)
 	_, err := io.ReadFull(reader, messageVersion)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if hex.EncodeToString(messageVersion) != VERSION {
 		errorStr := "message version mismatch: Expected %s, received %s"
 		return nil, fmt.Errorf(errorStr, VERSION, hex.EncodeToString(messageVersion))
 	}
-	
+
 	senderPublicKey := make([]byte, 33)
 	_, err = io.ReadFull(reader, senderPublicKey)
 	if err != nil {

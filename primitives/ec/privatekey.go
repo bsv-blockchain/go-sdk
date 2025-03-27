@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"math/big"
 
-	base58 "github.com/bitcoin-sv/go-sdk/compat/base58"
-	crypto "github.com/bitcoin-sv/go-sdk/primitives/hash"
-	keyshares "github.com/bitcoin-sv/go-sdk/primitives/keyshares"
-	"github.com/bitcoin-sv/go-sdk/util"
+	base58 "github.com/bsv-blockchain/go-sdk/compat/base58"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 var (
