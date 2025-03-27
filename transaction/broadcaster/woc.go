@@ -32,6 +32,13 @@ func (b *WhatsOnChain) Broadcast(t *transaction.Transaction) (
 	*transaction.BroadcastSuccess,
 	*transaction.BroadcastFailure,
 ) {
+	return b.BroadcastCtx(context.Background(), t)
+}
+
+func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (
+	*transaction.BroadcastSuccess,
+	*transaction.BroadcastFailure,
+) {
 	if t == nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
@@ -53,7 +60,6 @@ func (b *WhatsOnChain) Broadcast(t *transaction.Transaction) (
 		}
 	} else {
 		url := fmt.Sprintf("https://api.whatsonchain.com/v1/bsv/%s/tx/raw", b.Network)
-		ctx := context.Background()
 		req, err := http.NewRequestWithContext(
 			ctx,
 			"POST",

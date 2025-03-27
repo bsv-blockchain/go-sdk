@@ -22,14 +22,17 @@ type TAALBroadcast struct {
 	Client HTTPClient
 }
 
-func (b *TAALBroadcast) Broadcast(t *transaction.Transaction) (
+func (b *TAALBroadcast) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+	return b.BroadcastCtx(context.Background(), t)
+}
+
+func (b *TAALBroadcast) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (
 	*transaction.BroadcastSuccess,
 	*transaction.BroadcastFailure,
 ) {
 	buf := bytes.NewBuffer(t.Bytes())
 	url := "https://api.taal.com/api/v1/broadcast"
 
-	ctx := context.Background()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",

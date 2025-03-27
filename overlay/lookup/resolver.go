@@ -1,6 +1,7 @@
 package lookup
 
 import (
+	"context"
 	"log"
 	"sync"
 	"time"
@@ -18,7 +19,7 @@ type LookupResolver struct {
 	NetworkPreset   overlay.Network
 }
 
-func (l *LookupResolver) Query(question LookupQuestion, timeout time.Duration) (LookupAnswer, error) {
+func (l *LookupResolver) Query(ctx context.Context, question LookupQuestion, timeout time.Duration) (LookupAnswer, error) {
 	// // var competentHosts []string
 	// if question.Service == "ls_slap" {
 	// 	if l.NetworkPreset == types.NetworkLocal {
@@ -33,10 +34,10 @@ func (l *LookupResolver) Query(question LookupQuestion, timeout time.Duration) (
 	// } else {
 	// 	// competentHosts, err =
 	// }
-	return l.Facilitator.Lookup(l.SLAPTrackers[0], question, timeout)
+	return l.Facilitator.Lookup(ctx, l.SLAPTrackers[0], question, timeout)
 }
 
-func (l *LookupResolver) FindCompetentHosts(service string) ([]string, error) {
+func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string) ([]string, error) {
 	query := LookupQuestion{
 		Service: "ls_slap",
 		Query:   map[string]string{"service": service},
@@ -48,7 +49,7 @@ func (l *LookupResolver) FindCompetentHosts(service string) ([]string, error) {
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			if answer, err := l.Facilitator.Lookup(url, query, MAX_TRACKER_WAIT_TIME); err != nil {
+			if answer, err := l.Facilitator.Lookup(ctx, url, query, MAX_TRACKER_WAIT_TIME); err != nil {
 				log.Println("Error querying tracker", url, err)
 			} else {
 				responses <- answer

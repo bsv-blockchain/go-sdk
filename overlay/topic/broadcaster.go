@@ -1,6 +1,7 @@
 package topic
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"slices"
@@ -46,6 +47,10 @@ type Response struct {
 }
 
 func (t *TopicBroadcaster) Broadcast(tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+	return t.BroadcastCtx(context.Background(), tx)
+}
+
+func (t *TopicBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
 	taggedBeef := &TaggedBEEF{
 		Topics: t.Topics,
 	}
@@ -58,7 +63,7 @@ func (t *TopicBroadcaster) Broadcast(tx *transaction.Transaction) (*transaction.
 		}
 	} else if t.NetworkPreset == overlay.NetworkLocal {
 		interestedHosts = append(interestedHosts, "http://localhost:8080")
-	} else if interestedHosts, err = t.FindInterestedHosts(); err != nil {
+	} else if interestedHosts, err = t.FindInterestedHosts(ctx); err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
 			Description: err.Error(),
@@ -119,9 +124,6 @@ func (t *TopicBroadcaster) Broadcast(tx *transaction.Transaction) (*transaction.
 	var requireTopics []string
 	var requireHosts RequireAck
 	switch t.AckFromAll.RequireAck {
-	case RequireAckAll:
-		requireTopics = t.Topics
-		requireHosts = RequireAckAll
 	case RequireAckAny:
 		requireTopics = t.Topics
 		requireHosts = RequireAckAny
@@ -136,16 +138,12 @@ func (t *TopicBroadcaster) Broadcast(tx *transaction.Transaction) (*transaction.
 		if !t.checkAcknowledgmentFromAllHosts(hostAcks, requireTopics, requireHosts) {
 			return nil, &transaction.BroadcastFailure{
 				Code:        "ERR_REQUIRE_ACK_FROM_ALL_HOSTS_FAILED",
-				Description: fmt.Sprintf("Not all hosts acknowledged the required topics."),
+				Description: "Not all hosts acknowledged the required topics.",
 			}
 		}
 	}
 
-	requireTopics = make([]string, 0)
 	switch t.AckFromAny.RequireAck {
-	case RequireAckAll:
-		requireTopics = t.Topics
-		requireHosts = RequireAckAll
 	case RequireAckAny:
 		requireTopics = t.Topics
 		requireHosts = RequireAckAny
@@ -160,16 +158,16 @@ func (t *TopicBroadcaster) Broadcast(tx *transaction.Transaction) (*transaction.
 		if !t.checkAcknowledgmentFromAnyHost(hostAcks, requireTopics, requireHosts) {
 			return nil, &transaction.BroadcastFailure{
 				Code:        "ERR_REQUIRE_ACK_FROM_ANY_HOST_FAILED",
-				Description: fmt.Sprintf("No host acknowledged the required topics."),
+				Description: "No host acknowledged the required topics.",
 			}
 		}
 	}
 
-	if t.AckFromHost != nil && len(t.AckFromHost) > 0 {
+	if len(t.AckFromHost) > 0 {
 		if !t.checkAcknowledgmentFromSpecificHosts(hostAcks, t.AckFromHost) {
 			return nil, &transaction.BroadcastFailure{
 				Code:        "ERR_REQUIRE_ACK_FROM_SPECIFIC_HOSTS_FAILED",
-				Description: fmt.Sprintf("Specific hosts did not acknowledge the required topics."),
+				Description: "Specific hosts did not acknowledge the required topics.",
 			}
 		}
 	}
@@ -180,9 +178,9 @@ func (t *TopicBroadcaster) Broadcast(tx *transaction.Transaction) (*transaction.
 	}, nil
 }
 
-func (t *TopicBroadcaster) FindInterestedHosts() ([]string, error) {
+func (t *TopicBroadcaster) FindInterestedHosts(ctx context.Context) ([]string, error) {
 	results := make(map[string]map[string]struct{})
-	answer, err := t.Resolver.Query(lookup.LookupQuestion{
+	answer, err := t.Resolver.Query(ctx, lookup.LookupQuestion{
 		Service: "ls_ship",
 		Query: map[string][]string{
 			"topics": t.Topics,
@@ -192,7 +190,7 @@ func (t *TopicBroadcaster) FindInterestedHosts() ([]string, error) {
 		return nil, err
 	}
 	if answer.Type != lookup.AnswerTypeOutputList {
-		return nil, fmt.Errorf("SHIP answer is not an output list.")
+		return nil, fmt.Errorf("SHIP answer is not an output list")
 	}
 	for _, output := range answer.Outputs {
 		tx, err := transaction.NewTransactionFromBEEF(output.Beef)

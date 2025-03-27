@@ -60,6 +60,10 @@ type ArcResponse struct {
 }
 
 func (a *Arc) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+	return a.BroadcastCtx(context.Background(), t)
+}
+
+func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
 	var buf *bytes.Buffer
 	for _, input := range t.Inputs {
 		if input.SourceTxOutput() == nil {
@@ -78,7 +82,6 @@ func (a *Arc) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSucce
 		}
 	}
 
-	ctx := context.Background()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
