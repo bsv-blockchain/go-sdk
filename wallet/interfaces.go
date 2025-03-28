@@ -64,5 +64,5 @@ type SignableTransaction struct {
 }
 
 type Interface interface {
-	CreateAction(args CreateActionArgs) (*CreateActionResult, error)
+	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
 }

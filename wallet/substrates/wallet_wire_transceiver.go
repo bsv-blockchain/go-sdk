@@ -8,19 +8,23 @@ import (
 // WalletWireTransceiver implements wallet.Interface
 // A way to make remote calls to a wallet over a wallet wire.
 type WalletWireTransceiver struct {
-	Processor *WalletWireProcessor
+	Wire WalletWire
 }
 
 func NewWalletWireTransceiver(processor *WalletWireProcessor) *WalletWireTransceiver {
-	return &WalletWireTransceiver{Processor: processor}
+	return &WalletWireTransceiver{Wire: processor}
 }
 
 func (t *WalletWireTransceiver) Transmit(call Call, originator string, params []byte) ([]byte, error) {
 	// Create frame
-	frame := serializer.WriteRequestFrame(byte(call), originator, params)
+	frame := serializer.WriteRequestFrame(serializer.RequestFrame{
+		Call:       byte(call),
+		Originator: originator,
+		Params:     params,
+	})
 
 	// Transmit frame to processor
-	result, err := t.Processor.TransmitToWallet(frame)
+	result, err := t.Wire.TransmitToWallet(frame)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +33,7 @@ func (t *WalletWireTransceiver) Transmit(call Call, originator string, params []
 	return serializer.ReadResultFrame(result)
 }
 
-func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wallet.CreateActionResult, error) {
+func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 	// Serialize the request
 	data, err := serializer.SerializeCreateActionArgs(&args)
 	if err != nil {
@@ -37,7 +41,7 @@ func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs) (*wal
 	}
 
 	// Send to processor
-	resp, err := t.Transmit(CallCreateAction, "", data)
+	resp, err := t.Transmit(CallCreateAction, originator, data)
 	if err != nil {
 		return nil, err
 	}

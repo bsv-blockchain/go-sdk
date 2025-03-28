@@ -5,22 +5,90 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+type RequestFrame struct {
+	Call       byte
+	Originator string
+	Params     []byte
+}
+
 // WriteRequestFrame writes a call frame with call type, originator and params
-func WriteRequestFrame(call byte, originator string, params []byte) []byte {
+func WriteRequestFrame(requestFrame RequestFrame) []byte {
 	frame := make([]byte, 0)
 	frameWriter := newWriter(&frame)
 
 	// Write call type byte
-	frameWriter.writeByte(call)
+	frameWriter.writeByte(requestFrame.Call)
 
 	// Write originator length and bytes
-	originatorBytes := []byte(originator)
+	originatorBytes := []byte(requestFrame.Originator)
 	frameWriter.writeByte(byte(len(originatorBytes)))
 	frameWriter.writeBytes(originatorBytes)
 
 	// Write params if present
-	if len(params) > 0 {
-		frameWriter.writeBytes(params)
+	if len(requestFrame.Params) > 0 {
+		frameWriter.writeBytes(requestFrame.Params)
+	}
+
+	return frame
+}
+
+// ReadRequestFrame reads a request frame and returns call type, originator and params
+func ReadRequestFrame(data []byte) (*RequestFrame, error) {
+	frameReader := newReader(data)
+
+	// Read call type byte
+	call, err := frameReader.readByte()
+	if err != nil {
+		return nil, fmt.Errorf("error reading call byte: %v", err)
+	}
+
+	// Read originator length and bytes
+	originatorLen, err := frameReader.readByte()
+	if err != nil {
+		return nil, fmt.Errorf("error reading originator length: %v", err)
+	}
+	originatorBytes, err := frameReader.readBytes(int(originatorLen))
+	if err != nil {
+		return nil, fmt.Errorf("error reading originator: %v", err)
+	}
+	originator := string(originatorBytes)
+
+	// Remaining bytes are params
+	params := frameReader.readRemaining()
+
+	return &RequestFrame{
+		Call:       call,
+		Originator: originator,
+		Params:     params,
+	}, nil
+}
+
+// WriteResultFrame writes a result frame with either success data or an error
+func WriteResultFrame(result []byte, err *wallet.Error) []byte {
+	frame := make([]byte, 0)
+	frameWriter := newWriter(&frame)
+
+	if err != nil {
+		// Write error byte
+		frameWriter.writeByte(err.Code)
+
+		// Write error message
+		errorMsgBytes := []byte(err.Message)
+		frameWriter.writeVarInt(uint64(len(errorMsgBytes)))
+		frameWriter.writeBytes(errorMsgBytes)
+
+		// Write stack trace
+		stackBytes := []byte(err.Stack)
+		frameWriter.writeVarInt(uint64(len(stackBytes)))
+		frameWriter.writeBytes(stackBytes)
+	} else {
+		// Write success byte (0)
+		frameWriter.writeByte(0)
+
+		// Write result data if present
+		if len(result) > 0 {
+			frameWriter.writeBytes(result)
+		}
 	}
 
 	return frame

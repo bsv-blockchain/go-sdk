@@ -21,23 +21,29 @@ func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
 		return nil, errors.New("empty message")
 	}
 
-	// First byte is call type
-	callType := message[0]
-
-	switch Call(callType) {
+	requestFrame, err := serializer.ReadRequestFrame(message)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize request frame: %w", err)
+	}
+	var response []byte
+	switch Call(requestFrame.Call) {
 	case CallCreateAction:
-		args, err := serializer.DeserializeCreateActionArgs(message[1:])
+		args, err := serializer.DeserializeCreateActionArgs(requestFrame.Params)
+		if err != nil {
+			return nil, fmt.Errorf("failed to deserialize create action args: %w", err)
+		}
+		response, err = w.processCreateAction(*args, requestFrame.Originator)
 		if err != nil {
 			return nil, err
 		}
-		return w.processCreateAction(*args)
 	default:
-		return nil, fmt.Errorf("unknown call type: %d", callType)
+		return nil, fmt.Errorf("unknown call type: %d", requestFrame.Call)
 	}
+	return serializer.WriteResultFrame(response, nil), nil
 }
 
-func (w *WalletWireProcessor) processCreateAction(args wallet.CreateActionArgs) ([]byte, error) {
-	result, err := w.Wallet.CreateAction(args)
+func (w *WalletWireProcessor) processCreateAction(args wallet.CreateActionArgs, originator string) ([]byte, error) {
+	result, err := w.Wallet.CreateAction(args, originator)
 	if err != nil {
 		return nil, err
 	}
