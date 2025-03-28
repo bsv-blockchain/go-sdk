@@ -10,8 +10,8 @@ A transaction broadcast client is a crucial component in any Bitcoin SV applicat
 package main
 
 import (
-        "github.com/bitcoin-sv/go-sdk/transaction"
-        "github.com/bitcoin-sv/go-sdk/transaction/broadcaster"
+        "github.com/bsv-blockchain/go-sdk/transaction"
+        "github.com/bsv-blockchain/go-sdk/transaction/broadcaster"
 )
 
 func main() {

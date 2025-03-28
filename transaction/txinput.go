@@ -3,9 +3,9 @@ package transaction
 import (
 	"encoding/binary"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	crypto "github.com/bitcoin-sv/go-sdk/primitives/hash"
-	script "github.com/bitcoin-sv/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	script "github.com/bsv-blockchain/go-sdk/script"
 )
 
 // TotalInputSatoshis returns the total Satoshis inputted to the transaction.

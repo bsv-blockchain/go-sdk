@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	ecies "github.com/bitcoin-sv/go-sdk/compat/ecies"
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
+	ecies "github.com/bsv-blockchain/go-sdk/compat/ecies"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // Example of using ECIES to encrypt and decrypt data for a single user

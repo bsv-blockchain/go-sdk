@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 func TestEncryptedMessage(t *testing.T) {

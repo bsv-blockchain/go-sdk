@@ -8,7 +8,7 @@ import (
 	"math/bits"
 	"strings"
 
-	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/pkg/errors"
 )
 

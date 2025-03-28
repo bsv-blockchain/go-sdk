@@ -13,7 +13,7 @@ import (
 	"math/big"
 	"testing"
 
-	crypto "github.com/bitcoin-sv/go-sdk/primitives/hash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/stretchr/testify/require"
 )
 

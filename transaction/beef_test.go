@@ -12,8 +12,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	script "github.com/bitcoin-sv/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
 )
 

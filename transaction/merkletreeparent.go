@@ -3,9 +3,9 @@ package transaction
 import (
 	"encoding/hex"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	crypto "github.com/bitcoin-sv/go-sdk/primitives/hash"
-	"github.com/bitcoin-sv/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // MerkleTreeParentStr returns the Merkle Tree parent of two MerkleTree children using hex strings instead of bytes.
