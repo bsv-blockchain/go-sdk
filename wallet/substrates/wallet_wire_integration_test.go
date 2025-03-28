@@ -37,35 +37,60 @@ func TestCreateAction(t *testing.T) {
 	mockWallet := NewMockWallet(t)
 	walletTransceiver := createTestWalletWire(mockWallet)
 
-	// Expected arguments and return value
-	mockWallet.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
-		Description: "Test action description",
-		Outputs: []wallet.CreateActionOutput{{
-			LockingScript:      "00",
-			Satoshis:           1000,
-			OutputDescription:  "Test output",
-			Basket:             "test-basket",
-			CustomInstructions: "Test instructions",
-			Tags:               []string{"test-tag"},
-		}},
-		Labels: []string{"test-label"},
-	}
-	mockWallet.ExpectedOriginator = "test originator"
+	t.Run("should create an action with valid inputs", func(t *testing.T) {
+		// Expected arguments and return value
+		mockWallet.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
+			Description: "Test action description",
+			Outputs: []wallet.CreateActionOutput{{
+				LockingScript:      "00",
+				Satoshis:           1000,
+				OutputDescription:  "Test output",
+				Basket:             "test-basket",
+				CustomInstructions: "Test instructions",
+				Tags:               []string{"test-tag"},
+			}},
+			Labels: []string{"test-label"},
+		}
+		mockWallet.ExpectedOriginator = "test originator"
 
-	mockWallet.CreateActionResultToReturn = &wallet.CreateActionResult{
-		Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
-		Tx:   []byte{1, 2, 3, 4},
-	}
+		mockWallet.CreateActionResultToReturn = &wallet.CreateActionResult{
+			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
+			Tx:   []byte{1, 2, 3, 4},
+		}
 
-	// Execute test
-	result, err := walletTransceiver.CreateAction(*mockWallet.ExpectedCreateActionArgs, mockWallet.ExpectedOriginator)
+		// Execute test
+		result, err := walletTransceiver.CreateAction(*mockWallet.ExpectedCreateActionArgs, mockWallet.ExpectedOriginator)
 
-	// Verify results
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.Equal(t, mockWallet.CreateActionResultToReturn.Txid, result.Txid)
-	require.Equal(t, mockWallet.CreateActionResultToReturn.Tx, result.Tx)
-	require.Nil(t, result.NoSendChange)
-	require.Nil(t, result.SendWithResults)
-	require.Nil(t, result.SignableTransaction)
+		// Verify results
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.Equal(t, mockWallet.CreateActionResultToReturn.Txid, result.Txid)
+		require.Equal(t, mockWallet.CreateActionResultToReturn.Tx, result.Tx)
+		require.Nil(t, result.NoSendChange)
+		require.Nil(t, result.SendWithResults)
+		require.Nil(t, result.SignableTransaction)
+	})
+
+	t.Run("should create an action with minimal inputs (only description)", func(t *testing.T) {
+		// Expected arguments and return value
+		mockWallet.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
+			Description: "Minimal action description",
+		}
+		mockWallet.ExpectedOriginator = ""
+		mockWallet.CreateActionResultToReturn = &wallet.CreateActionResult{
+			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
+		}
+
+		// Execute test
+		result, err := walletTransceiver.CreateAction(*mockWallet.ExpectedCreateActionArgs, mockWallet.ExpectedOriginator)
+
+		// Verify results
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.Equal(t, mockWallet.CreateActionResultToReturn.Txid, result.Txid)
+		require.Nil(t, result.Tx)
+		require.Nil(t, result.NoSendChange)
+		require.Nil(t, result.SendWithResults)
+		require.Nil(t, result.SignableTransaction)
+	})
 }
