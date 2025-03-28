@@ -85,7 +85,7 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 				if sourceObj, ok := txs[sourceTxid]; ok {
 					input.SourceTransaction = sourceObj.Transaction
 				} else if beefTx.Transaction.MerklePath == nil && beefTx.KnownTxID == nil {
-					panic(fmt.Sprintf("Reference to unknown TXID in BUMP: %s", sourceTxid))
+					return nil, fmt.Errorf("reference to unknown txid in bump: %s", sourceTxid)
 				}
 			}
 
@@ -180,6 +180,39 @@ func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	}
 }
 
+func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
+	if len(beefBytes) < 36 {
+		return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+	}
+	version := binary.LittleEndian.Uint32(beefBytes[:4])
+	switch version {
+	case ATOMIC_BEEF:
+		if txid, err := chainhash.NewHash(beefBytes[4:36]); err != nil {
+			return nil, nil, nil, err
+		} else if b, err := NewBeefFromBytes(beefBytes[36:]); err != nil {
+			return nil, nil, nil, err
+		} else {
+			return b, b.FindTransaction(txid.String()), txid, nil
+		}
+	case BEEF_V1:
+		if tx, err := NewTransactionFromBEEF(beefBytes); err != nil {
+			return nil, nil, nil, err
+		} else if b, err := NewBeefFromTransaction(tx); err != nil {
+			return nil, nil, nil, err
+		} else {
+			return b, tx, tx.TxID(), nil
+		}
+	case BEEF_V2:
+		if beef, err := NewBeefFromBytes(beefBytes); err != nil {
+			return nil, nil, nil, err
+		} else {
+			return beef, nil, nil, nil
+		}
+	default:
+		return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+	}
+}
+
 func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	beef := &Beef{
 		Version:      BEEF_V2,
@@ -209,11 +242,16 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	}
 	for _, txid := range ancestors {
 		tx := txns[txid]
-		beef.Transactions[txid] = &BeefTx{
-			DataFormat:  RawTx,
+		beefTx := &BeefTx{
 			Transaction: tx,
-			BumpIndex:   bumpMap[tx.MerklePath.BlockHeight],
 		}
+		if tx.MerklePath != nil {
+			beefTx.DataFormat = RawTxAndBumpIndex
+			beefTx.BumpIndex = bumpMap[tx.MerklePath.BlockHeight]
+		} else {
+			beefTx.DataFormat = RawTx
+		}
+		beef.Transactions[txid] = beefTx
 	}
 	return beef, nil
 }
@@ -509,10 +547,10 @@ func (b *Beef) MergeBump(bump *MerklePath) int {
 
 	// review if any transactions are proven by this bump
 	for _, tx := range b.Transactions {
-		txid := tx.Transaction.TxID().String()
+		txid := tx.Transaction.TxID()
 		if tx.Transaction.MerklePath == nil {
 			for _, node := range b.BUMPs[*bumpIndex].Path[0] {
-				if node.Hash.String() == txid {
+				if node.Hash != nil && node.Hash.Equal(*txid) {
 					tx.Transaction.MerklePath = b.BUMPs[*bumpIndex]
 					break
 				}
@@ -586,8 +624,9 @@ func (b *Beef) tryToValidateBumpIndex(tx *BeefTx) {
 	if tx.DataFormat == TxIDOnly || tx.Transaction == nil || tx.Transaction.MerklePath == nil {
 		return
 	}
+	txid := tx.Transaction.TxID()
 	for _, node := range tx.Transaction.MerklePath.Path[0] {
-		if node.Hash.String() == tx.Transaction.TxID().String() {
+		if node.Hash != nil && node.Hash.Equal(*txid) {
 			return
 		}
 	}
@@ -979,15 +1018,36 @@ func (b *Beef) Bytes() ([]byte, error) {
 
 	// transactions / txids
 	beef = append(beef, VarInt(len(b.Transactions)).Bytes()...)
-	for _, tx := range b.Transactions {
-		beef = append(beef, byte(tx.DataFormat))
+	txs := make(map[string]struct{}, len(b.Transactions))
+	var appendTx func(tx *BeefTx) error
+	appendTx = func(tx *BeefTx) error {
+		if _, ok := txs[tx.Transaction.TxID().String()]; ok {
+			return nil
+		}
+
 		if tx.DataFormat == TxIDOnly {
+			beef = append(beef, byte(tx.DataFormat))
 			beef = append(beef, tx.KnownTxID[:]...)
 		} else {
+			for _, txin := range tx.Transaction.Inputs {
+				if parentTx := b.findTxid(txin.SourceTXID.String()); parentTx != nil {
+					if err := appendTx(parentTx); err != nil {
+						return err
+					}
+				}
+			}
+			beef = append(beef, byte(tx.DataFormat))
 			if tx.DataFormat == RawTxAndBumpIndex {
 				beef = append(beef, VarInt(tx.BumpIndex).Bytes()...)
 			}
 			beef = append(beef, tx.Transaction.Bytes()...)
+		}
+		txs[tx.Transaction.TxID().String()] = struct{}{}
+		return nil
+	}
+	for _, tx := range b.Transactions {
+		if err := appendTx(tx); err != nil {
+			return nil, err
 		}
 	}
 
