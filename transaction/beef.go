@@ -706,10 +706,10 @@ func (b *Beef) MergeBeefBytes(beef []byte) error {
 	if err != nil {
 		return err
 	}
-	return b.mergeBeef(otherBeef)
+	return b.MergeBeef(otherBeef)
 }
 
-func (b *Beef) mergeBeef(otherBeef *Beef) error {
+func (b *Beef) MergeBeef(otherBeef *Beef) error {
 	for _, bump := range otherBeef.BUMPs {
 		b.MergeBump(bump)
 	}

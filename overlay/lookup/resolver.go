@@ -2,9 +2,11 @@ package lookup
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
@@ -15,12 +17,44 @@ import (
 
 const MAX_TRACKER_WAIT_TIME = time.Second
 
+var DEFAULT_SLAP_TRACKERS = []string{"https://users.bapp.dev"}
+var DEFAULT_TESTNET_SLAP_TRACKERS = []string{"https://testnet-users.bapp.dev"}
+
 type LookupResolver struct {
 	Facilitator     Facilitator
 	SLAPTrackers    []string
 	HostOverrides   map[string][]string
 	AdditionalHosts map[string][]string
 	NetworkPreset   overlay.Network
+}
+
+func NewLookupResolver(cfg *LookupResolver) *LookupResolver {
+	resolver := &LookupResolver{
+		Facilitator:     cfg.Facilitator,
+		SLAPTrackers:    cfg.SLAPTrackers,
+		HostOverrides:   cfg.HostOverrides,
+		AdditionalHosts: cfg.AdditionalHosts,
+		NetworkPreset:   cfg.NetworkPreset,
+	}
+	if resolver.Facilitator == nil {
+		resolver.Facilitator = &HTTPSOverlayLookupFacilitator{
+			Client: http.DefaultClient,
+		}
+	}
+	if resolver.SLAPTrackers == nil {
+		if resolver.NetworkPreset == overlay.NetworkMainnet {
+			resolver.SLAPTrackers = DEFAULT_SLAP_TRACKERS
+		} else {
+			resolver.SLAPTrackers = DEFAULT_TESTNET_SLAP_TRACKERS
+		}
+	}
+	if resolver.HostOverrides == nil {
+		resolver.HostOverrides = make(map[string][]string)
+	}
+	if resolver.AdditionalHosts == nil {
+		resolver.AdditionalHosts = make(map[string][]string)
+	}
+	return resolver
 }
 
 func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion, timeout time.Duration) (*LookupAnswer, error) {
@@ -97,10 +131,12 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion, ti
 	return answer, nil
 }
 
-func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string) ([]string, error) {
+func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string) (competentHosts []string, err error) {
 	query := &LookupQuestion{
 		Service: "ls_slap",
-		Query:   map[string]string{"service": service},
+	}
+	if query.Query, err = json.Marshal(map[string]any{"service": service}); err != nil {
+		return nil, fmt.Errorf("error marshalling query: %w", err)
 	}
 
 	responses := make(chan *LookupAnswer, len(l.SLAPTrackers))
@@ -132,12 +168,13 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 					log.Println("Error parsing overlay admin token template:", err)
 				} else if parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
 					continue
-				} else {
+				} else if _, ok := hosts[parsed.Domain]; !ok {
+					competentHosts = append(competentHosts, parsed.Domain)
 					hosts[parsed.Domain] = struct{}{}
 				}
 			}
 		}
 	}
 
-	return nil, nil
+	return
 }

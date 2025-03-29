@@ -2,9 +2,12 @@ package topic
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
@@ -27,6 +30,21 @@ type AckFrom struct {
 	Topics     []string
 }
 
+type Response struct {
+	Host    string
+	Success bool
+	Steak   *overlay.Steak
+	Error   error
+}
+
+type BroadcasterConfig struct {
+	NetworkPreset overlay.Network
+	Facilitator   Facilitator
+	Resolver      *lookup.LookupResolver
+	AckFromAll    *AckFrom
+	AckFromAny    *AckFrom
+	AckFromHost   map[string]AckFrom
+}
 type Broadcaster struct {
 	Topics        []string
 	Facilitator   Facilitator
@@ -37,11 +55,46 @@ type Broadcaster struct {
 	NetworkPreset overlay.Network
 }
 
-type Response struct {
-	Host    string
-	Success bool
-	Steak   *overlay.Steak
-	Error   error
+func NewBroadcaster(topics []string, cfg *BroadcasterConfig) (*Broadcaster, error) {
+	if topics == nil {
+		return nil, fmt.Errorf("at least 1 topic required")
+	}
+	for _, topic := range topics {
+		if !strings.HasPrefix(topic, "tm_") {
+			return nil, fmt.Errorf("topic %s must start with 'tm_'", topic)
+		}
+	}
+	broadcaster := &Broadcaster{
+		Topics:      topics,
+		Facilitator: cfg.Facilitator,
+	}
+	if cfg.Facilitator == nil {
+		broadcaster.Facilitator = &HTTPSOverlayBroadcastFacilitator{
+			Client: http.DefaultClient,
+		}
+	}
+	if cfg.Resolver != nil {
+		broadcaster.Resolver = *cfg.Resolver
+	} else {
+		broadcaster.Resolver = *lookup.NewLookupResolver(&lookup.LookupResolver{})
+	}
+	if cfg.AckFromAll != nil {
+		broadcaster.AckFromAll = *cfg.AckFromAll
+	} else {
+		broadcaster.AckFromAll = AckFrom{RequireAck: RequireAckNone}
+	}
+	if cfg.AckFromAny != nil {
+		broadcaster.AckFromAny = *cfg.AckFromAny
+	} else {
+		broadcaster.AckFromAny = AckFrom{RequireAck: RequireAckAll}
+	}
+	if cfg.AckFromHost != nil {
+		broadcaster.AckFromHost = cfg.AckFromHost
+	} else {
+		broadcaster.AckFromHost = make(map[string]AckFrom)
+	}
+
+	return broadcaster, nil
 }
 
 func (b *Broadcaster) Broadcast(tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
@@ -178,13 +231,17 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 
 func (b *Broadcaster) FindInterestedHosts(ctx context.Context) ([]string, error) {
 	results := make(map[string]map[string]struct{})
+	query, err := json.Marshal(map[string][]string{
+		"topics": b.Topics,
+	})
+	if err != nil {
+		return nil, err
+	}
 	answer, err := b.Resolver.Query(
 		ctx,
 		&lookup.LookupQuestion{
 			Service: "ls_ship",
-			Query: map[string][]string{
-				"topics": b.Topics,
-			},
+			Query:   query,
 		},
 		MAX_SHIP_QUERY_TIMEOUT,
 	)
