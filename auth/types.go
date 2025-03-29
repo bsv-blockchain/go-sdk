@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"time"
-
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
@@ -44,6 +42,6 @@ type PeerSession struct {
 	IsAuthenticated bool
 	SessionNonce    string
 	PeerNonce       string
-	PeerIdentityKey ec.PublicKey
-	LastUpdated     time.Time
+	PeerIdentityKey string
+	LastUpdated     int
 }
