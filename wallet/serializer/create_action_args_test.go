@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateActionArgsRoundTrip(t *testing.T) {
+func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 	tests := []struct {
 		name string
 		args *wallet.CreateActionArgs
@@ -87,6 +87,44 @@ func TestCreateActionArgsRoundTrip(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Options: &wallet.CreateActionOptions{
 					SignAndProcess: boolPtr(true),
+				},
+			},
+		},
+		{
+			name: "multiple inputs",
+			args: &wallet.CreateActionArgs{
+				Inputs: []wallet.CreateActionInput{
+					{
+						Outpoint:              "1111111111111111111111111111111111111111111111111111111111111111.0",
+						InputDescription:      "input 1",
+						UnlockingScript:       "abcd",
+						UnlockingScriptLength: 2, // "abcd" is 2 bytes when decoded from hex
+					},
+					{
+						Outpoint:              "2222222222222222222222222222222222222222222222222222222222222222.1",
+						InputDescription:      "input 2",
+						UnlockingScript:       "efef",
+						UnlockingScriptLength: 2, // "efef" is 2 bytes when decoded from hex
+						SequenceNumber:        2,
+					},
+				},
+			},
+		},
+		{
+			name: "multiple outputs",
+			args: &wallet.CreateActionArgs{
+				Outputs: []wallet.CreateActionOutput{
+					{
+						LockingScript:     "abcd",
+						Satoshis:          1000,
+						OutputDescription: "output 1",
+					},
+					{
+						LockingScript:     "efef",
+						Satoshis:          2000,
+						OutputDescription: "output 2",
+						Tags:              []string{"tag1", "tag2"},
+					},
 				},
 			},
 		},
