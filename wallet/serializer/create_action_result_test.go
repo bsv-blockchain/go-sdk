@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateActionResultRoundTrip(t *testing.T) {
+func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 	tests := []struct {
 		name   string
 		result *wallet.CreateActionResult
@@ -70,27 +70,7 @@ func TestCreateActionResultRoundTrip(t *testing.T) {
 			require.NoError(t, err)
 
 			// Compare
-			require.Equal(t, tt.result.Txid, result.Txid)
-			require.Equal(t, tt.result.Tx, result.Tx)
-			require.Equal(t, tt.result.NoSendChange, result.NoSendChange)
-
-			if tt.result.SendWithResults != nil {
-				require.Equal(t, len(tt.result.SendWithResults), len(result.SendWithResults))
-				for i := range tt.result.SendWithResults {
-					require.Equal(t, tt.result.SendWithResults[i].Txid, result.SendWithResults[i].Txid)
-					require.Equal(t, tt.result.SendWithResults[i].Status, result.SendWithResults[i].Status)
-				}
-			} else {
-				require.Nil(t, result.SendWithResults)
-			}
-
-			if tt.result.SignableTransaction != nil {
-				require.NotNil(t, result.SignableTransaction)
-				require.Equal(t, tt.result.SignableTransaction.Tx, result.SignableTransaction.Tx)
-				require.Equal(t, tt.result.SignableTransaction.Reference, result.SignableTransaction.Reference)
-			} else {
-				require.Nil(t, result.SignableTransaction)
-			}
+			require.Equal(t, tt.result, result)
 		})
 	}
 }

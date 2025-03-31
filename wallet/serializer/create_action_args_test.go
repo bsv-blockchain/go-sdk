@@ -142,54 +142,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			require.NoError(t, err)
 
 			// Compare
-			require.Equal(t, tt.args.Description, args.Description)
-			require.Equal(t, tt.args.InputBEEF, args.InputBEEF)
-
-			if tt.args.Inputs != nil {
-				require.Equal(t, len(tt.args.Inputs), len(args.Inputs))
-				for i := range tt.args.Inputs {
-					require.Equal(t, tt.args.Inputs[i].Outpoint, args.Inputs[i].Outpoint)
-					require.Equal(t, tt.args.Inputs[i].InputDescription, args.Inputs[i].InputDescription)
-					require.Equal(t, tt.args.Inputs[i].UnlockingScript, args.Inputs[i].UnlockingScript)
-					require.Equal(t, tt.args.Inputs[i].UnlockingScriptLength, args.Inputs[i].UnlockingScriptLength)
-					require.Equal(t, tt.args.Inputs[i].SequenceNumber, args.Inputs[i].SequenceNumber)
-				}
-			} else {
-				require.Nil(t, args.Inputs)
-			}
-
-			if tt.args.Outputs != nil {
-				require.Equal(t, len(tt.args.Outputs), len(args.Outputs))
-				for i := range tt.args.Outputs {
-					require.Equal(t, tt.args.Outputs[i].LockingScript, args.Outputs[i].LockingScript)
-					require.Equal(t, tt.args.Outputs[i].Satoshis, args.Outputs[i].Satoshis)
-					require.Equal(t, tt.args.Outputs[i].OutputDescription, args.Outputs[i].OutputDescription)
-					require.Equal(t, tt.args.Outputs[i].Basket, args.Outputs[i].Basket)
-					require.Equal(t, tt.args.Outputs[i].CustomInstructions, args.Outputs[i].CustomInstructions)
-					require.Equal(t, tt.args.Outputs[i].Tags, args.Outputs[i].Tags)
-				}
-			} else {
-				require.Nil(t, args.Outputs)
-			}
-
-			require.Equal(t, tt.args.LockTime, args.LockTime)
-			require.Equal(t, tt.args.Version, args.Version)
-			require.Equal(t, tt.args.Labels, args.Labels)
-
-			if tt.args.Options != nil {
-				require.NotNil(t, args.Options)
-				require.Equal(t, tt.args.Options.SignAndProcess, args.Options.SignAndProcess)
-				require.Equal(t, tt.args.Options.AcceptDelayedBroadcast, args.Options.AcceptDelayedBroadcast)
-				require.Equal(t, tt.args.Options.TrustSelf, args.Options.TrustSelf)
-				require.Equal(t, tt.args.Options.KnownTxids, args.Options.KnownTxids)
-				require.Equal(t, tt.args.Options.ReturnTXIDOnly, args.Options.ReturnTXIDOnly)
-				require.Equal(t, tt.args.Options.NoSend, args.Options.NoSend)
-				require.Equal(t, tt.args.Options.NoSendChange, args.Options.NoSendChange)
-				require.Equal(t, tt.args.Options.SendWith, args.Options.SendWith)
-				require.Equal(t, tt.args.Options.RandomizeOutputs, args.Options.RandomizeOutputs)
-			} else {
-				require.Nil(t, args.Options)
-			}
+			require.Equal(t, tt.args, args)
 		})
 	}
 }
