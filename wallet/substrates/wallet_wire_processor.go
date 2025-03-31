@@ -28,24 +28,24 @@ func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
 	var response []byte
 	switch Call(requestFrame.Call) {
 	case CallCreateAction:
-		args, err := serializer.DeserializeCreateActionArgs(requestFrame.Params)
-		if err != nil {
-			return nil, fmt.Errorf("failed to deserialize create action args: %w", err)
-		}
-		response, err = w.processCreateAction(*args, requestFrame.Originator)
-		if err != nil {
-			return nil, err
-		}
+		response, err = w.processCreateAction(requestFrame)
 	default:
 		return nil, fmt.Errorf("unknown call type: %d", requestFrame.Call)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error calling %d: %w", requestFrame.Call, err)
 	}
 	return serializer.WriteResultFrame(response, nil), nil
 }
 
-func (w *WalletWireProcessor) processCreateAction(args wallet.CreateActionArgs, originator string) ([]byte, error) {
-	result, err := w.Wallet.CreateAction(args, originator)
+func (w *WalletWireProcessor) processCreateAction(requestFrame *serializer.RequestFrame) ([]byte, error) {
+	args, err := serializer.DeserializeCreateActionArgs(requestFrame.Params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to deserialize create action args: %w", err)
+	}
+	result, err := w.Wallet.CreateAction(*args, requestFrame.Originator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process create action: %w", err)
 	}
 	return serializer.SerializeCreateActionResult(result)
 }
