@@ -10,8 +10,7 @@ import (
 
 // SerializeCreateActionArgs serializes a wallet.CreateActionArgs object into a byte slice
 func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
-	buf := make([]byte, 0)
-	paramWriter := newWriter(&buf)
+	paramWriter := newWriter()
 
 	// Serialize description
 	descBytes := []byte(args.Description)
@@ -257,7 +256,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 		paramWriter.writeByte(0) // options not present
 	}
 
-	return buf, nil
+	return paramWriter.buf, nil
 }
 
 // DeserializeCreateActionArgs deserializes a byte slice into a wallet.CreateActionArgs object

@@ -13,8 +13,7 @@ type RequestFrame struct {
 
 // WriteRequestFrame writes a call frame with call type, originator and params
 func WriteRequestFrame(requestFrame RequestFrame) []byte {
-	frame := make([]byte, 0)
-	frameWriter := newWriter(&frame)
+	frameWriter := newWriter()
 
 	// Write call type byte
 	frameWriter.writeByte(requestFrame.Call)
@@ -29,7 +28,7 @@ func WriteRequestFrame(requestFrame RequestFrame) []byte {
 		frameWriter.writeBytes(requestFrame.Params)
 	}
 
-	return frame
+	return frameWriter.buf
 }
 
 // ReadRequestFrame reads a request frame and returns call type, originator and params
@@ -65,8 +64,7 @@ func ReadRequestFrame(data []byte) (*RequestFrame, error) {
 
 // WriteResultFrame writes a result frame with either success data or an error
 func WriteResultFrame(result []byte, err *wallet.Error) []byte {
-	frame := make([]byte, 0)
-	frameWriter := newWriter(&frame)
+	frameWriter := newWriter()
 
 	if err != nil {
 		// Write error byte
@@ -91,7 +89,7 @@ func WriteResultFrame(result []byte, err *wallet.Error) []byte {
 		}
 	}
 
-	return frame
+	return frameWriter.buf
 }
 
 // ReadResultFrame reads a response frame and returns either the result or error

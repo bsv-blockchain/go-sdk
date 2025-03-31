@@ -170,8 +170,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 		{
 			name: "invalid outpoint",
 			data: func() []byte {
-				buf := make([]byte, 0)
-				w := newWriter(&buf)
+				w := newWriter()
 				// description (empty)
 				w.writeVarInt(0)
 				// input BEEF (nil)
@@ -180,15 +179,14 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.writeVarInt(1)
 				// invalid outpoint (too short)
 				w.writeBytes([]byte{0x01, 0x02})
-				return *w.buf
+				return w.buf
 			}(),
 			err: "error reading outpoint: read past end of data",
 		},
 		{
 			name: "invalid unlocking script",
 			data: func() []byte {
-				buf := make([]byte, 0)
-				w := newWriter(&buf)
+				w := newWriter()
 				// description (empty)
 				w.writeVarInt(0)
 				// input BEEF (nil)
@@ -200,7 +198,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// unlocking script length (invalid hex)
 				w.writeVarInt(2)
 				w.writeBytes([]byte{0x01, 0x02})
-				return *w.buf
+				return w.buf
 			}(),
 			err: "error reading input description length: read past end of data",
 		},

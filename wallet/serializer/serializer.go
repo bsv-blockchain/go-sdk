@@ -10,19 +10,19 @@ import (
 
 // writer is a helper for building binary messages
 type writer struct {
-	buf *[]byte
+	buf []byte
 }
 
-func newWriter(buf *[]byte) *writer {
-	return &writer{buf: buf}
+func newWriter() *writer {
+	return &writer{}
 }
 
 func (w *writer) writeByte(b byte) {
-	*w.buf = append(*w.buf, b)
+	w.buf = append(w.buf, b)
 }
 
 func (w *writer) writeBytes(b []byte) {
-	*w.buf = append(*w.buf, b...)
+	w.buf = append(w.buf, b...)
 }
 
 func (w *writer) writeVarInt(n uint64) {

@@ -10,8 +10,7 @@ import (
 
 // SerializeCreateActionResult serializes a wallet.CreateActionResult to a byte slice
 func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, error) {
-	buf := make([]byte, 0)
-	resultWriter := newWriter(&buf)
+	resultWriter := newWriter()
 
 	// Write success byte (0 for success)
 	resultWriter.writeByte(0)
@@ -91,7 +90,7 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 		resultWriter.writeByte(0) // flag not present
 	}
 
-	return buf, nil
+	return resultWriter.buf, nil
 }
 
 // DeserializeCreateActionResult deserializes a byte slice to a wallet.CreateActionResult
