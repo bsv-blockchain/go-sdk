@@ -21,7 +21,7 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 		resultWriter.writeByte(1) // flag present
 		txidBytes, err := hex.DecodeString(result.Txid)
 		if err != nil {
-			return nil, fmt.Errorf("error decoding txid: %v", err)
+			return nil, fmt.Errorf("error decoding txid: %w", err)
 		}
 		resultWriter.writeBytes(txidBytes)
 	} else {
@@ -43,7 +43,7 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 		for _, outpoint := range result.NoSendChange {
 			opBytes, err := encodeOutpoint(outpoint)
 			if err != nil {
-				return nil, fmt.Errorf("error encoding outpoint: %v", err)
+				return nil, fmt.Errorf("error encoding outpoint: %w", err)
 			}
 			resultWriter.writeBytes(opBytes)
 		}
@@ -57,7 +57,7 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 		for _, res := range result.SendWithResults {
 			txidBytes, err := hex.DecodeString(res.Txid)
 			if err != nil {
-				return nil, fmt.Errorf("error decoding sendWith txid: %v", err)
+				return nil, fmt.Errorf("error decoding sendWith txid: %w", err)
 			}
 			resultWriter.writeBytes(txidBytes)
 
@@ -106,18 +106,18 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	// Read success byte (0 for success)
 	_, err := resultReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading success byte: %v", err)
+		return nil, fmt.Errorf("error reading success byte: %w", err)
 	}
 
 	// Parse txid
 	txidFlag, err := resultReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading txid flag: %v", err)
+		return nil, fmt.Errorf("error reading txid flag: %w", err)
 	}
 	if txidFlag == 1 {
 		txidBytes, err := resultReader.readBytes(32)
 		if err != nil {
-			return nil, fmt.Errorf("error reading txid: %v", err)
+			return nil, fmt.Errorf("error reading txid: %w", err)
 		}
 		result.Txid = hex.EncodeToString(txidBytes)
 	}
@@ -125,16 +125,16 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	// Parse tx
 	txFlag, err := resultReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading tx flag: %v", err)
+		return nil, fmt.Errorf("error reading tx flag: %w", err)
 	}
 	if txFlag == 1 {
 		txLen, err := resultReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading tx length: %v", err)
+			return nil, fmt.Errorf("error reading tx length: %w", err)
 		}
 		txBytes, err := resultReader.readBytes(int(txLen))
 		if err != nil {
-			return nil, fmt.Errorf("error reading tx: %v", err)
+			return nil, fmt.Errorf("error reading tx: %w", err)
 		}
 		result.Tx = txBytes
 	}
@@ -142,7 +142,7 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	// Parse noSendChange
 	noSendChangeLen, err := resultReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading noSendChange length: %v", err)
+		return nil, fmt.Errorf("error reading noSendChange length: %w", err)
 	}
 	if noSendChangeLen != math.MaxUint64 {
 		// Limit slice capacity to prevent potential memory exhaustion
@@ -153,11 +153,11 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 		for i := uint64(0); i < noSendChangeLen; i++ {
 			outpointBytes, err := resultReader.readBytes(36) // 32 txid + 4 index
 			if err != nil {
-				return nil, fmt.Errorf("error reading outpoint: %v", err)
+				return nil, fmt.Errorf("error reading outpoint: %w", err)
 			}
 			outpoint, err := decodeOutpoint(outpointBytes)
 			if err != nil {
-				return nil, fmt.Errorf("error decoding outpoint: %v", err)
+				return nil, fmt.Errorf("error decoding outpoint: %w", err)
 			}
 			result.NoSendChange = append(result.NoSendChange, outpoint)
 		}
@@ -166,7 +166,7 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	// Parse sendWithResults
 	sendWithResultsLen, err := resultReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading sendWithResults length: %v", err)
+		return nil, fmt.Errorf("error reading sendWithResults length: %w", err)
 	}
 	if sendWithResultsLen != math.MaxUint64 {
 		// Limit slice capacity to prevent potential memory exhaustion
@@ -177,13 +177,13 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 		for i := uint64(0); i < sendWithResultsLen; i++ {
 			txidBytes, err := resultReader.readBytes(32)
 			if err != nil {
-				return nil, fmt.Errorf("error reading sendWith txid: %v", err)
+				return nil, fmt.Errorf("error reading sendWith txid: %w", err)
 			}
 			txid := hex.EncodeToString(txidBytes)
 
 			statusCode, err := resultReader.readByte()
 			if err != nil {
-				return nil, fmt.Errorf("error reading status code: %v", err)
+				return nil, fmt.Errorf("error reading status code: %w", err)
 			}
 
 			var status string
@@ -208,25 +208,25 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	// Parse signableTransaction
 	signableTxFlag, err := resultReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading signable tx flag: %v", err)
+		return nil, fmt.Errorf("error reading signable tx flag: %w", err)
 	}
 	if signableTxFlag == 1 {
 		txLen, err := resultReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading signable tx length: %v", err)
+			return nil, fmt.Errorf("error reading signable tx length: %w", err)
 		}
 		txBytes, err := resultReader.readBytes(int(txLen))
 		if err != nil {
-			return nil, fmt.Errorf("error reading signable tx: %v", err)
+			return nil, fmt.Errorf("error reading signable tx: %w", err)
 		}
 
 		refLen, err := resultReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading reference length: %v", err)
+			return nil, fmt.Errorf("error reading reference length: %w", err)
 		}
 		refBytes, err := resultReader.readBytes(int(refLen))
 		if err != nil {
-			return nil, fmt.Errorf("error reading reference: %v", err)
+			return nil, fmt.Errorf("error reading reference: %w", err)
 		}
 
 		result.SignableTransaction = &wallet.SignableTransaction{

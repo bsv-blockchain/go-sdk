@@ -1,6 +1,7 @@
 package substrates
 
 import (
+	"fmt"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
@@ -26,7 +27,7 @@ func (t *WalletWireTransceiver) Transmit(call Call, originator string, params []
 	// Transmit frame to processor
 	result, err := t.Wire.TransmitToWallet(frame)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to transmit call to wallet wire: %w", err)
 	}
 
 	// Parse response
@@ -37,13 +38,13 @@ func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs, origi
 	// Serialize the request
 	data, err := serializer.SerializeCreateActionArgs(&args)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to serialize create action arguments: %w", err)
 	}
 
 	// Send to processor
 	resp, err := t.Transmit(CallCreateAction, originator, data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to transmit create action call: %w", err)
 	}
 
 	// Deserialize response

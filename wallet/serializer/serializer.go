@@ -83,12 +83,12 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 
 	txid, err := hex.DecodeString(parts[0])
 	if err != nil {
-		return nil, fmt.Errorf("invalid txid: %v", err)
+		return nil, fmt.Errorf("invalid txid: %w", err)
 	}
 
 	var index uint32
 	if _, err := fmt.Sscanf(parts[1], "%d", &index); err != nil {
-		return nil, fmt.Errorf("invalid index: %v", err)
+		return nil, fmt.Errorf("invalid index: %w", err)
 	}
 
 	buf := make([]byte, 36)

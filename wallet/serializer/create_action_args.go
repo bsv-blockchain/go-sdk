@@ -33,7 +33,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			// Serialize outpoint
 			outpoint, err := encodeOutpoint(input.Outpoint)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error encode outpoint for input: %w", err)
 			}
 			paramWriter.writeBytes(outpoint)
 
@@ -41,7 +41,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			if input.UnlockingScript != "" {
 				script, err := hex.DecodeString(input.UnlockingScript)
 				if err != nil {
-					return nil, fmt.Errorf("error decoding unlocking script: %v", err)
+					return nil, fmt.Errorf("error decoding unlocking script: %w", err)
 				}
 				paramWriter.writeVarInt(uint64(len(script)))
 				paramWriter.writeBytes(script)
@@ -73,7 +73,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			// Serialize locking script
 			script, err := hex.DecodeString(output.LockingScript)
 			if err != nil {
-				return nil, fmt.Errorf("error decoding locking script: %v", err)
+				return nil, fmt.Errorf("error decoding locking script: %w", err)
 			}
 			paramWriter.writeVarInt(uint64(len(script)))
 			paramWriter.writeBytes(script)
@@ -185,7 +185,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			for _, txid := range args.Options.KnownTxids {
 				txidBytes, err := hex.DecodeString(txid)
 				if err != nil {
-					return nil, fmt.Errorf("error decoding known txid: %v", err)
+					return nil, fmt.Errorf("error decoding known txid: %w", err)
 				}
 				paramWriter.writeBytes(txidBytes)
 			}
@@ -221,7 +221,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			for _, outpoint := range args.Options.NoSendChange {
 				op, err := encodeOutpoint(outpoint)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("error encode outpoint for options no send change: %w", err)
 				}
 				paramWriter.writeBytes(op)
 			}
@@ -235,7 +235,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 			for _, txid := range args.Options.SendWith {
 				txidBytes, err := hex.DecodeString(txid)
 				if err != nil {
-					return nil, fmt.Errorf("error decoding send with txid: %v", err)
+					return nil, fmt.Errorf("error decoding send with txid: %w", err)
 				}
 				paramWriter.writeBytes(txidBytes)
 			}
@@ -272,30 +272,30 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	// Read description
 	descLen, err := messageReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading description length: %v", err)
+		return nil, fmt.Errorf("error reading description length: %w", err)
 	}
 	descBytes, err := messageReader.readBytes(int(descLen))
 	if err != nil {
-		return nil, fmt.Errorf("error reading description: %v", err)
+		return nil, fmt.Errorf("error reading description: %w", err)
 	}
 	args.Description = string(descBytes)
 
 	// Read input BEEF
 	inputBeefLen, err := messageReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading input BEEF length: %v", err)
+		return nil, fmt.Errorf("error reading input BEEF length: %w", err)
 	}
 	if inputBeefLen != math.MaxUint64 { // -1 means nil
 		args.InputBEEF, err = messageReader.readBytes(int(inputBeefLen))
 		if err != nil {
-			return nil, fmt.Errorf("error reading input BEEF: %v", err)
+			return nil, fmt.Errorf("error reading input BEEF: %w", err)
 		}
 	}
 
 	// Read inputs
 	inputsLen, err := messageReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading inputs length: %v", err)
+		return nil, fmt.Errorf("error reading inputs length: %w", err)
 	}
 	if inputsLen != math.MaxUint64 { // -1 means nil
 		args.Inputs = make([]wallet.CreateActionInput, 0, inputsLen)
@@ -305,22 +305,22 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			// Read outpoint
 			outpointBytes, err := messageReader.readBytes(36) // 32 txid + 4 index
 			if err != nil {
-				return nil, fmt.Errorf("error reading outpoint: %v", err)
+				return nil, fmt.Errorf("error reading outpoint: %w", err)
 			}
 			input.Outpoint, err = decodeOutpoint(outpointBytes)
 			if err != nil {
-				return nil, fmt.Errorf("error decoding outpoint: %v", err)
+				return nil, fmt.Errorf("error decoding outpoint: %w", err)
 			}
 
 			// Read unlocking script
 			unlockingScriptLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading unlocking script length: %v", err)
+				return nil, fmt.Errorf("error reading unlocking script length: %w", err)
 			}
 			if unlockingScriptLen != math.MaxUint64 { // -1 means nil
 				scriptBytes, err := messageReader.readBytes(int(unlockingScriptLen))
 				if err != nil {
-					return nil, fmt.Errorf("error reading unlocking script: %v", err)
+					return nil, fmt.Errorf("error reading unlocking script: %w", err)
 				}
 				input.UnlockingScript = hex.EncodeToString(scriptBytes)
 				input.UnlockingScriptLength = uint32(len(scriptBytes))
@@ -328,7 +328,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 				// Read unlocking script length value
 				length, err := messageReader.readVarInt()
 				if err != nil {
-					return nil, fmt.Errorf("error reading unlocking script length value: %v", err)
+					return nil, fmt.Errorf("error reading unlocking script length value: %w", err)
 				}
 				input.UnlockingScriptLength = uint32(length)
 			}
@@ -336,18 +336,18 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			// Read input description
 			inputDescLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading input description length: %v", err)
+				return nil, fmt.Errorf("error reading input description length: %w", err)
 			}
 			inputDescBytes, err := messageReader.readBytes(int(inputDescLen))
 			if err != nil {
-				return nil, fmt.Errorf("error reading input description: %v", err)
+				return nil, fmt.Errorf("error reading input description: %w", err)
 			}
 			input.InputDescription = string(inputDescBytes)
 
 			// Read sequence number
 			seqNum, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading sequence number: %v", err)
+				return nil, fmt.Errorf("error reading sequence number: %w", err)
 			}
 			if seqNum != math.MaxUint64 { // -1 means nil
 				input.SequenceNumber = uint32(seqNum)
@@ -360,7 +360,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	// Read outputs
 	outputsLen, err := messageReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading outputs length: %v", err)
+		return nil, fmt.Errorf("error reading outputs length: %w", err)
 	}
 	if outputsLen != math.MaxUint64 { // -1 means nil
 		args.Outputs = make([]wallet.CreateActionOutput, 0, outputsLen)
@@ -370,41 +370,41 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			// Read locking script
 			lockingScriptLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading locking script length: %v", err)
+				return nil, fmt.Errorf("error reading locking script length: %w", err)
 			}
 			lockingScriptBytes, err := messageReader.readBytes(int(lockingScriptLen))
 			if err != nil {
-				return nil, fmt.Errorf("error reading locking script: %v", err)
+				return nil, fmt.Errorf("error reading locking script: %w", err)
 			}
 			output.LockingScript = hex.EncodeToString(lockingScriptBytes)
 
 			// Read satoshis
 			satoshis, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading satoshis: %v", err)
+				return nil, fmt.Errorf("error reading satoshis: %w", err)
 			}
 			output.Satoshis = satoshis
 
 			// Read output description
 			outputDescLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading output description length: %v", err)
+				return nil, fmt.Errorf("error reading output description length: %w", err)
 			}
 			outputDescBytes, err := messageReader.readBytes(int(outputDescLen))
 			if err != nil {
-				return nil, fmt.Errorf("error reading output description: %v", err)
+				return nil, fmt.Errorf("error reading output description: %w", err)
 			}
 			output.OutputDescription = string(outputDescBytes)
 
 			// Read basket
 			basketLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading basket length: %v", err)
+				return nil, fmt.Errorf("error reading basket length: %w", err)
 			}
 			if basketLen != math.MaxUint64 { // -1 means nil
 				basketBytes, err := messageReader.readBytes(int(basketLen))
 				if err != nil {
-					return nil, fmt.Errorf("error reading basket: %v", err)
+					return nil, fmt.Errorf("error reading basket: %w", err)
 				}
 				output.Basket = string(basketBytes)
 			}
@@ -412,12 +412,12 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			// Read custom instructions
 			customInstLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading custom instructions length: %v", err)
+				return nil, fmt.Errorf("error reading custom instructions length: %w", err)
 			}
 			if customInstLen != math.MaxUint64 { // -1 means nil
 				customInstBytes, err := messageReader.readBytes(int(customInstLen))
 				if err != nil {
-					return nil, fmt.Errorf("error reading custom instructions: %v", err)
+					return nil, fmt.Errorf("error reading custom instructions: %w", err)
 				}
 				output.CustomInstructions = string(customInstBytes)
 			}
@@ -425,18 +425,18 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 			// Read tags
 			tagsLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading tags length: %v", err)
+				return nil, fmt.Errorf("error reading tags length: %w", err)
 			}
 			if tagsLen != math.MaxUint64 { // -1 means nil
 				output.Tags = make([]string, 0, tagsLen)
 				for j := uint64(0); j < tagsLen; j++ {
 					tagLen, err := messageReader.readVarInt()
 					if err != nil {
-						return nil, fmt.Errorf("error reading tag length: %v", err)
+						return nil, fmt.Errorf("error reading tag length: %w", err)
 					}
 					tagBytes, err := messageReader.readBytes(int(tagLen))
 					if err != nil {
-						return nil, fmt.Errorf("error reading tag: %v", err)
+						return nil, fmt.Errorf("error reading tag: %w", err)
 					}
 					output.Tags = append(output.Tags, string(tagBytes))
 				}
@@ -449,7 +449,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	// Read lockTime
 	lockTime, err := messageReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading lockTime: %v", err)
+		return nil, fmt.Errorf("error reading lockTime: %w", err)
 	}
 	if lockTime != math.MaxUint64 { // -1 means nil
 		args.LockTime = uint32(lockTime)
@@ -458,7 +458,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	// Read version
 	version, err := messageReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading version: %v", err)
+		return nil, fmt.Errorf("error reading version: %w", err)
 	}
 	if version != math.MaxUint64 { // -1 means nil
 		args.Version = uint32(version)
@@ -467,18 +467,18 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	// Read labels
 	labelsLen, err := messageReader.readVarInt()
 	if err != nil {
-		return nil, fmt.Errorf("error reading labels length: %v", err)
+		return nil, fmt.Errorf("error reading labels length: %w", err)
 	}
 	if labelsLen != math.MaxUint64 { // -1 means nil
 		args.Labels = make([]string, 0, labelsLen)
 		for i := uint64(0); i < labelsLen; i++ {
 			labelLen, err := messageReader.readVarInt()
 			if err != nil {
-				return nil, fmt.Errorf("error reading label length: %v", err)
+				return nil, fmt.Errorf("error reading label length: %w", err)
 			}
 			labelBytes, err := messageReader.readBytes(int(labelLen))
 			if err != nil {
-				return nil, fmt.Errorf("error reading label: %v", err)
+				return nil, fmt.Errorf("error reading label: %w", err)
 			}
 			args.Labels = append(args.Labels, string(labelBytes))
 		}
@@ -487,7 +487,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	// Read options
 	optionsPresent, err := messageReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading options present flag: %v", err)
+		return nil, fmt.Errorf("error reading options present flag: %w", err)
 	}
 	if optionsPresent == 1 {
 		args.Options = &wallet.CreateActionOptions{}
@@ -495,7 +495,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read signAndProcess
 		signAndProcessFlag, err := messageReader.readByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading signAndProcess flag: %v", err)
+			return nil, fmt.Errorf("error reading signAndProcess flag: %w", err)
 		}
 		if signAndProcessFlag != 0xFF { // -1 means nil
 			args.Options.SignAndProcess = new(bool)
@@ -505,7 +505,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read acceptDelayedBroadcast
 		acceptDelayedBroadcastFlag, err := messageReader.readByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading acceptDelayedBroadcast flag: %v", err)
+			return nil, fmt.Errorf("error reading acceptDelayedBroadcast flag: %w", err)
 		}
 		if acceptDelayedBroadcastFlag != 0xFF { // -1 means nil
 			args.Options.AcceptDelayedBroadcast = new(bool)
@@ -515,7 +515,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read trustSelf
 		trustSelfFlag, err := messageReader.readByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading trustSelf flag: %v", err)
+			return nil, fmt.Errorf("error reading trustSelf flag: %w", err)
 		}
 		if trustSelfFlag == 1 {
 			args.Options.TrustSelf = "known"
@@ -524,14 +524,14 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read knownTxids
 		knownTxidsLen, err := messageReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading knownTxids length: %v", err)
+			return nil, fmt.Errorf("error reading knownTxids length: %w", err)
 		}
 		if knownTxidsLen != math.MaxUint64 { // -1 means nil
 			args.Options.KnownTxids = make([]string, 0, knownTxidsLen)
 			for i := uint64(0); i < knownTxidsLen; i++ {
 				txidBytes, err := messageReader.readBytes(32)
 				if err != nil {
-					return nil, fmt.Errorf("error reading known txid: %v", err)
+					return nil, fmt.Errorf("error reading known txid: %w", err)
 				}
 				args.Options.KnownTxids = append(args.Options.KnownTxids, hex.EncodeToString(txidBytes))
 			}
@@ -540,7 +540,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read returnTXIDOnly
 		returnTXIDOnlyFlag, err := messageReader.readByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading returnTXIDOnly flag: %v", err)
+			return nil, fmt.Errorf("error reading returnTXIDOnly flag: %w", err)
 		}
 		if returnTXIDOnlyFlag != 0xFF { // -1 means nil
 			args.Options.ReturnTXIDOnly = new(bool)
@@ -550,7 +550,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read noSend
 		noSendFlag, err := messageReader.readByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading noSend flag: %v", err)
+			return nil, fmt.Errorf("error reading noSend flag: %w", err)
 		}
 		if noSendFlag != 0xFF { // -1 means nil
 			args.Options.NoSend = new(bool)
@@ -560,18 +560,18 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read noSendChange
 		noSendChangeLen, err := messageReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading noSendChange length: %v", err)
+			return nil, fmt.Errorf("error reading noSendChange length: %w", err)
 		}
 		if noSendChangeLen != math.MaxUint64 { // -1 means nil
 			args.Options.NoSendChange = make([]string, 0, noSendChangeLen)
 			for i := uint64(0); i < noSendChangeLen; i++ {
 				outpointBytes, err := messageReader.readBytes(36) // 32 txid + 4 index
 				if err != nil {
-					return nil, fmt.Errorf("error reading noSendChange outpoint: %v", err)
+					return nil, fmt.Errorf("error reading noSendChange outpoint: %w", err)
 				}
 				outpoint, err := decodeOutpoint(outpointBytes)
 				if err != nil {
-					return nil, fmt.Errorf("error decoding noSendChange outpoint: %v", err)
+					return nil, fmt.Errorf("error decoding noSendChange outpoint: %w", err)
 				}
 				args.Options.NoSendChange = append(args.Options.NoSendChange, outpoint)
 			}
@@ -580,14 +580,14 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read sendWith
 		sendWithLen, err := messageReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading sendWith length: %v", err)
+			return nil, fmt.Errorf("error reading sendWith length: %w", err)
 		}
 		if sendWithLen != math.MaxUint64 { // -1 means nil
 			args.Options.SendWith = make([]string, 0, sendWithLen)
 			for i := uint64(0); i < sendWithLen; i++ {
 				txidBytes, err := messageReader.readBytes(32)
 				if err != nil {
-					return nil, fmt.Errorf("error reading sendWith txid: %v", err)
+					return nil, fmt.Errorf("error reading sendWith txid: %w", err)
 				}
 				args.Options.SendWith = append(args.Options.SendWith, hex.EncodeToString(txidBytes))
 			}
@@ -596,7 +596,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		// Read randomizeOutputs
 		randomizeOutputsFlag, err := messageReader.readByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading randomizeOutputs flag: %v", err)
+			return nil, fmt.Errorf("error reading randomizeOutputs flag: %w", err)
 		}
 		if randomizeOutputsFlag != 0xFF { // -1 means nil
 			args.Options.RandomizeOutputs = new(bool)

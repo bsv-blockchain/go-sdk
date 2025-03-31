@@ -39,17 +39,17 @@ func ReadRequestFrame(data []byte) (*RequestFrame, error) {
 	// Read call type byte
 	call, err := frameReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading call byte: %v", err)
+		return nil, fmt.Errorf("error reading call byte: %w", err)
 	}
 
 	// Read originator length and bytes
 	originatorLen, err := frameReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading originator length: %v", err)
+		return nil, fmt.Errorf("error reading originator length: %w", err)
 	}
 	originatorBytes, err := frameReader.readBytes(int(originatorLen))
 	if err != nil {
-		return nil, fmt.Errorf("error reading originator: %v", err)
+		return nil, fmt.Errorf("error reading originator: %w", err)
 	}
 	originator := string(originatorBytes)
 
@@ -101,29 +101,29 @@ func ReadResultFrame(data []byte) ([]byte, error) {
 	// Check error byte
 	errorByte, err := frameReader.readByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading error byte: %v", err)
+		return nil, fmt.Errorf("error reading error byte: %w", err)
 	}
 
 	if errorByte != 0 {
 		// Read error message
 		errorMsgLen, err := frameReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading error message length: %v", err)
+			return nil, fmt.Errorf("error reading error message length: %w", err)
 		}
 		errorMsgBytes, err := frameReader.readBytes(int(errorMsgLen))
 		if err != nil {
-			return nil, fmt.Errorf("error reading error message: %v", err)
+			return nil, fmt.Errorf("error reading error message: %w", err)
 		}
 		errorMsg := string(errorMsgBytes)
 
 		// Read stack trace
 		stackTraceLen, err := frameReader.readVarInt()
 		if err != nil {
-			return nil, fmt.Errorf("error reading stack trace length: %v", err)
+			return nil, fmt.Errorf("error reading stack trace length: %w", err)
 		}
 		stackTraceBytes, err := frameReader.readBytes(int(stackTraceLen))
 		if err != nil {
-			return nil, fmt.Errorf("error reading stack trace: %v", err)
+			return nil, fmt.Errorf("error reading stack trace: %w", err)
 		}
 		stackTrace := string(stackTraceBytes)
 
