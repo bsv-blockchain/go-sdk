@@ -325,11 +325,11 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 				input.UnlockingScriptLength = uint32(len(scriptBytes))
 			} else {
 				// Read unlocking script length value
-				length, err := messageReader.readVarInt()
+				length, err := messageReader.readVarInt32()
 				if err != nil {
 					return nil, fmt.Errorf("error reading unlocking script length value: %w", err)
 				}
-				input.UnlockingScriptLength = uint32(length)
+				input.UnlockingScriptLength = length
 			}
 
 			// Read input description

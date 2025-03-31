@@ -63,6 +63,11 @@ func (r *reader) readVarInt() (uint64, error) {
 	return binary.ReadUvarint(r)
 }
 
+func (r *reader) readVarInt32() (uint32, error) {
+	varUint64, err := binary.ReadUvarint(r)
+	return uint32(varUint64), err
+}
+
 // ReadByte implements the io.ByteReader interface
 func (r *reader) ReadByte() (byte, error) {
 	return r.readByte()

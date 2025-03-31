@@ -6,6 +6,60 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+func SerializeSignActionResult(result *wallet.SignActionResult) ([]byte, error) {
+	w := newWriter()
+
+	// Txid
+	if result.Txid != "" {
+		w.writeByte(1)
+		txidBytes, err := hex.DecodeString(result.Txid)
+		if err != nil {
+			return nil, fmt.Errorf("invalid txid hex: %w", err)
+		}
+		w.writeBytes(txidBytes)
+	} else {
+		w.writeByte(0)
+	}
+
+	// Tx
+	if len(result.Tx) > 0 {
+		w.writeByte(1)
+		w.writeVarInt(uint64(len(result.Tx)))
+		w.writeBytes(result.Tx)
+	} else {
+		w.writeByte(0)
+	}
+
+	// SendWithResults
+	if len(result.SendWithResults) > 0 {
+		w.writeVarInt(uint64(len(result.SendWithResults)))
+		for _, res := range result.SendWithResults {
+			txidBytes, err := hex.DecodeString(res.Txid)
+			if err != nil {
+				return nil, fmt.Errorf("invalid sendWith txid hex: %w", err)
+			}
+			w.writeBytes(txidBytes)
+
+			var statusByte byte
+			switch res.Status {
+			case "unproven":
+				statusByte = 1
+			case "sending":
+				statusByte = 2
+			case "failed":
+				statusByte = 3
+			default:
+				return nil, fmt.Errorf("invalid sendWith status: %s", res.Status)
+			}
+			w.writeByte(statusByte)
+		}
+	} else {
+		w.writeVarInt(0)
+	}
+
+	return w.buf, nil
+}
+
 func DeserializeSignActionResult(data []byte) (*wallet.SignActionResult, error) {
 	r := newReader(data)
 	result := &wallet.SignActionResult{}
