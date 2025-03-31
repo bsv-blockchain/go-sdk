@@ -63,6 +63,7 @@ func (r *reader) readVarInt() (uint64, error) {
 	return binary.ReadUvarint(r)
 }
 
+// ReadByte implements the io.ByteReader interface
 func (r *reader) ReadByte() (byte, error) {
 	return r.readByte()
 }
@@ -107,4 +108,8 @@ func decodeOutpoint(data []byte) (string, error) {
 	txid := hex.EncodeToString(data[:32])
 	index := binary.BigEndian.Uint32(data[32:36])
 	return fmt.Sprintf("%s.%d", txid, index), nil
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

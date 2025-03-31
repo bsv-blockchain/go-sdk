@@ -203,7 +203,3 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 		})
 	}
 }
-
-func boolPtr(b bool) *bool {
-	return &b
-}

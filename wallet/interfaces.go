@@ -63,6 +63,31 @@ type SignableTransaction struct {
 	Reference string
 }
 
+type SignActionSpend struct {
+	UnlockingScript string // Hex encoded
+	SequenceNumber  uint32
+}
+
+type SignActionOptions struct {
+	AcceptDelayedBroadcast *bool
+	ReturnTXIDOnly         *bool
+	NoSend                 *bool
+	SendWith               []string
+}
+
+type SignActionArgs struct {
+	Spends    map[uint32]SignActionSpend // Key is input index
+	Reference string                     // Base64 encoded
+	Options   *SignActionOptions
+}
+
+type SignActionResult struct {
+	Txid            string
+	Tx              []byte
+	SendWithResults []SendWithResult
+}
+
 type Interface interface {
 	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
+	SignAction(args SignActionArgs, originator string) (*SignActionResult, error)
 }

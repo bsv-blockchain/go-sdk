@@ -27,6 +27,11 @@ func (m *MockWallet) CreateAction(args wallet.CreateActionArgs, originator strin
 	return m.CreateActionResultToReturn, nil
 }
 
+func (m *MockWallet) SignAction(args wallet.SignActionArgs, originator string) (*wallet.SignActionResult, error) {
+	require.Fail(m.T, "SignAction mock not implemented")
+	return nil, nil
+}
+
 func createTestWalletWire(wallet wallet.Interface) *WalletWireTransceiver {
 	processor := NewWalletWireProcessor(wallet)
 	return NewWalletWireTransceiver(processor)

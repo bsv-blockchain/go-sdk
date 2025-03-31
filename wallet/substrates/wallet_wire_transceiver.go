@@ -50,3 +50,20 @@ func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs, origi
 	// Deserialize response
 	return serializer.DeserializeCreateActionResult(resp)
 }
+
+func (t *WalletWireTransceiver) SignAction(args wallet.SignActionArgs, originator string) (*wallet.SignActionResult, error) {
+	// Serialize the request
+	data, err := serializer.SerializeSignActionArgs(&args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize sign action arguments: %w", err)
+	}
+
+	// Send to processor
+	resp, err := t.transmit(CallSignAction, originator, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to transmit sign action call: %w", err)
+	}
+
+	// Deserialize response
+	return serializer.DeserializeSignActionResult(resp)
+}
