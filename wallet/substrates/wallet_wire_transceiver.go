@@ -16,7 +16,7 @@ func NewWalletWireTransceiver(processor *WalletWireProcessor) *WalletWireTransce
 	return &WalletWireTransceiver{Wire: processor}
 }
 
-func (t *WalletWireTransceiver) Transmit(call Call, originator string, params []byte) ([]byte, error) {
+func (t *WalletWireTransceiver) transmit(call Call, originator string, params []byte) ([]byte, error) {
 	// Create frame
 	frame := serializer.WriteRequestFrame(serializer.RequestFrame{
 		Call:       byte(call),
@@ -42,7 +42,7 @@ func (t *WalletWireTransceiver) CreateAction(args wallet.CreateActionArgs, origi
 	}
 
 	// Send to processor
-	resp, err := t.Transmit(CallCreateAction, originator, data)
+	resp, err := t.transmit(CallCreateAction, originator, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit create action call: %w", err)
 	}
