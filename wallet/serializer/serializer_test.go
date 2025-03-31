@@ -1,7 +1,7 @@
 package serializer
 
 import (
-	"bytes"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -75,16 +75,7 @@ func TestWriterReader(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			switch v := got.(type) {
-			case []byte:
-				if !bytes.Equal(v, tt.expected.([]byte)) {
-					t.Errorf("got %x, want %x", v, tt.expected)
-				}
-			default:
-				if got != tt.expected {
-					t.Errorf("got %v, want %v", got, tt.expected)
-				}
-			}
+			require.Equal(t, tt.expected, got)
 		})
 	}
 }
