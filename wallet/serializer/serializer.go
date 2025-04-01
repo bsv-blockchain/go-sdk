@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"strings"
 )
 
@@ -26,9 +27,7 @@ func (w *writer) writeBytes(b []byte) {
 }
 
 func (w *writer) writeVarInt(n uint64) {
-	var buf [binary.MaxVarintLen64]byte
-	size := binary.PutUvarint(buf[:], n)
-	w.writeBytes(buf[:size])
+	w.writeBytes(transaction.VarInt(n).Bytes())
 }
 
 // reader is a helper for reading binary messages
@@ -60,17 +59,31 @@ func (r *reader) readBytes(n int) ([]byte, error) {
 }
 
 func (r *reader) readVarInt() (uint64, error) {
-	return binary.ReadUvarint(r)
+	var varInt transaction.VarInt
+	if _, err := varInt.ReadFrom(r); err != nil {
+		return 0, fmt.Errorf("error reading varint: %w", err)
+	}
+	return uint64(varInt), nil
 }
 
 func (r *reader) readVarInt32() (uint32, error) {
-	varUint64, err := binary.ReadUvarint(r)
+	varUint64, err := r.readVarInt()
 	return uint32(varUint64), err
 }
 
 // ReadByte implements the io.ByteReader interface
 func (r *reader) ReadByte() (byte, error) {
 	return r.readByte()
+}
+
+// Read implements the io.Reader interface
+func (r *reader) Read(b []byte) (int, error) {
+	if r.pos >= len(r.data) {
+		return 0, errors.New("read past end of data")
+	}
+	n := copy(b, r.data[r.pos:])
+	r.pos += n
+	return n, nil
 }
 
 func (r *reader) readRemaining() []byte {
