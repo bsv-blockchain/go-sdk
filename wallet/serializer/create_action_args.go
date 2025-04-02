@@ -53,15 +53,10 @@ func serializeCreateActionInputs(paramWriter *writer, inputs []wallet.CreateActi
 		paramWriter.writeBytes(outpoint)
 
 		// Serialize unlocking script
-		if input.UnlockingScript != "" {
-			script, err := hex.DecodeString(input.UnlockingScript)
-			if err != nil {
-				return fmt.Errorf("error decoding unlocking script: %w", err)
-			}
-			paramWriter.writeVarInt(uint64(len(script)))
-			paramWriter.writeBytes(script)
-		} else {
-			paramWriter.writeVarInt(math.MaxUint64) // -1
+		if err = paramWriter.writeOptionalFromHex(input.UnlockingScript); err != nil {
+			return fmt.Errorf("invalid unlocking script: %w", err)
+		}
+		if input.UnlockingScript == "" {
 			paramWriter.writeVarInt(uint64(input.UnlockingScriptLength))
 		}
 

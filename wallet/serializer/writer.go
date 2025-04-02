@@ -44,6 +44,20 @@ func (w *writer) writeOptionalString(s string) {
 	}
 }
 
+func (w *writer) writeOptionalFromHex(s string) error {
+	if s != "" {
+		b, err := hex.DecodeString(s)
+		if err != nil {
+			return fmt.Errorf("error write invalid hex: %w", err)
+		}
+		w.writeVarInt(uint64(len(b)))
+		w.writeBytes(b)
+	} else {
+		w.writeVarInt(math.MaxUint64)
+	}
+	return nil
+}
+
 type BytesOption int
 
 const (

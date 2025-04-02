@@ -33,6 +33,8 @@ func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
 		response, err = w.processSignAction(requestFrame)
 	case CallAbortAction:
 		response, err = w.processAbortAction(requestFrame)
+	case CallListActions:
+		response, err = w.processListAction(requestFrame)
 	default:
 		return nil, fmt.Errorf("unknown call type: %d", requestFrame.Call)
 	}
@@ -76,4 +78,16 @@ func (w *WalletWireProcessor) processAbortAction(requestFrame *serializer.Reques
 		return nil, fmt.Errorf("failed to process abort action: %w", err)
 	}
 	return serializer.SerializeAbortActionResult(result)
+}
+
+func (w *WalletWireProcessor) processListAction(requestFrame *serializer.RequestFrame) ([]byte, error) {
+	args, err := serializer.DeserializeListActionArgs(requestFrame.Params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize list action args: %w", err)
+	}
+	result, err := w.Wallet.ListActions(*args, requestFrame.Originator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process list action: %w", err)
+	}
+	return serializer.SerializeListActionResult(result)
 }

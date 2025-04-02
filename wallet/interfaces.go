@@ -87,10 +87,87 @@ type SignActionResult struct {
 	SendWithResults []SendWithResult
 }
 
+type ActionInput struct {
+	SourceOutpoint      string
+	SourceSatoshis      uint64
+	SourceLockingScript string // Hex encoded
+	UnlockingScript     string // Hex encoded
+	InputDescription    string
+	SequenceNumber      uint32
+}
+
+type ActionOutput struct {
+	Satoshis           uint64
+	LockingScript      string // Hex encoded
+	Spendable          bool
+	CustomInstructions string
+	Tags               []string
+	OutputIndex        uint32
+	OutputDescription  string
+	Basket             string
+}
+
+type ActionStatus string
+
+const (
+	ActionStatusCompleted   ActionStatus = "completed"
+	ActionStatusUnprocessed ActionStatus = "unprocessed"
+	ActionStatusSending     ActionStatus = "sending"
+	ActionStatusUnproven    ActionStatus = "unproven"
+	ActionStatusUnsigned    ActionStatus = "unsigned"
+	ActionStatusNoSend      ActionStatus = "nosend"
+	ActionStatusNonFinal    ActionStatus = "nonfinal"
+)
+
+type ActionStatusCode uint8
+
+const (
+	ActionStatusCodeCompleted   ActionStatusCode = 1
+	ActionStatusCodeUnprocessed ActionStatusCode = 2
+	ActionStatusCodeSending     ActionStatusCode = 3
+	ActionStatusCodeUnproven    ActionStatusCode = 4
+	ActionStatusCodeUnsigned    ActionStatusCode = 5
+	ActionStatusCodeNoSend      ActionStatusCode = 6
+	ActionStatusCodeNonFinal    ActionStatusCode = 7
+)
+
+type Action struct {
+	Txid        string
+	Satoshis    uint64
+	Status      ActionStatus
+	IsOutgoing  bool
+	Description string
+	Labels      []string
+	Version     uint32
+	LockTime    uint32
+	Inputs      []ActionInput
+	Outputs     []ActionOutput
+}
+
+type ListActionsArgs struct {
+	Labels                           []string
+	LabelQueryMode                   string // "any" | "all"
+	IncludeLabels                    *bool
+	IncludeInputs                    *bool
+	IncludeInputSourceLockingScripts *bool
+	IncludeInputUnlockingScripts     *bool
+	IncludeOutputs                   *bool
+	IncludeOutputLockingScripts      *bool
+	Limit                            uint32 // Default 10, max 10000
+	Offset                           uint32
+	SeekPermission                   *bool // Default true
+}
+
+type ListActionsResult struct {
+	TotalActions uint32
+	Actions      []Action
+}
+
 type Interface interface {
 	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
 	SignAction(args SignActionArgs, originator string) (*SignActionResult, error)
 	AbortAction(args AbortActionArgs, originator string) (*AbortActionResult, error)
+	ListActions(args ListActionsArgs, originator string) (*ListActionsResult, error)
 }
 
 type AbortActionArgs struct {

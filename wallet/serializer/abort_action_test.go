@@ -46,7 +46,7 @@ func TestAbortActionArgsSerializeAndDeserialize(t *testing.T) {
 
 func TestAbortActionResultSerializeAndDeserialize(t *testing.T) {
 	tests := []struct {
-		name string
+		name   string
 		result *wallet.AbortActionResult
 	}{
 		{

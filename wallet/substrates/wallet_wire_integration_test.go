@@ -34,6 +34,16 @@ func (m *MockWallet) SignAction(args wallet.SignActionArgs, originator string) (
 	return nil, nil
 }
 
+func (m *MockWallet) AbortAction(args wallet.AbortActionArgs, originator string) (*wallet.AbortActionResult, error) {
+	require.Fail(m.T, "AbortAction mock not implemented")
+	return nil, nil
+}
+
+func (m *MockWallet) ListActions(args wallet.ListActionsArgs, originator string) (*wallet.ListActionsResult, error) {
+	require.Fail(m.T, "ListActions mock not implemented")
+	return nil, nil
+}
+
 func createTestWalletWire(wallet wallet.Interface) *WalletWireTransceiver {
 	processor := NewWalletWireProcessor(wallet)
 	return NewWalletWireTransceiver(processor)
@@ -114,9 +124,9 @@ func TestTsCompatibility(t *testing.T) {
 	require.Equal(t, wallet.CreateActionArgs{
 		Description: "Test action description",
 		Outputs: []wallet.CreateActionOutput{{
-			LockingScript:      "00",
-			Satoshis:           1000,
-			OutputDescription:  "Test output description",
+			LockingScript:     "00",
+			Satoshis:          1000,
+			OutputDescription: "Test output description",
 		}},
 	}, *createActionArgs)
 }

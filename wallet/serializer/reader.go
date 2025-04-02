@@ -184,6 +184,21 @@ func (r *reader) readStringSlice() ([]string, error) {
 	return slice, nil
 }
 
+func (r *reader) readOptionalToHex() (string, error) {
+	dataLen, err := r.readVarInt()
+	if err != nil {
+		return "", fmt.Errorf("error reading data length for optional hex: %w", err)
+	}
+	if dataLen == math.MaxUint64 {
+		return "", nil
+	}
+	data, err := r.readBytes(int(dataLen))
+	if err != nil {
+		return "", fmt.Errorf("error reading data bytes for optional hex: %w", err)
+	}
+	return hex.EncodeToString(data), nil
+}
+
 type readerHoldError struct {
 	err    error
 	reader reader
@@ -283,6 +298,15 @@ func (r *readerHoldError) readStringSlice() []string {
 		return nil
 	}
 	val, err := r.reader.readStringSlice()
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readOptionalToHex() string {
+	if r.err != nil {
+		return ""
+	}
+	val, err := r.reader.readOptionalToHex()
 	r.err = err
 	return val
 }
