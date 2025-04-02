@@ -39,47 +39,14 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 	if args.Options != nil {
 		w.writeByte(1) // options present
 
-		// AcceptDelayedBroadcast
-		if args.Options.AcceptDelayedBroadcast != nil {
-			if *args.Options.AcceptDelayedBroadcast {
-				w.writeByte(1)
-			} else {
-				w.writeByte(0)
-			}
-		} else {
-			w.writeByte(0xFF) // nil
-		}
-
-		// ReturnTXIDOnly
-		if args.Options.ReturnTXIDOnly != nil {
-			if *args.Options.ReturnTXIDOnly {
-				w.writeByte(1)
-			} else {
-				w.writeByte(0)
-			}
-		} else {
-			w.writeByte(0xFF) // nil
-		}
-
-		// NoSend
-		if args.Options.NoSend != nil {
-			if *args.Options.NoSend {
-				w.writeByte(1)
-			} else {
-				w.writeByte(0)
-			}
-		} else {
-			w.writeByte(0xFF) // nil
-		}
+		// AcceptDelayedBroadcast, ReturnTXIDOnly, NoSend
+		w.writeOptionalBool(args.Options.AcceptDelayedBroadcast)
+		w.writeOptionalBool(args.Options.ReturnTXIDOnly)
+		w.writeOptionalBool(args.Options.NoSend)
 
 		// SendWith
-		w.writeVarInt(uint64(len(args.Options.SendWith)))
-		for _, txid := range args.Options.SendWith {
-			txidBytes, err := hex.DecodeString(txid)
-			if err != nil {
-				return nil, fmt.Errorf("invalid txid hex: %w", err)
-			}
-			w.writeBytes(txidBytes)
+		if err := w.writeTxidSlice(args.Options.SendWith); err != nil {
+			return nil, fmt.Errorf("error writing sendWith txids: %w", err)
 		}
 	} else {
 		w.writeByte(0) // options not present
@@ -144,48 +111,24 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 	if optionsPresent == 1 {
 		args.Options = &wallet.SignActionOptions{}
 
-		// AcceptDelayedBroadcast
-		acceptFlag, err := r.readByte()
+		// AcceptDelayedBroadcast, ReturnTXIDOnly, NoSend
+		args.Options.AcceptDelayedBroadcast, err = r.readOptionalBool()
 		if err != nil {
 			return nil, fmt.Errorf("failed to read accept delayed broadcast flag: %w", err)
 		}
-		if acceptFlag != 0xFF {
-			val := acceptFlag == 1
-			args.Options.AcceptDelayedBroadcast = &val
-		}
-
-		// ReturnTXIDOnly
-		returnFlag, err := r.readByte()
+		args.Options.ReturnTXIDOnly, err = r.readOptionalBool()
 		if err != nil {
 			return nil, fmt.Errorf("failed to read return txid only flag: %w", err)
 		}
-		if returnFlag != 0xFF {
-			val := returnFlag == 1
-			args.Options.ReturnTXIDOnly = &val
-		}
-
-		// NoSend
-		noSendFlag, err := r.readByte()
+		args.Options.NoSend, err = r.readOptionalBool()
 		if err != nil {
 			return nil, fmt.Errorf("failed to read no send flag: %w", err)
 		}
-		if noSendFlag != 0xFF {
-			val := noSendFlag == 1
-			args.Options.NoSend = &val
-		}
 
 		// SendWith
-		sendWithLen, err := r.readVarInt()
+		args.Options.SendWith, err = r.readTxidSlice()
 		if err != nil {
-			return nil, fmt.Errorf("failed to read sendWith length: %w", err)
-		}
-		args.Options.SendWith = make([]string, sendWithLen)
-		for i := 0; i < int(sendWithLen); i++ {
-			sendWith, err := r.readBytes(32)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read sendWith bytes: %w", err)
-			}
-			args.Options.SendWith[i] = hex.EncodeToString(sendWith)
+			return nil, fmt.Errorf("failed to read sendWith txids: %w", err)
 		}
 	}
 

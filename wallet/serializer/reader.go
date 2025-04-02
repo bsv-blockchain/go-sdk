@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -129,6 +130,38 @@ func (r *reader) readOptionalUint32() (uint32, error) {
 		return 0, nil
 	}
 	return uint32(val), nil
+}
+
+func (r *reader) readOptionalBool() (*bool, error) {
+	b, err := r.readByte()
+	if err != nil {
+		return nil, err
+	}
+	if b == 0xFF {
+		return nil, nil
+	}
+	val := b == 1
+	return &val, nil
+}
+
+func (r *reader) readTxidSlice() ([]string, error) {
+	count, err := r.readVarInt()
+	if err != nil {
+		return nil, err
+	}
+	if count == math.MaxUint64 {
+		return nil, nil
+	}
+
+	txids := make([]string, 0, count)
+	for i := uint64(0); i < count; i++ {
+		txid, err := r.readBytes(32)
+		if err != nil {
+			return nil, err
+		}
+		txids = append(txids, hex.EncodeToString(txid))
+	}
+	return txids, nil
 }
 
 func (r *reader) readStringSlice() ([]string, error) {
