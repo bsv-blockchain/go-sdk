@@ -90,4 +90,13 @@ type SignActionResult struct {
 type Interface interface {
 	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
 	SignAction(args SignActionArgs, originator string) (*SignActionResult, error)
+	AbortAction(args AbortActionArgs, originator string) (*AbortActionResult, error)
+}
+
+type AbortActionArgs struct {
+	Reference string // Base64 encoded reference
+}
+
+type AbortActionResult struct {
+	Aborted bool
 }
