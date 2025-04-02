@@ -67,3 +67,20 @@ func (t *WalletWireTransceiver) SignAction(args wallet.SignActionArgs, originato
 	// Deserialize response
 	return serializer.DeserializeSignActionResult(resp)
 }
+
+func (t *WalletWireTransceiver) AbortAction(args wallet.AbortActionArgs, originator string) (*wallet.AbortActionResult, error) {
+	// Serialize the request
+	data, err := serializer.SerializeAbortActionArgs(&args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize abort action arguments: %w", err)
+	}
+
+	// Send to processor
+	resp, err := t.transmit(CallAbortAction, originator, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to transmit abort action call: %w", err)
+	}
+
+	// Deserialize response
+	return serializer.DeserializeAbortActionResult(resp)
+}
