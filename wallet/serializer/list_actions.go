@@ -6,7 +6,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-func SerializeListActionArgs(args *wallet.ListActionsArgs) ([]byte, error) {
+func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	w := newWriter()
 
 	// Serialize labels
@@ -40,7 +40,7 @@ func SerializeListActionArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	return w.buf, nil
 }
 
-func DeserializeListActionArgs(data []byte) (*wallet.ListActionsArgs, error) {
+func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	r := newReaderHoldError(data)
 	args := &wallet.ListActionsArgs{}
 
@@ -79,7 +79,7 @@ func DeserializeListActionArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	return args, nil
 }
 
-func SerializeListActionResult(result *wallet.ListActionsResult) ([]byte, error) {
+func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error) {
 	w := newWriter()
 
 	// Serialize totalActions
@@ -170,7 +170,7 @@ func SerializeListActionResult(result *wallet.ListActionsResult) ([]byte, error)
 	return w.buf, nil
 }
 
-func DeserializeListActionResult(data []byte) (*wallet.ListActionsResult, error) {
+func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error) {
 	r := newReaderHoldError(data)
 	result := &wallet.ListActionsResult{}
 

@@ -73,9 +73,9 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
-			data, err := SerializeListActionArgs(&tt.args)
+			data, err := SerializeListActionsArgs(&tt.args)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeListActionArgs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SerializeListActionsArgs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.wantErr {
@@ -83,9 +83,9 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 			}
 
 			// Test deserialization
-			deserialized, err := DeserializeListActionArgs(data)
+			deserialized, err := DeserializeListActionsArgs(data)
 			if err != nil {
-				t.Errorf("DeserializeListActionArgs() error = %v", err)
+				t.Errorf("DeserializeListActionsArgs() error = %v", err)
 				return
 			}
 
@@ -194,9 +194,9 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
-			data, err := SerializeListActionResult(&tt.result)
+			data, err := SerializeListActionsResult(&tt.result)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeListActionResult() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SerializeListActionsResult() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.wantErr {
@@ -204,9 +204,9 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 			}
 
 			// Test deserialization
-			deserialized, err := DeserializeListActionResult(data)
+			deserialized, err := DeserializeListActionsResult(data)
 			if err != nil {
-				t.Errorf("DeserializeListActionResult() error = %v", err)
+				t.Errorf("DeserializeListActionsResult() error = %v", err)
 				return
 			}
 

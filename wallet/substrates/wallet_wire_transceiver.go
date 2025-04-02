@@ -87,7 +87,7 @@ func (t *WalletWireTransceiver) AbortAction(args wallet.AbortActionArgs, origina
 
 func (t *WalletWireTransceiver) ListActions(args wallet.ListActionsArgs, originator string) (*wallet.ListActionsResult, error) {
 	// Serialize the request
-	data, err := serializer.SerializeListActionArgs(&args)
+	data, err := serializer.SerializeListActionsArgs(&args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize list action arguments: %w", err)
 	}
@@ -99,5 +99,5 @@ func (t *WalletWireTransceiver) ListActions(args wallet.ListActionsArgs, origina
 	}
 
 	// Deserialize response
-	return serializer.DeserializeListActionResult(resp)
+	return serializer.DeserializeListActionsResult(resp)
 }
