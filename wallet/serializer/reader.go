@@ -124,7 +124,7 @@ func (r *reader) readOptionalBytes(opts ...BytesOption) ([]byte, error) {
 func (r *reader) readOptionalUint32() (uint32, error) {
 	val, err := r.readVarInt()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error reading val for optional uint32: %w", err)
 	}
 	if val == math.MaxUint64 {
 		return 0, nil
@@ -135,7 +135,7 @@ func (r *reader) readOptionalUint32() (uint32, error) {
 func (r *reader) readOptionalBool() (*bool, error) {
 	b, err := r.readByte()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading byte for optional bool: %w", err)
 	}
 	if b == 0xFF {
 		return nil, nil
@@ -147,7 +147,7 @@ func (r *reader) readOptionalBool() (*bool, error) {
 func (r *reader) readTxidSlice() ([]string, error) {
 	count, err := r.readVarInt()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading slice txid count: %w", err)
 	}
 	if count == math.MaxUint64 {
 		return nil, nil
@@ -157,7 +157,7 @@ func (r *reader) readTxidSlice() ([]string, error) {
 	for i := uint64(0); i < count; i++ {
 		txid, err := r.readBytes(32)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading txid bytes for slice: %w", err)
 		}
 		txids = append(txids, hex.EncodeToString(txid))
 	}
@@ -167,7 +167,7 @@ func (r *reader) readTxidSlice() ([]string, error) {
 func (r *reader) readStringSlice() ([]string, error) {
 	count, err := r.readVarInt()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading slice string count: %w", err)
 	}
 	if count == math.MaxUint64 {
 		return nil, nil
@@ -177,9 +177,112 @@ func (r *reader) readStringSlice() ([]string, error) {
 	for i := uint64(0); i < count; i++ {
 		str, err := r.readString()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading string for slice: %w", err)
 		}
 		slice = append(slice, str)
 	}
 	return slice, nil
+}
+
+type readerHoldError struct {
+	err    error
+	reader reader
+}
+
+func newReaderHoldError(data []byte) *readerHoldError {
+	return &readerHoldError{
+		reader: reader{data: data},
+	}
+}
+
+func (r *readerHoldError) readVarInt() uint64 {
+	var val uint64
+	if r.err == nil {
+		val, r.err = r.reader.readVarInt()
+	}
+	if r.err != nil {
+		return 0
+	}
+	return val
+}
+
+func (r *readerHoldError) readVarInt32() uint32 {
+	if r.err != nil {
+		return 0
+	}
+	val, err := r.reader.readVarInt32()
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readOptionalUint32() uint32 {
+	if r.err != nil {
+		return 0
+	}
+	val, err := r.reader.readOptionalUint32()
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readBytes(n int) []byte {
+	if r.err != nil {
+		return nil
+	}
+	val, err := r.reader.readBytes(n)
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readByte() byte {
+	if r.err != nil {
+		return 0
+	}
+	val, err := r.reader.readByte()
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readOptionalBool() *bool {
+	if r.err != nil {
+		return nil
+	}
+	val, err := r.reader.readOptionalBool()
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readTxidSlice() []string {
+	if r.err != nil {
+		return nil
+	}
+	val, err := r.reader.readTxidSlice()
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readOptionalBytes(opts ...BytesOption) []byte {
+	if r.err != nil {
+		return nil
+	}
+	val, err := r.reader.readOptionalBytes(opts...)
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readString() string {
+	if r.err != nil {
+		return ""
+	}
+	val, err := r.reader.readString()
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readStringSlice() []string {
+	if r.err != nil {
+		return nil
+	}
+	val, err := r.reader.readStringSlice()
+	r.err = err
+	return val
 }

@@ -86,7 +86,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 
 // decodeOutpoint converts binary outpoint data to string format "txid.index"
 func decodeOutpoint(data []byte) (string, error) {
-	if len(data) < 32 {
+	if len(data) < 36 {
 		return "", errors.New("invalid outpoint data length")
 	}
 

@@ -56,72 +56,50 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 		return nil, errors.New("empty response data")
 	}
 
-	resultReader := newReader(data)
+	resultReader := newReaderHoldError(data)
 	result := &wallet.CreateActionResult{}
 
 	// Read success byte (0 for success)
-	_, err := resultReader.readByte()
-	if err != nil {
-		return nil, fmt.Errorf("error reading success byte: %w", err)
-	}
+	_ = resultReader.readByte()
 
-	// Parse txid
-	txIdBytes, err := resultReader.readOptionalBytes(BytesOptionWithFlag, BytesOptionTxIdLen)
-	if err != nil {
-		return nil, fmt.Errorf("error reading txid bytes: %w", err)
-	}
+	// Parse txid and tx
+	txIdBytes := resultReader.readOptionalBytes(BytesOptionWithFlag, BytesOptionTxIdLen)
 	result.Txid = hex.EncodeToString(txIdBytes)
-
-	// Parse tx
-	result.Tx, err = resultReader.readOptionalBytes(BytesOptionWithFlag)
-	if err != nil {
-		return nil, fmt.Errorf("error reading tx: %w", err)
+	result.Tx = resultReader.readOptionalBytes(BytesOptionWithFlag)
+	if resultReader.err != nil {
+		return nil, fmt.Errorf("error reading tx: %w", resultReader.err)
 	}
 
 	// Parse noSendChange
-	noSendChangeData, err := resultReader.readOptionalBytes()
-	if err != nil {
-		return nil, fmt.Errorf("error reading noSendChange: %w", err)
-	}
-	result.NoSendChange, err = decodeOutpoints(noSendChangeData)
+	noSendChangeData := resultReader.readOptionalBytes()
+	noSendChange, err := decodeOutpoints(noSendChangeData)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding noSendChange: %w", err)
 	}
+	result.NoSendChange = noSendChange
 
 	// Parse sendWithResults
-	result.SendWithResults, err = readTxidSliceWithStatus(resultReader)
+	result.SendWithResults, err = readTxidSliceWithStatus(&resultReader.reader)
 	if err != nil {
 		return nil, fmt.Errorf("error reading sendWith results: %w", err)
 	}
 
 	// Parse signableTransaction
-	signableTxFlag, err := resultReader.readByte()
-	if err != nil {
-		return nil, fmt.Errorf("error reading signable tx flag: %w", err)
-	}
+	signableTxFlag := resultReader.readByte()
 	if signableTxFlag == 1 {
-		txLen, err := resultReader.readVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("error reading signable tx length: %w", err)
-		}
-		txBytes, err := resultReader.readBytes(int(txLen))
-		if err != nil {
-			return nil, fmt.Errorf("error reading signable tx: %w", err)
-		}
+		txLen := resultReader.readVarInt()
+		txBytes := resultReader.readBytes(int(txLen))
 
-		refLen, err := resultReader.readVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("error reading reference length: %w", err)
-		}
-		refBytes, err := resultReader.readBytes(int(refLen))
-		if err != nil {
-			return nil, fmt.Errorf("error reading reference: %w", err)
-		}
+		refLen := resultReader.readVarInt()
+		refBytes := resultReader.readBytes(int(refLen))
 
 		result.SignableTransaction = &wallet.SignableTransaction{
 			Tx:        txBytes,
 			Reference: string(refBytes),
 		}
+	}
+	if resultReader.err != nil {
+		return nil, fmt.Errorf("error reading signableTransaction: %w", resultReader.err)
 	}
 
 	return result, nil

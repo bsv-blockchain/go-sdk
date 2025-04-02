@@ -9,14 +9,12 @@ import (
 func SerializeSignActionResult(result *wallet.SignActionResult) ([]byte, error) {
 	w := newWriter()
 
-	// Txid
+	// Txid and tx
 	txidBytes, err := hex.DecodeString(result.Txid)
 	if err != nil {
 		return nil, fmt.Errorf("invalid txid hex: %w", err)
 	}
 	w.writeOptionalBytes(txidBytes, BytesOptionWithFlag, BytesOptionTxIdLen)
-
-	// Tx
 	w.writeOptionalBytes(result.Tx, BytesOptionWithFlag)
 
 	// SendWithResults
@@ -28,27 +26,20 @@ func SerializeSignActionResult(result *wallet.SignActionResult) ([]byte, error) 
 }
 
 func DeserializeSignActionResult(data []byte) (*wallet.SignActionResult, error) {
-	r := newReader(data)
+	r := newReaderHoldError(data)
 	result := &wallet.SignActionResult{}
 
-	// Txid
-	txidBytes, err := r.readOptionalBytes(BytesOptionWithFlag, BytesOptionTxIdLen)
-	if err != nil {
-		return nil, fmt.Errorf("reading txid: %w", err)
-	}
+	// Txid and tx
+	txidBytes := r.readOptionalBytes(BytesOptionWithFlag, BytesOptionTxIdLen)
 	result.Txid = hex.EncodeToString(txidBytes)
-
-	// Tx
-	result.Tx, err = r.readOptionalBytes(BytesOptionWithFlag)
-	if err != nil {
-		return nil, fmt.Errorf("reading tx: %w", err)
-	}
+	result.Tx = r.readOptionalBytes(BytesOptionWithFlag)
 
 	// SendWithResults
-	result.SendWithResults, err = readTxidSliceWithStatus(r)
+	results, err := readTxidSliceWithStatus(&r.reader)
 	if err != nil {
 		return nil, fmt.Errorf("reading sendWith results: %w", err)
 	}
+	result.SendWithResults = results
 
 	return result, nil
 }

@@ -56,80 +56,51 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 }
 
 func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
-	r := newReader(data)
+	r := newReaderHoldError(data)
 	args := &wallet.SignActionArgs{}
 
 	// Deserialize spends
-	spendCount, err := r.readVarInt()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read spend count: %w", err)
-	}
+	spendCount := r.readVarInt()
 	args.Spends = make(map[uint32]wallet.SignActionSpend)
 	for i := 0; i < int(spendCount); i++ {
-		inputIndex, err := r.readVarInt32()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read input index: %w", err)
-		}
+		inputIndex := r.readVarInt32()
 		spend := wallet.SignActionSpend{}
 
 		// Unlocking script
-		scriptLen, err := r.readVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read unlocking script length: %w", err)
-		}
-		unlockingScript, err := r.readBytes(int(scriptLen))
-		if err != nil {
-			return nil, fmt.Errorf("failed to read unlocking script: %w", err)
-		}
+		scriptLen := r.readVarInt()
+		unlockingScript := r.readBytes(int(scriptLen))
 		spend.UnlockingScript = hex.EncodeToString(unlockingScript)
 
 		// Sequence number
-		spend.SequenceNumber, err = r.readVarInt32()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read sequence number: %w", err)
-		}
+		spend.SequenceNumber = r.readVarInt32()
 
 		args.Spends[inputIndex] = spend
+		if r.err != nil {
+			return nil, fmt.Errorf("error reading spend %d: %w", inputIndex, r.err)
+		}
 	}
 
 	// Reference
-	refLen, err := r.readVarInt()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read reference length: %w", err)
-	}
-	reference, err := r.readBytes(int(refLen))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read reference: %w", err)
-	}
+	refLen := r.readVarInt()
+	reference := r.readBytes(int(refLen))
 	args.Reference = base64.StdEncoding.EncodeToString(reference)
 
 	// Options
-	optionsPresent, err := r.readByte()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read options presence: %w", err)
-	}
+	optionsPresent := r.readByte()
 	if optionsPresent == 1 {
 		args.Options = &wallet.SignActionOptions{}
 
 		// AcceptDelayedBroadcast, ReturnTXIDOnly, NoSend
-		args.Options.AcceptDelayedBroadcast, err = r.readOptionalBool()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read accept delayed broadcast flag: %w", err)
-		}
-		args.Options.ReturnTXIDOnly, err = r.readOptionalBool()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read return txid only flag: %w", err)
-		}
-		args.Options.NoSend, err = r.readOptionalBool()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read no send flag: %w", err)
-		}
+		args.Options.AcceptDelayedBroadcast = r.readOptionalBool()
+		args.Options.ReturnTXIDOnly = r.readOptionalBool()
+		args.Options.NoSend = r.readOptionalBool()
 
 		// SendWith
-		args.Options.SendWith, err = r.readTxidSlice()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read sendWith txids: %w", err)
-		}
+		args.Options.SendWith = r.readTxidSlice()
+	}
+
+	if r.err != nil {
+		return nil, fmt.Errorf("error reading sign action args: %w", r.err)
 	}
 
 	return args, nil
