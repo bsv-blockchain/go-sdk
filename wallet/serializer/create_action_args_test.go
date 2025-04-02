@@ -191,7 +191,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.writeBytes([]byte{0x01, 0x02})
 				return w.buf
 			}(),
-			err: "error reading input description length",
+			err: "error reading input description: error reading string length",
 		},
 	}
 

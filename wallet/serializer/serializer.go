@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"math"
 	"strings"
 )
 
@@ -28,6 +29,50 @@ func (w *writer) writeBytes(b []byte) {
 
 func (w *writer) writeVarInt(n uint64) {
 	w.writeBytes(transaction.VarInt(n).Bytes())
+}
+
+func (w *writer) writeString(s string) {
+	b := []byte(s)
+	w.writeVarInt(uint64(len(b)))
+	w.writeBytes(b)
+}
+
+func (w *writer) writeOptionalString(s string) {
+	if s != "" {
+		b := []byte(s)
+		w.writeVarInt(uint64(len(b)))
+		w.writeBytes(b)
+	} else {
+		w.writeVarInt(math.MaxUint64)
+	}
+}
+
+func (w *writer) writeOptionalBytes(b []byte) {
+	if b != nil {
+		w.writeVarInt(uint64(len(b)))
+		w.writeBytes(b)
+	} else {
+		w.writeVarInt(math.MaxUint64)
+	}
+}
+
+func (w *writer) writeOptionalUint32(n uint32) {
+	if n > 0 {
+		w.writeVarInt(uint64(n))
+	} else {
+		w.writeVarInt(math.MaxUint64)
+	}
+}
+
+func (w *writer) writeStringSlice(slice []string) {
+	if slice != nil {
+		w.writeVarInt(uint64(len(slice)))
+		for _, s := range slice {
+			w.writeOptionalString(s)
+		}
+	} else {
+		w.writeVarInt(math.MaxUint64)
+	}
 }
 
 // reader is a helper for reading binary messages
@@ -91,6 +136,63 @@ func (r *reader) readRemaining() []byte {
 		return nil
 	}
 	return r.data[r.pos:]
+}
+
+func (r *reader) readString() (string, error) {
+	length, err := r.readVarInt()
+	if err != nil {
+		return "", fmt.Errorf("error reading string length: %w", err)
+	}
+	if length == math.MaxUint64 || length == 0 {
+		return "", nil
+	}
+	data, err := r.readBytes(int(length))
+	if err != nil {
+		return "", fmt.Errorf("error reading string bytes: %w", err)
+	}
+	return string(data), nil
+}
+
+func (r *reader) readOptionalBytes() ([]byte, error) {
+	length, err := r.readVarInt()
+	if err != nil {
+		return nil, err
+	}
+	if length == math.MaxUint64 {
+		return nil, nil
+	}
+	return r.readBytes(int(length))
+}
+
+func (r *reader) readOptionalUint32() (uint32, error) {
+	val, err := r.readVarInt()
+	if err != nil {
+		return 0, err
+	}
+	if val == math.MaxUint64 {
+		return 0, nil
+	}
+	return uint32(val), nil
+}
+
+func (r *reader) readStringSlice() ([]string, error) {
+	count, err := r.readVarInt()
+	if err != nil {
+		return nil, err
+	}
+	if count == math.MaxUint64 {
+		return nil, nil
+	}
+
+	slice := make([]string, 0, count)
+	for i := uint64(0); i < count; i++ {
+		str, err := r.readString()
+		if err != nil {
+			return nil, err
+		}
+		slice = append(slice, str)
+	}
+	return slice, nil
 }
 
 // encodeOutpoint converts outpoint string "txid.index" to binary format
