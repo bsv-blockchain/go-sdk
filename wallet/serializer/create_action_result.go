@@ -15,26 +15,13 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 	// Write success byte (0 for success)
 	resultWriter.writeByte(0)
 
-	// Write txid if present
-	if result.Txid != "" {
-		resultWriter.writeByte(1) // flag present
-		txidBytes, err := hex.DecodeString(result.Txid)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding txid: %w", err)
-		}
-		resultWriter.writeBytes(txidBytes)
-	} else {
-		resultWriter.writeByte(0) // flag not present
+	// Write txid and tx if present
+	txidBytes, err := hex.DecodeString(result.Txid)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding txid: %w", err)
 	}
-
-	// Write tx if present
-	if len(result.Tx) > 0 {
-		resultWriter.writeByte(1) // flag present
-		resultWriter.writeVarInt(uint64(len(result.Tx)))
-		resultWriter.writeBytes(result.Tx)
-	} else {
-		resultWriter.writeByte(0) // flag not present
-	}
+	resultWriter.writeOptionalBytes(txidBytes, BytesOptionWithFlag, BytesOptionTxIdLen, BytesOptionZeroIfEmpty)
+	resultWriter.writeOptionalBytes(result.Tx, BytesOptionWithFlag, BytesOptionZeroIfEmpty)
 
 	// Write noSendChange
 	if result.NoSendChange != nil {
@@ -109,33 +96,16 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	}
 
 	// Parse txid
-	txidFlag, err := resultReader.readByte()
+	txIdBytes, err := resultReader.readOptionalBytes(BytesOptionWithFlag, BytesOptionTxIdLen)
 	if err != nil {
-		return nil, fmt.Errorf("error reading txid flag: %w", err)
+		return nil, fmt.Errorf("error reading txid bytes: %w", err)
 	}
-	if txidFlag == 1 {
-		txidBytes, err := resultReader.readBytes(32)
-		if err != nil {
-			return nil, fmt.Errorf("error reading txid: %w", err)
-		}
-		result.Txid = hex.EncodeToString(txidBytes)
-	}
+	result.Txid = hex.EncodeToString(txIdBytes)
 
 	// Parse tx
-	txFlag, err := resultReader.readByte()
+	result.Tx, err = resultReader.readOptionalBytes(BytesOptionWithFlag)
 	if err != nil {
-		return nil, fmt.Errorf("error reading tx flag: %w", err)
-	}
-	if txFlag == 1 {
-		txLen, err := resultReader.readVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("error reading tx length: %w", err)
-		}
-		txBytes, err := resultReader.readBytes(int(txLen))
-		if err != nil {
-			return nil, fmt.Errorf("error reading tx: %w", err)
-		}
-		result.Tx = txBytes
+		return nil, fmt.Errorf("error reading tx: %w", err)
 	}
 
 	// Parse noSendChange

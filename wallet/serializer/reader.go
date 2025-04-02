@@ -85,12 +85,36 @@ func (r *reader) readString() (string, error) {
 	return string(data), nil
 }
 
-func (r *reader) readOptionalBytes() ([]byte, error) {
-	length, err := r.readVarInt()
-	if err != nil {
-		return nil, err
+func (r *reader) readOptionalBytes(opts ...BytesOption) ([]byte, error) {
+	var withFlag, txIdLen bool
+	for _, opt := range opts {
+		switch opt {
+		case BytesOptionWithFlag:
+			withFlag = true
+		case BytesOptionTxIdLen:
+			txIdLen = true
+		}
 	}
-	if length == math.MaxUint64 {
+	if withFlag {
+		txFlag, err := r.readByte()
+		if err != nil {
+			return nil, fmt.Errorf("error reading tx flag: %w", err)
+		}
+		if txFlag != 1 {
+			return nil, nil
+		}
+	}
+	var length uint64
+	if txIdLen {
+		length = 32
+	} else {
+		var err error
+		length, err = r.readVarInt()
+		if err != nil {
+			return nil, fmt.Errorf("error reading length: %w", err)
+		}
+	}
+	if length == math.MaxUint64 || length == 0 {
 		return nil, nil
 	}
 	return r.readBytes(int(length))

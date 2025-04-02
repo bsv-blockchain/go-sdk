@@ -44,12 +44,46 @@ func (w *writer) writeOptionalString(s string) {
 	}
 }
 
-func (w *writer) writeOptionalBytes(b []byte) {
-	if b != nil {
-		w.writeVarInt(uint64(len(b)))
+type BytesOption int
+
+const (
+	BytesOptionWithFlag    BytesOption = 1
+	BytesOptionTxIdLen     BytesOption = 2
+	BytesOptionZeroIfEmpty BytesOption = 3
+)
+
+func (w *writer) writeOptionalBytes(b []byte, options ...BytesOption) {
+	var withFlag, txIdLen, zeroIfEmpty bool
+	for _, opt := range options {
+		switch opt {
+		case BytesOptionWithFlag:
+			withFlag = true
+		case BytesOptionTxIdLen:
+			txIdLen = true
+		case BytesOptionZeroIfEmpty:
+			zeroIfEmpty = true
+		}
+	}
+	hasData := len(b) > 0
+	if withFlag {
+		if hasData {
+			w.writeByte(1)
+		} else {
+			w.writeByte(0)
+			return
+		}
+	}
+	if hasData {
+		if !txIdLen {
+			w.writeVarInt(uint64(len(b)))
+		}
 		w.writeBytes(b)
 	} else {
-		w.writeVarInt(math.MaxUint64)
+		if zeroIfEmpty {
+			w.writeVarInt(0)
+		} else {
+			w.writeVarInt(math.MaxUint64)
+		}
 	}
 }
 
