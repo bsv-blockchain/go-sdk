@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -30,6 +31,57 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 	binary.BigEndian.PutUint32(buf[32:36], index)
 
 	return buf, nil
+}
+
+// Outpoint represents a transaction output reference (txid + output index)
+type Outpoint string
+
+// encodeOutpoints serializes a slice of outpoints
+func encodeOutpoints(outpoints []string) ([]byte, error) {
+	if outpoints == nil {
+		return nil, nil
+	}
+
+	w := newWriter()
+	w.writeVarInt(uint64(len(outpoints)))
+	for _, op := range outpoints {
+		opBytes, err := encodeOutpoint(op)
+		if err != nil {
+			return nil, err
+		}
+		w.writeBytes(opBytes)
+	}
+	return w.buf, nil
+}
+
+// decodeOutpoints deserializes a slice of outpoints
+func decodeOutpoints(data []byte) ([]string, error) {
+	if len(data) == 0 {
+		return nil, nil
+	}
+
+	r := newReader(data)
+	count, err := r.readVarInt()
+	if err != nil {
+		return nil, err
+	}
+	if count == math.MaxUint64 {
+		return nil, nil
+	}
+
+	outpoints := make([]string, 0, count)
+	for i := uint64(0); i < count; i++ {
+		opBytes, err := r.readBytes(36)
+		if err != nil {
+			return nil, err
+		}
+		op, err := decodeOutpoint(opBytes)
+		if err != nil {
+			return nil, err
+		}
+		outpoints = append(outpoints, op)
+	}
+	return outpoints, nil
 }
 
 // decodeOutpoint converts binary outpoint data to string format "txid.index"

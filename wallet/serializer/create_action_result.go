@@ -24,18 +24,11 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 	resultWriter.writeOptionalBytes(result.Tx, BytesOptionWithFlag, BytesOptionZeroIfEmpty)
 
 	// Write noSendChange
-	if result.NoSendChange != nil {
-		resultWriter.writeVarInt(uint64(len(result.NoSendChange)))
-		for _, outpoint := range result.NoSendChange {
-			opBytes, err := encodeOutpoint(outpoint)
-			if err != nil {
-				return nil, fmt.Errorf("error encoding outpoint: %w", err)
-			}
-			resultWriter.writeBytes(opBytes)
-		}
-	} else {
-		resultWriter.writeVarInt(math.MaxUint64) // -1 for nil
+	noSendChangeData, err := encodeOutpoints(result.NoSendChange)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding noSendChange: %w", err)
 	}
+	resultWriter.writeOptionalBytes(noSendChangeData)
 
 	// Write sendWithResults
 	if result.SendWithResults != nil {
@@ -109,27 +102,13 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	}
 
 	// Parse noSendChange
-	noSendChangeLen, err := resultReader.readVarInt()
+	noSendChangeData, err := resultReader.readOptionalBytes()
 	if err != nil {
-		return nil, fmt.Errorf("error reading noSendChange length: %w", err)
+		return nil, fmt.Errorf("error reading noSendChange: %w", err)
 	}
-	if noSendChangeLen != math.MaxUint64 {
-		// Limit slice capacity to prevent potential memory exhaustion
-		if noSendChangeLen > 1000 {
-			return nil, fmt.Errorf("noSendChange length %d exceeds maximum allowed (1000)", noSendChangeLen)
-		}
-		result.NoSendChange = make([]string, 0, noSendChangeLen)
-		for i := uint64(0); i < noSendChangeLen; i++ {
-			outpointBytes, err := resultReader.readBytes(36) // 32 txid + 4 index
-			if err != nil {
-				return nil, fmt.Errorf("error reading outpoint: %w", err)
-			}
-			outpoint, err := decodeOutpoint(outpointBytes)
-			if err != nil {
-				return nil, fmt.Errorf("error decoding outpoint: %w", err)
-			}
-			result.NoSendChange = append(result.NoSendChange, outpoint)
-		}
+	result.NoSendChange, err = decodeOutpoints(noSendChangeData)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding noSendChange: %w", err)
 	}
 
 	// Parse sendWithResults

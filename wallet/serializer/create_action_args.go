@@ -125,18 +125,11 @@ func serializeCreateActionOptions(paramWriter *writer, options *wallet.CreateAct
 	paramWriter.writeOptionalBool(options.NoSend)
 
 	// noSendChange
-	if options.NoSendChange != nil {
-		paramWriter.writeVarInt(uint64(len(options.NoSendChange)))
-		for _, outpoint := range options.NoSendChange {
-			op, err := encodeOutpoint(outpoint)
-			if err != nil {
-				return fmt.Errorf("error encode outpoint for options no send change: %w", err)
-			}
-			paramWriter.writeBytes(op)
-		}
-	} else {
-		paramWriter.writeVarInt(math.MaxUint64) // -1
+	noSendChangeData, err := encodeOutpoints(options.NoSendChange)
+	if err != nil {
+		return fmt.Errorf("error encoding noSendChange: %w", err)
 	}
+	paramWriter.writeOptionalBytes(noSendChangeData)
 
 	// sendWith
 	if err := paramWriter.writeTxidSlice(options.SendWith); err != nil {

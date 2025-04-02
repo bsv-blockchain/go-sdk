@@ -273,23 +273,13 @@ func deserializeCreateActionOptions(messageReader *reader) (*wallet.CreateAction
 	}
 
 	// Read noSendChange
-	noSendChangeLen, err := messageReader.readVarInt()
+	noSendChangeData, err := messageReader.readOptionalBytes()
 	if err != nil {
-		return nil, fmt.Errorf("error reading noSendChange length: %w", err)
+		return nil, fmt.Errorf("error reading noSendChange: %w", err)
 	}
-	if noSendChangeLen != math.MaxUint64 { // -1 means nil
-		options.NoSendChange = make([]string, 0, noSendChangeLen)
-		for i := uint64(0); i < noSendChangeLen; i++ {
-			outpointBytes, err := messageReader.readBytes(36) // 32 txid + 4 index
-			if err != nil {
-				return nil, fmt.Errorf("error reading noSendChange outpoint: %w", err)
-			}
-			outpoint, err := decodeOutpoint(outpointBytes)
-			if err != nil {
-				return nil, fmt.Errorf("error decoding noSendChange outpoint: %w", err)
-			}
-			options.NoSendChange = append(options.NoSendChange, outpoint)
-		}
+	options.NoSendChange, err = decodeOutpoints(noSendChangeData)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding noSendChange: %w", err)
 	}
 
 	// Read sendWith
