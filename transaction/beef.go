@@ -69,6 +69,7 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 				if err != nil {
 					return nil, err
 				}
+				beefTx.BumpIndex = int(bumpIndex)
 			}
 			// read the transaction data
 			_, err = beefTx.Transaction.ReadFrom(reader)
@@ -649,6 +650,7 @@ func (b *Beef) MergeTransaction(tx *Transaction) (*BeefTx, error) {
 	}
 	if bumpIndex != nil {
 		newTx.DataFormat = RawTxAndBumpIndex
+		newTx.BumpIndex = *bumpIndex
 	}
 
 	b.Transactions[txid] = newTx

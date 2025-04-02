@@ -236,7 +236,7 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 		}
 	}
 	if txLeaf == nil {
-		return nil, fmt.Errorf("the BUMP does not contain the txid: %x", *txid)
+		return nil, fmt.Errorf("the BUMP does not contain the txid: %s", *txid)
 	}
 
 	// Calculate the root using the index as a way to determine which direction to concatenate.
