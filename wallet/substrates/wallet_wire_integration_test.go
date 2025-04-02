@@ -2,7 +2,6 @@ package substrates
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/stretchr/testify/require"
@@ -112,7 +111,6 @@ func TestTsCompatibility(t *testing.T) {
 	require.Equal(t, uint8(CallCreateAction), request.Call)
 	createActionArgs, err := serializer.DeserializeCreateActionArgs(request.Params)
 	require.Nil(t, err)
-	fmt.Printf("createActionArgs: %+v\n", createActionArgs)
 	require.Equal(t, wallet.CreateActionArgs{
 		Description: "Test action description",
 		Outputs: []wallet.CreateActionOutput{{

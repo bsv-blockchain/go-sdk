@@ -75,6 +75,34 @@ func (w *writer) writeStringSlice(slice []string) {
 	}
 }
 
+func (w *writer) writeOptionalBool(b *bool) {
+	if b != nil {
+		if *b {
+			w.writeByte(1)
+		} else {
+			w.writeByte(0)
+		}
+	} else {
+		w.writeByte(0xFF) // -1
+	}
+}
+
+func (w *writer) writeTxidSlice(txids []string) error {
+	if txids != nil {
+		w.writeVarInt(uint64(len(txids)))
+		for _, txid := range txids {
+			txidBytes, err := hex.DecodeString(txid)
+			if err != nil {
+				return fmt.Errorf("error decoding txid: %w", err)
+			}
+			w.writeBytes(txidBytes)
+		}
+	} else {
+		w.writeVarInt(math.MaxUint64) // -1
+	}
+	return nil
+}
+
 // reader is a helper for reading binary messages
 type reader struct {
 	data []byte

@@ -104,27 +104,9 @@ func serializeCreateActionOptions(paramWriter *writer, options *wallet.CreateAct
 	}
 	paramWriter.writeByte(1) // options present
 
-	// signAndProcess
-	if options.SignAndProcess != nil {
-		if *options.SignAndProcess {
-			paramWriter.writeByte(1)
-		} else {
-			paramWriter.writeByte(0)
-		}
-	} else {
-		paramWriter.writeByte(0xFF) // -1
-	}
-
-	// acceptDelayedBroadcast
-	if options.AcceptDelayedBroadcast != nil {
-		if *options.AcceptDelayedBroadcast {
-			paramWriter.writeByte(1)
-		} else {
-			paramWriter.writeByte(0)
-		}
-	} else {
-		paramWriter.writeByte(0xFF) // -1
-	}
+	// signAndProcess and acceptDelayedBroadcast
+	paramWriter.writeOptionalBool(options.SignAndProcess)
+	paramWriter.writeOptionalBool(options.AcceptDelayedBroadcast)
 
 	// trustSelf
 	if options.TrustSelf == "known" {
@@ -134,40 +116,13 @@ func serializeCreateActionOptions(paramWriter *writer, options *wallet.CreateAct
 	}
 
 	// knownTxids
-	if options.KnownTxids != nil {
-		paramWriter.writeVarInt(uint64(len(options.KnownTxids)))
-		for _, txid := range options.KnownTxids {
-			txidBytes, err := hex.DecodeString(txid)
-			if err != nil {
-				return fmt.Errorf("error decoding known txid: %w", err)
-			}
-			paramWriter.writeBytes(txidBytes)
-		}
-	} else {
-		paramWriter.writeVarInt(math.MaxUint64) // -1
+	if err := paramWriter.writeTxidSlice(options.KnownTxids); err != nil {
+		return fmt.Errorf("error writing known txids: %w", err)
 	}
 
-	// returnTXIDOnly
-	if options.ReturnTXIDOnly != nil {
-		if *options.ReturnTXIDOnly {
-			paramWriter.writeByte(1)
-		} else {
-			paramWriter.writeByte(0)
-		}
-	} else {
-		paramWriter.writeByte(0xFF) // -1
-	}
-
-	// noSend
-	if options.NoSend != nil {
-		if *options.NoSend {
-			paramWriter.writeByte(1)
-		} else {
-			paramWriter.writeByte(0)
-		}
-	} else {
-		paramWriter.writeByte(0xFF) // -1
-	}
+	// returnTXIDOnly and noSend
+	paramWriter.writeOptionalBool(options.ReturnTXIDOnly)
+	paramWriter.writeOptionalBool(options.NoSend)
 
 	// noSendChange
 	if options.NoSendChange != nil {
@@ -184,29 +139,12 @@ func serializeCreateActionOptions(paramWriter *writer, options *wallet.CreateAct
 	}
 
 	// sendWith
-	if options.SendWith != nil {
-		paramWriter.writeVarInt(uint64(len(options.SendWith)))
-		for _, txid := range options.SendWith {
-			txidBytes, err := hex.DecodeString(txid)
-			if err != nil {
-				return fmt.Errorf("error decoding send with txid: %w", err)
-			}
-			paramWriter.writeBytes(txidBytes)
-		}
-	} else {
-		paramWriter.writeVarInt(math.MaxUint64) // -1
+	if err := paramWriter.writeTxidSlice(options.SendWith); err != nil {
+		return fmt.Errorf("error writing send with txids: %w", err)
 	}
 
 	// randomizeOutputs
-	if options.RandomizeOutputs != nil {
-		if *options.RandomizeOutputs {
-			paramWriter.writeByte(1)
-		} else {
-			paramWriter.writeByte(0)
-		}
-	} else {
-		paramWriter.writeByte(0xFF) // -1
-	}
+	paramWriter.writeOptionalBool(options.RandomizeOutputs)
 
 	return nil
 }
