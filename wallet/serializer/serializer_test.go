@@ -118,3 +118,8 @@ func TestReaderErrors(t *testing.T) {
 		})
 	}
 }
+
+// boolPtr is a helper function to create a pointer to a boolean value
+func boolPtr(b bool) *bool {
+	return &b
+}
