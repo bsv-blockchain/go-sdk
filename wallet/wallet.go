@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -257,6 +258,25 @@ type VerifySignatureArgs struct {
 	ForSelf              bool
 }
 
+type CreateHmacArgs struct {
+	EncryptionArgs
+	Data []byte
+}
+
+type CreateHmacResult struct {
+	Hmac []byte
+}
+
+type VerifyHmacArgs struct {
+	EncryptionArgs
+	Data []byte
+	Hmac []byte
+}
+
+type VerifyHmacResult struct {
+	Valid bool
+}
+
 type VerifySignatureResult struct {
 	Valid bool
 }
@@ -312,4 +332,50 @@ func (w *Wallet) VerifySignature(args *VerifySignatureArgs) (*VerifySignatureRes
 
 func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
 	return ec.PrivateKeyFromBytes([]byte{1})
+}
+
+// CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
+// using a symmetric key derived from the protocol, key ID, and counterparty.
+func (w *Wallet) CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error) {
+	if args.Counterparty.Type == CounterpartyUninitialized {
+		args.Counterparty = Counterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
+
+	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
+	}
+
+	mac := hmac.New(sha256.New, key.ToBytes())
+	mac.Write(args.Data)
+	hmac := mac.Sum(nil)
+
+	return &CreateHmacResult{Hmac: hmac}, nil
+}
+
+// VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
+// The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
+func (w *Wallet) VerifyHmac(args VerifyHmacArgs) (*VerifyHmacResult, error) {
+	if args.Counterparty.Type == CounterpartyUninitialized {
+		args.Counterparty = Counterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
+
+	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
+	}
+
+	mac := hmac.New(sha256.New, key.ToBytes())
+	mac.Write(args.Data)
+	expectedHmac := mac.Sum(nil)
+
+	if !hmac.Equal(expectedHmac, args.Hmac) {
+		return nil, errors.New("HMAC is not valid")
+	}
+
+	return &VerifyHmacResult{Valid: true}, nil
 }

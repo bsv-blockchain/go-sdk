@@ -2,6 +2,8 @@ package wallet
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"regexp"
@@ -9,6 +11,13 @@ import (
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
+
+type keyDeriverInterface interface {
+	DerivePrivateKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.PrivateKey, error)
+	DerivePublicKey(protocol Protocol, keyID string, counterparty Counterparty, forSelf bool) (*ec.PublicKey, error)
+	DeriveSymmetricKey(protocol Protocol, keyID string, counterparty Counterparty) (*ec.SymmetricKey, error)
+	RevealSpecificSecret(counterparty Counterparty, protocol Protocol, keyID string) ([]byte, error)
+}
 
 // KeyDeriver is responsible for deriving various types of keys using a root private key.
 // It supports deriving public and private keys, symmetric keys, and revealing key linkages.
@@ -19,6 +28,9 @@ type KeyDeriver struct {
 // NewKeyDeriver creates a new KeyDeriver instance with a root private key.
 // The root key can be either a specific private key or the special 'anyone' key.
 func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {
+	if privateKey == nil {
+		privateKey, _ = AnyoneKey()
+	}
 	return &KeyDeriver{
 		rootKey: privateKey,
 	}
@@ -122,6 +134,30 @@ func (kd *KeyDeriver) normalizeCounterparty(counterparty Counterparty) (*ec.Publ
 	default:
 		return nil, errors.New("invalid counterparty, must be self, other, or anyone")
 	}
+}
+
+// RevealSpecificSecret reveals the specific key association for a given protocol ID, key ID, and counterparty.
+// It computes HMAC-SHA256 of the shared secret and invoice number.
+func (kd *KeyDeriver) RevealSpecificSecret(counterparty Counterparty, protocol Protocol, keyID string) ([]byte, error) {
+	counterpartyKey, err := kd.normalizeCounterparty(counterparty)
+	if err != nil {
+		return nil, fmt.Errorf("failed to normalize counterparty: %w", err)
+	}
+
+	sharedSecret, err := kd.rootKey.DeriveSharedSecret(counterpartyKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive shared secret: %w", err)
+	}
+
+	invoiceNumber, err := kd.computeInvoiceNumber(protocol, keyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute invoice number: %w", err)
+	}
+
+	// Compute HMAC-SHA256 of shared secret and invoice number
+	mac := hmac.New(sha256.New, sharedSecret.X.Bytes())
+	mac.Write([]byte(invoiceNumber))
+	return mac.Sum(nil), nil
 }
 
 // RevealCounterpartySecret reveals the shared secret between the root key and the counterparty.
