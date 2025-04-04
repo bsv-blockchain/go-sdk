@@ -216,6 +216,27 @@ type Interface interface {
 	ListActions(args ListActionsArgs, originator string) (*ListActionsResult, error)
 	InternalizeAction(args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
 	ListOutputs(args ListOutputsArgs, originator string) (*ListOutputsResult, error)
+	GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+	RevealCounterpartyKeyLinkage(args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
+	RevealSpecificKeyLinkage(args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
+	Encrypt(args EncryptArgs, originator string) (*EncryptResult, error)
+	Decrypt(args DecryptArgs, originator string) (*DecryptResult, error)
+	CreateHmac(args CreateHmacArgs, originator string) (*CreateHmacResult, error)
+	VerifyHmac(args VerifyHmacArgs, originator string) (*VerifyHmacResult, error)
+	CreateSignature(args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
+	VerifySignature(args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+	AcquireCertificate(args AcquireCertificateArgs, originator string) (*Certificate, error)
+	ListCertificates(args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
+	ProveCertificate(args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
+	RelinquishCertificate(args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
+	DiscoverByIdentityKey(args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
+	DiscoverByAttributes(args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
+	IsAuthenticated(args interface{}, originator string) (*AuthenticatedResult, error)
+	WaitForAuthentication(args interface{}, originator string) (*AuthenticatedResult, error)
+	GetHeight(args interface{}, originator string) (*GetHeightResult, error)
+	GetHeaderForHeight(args GetHeaderArgs, originator string) (*GetHeaderResult, error)
+	GetNetwork(args interface{}, originator string) (*GetNetworkResult, error)
+	GetVersion(args interface{}, originator string) (*GetVersionResult, error)
 }
 
 // AbortActionArgs identifies a transaction to abort using its reference string.
@@ -262,4 +283,166 @@ type InternalizeActionArgs struct {
 // InternalizeActionResult confirms whether a transaction was successfully internalized.
 type InternalizeActionResult struct {
 	Accepted bool
+}
+
+type RevealCounterpartyKeyLinkageArgs struct {
+	Counterparty     string
+	Verifier         string
+	Privileged       *bool
+	PrivilegedReason string
+}
+
+type RevealCounterpartyKeyLinkageResult struct {
+	EncryptedLinkage      []byte
+	EncryptedLinkageProof []byte
+	Prover                string
+	Verifier              string
+	Counterparty          string
+	RevelationTime        string
+}
+
+type RevealSpecificKeyLinkageArgs struct {
+	Counterparty     string
+	Verifier         string
+	ProtocolID       [2]interface{} // [SecurityLevel, ProtocolString]
+	KeyID            string
+	Privileged       *bool
+	PrivilegedReason string
+}
+
+type RevealSpecificKeyLinkageResult struct {
+	EncryptedLinkage      []byte
+	EncryptedLinkageProof []byte
+	Prover                string
+	Verifier              string
+	Counterparty          string
+	ProtocolID            [2]interface{} // [SecurityLevel, ProtocolString]
+	KeyID                 string
+	ProofType             byte
+}
+
+type Certificate struct {
+	Type               string
+	Subject            string
+	SerialNumber       string
+	Certifier          string
+	RevocationOutpoint string
+	Signature          string
+	Fields             map[string]string
+}
+
+type IdentityCertifier struct {
+	Name        string
+	IconUrl     string
+	Description string
+	Trust       uint8
+}
+
+type IdentityCertificate struct {
+	Certificate
+	CertifierInfo           IdentityCertifier
+	PubliclyRevealedKeyring map[string]string
+	DecryptedFields         map[string]string
+}
+
+type AcquireCertificateArgs struct {
+	Type                string
+	Certifier           string
+	AcquisitionProtocol string
+	Fields              map[string]string
+	SerialNumber        string
+	RevocationOutpoint  string
+	Signature           string
+	CertifierUrl        string
+	KeyringRevealer     string
+	KeyringForSubject   map[string]string
+	Privileged          *bool
+	PrivilegedReason    string
+}
+
+type ListCertificatesArgs struct {
+	Certifiers       []string
+	Types            []string
+	Limit            uint32
+	Offset           uint32
+	Privileged       *bool
+	PrivilegedReason string
+}
+
+type CertificateResult struct {
+	Certificate
+	Keyring  map[string]string
+	Verifier string
+}
+
+type ListCertificatesResult struct {
+	TotalCertificates uint32
+	Certificates      []CertificateResult
+}
+
+type ProveCertificateArgs struct {
+	Certificate    Certificate
+	FieldsToReveal []string
+	Verifier         string
+	Privileged       *bool
+	PrivilegedReason string
+}
+
+type ProveCertificateResult struct {
+	KeyringForVerifier map[string]string
+	Certificate        *Certificate
+	Verifier           string
+}
+
+type RelinquishCertificateArgs struct {
+	Type         string
+	SerialNumber string
+	Certifier    string
+}
+
+type RelinquishCertificateResult struct {
+	Relinquished bool
+}
+
+type DiscoverByIdentityKeyArgs struct {
+	IdentityKey    string
+	Limit          uint32
+	Offset         uint32
+	SeekPermission *bool
+}
+
+type DiscoverByAttributesArgs struct {
+	Attributes     map[string]string
+	Limit          uint32
+	Offset         uint32
+	SeekPermission *bool
+}
+
+type DiscoverCertificatesResult struct {
+	TotalCertificates uint32
+	Certificates      []IdentityCertificate
+}
+
+type AuthenticatedResult struct {
+	Authenticated bool
+}
+
+type GetHeightResult struct {
+	Height uint32
+}
+
+type GetHeaderArgs struct {
+	Height uint32
+}
+
+type GetHeaderResult struct {
+	Header string
+}
+
+type GetNetworkResult struct {
+	Network string // "mainnet" | "testnet"
+}
+
+type GetVersionResult struct {
+	Version string
 }
