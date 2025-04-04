@@ -266,6 +266,10 @@ func (r *readerHoldError) readOptionalBool() *bool {
 	return val
 }
 
+func readOptionalBoolAsBool(opt *bool) bool {
+	return opt != nil && *opt
+}
+
 func (r *readerHoldError) readTxidSlice() []string {
 	if r.err != nil {
 		return nil
