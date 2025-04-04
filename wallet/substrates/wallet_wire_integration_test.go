@@ -1,31 +1,11 @@
 package substrates
 
 import (
+	"testing"
+
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
-
-type MockWallet struct {
-	T                          *testing.T
-	ExpectedOriginator         string
-	ExpectedCreateActionArgs   *wallet.CreateActionArgs
-	CreateActionResultToReturn *wallet.CreateActionResult
-}
-
-func NewMockWallet(t *testing.T) *MockWallet {
-	return &MockWallet{T: t}
-}
-
-func (m *MockWallet) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-	if m.ExpectedCreateActionArgs != nil {
-		require.Equal(m.T, m.ExpectedCreateActionArgs.Description, args.Description)
-		require.Equal(m.T, m.ExpectedCreateActionArgs.Outputs, args.Outputs)
-		require.Equal(m.T, m.ExpectedCreateActionArgs.Labels, args.Labels)
-	}
-	require.Equal(m.T, m.ExpectedOriginator, originator)
-	return m.CreateActionResultToReturn, nil
-}
 
 func createTestWalletWire(wallet wallet.Interface) *WalletWireTransceiver {
 	processor := NewWalletWireProcessor(wallet)
@@ -34,12 +14,12 @@ func createTestWalletWire(wallet wallet.Interface) *WalletWireTransceiver {
 
 func TestCreateAction(t *testing.T) {
 	// Setup mock
-	mockWallet := NewMockWallet(t)
-	walletTransceiver := createTestWalletWire(mockWallet)
+	mock := wallet.NewMockWallet(t)
+	walletTransceiver := createTestWalletWire(mock)
 
 	t.Run("should create an action with valid inputs", func(t *testing.T) {
 		// Expected arguments and return value
-		mockWallet.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
+		mock.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
 				LockingScript:      "00",
@@ -51,21 +31,21 @@ func TestCreateAction(t *testing.T) {
 			}},
 			Labels: []string{"test-label"},
 		}
-		mockWallet.ExpectedOriginator = "test originator"
+		mock.ExpectedOriginator = "test originator"
 
-		mockWallet.CreateActionResultToReturn = &wallet.CreateActionResult{
+		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
 			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
 			Tx:   []byte{1, 2, 3, 4},
 		}
 
 		// Execute test
-		result, err := walletTransceiver.CreateAction(*mockWallet.ExpectedCreateActionArgs, mockWallet.ExpectedOriginator)
+		result, err := walletTransceiver.CreateAction(*mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
 
 		// Verify results
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.Equal(t, mockWallet.CreateActionResultToReturn.Txid, result.Txid)
-		require.Equal(t, mockWallet.CreateActionResultToReturn.Tx, result.Tx)
+		require.Equal(t, mock.CreateActionResultToReturn.Txid, result.Txid)
+		require.Equal(t, mock.CreateActionResultToReturn.Tx, result.Tx)
 		require.Nil(t, result.NoSendChange)
 		require.Nil(t, result.SendWithResults)
 		require.Nil(t, result.SignableTransaction)
@@ -73,21 +53,21 @@ func TestCreateAction(t *testing.T) {
 
 	t.Run("should create an action with minimal inputs (only description)", func(t *testing.T) {
 		// Expected arguments and return value
-		mockWallet.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
+		mock.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
 			Description: "Minimal action description",
 		}
-		mockWallet.ExpectedOriginator = ""
-		mockWallet.CreateActionResultToReturn = &wallet.CreateActionResult{
+		mock.ExpectedOriginator = ""
+		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
 			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
 		}
 
 		// Execute test
-		result, err := walletTransceiver.CreateAction(*mockWallet.ExpectedCreateActionArgs, mockWallet.ExpectedOriginator)
+		result, err := walletTransceiver.CreateAction(*mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
 
 		// Verify results
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.Equal(t, mockWallet.CreateActionResultToReturn.Txid, result.Txid)
+		require.Equal(t, mock.CreateActionResultToReturn.Txid, result.Txid)
 		require.Nil(t, result.Tx)
 		require.Nil(t, result.NoSendChange)
 		require.Nil(t, result.SendWithResults)

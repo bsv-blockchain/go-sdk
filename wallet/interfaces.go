@@ -1,5 +1,20 @@
 package wallet
 
+import (
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+)
+
+// Certificate represents a basic certificate in the wallet
+type Certificate struct {
+	Type               string            // Base64-encoded certificate type ID
+	SerialNumber       string            // Base64-encoded unique serial number
+	Subject            *ec.PublicKey     // Public key of the certificate subject
+	Certifier          *ec.PublicKey     // Public key of the certificate issuer
+	RevocationOutpoint string            // Format: "txid:outputIndex"
+	Fields             map[string]string // Field name -> field value (encrypted)
+	Signature          string            // Hex-encoded signature
+}
+
 // CreateActionInput represents an input to be spent in a transaction
 type CreateActionInput struct {
 	Outpoint              string // Format: "txid:outputIndex"
@@ -63,6 +78,77 @@ type SignableTransaction struct {
 	Reference string
 }
 
+// ListCertificatesArgs contains parameters for listing certificates
+type ListCertificatesArgs struct {
+	// Certifiers to filter by (public keys)
+	Certifiers []string
+
+	// Certificate types to filter by
+	Types []string
+}
+
+// ListCertificatesResult contains the results of listing certificates
+type ListCertificatesResult struct {
+	// The matching certificates
+	Certificates []Certificate
+}
+
+// ProveCertificateArgs contains parameters for creating verifiable certificates
+type ProveCertificateArgs struct {
+	// The certificate to create a verifiable version of
+	Certificate Certificate
+
+	// Fields to reveal in the certificate
+	FieldsToReveal []string
+
+	// The verifier's identity key
+	Verifier string
+}
+
+// ProveCertificateResult contains the result of creating a verifiable certificate
+type ProveCertificateResult struct {
+	// Keyring for revealing specific fields to the verifier
+	KeyringForVerifier map[string]string
+}
+
+// Note: The following types are defined in wallet.go:
+// - CounterpartyType
+// - CreateHmacArgs/Result
+// - VerifyHmacArgs/Result
+// - CreateSignatureArgs/Result
+// - VerifySignatureArgs/Result
+// - EncryptArgs/Result
+// - DecryptArgs/Result
+// - GetPublicKeyArgs/Result
+
+// Interface defines the interface for wallet operations
+// This should match the TypeScript SDK's WalletInterface
 type Interface interface {
+	// Transaction creation
 	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
+
+	// Certificate management
+	ListCertificates(args ListCertificatesArgs) (*ListCertificatesResult, error)
+	ProveCertificate(args ProveCertificateArgs) (*ProveCertificateResult, error)
+
+	// HMAC operations
+	CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error)
+	VerifyHmac(args VerifyHmacArgs) (*VerifyHmacResult, error)
+
+	// Signature operations
+	CreateSignature(args *CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
+	VerifySignature(args *VerifySignatureArgs) (*VerifySignatureResult, error)
+
+	// Encryption operations
+	Encrypt(args *EncryptArgs) (*EncryptResult, error)
+	Decrypt(args *DecryptArgs) (*DecryptResult, error)
+
+	// Key operations
+	GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+
+	// Authentication
+	IsAuthenticated(args interface{}) (bool, error)
+	GetHeight(args interface{}) (uint32, error)
+	GetNetwork(args interface{}) (string, error)
+	GetVersion(args interface{}) (string, error)
 }

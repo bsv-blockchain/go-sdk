@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"math/big"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -381,6 +382,188 @@ func TestToDER(t *testing.T) {
 		if !bytes.Equal(der, pk.ToDER()) {
 			t.Errorf("%s pubkey: ToDER does not match itself.",
 				test.name)
+		}
+	}
+}
+
+// TestCompressedVsEncode tests that Compressed() and encode(true) produce identical results
+func TestCompressedVsEncode(t *testing.T) {
+	// Generate a set of test keys with different Y parities
+	testKeys := generateTestPublicKeys(t)
+
+	for i, key := range testKeys {
+		// Get results from Compressed() method
+		compressed := key.Compressed()
+
+		// We can't access encode directly, so we'll compare to our own implementation
+		// that follows the same logic as encode(true)
+		encoded := manualCompressedEncoding(key)
+
+		// Test for equality
+		if !bytes.Equal(compressed, encoded) {
+			t.Errorf("Test %d: Compressed() and manual encoding produced different results", i)
+			t.Errorf("  Compressed(): %x", compressed)
+			t.Errorf("  Manual encode: %x", encoded)
+		}
+	}
+}
+
+// manualCompressedEncoding implements the same logic as the private encode(true) method
+func manualCompressedEncoding(p *PublicKey) []byte {
+	byteLen := (p.Curve.Params().BitSize + 7) >> 3
+
+	xBytes := p.X.Bytes()
+
+	// Prepend zeros if necessary to match byteLen
+	for len(xBytes) < byteLen {
+		xBytes = append([]byte{0}, xBytes...)
+	}
+
+	// Determine prefix based on Y parity
+	prefix := byte(0x02)
+	if new(big.Int).And(p.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0 {
+		prefix = 0x03
+	}
+
+	return append([]byte{prefix}, xBytes...)
+}
+
+// BenchmarkCompressed benchmarks the Compressed() method
+func BenchmarkCompressed(b *testing.B) {
+	keys := generateTestPublicKeys(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Use a different key for each iteration to avoid caching effects
+		key := keys[i%len(keys)]
+		_ = key.Compressed()
+	}
+}
+
+// BenchmarkManualCompressedEncoding benchmarks the manual implementation of encode()
+func BenchmarkManualCompressedEncoding(b *testing.B) {
+	keys := generateTestPublicKeys(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Use a different key for each iteration to avoid caching effects
+		key := keys[i%len(keys)]
+		_ = manualCompressedEncoding(key)
+	}
+}
+
+// BenchmarkIsOdd benchmarks the isOdd function for Y parity check
+func BenchmarkIsOdd(b *testing.B) {
+	keys := generateTestPublicKeys(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := keys[i%len(keys)]
+		_ = isOdd(key.Y)
+	}
+}
+
+// BenchmarkBigIntParity benchmarks the big.Int method for Y parity check
+func BenchmarkBigIntParity(b *testing.B) {
+	keys := generateTestPublicKeys(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := keys[i%len(keys)]
+		_ = new(big.Int).And(key.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0
+	}
+}
+
+// BenchmarkCompressedPreallocated benchmarks Compressed with pre-allocated memory
+func BenchmarkCompressedPreallocated(b *testing.B) {
+	keys := generateTestPublicKeys(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := keys[i%len(keys)]
+		result := make([]byte, 33) // Pre-allocate the final size
+
+		// Reproduce Compressed() logic with pre-allocated slice
+		format := pubkeyCompressed
+		if isOdd(key.Y) {
+			format |= 0x1
+		}
+		result[0] = format
+
+		// Copy X bytes with proper padding
+		xBytes := key.X.Bytes()
+		xOffset := 33 - len(xBytes)
+		copy(result[xOffset:], xBytes)
+	}
+}
+
+// BenchmarkManualEncodingPreallocated benchmarks manual encoding with pre-allocated memory
+func BenchmarkManualEncodingPreallocated(b *testing.B) {
+	keys := generateTestPublicKeys(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := keys[i%len(keys)]
+		result := make([]byte, 33) // Pre-allocate the final size
+
+		// Determine prefix based on Y parity
+		if new(big.Int).And(key.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0 {
+			result[0] = 0x03
+		} else {
+			result[0] = 0x02
+		}
+
+		// Copy X bytes with proper padding
+		xBytes := key.X.Bytes()
+		xOffset := 33 - len(xBytes)
+		copy(result[xOffset:], xBytes)
+	}
+}
+
+// generateTestPublicKeys creates a set of public keys for testing
+// Updated to accept either testing.T or testing.B
+func generateTestPublicKeys(t interface{}) []*PublicKey {
+	var keys []*PublicKey
+
+	// Create keys from private keys with different values
+	for i := 1; i <= 10; i++ {
+		// Create a private key with different seed values
+		d := new(big.Int).SetInt64(int64(i * 123456789))
+
+		// Calculate the public key point
+		x, y := S256().ScalarBaseMult(d.Bytes())
+
+		// Create the public key directly
+		pubKey := &PublicKey{
+			Curve: S256(),
+			X:     x,
+			Y:     y,
+		}
+
+		keys = append(keys, pubKey)
+	}
+
+	return keys
+}
+
+// TestParityCheckEquivalence tests that the two methods of checking Y parity are equivalent
+func TestParityCheckEquivalence(t *testing.T) {
+	// Generate a set of test keys with different Y parities
+	testKeys := generateTestPublicKeys(t)
+
+	for i, key := range testKeys {
+		// Check parity using isOdd function
+		yIsOdd := isOdd(key.Y)
+
+		// Check parity using big.Int method
+		yIsOddBigInt := new(big.Int).And(key.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0
+
+		// Test for equality
+		if yIsOdd != yIsOddBigInt {
+			t.Errorf("Test %d: Parity check methods produced different results", i)
+			t.Errorf("  isOdd(Y): %v", yIsOdd)
+			t.Errorf("  bigint method: %v", yIsOddBigInt)
+			t.Errorf("  Y value: %s", key.Y.Text(16))
 		}
 	}
 }

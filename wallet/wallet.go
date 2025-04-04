@@ -374,7 +374,7 @@ func (w *Wallet) VerifyHmac(args VerifyHmacArgs) (*VerifyHmacResult, error) {
 	expectedHmac := mac.Sum(nil)
 
 	if !hmac.Equal(expectedHmac, args.Hmac) {
-		return nil, errors.New("HMAC is not valid")
+		return &VerifyHmacResult{Valid: false}, nil
 	}
 
 	return &VerifyHmacResult{Valid: true}, nil

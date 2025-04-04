@@ -237,38 +237,38 @@ func (p *PublicKey) Mul(k *big.Int) *PublicKey {
  * const publicKeyHash = pubkey.Hash()
  */
 func (p *PublicKey) Hash() []byte {
-	return crypto.Ripemd160(crypto.Sha256(p.encode(true)))
+	return crypto.Ripemd160(crypto.Sha256(p.Compressed()))
 }
 
-//nolint:unparam // only compact is used
-func (p *PublicKey) encode(compact bool) []byte {
-	byteLen := (p.Curve.Params().BitSize + 7) >> 3
+// //nolint:unparam // only compact is used
+// func (p *PublicKey) encode(compact bool) []byte {
+// 	byteLen := (p.Curve.Params().BitSize + 7) >> 3
 
-	xBytes := p.X.Bytes()
-	yBytes := p.Y.Bytes()
+// 	xBytes := p.X.Bytes()
+// 	yBytes := p.Y.Bytes()
 
-	// Prepend zeros if necessary to match byteLen
-	for len(xBytes) < byteLen {
-		xBytes = append([]byte{0}, xBytes...)
-	}
-	for len(yBytes) < byteLen {
-		yBytes = append([]byte{0}, yBytes...)
-	}
+// 	// Prepend zeros if necessary to match byteLen
+// 	for len(xBytes) < byteLen {
+// 		xBytes = append([]byte{0}, xBytes...)
+// 	}
+// 	for len(yBytes) < byteLen {
+// 		yBytes = append([]byte{0}, yBytes...)
+// 	}
 
-	if compact {
-		prefix := byte(0x02)
-		if new(big.Int).And(p.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0 {
-			prefix = 0x03
-		}
-		return append([]byte{prefix}, xBytes...)
-	}
+// 	if compact {
+// 		prefix := byte(0x02)
+// 		if new(big.Int).And(p.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0 {
+// 			prefix = 0x03
+// 		}
+// 		return append([]byte{prefix}, xBytes...)
+// 	}
 
-	// Non-compact format
-	return append(append([]byte{0x04}, xBytes...), yBytes...)
-}
+// 	// Non-compact format
+// 	return append(append([]byte{0x04}, xBytes...), yBytes...)
+// }
 
 func (p *PublicKey) ToDER() []byte {
-	encoded := p.encode(true)
+	encoded := p.Compressed()
 	return encoded
 }
 
@@ -282,7 +282,7 @@ func (p *PublicKey) DeriveChild(privateKey *PrivateKey, invoiceNumber string) (*
 	if err != nil {
 		return nil, err
 	}
-	pubKeyEncoded := sharedSecret.encode(true)
+	pubKeyEncoded := sharedSecret.Compressed()
 	hmac := crypto.Sha256HMAC(invoiceNumberBin, pubKeyEncoded)
 
 	newPointX, newPointY := S256().ScalarBaseMult(hmac)

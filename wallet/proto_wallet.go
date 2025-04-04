@@ -1,0 +1,289 @@
+package wallet
+
+import (
+	"errors"
+	"fmt"
+
+	"crypto/hmac"
+	"crypto/sha256"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	hash "github.com/bsv-blockchain/go-sdk/primitives/hash"
+)
+
+// ProtoWallet is a precursor to a full wallet, capable of performing foundational cryptographic operations.
+// It can derive keys, create signatures, facilitate encryption and HMAC operations.
+// Unlike a full wallet, it doesn't create transactions, manage outputs, interact with the blockchain,
+// or store any data.
+type ProtoWallet struct {
+	// The underlying key deriver
+	keyDeriver *KeyDeriver
+}
+
+// NewProtoWallet creates a new ProtoWallet from a private key or KeyDeriver
+func NewProtoWallet(rootKeyOrKeyDeriver any) (*ProtoWallet, error) {
+	switch v := rootKeyOrKeyDeriver.(type) {
+	case *KeyDeriver:
+		return &ProtoWallet{
+			keyDeriver: v,
+		}, nil
+	case *ec.PrivateKey:
+		return &ProtoWallet{
+			keyDeriver: NewKeyDeriver(v),
+		}, nil
+	case *Wallet:
+		return &ProtoWallet{
+			keyDeriver: NewKeyDeriver(v.privateKey),
+		}, nil
+	default:
+		// Create an "anyone" key deriver as default
+		kd := NewKeyDeriver(nil)
+		return &ProtoWallet{
+			keyDeriver: kd,
+		}, nil
+	}
+}
+
+// GetPublicKey returns the public key for the wallet
+func (p *ProtoWallet) GetPublicKey(args *GetPublicKeyArgs) (*ec.PublicKey, error) {
+	if args.IdentityKey {
+		if p.keyDeriver == nil {
+			return nil, errors.New("keyDeriver is undefined")
+		}
+		return p.keyDeriver.rootKey.PubKey(), nil
+	} else {
+		if args.ProtocolID.Protocol == "" || args.KeyID == "" {
+			return nil, errors.New("protocolID and keyID are required if identityKey is false")
+		}
+
+		if p.keyDeriver == nil {
+			return nil, errors.New("keyDeriver is undefined")
+		}
+
+		// Handle default counterparty (self)
+		counterparty := args.Counterparty
+		if counterparty.Type == CounterpartyUninitialized {
+			counterparty = Counterparty{
+				Type: CounterpartyTypeSelf,
+			}
+		}
+
+		return p.keyDeriver.DerivePublicKey(
+			args.ProtocolID,
+			args.KeyID,
+			counterparty,
+			args.ForSelf,
+		)
+	}
+}
+
+// Encrypt encrypts data using the provided protocol ID and key ID
+func (p *ProtoWallet) Encrypt(
+	args *EncryptArgs,
+) ([]byte, error) {
+	if p.keyDeriver == nil {
+		return nil, errors.New("keyDeriver is undefined")
+	}
+
+	// Create protocol struct from the protocol ID array
+	protocol := args.ProtocolID
+
+	// Handle counterparty
+	counterpartyObj := args.Counterparty
+
+	// Derive a symmetric key for encryption
+	key, err := p.keyDeriver.DeriveSymmetricKey(protocol, args.KeyID, counterpartyObj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+	}
+
+	return key.Encrypt(args.Plaintext)
+}
+
+// Decrypt decrypts data using the provided protocol ID and key ID
+func (p *ProtoWallet) Decrypt(
+	args *DecryptArgs,
+) ([]byte, error) {
+	if p.keyDeriver == nil {
+		return nil, errors.New("keyDeriver is undefined")
+	}
+
+	// Create protocol struct from the protocol ID array
+	protocol := args.ProtocolID
+
+	// Handle counterparty
+	counterpartyObj := args.Counterparty
+
+	// Derive a symmetric key for decryption
+	key, err := p.keyDeriver.DeriveSymmetricKey(protocol, args.KeyID, counterpartyObj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+	}
+
+	return key.Decrypt(args.Ciphertext)
+}
+
+// CreateSignature creates a signature for the provided data
+func (p *ProtoWallet) CreateSignature(
+	args *CreateSignatureArgs,
+	originator string,
+) (*CreateSignatureResult, error) {
+	if p.keyDeriver == nil {
+		return nil, errors.New("keyDeriver is undefined")
+	}
+
+	// Get hash to sign
+	var dataHash []byte
+	if len(args.DashToDirectlySign) > 0 {
+		dataHash = args.DashToDirectlySign
+	} else {
+		dataHash = hash.Sha256(args.Data)
+	}
+
+	// Handle counterparty
+	counterpartyObj := args.Counterparty
+	if counterpartyObj.Type == CounterpartyUninitialized {
+		counterpartyObj = Counterparty{
+			Type: CounterpartyTypeAnyone,
+		}
+	}
+
+	// Derive private key for signing
+	privKey, err := p.keyDeriver.DerivePrivateKey(
+		args.ProtocolID,
+		args.KeyID,
+		counterpartyObj,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive private key: %v", err)
+	}
+
+	// Create signature
+	signature, err := privKey.Sign(dataHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create signature: %v", err)
+	}
+
+	return &CreateSignatureResult{
+		Signature: *signature,
+	}, nil
+}
+
+// VerifySignature verifies a signature for the provided data
+func (p *ProtoWallet) VerifySignature(
+	args *VerifySignatureArgs,
+) (*VerifySignatureResult, error) {
+	if p.keyDeriver == nil {
+		return nil, errors.New("keyDeriver is undefined")
+	}
+
+	// Get hash to verify
+	var dataHash []byte
+	if len(args.HashToDirectlyVerify) > 0 {
+		dataHash = args.HashToDirectlyVerify
+	} else {
+		dataHash = hash.Sha256(args.Data)
+	}
+
+	// Handle counterparty
+	counterpartyObj := args.Counterparty
+	if counterpartyObj.Type == CounterpartyUninitialized {
+		counterpartyObj = Counterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
+
+	// Derive public key for verification
+	pubKey, err := p.keyDeriver.DerivePublicKey(
+		args.ProtocolID,
+		args.KeyID,
+		counterpartyObj,
+		args.ForSelf,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive public key: %v", err)
+	}
+
+	// Verify signature
+	valid := args.Signature.Verify(dataHash, pubKey)
+	if !valid {
+		return nil, fmt.Errorf("signature is not valid")
+	}
+
+	return &VerifySignatureResult{
+		Valid: valid,
+	}, nil
+}
+
+// CreateHmac creates an HMAC for the provided data
+func (p *ProtoWallet) CreateHmac(
+	args CreateHmacArgs,
+) (*CreateHmacResult, error) {
+	if p.keyDeriver == nil {
+		return nil, errors.New("keyDeriver is undefined")
+	}
+
+	// Handle default counterparty (self for HMAC)
+	counterpartyObj := args.Counterparty
+	if counterpartyObj.Type == CounterpartyUninitialized {
+		counterpartyObj = Counterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
+
+	// Derive a symmetric key for HMAC
+	key, err := p.keyDeriver.DeriveSymmetricKey(
+		args.ProtocolID,
+		args.KeyID,
+		counterpartyObj,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+	}
+
+	// Create HMAC using the derived key
+	mac := hmac.New(sha256.New, key.ToBytes())
+	mac.Write(args.Data)
+	hmacValue := mac.Sum(nil)
+
+	return &CreateHmacResult{Hmac: hmacValue}, nil
+}
+
+// VerifyHmac verifies an HMAC for the provided data
+func (p *ProtoWallet) VerifyHmac(
+	args VerifyHmacArgs,
+) (*VerifyHmacResult, error) {
+	if p.keyDeriver == nil {
+		return nil, errors.New("keyDeriver is undefined")
+	}
+
+	// Handle default counterparty (self for HMAC)
+	counterpartyObj := args.Counterparty
+	if counterpartyObj.Type == CounterpartyUninitialized {
+		counterpartyObj = Counterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
+
+	// Derive a symmetric key for HMAC verification
+	key, err := p.keyDeriver.DeriveSymmetricKey(
+		args.ProtocolID,
+		args.KeyID,
+		counterpartyObj,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+	}
+
+	// Create expected HMAC
+	mac := hmac.New(sha256.New, key.ToBytes())
+	mac.Write(args.Data)
+	expectedHmac := mac.Sum(nil)
+
+	// Verify HMAC
+	if !hmac.Equal(expectedHmac, args.Hmac) {
+		return &VerifyHmacResult{Valid: false}, nil
+	}
+
+	return &VerifyHmacResult{Valid: true}, nil
+}

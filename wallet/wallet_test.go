@@ -511,8 +511,8 @@ func TestHmacCreateVerify(t *testing.T) {
 	// Verify HMAC
 	verifyHmacArgs := wallet.VerifyHmacArgs{
 		EncryptionArgs: baseArgs,
-		Hmac:                 createHmacResult.Hmac,
-		Data:                 sampleData,
+		Hmac:           createHmacResult.Hmac,
+		Data:           sampleData,
 	}
 	verifyHmacArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
@@ -527,30 +527,34 @@ func TestHmacCreateVerify(t *testing.T) {
 	t.Run("fails to verify HMAC with wrong data", func(t *testing.T) {
 		invalidVerifyHmacArgs := verifyHmacArgs
 		invalidVerifyHmacArgs.Data = append([]byte{0}, sampleData...)
-		_, err = counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
-		assert.Error(t, err)
+		valid, err := counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
+		assert.NoError(t, err)
+		assert.False(t, valid.Valid)
 	})
 
 	t.Run("fails to verify HMAC with wrong protocol", func(t *testing.T) {
 		invalidVerifyHmacArgs := verifyHmacArgs
 		invalidVerifyHmacArgs.ProtocolID.Protocol = "wrong"
-		_, err = counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
-		assert.Error(t, err)
+		valid, err := counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
+		assert.NoError(t, err)
+		assert.False(t, valid.Valid)
 	})
 
 	t.Run("fails to verify HMAC with wrong key ID", func(t *testing.T) {
 		invalidVerifyHmacArgs := verifyHmacArgs
 		invalidVerifyHmacArgs.KeyID = "wrong"
-		_, err = counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
-		assert.Error(t, err)
+		valid, err := counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
+		assert.NoError(t, err)
+		assert.False(t, valid.Valid)
 	})
 
 	t.Run("fails to verify HMAC with wrong counterparty", func(t *testing.T) {
 		invalidVerifyHmacArgs := verifyHmacArgs
 		wrongKey, _ := ec.NewPrivateKey()
 		invalidVerifyHmacArgs.Counterparty.Counterparty = wrongKey.PubKey()
-		_, err = counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
-		assert.Error(t, err)
+		valid, err := counterpartyWallet.VerifyHmac(invalidVerifyHmacArgs)
+		assert.NoError(t, err)
+		assert.False(t, valid.Valid)
 	})
 
 	t.Run("validates BRC-2 HMAC compliance vector", func(t *testing.T) {
