@@ -53,21 +53,25 @@ type CreateActionResult struct {
 	SignableTransaction *SignableTransaction
 }
 
+// SendWithResult tracks the status of transactions sent as part of a batch.
 type SendWithResult struct {
 	Txid   string
 	Status string // "unproven" | "sending" | "failed"
 }
 
+// SignableTransaction contains data needed to complete signing of a partial transaction.
 type SignableTransaction struct {
 	Tx        []byte
 	Reference string
 }
 
+// SignActionSpend provides the unlocking script and sequence number for a specific input.
 type SignActionSpend struct {
 	UnlockingScript string // Hex encoded
 	SequenceNumber  uint32
 }
 
+// SignActionOptions controls signing and broadcasting behavior.
 type SignActionOptions struct {
 	AcceptDelayedBroadcast *bool
 	ReturnTXIDOnly         *bool
@@ -75,18 +79,21 @@ type SignActionOptions struct {
 	SendWith               []string
 }
 
+// SignActionArgs contains data needed to sign a previously created transaction.
 type SignActionArgs struct {
 	Spends    map[uint32]SignActionSpend // Key is input index
 	Reference string                     // Base64 encoded
 	Options   *SignActionOptions
 }
 
+// SignActionResult contains the output of a successful signing operation.
 type SignActionResult struct {
 	Txid            string
 	Tx              []byte
 	SendWithResults []SendWithResult
 }
 
+// ActionInput describes a transaction input with full details.
 type ActionInput struct {
 	SourceOutpoint      string
 	SourceSatoshis      uint64
@@ -96,6 +103,7 @@ type ActionInput struct {
 	SequenceNumber      uint32
 }
 
+// ActionOutput describes a transaction output with full details.
 type ActionOutput struct {
 	Satoshis           uint64
 	LockingScript      string // Hex encoded
@@ -107,6 +115,7 @@ type ActionOutput struct {
 	Basket             string
 }
 
+// ActionStatus represents the current state of a transaction.
 type ActionStatus string
 
 const (
@@ -119,6 +128,7 @@ const (
 	ActionStatusNonFinal    ActionStatus = "nonfinal"
 )
 
+// ActionStatusCode is the numeric representation of ActionStatus.
 type ActionStatusCode uint8
 
 const (
@@ -131,6 +141,7 @@ const (
 	ActionStatusCodeNonFinal    ActionStatusCode = 7
 )
 
+// Action contains full details about a wallet transaction including inputs, outputs and metadata.
 type Action struct {
 	Txid        string
 	Satoshis    uint64
@@ -144,6 +155,7 @@ type Action struct {
 	Outputs     []ActionOutput
 }
 
+// ListActionsArgs defines filtering and pagination options for listing wallet transactions.
 type ListActionsArgs struct {
 	Labels                           []string
 	LabelQueryMode                   string // "any" | "all"
@@ -158,22 +170,63 @@ type ListActionsArgs struct {
 	SeekPermission                   *bool // Default true
 }
 
+// ListActionsResult contains a paginated list of wallet transactions matching the query.
 type ListActionsResult struct {
 	TotalActions uint32
 	Actions      []Action
 }
 
+// Interface defines the core wallet operations for transaction creation, signing and querying.
 type Interface interface {
 	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
 	SignAction(args SignActionArgs, originator string) (*SignActionResult, error)
 	AbortAction(args AbortActionArgs, originator string) (*AbortActionResult, error)
 	ListActions(args ListActionsArgs, originator string) (*ListActionsResult, error)
+	InternalizeAction(args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
 }
 
+// AbortActionArgs identifies a transaction to abort using its reference string.
 type AbortActionArgs struct {
 	Reference string // Base64 encoded reference
 }
 
+// AbortActionResult confirms whether a transaction was successfully aborted.
 type AbortActionResult struct {
 	Aborted bool
+}
+
+// Payment contains derivation and identity data for wallet payment outputs.
+type Payment struct {
+	DerivationPrefix   string
+	DerivationSuffix   string
+	SenderIdentityKey  string
+}
+
+// BasketInsertion contains metadata for outputs being inserted into baskets.
+type BasketInsertion struct {
+	Basket             string
+	CustomInstructions string
+	Tags               []string
+}
+
+// InternalizeOutput defines how to process a transaction output - as payment or basket insertion.
+type InternalizeOutput struct {
+	OutputIndex        uint32
+	Protocol           string // "wallet payment" | "basket insertion"
+	PaymentRemittance  *Payment
+	InsertionRemittance *BasketInsertion
+}
+
+// InternalizeActionArgs contains data needed to import an external transaction into the wallet.
+type InternalizeActionArgs struct {
+	Tx           []byte
+	Outputs      []InternalizeOutput
+	Description  string
+	Labels       []string
+	SeekPermission *bool
+}
+
+// InternalizeActionResult confirms whether a transaction was successfully internalized.
+type InternalizeActionResult struct {
+	Accepted bool
 }

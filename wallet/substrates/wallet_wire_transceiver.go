@@ -101,3 +101,20 @@ func (t *WalletWireTransceiver) ListActions(args wallet.ListActionsArgs, origina
 	// Deserialize response
 	return serializer.DeserializeListActionsResult(resp)
 }
+
+func (t *WalletWireTransceiver) InternalizeAction(args wallet.InternalizeActionArgs, originator string) (*wallet.InternalizeActionResult, error) {
+	// Serialize the request
+	data, err := serializer.SerializeInternalizeActionArgs(&args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize internalize action arguments: %w", err)
+	}
+
+	// Send to processor
+	resp, err := t.transmit(CallInternalizeAction, originator, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to transmit internalize action call: %w", err)
+	}
+
+	// Deserialize response
+	return serializer.DeserializeInternalizeActionResult(resp)
+}

@@ -310,3 +310,10 @@ func (r *readerHoldError) readOptionalToHex() string {
 	r.err = err
 	return val
 }
+
+func (r *readerHoldError) readRemaining() []byte {
+	if r.err != nil {
+		return nil
+	}
+	return r.reader.readRemaining()
+}
