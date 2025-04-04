@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const OutpointSize = 36
+
 // encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint string) ([]byte, error) {
 	parts := strings.Split(outpoint, ".")
@@ -26,7 +28,7 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid index: %w", err)
 	}
 
-	buf := make([]byte, 36)
+	buf := make([]byte, OutpointSize)
 	copy(buf[:32], txid)
 	binary.BigEndian.PutUint32(buf[32:36], index)
 
@@ -71,7 +73,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 
 	outpoints := make([]string, 0, count)
 	for i := uint64(0); i < count; i++ {
-		opBytes, err := r.readBytes(36)
+		opBytes, err := r.readBytes(OutpointSize)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +88,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 
 // decodeOutpoint converts binary outpoint data to string format "txid.index"
 func decodeOutpoint(data []byte) (string, error) {
-	if len(data) < 36 {
+	if len(data) != OutpointSize {
 		return "", errors.New("invalid outpoint data length")
 	}
 
