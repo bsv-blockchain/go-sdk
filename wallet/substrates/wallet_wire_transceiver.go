@@ -118,3 +118,20 @@ func (t *WalletWireTransceiver) InternalizeAction(args wallet.InternalizeActionA
 	// Deserialize response
 	return serializer.DeserializeInternalizeActionResult(resp)
 }
+
+func (t *WalletWireTransceiver) ListOutputs(args wallet.ListOutputsArgs, originator string) (*wallet.ListOutputsResult, error) {
+	// Serialize the request
+	data, err := serializer.SerializeListOutputsArgs(&args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize list outputs arguments: %w", err)
+	}
+
+	// Send to processor
+	resp, err := t.transmit(CallListOutputs, originator, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to transmit list outputs call: %w", err)
+	}
+
+	// Deserialize response
+	return serializer.DeserializeListOutputsResult(resp)
+}

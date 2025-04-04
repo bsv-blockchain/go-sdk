@@ -35,6 +35,10 @@ func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
 		response, err = w.processAbortAction(requestFrame)
 	case CallListActions:
 		response, err = w.processListActions(requestFrame)
+	case CallInternalizeAction:
+		response, err = w.processInternalizeAction(requestFrame)
+	case CallListOutputs:
+		response, err = w.processListOutputs(requestFrame)
 	default:
 		return nil, fmt.Errorf("unknown call type: %d", requestFrame.Call)
 	}
@@ -90,4 +94,28 @@ func (w *WalletWireProcessor) processListActions(requestFrame *serializer.Reques
 		return nil, fmt.Errorf("failed to process list action: %w", err)
 	}
 	return serializer.SerializeListActionsResult(result)
+}
+
+func (w *WalletWireProcessor) processInternalizeAction(requestFrame *serializer.RequestFrame) ([]byte, error) {
+	args, err := serializer.DeserializeInternalizeActionArgs(requestFrame.Params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to internalize list action args: %w", err)
+	}
+	result, err := w.Wallet.InternalizeAction(*args, requestFrame.Originator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process internalize action: %w", err)
+	}
+	return serializer.SerializeInternalizeActionResult(result)
+}
+
+func (w *WalletWireProcessor) processListOutputs(requestFrame *serializer.RequestFrame) ([]byte, error) {
+	args, err := serializer.DeserializeListOutputsArgs(requestFrame.Params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize list outputs args: %w", err)
+	}
+	result, err := w.Wallet.ListOutputs(*args, requestFrame.Originator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process list outputs: %w", err)
+	}
+	return serializer.SerializeListOutputsResult(result)
 }

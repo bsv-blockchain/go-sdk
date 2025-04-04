@@ -215,6 +215,7 @@ type Interface interface {
 	AbortAction(args AbortActionArgs, originator string) (*AbortActionResult, error)
 	ListActions(args ListActionsArgs, originator string) (*ListActionsResult, error)
 	InternalizeAction(args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
+	ListOutputs(args ListOutputsArgs, originator string) (*ListOutputsResult, error)
 }
 
 // AbortActionArgs identifies a transaction to abort using its reference string.

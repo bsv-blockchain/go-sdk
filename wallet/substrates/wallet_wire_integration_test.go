@@ -44,6 +44,16 @@ func (m *MockWallet) ListActions(args wallet.ListActionsArgs, originator string)
 	return nil, nil
 }
 
+func (m *MockWallet) InternalizeAction(args wallet.InternalizeActionArgs, originator string) (*wallet.InternalizeActionResult, error) {
+	require.Fail(m.T, "InternalizeAction mock not implemented")
+	return nil, nil
+}
+
+func (m *MockWallet) ListOutputs(args wallet.ListOutputsArgs, originator string) (*wallet.ListOutputsResult, error) {
+	require.Fail(m.T, "ListOutputs mock not implemented")
+	return nil, nil
+}
+
 func createTestWalletWire(wallet wallet.Interface) *WalletWireTransceiver {
 	processor := NewWalletWireProcessor(wallet)
 	return NewWalletWireTransceiver(processor)
