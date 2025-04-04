@@ -39,6 +39,8 @@ func (w *WalletWireProcessor) TransmitToWallet(message []byte) ([]byte, error) {
 		response, err = w.processInternalizeAction(requestFrame)
 	case CallListOutputs:
 		response, err = w.processListOutputs(requestFrame)
+	case CallRelinquishOutput:
+		response, err = w.processRelinquishOutput(requestFrame)
 	case CallGetPublicKey:
 		response, err = w.processGetPublicKey(requestFrame)
 	case CallRevealCounterpartyKeyLinkage:
@@ -160,6 +162,18 @@ func (w *WalletWireProcessor) processListOutputs(requestFrame *serializer.Reques
 		return nil, fmt.Errorf("failed to process list outputs: %w", err)
 	}
 	return serializer.SerializeListOutputsResult(result)
+}
+
+func (w *WalletWireProcessor) processRelinquishOutput(requestFrame *serializer.RequestFrame) ([]byte, error) {
+	args, err := serializer.DeserializeRelinquishOutputArgs(requestFrame.Params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize relinquish output args: %w", err)
+	}
+	result, err := w.Wallet.RelinquishOutput(*args, requestFrame.Originator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process relinquish output: %w", err)
+	}
+	return serializer.SerializeRelinquishOutputResult(result)
 }
 
 func (w *WalletWireProcessor) processGetPublicKey(requestFrame *serializer.RequestFrame) ([]byte, error) {

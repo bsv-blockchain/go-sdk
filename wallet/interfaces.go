@@ -216,6 +216,7 @@ type Interface interface {
 	ListActions(args ListActionsArgs, originator string) (*ListActionsResult, error)
 	InternalizeAction(args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
 	ListOutputs(args ListOutputsArgs, originator string) (*ListOutputsResult, error)
+	RelinquishOutput(args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
 	GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
 	RevealCounterpartyKeyLinkage(args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
 	RevealSpecificKeyLinkage(args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
@@ -398,6 +399,15 @@ type RelinquishCertificateArgs struct {
 	Type         string
 	SerialNumber string
 	Certifier    string
+}
+
+type RelinquishOutputArgs struct {
+	Basket  string
+	Output  string
+}
+
+type RelinquishOutputResult struct {
+	Relinquished bool
 }
 
 type RelinquishCertificateResult struct {

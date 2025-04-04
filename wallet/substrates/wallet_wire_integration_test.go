@@ -54,6 +54,11 @@ func (m *MockWallet) ListOutputs(args wallet.ListOutputsArgs, originator string)
 	return nil, nil
 }
 
+func (m *MockWallet) RelinquishOutput(args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
+	require.Fail(m.T, "RelinquishOutput mock not implemented")
+	return nil, nil
+}
+
 func (m *MockWallet) GetPublicKey(args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
 	require.Fail(m.T, "GetPublicKey mock not implemented")
 	return nil, nil

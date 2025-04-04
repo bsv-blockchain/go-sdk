@@ -136,6 +136,18 @@ func (t *WalletWireTransceiver) ListOutputs(args wallet.ListOutputsArgs, origina
 	return serializer.DeserializeListOutputsResult(resp)
 }
 
+func (t *WalletWireTransceiver) RelinquishOutput(args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
+	data, err := serializer.SerializeRelinquishOutputArgs(&args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize relinquish output arguments: %w", err)
+	}
+	resp, err := t.transmit(CallRelinquishOutput, originator, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to transmit relinquish output call: %w", err)
+	}
+	return serializer.DeserializeRelinquishOutputResult(resp)
+}
+
 func (t *WalletWireTransceiver) GetPublicKey(args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
 	data, err := serializer.SerializeGetPublicKeyArgs(&args)
 	if err != nil {
