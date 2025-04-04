@@ -176,6 +176,38 @@ type ListActionsResult struct {
 	Actions      []Action
 }
 
+// ListOutputsArgs defines filtering and options for listing wallet outputs.
+type ListOutputsArgs struct {
+	Basket                    string
+	Tags                      []string
+	TagQueryMode              string // "any" | "all"
+	Include                   string // "locking scripts" | "entire transactions"
+	IncludeCustomInstructions *bool
+	IncludeTags               *bool
+	IncludeLabels             *bool
+	Limit                     uint32 // Default 10, max 10000
+	Offset                    uint32
+	SeekPermission            *bool // Default true
+}
+
+// Output represents a wallet UTXO with its metadata
+type Output struct {
+	Satoshis           uint64
+	LockingScript      string // Hex encoded
+	Spendable          bool
+	CustomInstructions string
+	Tags               []string
+	Outpoint           string // Format: "txid.index"
+	Labels             []string
+}
+
+// ListOutputsResult contains a paginated list of wallet outputs matching the query.
+type ListOutputsResult struct {
+	TotalOutputs uint32
+	BEEF         []byte
+	Outputs      []Output
+}
+
 // Interface defines the core wallet operations for transaction creation, signing and querying.
 type Interface interface {
 	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
@@ -197,9 +229,9 @@ type AbortActionResult struct {
 
 // Payment contains derivation and identity data for wallet payment outputs.
 type Payment struct {
-	DerivationPrefix   string
-	DerivationSuffix   string
-	SenderIdentityKey  string
+	DerivationPrefix  string
+	DerivationSuffix  string
+	SenderIdentityKey string
 }
 
 // BasketInsertion contains metadata for outputs being inserted into baskets.
@@ -211,18 +243,18 @@ type BasketInsertion struct {
 
 // InternalizeOutput defines how to process a transaction output - as payment or basket insertion.
 type InternalizeOutput struct {
-	OutputIndex        uint32
-	Protocol           string // "wallet payment" | "basket insertion"
-	PaymentRemittance  *Payment
+	OutputIndex         uint32
+	Protocol            string // "wallet payment" | "basket insertion"
+	PaymentRemittance   *Payment
 	InsertionRemittance *BasketInsertion
 }
 
 // InternalizeActionArgs contains data needed to import an external transaction into the wallet.
 type InternalizeActionArgs struct {
-	Tx           []byte
-	Outputs      []InternalizeOutput
-	Description  string
-	Labels       []string
+	Tx             []byte
+	Outputs        []InternalizeOutput
+	Description    string
+	Labels         []string
 	SeekPermission *bool
 }
 
