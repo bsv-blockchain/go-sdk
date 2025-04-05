@@ -6,9 +6,18 @@ import (
 )
 
 func SerializeGetHeightResult(result *wallet.GetHeightResult) ([]byte, error) {
-	return nil, fmt.Errorf("not implemented")
+	w := newWriter()
+	w.writeVarInt(uint64(result.Height))
+	return w.buf, nil
 }
 
 func DeserializeGetHeightResult(data []byte) (*wallet.GetHeightResult, error) {
-	return nil, fmt.Errorf("not implemented")
+	r := newReaderHoldError(data)
+	height := r.readVarInt32()
+	if r.err != nil {
+		return nil, fmt.Errorf("error reading height: %w", r.err)
+	}
+	return &wallet.GetHeightResult{
+		Height: height,
+	}, nil
 }
