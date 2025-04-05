@@ -1,27 +1,11 @@
 package serializer
 
 import (
-	"encoding/hex"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func newCounterparty(t *testing.T, pubKeyHex string) wallet.Counterparty {
-	pubKey, err := ec.PublicKeyFromString(pubKeyHex)
-	require.NoError(t, err)
-	return wallet.Counterparty{
-		Type:         wallet.CounterpartyTypeOther,
-		Counterparty: pubKey,
-	}
-}
-
-func fromHex(t *testing.T, s string) []byte {
-	data, err := hex.DecodeString(s)
-	require.NoError(t, err)
-	return data
-}
 
 func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
 	tests := []struct {

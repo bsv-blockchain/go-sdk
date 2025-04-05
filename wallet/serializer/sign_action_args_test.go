@@ -85,7 +85,7 @@ func TestSerializeSignActionArgs(t *testing.T) {
 
 func TestDeserializeSignActionArgs(t *testing.T) {
 	txid := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-	txidBytes, _ := hex.DecodeString(txid)
+	txidBytes := fromHex(t, txid)
 	script := []byte{0xab, 0xcd, 0xef}
 	ref := []byte("reference123")
 

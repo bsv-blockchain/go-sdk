@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/hex"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -318,4 +319,21 @@ func TestPrivilegedParams(t *testing.T) {
 // boolPtr is a helper function to create a pointer to a boolean value
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+// fromHex is a helper function to create a public key from a hex string
+func fromHex(t *testing.T, s string) []byte {
+	data, err := hex.DecodeString(s)
+	require.NoError(t, err)
+	return data
+}
+
+// newCounterparty is a helper function to create a new counterparty
+func newCounterparty(t *testing.T, pubKeyHex string) wallet.Counterparty {
+	pubKey, err := ec.PublicKeyFromString(pubKeyHex)
+	require.NoError(t, err)
+	return wallet.Counterparty{
+		Type:         wallet.CounterpartyTypeOther,
+		Counterparty: pubKey,
+	}
 }

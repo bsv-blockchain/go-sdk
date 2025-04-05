@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -72,7 +71,7 @@ func TestSerializeSignActionResult(t *testing.T) {
 
 func TestDeserializeSignActionResult(t *testing.T) {
 	txid := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-	txidBytes, _ := hex.DecodeString(txid)
+	txidBytes := fromHex(t, txid)
 	tx := []byte{1, 2, 3, 4, 5}
 
 	tests := []struct {
