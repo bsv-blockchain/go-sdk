@@ -230,7 +230,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		hash := sha256.Sum256(sampleData)
 
 		// Create signature with hash
-		signArgs.DashToDirectlySign = hash[:]
+		signArgs.HashToDirectlySign = hash[:]
 		signArgs.Data = nil
 
 		signResult, err := userWallet.CreateSignature(signArgs, "")
