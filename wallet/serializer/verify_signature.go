@@ -62,10 +62,6 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	args.Privileged = readOptionalBoolAsBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error decoding key params: %w", r.err)
-	}
-
 	// Read forSelf flag
 	args.ForSelf = readOptionalBoolAsBool(r.readOptionalBool())
 
@@ -76,10 +72,6 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	}
 	args.Signature = *sig
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading signature: %w", r.err)
-	}
-
 	// Read data or hash
 	dataTypeFlag := r.readByte()
 	if dataTypeFlag == 1 {
@@ -88,10 +80,6 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 		args.HashToDirectlyVerify = r.readBytes(sha256.Size)
 	} else {
 		return nil, fmt.Errorf("invalid data type flag: %d", dataTypeFlag)
-	}
-
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading data or hash: %w", r.err)
 	}
 
 	// Read seekPermission
