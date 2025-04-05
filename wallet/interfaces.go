@@ -303,9 +303,9 @@ type RevealCounterpartyKeyLinkageResult struct {
 }
 
 type RevealSpecificKeyLinkageArgs struct {
-	Counterparty     string
+	Counterparty     Counterparty
 	Verifier         string
-	ProtocolID       [2]interface{} // [SecurityLevel, ProtocolString]
+	ProtocolID       Protocol
 	KeyID            string
 	Privileged       *bool
 	PrivilegedReason string
@@ -314,10 +314,10 @@ type RevealSpecificKeyLinkageArgs struct {
 type RevealSpecificKeyLinkageResult struct {
 	EncryptedLinkage      []byte
 	EncryptedLinkageProof []byte
-	Prover                string
-	Verifier              string
-	Counterparty          string
-	ProtocolID            [2]interface{} // [SecurityLevel, ProtocolString]
+	Prover                []byte
+	Verifier              []byte
+	Counterparty          Counterparty
+	ProtocolID            Protocol
 	KeyID                 string
 	ProofType             byte
 }

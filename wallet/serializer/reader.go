@@ -36,6 +36,21 @@ func (r *reader) readBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
+func (r *reader) readIntBytes() ([]byte, error) {
+	linkageLen, err := r.readVarInt()
+	if err != nil {
+		return nil, fmt.Errorf("error reading bytes int length: %w", err)
+	}
+	if linkageLen == 0 {
+		return nil, nil
+	}
+	b, err  := r.readBytes(int(linkageLen))
+	if err != nil {
+		return nil, fmt.Errorf("error reading bytes int: %w", err)
+	}
+	return b, nil
+}
+
 func (r *reader) readVarInt() (uint64, error) {
 	var varInt transaction.VarInt
 	if _, err := varInt.ReadFrom(r); err != nil {
@@ -244,6 +259,15 @@ func (r *readerHoldError) readBytes(n int) []byte {
 		return nil
 	}
 	val, err := r.reader.readBytes(n)
+	r.err = err
+	return val
+}
+
+func (r *readerHoldError) readIntBytes() []byte {
+	if r.err != nil {
+		return nil
+	}
+	val, err := r.reader.readIntBytes()
 	r.err = err
 	return val
 }

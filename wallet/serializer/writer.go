@@ -24,6 +24,11 @@ func (w *writer) writeBytes(b []byte) {
 	w.buf = append(w.buf, b...)
 }
 
+func (w *writer) writeIntBytes(b []byte) {
+	w.writeVarInt(uint64(len(b)))
+	w.writeBytes(b)
+}
+
 func (w *writer) writeVarInt(n uint64) {
 	w.writeBytes(transaction.VarInt(n).Bytes())
 }
