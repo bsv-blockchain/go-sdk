@@ -382,8 +382,8 @@ type ListCertificatesResult struct {
 }
 
 type ProveCertificateArgs struct {
-	Certificate    Certificate
-	FieldsToReveal []string
+	Certificate      Certificate
+	FieldsToReveal   []string
 	Verifier         string
 	Privileged       *bool
 	PrivilegedReason string
@@ -402,8 +402,8 @@ type RelinquishCertificateArgs struct {
 }
 
 type RelinquishOutputArgs struct {
-	Basket  string
-	Output  string
+	Basket string
+	Output string
 }
 
 type RelinquishOutputResult struct {

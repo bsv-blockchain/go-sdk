@@ -66,7 +66,7 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	args.Certifiers = make([]string, 0, certifiersLength)
 	for i := uint64(0); i < certifiersLength; i++ {
 		certifierBytes := r.readBytes(SizeCertifier)
-		if r .err != nil {
+		if r.err != nil {
 			return nil, fmt.Errorf("error deserializing certifier: %w", r.err)
 		}
 		args.Certifiers = append(args.Certifiers, hex.EncodeToString(certifierBytes))

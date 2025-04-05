@@ -39,7 +39,7 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 			},
 		},
 		{
-			name: "minimal result",
+			name:   "minimal result",
 			result: &wallet.CreateActionResult{},
 		},
 		{

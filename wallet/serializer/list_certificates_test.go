@@ -82,10 +82,10 @@ func TestListCertificatesResult(t *testing.T) {
 				},
 				{
 					Certificate: wallet.Certificate{
-						Type:         base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert2"), SizeType)),
-						Subject:      hex.EncodeToString(make([]byte, SizeSubject)),
-						SerialNumber: base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial2"), SizeSerial)),
-						Certifier:    hex.EncodeToString(make([]byte, SizeCertifier)),
+						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert2"), SizeType)),
+						Subject:            hex.EncodeToString(make([]byte, SizeSubject)),
+						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial2"), SizeSerial)),
+						Certifier:          hex.EncodeToString(make([]byte, SizeCertifier)),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 					},
 				},

@@ -44,7 +44,7 @@ func (r *reader) readIntBytes() ([]byte, error) {
 	if linkageLen == 0 {
 		return nil, nil
 	}
-	b, err  := r.readBytes(int(linkageLen))
+	b, err := r.readBytes(int(linkageLen))
 	if err != nil {
 		return nil, fmt.Errorf("error reading bytes int: %w", err)
 	}

@@ -15,8 +15,8 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 			name: "full args",
 			args: &wallet.RevealCounterpartyKeyLinkageArgs{
 				Counterparty:     "02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-				Verifier:        "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-				Privileged:      boolPtr(true),
+				Verifier:         "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+				Privileged:       boolPtr(true),
 				PrivilegedReason: "test-reason",
 			},
 		},
@@ -24,7 +24,7 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 			name: "minimal args",
 			args: &wallet.RevealCounterpartyKeyLinkageArgs{
 				Counterparty: "02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-				Verifier:    "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+				Verifier:     "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
 			},
 		},
 	}

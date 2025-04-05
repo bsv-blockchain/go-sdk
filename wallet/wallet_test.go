@@ -511,8 +511,8 @@ func TestHmacCreateVerify(t *testing.T) {
 	// Verify HMAC
 	verifyHmacArgs := wallet.VerifyHmacArgs{
 		EncryptionArgs: baseArgs,
-		Hmac:                 createHmacResult.Hmac,
-		Data:                 sampleData,
+		Hmac:           createHmacResult.Hmac,
+		Data:           sampleData,
 	}
 	verifyHmacArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,

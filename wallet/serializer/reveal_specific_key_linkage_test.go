@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-
 func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
 	tests := []struct {
 		name string

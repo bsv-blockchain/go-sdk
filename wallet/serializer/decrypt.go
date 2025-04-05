@@ -11,7 +11,7 @@ func SerializeDecryptArgs(args *wallet.DecryptArgs) ([]byte, error) {
 	// Encode key related params (protocol, key, counterparty, privileged)
 	params := KeyRelatedParams{
 		ProtocolID:       args.ProtocolID,
-		KeyID:           args.KeyID,
+		KeyID:            args.KeyID,
 		Counterparty:     args.Counterparty,
 		Privileged:       &args.Privileged,
 		PrivilegedReason: args.PrivilegedReason,
