@@ -7,12 +7,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-const (
-	SizeType      = 32
-	SizeCertifier = 33
-	SizeRevealer  = 33
-)
-
 func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byte, error) {
 	w := newWriter()
 
@@ -66,6 +60,9 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		serialBytes, err := base64.StdEncoding.DecodeString(args.SerialNumber)
 		if err != nil {
 			return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
+		}
+		if len(serialBytes) != SizeSerial {
+			return nil, fmt.Errorf("serialNumber must be %d bytes long", SizeSerial)
 		}
 		w.writeBytes(serialBytes)
 
@@ -168,7 +165,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	if args.AcquisitionProtocol == "direct" {
 		// Read serial number
-		serialNumberBytes := r.readBytes(32)
+		serialNumberBytes := r.readBytes(SizeSerial)
 		args.SerialNumber = base64.StdEncoding.EncodeToString(serialNumberBytes)
 
 		// Read revocation outpoint
@@ -222,134 +219,4 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 	}
 
 	return args, nil
-}
-
-func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
-	w := newWriter()
-	w.writeByte(0) // errorByte = 0 (success)
-
-	// Type (base64)
-	typeBytes, err := base64.StdEncoding.DecodeString(cert.Type)
-	if err != nil {
-		return nil, fmt.Errorf("invalid type base64: %w", err)
-	}
-	w.writeBytes(typeBytes)
-
-	// Subject (hex)
-	subjectBytes, err := hex.DecodeString(cert.Subject)
-	if err != nil {
-		return nil, fmt.Errorf("invalid subject hex: %w", err)
-	}
-	w.writeBytes(subjectBytes)
-
-	// Serial number (base64)
-	serialBytes, err := base64.StdEncoding.DecodeString(cert.SerialNumber)
-	if err != nil {
-		return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
-	}
-	w.writeBytes(serialBytes)
-
-	// Certifier (hex)
-	certifierBytes, err := hex.DecodeString(cert.Certifier)
-	if err != nil {
-		return nil, fmt.Errorf("invalid certifier hex: %w", err)
-	}
-	w.writeBytes(certifierBytes)
-
-	// Revocation outpoint
-	outpointBytes, err := encodeOutpoint(cert.RevocationOutpoint)
-	if err != nil {
-		return nil, fmt.Errorf("invalid revocationOutpoint: %w", err)
-	}
-	w.writeBytes(outpointBytes)
-
-	// Signature (hex)
-	sigBytes, err := hex.DecodeString(cert.Signature)
-	if err != nil {
-		return nil, fmt.Errorf("invalid signature hex: %w", err)
-	}
-	w.writeVarInt(uint64(len(sigBytes)))
-	w.writeBytes(sigBytes)
-
-	// Fields
-	fieldEntries := make([]string, 0, len(cert.Fields))
-	for k := range cert.Fields {
-		fieldEntries = append(fieldEntries, k)
-	}
-	w.writeVarInt(uint64(len(fieldEntries)))
-	for _, key := range fieldEntries {
-		keyBytes := []byte(key)
-		w.writeVarInt(uint64(len(keyBytes)))
-		w.writeBytes(keyBytes)
-		valueBytes := []byte(cert.Fields[key])
-		w.writeVarInt(uint64(len(valueBytes)))
-		w.writeBytes(valueBytes)
-	}
-
-	return w.buf, nil
-}
-
-func DeserializeCertificate(data []byte) (*wallet.Certificate, error) {
-	r := newReaderHoldError(data)
-	cert := &wallet.Certificate{
-		Fields: make(map[string]string),
-	}
-
-	// Read error byte (0 = success)
-	errorByte := r.readByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("certificate deserialization failed with error byte %d", errorByte)
-	}
-
-	// Read type (base64)
-	typeBytes := r.readBytes(32)
-	cert.Type = base64.StdEncoding.EncodeToString(typeBytes)
-
-	// Read subject (hex)
-	subjectBytes := r.readBytes(33)
-	cert.Subject = hex.EncodeToString(subjectBytes)
-
-	// Read serial number (base64)
-	serialBytes := r.readBytes(32)
-	cert.SerialNumber = base64.StdEncoding.EncodeToString(serialBytes)
-
-	// Read certifier (hex)
-	certifierBytes := r.readBytes(33)
-	cert.Certifier = hex.EncodeToString(certifierBytes)
-
-	// Read revocation outpoint
-	outpointBytes := r.readBytes(OutpointSize)
-	cert.RevocationOutpoint, r.err = decodeOutpoint(outpointBytes)
-	if r.err != nil {
-		return nil, fmt.Errorf("error decoding outpoint: %w", r.err)
-	}
-
-	// Read signature
-	signatureLength := r.readVarInt()
-	signatureBytes := r.readBytes(int(signatureLength))
-	cert.Signature = hex.EncodeToString(signatureBytes)
-
-	// Read fields
-	fieldsLength := r.readVarInt()
-	for i := uint64(0); i < fieldsLength; i++ {
-		fieldNameLength := r.readVarInt()
-		fieldNameBytes := r.readBytes(int(fieldNameLength))
-		fieldName := string(fieldNameBytes)
-
-		fieldValueLength := r.readVarInt()
-		fieldValueBytes := r.readBytes(int(fieldValueLength))
-		fieldValue := string(fieldValueBytes)
-
-		if r.err != nil {
-			return nil, fmt.Errorf("error reading field %s: %w", fieldName, r.err)
-		}
-
-		cert.Fields[fieldName] = fieldValue
-	}
-
-	if r.err != nil {
-		return nil, fmt.Errorf("error deserializing certificate: %w", r.err)
-	}
-
-	return cert, nil
 }

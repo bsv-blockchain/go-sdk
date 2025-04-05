@@ -22,7 +22,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 				"field1": "value1",
 				"field2": "value2",
 			},
-			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, 32)),
+			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, SizeSerial)),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:          hex.EncodeToString(make([]byte, 64)),
 			KeyringRevealer:    "certifier",
@@ -49,7 +49,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), SizeType)),
 			Certifier:           hex.EncodeToString(make([]byte, SizeCertifier)),
 			AcquisitionProtocol: "direct",
-			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, 32)),
+			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, SizeSerial)),
 			RevocationOutpoint:  "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:           hex.EncodeToString(make([]byte, 64)),
 			KeyringRevealer:     hex.EncodeToString(make([]byte, SizeRevealer)),
@@ -70,35 +70,4 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			require.Equal(t, tt.args, got)
 		})
 	}
-}
-
-func TestCertificate(t *testing.T) {
-	t.Run("serialize/deserialize", func(t *testing.T) {
-		cert := &wallet.Certificate{
-			Type:               base64.StdEncoding.EncodeToString([]byte("test-cert")),
-			Subject:            hex.EncodeToString(make([]byte, 33)),
-			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, 32)),
-			Certifier:          hex.EncodeToString(make([]byte, 33)),
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-			Signature:          hex.EncodeToString(make([]byte, 64)),
-			Fields: map[string]string{
-				"field1": "value1",
-				"field2": "value2",
-			},
-		}
-
-		data, err := SerializeCertificate(cert)
-		require.NoError(t, err)
-
-		got, err := DeserializeCertificate(data)
-		require.NoError(t, err)
-		require.Equal(t, cert, got)
-	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeCertificate(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "certificate deserialization failed with error byte 1")
-	})
 }
