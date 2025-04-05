@@ -6,27 +6,34 @@ import (
 	"testing"
 )
 
-func TestDiscoverByIdentityKeyArgs(t *testing.T) {
+func TestDiscoverByAttributesArgs(t *testing.T) {
 	tests := []struct {
 		name string
-		args *wallet.DiscoverByIdentityKeyArgs
+		args *wallet.DiscoverByAttributesArgs
 	}{{
 		name: "full args",
-		args: &wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey:    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+		args: &wallet.DiscoverByAttributesArgs{
+			Attributes: map[string]string{
+				"field1": "value1",
+				"field2": "value2",
+			},
 			Limit:          10,
 			Offset:         5,
 			SeekPermission: boolPtr(true),
 		},
 	}, {
 		name: "minimal args",
-		args: &wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey: "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+		args: &wallet.DiscoverByAttributesArgs{
+			Attributes: map[string]string{
+				"field1": "value1",
+			},
 		},
 	}, {
 		name: "undefined limit/offset",
-		args: &wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey:    "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+		args: &wallet.DiscoverByAttributesArgs{
+			Attributes: map[string]string{
+				"field1": "value1",
+			},
 			SeekPermission: boolPtr(false),
 		},
 	}}
@@ -34,11 +41,11 @@ func TestDiscoverByIdentityKeyArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
-			data, err := SerializeDiscoverByIdentityKeyArgs(tt.args)
+			data, err := SerializeDiscoverByAttributesArgs(tt.args)
 			require.NoError(t, err)
 
 			// Test deserialization
-			got, err := DeserializeDiscoverByIdentityKeyArgs(data)
+			got, err := DeserializeDiscoverByAttributesArgs(data)
 			require.NoError(t, err)
 
 			// Compare results
