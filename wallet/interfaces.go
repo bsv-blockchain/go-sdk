@@ -147,8 +147,12 @@ type Interface interface {
 	GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
 
 	// Authentication
-	IsAuthenticated(args interface{}) (bool, error)
-	GetHeight(args interface{}) (uint32, error)
-	GetNetwork(args interface{}) (string, error)
-	GetVersion(args interface{}) (string, error)
+	IsAuthenticated(args any) (bool, error)
+	GetHeight(args any) (uint32, error)
+	GetNetwork(args any) (string, error)
+	GetVersion(args any) (string, error)
 }
+
+type CertificateFieldNameUnder50Bytes string
+
+type Base64String string

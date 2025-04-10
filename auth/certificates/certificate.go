@@ -2,13 +2,14 @@ package certificates
 
 import (
 	"encoding/base64"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"sort"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -21,10 +22,10 @@ var (
 // It provides methods for serialization, deserialization, signing, and verifying certificates.
 type Certificate struct {
 	// Type identifier for the certificate, base64 encoded string, 32 bytes
-	Type string `json:"type"`
+	Type wallet.Base64String `json:"type"`
 
 	// Unique serial number of the certificate, base64 encoded string, 32 bytes
-	SerialNumber string `json:"serialNumber"`
+	SerialNumber wallet.Base64String `json:"serialNumber"`
 
 	// The public key belonging to the certificate's subject
 	Subject ec.PublicKey `json:"subject"`
@@ -36,7 +37,7 @@ type Certificate struct {
 	RevocationOutpoint *overlay.Outpoint `json:"revocationOutpoint"`
 
 	// All the fields present in the certificate, with field names as keys and encrypted field values as strings
-	Fields map[string]string `json:"fields"`
+	Fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String `json:"fields"`
 
 	// Certificate signature by the certifier's private key
 	Signature []byte `json:"signature,omitempty"`
@@ -44,12 +45,12 @@ type Certificate struct {
 
 // NewCertificate creates a new certificate with the given fields
 func NewCertificate(
-	certType string,
-	serialNumber string,
+	certType wallet.Base64String,
+	serialNumber wallet.Base64String,
 	subject ec.PublicKey,
 	certifier ec.PublicKey,
 	revocationOutpoint *overlay.Outpoint,
-	fields map[string]string,
+	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
 	signature []byte,
 ) *Certificate {
 	return &Certificate{
@@ -65,183 +66,195 @@ func NewCertificate(
 
 // ToBinary serializes the certificate into binary format
 func (c *Certificate) ToBinary(includeSignature bool) ([]byte, error) {
-	// Create a buffer to hold the binary data
-	var buffer []byte
+	writer := util.NewWriter()
 
 	// Write type (Base64String, 32 bytes)
-	typeBytes, err := base64.StdEncoding.DecodeString(c.Type)
+	typeBytes, err := base64.StdEncoding.DecodeString(string(c.Type))
 	if err != nil {
 		return nil, fmt.Errorf("invalid type encoding: %w", err)
 	}
-	buffer = append(buffer, typeBytes...)
+	writer.WriteBytes(typeBytes)
 
 	// Write serialNumber (Base64String, 32 bytes)
-	serialNumberBytes, err := base64.StdEncoding.DecodeString(c.SerialNumber)
+	serialNumberBytes, err := base64.StdEncoding.DecodeString(string(c.SerialNumber))
 	if err != nil {
 		return nil, fmt.Errorf("invalid serial number encoding: %w", err)
 	}
-	buffer = append(buffer, serialNumberBytes...)
+	writer.WriteBytes(serialNumberBytes)
 
 	// Write subject (33 bytes compressed public key)
 	subjectBytes := c.Subject.Compressed()
-	buffer = append(buffer, subjectBytes...)
+	writer.WriteBytes(subjectBytes)
 
 	// Write certifier (33 bytes compressed public key)
 	certifierBytes := c.Certifier.Compressed()
-	buffer = append(buffer, certifierBytes...)
+	writer.WriteBytes(certifierBytes)
 
 	// Write revocationOutpoint (TXID + OutputIndex)
-	if c.RevocationOutpoint != nil {
-		// In Go SDK, the overlay.Outpoint.Txid is already a byte array, so we can use it directly
-		buffer = append(buffer, c.RevocationOutpoint.Txid[:]...)
-
-		// Write output index as varint
-		outputIndex := c.RevocationOutpoint.OutputIndex
-		varIntBytes := writeVarInt(uint64(outputIndex))
-		buffer = append(buffer, varIntBytes...)
-	} else {
-		// Default empty outpoint (32 bytes of zeros + varint 0)
-		buffer = append(buffer, make([]byte, 32)...)
-		buffer = append(buffer, 0) // varint 0
-	}
+	writer.WriteBytes(c.RevocationOutpoint.Txid[:])
+	writer.WriteVarInt(uint64(c.RevocationOutpoint.OutputIndex))
 
 	// Write fields
 	// Sort field names lexicographically
-	fieldNames := make([]string, 0, len(c.Fields))
+	fieldNames := make([]wallet.CertificateFieldNameUnder50Bytes, 0, len(c.Fields))
 	for fieldName := range c.Fields {
 		fieldNames = append(fieldNames, fieldName)
 	}
-	sort.Strings(fieldNames)
+	sort.Slice(fieldNames, func(i, j int) bool {
+		return fieldNames[i] < fieldNames[j]
+	})
 
 	// Write field count as varint
-	varIntBytes := writeVarInt(uint64(len(fieldNames)))
-	buffer = append(buffer, varIntBytes...)
+	writer.WriteVarInt(uint64(len(fieldNames)))
 
-	// Write each field
 	for _, fieldName := range fieldNames {
 		fieldValue := c.Fields[fieldName]
 
 		// Field name length + name
 		fieldNameBytes := []byte(fieldName)
-		fieldNameLenBytes := writeVarInt(uint64(len(fieldNameBytes)))
-		buffer = append(buffer, fieldNameLenBytes...)
-		buffer = append(buffer, fieldNameBytes...)
+		writer.WriteVarInt(uint64(len(fieldNameBytes)))
+		writer.WriteBytes(fieldNameBytes)
 
 		// Field value length + value
 		fieldValueBytes := []byte(fieldValue)
-		fieldValueLenBytes := writeVarInt(uint64(len(fieldValueBytes)))
-		buffer = append(buffer, fieldValueLenBytes...)
-		buffer = append(buffer, fieldValueBytes...)
+		writer.WriteVarInt(uint64(len(fieldValueBytes)))
+		writer.WriteBytes(fieldValueBytes)
 	}
 
 	// Write signature if included
 	if includeSignature && len(c.Signature) > 0 {
-		buffer = append(buffer, c.Signature...)
+		writer.WriteBytes(c.Signature)
 	}
 
-	return buffer, nil
+	return writer.Bytes(), nil
 }
 
 // CertificateFromBinary deserializes a certificate from binary format
 func CertificateFromBinary(data []byte) (*Certificate, error) {
-	if len(data) < 130 { // Minimum size for basic fields
-		return nil, ErrInvalidCertificate
-	}
-
-	offset := 0
+	reader := util.NewReader(data)
 
 	// Read type (32 bytes)
-	typeBytes := data[offset : offset+32]
+	typeBytes, err := reader.ReadBytes(32)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read type: %w", err)
+	}
 	typeStr := base64.StdEncoding.EncodeToString(typeBytes)
-	offset += 32
 
 	// Read serialNumber (32 bytes)
-	serialNumberBytes := data[offset : offset+32]
+	serialNumberBytes, err := reader.ReadBytes(32)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read serial number: %w", err)
+	}
 	serialNumber := base64.StdEncoding.EncodeToString(serialNumberBytes)
-	offset += 32
 
 	// Read subject (33 bytes)
-	subjectBytes := data[offset : offset+33]
+	subjectBytes, err := reader.ReadBytes(33)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read subject: %w", err)
+	}
 	subject, err := ec.ParsePubKey(subjectBytes)
 	if err != nil {
 		return nil, fmt.Errorf("invalid subject public key: %w", err)
 	}
-	offset += 33
 
 	// Read certifier (33 bytes)
-	certifierBytes := data[offset : offset+33]
+	certifierBytes, err := reader.ReadBytes(33)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read certifier: %w", err)
+	}
 	certifier, err := ec.ParsePubKey(certifierBytes)
 	if err != nil {
 		return nil, fmt.Errorf("invalid certifier public key: %w", err)
 	}
-	offset += 33
 
 	// Read revocationOutpoint
-	txidBytes := data[offset : offset+32]
-	offset += 32
-
-	// Read output index (varint)
-	outputIndex, bytesRead := readVarInt(data[offset:])
-	offset += bytesRead
+	txidBytes, err := reader.ReadBytes(32)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read txid: %w", err)
+	}
+	outputIndex, err := reader.ReadVarInt()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read output index: %w", err)
+	}
 
 	// Create revocation outpoint
 	revocationOutpoint := &overlay.Outpoint{
+		Txid:        chainhash.Hash(txidBytes),
 		OutputIndex: uint32(outputIndex),
 	}
-	// Copy txid bytes into the Hash field
-	copy(revocationOutpoint.Txid[:], txidBytes)
 
 	// Read field count (varint)
-	fieldCount, bytesRead := readVarInt(data[offset:])
-	offset += bytesRead
+	fieldCount, err := reader.ReadVarInt()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read field count: %w", err)
+	}
 
 	// Read fields
-	fields := make(map[string]string)
+	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
 	for i := uint64(0); i < fieldCount; i++ {
-		// Read field name length (varint)
-		fieldNameLen, bytesRead := readVarInt(data[offset:])
-		offset += bytesRead
+		// Field name length (varint)
+		fieldNameLength, err := reader.ReadVarInt()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read field name length: %w", err)
+		}
 
-		// Read field name
-		fieldName := string(data[offset : offset+int(fieldNameLen)])
-		offset += int(fieldNameLen)
+		// Field name
+		fieldNameBytes, err := reader.ReadBytes(int(fieldNameLength))
+		if err != nil {
+			return nil, fmt.Errorf("failed to read field name: %w", err)
+		}
+		fieldName := wallet.CertificateFieldNameUnder50Bytes(string(fieldNameBytes))
 
-		// Read field value length (varint)
-		fieldValueLen, bytesRead := readVarInt(data[offset:])
-		offset += bytesRead
+		// Field value length (varint)
+		fieldValueLength, err := reader.ReadVarInt()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read field value length: %w", err)
+		}
 
-		// Read field value
-		fieldValue := string(data[offset : offset+int(fieldValueLen)])
-		offset += int(fieldValueLen)
+		// Field value
+		fieldValueBytes, err := reader.ReadBytes(int(fieldValueLength))
+		if err != nil {
+			return nil, fmt.Errorf("failed to read field value: %w", err)
+		}
+		fieldValue := wallet.Base64String(string(fieldValueBytes))
 
 		fields[fieldName] = fieldValue
 	}
 
 	// Read signature if present
 	var signature []byte
-	if offset < len(data) {
-		signature = data[offset:]
+	if !reader.EOF() {
+		remaining, err := reader.Read()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read signature: %w", err)
+		}
+		signature = remaining
 	}
 
-	// Create certificate
-	cert := &Certificate{
-		Type:               typeStr,
-		SerialNumber:       serialNumber,
+	return &Certificate{
+		Type:               wallet.Base64String(typeStr),
+		SerialNumber:       wallet.Base64String(serialNumber),
 		Subject:            *subject,
 		Certifier:          *certifier,
 		RevocationOutpoint: revocationOutpoint,
 		Fields:             fields,
 		Signature:          signature,
-	}
-
-	return cert, nil
+	}, nil
 }
 
 // Verify checks the certificate's validity including signature verification
+// A nil error response indicates a valid certificate
 func (c *Certificate) Verify() error {
 	// Verify the certificate signature
 	if len(c.Signature) == 0 {
-		return fmt.Errorf("certificate has no signature")
+		// provide a fallback value (empty string)
+		c.Signature = []byte("")
+	}
+
+	// Create a verifier wallet
+	verifier, err := wallet.NewProtoWallet(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create verifier wallet: %w", err)
 	}
 
 	// Get the binary representation without the signature
@@ -257,8 +270,28 @@ func (c *Certificate) Verify() error {
 	}
 
 	// Verify the signature using the certifier's public key
-	valid := c.Certifier.Verify(data, sig)
-	if !valid {
+	verifyArgs := &wallet.VerifySignatureArgs{
+		EncryptionArgs: wallet.EncryptionArgs{
+			ProtocolID: wallet.Protocol{
+				SecurityLevel: wallet.SecurityLevelEveryApp,
+				Protocol:      "certificate signature",
+			},
+			KeyID: fmt.Sprintf("%s %s", c.Type, c.SerialNumber),
+			Counterparty: wallet.Counterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: &c.Certifier,
+			},
+		},
+		Data:      data,
+		Signature: *sig,
+	}
+
+	verifyResult, err := verifier.VerifySignature(verifyArgs)
+	if err != nil {
+		return fmt.Errorf("signature verification failed: %w", err)
+	}
+
+	if !verifyResult.Valid {
 		return fmt.Errorf("invalid signature")
 	}
 
@@ -266,13 +299,22 @@ func (c *Certificate) Verify() error {
 }
 
 // Sign adds a signature to the certificate using the certifier's wallet
-// Certificate must not be already signed
-func (c *Certificate) Sign(certifierWallet *wallet.Wallet) error {
+// Certificate must not be already signed.
+func (c *Certificate) Sign(certifierWallet wallet.ProtoWallet) error {
 	if c.Signature != nil && len(c.Signature) > 0 {
 		return ErrAlreadySigned
 	}
 
-	// Prepare for signing
+	// Get the wallet's identity public key and update the certificate's certifier field
+	pubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+		IdentityKey: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get wallet identity key: %w", err)
+	}
+	c.Certifier = *pubKeyResult
+
+	// Prepare for signing - exclude the signature when signing
 	dataToSign, err := c.ToBinary(false)
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate: %w", err)
@@ -283,9 +325,9 @@ func (c *Certificate) Sign(certifierWallet *wallet.Wallet) error {
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "Certificate",
+				Protocol:      "certificate signature",
 			},
-			KeyID: c.SerialNumber,
+			KeyID: fmt.Sprintf("%s %s", c.Type, c.SerialNumber),
 			Counterparty: wallet.Counterparty{
 				Type: wallet.CounterpartyTypeAnyone,
 			},
@@ -300,69 +342,28 @@ func (c *Certificate) Sign(certifierWallet *wallet.Wallet) error {
 	}
 
 	// Store the signature
-	// The TypeScript SDK uses the DER encoded signature + 1 byte for recoveryId
 	c.Signature = signResult.Signature.Serialize()
 
 	return nil
 }
 
 // GetCertificateEncryptionDetails returns protocol ID and key ID for certificate field encryption
+// For master certificate creation, no serial number is provided because entropy is required
+// from both the client and the certifier. In this case, the keyID is simply the fieldName.
+// For VerifiableCertificates verifier keyring creation, both the serial number and field name are available,
+// so the keyID is formed by concatenating the serialNumber and fieldName.
 func GetCertificateEncryptionDetails(fieldName string, serialNumber string) (wallet.Protocol, string) {
-	return wallet.Protocol{
-			SecurityLevel: wallet.SecurityLevelEveryApp,
-			Protocol:      "certificate field encryption",
-		}, func() string {
-			if serialNumber != "" {
-				return serialNumber + " " + fieldName
-			}
-			return fieldName
-		}()
-}
+	protocolID := wallet.Protocol{
+		SecurityLevel: wallet.SecurityLevelEveryApp,
+		Protocol:      "certificate field encryption",
+	}
 
-// Helper functions for varint encoding/decoding
-func writeVarInt(value uint64) []byte {
-	if value < 0xfd {
-		return []byte{byte(value)}
-	} else if value <= 0xffff {
-		buf := make([]byte, 3)
-		buf[0] = 0xfd
-		binary.LittleEndian.PutUint16(buf[1:], uint16(value))
-		return buf
-	} else if value <= 0xffffffff {
-		buf := make([]byte, 5)
-		buf[0] = 0xfe
-		binary.LittleEndian.PutUint32(buf[1:], uint32(value))
-		return buf
+	var keyID string
+	if serialNumber != "" {
+		keyID = serialNumber + " " + fieldName
 	} else {
-		buf := make([]byte, 9)
-		buf[0] = 0xff
-		binary.LittleEndian.PutUint64(buf[1:], value)
-		return buf
-	}
-}
-
-func readVarInt(data []byte) (uint64, int) {
-	if len(data) == 0 {
-		return 0, 0
+		keyID = fieldName
 	}
 
-	switch data[0] {
-	case 0xfd:
-		if len(data) < 3 {
-			return 0, 1
-		}
-		return uint64(binary.LittleEndian.Uint16(data[1:3])), 3
-	case 0xfe:
-		if len(data) < 5 {
-			return 0, 1
-		}
-		return uint64(binary.LittleEndian.Uint32(data[1:5])), 5
-	case 0xff:
-		if len(data) < 9 {
-			return 0, 1
-		}
-		return binary.LittleEndian.Uint64(data[1:9]), 9
-	default:
-		return uint64(data[0]), 1
-	}
+	return protocolID, keyID
 }
