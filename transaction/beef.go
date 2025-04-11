@@ -1059,7 +1059,12 @@ func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(append(util.LittleEndianBytes(ATOMIC_BEEF, 4), txid[:]...), beef...), nil
+	result := make([]byte, 0, 4+chainhash.HashSize+len(beef))
+	result = append(result, util.LittleEndianBytes(ATOMIC_BEEF, 4)...)
+	result = append(result, txid[:]...)
+	result = append(result, beef...)
+
+	return result, nil
 }
 
 func (b *Beef) TxidOnly() (*Beef, error) {
