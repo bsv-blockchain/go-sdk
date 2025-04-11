@@ -106,7 +106,7 @@ func ValidateCertificates(
 				}
 
 				// Check type match
-				_, typeExists := types[cert.Type]
+				_, typeExists := types[string(cert.Type)]
 				if !typeExists {
 					errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
 					return

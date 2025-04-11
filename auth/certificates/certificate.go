@@ -300,8 +300,8 @@ func (c *Certificate) Verify() error {
 
 // Sign adds a signature to the certificate using the certifier's wallet
 // Certificate must not be already signed.
-func (c *Certificate) Sign(certifierWallet wallet.ProtoWallet) error {
-	if c.Signature != nil && len(c.Signature) > 0 {
+func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
+	if c.Signature != nil {
 		return ErrAlreadySigned
 	}
 

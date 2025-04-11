@@ -2,690 +2,380 @@ package certificates
 
 import (
 	"encoding/base64"
-	"fmt"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// mockVerify is used for testing purposes to skip actual cryptographic verification
-// since our random test keys don't produce valid signatures
-func mockVerify(cert any) error {
-	var signature []byte
+func TestCertificate(t *testing.T) {
+	// Sample data for testing - use consistent data like in TS
+	sampleType := wallet.Base64String(base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	sampleSerialNumber := wallet.Base64String(base64.StdEncoding.EncodeToString(make([]byte, 32)))
 
-	// Check what type of certificate we're verifying
-	switch c := cert.(type) {
-	case *Certificate:
-		signature = c.Signature
-	case *MasterCertificate:
-		signature = c.Signature
-	case *VerifiableCertificate:
-		signature = c.Signature
-	default:
-		return fmt.Errorf("unknown certificate type")
+	// Create private keys
+	sampleSubjectPrivateKey, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	sampleSubjectPubKey := sampleSubjectPrivateKey.PubKey()
+
+	sampleCertifierPrivateKey, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	sampleCertifierPubKey := sampleCertifierPrivateKey.PubKey()
+
+	// Create a revocation outpoint
+	txid := make([]byte, 32)
+	var outpoint overlay.Outpoint
+	copy(outpoint.Txid[:], txid)
+	outpoint.OutputIndex = 1
+	sampleRevocationOutpoint := &outpoint
+
+	// Convert string maps to the proper types
+	sampleFields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
+		wallet.CertificateFieldNameUnder50Bytes("name"):         wallet.Base64String("Alice"),
+		wallet.CertificateFieldNameUnder50Bytes("email"):        wallet.Base64String("alice@example.com"),
+		wallet.CertificateFieldNameUnder50Bytes("organization"): wallet.Base64String("Example Corp"),
+	}
+	sampleFieldsEmpty := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{}
+
+	// Helper function to create a ProtoWallet for testing
+	createProtoWallet := func(privateKey *ec.PrivateKey) *wallet.ProtoWallet {
+		protoWallet, err := wallet.NewProtoWallet(privateKey)
+		require.NoError(t, err)
+		return protoWallet
 	}
 
-	// Just check if signature exists
-	if len(signature) == 0 {
-		return ErrInvalidCertificate
-	}
-	return nil
-}
-
-func TestCertificateConstructWithValidData(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	sampleFields := map[string]string{
-		"name":         "Alice",
-		"email":        "alice@example.com",
-		"organization": "Example Corp",
-	}
-
-	// Create certificate
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             sampleFields,
-	}
-
-	// Verify certificate properties
-	if certificate.Type != sampleType {
-		t.Errorf("Expected certificate type to be %s, got %s", sampleType, certificate.Type)
-	}
-
-	if certificate.SerialNumber != sampleSerialNumber {
-		t.Errorf("Expected serial number to be %s, got %s", sampleSerialNumber, certificate.SerialNumber)
-	}
-
-	if !certificate.Subject.IsEqual(&*subjectPubKeyResult.PublicKey) {
-		t.Errorf("Subject public keys don't match")
-	}
-
-	if !certificate.Certifier.IsEqual(&*certifierPubKeyResult.PublicKey) {
-		t.Errorf("Certifier public keys don't match")
-	}
-
-	if certificate.Signature != nil {
-		t.Errorf("Expected signature to be nil, got %v", certificate.Signature)
-	}
-
-	if len(certificate.Fields) != 3 {
-		t.Errorf("Expected 3 fields, got %d", len(certificate.Fields))
-	}
-}
-
-func TestCertificateSerializeDeserializeWithoutSignature(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	sampleFields := map[string]string{
-		"name":         "Alice",
-		"email":        "alice@example.com",
-		"organization": "Example Corp",
-	}
-
-	// Create certificate
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             sampleFields,
-	}
-
-	// Serialize without signature
-	serialized, err := certificate.ToBinary(false)
-	if err != nil {
-		t.Fatalf("Failed to serialize certificate: %v", err)
-	}
-
-	// Deserialize
-	deserializedCert, err := CertificateFromBinary(serialized)
-	if err != nil {
-		t.Fatalf("Failed to deserialize certificate: %v", err)
-	}
-
-	// Check deserialized properties
-	if deserializedCert.Type != certificate.Type {
-		t.Errorf("Expected type to be %s, got %s", certificate.Type, deserializedCert.Type)
-	}
-
-	if deserializedCert.SerialNumber != certificate.SerialNumber {
-		t.Errorf("Expected serial number to be %s, got %s", certificate.SerialNumber, deserializedCert.SerialNumber)
-	}
-
-	if !deserializedCert.Subject.IsEqual(&certificate.Subject) {
-		t.Errorf("Subject public keys don't match")
-	}
-
-	if !deserializedCert.Certifier.IsEqual(&certificate.Certifier) {
-		t.Errorf("Certifier public keys don't match")
-	}
-
-	if deserializedCert.Signature != nil && len(deserializedCert.Signature) > 0 {
-		t.Errorf("Expected signature to be empty, got %v", deserializedCert.Signature)
-	}
-
-	// Check fields
-	if len(deserializedCert.Fields) != len(certificate.Fields) {
-		t.Errorf("Expected %d fields, got %d", len(certificate.Fields), len(deserializedCert.Fields))
-	}
-
-	for key, value := range certificate.Fields {
-		if deserializedCert.Fields[key] != value {
-			t.Errorf("Field %s: expected %s, got %s", key, value, deserializedCert.Fields[key])
+	t.Run("should construct a Certificate with valid data", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil, // No signature
 		}
-	}
-}
-
-func TestCertificateSerializeDeserializeWithSignature(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	sampleFields := map[string]string{
-		"name":         "Alice",
-		"email":        "alice@example.com",
-		"organization": "Example Corp",
-	}
-
-	// Create certificate
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             sampleFields,
-	}
-
-	// Sign certificate
-	err = certificate.Sign(certifierWallet)
-	if err != nil {
-		t.Fatalf("Failed to sign certificate: %v", err)
-	}
-
-	// Verify signature exists
-	if len(certificate.Signature) == 0 {
-		t.Errorf("Expected signature to be present after signing")
-	}
-
-	// Serialize with signature
-	serialized, err := certificate.ToBinary(true)
-	if err != nil {
-		t.Fatalf("Failed to serialize certificate: %v", err)
-	}
-
-	// Deserialize
-	deserializedCert, err := CertificateFromBinary(serialized)
-	if err != nil {
-		t.Fatalf("Failed to deserialize certificate: %v", err)
-	}
-
-	// Check signature
-	if len(deserializedCert.Signature) == 0 {
-		t.Errorf("Signature was lost during deserialization")
-	}
-}
-
-func TestCertificateSignAndVerify(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	sampleFields := map[string]string{
-		"name":         "Alice",
-		"email":        "alice@example.com",
-		"organization": "Example Corp",
-	}
-
-	// Create certificate
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             sampleFields,
-	}
-
-	// Sign certificate
-	err = certificate.Sign(certifierWallet)
-	if err != nil {
-		t.Fatalf("Failed to sign certificate: %v", err)
-	}
-
-	// Use mock verification for testing
-	err = mockVerify(certificate)
-	if err != nil {
-		t.Errorf("Certificate verification failed: %v", err)
-	}
-}
-
-func TestCertificateVerificationFailsWhenTampered(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	sampleFields := map[string]string{
-		"name":         "Alice",
-		"email":        "alice@example.com",
-		"organization": "Example Corp",
-	}
-
-	// Create certificate
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             sampleFields,
-	}
-
-	// Sign certificate
-	err = certificate.Sign(certifierWallet)
-	if err != nil {
-		t.Fatalf("Failed to sign certificate: %v", err)
-	}
-
-	// Tamper with the certificate
-	certificate.Fields["email"] = "attacker@example.com"
-
-	// Verify should fail - but we're using mock verification that won't detect tampering
-	// This test is only demonstrating the concept since we're using mock signatures
-	// In a real implementation, Verify() would detect the tampering
-	t.Skip("Skipping tamper verification test as we're using mock verification")
-}
-
-func TestCertificateVerificationFailsWhenSignatureMissing(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	sampleFields := map[string]string{
-		"name":         "Alice",
-		"email":        "alice@example.com",
-		"organization": "Example Corp",
-	}
-
-	// Create certificate without signature
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             sampleFields,
-	}
-
-	// Verify should fail
-	err = mockVerify(certificate)
-	if err == nil {
-		t.Errorf("Certificate verification should have failed with missing signature")
-	}
-}
-
-func TestCertificateWithEmptyFields(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	emptyFields := map[string]string{}
-
-	// Create certificate with empty fields
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             emptyFields,
-	}
-
-	// Sign certificate
-	err = certificate.Sign(certifierWallet)
-	if err != nil {
-		t.Fatalf("Failed to sign certificate with empty fields: %v", err)
-	}
-
-	// Serialize with signature
-	serialized, err := certificate.ToBinary(true)
-	if err != nil {
-		t.Fatalf("Failed to serialize certificate: %v", err)
-	}
-
-	// Deserialize
-	deserializedCert, err := CertificateFromBinary(serialized)
-	if err != nil {
-		t.Fatalf("Failed to deserialize certificate: %v", err)
-	}
-
-	// Check fields are still empty
-	if len(deserializedCert.Fields) != 0 {
-		t.Errorf("Expected empty fields, got %d fields", len(deserializedCert.Fields))
-	}
-
-	// Verify signature with mock verification
-	err = mockVerify(deserializedCert)
-	if err != nil {
-		t.Errorf("Certificate verification failed: %v", err)
-	}
-}
-
-func TestCertificateSignThrowsIfAlreadySigned(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-	sampleFields := map[string]string{
-		"name": "Alice",
-	}
-
-	// Create certificate
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             sampleFields,
-		Signature:          []byte("dummy-signature"), // Pre-existing signature
-	}
-
-	// Try to sign again
-	err = certificate.Sign(certifierWallet)
-	if err == nil {
-		t.Errorf("Expected error when signing certificate that already has a signature")
-	}
-}
-
-func TestCertificateWithLongFieldNamesAndValues(t *testing.T) {
-	// Create a helper for test wallets
-	helper := &TestWalletHelper{}
-
-	// Create test wallets to get the public keys
-	certifierWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create certifier wallet: %v", err)
-	}
-
-	subjectWallet, err := helper.CreateTestWallet()
-	if err != nil {
-		t.Fatalf("Failed to create subject wallet: %v", err)
-	}
-
-	// Get the public keys
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get certifier public key: %v", err)
-	}
-
-	subjectPubKeyResult, err := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
-		IdentityKey: true,
-	}, "")
-	if err != nil {
-		t.Fatalf("Failed to get subject public key: %v", err)
-	}
-
-	// Sample data
-	sampleType := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleSerialNumber := base64.StdEncoding.EncodeToString(make([]byte, 32))
-	sampleRevocationOutpoint := &overlay.Outpoint{}
-
-	// Create long field name and value
-	var longFieldName string
-	for i := 0; i < 10; i++ {
-		longFieldName += "longFieldName_"
-	}
-
-	var longFieldValue string
-	for i := 0; i < 20; i++ {
-		longFieldValue += "longFieldValue_"
-	}
-
-	longFields := map[string]string{
-		longFieldName: longFieldValue,
-	}
-
-	// Create certificate with long fields
-	certificate := &Certificate{
-		Type:               sampleType,
-		SerialNumber:       sampleSerialNumber,
-		Subject:            *subjectPubKeyResult.PublicKey,
-		Certifier:          *certifierPubKeyResult.PublicKey,
-		RevocationOutpoint: sampleRevocationOutpoint,
-		Fields:             longFields,
-	}
-
-	// Sign certificate
-	err = certificate.Sign(certifierWallet)
-	if err != nil {
-		t.Fatalf("Failed to sign certificate with long fields: %v", err)
-	}
-
-	// Serialize with signature
-	serialized, err := certificate.ToBinary(true)
-	if err != nil {
-		t.Fatalf("Failed to serialize certificate: %v", err)
-	}
-
-	// Deserialize
-	deserializedCert, err := CertificateFromBinary(serialized)
-	if err != nil {
-		t.Fatalf("Failed to deserialize certificate: %v", err)
-	}
-
-	// Check long field is preserved
-	if deserializedCert.Fields[longFieldName] != longFieldValue {
-		t.Errorf("Long field value not preserved")
-	}
-
-	// Verify signature with mock verification
-	err = mockVerify(deserializedCert)
-	if err != nil {
-		t.Errorf("Certificate verification failed: %v", err)
-	}
+
+		assert.Equal(t, sampleType, certificate.Type)
+		assert.Equal(t, sampleSerialNumber, certificate.SerialNumber)
+		assert.True(t, certificate.Subject.IsEqual(sampleSubjectPubKey))
+		assert.True(t, certificate.Certifier.IsEqual(sampleCertifierPubKey))
+		assert.Equal(t, sampleRevocationOutpoint, certificate.RevocationOutpoint)
+		assert.Nil(t, certificate.Signature)
+		assert.Equal(t, sampleFields, certificate.Fields)
+	})
+
+	t.Run("should serialize and deserialize the Certificate without signature", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil, // No signature
+		}
+
+		serialized, err := certificate.ToBinary(false) // Exclude signature
+		require.NoError(t, err)
+
+		deserializedCertificate, err := CertificateFromBinary(serialized)
+		require.NoError(t, err)
+
+		assert.Equal(t, sampleType, deserializedCertificate.Type)
+		assert.Equal(t, sampleSerialNumber, deserializedCertificate.SerialNumber)
+		assert.True(t, deserializedCertificate.Subject.IsEqual(&certificate.Subject))
+		assert.True(t, deserializedCertificate.Certifier.IsEqual(&certificate.Certifier))
+		assert.Equal(t, certificate.RevocationOutpoint, deserializedCertificate.RevocationOutpoint)
+		assert.Nil(t, deserializedCertificate.Signature)
+		assert.Equal(t, sampleFields, deserializedCertificate.Fields)
+	})
+
+	t.Run("should serialize and deserialize the Certificate with signature", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil, // No signature
+		}
+
+		// Create a ProtoWallet for signing
+		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
+
+		err = certificate.Sign(certifierProtoWallet)
+		require.NoError(t, err)
+
+		serialized, err := certificate.ToBinary(true) // Include signature
+		require.NoError(t, err)
+
+		deserializedCertificate, err := CertificateFromBinary(serialized)
+		require.NoError(t, err)
+
+		assert.Equal(t, sampleType, deserializedCertificate.Type)
+		assert.Equal(t, sampleSerialNumber, deserializedCertificate.SerialNumber)
+		assert.True(t, deserializedCertificate.Subject.IsEqual(&certificate.Subject))
+		assert.True(t, deserializedCertificate.Certifier.IsEqual(&certificate.Certifier))
+		assert.Equal(t, certificate.RevocationOutpoint, deserializedCertificate.RevocationOutpoint)
+		assert.NotNil(t, deserializedCertificate.Signature)
+		assert.Equal(t, certificate.Signature, deserializedCertificate.Signature)
+		assert.Equal(t, sampleFields, deserializedCertificate.Fields)
+	})
+
+	t.Run("should sign the Certificate and verify the signature successfully", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil, // No signature
+		}
+
+		// Create a ProtoWallet for signing
+		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
+
+		err = certificate.Sign(certifierProtoWallet)
+		require.NoError(t, err)
+
+		// Verify the signature
+		err = certificate.Verify()
+		assert.NoError(t, err)
+	})
+
+	t.Run("should fail verification if the Certificate is tampered with", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil, // No signature
+		}
+
+		// Create a ProtoWallet for signing
+		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
+
+		err = certificate.Sign(certifierProtoWallet)
+		require.NoError(t, err)
+
+		// Tamper with the certificate (modify a field)
+		certificate.Fields[wallet.CertificateFieldNameUnder50Bytes("email")] = wallet.Base64String("attacker@example.com")
+
+		// Verify the signature
+		err = certificate.Verify()
+		assert.Error(t, err)
+	})
+
+	t.Run("should fail verification if the signature is missing", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil, // No signature
+		}
+
+		// Verify the signature
+		err = certificate.Verify()
+		assert.Error(t, err)
+	})
+
+	t.Run("should fail verification if the signature is incorrect", func(t *testing.T) {
+		// Create an incorrect signature
+		incorrectSignature := []byte("3045022100cde229279465bb91992ccbc30bf6ed4eb8cdd9d517f31b30ff778d500d5400010220134f0e4065984f8668a642a5ad7a80886265f6aaa56d215d6400c216a4802177")
+
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          incorrectSignature,
+		}
+
+		// Verify the signature
+		err = certificate.Verify()
+		assert.Error(t, err)
+	})
+
+	t.Run("should handle certificates with empty fields", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFieldsEmpty, // Using empty fields
+			Signature:          nil,               // No signature
+		}
+
+		// Create a ProtoWallet for signing
+		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
+
+		err = certificate.Sign(certifierProtoWallet)
+		require.NoError(t, err)
+
+		// Serialize and deserialize
+		serialized, err := certificate.ToBinary(true)
+		require.NoError(t, err)
+
+		deserializedCertificate, err := CertificateFromBinary(serialized)
+		require.NoError(t, err)
+
+		assert.Equal(t, sampleFieldsEmpty, deserializedCertificate.Fields)
+
+		// Verify the signature
+		err = deserializedCertificate.Verify()
+		assert.NoError(t, err)
+	})
+
+	t.Run("should correctly handle serialization/deserialization when signature is excluded", func(t *testing.T) {
+		// Create a dummy signature
+		dummySignature := []byte("deadbeef1234")
+
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          dummySignature,
+		}
+
+		// Serialize without signature
+		serialized, err := certificate.ToBinary(false)
+		require.NoError(t, err)
+
+		deserializedCertificate, err := CertificateFromBinary(serialized)
+		require.NoError(t, err)
+
+		assert.Nil(t, deserializedCertificate.Signature)
+		assert.Equal(t, sampleFields, deserializedCertificate.Fields)
+	})
+
+	t.Run("should correctly handle certificates with long field names and values", func(t *testing.T) {
+		longFieldName := ""
+		for i := 0; i < 10; i++ {
+			longFieldName += "longFieldName_"
+		}
+
+		longFieldValue := ""
+		for i := 0; i < 20; i++ {
+			longFieldValue += "longFieldValue_"
+		}
+
+		fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
+			wallet.CertificateFieldNameUnder50Bytes(longFieldName): wallet.Base64String(longFieldValue),
+		}
+
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             fields,
+			Signature:          nil, // No signature
+		}
+
+		// Create a ProtoWallet for signing
+		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
+
+		err = certificate.Sign(certifierProtoWallet)
+		require.NoError(t, err)
+
+		// Serialize and deserialize
+		serialized, err := certificate.ToBinary(true)
+		require.NoError(t, err)
+
+		deserializedCertificate, err := CertificateFromBinary(serialized)
+		require.NoError(t, err)
+
+		assert.Equal(t, fields, deserializedCertificate.Fields)
+
+		// Verify the signature
+		err = deserializedCertificate.Verify()
+		assert.NoError(t, err)
+	})
+
+	t.Run("should correctly serialize and deserialize the revocationOutpoint", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil, // No signature
+		}
+
+		serialized, err := certificate.ToBinary(false)
+		require.NoError(t, err)
+
+		deserializedCertificate, err := CertificateFromBinary(serialized)
+		require.NoError(t, err)
+
+		assert.Equal(t, certificate.RevocationOutpoint, deserializedCertificate.RevocationOutpoint)
+	})
+
+	t.Run("should throw if already signed, and should update the certifier field if it differs", func(t *testing.T) {
+		// Scenario 1: Certificate already has a signature
+		preSignedCertificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          []byte("deadbeef"), // Already has a placeholder signature
+		}
+
+		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
+
+		// Trying to sign again should error
+		err = preSignedCertificate.Sign(certifierProtoWallet)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "certificate has already been signed")
+
+		// Scenario 2: The certifier property is set to something different from the wallet's public key
+		mismatchedCertifierPrivateKey, err := ec.NewPrivateKey()
+		require.NoError(t, err)
+		mismatchedCertifierPubKey := mismatchedCertifierPrivateKey.PubKey()
+
+		certificateWithMismatch := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *mismatchedCertifierPubKey, // Different from actual wallet key
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil,
+		}
+
+		// Sign the certificate; it should automatically update
+		// the certifier field to match the wallet's actual public key
+		err = certificateWithMismatch.Sign(certifierProtoWallet)
+		require.NoError(t, err)
+
+		// Get the expected public key from the wallet
+		pubKey, err := certifierProtoWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+			IdentityKey: true,
+		})
+		require.NoError(t, err)
+
+		assert.True(t, certificateWithMismatch.Certifier.IsEqual(pubKey))
+		err = certificateWithMismatch.Verify()
+		assert.NoError(t, err)
+	})
 }

@@ -7,36 +7,47 @@ import (
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 var (
 	ErrInvalidMasterCertificate = errors.New("invalid master certificate")
 	ErrMissingMasterKeyring     = errors.New("master keyring is required")
+	ErrFieldNotFound            = errors.New("field not found")
+	ErrKeyNotFoundInKeyring     = errors.New("key not found in keyring")
+	ErrDecryptionFailed         = errors.New("decryption failed")
+	ErrEncryptionFailed         = errors.New("encryption failed")
 )
 
 // MasterCertificate extends the Certificate struct to include a master keyring
 // for key management and selective disclosure of certificate fields.
+// It mirrors the structure and functionality of the MasterCertificate class in the TypeScript SDK.
 type MasterCertificate struct {
-	// Embed the Certificate struct
+	// Embed the base Certificate struct
 	Certificate
-	// MasterKeyring contains encrypted symmetric keys for each field
-	MasterKeyring map[string]string `json:"masterKeyring,omitempty"`
+	// MasterKeyring contains encrypted symmetric keys (Base64 encoded) for each field.
+	// The key is the field name, and the value is the encrypted key.
+	MasterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String `json:"masterKeyring,omitempty"`
 }
 
-// NewMasterCertificate creates a new master certificate with the given fields
+// NewMasterCertificate creates a new MasterCertificate instance.
+// It validates that the masterKeyring contains an entry for every field in the base certificate.
 func NewMasterCertificate(
 	cert *Certificate,
-	masterKeyring map[string]string,
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
 ) (*MasterCertificate, error) {
-	// Ensure every field has a corresponding master key
-	for field := range cert.Fields {
-		if _, exists := masterKeyring[field]; !exists {
-			return nil, errors.New("master keyring must contain a value for every field")
+	if masterKeyring == nil {
+		return nil, ErrMissingMasterKeyring
+	}
+
+	// Ensure every field in `cert.Fields` has a corresponding key in `masterKeyring`
+	for fieldName := range cert.Fields {
+		if _, exists := masterKeyring[fieldName]; !exists {
+			return nil, fmt.Errorf("master keyring must contain a value for every field. Missing key for field: %s", fieldName)
 		}
 	}
 
-	// Create the certificate
 	masterCert := &MasterCertificate{
 		Certificate:   *cert,
 		MasterKeyring: masterKeyring,
@@ -45,63 +56,158 @@ func NewMasterCertificate(
 	return masterCert, nil
 }
 
-// IssueCertificateForSubject creates a new certificate for a subject
-// This is a static method that creates and returns a signed MasterCertificate
-func IssueCertificateForSubject(
-	certifierWallet *wallet.Wallet,
-	subject *wallet.Counterparty,
-	plainFields map[string]string,
-	certificateType string,
-	// Optional revocation outpoint, default to a placeholder value
-	getRevocationOutpoint func(string) (*overlay.Outpoint, error),
-) (*MasterCertificate, error) {
-	// 1. Generate a random serialNumber if not provided
-	serialBytes := make([]byte, 32)
-	if _, err := rand.Read(serialBytes); err != nil {
-		return nil, err
+// CertificateFieldsResult holds the results from creating encrypted certificate fields.
+type CertificateFieldsResult struct {
+	CertificateFields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String
+	MasterKeyring     map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String
+}
+
+// CreateCertificateFields encrypts certificate fields for a subject and generates a master keyring.
+// This static method mirrors the TypeScript implementation.
+func CreateCertificateFields(
+	creatorWallet *wallet.ProtoWallet,
+	certifierOrSubject wallet.Counterparty,
+	fields map[wallet.CertificateFieldNameUnder50Bytes]string, // Plaintext field values
+	privileged bool,
+	privilegedReason string,
+) (*CertificateFieldsResult, error) {
+	certificateFields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+	masterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+
+	for fieldName, fieldValue := range fields {
+		// 1. Generate a random symmetric key (32 bytes)
+		fieldSymmetricKeyBytes := make([]byte, 32)
+		if _, err := rand.Read(fieldSymmetricKeyBytes); err != nil {
+			return nil, fmt.Errorf("failed to generate random key for field %s: %w", fieldName, err)
+		}
+		fieldSymmetricKey := ec.NewSymmetricKey(fieldSymmetricKeyBytes)
+
+		// 2. Encrypt the field value with this key
+		encryptedFieldValue, err := fieldSymmetricKey.Encrypt([]byte(fieldValue))
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt field value for %s: %w", fieldName, err)
+		}
+		certificateFields[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedFieldValue))
+
+		// 3. Encrypt the symmetric key for the certifier/subject
+		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number for master keyring creation
+		encryptedKey, err := creatorWallet.Encrypt(&wallet.EncryptArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID:       protocolID,
+				KeyID:            keyID,
+				Counterparty:     certifierOrSubject,
+				Privileged:       privileged,
+				PrivilegedReason: privilegedReason,
+			},
+			Plaintext: fieldSymmetricKeyBytes,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt field revelation key for %s: %w", fieldName, err)
+		}
+		masterKeyring[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKey))
 	}
-	serialNumber := base64.StdEncoding.EncodeToString(serialBytes)
+
+	return &CertificateFieldsResult{
+		CertificateFields: certificateFields,
+		MasterKeyring:     masterKeyring,
+	}, nil
+}
+
+// IssueCertificateForSubject creates a new MasterCertificate for a specified subject.
+// This method generates a certificate containing encrypted fields and a keyring
+// for the subject to decrypt all fields. Each field is encrypted with a randomly
+// generated symmetric key, which is then encrypted for the subject. The certificate
+// can also include a revocation outpoint to manage potential revocation.
+// This static method mirrors the TypeScript implementation.
+func IssueCertificateForSubject(
+	certifierWallet *wallet.ProtoWallet,
+	subject wallet.Counterparty,
+	plainFields map[string]string, // Plaintext fields
+	certificateType string,
+	getRevocationOutpoint func(string) (*overlay.Outpoint, error), // Optional func
+	serialNumberStr string, // Optional serial number as Base64String
+) (*MasterCertificate, error) {
+
+	// 1. Generate a random serialNumber if not provided
+	var serialNumber wallet.Base64String
+	if serialNumberStr != "" {
+		serialNumber = wallet.Base64String(serialNumberStr)
+	} else {
+		serialBytes := make([]byte, 32)
+		if _, err := rand.Read(serialBytes); err != nil {
+			return nil, fmt.Errorf("failed to generate random serial number: %w", err)
+		}
+		serialNumber = wallet.Base64String(base64.StdEncoding.EncodeToString(serialBytes))
+	}
+
+	// Convert plainFields map[string]string to map[wallet.CertificateFieldNameUnder50Bytes]string
+	fieldsForEncryption := make(map[wallet.CertificateFieldNameUnder50Bytes]string)
+	for k, v := range plainFields {
+		// TODO: Add validation if needed that key length is under 50 bytes
+		fieldsForEncryption[wallet.CertificateFieldNameUnder50Bytes(k)] = v
+	}
 
 	// 2. Create encrypted certificate fields and associated master keyring
-	encryptedFields, masterKeyring, err := createCertificateFields(certifierWallet, subject, plainFields)
+	fieldResult, err := CreateCertificateFields(certifierWallet, subject, fieldsForEncryption, false, "")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create certificate fields: %w", err)
 	}
 
 	// 3. Get the identity public key of the certifier
-	certifierPubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	certifierPubKey, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
 		IdentityKey: true,
-	}, "")
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get certifier public key: %w", err)
+	}
+
+	// Check if the obtained public key is valid internally
+	if certifierPubKey == nil || certifierPubKey.X == nil {
+		return nil, errors.New("failed to get a valid certifier public key from wallet")
 	}
 
 	// 4. Get revocation outpoint
 	var revocationOutpoint *overlay.Outpoint
 	if getRevocationOutpoint != nil {
-		revocationOutpoint, err = getRevocationOutpoint(serialNumber)
+		revocationOutpoint, err = getRevocationOutpoint(string(serialNumber))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get revocation outpoint: %w", err)
 		}
 	} else {
-		// Default to empty outpoint
-		revocationOutpoint = &overlay.Outpoint{}
+		// Default to empty outpoint (matching TS behavior where undefined becomes empty string)
+		revocationOutpoint = &overlay.Outpoint{} // Assuming empty TXID and index 0 is the placeholder
 	}
 
-	// 5. Create the base certificate
+	// 5. Create the base Certificate struct
 	baseCert := &Certificate{
-		Type:               certificateType,
+		Type:               wallet.Base64String(certificateType),
 		SerialNumber:       serialNumber,
-		Subject:            *subject.Counterparty,
-		Certifier:          *certifierPubKeyResult.PublicKey,
+		Certifier:          *certifierPubKey,
 		RevocationOutpoint: revocationOutpoint,
-		Fields:             encryptedFields,
+		Fields:             fieldResult.CertificateFields,
 	}
 
-	// 6. Create the master certificate
-	masterCert, err := NewMasterCertificate(baseCert, masterKeyring)
+	// Set the Subject field based on counterparty type
+	if subject.Type == wallet.CounterpartyTypeSelf {
+		// For self-signed certs, use the certifier's identity key as the subject
+		baseCert.Subject = *certifierPubKey
+	} else if subject.Type == wallet.CounterpartyTypeOther {
+		// For other-signed certs, ensure the counterparty has a public key
+		if subject.Counterparty == nil {
+			return nil, fmt.Errorf("subject counterparty is TypeOther but has a nil public key")
+		}
+		baseCert.Subject = *subject.Counterparty
+	} else if subject.Type == wallet.CounterpartyTypeAnyone {
+		// For "anyone" counterparty, use the certifier's key as well
+		baseCert.Subject = *certifierPubKey
+	} else {
+		return nil, fmt.Errorf("unhandled subject counterparty type: %v", subject.Type)
+	}
+
+	// 6. Create the MasterCertificate instance
+	masterCert, err := NewMasterCertificate(baseCert, fieldResult.MasterKeyring)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create master certificate instance: %w", err)
 	}
 
 	// 7. Sign the certificate
@@ -113,260 +219,183 @@ func IssueCertificateForSubject(
 	return masterCert, nil
 }
 
-// createCertificateFields encrypts certificate fields and creates a master keyring
-func createCertificateFields(
-	certifierWallet *wallet.Wallet,
-	subject *wallet.Counterparty,
-	fields map[string]string,
-) (encryptedFields map[string]string, masterKeyring map[string]string, err error) {
-	// Initialize result maps
-	encryptedFields = make(map[string]string)
-	masterKeyring = make(map[string]string)
-
-	// Process each field
-	for fieldName, fieldValue := range fields {
-		// For each field we:
-		// 1. Generate a random symmetric key (in TypeScript this would be SymmetricKey.fromRandom())
-		// 2. Encrypt the field value with this key
-		// 3. Encrypt the key with the subject's public key
-
-		// 1. Generate a random key (32 bytes)
-		fieldSymmetricKey := make([]byte, 32)
-		if _, err := rand.Read(fieldSymmetricKey); err != nil {
-			return nil, nil, fmt.Errorf("failed to generate random key: %w", err)
-		}
-
-		// 2. In TypeScript, encrypt the field value with the symmetric key
-		// Here we're simulating this - in a real implementation we would:
-		// symmetricKey := symmetric.NewKey(fieldSymmetricKey)
-		// encryptedFieldValue, err := symmetricKey.Encrypt([]byte(fieldValue))
-
-		// For now, just encode the field value in base64 as a placeholder
-		encryptedFieldValue := base64.StdEncoding.EncodeToString([]byte(fieldValue))
-		encryptedFields[fieldName] = encryptedFieldValue
-
-		// 3. Encrypt the symmetric key for the subject
-		protocolID, keyID := GetCertificateEncryptionDetails(fieldName, "")
-		encryptResult, err := certifierWallet.Encrypt(&wallet.EncryptArgs{
-			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID:   protocolID,
-				KeyID:        keyID,
-				Counterparty: *subject,
-			},
-			Plaintext: fieldSymmetricKey,
-		})
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to encrypt field revelation key: %w", err)
-		}
-
-		// Store the encrypted key in the master keyring
-		masterKeyring[fieldName] = base64.StdEncoding.EncodeToString(encryptResult.Ciphertext)
-	}
-
-	return encryptedFields, masterKeyring, nil
+// DecryptFieldResult holds the results from decrypting a single certificate field.
+type DecryptFieldResult struct {
+	FieldRevelationKey  []byte // The decrypted symmetric key for the field
+	DecryptedFieldValue string // The plaintext field value
 }
 
-// CreateFieldRevelationKeyring creates a keyring that allows a verifier to decrypt specific fields
-func (m *MasterCertificate) CreateFieldRevelationKeyring(
-	subjectWallet *wallet.Wallet,
-	verifier *wallet.Counterparty,
-	fieldNames []string,
-) (map[string]string, error) {
-	if m.MasterKeyring == nil || len(m.MasterKeyring) == 0 {
+// DecryptField decrypts a single field using the master keyring.
+// This static method mirrors the TypeScript implementation.
+func DecryptField(
+	subjectOrCertifierWallet *wallet.ProtoWallet,
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
+	fieldName wallet.CertificateFieldNameUnder50Bytes,
+	encryptedFieldValue wallet.Base64String, // Base64 encoded encrypted value
+	counterparty wallet.Counterparty,
+	privileged bool,
+	privilegedReason string,
+) (*DecryptFieldResult, error) {
+	if masterKeyring == nil {
 		return nil, ErrMissingMasterKeyring
 	}
 
-	// Create a keyring to share with the verifier
-	keyring := make(map[string]string)
-
-	// Verify that all requested fields exist in the certificate
-	for _, fieldName := range fieldNames {
-		if _, exists := m.Fields[fieldName]; !exists {
-			return nil, fmt.Errorf("field %s does not exist in the certificate", fieldName)
-		}
+	// 1. Get the encrypted field revelation key from the master keyring
+	encryptedKeyBase64, exists := masterKeyring[fieldName]
+	if !exists {
+		return nil, fmt.Errorf("%w: field %s", ErrKeyNotFoundInKeyring, fieldName)
+	}
+	encryptedKeyBytes, err := base64.StdEncoding.DecodeString(string(encryptedKeyBase64))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode master key for field %s: %w", fieldName, err)
 	}
 
-	// For each requested field, decrypt its master key and re-encrypt for the verifier
-	for _, fieldName := range fieldNames {
-		// Get the encrypted master key
-		masterKey, exists := m.MasterKeyring[fieldName]
-		if !exists {
-			continue // Skip fields not in master keyring
-		}
+	// 2. Decrypt the field revelation key
+	protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number
+	decryptedBytes, err := subjectOrCertifierWallet.Decrypt(&wallet.DecryptArgs{
+		EncryptionArgs: wallet.EncryptionArgs{
+			ProtocolID:       protocolID,
+			KeyID:            keyID,
+			Counterparty:     counterparty,
+			Privileged:       privileged,
+			PrivilegedReason: privilegedReason,
+		},
+		Ciphertext: encryptedKeyBytes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt field revelation key for %s: %w", fieldName, err)
+	}
+	fieldRevelationKey := decryptedBytes
 
-		// 1. Decrypt the master key using the subject's wallet
-		masterKeyBytes, err := base64.StdEncoding.DecodeString(masterKey)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode master key: %w", err)
-		}
-
-		// Create a Counterparty for the certifier
-		// In the TypeScript SDK, this would be whoever encrypted the master key
-		certifier := &wallet.Counterparty{
-			Type:         wallet.CounterpartyTypeOther,
-			Counterparty: &m.Certifier,
-		}
-
-		// Get protocol details for the master keyring (just fieldName, no serialNumber)
-		masterProtocolID, masterKeyID := GetCertificateEncryptionDetails(fieldName, "")
-
-		// Decrypt the master key
-		decryptedKeyResult, err := subjectWallet.Decrypt(&wallet.DecryptArgs{
-			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID:   masterProtocolID,
-				KeyID:        masterKeyID,
-				Counterparty: *certifier,
-			},
-			Ciphertext: masterKeyBytes,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to decrypt master key for field %s: %w", fieldName, err)
-		}
-
-		// 2. Re-encrypt the decrypted master key for the verifier
-		// Get protocol details for the verifier keyring (include serialNumber)
-		verifierProtocolID, verifierKeyID := GetCertificateEncryptionDetails(fieldName, m.SerialNumber)
-		encryptResult, err := subjectWallet.Encrypt(&wallet.EncryptArgs{
-			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID:   verifierProtocolID,
-				KeyID:        verifierKeyID,
-				Counterparty: *verifier,
-			},
-			Plaintext: decryptedKeyResult.Plaintext,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to encrypt key for verifier: %w", err)
-		}
-
-		// 3. Add to the revelation keyring
-		keyring[fieldName] = base64.StdEncoding.EncodeToString(encryptResult.Ciphertext)
+	// 3. Decrypt the field value using the field revelation key
+	encryptedFieldBytes, err := base64.StdEncoding.DecodeString(string(encryptedFieldValue))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode encrypted field value for %s: %w", fieldName, err)
 	}
 
-	return keyring, nil
+	// Use the field revelation key as a symmetric key
+	symmetricKey := ec.NewSymmetricKey(fieldRevelationKey)
+	plaintextFieldBytes, err := symmetricKey.Decrypt(encryptedFieldBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt field %s value: %w", fieldName, ErrDecryptionFailed)
+	}
+
+	return &DecryptFieldResult{
+		FieldRevelationKey:  fieldRevelationKey,
+		DecryptedFieldValue: string(plaintextFieldBytes),
+	}, nil
 }
 
-// DecryptFields decrypts all fields using the masterKeyring
-func (m *MasterCertificate) DecryptFields(
-	subjectOrCertifierWallet *wallet.Wallet,
-	counterparty *wallet.Counterparty,
-) (map[string]string, error) {
-	if m.MasterKeyring == nil || len(m.MasterKeyring) == 0 {
+// DecryptFields decrypts multiple fields using the master keyring.
+// This static method mirrors the TypeScript implementation.
+func DecryptFields(
+	subjectOrCertifierWallet *wallet.ProtoWallet,
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
+	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // Encrypted fields
+	counterparty wallet.Counterparty,
+	privileged bool,
+	privilegedReason string,
+) (map[wallet.CertificateFieldNameUnder50Bytes]string, error) { // Returns map of plaintext values
+	if masterKeyring == nil {
 		return nil, ErrMissingMasterKeyring
 	}
-
-	// Decrypt each field
-	decryptedFields := make(map[string]string)
-
-	// Iterate through all fields in the certificate
-	for fieldName, encryptedValue := range m.Fields {
-		// Check if we have the master key for this field
-		masterKey, exists := m.MasterKeyring[fieldName]
-		if !exists {
-			continue // Skip fields without master keys
-		}
-
-		// 1. Decrypt the master key (field revelation key) using the wallet
-		// Here we need to convert the base64 masterKey to []byte
-		masterKeyBytes, err := base64.StdEncoding.DecodeString(masterKey)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode master key: %w", err)
-		}
-
-		// Get protocol details for the master keyring (just fieldName, no serialNumber)
-		masterProtocolID, masterKeyID := GetCertificateEncryptionDetails(fieldName, "")
-
-		// Use the wallet to decrypt the master key
-		decryptedKeyResult, err := subjectOrCertifierWallet.Decrypt(&wallet.DecryptArgs{
-			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID:   masterProtocolID,
-				KeyID:        masterKeyID,
-				Counterparty: *counterparty,
-			},
-			Ciphertext: masterKeyBytes,
-		})
-		if err != nil {
-			continue // Skip this field if we can't decrypt the key
-		}
-
-		// TODO: In a real implementation, we would use the decryptedKeyResult.Plaintext
-		// to create a symmetric key for decrypting the field value
-		_ = decryptedKeyResult // Acknowledging that we're not using this yet
-
-		// 2. Use the decrypted key to decrypt the field value
-		// In a real implementation, we would use a symmetric key from the decrypted master key
-		// For now, we'll simulate this by just using the decrypted key as a placeholder
-
-		// Convert the encrypted value from base64
-		fieldValueBytes, err := base64.StdEncoding.DecodeString(encryptedValue)
-		if err != nil {
-			continue
-		}
-
-		// In the TypeScript implementation, a SymmetricKey is created from the decrypted key
-		// and used to decrypt the field value. Here we'll just use a placeholder.
-		// In a real implementation, we would:
-		// symmetricKey := symmetric.NewKey(decryptedKeyResult.Plaintext)
-		// decryptedValueBytes, err := symmetricKey.Decrypt(fieldValueBytes)
-
-		// For now, just use the plaintext as is
-		decryptedFields[fieldName] = string(fieldValueBytes)
+	if fields == nil {
+		return nil, errors.New("fields map cannot be nil")
 	}
 
-	if len(decryptedFields) == 0 {
-		return nil, errors.New("failed to decrypt any certificate fields")
+	decryptedFields := make(map[wallet.CertificateFieldNameUnder50Bytes]string)
+
+	for fieldName, encryptedFieldValue := range fields {
+		result, err := DecryptField(
+			subjectOrCertifierWallet,
+			masterKeyring,
+			fieldName,
+			encryptedFieldValue,
+			counterparty,
+			privileged,
+			privilegedReason,
+		)
+		if err != nil {
+			// If any field fails, the whole operation fails
+			return nil, fmt.Errorf("failed to decrypt field %s: %w", fieldName, err)
+		}
+		decryptedFields[fieldName] = result.DecryptedFieldValue
 	}
 
 	return decryptedFields, nil
 }
 
-// CreateVerifiableCertificateForVerifier creates a verifiable certificate for a specific verifier
-// using the subject's wallet to decrypt and re-encrypt field keys
-func (m *MasterCertificate) CreateVerifiableCertificateForVerifier(
-	subjectWallet *wallet.Wallet,
-	verifier *wallet.Counterparty,
-	fieldsToReveal []string,
-) (*VerifiableCertificate, error) {
-	if m.MasterKeyring == nil || len(m.MasterKeyring) == 0 {
-		return nil, ErrMissingMasterKeyring
-	}
-
-	// Create a keyring for the verifier
-	keyring, err := m.CreateFieldRevelationKeyring(
-		subjectWallet,
-		verifier,
-		fieldsToReveal,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new VerifiableCertificate with the verifier's keyring
-	verifiableCertificate := NewVerifiableCertificate(&m.Certificate, keyring)
-
-	return verifiableCertificate, nil
-}
-
-// CreateFromVerifiableCertificate creates a master certificate from a verifiable certificate
-// This is useful when loading certificates from storage
-func CreateFromVerifiableCertificate(
-	certificate *VerifiableCertificate,
-	masterKeyring map[string]string,
-) (*MasterCertificate, error) {
+// CreateKeyringForVerifier creates a keyring for a verifier that allows them to decrypt specific fields
+// in a certificate. The subject decrypts the master key, then re-encrypts it for the verifier.
+// This allows selective disclosure of certificate fields to specific verifiers.
+// This static method mirrors the TypeScript implementation.
+func CreateKeyringForVerifier(
+	subjectWallet *wallet.ProtoWallet,
+	certifier wallet.Counterparty, // Counterparty used when decrypting master key
+	verifier wallet.Counterparty, // Counterparty to encrypt for
+	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // All encrypted fields from cert
+	fieldsToReveal []wallet.CertificateFieldNameUnder50Bytes, // Which fields to include in the new keyring
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // The original master keyring
+	serialNumber wallet.Base64String, // Serial number needed for encryption protocol/key ID
+	privileged bool,
+	privilegedReason string,
+) (map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, error) { // Returns the verifier-specific keyring
 	if masterKeyring == nil || len(masterKeyring) == 0 {
 		return nil, ErrMissingMasterKeyring
 	}
 
-	// Ensure every field has a corresponding master key
-	for field := range certificate.Fields {
-		if _, exists := masterKeyring[field]; !exists {
-			return nil, errors.New("master keyring must contain a value for every field")
+	// Create a new verifier-specific keyring
+	keyringForVerifier := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+
+	// For each field to reveal:
+	for _, fieldName := range fieldsToReveal {
+		// Check if the field exists in the certificate
+		if _, exists := fields[fieldName]; !exists {
+			return nil, fmt.Errorf("%w for field %s", ErrFieldNotFound, fieldName)
 		}
+
+		// First decrypt the master key
+		decryptedKey, err := DecryptField(
+			subjectWallet,
+			masterKeyring,
+			fieldName,
+			fields[fieldName],
+			certifier,
+			privileged,
+			privilegedReason,
+		)
+		if err != nil {
+			// Wrap the original error with our ErrDecryptionFailed
+			return nil, fmt.Errorf("failed to decrypt master key for field %s during keyring creation: %w: %v",
+				fieldName, ErrDecryptionFailed, err)
+		}
+		fieldRevelationKey := decryptedKey.FieldRevelationKey
+
+		// 2. Re-encrypt the field revelation key for the verifier
+		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(serialNumber))
+		encryptedKeyForVerifier, err := subjectWallet.Encrypt(&wallet.EncryptArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID:       protocolID,
+				KeyID:            keyID,
+				Counterparty:     verifier,
+				Privileged:       privileged,
+				PrivilegedReason: privilegedReason,
+			},
+			Plaintext: fieldRevelationKey,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt field key for verifier: %w", err)
+		}
+
+		// 3. Store in verifier keyring
+		keyringForVerifier[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKeyForVerifier))
 	}
 
-	masterCert := &MasterCertificate{
-		Certificate:   certificate.Certificate,
-		MasterKeyring: masterKeyring,
-	}
-
-	return masterCert, nil
+	return keyringForVerifier, nil
 }
+
+// Note: Methods like `createVerifiableCertificate` would typically belong in a
+// separate `VerifiableCertificate` struct/file, which would use the methods
+// defined here (like `CreateKeyringForVerifier`). This file focuses only on
+// implementing the `MasterCertificate` structure and its associated static methods
+// as defined in the TypeScript `MasterCertificate.ts`.

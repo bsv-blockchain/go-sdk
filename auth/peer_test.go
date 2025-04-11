@@ -434,10 +434,10 @@ func TestPeerCertificateExchange(t *testing.T) {
 	// Mock certificates for both wallets
 	aliceCert := &certificates.VerifiableCertificate{
 		Certificate: certificates.Certificate{
-			Type:         certType,
+			Type:         wallet.Base64String(certType),
 			SerialNumber: "alice-serial-12345",
-			Fields: map[string]string{
-				requiredField: "Alice's data",
+			Fields: map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
+				wallet.CertificateFieldNameUnder50Bytes(requiredField): wallet.Base64String("Alice's data"),
 			},
 		},
 		KeyRing: map[string]string{},
@@ -445,10 +445,10 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	bobCert := &certificates.VerifiableCertificate{
 		Certificate: certificates.Certificate{
-			Type:         certType,
+			Type:         wallet.Base64String(certType),
 			SerialNumber: "bob-serial-67890",
-			Fields: map[string]string{
-				requiredField: "Bob's data",
+			Fields: map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
+				wallet.CertificateFieldNameUnder50Bytes(requiredField): wallet.Base64String("Bob's data"),
 			},
 		},
 		KeyRing: map[string]string{},
