@@ -181,12 +181,15 @@ func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 }
 
 func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
-	if len(beefBytes) < 36 {
-		return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+	if len(beefBytes) < 4 {
+		return nil, nil, nil, fmt.Errorf("invalid-version")
 	}
 	version := binary.LittleEndian.Uint32(beefBytes[:4])
 	switch version {
 	case ATOMIC_BEEF:
+		if len(beefBytes) < 36 {
+			return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+		}
 		if txid, err := chainhash.NewHash(beefBytes[4:36]); err != nil {
 			return nil, nil, nil, fmt.Errorf("invalid txid: %w", err)
 		} else if b, err := NewBeefFromBytes(beefBytes[36:]); err != nil {
@@ -214,6 +217,9 @@ func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
 }
 
 func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
+	if t == nil {
+		return nil, fmt.Errorf("transaction is nil")
+	}
 	beef := &Beef{
 		Version:      BEEF_V2,
 		BUMPs:        []*MerklePath{},
@@ -230,11 +236,11 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 		if tx.MerklePath == nil {
 			continue
 		}
-		if _, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
+		if bumpIdx, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
 			bumpMap[tx.MerklePath.BlockHeight] = len(beef.BUMPs)
 			beef.BUMPs = append(beef.BUMPs, tx.MerklePath)
 		} else {
-			err = beef.BUMPs[bumpMap[tx.MerklePath.BlockHeight]].Combine(tx.MerklePath)
+			err = beef.BUMPs[bumpIdx].Combine(tx.MerklePath)
 			if err != nil {
 				return nil, err
 			}
@@ -440,9 +446,13 @@ func (t *Transaction) collectAncestors(txns map[string]*Transaction, allowPartia
 }
 
 func (b *Beef) FindBump(txid string) *MerklePath {
+	idHash, _ := chainhash.NewHashFromHex(txid)
+	if idHash == nil {
+		return nil
+	}
 	for _, bump := range b.BUMPs {
 		for _, leaf := range bump.Path[0] {
-			if leaf.Hash != nil && leaf.Hash.String() == txid {
+			if leaf.Hash != nil && leaf.Hash.Equal(*idHash) {
 				return bump
 			}
 		}
