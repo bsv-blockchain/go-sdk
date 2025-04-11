@@ -1037,18 +1037,18 @@ func (b *Beef) Bytes() ([]byte, error) {
 				return fmt.Errorf("txid is nil")
 			}
 			txid = tx.KnownTxID.String()
-			if _, ok := txs[txid]; ok {
-				return nil
-			}
-			beef = append(beef, byte(tx.DataFormat))
-			beef = append(beef, tx.KnownTxID[:]...)
 		} else if tx.Transaction == nil {
 			return fmt.Errorf("transaction is nil")
 		} else {
 			txid = tx.Transaction.TxID().String()
-			if _, ok := txs[txid]; ok {
-				return nil
-			}
+		}
+		if _, ok := txs[txid]; ok {
+			return nil
+		}
+		if tx.DataFormat == TxIDOnly {
+			beef = append(beef, byte(tx.DataFormat))
+			beef = append(beef, tx.KnownTxID[:]...)
+		} else {
 			for _, txin := range tx.Transaction.Inputs {
 				if parentTx := b.findTxid(txin.SourceTXID.String()); parentTx != nil {
 					if err := appendTx(parentTx); err != nil {
