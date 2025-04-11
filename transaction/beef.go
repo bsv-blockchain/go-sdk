@@ -234,7 +234,7 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 			bumpMap[tx.MerklePath.BlockHeight] = len(beef.BUMPs)
 			beef.BUMPs = append(beef.BUMPs, tx.MerklePath)
 		} else {
-			err := beef.BUMPs[bumpMap[tx.MerklePath.BlockHeight]].Combine(tx.MerklePath)
+			err = beef.BUMPs[bumpMap[tx.MerklePath.BlockHeight]].Combine(tx.MerklePath)
 			if err != nil {
 				return nil, err
 			}
