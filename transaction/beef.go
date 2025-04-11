@@ -1031,14 +1031,24 @@ func (b *Beef) Bytes() ([]byte, error) {
 	txs := make(map[string]struct{}, len(b.Transactions))
 	var appendTx func(tx *BeefTx) error
 	appendTx = func(tx *BeefTx) error {
-		if _, ok := txs[tx.Transaction.TxID().String()]; ok {
-			return nil
-		}
-
+		var txid string
 		if tx.DataFormat == TxIDOnly {
+			if tx.KnownTxID == nil {
+				return fmt.Errorf("txid is nil")
+			}
+			txid = tx.KnownTxID.String()
+			if _, ok := txs[txid]; ok {
+				return nil
+			}
 			beef = append(beef, byte(tx.DataFormat))
 			beef = append(beef, tx.KnownTxID[:]...)
+		} else if tx.Transaction == nil {
+			return fmt.Errorf("transaction is nil")
 		} else {
+			txid = tx.Transaction.TxID().String()
+			if _, ok := txs[txid]; ok {
+				return nil
+			}
 			for _, txin := range tx.Transaction.Inputs {
 				if parentTx := b.findTxid(txin.SourceTXID.String()); parentTx != nil {
 					if err := appendTx(parentTx); err != nil {
@@ -1052,7 +1062,7 @@ func (b *Beef) Bytes() ([]byte, error) {
 			}
 			beef = append(beef, tx.Transaction.Bytes()...)
 		}
-		txs[tx.Transaction.TxID().String()] = struct{}{}
+		txs[txid] = struct{}{}
 		return nil
 	}
 	for _, tx := range b.Transactions {
