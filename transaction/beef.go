@@ -168,13 +168,13 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 
 func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	if len(beef) < 36 {
-		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+		return nil, nil, fmt.Errorf("provided atomic BEEF length (%d) is too short", len(beef))
 	} else if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
-		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+		return nil, nil, fmt.Errorf("version %d is not atomic BEEF", version)
 	} else if txid, err := chainhash.NewHash(beef[4:36]); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid txid: %w", err)
 	} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid BEEF: %w", err)
 	} else {
 		return b, txid, nil
 	}
