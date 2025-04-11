@@ -169,29 +169,32 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 
 func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	if len(beef) < 36 {
-		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+		return nil, nil, fmt.Errorf("provided atomic BEEF length (%d) is too short", len(beef))
 	} else if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
-		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+		return nil, nil, fmt.Errorf("version %d is not atomic BEEF", version)
 	} else if txid, err := chainhash.NewHash(beef[4:36]); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid txid: %w", err)
 	} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid BEEF: %w", err)
 	} else {
 		return b, txid, nil
 	}
 }
 
 func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
-	if len(beefBytes) < 36 {
-		return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+	if len(beefBytes) < 4 {
+		return nil, nil, nil, fmt.Errorf("invalid-version")
 	}
 	version := binary.LittleEndian.Uint32(beefBytes[:4])
 	switch version {
 	case ATOMIC_BEEF:
+		if len(beefBytes) < 36 {
+			return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+		}
 		if txid, err := chainhash.NewHash(beefBytes[4:36]); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, fmt.Errorf("invalid txid: %w", err)
 		} else if b, err := NewBeefFromBytes(beefBytes[36:]); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, fmt.Errorf("invalid BEEF: %w", err)
 		} else {
 			return b, b.FindTransaction(txid.String()), txid, nil
 		}
@@ -215,6 +218,9 @@ func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
 }
 
 func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
+	if t == nil {
+		return nil, fmt.Errorf("transaction is nil")
+	}
 	beef := &Beef{
 		Version:      BEEF_V2,
 		BUMPs:        []*MerklePath{},
@@ -231,11 +237,11 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 		if tx.MerklePath == nil {
 			continue
 		}
-		if _, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
+		if bumpIdx, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
 			bumpMap[tx.MerklePath.BlockHeight] = len(beef.BUMPs)
 			beef.BUMPs = append(beef.BUMPs, tx.MerklePath)
 		} else {
-			err := beef.BUMPs[bumpMap[tx.MerklePath.BlockHeight]].Combine(tx.MerklePath)
+			err = beef.BUMPs[bumpIdx].Combine(tx.MerklePath)
 			if err != nil {
 				return nil, err
 			}
@@ -441,9 +447,13 @@ func (t *Transaction) collectAncestors(txns map[string]*Transaction, allowPartia
 }
 
 func (b *Beef) FindBump(txid string) *MerklePath {
+	idHash, _ := chainhash.NewHashFromHex(txid)
+	if idHash == nil {
+		return nil
+	}
 	for _, bump := range b.BUMPs {
 		for _, leaf := range bump.Path[0] {
-			if leaf.Hash != nil && leaf.Hash.String() == txid {
+			if leaf.Hash != nil && leaf.Hash.Equal(*idHash) {
 				return bump
 			}
 		}
@@ -1023,10 +1033,20 @@ func (b *Beef) Bytes() ([]byte, error) {
 	txs := make(map[string]struct{}, len(b.Transactions))
 	var appendTx func(tx *BeefTx) error
 	appendTx = func(tx *BeefTx) error {
-		if _, ok := txs[tx.Transaction.TxID().String()]; ok {
+		var txid string
+		if tx.DataFormat == TxIDOnly {
+			if tx.KnownTxID == nil {
+				return fmt.Errorf("txid is nil")
+			}
+			txid = tx.KnownTxID.String()
+		} else if tx.Transaction == nil {
+			return fmt.Errorf("transaction is nil")
+		} else {
+			txid = tx.Transaction.TxID().String()
+		}
+		if _, ok := txs[txid]; ok {
 			return nil
 		}
-
 		if tx.DataFormat == TxIDOnly {
 			beef = append(beef, byte(tx.DataFormat))
 			beef = append(beef, tx.KnownTxID[:]...)
@@ -1044,7 +1064,7 @@ func (b *Beef) Bytes() ([]byte, error) {
 			}
 			beef = append(beef, tx.Transaction.Bytes()...)
 		}
-		txs[tx.Transaction.TxID().String()] = struct{}{}
+		txs[txid] = struct{}{}
 		return nil
 	}
 	for _, tx := range b.Transactions {
@@ -1061,7 +1081,12 @@ func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(append(util.LittleEndianBytes(ATOMIC_BEEF, 4), txid[:]...), beef...), nil
+	result := make([]byte, 0, 4+chainhash.HashSize+len(beef))
+	result = append(result, util.LittleEndianBytes(ATOMIC_BEEF, 4)...)
+	result = append(result, txid[:]...)
+	result = append(result, beef...)
+
+	return result, nil
 }
 
 func (b *Beef) TxidOnly() (*Beef, error) {
