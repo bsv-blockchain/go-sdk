@@ -47,6 +47,17 @@ func TestFromBEEF(t *testing.T) {
 	require.NoError(t, err, "NewTransactionFromBEEF method failed")
 	require.Equal(t, tx.TxID().String(), tx2.TxID().String(), "Transaction ID does not match")
 
+	_, txid, err := NewBeefFromAtomicBytes(atomic)
+	require.NoError(t, err, "NewBeefFromAtomicBytes method failed")
+	require.Equal(t, txid.String(), expectedTxID, "Transaction ID does not match")
+
+	_, txFromBeef, _, err := ParseBeef(beefBytes)
+	require.NoError(t, err, "ParseBeef method failed")
+	require.Equal(t, txFromBeef.TxID().String(), expectedTxID, "Transaction ID does not match")
+
+	_, err = NewBeefFromTransaction(tx)
+	require.NoError(t, err, "NewBeefFromTransaction method failed")
+
 }
 
 func TestNewBEEFFromBytes(t *testing.T) {
