@@ -188,9 +188,9 @@ func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
 	switch version {
 	case ATOMIC_BEEF:
 		if txid, err := chainhash.NewHash(beefBytes[4:36]); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, fmt.Errorf("invalid txid: %w", err)
 		} else if b, err := NewBeefFromBytes(beefBytes[36:]); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, fmt.Errorf("invalid BEEF: %w", err)
 		} else {
 			return b, b.FindTransaction(txid.String()), txid, nil
 		}
