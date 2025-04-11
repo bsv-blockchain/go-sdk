@@ -16,7 +16,7 @@ type CompletedProtoWallet struct {
 
 // NewCompletedProtoWallet creates a new CompletedProtoWallet from a private key
 func NewCompletedProtoWallet(privateKey *ec.PrivateKey) (*CompletedProtoWallet, error) {
-	protoWallet, err := wallet.NewProtoWallet(privateKey)
+	protoWallet, err := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypePrivateKey, PrivateKey: privateKey})
 	if err != nil {
 		return nil, err
 	}
@@ -26,66 +26,6 @@ func NewCompletedProtoWallet(privateKey *ec.PrivateKey) (*CompletedProtoWallet, 
 		ProtoWallet: protoWallet, // Directly embed the ProtoWallet
 		keyDeriver:  keyDeriver,
 	}, nil
-}
-
-// GetProtoWallet returns the embedded *wallet.ProtoWallet
-// This allows the CompletedProtoWallet to be used where a *wallet.ProtoWallet is expected
-func (c *CompletedProtoWallet) GetProtoWallet() *wallet.ProtoWallet {
-	return c.ProtoWallet
-}
-
-// GetPublicKey returns the public key for specific purposes, implementing the wallet.Interface
-// This overrides the ProtoWallet's GetPublicKey method to match the wallet.Interface signature
-func (c *CompletedProtoWallet) GetPublicKey(args *wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-	pubKey, err := c.ProtoWallet.GetPublicKey(args)
-	if err != nil {
-		return nil, err
-	}
-	return &wallet.GetPublicKeyResult{
-		PublicKey: pubKey,
-	}, nil
-}
-
-// CreateSignature creates a signature for the provided data
-func (c *CompletedProtoWallet) CreateSignature(args *wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-	return c.ProtoWallet.CreateSignature(args, originator)
-}
-
-// VerifySignature verifies a signature for the provided data
-func (c *CompletedProtoWallet) VerifySignature(args *wallet.VerifySignatureArgs) (*wallet.VerifySignatureResult, error) {
-	return c.ProtoWallet.VerifySignature(args)
-}
-
-// Encrypt encrypts data using the provided protocol ID and key ID
-func (c *CompletedProtoWallet) Encrypt(args *wallet.EncryptArgs) (*wallet.EncryptResult, error) {
-	ciphertext, err := c.ProtoWallet.Encrypt(args)
-	if err != nil {
-		return nil, err
-	}
-	return &wallet.EncryptResult{
-		Ciphertext: ciphertext,
-	}, nil
-}
-
-// Decrypt decrypts data using the provided protocol ID and key ID
-func (c *CompletedProtoWallet) Decrypt(args *wallet.DecryptArgs) (*wallet.DecryptResult, error) {
-	plaintext, err := c.ProtoWallet.Decrypt(args)
-	if err != nil {
-		return nil, err
-	}
-	return &wallet.DecryptResult{
-		Plaintext: plaintext,
-	}, nil
-}
-
-// CreateHmac creates an HMAC for the provided data
-func (c *CompletedProtoWallet) CreateHmac(args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
-	return c.ProtoWallet.CreateHmac(args)
-}
-
-// VerifyHmac verifies an HMAC for the provided data
-func (c *CompletedProtoWallet) VerifyHmac(args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
-	return c.ProtoWallet.VerifyHmac(args)
 }
 
 // CreateAction creates a new transaction (not needed for certificates)

@@ -252,7 +252,7 @@ func (c *Certificate) Verify() error {
 	}
 
 	// Create a verifier wallet
-	verifier, err := wallet.NewProtoWallet(nil)
+	verifier, err := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypeAnyone})
 	if err != nil {
 		return fmt.Errorf("failed to create verifier wallet: %w", err)
 	}
@@ -308,11 +308,11 @@ func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
 	// Get the wallet's identity public key and update the certificate's certifier field
 	pubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
 		IdentityKey: true,
-	})
+	}, "")
 	if err != nil {
 		return fmt.Errorf("failed to get wallet identity key: %w", err)
 	}
-	c.Certifier = *pubKeyResult
+	c.Certifier = *pubKeyResult.PublicKey
 
 	// Prepare for signing - exclude the signature when signing
 	dataToSign, err := c.ToBinary(false)

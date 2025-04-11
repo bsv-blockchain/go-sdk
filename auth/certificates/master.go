@@ -104,7 +104,7 @@ func CreateCertificateFields(
 		if err != nil {
 			return nil, fmt.Errorf("failed to encrypt field revelation key for %s: %w", fieldName, err)
 		}
-		masterKeyring[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKey))
+		masterKeyring[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKey.Ciphertext))
 	}
 
 	return &CertificateFieldsResult{
@@ -156,13 +156,13 @@ func IssueCertificateForSubject(
 	// 3. Get the identity public key of the certifier
 	certifierPubKey, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
 		IdentityKey: true,
-	})
+	}, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get certifier public key: %w", err)
 	}
 
 	// Check if the obtained public key is valid internally
-	if certifierPubKey == nil || certifierPubKey.X == nil {
+	if certifierPubKey == nil || certifierPubKey.PublicKey.X == nil {
 		return nil, errors.New("failed to get a valid certifier public key from wallet")
 	}
 
@@ -182,7 +182,7 @@ func IssueCertificateForSubject(
 	baseCert := &Certificate{
 		Type:               wallet.Base64String(certificateType),
 		SerialNumber:       serialNumber,
-		Certifier:          *certifierPubKey,
+		Certifier:          *certifierPubKey.PublicKey,
 		RevocationOutpoint: revocationOutpoint,
 		Fields:             fieldResult.CertificateFields,
 	}
@@ -190,7 +190,7 @@ func IssueCertificateForSubject(
 	// Set the Subject field based on counterparty type
 	if subject.Type == wallet.CounterpartyTypeSelf {
 		// For self-signed certs, use the certifier's identity key as the subject
-		baseCert.Subject = *certifierPubKey
+		baseCert.Subject = *certifierPubKey.PublicKey
 	} else if subject.Type == wallet.CounterpartyTypeOther {
 		// For other-signed certs, ensure the counterparty has a public key
 		if subject.Counterparty == nil {
@@ -199,7 +199,7 @@ func IssueCertificateForSubject(
 		baseCert.Subject = *subject.Counterparty
 	} else if subject.Type == wallet.CounterpartyTypeAnyone {
 		// For "anyone" counterparty, use the certifier's key as well
-		baseCert.Subject = *certifierPubKey
+		baseCert.Subject = *certifierPubKey.PublicKey
 	} else {
 		return nil, fmt.Errorf("unhandled subject counterparty type: %v", subject.Type)
 	}
@@ -265,7 +265,7 @@ func DecryptField(
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt field revelation key for %s: %w", fieldName, err)
 	}
-	fieldRevelationKey := decryptedBytes
+	fieldRevelationKey := decryptedBytes.Plaintext
 
 	// 3. Decrypt the field value using the field revelation key
 	encryptedFieldBytes, err := base64.StdEncoding.DecodeString(string(encryptedFieldValue))
@@ -388,7 +388,7 @@ func CreateKeyringForVerifier(
 		}
 
 		// 3. Store in verifier keyring
-		keyringForVerifier[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKeyForVerifier))
+		keyringForVerifier[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKeyForVerifier.Ciphertext))
 	}
 
 	return keyringForVerifier, nil

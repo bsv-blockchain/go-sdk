@@ -19,38 +19,50 @@ type ProtoWallet struct {
 	// The underlying key deriver
 	keyDeriver *KeyDeriver
 }
+type ProtoWalletArgsType string
+
+const (
+	ProtoWalletArgsTypePrivateKey ProtoWalletArgsType = "privateKey"
+	ProtoWalletArgsTypeKeyDeriver ProtoWalletArgsType = "keyDeriver"
+	ProtoWalletArgsTypeAnyone     ProtoWalletArgsType = "anyone"
+)
+
+type ProtoWalletArgs struct {
+	Type       ProtoWalletArgsType
+	PrivateKey *ec.PrivateKey
+	KeyDeriver *KeyDeriver
+}
 
 // NewProtoWallet creates a new ProtoWallet from a private key or KeyDeriver
-func NewProtoWallet(rootKeyOrKeyDeriver any) (*ProtoWallet, error) {
-	switch v := rootKeyOrKeyDeriver.(type) {
-	case *KeyDeriver:
+func NewProtoWallet(rootKeyOrKeyDeriver ProtoWalletArgs) (*ProtoWallet, error) {
+	switch rootKeyOrKeyDeriver.Type {
+	case ProtoWalletArgsTypeKeyDeriver:
 		return &ProtoWallet{
-			keyDeriver: v,
+			keyDeriver: NewKeyDeriver(rootKeyOrKeyDeriver.PrivateKey),
 		}, nil
-	case *ec.PrivateKey:
+	case ProtoWalletArgsTypePrivateKey:
 		return &ProtoWallet{
-			keyDeriver: NewKeyDeriver(v),
+			keyDeriver: NewKeyDeriver(rootKeyOrKeyDeriver.PrivateKey),
 		}, nil
-	case *Wallet:
-		return &ProtoWallet{
-			keyDeriver: NewKeyDeriver(v.privateKey),
-		}, nil
-	default:
+	case ProtoWalletArgsTypeAnyone:
 		// Create an "anyone" key deriver as default
 		kd := NewKeyDeriver(nil)
 		return &ProtoWallet{
 			keyDeriver: kd,
 		}, nil
 	}
+	return nil, errors.New("invalid rootKeyOrKeyDeriver")
 }
 
 // GetPublicKey returns the public key for the wallet
-func (p *ProtoWallet) GetPublicKey(args *GetPublicKeyArgs) (*ec.PublicKey, error) {
+func (p *ProtoWallet) GetPublicKey(args *GetPublicKeyArgs, _originator string) (*GetPublicKeyResult, error) {
 	if args.IdentityKey {
 		if p.keyDeriver == nil {
 			return nil, errors.New("keyDeriver is undefined")
 		}
-		return p.keyDeriver.rootKey.PubKey(), nil
+		return &GetPublicKeyResult{
+			PublicKey: p.keyDeriver.rootKey.PubKey(),
+		}, nil
 	} else {
 		if args.ProtocolID.Protocol == "" || args.KeyID == "" {
 			return nil, errors.New("protocolID and keyID are required if identityKey is false")
@@ -68,19 +80,25 @@ func (p *ProtoWallet) GetPublicKey(args *GetPublicKeyArgs) (*ec.PublicKey, error
 			}
 		}
 
-		return p.keyDeriver.DerivePublicKey(
+		pubKey, err := p.keyDeriver.DerivePublicKey(
 			args.ProtocolID,
 			args.KeyID,
 			counterparty,
 			args.ForSelf,
 		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive public key: %v", err)
+		}
+		return &GetPublicKeyResult{
+			PublicKey: pubKey,
+		}, nil
 	}
 }
 
 // Encrypt encrypts data using the provided protocol ID and key ID
 func (p *ProtoWallet) Encrypt(
 	args *EncryptArgs,
-) ([]byte, error) {
+) (*EncryptResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -97,13 +115,20 @@ func (p *ProtoWallet) Encrypt(
 		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
 	}
 
-	return key.Encrypt(args.Plaintext)
+	encrypted, err := key.Encrypt(args.Plaintext)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt: %v", err)
+	}
+
+	return &EncryptResult{
+		Ciphertext: encrypted,
+	}, nil
 }
 
 // Decrypt decrypts data using the provided protocol ID and key ID
 func (p *ProtoWallet) Decrypt(
 	args *DecryptArgs,
-) ([]byte, error) {
+) (*DecryptResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -120,7 +145,14 @@ func (p *ProtoWallet) Decrypt(
 		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
 	}
 
-	return key.Decrypt(args.Ciphertext)
+	plaintext, err := key.Decrypt(args.Ciphertext)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt: %v", err)
+	}
+
+	return &DecryptResult{
+		Plaintext: plaintext,
+	}, nil
 }
 
 // CreateSignature creates a signature for the provided data

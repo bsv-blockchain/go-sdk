@@ -40,14 +40,6 @@ type AuthMessage struct {
 }
 
 // ValidateCertificates validates and processes the certificates received from a peer.
-// This matches the TypeScript SDK's validateCertificates function exactly.
-//
-// This function checks:
-// 1. Certificate subject matches the message identity key
-// 2. Certificate signature is valid
-// 3. Certificate certifier and type match requested requirements (if provided)
-// 4. Attempts to decrypt certificate fields
-//
 // The certificatesRequested parameter can be nil or a RequestedCertificateSet
 func ValidateCertificates(
 	verifierWallet wallet.Interface,

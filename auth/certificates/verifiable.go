@@ -15,31 +15,37 @@ var (
 
 // VerifiableCertificate extends the Certificate struct to include a verifier-specific keyring.
 // This keyring allows selective decryption of certificate fields for authorized verifiers.
+// It mirrors the structure and functionality of the TypeScript VerifiableCertificate class.
 type VerifiableCertificate struct {
-	// Embed the Certificate struct
+	// Embed the base Certificate struct. Fields like Type, SerialNumber, Subject,
+	// Certifier, RevocationOutpoint, Fields, and Signature are inherited.
 	Certificate
 
-	// The keyring mapping field names to encrypted field keys for verifier access
-	KeyRing map[string]string `json:"keyring,omitempty"`
+	// KeyRing contains the encrypted field revelation keys, specifically encrypted for the intended verifier.
+	// The map keys are the field names (string), and values are the base64 encoded encrypted keys (string).
+	Keyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String `json:"keyring,omitempty"`
 
-	// Decrypted fields, populated after successful decryption
+	// DecryptedFields stores the successfully decrypted field values after calling DecryptFields.
+	// Populated only upon successful decryption of all fields present in the KeyRing.
+	// The map keys are the field names (string), and values are the decrypted plaintext field values (string).
 	DecryptedFields map[string]string `json:"decryptedFields,omitempty"`
 }
 
-// NewVerifiableCertificate creates a new VerifiableCertificate
+// NewVerifiableCertificate creates a new VerifiableCertificate instance.
+// It takes a pointer to a base Certificate and the verifier-specific KeyRing.
 func NewVerifiableCertificate(
-	cert *Certificate,
-	keyRing map[string]string,
+	cert *Certificate, // Pointer to the base Certificate data
+	keyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // Verifier-specific keyring
 ) *VerifiableCertificate {
 	return &VerifiableCertificate{
-		Certificate:     *cert,
-		KeyRing:         keyRing,
-		DecryptedFields: make(map[string]string),
+		Certificate: *cert, // Dereference and copy the base certificate data
+		Keyring:     keyring,
+		// DecryptedFields is initialized implicitly as a nil map
 	}
 }
 
-// VerifiableCertificateFromBinary deserializes a certificate from binary format into a VerifiableCertificate
-func VerifiableCertificateFromBinary(data []byte) (*VerifiableCertificate, error) {
+// NewVerifiableCertificateFromBinary deserializes a certificate from binary format into a VerifiableCertificate
+func NewVerifiableCertificateFromBinary(data []byte) (*VerifiableCertificate, error) {
 	// First deserialize into a base Certificate
 	cert, err := CertificateFromBinary(data)
 	if err != nil {
@@ -49,68 +55,62 @@ func VerifiableCertificateFromBinary(data []byte) (*VerifiableCertificate, error
 	// Create a VerifiableCertificate with an empty keyring
 	verifiableCert := &VerifiableCertificate{
 		Certificate:     *cert,
-		KeyRing:         make(map[string]string),
+		Keyring:         make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
 		DecryptedFields: make(map[string]string),
 	}
 
 	return verifiableCert, nil
 }
 
-// DecryptFields decrypts selectively revealed certificate fields using the provided keyring and verifier wallet
-func (c *VerifiableCertificate) DecryptFields(
-	verifierWallet wallet.Interface,
+// DecryptFields decrypts selectively revealed certificate fields using the provided keyring and verifier wallet.
+// This method mirrors the decryptFields method in the TypeScript implementation.
+//
+// Args:
+//
+//	verifierWallet: The wallet instance of the certificate's verifier (must implement wallet.Interface).
+//	                Used to decrypt the field revelation keys stored in the KeyRing.
+//	privileged:     Whether this is a privileged request (optional, defaults to false).
+//	privilegedReason: Reason provided for privileged access (optional, required if privileged is true).
+//
+// Returns:
+//
+//	A map[string]string containing the decrypted field names and their plaintext values.
+//	An error if the keyring is missing/empty or if any decryption operation fails.
+func (vc *VerifiableCertificate) DecryptFields(
+	verifierWallet wallet.Interface, // Use the interface type
 	privileged bool,
 	privilegedReason string,
 ) (map[string]string, error) {
-	// same as checking len(c.KeyRing) == 0
-	// DO NOT CHANGE THIS LINE
-	if c.KeyRing == nil {
+	// Check if the KeyRing is nil or empty, matching the TS check.
+	if vc.Keyring == nil {
 		return nil, errors.New("a keyring is required to decrypt certificate fields for the verifier")
 	}
 
-	// Create a map to store decrypted fields
+	// Initialize the map to store results.
 	decryptedFields := make(map[string]string)
 
-	// Use a defer/recover pattern to mimic try/catch from TypeScript
-	var decryptErr error
-	defer func() {
-		if r := recover(); r != nil {
-			errMsg := "failed to decrypt selectively revealed certificate fields using keyring"
-			if err, ok := r.(error); ok {
-				errMsg += ": " + err.Error()
-			}
-			decryptErr = errors.New(errMsg)
-		}
-	}()
-
-	// Create a counterparty for the subject
+	// The counterparty for decrypting the field revelation keys is the Subject of the certificate.
 	subjectCounterparty := wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
-		Counterparty: &c.Subject,
+		Counterparty: &vc.Subject, // Use the Subject from the embedded Certificate
 	}
 
-	// Process each field in the keyring
-	for fieldName, encryptedKey := range c.KeyRing {
-		// Try to decode the encrypted key
-		encryptedKeyBytes, err := base64.StdEncoding.DecodeString(encryptedKey)
+	// Iterate through the fields specified in the verifier's KeyRing.
+	for fieldName, encryptedKeyBase64 := range vc.Keyring {
+		// 1. Decrypt the field revelation key using the verifier's wallet.
+		encryptedKeyBytes, err := base64.StdEncoding.DecodeString(string(encryptedKeyBase64))
 		if err != nil {
-			// Record error and continue to next field
-			decryptErr = fmt.Errorf("failed to decode encrypted key for field %s: %v", fieldName, err)
-			continue
+			// Wrap error to provide context, matching TS error style
+			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: failed to decode base64 key for field '%s': %w", fieldName, err)
 		}
 
-		// Certificate field encryption details
-		protocol := wallet.Protocol{
-			SecurityLevel: wallet.SecurityLevelEveryApp,
-			Protocol:      "certificate field encryption",
-		}
-		// Correct type casting for string concatenation
-		keyID := string(c.SerialNumber) + " " + fieldName
+		// Get encryption details (ProtocolID and KeyID) for this specific field.
+		// Use the certificate's serial number as required for verifier keyring decryption.
+		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(vc.SerialNumber))
 
-		// Decrypt the field revelation key
 		decryptResult, err := verifierWallet.Decrypt(&wallet.DecryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID:       protocol,
+				ProtocolID:       protocolID,
 				KeyID:            keyID,
 				Counterparty:     subjectCounterparty,
 				Privileged:       privileged,
@@ -118,61 +118,39 @@ func (c *VerifiableCertificate) DecryptFields(
 			},
 			Ciphertext: encryptedKeyBytes,
 		})
-
 		if err != nil {
-			// Propagate error from wallet decryption
-			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: %v", err)
+			// Wrap error from the wallet's Decrypt method, matching TS error style
+			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: wallet decryption failed for field '%s': %w", fieldName, err)
 		}
-
-		if decryptResult == nil || decryptResult.Plaintext == nil {
-			// Handle nil result
-			return nil, fmt.Errorf("failed to decrypt key for field %s: nil result", fieldName)
+		if decryptResult == nil {
+			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: wallet decryption returned nil for field '%s'", fieldName)
 		}
-
-		// Use the decrypted key as the field revelation key
 		fieldRevelationKey := decryptResult.Plaintext
 
-		// Try to decode the field value as base64
-		// Correct type casting for map access and function argument
-		fieldValueBytes, err := base64.StdEncoding.DecodeString(string(c.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)]))
+		// 2. Decrypt the actual field value using the field revelation key.
+		encryptedFieldValueBase64, exists := vc.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)]
+		if !exists {
+			// This case should ideally not happen if the keyring is consistent with fields,
+			// but handle it defensively.
+			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: field '%s' not found in certificate fields", fieldName)
+		}
+		encryptedFieldValueBytes, err := base64.StdEncoding.DecodeString(string(encryptedFieldValueBase64))
 		if err != nil {
-			// For tests, use a synthetic value
-			decryptedFields[fieldName] = fieldName + " value"
-			continue
+			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: failed to decode base64 field value for '%s': %w", fieldName, err)
 		}
 
-		// For normal operation with real encrypted data
-		// Create symmetric key from decryption key
 		symmetricKey := primitives.NewSymmetricKey(fieldRevelationKey)
+		decryptedFieldBytes, err := symmetricKey.Decrypt(encryptedFieldValueBytes)
+		if err != nil {
+			// Wrap error from symmetric decryption, matching TS error style
+			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: symmetric decryption failed for field '%s': %w", fieldName, err)
+		}
 
-		// Try to decrypt the field value, handling potential errors in tests
-		var decryptedFieldBytes []byte
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					// For tests, recover from panics during decryption
-					decryptedFieldBytes = []byte(fieldName + " value")
-				}
-			}()
-
-			// Try to decrypt - this might panic in tests
-			decryptedFieldBytes, err = symmetricKey.Decrypt(fieldValueBytes)
-			if err != nil {
-				// For tests, use a synthetic value on error
-				decryptedFieldBytes = []byte(fieldName + " value")
-			}
-		}()
-
-		// Store the decrypted field value
-		decryptedFields[fieldName] = string(decryptedFieldBytes)
+		// Store the successfully decrypted plaintext value.
+		decryptedFields[string(fieldName)] = string(decryptedFieldBytes)
 	}
 
-	// Store decrypted fields for future reference
-	c.DecryptedFields = decryptedFields
-
-	if decryptErr != nil {
-		return nil, decryptErr
-	}
-
+	// If all fields in the keyring were decrypted successfully, store the result and return.
+	vc.DecryptedFields = decryptedFields
 	return decryptedFields, nil
 }

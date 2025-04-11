@@ -42,7 +42,7 @@ func TestCertificate(t *testing.T) {
 
 	// Helper function to create a ProtoWallet for testing
 	createProtoWallet := func(privateKey *ec.PrivateKey) *wallet.ProtoWallet {
-		protoWallet, err := wallet.NewProtoWallet(privateKey)
+		protoWallet, err := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypePrivateKey, PrivateKey: privateKey})
 		require.NoError(t, err)
 		return protoWallet
 	}
@@ -371,10 +371,10 @@ func TestCertificate(t *testing.T) {
 		// Get the expected public key from the wallet
 		pubKey, err := certifierProtoWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
 			IdentityKey: true,
-		})
+		}, "")
 		require.NoError(t, err)
 
-		assert.True(t, certificateWithMismatch.Certifier.IsEqual(pubKey))
+		assert.True(t, certificateWithMismatch.Certifier.IsEqual(pubKey.PublicKey))
 		err = certificateWithMismatch.Verify()
 		assert.NoError(t, err)
 	})

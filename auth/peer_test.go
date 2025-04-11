@@ -440,7 +440,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 				wallet.CertificateFieldNameUnder50Bytes(requiredField): wallet.Base64String("Alice's data"),
 			},
 		},
-		KeyRing: map[string]string{},
+		Keyring: map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{},
 	}
 
 	bobCert := &certificates.VerifiableCertificate{
@@ -451,7 +451,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 				wallet.CertificateFieldNameUnder50Bytes(requiredField): wallet.Base64String("Bob's data"),
 			},
 		},
-		KeyRing: map[string]string{},
+		Keyring: map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{},
 	}
 
 	// Set mock certificates in the wallets
