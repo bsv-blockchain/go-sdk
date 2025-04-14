@@ -389,7 +389,7 @@ func TestToDER(t *testing.T) {
 // TestCompressedVsEncode tests that Compressed() and encode(true) produce identical results
 func TestCompressedVsEncode(t *testing.T) {
 	// Generate a set of test keys with different Y parities
-	testKeys := generateTestPublicKeys(t)
+	testKeys := generateTestPublicKeys()
 
 	for i, key := range testKeys {
 		// Get results from Compressed() method
@@ -430,7 +430,7 @@ func manualCompressedEncoding(p *PublicKey) []byte {
 
 // BenchmarkCompressed benchmarks the Compressed() method
 func BenchmarkCompressed(b *testing.B) {
-	keys := generateTestPublicKeys(nil)
+	keys := generateTestPublicKeys()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -442,7 +442,7 @@ func BenchmarkCompressed(b *testing.B) {
 
 // BenchmarkManualCompressedEncoding benchmarks the manual implementation of encode()
 func BenchmarkManualCompressedEncoding(b *testing.B) {
-	keys := generateTestPublicKeys(nil)
+	keys := generateTestPublicKeys()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -454,7 +454,7 @@ func BenchmarkManualCompressedEncoding(b *testing.B) {
 
 // BenchmarkIsOdd benchmarks the isOdd function for Y parity check
 func BenchmarkIsOdd(b *testing.B) {
-	keys := generateTestPublicKeys(nil)
+	keys := generateTestPublicKeys()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -465,7 +465,7 @@ func BenchmarkIsOdd(b *testing.B) {
 
 // BenchmarkBigIntParity benchmarks the big.Int method for Y parity check
 func BenchmarkBigIntParity(b *testing.B) {
-	keys := generateTestPublicKeys(nil)
+	keys := generateTestPublicKeys()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -476,7 +476,7 @@ func BenchmarkBigIntParity(b *testing.B) {
 
 // BenchmarkCompressedPreallocated benchmarks Compressed with pre-allocated memory
 func BenchmarkCompressedPreallocated(b *testing.B) {
-	keys := generateTestPublicKeys(nil)
+	keys := generateTestPublicKeys()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -499,7 +499,7 @@ func BenchmarkCompressedPreallocated(b *testing.B) {
 
 // BenchmarkManualEncodingPreallocated benchmarks manual encoding with pre-allocated memory
 func BenchmarkManualEncodingPreallocated(b *testing.B) {
-	keys := generateTestPublicKeys(nil)
+	keys := generateTestPublicKeys()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -521,8 +521,7 @@ func BenchmarkManualEncodingPreallocated(b *testing.B) {
 }
 
 // generateTestPublicKeys creates a set of public keys for testing
-// Updated to accept either testing.T or testing.B
-func generateTestPublicKeys(t interface{}) []*PublicKey {
+func generateTestPublicKeys() []*PublicKey {
 	var keys []*PublicKey
 
 	// Create keys from private keys with different values
@@ -549,7 +548,7 @@ func generateTestPublicKeys(t interface{}) []*PublicKey {
 // TestParityCheckEquivalence tests that the two methods of checking Y parity are equivalent
 func TestParityCheckEquivalence(t *testing.T) {
 	// Generate a set of test keys with different Y parities
-	testKeys := generateTestPublicKeys(t)
+	testKeys := generateTestPublicKeys()
 
 	for i, key := range testKeys {
 		// Check parity using isOdd function
