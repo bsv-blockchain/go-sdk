@@ -30,7 +30,7 @@ func (w *writer) writeIntBytes(b []byte) {
 }
 
 func (w *writer) writeVarInt(n uint64) {
-	w.writeBytes(transaction.VarInt(n).Bytes())
+	w.writeBytes(util.VarInt(n).Bytes())
 }
 
 func (w *writer) writeString(s string) {

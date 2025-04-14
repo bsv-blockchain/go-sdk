@@ -2,23 +2,25 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeAuthenticatedResult(result *wallet.AuthenticatedResult) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Error byte (0 for success)
-	w.writeByte(0)
+	w.WriteByte(0)
 
 	// Authenticated flag (1=true, 0=false)
 	if result.Authenticated {
-		w.writeByte(1)
+		w.WriteByte(1)
 	} else {
-		w.writeByte(0)
+		w.WriteByte(0)
 	}
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeAuthenticatedResult(data []byte) (*wallet.AuthenticatedResult, error) {

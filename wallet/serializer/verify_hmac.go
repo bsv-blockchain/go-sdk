@@ -2,11 +2,13 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeVerifyHmacArgs(args *wallet.VerifyHmacArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Encode key related params (protocol, key, counterparty, privileged)
 	params := KeyRelatedParams{
@@ -20,23 +22,23 @@ func SerializeVerifyHmacArgs(args *wallet.VerifyHmacArgs) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error encoding key params: %w", err)
 	}
-	w.writeBytes(keyParams)
+	w.WriteBytes(keyParams)
 
 	// Write HMAC bytes (fixed 32 bytes)
-	w.writeBytes(args.Hmac)
+	w.WriteBytes(args.Hmac)
 
 	// Write data length + bytes
-	w.writeVarInt(uint64(len(args.Data)))
-	w.writeBytes(args.Data)
+	w.WriteVarInt(uint64(len(args.Data)))
+	w.WriteBytes(args.Data)
 
 	// Write seekPermission flag (-1 if undefined)
-	w.writeOptionalBool(&args.SeekPermission)
+	w.WriteOptionalBool(&args.SeekPermission)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHmacArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.VerifyHmacArgs{}
 
 	// Decode key related params
@@ -47,43 +49,43 @@ func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHmacArgs, error) {
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = readOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read HMAC (fixed 32 bytes)
-	args.Hmac = r.readBytes(32)
+	args.Hmac = r.ReadBytes(32)
 
 	// Read data
-	dataLen := r.readVarInt()
-	args.Data = r.readBytes(int(dataLen))
+	dataLen := r.ReadVarInt()
+	args.Data = r.ReadBytes(int(dataLen))
 
 	// Read seekPermission
-	args.SeekPermission = readOptionalBoolAsBool(r.readOptionalBool())
+	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error deserializing VerifyHmac args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error deserializing VerifyHmac args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
 func SerializeVerifyHmacResult(result *wallet.VerifyHmacResult) ([]byte, error) {
-	w := newWriter()
-	w.writeByte(0) // errorByte = 0 (success)
-	return w.buf, nil
+	w := util.NewWriter()
+	w.WriteByte(0) // errorByte = 0 (success)
+	return w.Buf, nil
 }
 
 func DeserializeVerifyHmacResult(data []byte) (*wallet.VerifyHmacResult, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 
 	// Read error byte (0 = success)
-	errorByte := r.readByte()
+	errorByte := r.ReadByte()
 	if errorByte != 0 {
 		return nil, fmt.Errorf("verifyHmac failed with error byte %d", errorByte)
 	}
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error deserializing VerifyHmac result: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error deserializing VerifyHmac result: %w", r.Err)
 	}
 
 	return &wallet.VerifyHmacResult{Valid: true}, nil

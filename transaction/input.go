@@ -17,7 +17,7 @@ Field	                     Description                                          
 Previous Transaction hash  doubled SHA256-hashed of a (previous) to-be-used transaction	 32 bytes
 Previous Txout-index       non-negative integer indexing an output of the to-be-used      4 bytes
                            transaction
-Txin-script length         non-negative integer VI = VarInt                               1-9 bytes
+Txin-script length         non-negative integer VI = util.VarInt                               1-9 bytes
 Txin-script / scriptSig	   Script	                                                        <in-script length>-many bytes
 sequence_no	               normally 0xFFFFFFFF; irrelevant unless transaction's           4 bytes
                            lock_time is > 0
@@ -91,7 +91,7 @@ func (i *TransactionInput) readFrom(r io.Reader, extended bool) (int64, error) {
 		return bytesRead, errors.Wrapf(err, "previousTxID(4): got %d bytes", n)
 	}
 
-	var l VarInt
+	var l util.VarInt
 	n64, err := l.ReadFrom(r)
 	bytesRead += n64
 	if err != nil {
@@ -128,7 +128,7 @@ func (i *TransactionInput) readFrom(r io.Reader, extended bool) (int64, error) {
 		}
 
 		// Read in the prevTxLockingScript
-		var scriptLen VarInt
+		var scriptLen util.VarInt
 		n64, err := scriptLen.ReadFrom(r)
 		bytesRead += n64
 		if err != nil {
@@ -179,9 +179,9 @@ func (i *TransactionInput) Bytes(clear bool) []byte {
 		h = append(h, 0x00)
 	} else {
 		if i.UnlockingScript == nil {
-			h = append(h, VarInt(0).Bytes()...)
+			h = append(h, util.VarInt(0).Bytes()...)
 		} else {
-			h = append(h, VarInt(uint64(len(*i.UnlockingScript))).Bytes()...)
+			h = append(h, util.VarInt(uint64(len(*i.UnlockingScript))).Bytes()...)
 			h = append(h, *i.UnlockingScript...)
 		}
 	}

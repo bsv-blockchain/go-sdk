@@ -2,20 +2,22 @@ package serializer
 
 import (
 	"fmt"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // SerializeGetPublicKeyArgs serializes the wallet.GetPublicKeyArgs structure into a byte array.
 func SerializeGetPublicKeyArgs(args *wallet.GetPublicKeyArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Write identity key flag
 	// Write identity key flag
 	if args.IdentityKey {
-		w.writeByte(1)
+		w.WriteByte(1)
 	} else {
-		w.writeByte(0)
+		w.WriteByte(0)
 	}
 
 	if !args.IdentityKey {
@@ -30,28 +32,28 @@ func SerializeGetPublicKeyArgs(args *wallet.GetPublicKeyArgs) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error encoding key params: %w", err)
 		}
-		w.writeBytes(keyParams)
+		w.WriteBytes(keyParams)
 
 		// Write forSelf flag
-		w.writeOptionalBool(&args.ForSelf)
+		w.WriteOptionalBool(&args.ForSelf)
 	} else {
 		// Write privileged params for identity key case
-		w.writeBytes(encodePrivilegedParams(&args.Privileged, args.PrivilegedReason))
+		w.WriteBytes(encodePrivilegedParams(&args.Privileged, args.PrivilegedReason))
 	}
 
 	// Write seekPermission
-	w.writeOptionalBool(&args.SeekPermission)
+	w.WriteOptionalBool(&args.SeekPermission)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 // DeserializeGetPublicKeyArgs deserializes a byte array into the wallet.GetPublicKeyArgs structure.
 func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.GetPublicKeyArgs{}
 
 	// Read identity key flag
-	identityKeyFlag := r.readByte()
+	identityKeyFlag := r.ReadByte()
 	if identityKeyFlag == 1 {
 		args.IdentityKey = true
 	}
@@ -69,7 +71,7 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 		args.PrivilegedReason = keyParams.PrivilegedReason
 
 		// Read forSelf flag
-		args.ForSelf = readOptionalBoolAsBool(r.readOptionalBool())
+		args.ForSelf = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 	} else {
 		// Read privileged params for identity key case
 		privileged, privilegedReason := decodePrivilegedParams(r)
@@ -78,10 +80,10 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 	}
 
 	// Read seekPermission
-	args.SeekPermission = readOptionalBoolAsBool(r.readOptionalBool())
+	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading getPublicKey args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading getPublicKey args: %w", r.Err)
 	}
 
 	return args, nil
@@ -89,9 +91,9 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 
 // SerializeGetPublicKeyResult serializes the wallet.GetPublicKeyResult structure into a byte array.
 func SerializeGetPublicKeyResult(result *wallet.GetPublicKeyResult) ([]byte, error) {
-	w := newWriter()
-	w.writeBytes(result.PublicKey.ToDER())
-	return w.buf, nil
+	w := util.NewWriter()
+	w.WriteBytes(result.PublicKey.ToDER())
+	return w.Buf, nil
 }
 
 // DeserializeGetPublicKeyResult deserializes a byte array into the wallet.GetPublicKeyResult structure.

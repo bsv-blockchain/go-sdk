@@ -7,7 +7,7 @@ import (
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
-	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 const hBSV = "Bitcoin Signed Message:\n"
@@ -26,13 +26,13 @@ func SignMessageWithCompression(privateKey *ec.PrivateKey, message []byte, sigRe
 
 	b := new(bytes.Buffer)
 
-	varInt := transaction.VarInt(len(hBSV))
+	varInt := util.VarInt(len(hBSV))
 	b.Write(varInt.Bytes())
 
 	// append the hBsv to buff
 	b.WriteString(hBSV)
 
-	varInt = transaction.VarInt(len(message))
+	varInt = util.VarInt(len(message))
 	b.Write(varInt.Bytes())
 
 	// append the data to buff

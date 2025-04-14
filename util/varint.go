@@ -1,4 +1,4 @@
-package transaction
+package util
 
 import (
 	"encoding/binary"
@@ -28,7 +28,7 @@ func NewVarIntFromBytes(bb []byte) (VarInt, int) {
 	}
 }
 
-// Length return the length of the underlying byte representation of the `transaction.VarInt`.
+// Length return the length of the underlying byte representation of the `util.VarInt`.
 func (v VarInt) Length() int {
 	if v < 253 {
 		return 1

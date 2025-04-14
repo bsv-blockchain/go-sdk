@@ -2,12 +2,14 @@ package serializer
 
 import (
 	"fmt"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeCreateSignatureArgs(args *wallet.CreateSignatureArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Encode key related params (protocol, key, counterparty, privileged)
 	params := KeyRelatedParams{
@@ -21,26 +23,26 @@ func SerializeCreateSignatureArgs(args *wallet.CreateSignatureArgs) ([]byte, err
 	if err != nil {
 		return nil, fmt.Errorf("error encoding key params: %w", err)
 	}
-	w.writeBytes(keyParams)
+	w.WriteBytes(keyParams)
 
 	// Write data or hash flag and content
 	if args.Data != nil {
-		w.writeByte(1)
-		w.writeVarInt(uint64(len(args.Data)))
-		w.writeBytes(args.Data)
+		w.WriteByte(1)
+		w.WriteVarInt(uint64(len(args.Data)))
+		w.WriteBytes(args.Data)
 	} else {
-		w.writeByte(2)
-		w.writeBytes(args.HashToDirectlySign)
+		w.WriteByte(2)
+		w.WriteBytes(args.HashToDirectlySign)
 	}
 
 	// Write seekPermission flag (-1 if undefined)
-	w.writeOptionalBool(&args.SeekPermission)
+	w.WriteOptionalBool(&args.SeekPermission)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.CreateSignatureArgs{}
 
 	// Decode key related params
@@ -51,56 +53,56 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = readOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read data or hash
-	dataTypeFlag := r.readByte()
+	dataTypeFlag := r.ReadByte()
 	if dataTypeFlag == 1 {
-		dataLen := r.readVarInt()
-		args.Data = r.readBytes(int(dataLen))
+		dataLen := r.ReadVarInt()
+		args.Data = r.ReadBytes(int(dataLen))
 	} else if dataTypeFlag == 2 {
-		args.HashToDirectlySign = r.readBytes(32)
+		args.HashToDirectlySign = r.ReadBytes(32)
 	} else {
 		return nil, fmt.Errorf("invalid data type flag: %d", dataTypeFlag)
 	}
 
 	// Read seekPermission
-	args.SeekPermission = readOptionalBoolAsBool(r.readOptionalBool())
+	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error deserializing CreateSignature args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error deserializing CreateSignature args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
 func SerializeCreateSignatureResult(result *wallet.CreateSignatureResult) ([]byte, error) {
-	w := newWriter()
-	w.writeByte(0) // errorByte = 0 (success)
-	w.writeBytes(result.Signature.Serialize())
-	return w.buf, nil
+	w := util.NewWriter()
+	w.WriteByte(0) // errorByte = 0 (success)
+	w.WriteBytes(result.Signature.Serialize())
+	return w.Buf, nil
 }
 
 func DeserializeCreateSignatureResult(data []byte) (*wallet.CreateSignatureResult, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	result := &wallet.CreateSignatureResult{}
 
 	// Read error byte (0 = success)
-	errorByte := r.readByte()
+	errorByte := r.ReadByte()
 	if errorByte != 0 {
 		return nil, fmt.Errorf("createSignature failed with error byte %d", errorByte)
 	}
 
 	// Read signature (remaining bytes)
-	sig, err := ec.FromDER(r.readRemaining())
+	sig, err := ec.FromDER(r.ReadRemaining())
 	if err != nil {
 		return nil, fmt.Errorf("error deserializing signature: %w", err)
 	}
 	result.Signature = *sig
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error deserializing CreateSignature result: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error deserializing CreateSignature result: %w", r.Err)
 	}
 
 	return result, nil

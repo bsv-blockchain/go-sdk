@@ -2,11 +2,13 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeDecryptArgs(args *wallet.DecryptArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Encode key related params (protocol, key, counterparty, privileged)
 	params := KeyRelatedParams{
@@ -20,20 +22,20 @@ func SerializeDecryptArgs(args *wallet.DecryptArgs) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error encoding key params: %w", err)
 	}
-	w.writeBytes(keyParams)
+	w.WriteBytes(keyParams)
 
 	// Write ciphertext length + bytes
-	w.writeVarInt(uint64(len(args.Ciphertext)))
-	w.writeBytes(args.Ciphertext)
+	w.WriteVarInt(uint64(len(args.Ciphertext)))
+	w.WriteBytes(args.Ciphertext)
 
 	// Write seekPermission flag (-1 if undefined)
-	w.writeOptionalBool(&args.SeekPermission)
+	w.WriteOptionalBool(&args.SeekPermission)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeDecryptArgs(data []byte) (*wallet.DecryptArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.DecryptArgs{}
 
 	// Decode key related params
@@ -44,45 +46,45 @@ func DeserializeDecryptArgs(data []byte) (*wallet.DecryptArgs, error) {
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = readOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read ciphertext
-	ciphertextLen := r.readVarInt()
-	args.Ciphertext = r.readBytes(int(ciphertextLen))
+	ciphertextLen := r.ReadVarInt()
+	args.Ciphertext = r.ReadBytes(int(ciphertextLen))
 
 	// Read seekPermission
-	args.SeekPermission = readOptionalBoolAsBool(r.readOptionalBool())
+	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error decrypting args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error decrypting args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
 func SerializeDecryptResult(result *wallet.DecryptResult) ([]byte, error) {
-	w := newWriter()
-	w.writeByte(0) // errorByte = 0 (success)
-	w.writeBytes(result.Plaintext)
-	return w.buf, nil
+	w := util.NewWriter()
+	w.WriteByte(0) // errorByte = 0 (success)
+	w.WriteBytes(result.Plaintext)
+	return w.Buf, nil
 }
 
 func DeserializeDecryptResult(data []byte) (*wallet.DecryptResult, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	result := &wallet.DecryptResult{}
 
 	// Read error byte (0 = success)
-	errorByte := r.readByte()
+	errorByte := r.ReadByte()
 	if errorByte != 0 {
 		return nil, fmt.Errorf("decrypt failed with error byte %d", errorByte)
 	}
 
 	// Read plaintext (remaining bytes)
-	result.Plaintext = r.readRemaining()
+	result.Plaintext = r.ReadRemaining()
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error decrypting result: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error decrypting result: %w", r.Err)
 	}
 
 	return result, nil
