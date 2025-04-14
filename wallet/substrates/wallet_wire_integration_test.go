@@ -1,9 +1,11 @@
 package substrates
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,4 +75,23 @@ func TestCreateAction(t *testing.T) {
 		require.Nil(t, result.SendWithResults)
 		require.Nil(t, result.SignableTransaction)
 	})
+}
+
+func TestTsCompatibility(t *testing.T) {
+	const createActionFrame = "0100175465737420616374696f6e206465736372697074696f6effffffffffffffffffffffffffffffffffff010100fde8031754657374206f7574707574206465736372697074696f6effffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00"
+	frame, err := hex.DecodeString(createActionFrame)
+	require.Nil(t, err)
+	request, err := serializer.ReadRequestFrame(frame)
+	require.Nil(t, err)
+	require.Equal(t, uint8(CallCreateAction), request.Call)
+	createActionArgs, err := serializer.DeserializeCreateActionArgs(request.Params)
+	require.Nil(t, err)
+	require.Equal(t, wallet.CreateActionArgs{
+		Description: "Test action description",
+		Outputs: []wallet.CreateActionOutput{{
+			LockingScript:     "00",
+			Satoshis:          1000,
+			OutputDescription: "Test output description",
+		}},
+	}, *createActionArgs)
 }

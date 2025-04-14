@@ -187,7 +187,7 @@ func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPu
 type CreateSignatureArgs struct {
 	EncryptionArgs
 	Data               []byte
-	DashToDirectlySign []byte
+	HashToDirectlySign []byte
 }
 
 type CreateSignatureResult struct {
@@ -208,14 +208,14 @@ func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (
 	if args == nil {
 		return nil, errors.New("args must be provided")
 	}
-	if len(args.Data) == 0 && len(args.DashToDirectlySign) == 0 {
+	if len(args.Data) == 0 && len(args.HashToDirectlySign) == 0 {
 		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
 	}
 
 	// Get hash to sign
 	var hash []byte
-	if len(args.DashToDirectlySign) > 0 {
-		hash = args.DashToDirectlySign
+	if len(args.HashToDirectlySign) > 0 {
+		hash = args.HashToDirectlySign
 	} else {
 		sum := sha256.Sum256(args.Data)
 		hash = sum[:]
