@@ -15,7 +15,7 @@ import (
 )
 
 // AUTH_VERSION is the version of the auth protocol
-const AUTH_VERSION = "1"
+const AUTH_VERSION = "0.1"
 
 type OnGeneralMessageReceivedCallback func(senderPublicKey string, payload []byte) error
 type OnCertificateReceivedCallback func(senderPublicKey string, certs []*certificates.VerifiableCertificate) error
