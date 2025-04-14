@@ -7,6 +7,7 @@ import (
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Create test data
@@ -263,28 +264,43 @@ func TestCreateVerifySignature(t *testing.T) {
 
 	t.Run("fails to verify signature with wrong data", func(t *testing.T) {
 		// Verify with wrong data
-		invalidVerifySignatureArgs := verifyArgs
-		invalidVerifySignatureArgs.Data = append([]byte{0}, sampleData...)
-		_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs, "example")
-		assert.Error(t, err)
+		invalidVerifySignatureArgs := wallet.VerifySignatureArgs{
+			EncryptionArgs: verifyArgs.EncryptionArgs,
+			Signature:      verifyArgs.Signature,
+			Data:           append([]byte{0}, sampleData...),
+		}
+		_, err := counterpartyWallet.VerifySignature(invalidVerifySignatureArgs, "example")
+		require.Error(t, err)
 	})
 
 	t.Run("fails to verify signature with wrong protocol", func(t *testing.T) {
-		invalidVerifySignatureArgs := verifyArgs
+		invalidVerifySignatureArgs := wallet.VerifySignatureArgs{
+			EncryptionArgs: verifyArgs.EncryptionArgs,
+			Signature:      verifyArgs.Signature,
+			Data:           verifyArgs.Data,
+		}
 		invalidVerifySignatureArgs.ProtocolID.Protocol = "wrong"
 		_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs, "example")
 		assert.Error(t, err)
 	})
 
 	t.Run("fails to verify signature with wrong key ID", func(t *testing.T) {
-		invalidVerifySignatureArgs := verifyArgs
+		invalidVerifySignatureArgs := wallet.VerifySignatureArgs{
+			EncryptionArgs: verifyArgs.EncryptionArgs,
+			Signature:      verifyArgs.Signature,
+			Data:           verifyArgs.Data,
+		}
 		invalidVerifySignatureArgs.KeyID = "wrong"
 		_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs, "example")
 		assert.Error(t, err)
 	})
 
 	t.Run("fails to verify signature with wrong counterparty", func(t *testing.T) {
-		invalidVerifySignatureArgs := verifyArgs
+		invalidVerifySignatureArgs := wallet.VerifySignatureArgs{
+			EncryptionArgs: verifyArgs.EncryptionArgs,
+			Signature:      verifyArgs.Signature,
+			Data:           verifyArgs.Data,
+		}
 		wrongKey, _ := ec.NewPrivateKey()
 		invalidVerifySignatureArgs.Counterparty.Counterparty = wrongKey.PubKey()
 		_, err = counterpartyWallet.VerifySignature(invalidVerifySignatureArgs, "example")
