@@ -28,8 +28,10 @@ func TestEncryptDecryptMessage(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create wallets with proper initialization
-	userWallet := wallet.NewWallet(userKey)
-	counterpartyWallet := wallet.NewWallet(counterpartyKey)
+	userWallet, err := wallet.NewWallet(userKey)
+	assert.NoError(t, err)
+	counterpartyWallet, err := wallet.NewWallet(counterpartyKey)
+	assert.NoError(t, err)
 
 	// Encrypt message
 	encryptResult, err := userWallet.Encrypt(wallet.EncryptArgs{
@@ -120,7 +122,9 @@ func TestEncryptDecryptMessage(t *testing.T) {
 			"0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
 		assert.NoError(t, err)
 
-		result, err := wallet.NewWallet(privKey).Decrypt(wallet.DecryptArgs{
+		w, err := wallet.NewWallet(privKey)
+		assert.NoError(t, err)
+		result, err := w.Decrypt(wallet.DecryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
@@ -150,7 +154,8 @@ func TestDefaultEncryptDecryptOperations(t *testing.T) {
 	// Generate keys
 	userKey, err := ec.NewPrivateKey()
 	assert.NoError(t, err)
-	userWallet := wallet.NewWallet(userKey)
+	userWallet, err := wallet.NewWallet(userKey)
+	assert.NoError(t, err)
 
 	// Base encryption args
 	baseArgs := wallet.EncryptionArgs{
@@ -187,8 +192,10 @@ func TestCreateVerifySignature(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create wallets with proper initialization
-	userWallet := wallet.NewWallet(userKey)
-	counterpartyWallet := wallet.NewWallet(counterpartyKey)
+	userWallet, err := wallet.NewWallet(userKey)
+	assert.NoError(t, err)
+	counterpartyWallet, err := wallet.NewWallet(counterpartyKey)
+	assert.NoError(t, err)
 
 	// Create base args
 	baseArgs := wallet.EncryptionArgs{
@@ -286,7 +293,8 @@ func TestCreateVerifySignature(t *testing.T) {
 
 	t.Run("validates the BRC-3 compliance vector", func(t *testing.T) {
 		anyoneKey, _ := wallet.AnyoneKey()
-		anyoneWallet := wallet.NewWallet(anyoneKey)
+		anyoneWallet, err := wallet.NewWallet(anyoneKey)
+		assert.NoError(t, err)
 
 		counterparty, err := ec.PublicKeyFromString(
 			"0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
@@ -325,10 +333,12 @@ func TestDefaultSignatureOperations(t *testing.T) {
 	// Generate keys
 	userKey, err := ec.NewPrivateKey()
 	assert.NoError(t, err)
-	userWallet := wallet.NewWallet(userKey)
+	userWallet, err := wallet.NewWallet(userKey)
+	assert.NoError(t, err)
 
 	anyoneKey, _ := wallet.AnyoneKey()
-	anyoneWallet := wallet.NewWallet(anyoneKey)
+	anyoneWallet, err := wallet.NewWallet(anyoneKey)
+	assert.NoError(t, err)
 
 	// Base encryption args
 	baseArgs := wallet.EncryptionArgs{
@@ -430,8 +440,10 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create wallets
-	userWallet := wallet.NewWallet(userKey)
-	counterpartyWallet := wallet.NewWallet(counterpartyKey)
+	userWallet, err := wallet.NewWallet(userKey)
+	assert.NoError(t, err)
+	counterpartyWallet, err := wallet.NewWallet(counterpartyKey)
+	assert.NoError(t, err)
 
 	// Base args
 	baseArgs := wallet.EncryptionArgs{
@@ -484,8 +496,10 @@ func TestHmacCreateVerify(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create wallets with proper initialization
-	userWallet := wallet.NewWallet(userKey)
-	counterpartyWallet := wallet.NewWallet(counterpartyKey)
+	userWallet, err := wallet.NewWallet(userKey)
+	assert.NoError(t, err)
+	counterpartyWallet, err := wallet.NewWallet(counterpartyKey)
+	assert.NoError(t, err)
 
 	// Create base args
 	baseArgs := wallet.EncryptionArgs{
@@ -563,7 +577,9 @@ func TestHmacCreateVerify(t *testing.T) {
 		counterparty, err := ec.PublicKeyFromString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
 		assert.NoError(t, err)
 
-		verifyResult, err := wallet.NewWallet(privKey).VerifyHmac(wallet.VerifyHmacArgs{
+		w, err := wallet.NewWallet(privKey)
+		assert.NoError(t, err)
+		verifyResult, err := w.VerifyHmac(wallet.VerifyHmacArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,

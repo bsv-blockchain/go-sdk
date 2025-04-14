@@ -250,11 +250,20 @@ func main() {
 	_, _ = rand.Read(bobKeyBytes)
 	bobPrivKey, _ := ec.PrivateKeyFromBytes(bobKeyBytes)
 
-	aliceWallet := &MinimalWalletImpl{Wallet: wallet.NewWallet(alicePrivKey)}
-	bobWallet := &MinimalWalletImpl{Wallet: wallet.NewWallet(bobPrivKey)}
+	aliceW, err := wallet.NewWallet(alicePrivKey)
+	if err != nil {
+		log.Fatalf("Failed to create alice wallet: %v", err)
+	}
+	aliceWallet := &MinimalWalletImpl{Wallet: aliceW}
+
+	bobW, err := wallet.NewWallet(bobPrivKey)
+	if err != nil {
+		log.Fatalf("Failed to create bob wallet: %v", err)
+	}
+	bobWallet := &MinimalWalletImpl{Wallet: bobW}
 
 	// Connect transports
-	err := aliceTransport.Connect()
+	err = aliceTransport.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect Alice's transport: %v", err)
 	}

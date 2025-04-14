@@ -5,7 +5,6 @@ import (
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
-	transaction "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
 
 // SecurityLevel defines the access control level for wallet operations.
@@ -45,19 +44,21 @@ type Counterparty struct {
 // It can encrypt/decrypt data, create/verify signatures, and manage keys.
 type Wallet struct {
 	ProtoWallet
-	privateKey *ec.PrivateKey
-	publicKey  *ec.PublicKey
-	keyDeriver *KeyDeriver
 }
 
 // NewWallet creates a new wallet instance using the provided private key.
 // The private key serves as the root of trust for all cryptographic operations.
-func NewWallet(privateKey *ec.PrivateKey) *Wallet {
-	return &Wallet{
-		privateKey: privateKey,
-		publicKey:  privateKey.PubKey(),
-		keyDeriver: NewKeyDeriver(privateKey),
+func NewWallet(privateKey *ec.PrivateKey) (*Wallet, error) {
+	w, err := NewProtoWallet(ProtoWalletArgs{
+		Type:       ProtoWalletArgsTypePrivateKey,
+		PrivateKey: privateKey,
+	})
+	if err != nil {
+		return nil, err
 	}
+	return &Wallet{
+		ProtoWallet: *w,
+	}, nil
 }
 
 type EncryptionArgs struct {
@@ -141,7 +142,7 @@ type CreateSignatureResult struct {
 	Signature ec.Signature
 }
 
-type SignOutputs transaction.Flag
+type SignOutputs sighash.Flag
 
 var (
 	SignOutputsAll    SignOutputs = SignOutputs(sighash.All)

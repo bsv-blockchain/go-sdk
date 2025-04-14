@@ -167,8 +167,18 @@ func main() {
 	_, _ = rand.Read(bobKeyBytes)
 	bobPrivKey, _ := ec.PrivateKeyFromBytes(bobKeyBytes)
 
-	aliceWallet := &MinimalWalletImpl{Wallet: wallet.NewWallet(alicePrivKey)}
-	bobWallet := &MinimalWalletImpl{Wallet: wallet.NewWallet(bobPrivKey)}
+	aliceW, err := wallet.NewWallet(alicePrivKey)
+	if err != nil {
+		log.Fatalf("Failed to create alice wallet: %v", err)
+	}
+
+	aliceWallet := &MinimalWalletImpl{Wallet: aliceW}
+
+	bobW, err := wallet.NewWallet(bobPrivKey)
+	if err != nil {
+		log.Fatalf("Failed to create bob wallet: %v", err)
+	}
+	bobWallet := &MinimalWalletImpl{Wallet: bobW}
 
 	// Create peers
 	alicePeer := auth.NewPeer(&auth.PeerOptions{
@@ -213,7 +223,7 @@ func main() {
 	})
 
 	// Alice sends a message to Bob
-	err := alicePeer.ToPeer([]byte("Hello, Bob!"), bobIdentityResult.PublicKey, 5000)
+	err = alicePeer.ToPeer([]byte("Hello, Bob!"), bobIdentityResult.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message: %v", err)
 	}
