@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -89,34 +90,34 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 		{
 			name: "invalid txid length",
 			data: func() []byte {
-				w := newWriter()
-				w.writeByte(1)                   // txid flag
-				w.writeBytes([]byte{0x01, 0x02}) // invalid length
-				return w.buf
+				w := util.NewWriter()
+				w.WriteByte(1)                   // txid flag
+				w.WriteBytes([]byte{0x01, 0x02}) // invalid length
+				return w.Buf
 			}(),
 			err: "error reading tx",
 		},
 		{
 			name: "invalid status code",
 			data: func() []byte {
-				w := newWriter()
+				w := util.NewWriter()
 				// success byte
-				w.writeByte(0)
+				w.WriteByte(0)
 				// txid flag
-				w.writeByte(0)
+				w.WriteByte(0)
 				// tx flag
-				w.writeByte(0)
+				w.WriteByte(0)
 				// noSendChange (nil)
-				w.writeVarInt(math.MaxUint64)
+				w.WriteVarInt(math.MaxUint64)
 				// sendWithResults (1 item)
-				w.writeVarInt(1)
+				w.WriteVarInt(1)
 				// txid
-				w.writeBytes(make([]byte, 32))
+				w.WriteBytes(make([]byte, 32))
 				// invalid status
-				w.writeByte(99)
+				w.WriteByte(99)
 				// signable tx flag
-				w.writeByte(0)
-				return w.buf
+				w.WriteByte(0)
+				return w.Buf
 			}(),
 			err: "invalid status code: 99",
 		},

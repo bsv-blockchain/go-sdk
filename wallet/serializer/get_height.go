@@ -2,20 +2,22 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeGetHeightResult(result *wallet.GetHeightResult) ([]byte, error) {
-	w := newWriter()
-	w.writeVarInt(uint64(result.Height))
-	return w.buf, nil
+	w := util.NewWriter()
+	w.WriteVarInt(uint64(result.Height))
+	return w.Buf, nil
 }
 
 func DeserializeGetHeightResult(data []byte) (*wallet.GetHeightResult, error) {
-	r := newReaderHoldError(data)
-	height := r.readVarInt32()
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading height: %w", r.err)
+	r := util.NewReaderHoldError(data)
+	height := r.ReadVarInt32()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading height: %w", r.Err)
 	}
 	return &wallet.GetHeightResult{
 		Height: height,

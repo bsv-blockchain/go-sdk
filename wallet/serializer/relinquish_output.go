@@ -2,51 +2,53 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeRelinquishOutputArgs(args *wallet.RelinquishOutputArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Write basket string with length prefix
-	w.writeString(args.Basket)
+	w.WriteString(args.Basket)
 
 	// Write outpoint string with length prefix
 	outpoint, err := encodeOutpoint(args.Output)
 	if err != nil {
 		return nil, fmt.Errorf("error relinquish output encode output: %v", err)
 	}
-	w.writeBytes(outpoint)
+	w.WriteBytes(outpoint)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeRelinquishOutputArgs(data []byte) (*wallet.RelinquishOutputArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.RelinquishOutputArgs{
-		Basket: r.readString(),
+		Basket: r.ReadString(),
 	}
-	outpoint, err := decodeOutpoint(r.readBytes(OutpointSize))
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading relinquish output: %w", r.err)
+	outpoint, err := decodeOutpoint(r.ReadBytes(OutpointSize))
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading relinquish output: %w", r.Err)
 	} else if err != nil {
-		return nil, fmt.Errorf("error decoding relinqush outpoint: %w", r.err)
+		return nil, fmt.Errorf("error decoding relinqush outpoint: %w", r.Err)
 	}
 	args.Output = outpoint
 	return args, nil
 }
 
 func SerializeRelinquishOutputResult(result *wallet.RelinquishOutputResult) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Write 1 byte boolean flag (1 = true, 0 = false)
 	if result.Relinquished {
-		w.writeByte(1)
+		w.WriteByte(1)
 	} else {
-		w.writeByte(0)
+		w.WriteByte(0)
 	}
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeRelinquishOutputResult(data []byte) (*wallet.RelinquishOutputResult, error) {

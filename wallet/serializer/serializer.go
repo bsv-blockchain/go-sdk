@@ -5,10 +5,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"math"
 	"strings"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 const OutpointSize = 36
@@ -46,16 +48,16 @@ func encodeOutpoints(outpoints []string) ([]byte, error) {
 		return nil, nil
 	}
 
-	w := newWriter()
-	w.writeVarInt(uint64(len(outpoints)))
+	w := util.NewWriter()
+	w.WriteVarInt(uint64(len(outpoints)))
 	for _, op := range outpoints {
 		opBytes, err := encodeOutpoint(op)
 		if err != nil {
 			return nil, err
 		}
-		w.writeBytes(opBytes)
+		w.WriteBytes(opBytes)
 	}
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 // decodeOutpoints deserializes a slice of outpoints
@@ -64,8 +66,8 @@ func decodeOutpoints(data []byte) ([]string, error) {
 		return nil, nil
 	}
 
-	r := newReader(data)
-	count, err := r.readVarInt()
+	r := util.NewReader(data)
+	count, err := r.ReadVarInt()
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +77,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 
 	outpoints := make([]string, 0, count)
 	for i := uint64(0); i < count; i++ {
-		opBytes, err := r.readBytes(OutpointSize)
+		opBytes, err := r.ReadBytes(OutpointSize)
 		if err != nil {
 			return nil, err
 		}
@@ -100,19 +102,19 @@ func decodeOutpoint(data []byte) (string, error) {
 }
 
 // encodeCounterparty writes counterparty in the same format as TypeScript version
-func encodeCounterparty(w *writer, counterparty wallet.Counterparty) error {
+func encodeCounterparty(w *util.Writer, counterparty wallet.Counterparty) error {
 	switch counterparty.Type {
 	case wallet.CounterpartyUninitialized:
-		w.writeByte(0)
+		w.WriteByte(0)
 	case wallet.CounterpartyTypeSelf:
-		w.writeByte(11)
+		w.WriteByte(11)
 	case wallet.CounterpartyTypeAnyone:
-		w.writeByte(12)
+		w.WriteByte(12)
 	case wallet.CounterpartyTypeOther:
 		if counterparty.Counterparty == nil {
 			return errors.New("counterparty is nil for type other")
 		}
-		w.writeBytes(counterparty.Counterparty.ToDER())
+		w.WriteBytes(counterparty.Counterparty.ToDER())
 	default:
 		return fmt.Errorf("unknown counterparty type: %v", counterparty.Type)
 	}
@@ -120,9 +122,9 @@ func encodeCounterparty(w *writer, counterparty wallet.Counterparty) error {
 }
 
 // decodeCounterparty reads counterparty in the same format as TypeScript version
-func decodeCounterparty(r *readerHoldError) (wallet.Counterparty, error) {
+func decodeCounterparty(r *util.ReaderHoldError) (wallet.Counterparty, error) {
 	counterparty := wallet.Counterparty{}
-	counterpartyFlag := r.readByte()
+	counterpartyFlag := r.ReadByte()
 	switch counterpartyFlag {
 	case 0:
 		counterparty.Type = wallet.CounterpartyUninitialized
@@ -131,7 +133,7 @@ func decodeCounterparty(r *readerHoldError) (wallet.Counterparty, error) {
 	case 12:
 		counterparty.Type = wallet.CounterpartyTypeAnyone
 	default:
-		pubKey, err := ec.PublicKeyFromBytes(append([]byte{counterpartyFlag}, r.readBytes(32)...))
+		pubKey, err := ec.PublicKeyFromBytes(append([]byte{counterpartyFlag}, r.ReadBytes(32)...))
 		if err != nil {
 			return counterparty, fmt.Errorf("invalid counterparty bytes: %w", err)
 		}
@@ -152,61 +154,61 @@ type KeyRelatedParams struct {
 
 // encodeProtocol serializes a Protocol to bytes matching the TypeScript format
 func encodeProtocol(protocol wallet.Protocol) []byte {
-	w := newWriter()
-	w.writeByte(byte(protocol.SecurityLevel))
-	w.writeString(protocol.Protocol)
-	return w.buf
+	w := util.NewWriter()
+	w.WriteByte(byte(protocol.SecurityLevel))
+	w.WriteString(protocol.Protocol)
+	return w.Buf
 }
 
 // decodeProtocol deserializes Protocol from bytes matching the TypeScript format
-func decodeProtocol(r *readerHoldError) (wallet.Protocol, error) {
+func decodeProtocol(r *util.ReaderHoldError) (wallet.Protocol, error) {
 	protocol := wallet.Protocol{
-		SecurityLevel: wallet.SecurityLevel(r.readByte()),
-		Protocol:      r.readString(),
+		SecurityLevel: wallet.SecurityLevel(r.ReadByte()),
+		Protocol:      r.ReadString(),
 	}
-	if r.err != nil {
-		return protocol, fmt.Errorf("error decoding protocol: %w", r.err)
+	if r.Err != nil {
+		return protocol, fmt.Errorf("error decoding protocol: %w", r.Err)
 	}
 	return protocol, nil
 }
 
 // encodePrivilegedParams serializes privileged flag and reason matching TypeScript format
 func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Write privileged flag
 	if privileged != nil {
 		if *privileged {
-			w.writeByte(1)
+			w.WriteByte(1)
 		} else {
-			w.writeByte(0)
+			w.WriteByte(0)
 		}
 	} else {
 		// Write 9 bytes of 0xFF (-1) when undefined
 		for i := 0; i < 9; i++ {
-			w.writeByte(0xFF)
+			w.WriteByte(0xFF)
 		}
 	}
 
 	// Write privileged reason
 	if privilegedReason != "" {
-		w.writeByte(byte(len(privilegedReason)))
-		w.writeString(privilegedReason)
+		w.WriteByte(byte(len(privilegedReason)))
+		w.WriteString(privilegedReason)
 	} else {
 		// Write 9 bytes of 0xFF (-1) when undefined
 		for i := 0; i < 9; i++ {
-			w.writeByte(0xFF)
+			w.WriteByte(0xFF)
 		}
 	}
 
-	return w.buf
+	return w.Buf
 }
 
 // decodePrivilegedParams deserializes privileged flag and reason matching TypeScript format
-func decodePrivilegedParams(r *readerHoldError) (*bool, string) {
+func decodePrivilegedParams(r *util.ReaderHoldError) (*bool, string) {
 	// Read privileged flag
 	var privileged *bool
-	flag := r.readByte()
+	flag := r.ReadByte()
 	if flag != 0xFF { // Not -1
 		val := flag == 1
 		privileged = &val
@@ -214,17 +216,17 @@ func decodePrivilegedParams(r *readerHoldError) (*bool, string) {
 
 	// Skip 8 more bytes if flag was 0xFF (TypeScript writes 9 bytes of 0xFF)
 	if flag == 0xFF {
-		r.readBytes(8)
+		r.ReadBytes(8)
 	}
 
 	// Read privileged reason length
 	var privilegedReason string
-	reasonLen := r.readByte()
+	reasonLen := r.ReadByte()
 	if reasonLen != 0xFF { // Not -1
-		privilegedReason = r.readString()
+		privilegedReason = r.ReadString()
 	} else {
 		// Skip 8 more bytes if length was 0xFF (TypeScript writes 9 bytes of 0xFF)
-		r.readBytes(8)
+		r.ReadBytes(8)
 	}
 
 	return privileged, privilegedReason
@@ -232,13 +234,13 @@ func decodePrivilegedParams(r *readerHoldError) (*bool, string) {
 
 // encodeKeyRelatedParams serializes protocol, key and privilege parameters
 func encodeKeyRelatedParams(params KeyRelatedParams) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Write protocol ID (matches TypeScript format)
-	w.writeBytes(encodeProtocol(params.ProtocolID))
+	w.WriteBytes(encodeProtocol(params.ProtocolID))
 
 	// Write key ID
-	w.writeString(params.KeyID)
+	w.WriteString(params.KeyID)
 
 	// Write counterparty
 	if err := encodeCounterparty(w, params.Counterparty); err != nil {
@@ -246,13 +248,13 @@ func encodeKeyRelatedParams(params KeyRelatedParams) ([]byte, error) {
 	}
 
 	// Write privileged params
-	w.writeBytes(encodePrivilegedParams(params.Privileged, params.PrivilegedReason))
+	w.WriteBytes(encodePrivilegedParams(params.Privileged, params.PrivilegedReason))
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 // decodeKeyRelatedParams deserializes protocol, key and privilege parameters
-func decodeKeyRelatedParams(r *readerHoldError) (*KeyRelatedParams, error) {
+func decodeKeyRelatedParams(r *util.ReaderHoldError) (*KeyRelatedParams, error) {
 	params := &KeyRelatedParams{}
 
 	// Read protocol ID (matches TypeScript format)
@@ -263,7 +265,7 @@ func decodeKeyRelatedParams(r *readerHoldError) (*KeyRelatedParams, error) {
 	params.ProtocolID = protocol
 
 	// Read key ID
-	params.KeyID = r.readString()
+	params.KeyID = r.ReadString()
 
 	// Read counterparty
 	params.Counterparty, err = decodeCounterparty(r)
@@ -274,8 +276,8 @@ func decodeKeyRelatedParams(r *readerHoldError) (*KeyRelatedParams, error) {
 	// Read privileged params
 	params.Privileged, params.PrivilegedReason = decodePrivilegedParams(r)
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error decoding key params: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error decoding key params: %w", r.Err)
 	}
 
 	return params, nil

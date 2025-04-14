@@ -2,36 +2,38 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeGetNetworkResult(result *wallet.GetNetworkResult) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Error byte (0 for success)
-	w.writeByte(0)
+	w.WriteByte(0)
 
 	// Network byte (0 for mainnet, 1 for testnet)
 	if result.Network == "mainnet" {
-		w.writeByte(0)
+		w.WriteByte(0)
 	} else {
-		w.writeByte(1)
+		w.WriteByte(1)
 	}
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeGetNetworkResult(data []byte) (*wallet.GetNetworkResult, error) {
-	r := newReader(data)
+	r := util.NewReader(data)
 
 	// Read error byte
-	_, err := r.readByte()
+	_, err := r.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading error byte: %w", err)
 	}
 
 	// Read network byte
-	networkByte, err := r.readByte()
+	networkByte, err := r.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading network byte: %w", err)
 	}

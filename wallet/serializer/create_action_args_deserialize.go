@@ -4,8 +4,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"math"
+
+	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // DeserializeCreateActionArgs deserializes a byte slice into a wallet.CreateActionArgs object
@@ -14,13 +16,13 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		return nil, errors.New("empty message")
 	}
 
-	messageReader := newReaderHoldError(data)
+	messageReader := util.NewReaderHoldError(data)
 	args := &wallet.CreateActionArgs{}
 	var err error
 
 	// Read description and input BEEF
-	args.Description = messageReader.readString()
-	args.InputBEEF = messageReader.readOptionalBytes()
+	args.Description = messageReader.ReadString()
+	args.InputBEEF = messageReader.ReadOptionalBytes()
 
 	// Read inputs
 	inputs, err := deserializeCreateActionInputs(messageReader)
@@ -37,9 +39,9 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	args.Outputs = outputs
 
 	// Read lockTime, version, and labels
-	args.LockTime = messageReader.readOptionalUint32()
-	args.Version = messageReader.readOptionalUint32()
-	args.Labels = messageReader.readStringSlice()
+	args.LockTime = messageReader.ReadOptionalUint32()
+	args.Version = messageReader.ReadOptionalUint32()
+	args.Labels = messageReader.ReadStringSlice()
 
 	// Read options
 	options, err := deserializeCreateActionOptions(messageReader)
@@ -52,8 +54,8 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 }
 
 // deserializeCreateActionInputs deserializes the inputs into a slice of wallet.CreateActionInput
-func deserializeCreateActionInputs(messageReader *readerHoldError) ([]wallet.CreateActionInput, error) {
-	inputsLen := messageReader.readVarInt()
+func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]wallet.CreateActionInput, error) {
+	inputsLen := messageReader.ReadVarInt()
 	if inputsLen == math.MaxUint64 { // -1 means nil
 		return nil, nil
 	}
@@ -64,34 +66,34 @@ func deserializeCreateActionInputs(messageReader *readerHoldError) ([]wallet.Cre
 		input := wallet.CreateActionInput{}
 
 		// Read outpoint
-		outpointBytes := messageReader.readBytes(36) // 32 txid + 4 index
+		outpointBytes := messageReader.ReadBytes(36) // 32 txid + 4 index
 		input.Outpoint, err = decodeOutpoint(outpointBytes)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}
 
 		// Read unlocking script
-		scriptBytes := messageReader.readOptionalBytes()
+		scriptBytes := messageReader.ReadOptionalBytes()
 		if scriptBytes != nil {
 			input.UnlockingScript = hex.EncodeToString(scriptBytes)
 			input.UnlockingScriptLength = uint32(len(scriptBytes))
 		} else {
 			// Read unlocking script length value
-			length := messageReader.readVarInt32()
+			length := messageReader.ReadVarInt32()
 			input.UnlockingScriptLength = length
 		}
 
 		// Read input description
-		input.InputDescription = messageReader.readString()
+		input.InputDescription = messageReader.ReadString()
 
 		// Read sequence number
-		seqNum := messageReader.readVarInt()
+		seqNum := messageReader.ReadVarInt()
 		if seqNum != math.MaxUint64 { // -1 means nil
 			input.SequenceNumber = uint32(seqNum)
 		}
 
-		if messageReader.err != nil {
-			return nil, fmt.Errorf("error reading input %d: %w", i, messageReader.err)
+		if messageReader.Err != nil {
+			return nil, fmt.Errorf("error reading input %d: %w", i, messageReader.Err)
 		}
 
 		inputs = append(inputs, input)
@@ -101,8 +103,8 @@ func deserializeCreateActionInputs(messageReader *readerHoldError) ([]wallet.Cre
 }
 
 // deserializeCreateActionOutputs deserializes the outputs into a slice of wallet.CreateActionOutput
-func deserializeCreateActionOutputs(messageReader *readerHoldError) ([]wallet.CreateActionOutput, error) {
-	outputsLen := messageReader.readVarInt()
+func deserializeCreateActionOutputs(messageReader *util.ReaderHoldError) ([]wallet.CreateActionOutput, error) {
+	outputsLen := messageReader.ReadVarInt()
 	if outputsLen == math.MaxUint64 { // -1 means nil
 		return nil, nil
 	}
@@ -110,7 +112,7 @@ func deserializeCreateActionOutputs(messageReader *readerHoldError) ([]wallet.Cr
 	outputs := make([]wallet.CreateActionOutput, 0, outputsLen)
 	for i := uint64(0); i < outputsLen; i++ {
 		// Read locking script
-		lockingScriptBytes := messageReader.readOptionalBytes()
+		lockingScriptBytes := messageReader.ReadOptionalBytes()
 		if lockingScriptBytes == nil {
 			return nil, fmt.Errorf("locking script cannot be nil")
 		}
@@ -118,15 +120,15 @@ func deserializeCreateActionOutputs(messageReader *readerHoldError) ([]wallet.Cr
 		// Read satoshis, output description, basket, custom instructions, and tags
 		output := wallet.CreateActionOutput{
 			LockingScript:      hex.EncodeToString(lockingScriptBytes),
-			Satoshis:           messageReader.readVarInt(),
-			OutputDescription:  messageReader.readString(),
-			Basket:             messageReader.readString(),
-			CustomInstructions: messageReader.readString(),
-			Tags:               messageReader.readStringSlice(),
+			Satoshis:           messageReader.ReadVarInt(),
+			OutputDescription:  messageReader.ReadString(),
+			Basket:             messageReader.ReadString(),
+			CustomInstructions: messageReader.ReadString(),
+			Tags:               messageReader.ReadStringSlice(),
 		}
 
-		if messageReader.err != nil {
-			return nil, fmt.Errorf("error reading output %d: %w", i, messageReader.err)
+		if messageReader.Err != nil {
+			return nil, fmt.Errorf("error reading output %d: %w", i, messageReader.Err)
 		}
 
 		outputs = append(outputs, output)
@@ -136,8 +138,8 @@ func deserializeCreateActionOutputs(messageReader *readerHoldError) ([]wallet.Cr
 }
 
 // deserializeCreateActionOptions decodes into wallet.CreateActionOptions
-func deserializeCreateActionOptions(messageReader *readerHoldError) (*wallet.CreateActionOptions, error) {
-	optionsPresent := messageReader.readByte()
+func deserializeCreateActionOptions(messageReader *util.ReaderHoldError) (*wallet.CreateActionOptions, error) {
+	optionsPresent := messageReader.ReadByte()
 	if optionsPresent != 1 {
 		return nil, nil
 	}
@@ -145,21 +147,21 @@ func deserializeCreateActionOptions(messageReader *readerHoldError) (*wallet.Cre
 	options := &wallet.CreateActionOptions{}
 
 	// Read signAndProcess and acceptDelayedBroadcast
-	options.SignAndProcess = messageReader.readOptionalBool()
-	options.AcceptDelayedBroadcast = messageReader.readOptionalBool()
+	options.SignAndProcess = messageReader.ReadOptionalBool()
+	options.AcceptDelayedBroadcast = messageReader.ReadOptionalBool()
 
 	// Read trustSelf
-	if messageReader.readByte() == 1 {
+	if messageReader.ReadByte() == 1 {
 		options.TrustSelf = "known"
 	}
 
 	// Read knownTxids, returnTXIDOnly, and noSend
-	options.KnownTxids = messageReader.readTxidSlice()
-	options.ReturnTXIDOnly = messageReader.readOptionalBool()
-	options.NoSend = messageReader.readOptionalBool()
+	options.KnownTxids = messageReader.ReadTxidSlice()
+	options.ReturnTXIDOnly = messageReader.ReadOptionalBool()
+	options.NoSend = messageReader.ReadOptionalBool()
 
 	// Read noSendChange
-	noSendChangeData := messageReader.readOptionalBytes()
+	noSendChangeData := messageReader.ReadOptionalBytes()
 	noSendChange, err := decodeOutpoints(noSendChangeData)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding noSendChange: %w", err)
@@ -167,8 +169,8 @@ func deserializeCreateActionOptions(messageReader *readerHoldError) (*wallet.Cre
 	options.NoSendChange = noSendChange
 
 	// Read sendWith and randomizeOutputs
-	options.SendWith = messageReader.readTxidSlice()
-	options.RandomizeOutputs = messageReader.readOptionalBool()
+	options.SendWith = messageReader.ReadTxidSlice()
+	options.RandomizeOutputs = messageReader.ReadOptionalBool()
 
 	return options, nil
 }

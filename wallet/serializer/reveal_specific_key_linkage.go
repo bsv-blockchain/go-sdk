@@ -3,11 +3,13 @@ package serializer
 import (
 	"encoding/hex"
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeRevealSpecificKeyLinkageArgs(args *wallet.RevealSpecificKeyLinkageArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Encode key-related parameters (protocol, keyID, counterparty, privileged)
 	params := KeyRelatedParams{
@@ -21,20 +23,20 @@ func SerializeRevealSpecificKeyLinkageArgs(args *wallet.RevealSpecificKeyLinkage
 	if err != nil {
 		return nil, fmt.Errorf("error encoding key params: %w", err)
 	}
-	w.writeBytes(keyParams)
+	w.WriteBytes(keyParams)
 
 	// Write verifier public key
 	verifierBytes, err := hex.DecodeString(args.Verifier)
 	if err != nil {
 		return nil, fmt.Errorf("invalid verifier hex: %w", err)
 	}
-	w.writeBytes(verifierBytes)
+	w.WriteBytes(verifierBytes)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeRevealSpecificKeyLinkageArgs(data []byte) (*wallet.RevealSpecificKeyLinkageArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.RevealSpecificKeyLinkageArgs{}
 
 	// Decode key-related parameters
@@ -49,46 +51,46 @@ func DeserializeRevealSpecificKeyLinkageArgs(data []byte) (*wallet.RevealSpecifi
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read verifier public key
-	args.Verifier = hex.EncodeToString(r.readRemaining())
+	args.Verifier = hex.EncodeToString(r.ReadRemaining())
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error decoding args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error decoding args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
 func SerializeRevealSpecificKeyLinkageResult(result *wallet.RevealSpecificKeyLinkageResult) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Write prover, verifier, counterparty public keys
-	w.writeIntBytes(result.Prover)
-	w.writeIntBytes(result.Verifier)
+	w.WriteIntBytes(result.Prover)
+	w.WriteIntBytes(result.Verifier)
 	if err := encodeCounterparty(w, result.Counterparty); err != nil {
 		return nil, fmt.Errorf("error encoding counterparty: %w", err)
 	}
 
 	// Write protocol ID (security level + protocol string)
-	w.writeBytes(encodeProtocol(result.ProtocolID))
+	w.WriteBytes(encodeProtocol(result.ProtocolID))
 
 	// Write key ID, encrypted linkage and proof
-	w.writeIntBytes([]byte(result.KeyID))
-	w.writeIntBytes(result.EncryptedLinkage)
-	w.writeIntBytes(result.EncryptedLinkageProof)
+	w.WriteIntBytes([]byte(result.KeyID))
+	w.WriteIntBytes(result.EncryptedLinkage)
+	w.WriteIntBytes(result.EncryptedLinkageProof)
 
 	// Write proof type
-	w.writeByte(result.ProofType)
+	w.WriteByte(result.ProofType)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpecificKeyLinkageResult, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	result := &wallet.RevealSpecificKeyLinkageResult{}
 
 	// Read prover, verifier, counterparty public keys
-	result.Prover = r.readIntBytes()
-	result.Verifier = r.readIntBytes()
+	result.Prover = r.ReadIntBytes()
+	result.Verifier = r.ReadIntBytes()
 	counterparty, err := decodeCounterparty(r)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding counterparty: %w", err)
@@ -103,26 +105,26 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 	result.ProtocolID = protocol
 
 	// Read key ID, encrypted linkage, and proof
-	result.KeyID = string(r.readIntBytes())
-	result.EncryptedLinkage = r.readIntBytes()
-	result.EncryptedLinkageProof = r.readIntBytes()
+	result.KeyID = string(r.ReadIntBytes())
+	result.EncryptedLinkage = r.ReadIntBytes()
+	result.EncryptedLinkageProof = r.ReadIntBytes()
 
 	// Read proof type
-	result.ProofType = r.readByte()
+	result.ProofType = r.ReadByte()
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading result: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading result: %w", r.Err)
 	}
 
 	return result, nil
 }
 
-func writePubKeyHex(w *writer, pubKey string) {
+func writePubKeyHex(w *util.Writer, pubKey string) {
 	bytes, _ := hex.DecodeString(pubKey)
-	w.writeBytes(bytes)
+	w.WriteBytes(bytes)
 }
 
-func readPubKeyHex(r *readerHoldError) string {
-	bytes := r.readBytes(33)
+func readPubKeyHex(r *util.ReaderHoldError) string {
+	bytes := r.ReadBytes(33)
 	return hex.EncodeToString(bytes)
 }

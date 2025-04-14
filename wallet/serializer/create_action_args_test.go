@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -161,35 +162,35 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 		{
 			name: "invalid outpoint",
 			data: func() []byte {
-				w := newWriter()
+				w := util.NewWriter()
 				// description (empty)
-				w.writeVarInt(0)
+				w.WriteVarInt(0)
 				// input BEEF (nil)
-				w.writeVarInt(math.MaxUint64)
+				w.WriteVarInt(math.MaxUint64)
 				// inputs (1 item)
-				w.writeVarInt(1)
+				w.WriteVarInt(1)
 				// invalid outpoint (too short)
-				w.writeBytes([]byte{0x01, 0x02})
-				return w.buf
+				w.WriteBytes([]byte{0x01, 0x02})
+				return w.Buf
 			}(),
 			err: "error decoding outpoint: invalid outpoint data length",
 		},
 		{
 			name: "invalid unlocking script",
 			data: func() []byte {
-				w := newWriter()
+				w := util.NewWriter()
 				// description (empty)
-				w.writeVarInt(0)
+				w.WriteVarInt(0)
 				// input BEEF (nil)
-				w.writeVarInt(math.MaxUint64)
+				w.WriteVarInt(math.MaxUint64)
 				// inputs (1 item)
-				w.writeVarInt(1)
+				w.WriteVarInt(1)
 				// valid outpoint
-				w.writeBytes(make([]byte, 36))
+				w.WriteBytes(make([]byte, 36))
 				// unlocking script length (invalid hex)
-				w.writeVarInt(2)
-				w.writeBytes([]byte{0x01, 0x02})
-				return w.buf
+				w.WriteVarInt(2)
+				w.WriteBytes([]byte{0x01, 0x02})
+				return w.Buf
 			}(),
 			err: "error reading string length",
 		},

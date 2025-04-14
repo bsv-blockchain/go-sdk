@@ -2,6 +2,8 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -13,47 +15,47 @@ type RequestFrame struct {
 
 // WriteRequestFrame writes a call frame with call type, originator and params
 func WriteRequestFrame(requestFrame RequestFrame) []byte {
-	frameWriter := newWriter()
+	frameWriter := util.NewWriter()
 
 	// Write call type byte
-	frameWriter.writeByte(requestFrame.Call)
+	frameWriter.WriteByte(requestFrame.Call)
 
 	// Write originator length and bytes
 	originatorBytes := []byte(requestFrame.Originator)
-	frameWriter.writeByte(byte(len(originatorBytes)))
-	frameWriter.writeBytes(originatorBytes)
+	frameWriter.WriteByte(byte(len(originatorBytes)))
+	frameWriter.WriteBytes(originatorBytes)
 
 	// Write params if present
 	if len(requestFrame.Params) > 0 {
-		frameWriter.writeBytes(requestFrame.Params)
+		frameWriter.WriteBytes(requestFrame.Params)
 	}
 
-	return frameWriter.buf
+	return frameWriter.Buf
 }
 
 // ReadRequestFrame reads a request frame and returns call type, originator and params
 func ReadRequestFrame(data []byte) (*RequestFrame, error) {
-	frameReader := newReader(data)
+	frameReader := util.NewReader(data)
 
 	// Read call type byte
-	call, err := frameReader.readByte()
+	call, err := frameReader.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading call byte: %w", err)
 	}
 
 	// Read originator length and bytes
-	originatorLen, err := frameReader.readByte()
+	originatorLen, err := frameReader.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading originator length: %w", err)
 	}
-	originatorBytes, err := frameReader.readBytes(int(originatorLen))
+	originatorBytes, err := frameReader.ReadBytes(int(originatorLen))
 	if err != nil {
 		return nil, fmt.Errorf("error reading originator: %w", err)
 	}
 	originator := string(originatorBytes)
 
 	// Remaining bytes are params
-	params := frameReader.readRemaining()
+	params := frameReader.ReadRemaining()
 
 	return &RequestFrame{
 		Call:       call,
@@ -64,62 +66,62 @@ func ReadRequestFrame(data []byte) (*RequestFrame, error) {
 
 // WriteResultFrame writes a result frame with either success data or an error
 func WriteResultFrame(result []byte, err *wallet.Error) []byte {
-	frameWriter := newWriter()
+	frameWriter := util.NewWriter()
 
 	if err != nil {
 		// Write error byte
-		frameWriter.writeByte(err.Code)
+		frameWriter.WriteByte(err.Code)
 
 		// Write error message
 		errorMsgBytes := []byte(err.Message)
-		frameWriter.writeVarInt(uint64(len(errorMsgBytes)))
-		frameWriter.writeBytes(errorMsgBytes)
+		frameWriter.WriteVarInt(uint64(len(errorMsgBytes)))
+		frameWriter.WriteBytes(errorMsgBytes)
 
 		// Write stack trace
 		stackBytes := []byte(err.Stack)
-		frameWriter.writeVarInt(uint64(len(stackBytes)))
-		frameWriter.writeBytes(stackBytes)
+		frameWriter.WriteVarInt(uint64(len(stackBytes)))
+		frameWriter.WriteBytes(stackBytes)
 	} else {
 		// Write success byte (0)
-		frameWriter.writeByte(0)
+		frameWriter.WriteByte(0)
 
 		// Write result data if present
 		if len(result) > 0 {
-			frameWriter.writeBytes(result)
+			frameWriter.WriteBytes(result)
 		}
 	}
 
-	return frameWriter.buf
+	return frameWriter.Buf
 }
 
 // ReadResultFrame reads a response frame and returns either the result or error
 func ReadResultFrame(data []byte) ([]byte, error) {
-	frameReader := newReader(data)
+	frameReader := util.NewReader(data)
 
 	// Check error byte
-	errorByte, err := frameReader.readByte()
+	errorByte, err := frameReader.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading error byte: %w", err)
 	}
 
 	if errorByte != 0 {
 		// Read error message
-		errorMsgLen, err := frameReader.readVarInt()
+		errorMsgLen, err := frameReader.ReadVarInt()
 		if err != nil {
 			return nil, fmt.Errorf("error reading error message length: %w", err)
 		}
-		errorMsgBytes, err := frameReader.readBytes(int(errorMsgLen))
+		errorMsgBytes, err := frameReader.ReadBytes(int(errorMsgLen))
 		if err != nil {
 			return nil, fmt.Errorf("error reading error message: %w", err)
 		}
 		errorMsg := string(errorMsgBytes)
 
 		// Read stack trace
-		stackTraceLen, err := frameReader.readVarInt()
+		stackTraceLen, err := frameReader.ReadVarInt()
 		if err != nil {
 			return nil, fmt.Errorf("error reading stack trace length: %w", err)
 		}
-		stackTraceBytes, err := frameReader.readBytes(int(stackTraceLen))
+		stackTraceBytes, err := frameReader.ReadBytes(int(stackTraceLen))
 		if err != nil {
 			return nil, fmt.Errorf("error reading stack trace: %w", err)
 		}
@@ -133,5 +135,5 @@ func ReadResultFrame(data []byte) ([]byte, error) {
 	}
 
 	// Return result frame
-	return frameReader.readRemaining(), nil
+	return frameReader.ReadRemaining(), nil
 }
