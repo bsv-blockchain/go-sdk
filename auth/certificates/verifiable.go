@@ -108,7 +108,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 		// Use the certificate's serial number as required for verifier keyring decryption.
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(vc.SerialNumber))
 
-		decryptResult, err := verifierWallet.Decrypt(&wallet.DecryptArgs{
+		decryptResult, err := verifierWallet.Decrypt(wallet.DecryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,
@@ -117,7 +117,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 				PrivilegedReason: privilegedReason,
 			},
 			Ciphertext: encryptedKeyBytes,
-		})
+		}, "")
 		if err != nil {
 			// Wrap error from the wallet's Decrypt method, matching TS error style
 			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: wallet decryption failed for field '%s': %w", fieldName, err)

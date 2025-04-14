@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -19,16 +21,7 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 		return nil, fmt.Errorf("type must be %d bytes", SizeType)
 	}
 	w.writeBytes(typeBytes)
-
-	// Encode subject (hex)
-	subjectBytes, err := hex.DecodeString(args.Certificate.Subject)
-	if err != nil {
-		return nil, fmt.Errorf("invalid subject hex: %w", err)
-	}
-	if len(subjectBytes) != SizeCertifier {
-		return nil, fmt.Errorf("subject must be %d bytes", SizeCertifier)
-	}
-	w.writeBytes(subjectBytes)
+	w.writeBytes(args.Certificate.Subject.Compressed())
 
 	// Encode serialNumber (base64)
 	serialBytes, err := base64.StdEncoding.DecodeString(args.Certificate.SerialNumber)
@@ -40,15 +33,7 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	}
 	w.writeBytes(serialBytes)
 
-	// Encode certifier (hex)
-	certifierBytes, err := hex.DecodeString(args.Certificate.Certifier)
-	if err != nil {
-		return nil, fmt.Errorf("invalid certifier hex: %w", err)
-	}
-	if len(certifierBytes) != SizeCertifier {
-		return nil, fmt.Errorf("certifier must be %d bytes", SizeCertifier)
-	}
-	w.writeBytes(certifierBytes)
+	w.writeBytes(args.Certificate.Certifier.Compressed())
 
 	// Encode revocationOutpoint
 	outpointBytes, err := encodeOutpoint(args.Certificate.RevocationOutpoint)
@@ -104,9 +89,9 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	return w.buf, nil
 }
 
-func DeserializeProveCertificateArgs(data []byte) (*wallet.ProveCertificateArgs, error) {
+func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificateArgs, err error) {
 	r := newReaderHoldError(data)
-	args := &wallet.ProveCertificateArgs{}
+	args = &wallet.ProveCertificateArgs{}
 
 	// Read certificate type (base64)
 	typeBytes := r.readBytes(SizeType)
@@ -114,7 +99,9 @@ func DeserializeProveCertificateArgs(data []byte) (*wallet.ProveCertificateArgs,
 
 	// Read subject (hex)
 	subjectBytes := r.readBytes(SizeCertifier)
-	args.Certificate.Subject = hex.EncodeToString(subjectBytes)
+	if args.Certificate.Subject, err = ec.PublicKeyFromBytes(subjectBytes); err != nil {
+		return nil, err
+	}
 
 	// Read serialNumber (base64)
 	serialBytes := r.readBytes(SizeType)
@@ -122,7 +109,9 @@ func DeserializeProveCertificateArgs(data []byte) (*wallet.ProveCertificateArgs,
 
 	// Read certifier (hex)
 	certifierBytes := r.readBytes(SizeCertifier)
-	args.Certificate.Certifier = hex.EncodeToString(certifierBytes)
+	if args.Certificate.Certifier, err = ec.PublicKeyFromBytes(certifierBytes); err != nil {
+		return nil, err
+	}
 
 	// Read revocationOutpoint
 	outpointBytes := r.readBytes(OutpointSize)

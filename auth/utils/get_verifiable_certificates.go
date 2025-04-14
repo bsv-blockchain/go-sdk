@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -29,7 +30,7 @@ type GetVerifiableCertificatesOptions struct {
 func GetVerifiableCertificates(
 	w wallet.Interface,
 	requestedCertificates interface{},
-	verifierIdentityKey string,
+	verifierIdentityKey *ec.PublicKey,
 ) ([]*certificates.VerifiableCertificate, error) {
 
 	fmt.Println("Note: getVerifiableCertificates is a stub implementation")

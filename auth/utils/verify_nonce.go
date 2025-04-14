@@ -47,7 +47,7 @@ func VerifyNonce(
 	}
 
 	// Verify the hmac
-	result, err := w.VerifyHmac(args)
+	result, err := w.VerifyHmac(args, "")
 	if err != nil {
 		return false, fmt.Errorf("failed to verify HMAC: %w", err)
 	}

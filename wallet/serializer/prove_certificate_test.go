@@ -3,12 +3,16 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"testing"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestProveCertificateArgs(t *testing.T) {
+	pk, err := ec.NewPrivateKey()
+	require.NoError(t, err)
 	tests := []struct {
 		name string
 		args *wallet.ProveCertificateArgs
@@ -17,9 +21,9 @@ func TestProveCertificateArgs(t *testing.T) {
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
 				Type:               base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
-				Subject:            hex.EncodeToString(make([]byte, SizeCertifier)),
+				Subject:            pk.PubKey(),
 				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
-				Certifier:          hex.EncodeToString(make([]byte, SizeCertifier)),
+				Certifier:          pk.PubKey(),
 				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 				Signature:          hex.EncodeToString(make([]byte, 64)),
 				Fields: map[string]string{
@@ -37,9 +41,9 @@ func TestProveCertificateArgs(t *testing.T) {
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
 				Type:               base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
-				Subject:            hex.EncodeToString(make([]byte, SizeCertifier)),
+				Subject:            pk.PubKey(),
 				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
-				Certifier:          hex.EncodeToString(make([]byte, SizeCertifier)),
+				Certifier:          pk.PubKey(),
 				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 				Signature:          hex.EncodeToString(make([]byte, 64)),
 			},

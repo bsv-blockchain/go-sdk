@@ -34,11 +34,11 @@ func (sm *SessionManager) AddSession(session *PeerSession) error {
 	sm.sessionNonceToSession[session.SessionNonce] = session
 
 	// Also track it by identity key if present
-	if session.PeerIdentityKey != "" {
-		nonces := sm.identityKeyToNonces[session.PeerIdentityKey]
+	if session.PeerIdentityKey != nil {
+		nonces := sm.identityKeyToNonces[session.PeerIdentityKey.ToDERHex()]
 		if nonces == nil {
 			nonces = make(map[string]struct{})
-			sm.identityKeyToNonces[session.PeerIdentityKey] = nonces
+			sm.identityKeyToNonces[session.PeerIdentityKey.ToDERHex()] = nonces
 		}
 		nonces[session.SessionNonce] = struct{}{}
 	}
@@ -95,12 +95,12 @@ func (sm *SessionManager) RemoveSession(session *PeerSession) {
 		delete(sm.sessionNonceToSession, session.SessionNonce)
 	}
 
-	if session.PeerIdentityKey != "" {
-		nonces := sm.identityKeyToNonces[session.PeerIdentityKey]
+	if session.PeerIdentityKey != nil {
+		nonces := sm.identityKeyToNonces[session.PeerIdentityKey.ToDERHex()]
 		if nonces != nil {
 			delete(nonces, session.SessionNonce)
 			if len(nonces) == 0 {
-				delete(sm.identityKeyToNonces, session.PeerIdentityKey)
+				delete(sm.identityKeyToNonces, session.PeerIdentityKey.ToDERHex())
 			}
 		}
 	}

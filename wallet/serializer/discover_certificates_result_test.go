@@ -3,24 +3,28 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"testing"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestDiscoverCertificatesResult(t *testing.T) {
 	// Reuse the same test from discover_by_identity_key_test.go
 	// since the result format is identical
 	t.Run("success with certificates", func(t *testing.T) {
+		pk, err := ec.NewPrivateKey()
+		require.NoError(t, err)
 		result := &wallet.DiscoverCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
 						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("dGVzdC10eXBl"), SizeType)),
-						Subject:            hex.EncodeToString(make([]byte, 33)),
+						Subject:            pk.PubKey(),
 						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("c2VyaWFs"), SizeType)),
-						Certifier:          hex.EncodeToString(make([]byte, 33)),
+						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 						Signature:          hex.EncodeToString(make([]byte, 64)),
 						Fields: map[string]string{

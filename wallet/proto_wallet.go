@@ -55,7 +55,7 @@ func NewProtoWallet(rootKeyOrKeyDeriver ProtoWalletArgs) (*ProtoWallet, error) {
 }
 
 // GetPublicKey returns the public key for the wallet
-func (p *ProtoWallet) GetPublicKey(args *GetPublicKeyArgs, _originator string) (*GetPublicKeyResult, error) {
+func (p *ProtoWallet) GetPublicKey(args GetPublicKeyArgs, _originator string) (*GetPublicKeyResult, error) {
 	if args.IdentityKey {
 		if p.keyDeriver == nil {
 			return nil, errors.New("keyDeriver is undefined")
@@ -97,7 +97,8 @@ func (p *ProtoWallet) GetPublicKey(args *GetPublicKeyArgs, _originator string) (
 
 // Encrypt encrypts data using the provided protocol ID and key ID
 func (p *ProtoWallet) Encrypt(
-	args *EncryptArgs,
+	args EncryptArgs,
+	originator string,
 ) (*EncryptResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
@@ -127,7 +128,8 @@ func (p *ProtoWallet) Encrypt(
 
 // Decrypt decrypts data using the provided protocol ID and key ID
 func (p *ProtoWallet) Decrypt(
-	args *DecryptArgs,
+	args DecryptArgs,
+	originator string,
 ) (*DecryptResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
@@ -159,7 +161,7 @@ func (p *ProtoWallet) Decrypt(
 
 // CreateSignature creates a signature for the provided data
 func (p *ProtoWallet) CreateSignature(
-	args *CreateSignatureArgs,
+	args CreateSignatureArgs,
 	originator string,
 ) (*CreateSignatureResult, error) {
 	if p.keyDeriver == nil {
@@ -168,8 +170,8 @@ func (p *ProtoWallet) CreateSignature(
 
 	// Get hash to sign
 	var dataHash []byte
-	if len(args.DashToDirectlySign) > 0 {
-		dataHash = args.DashToDirectlySign
+	if len(args.HashToDirectlySign) > 0 {
+		dataHash = args.HashToDirectlySign
 	} else {
 		dataHash = hash.Sha256(args.Data)
 	}
@@ -205,7 +207,8 @@ func (p *ProtoWallet) CreateSignature(
 
 // VerifySignature verifies a signature for the provided data
 func (p *ProtoWallet) VerifySignature(
-	args *VerifySignatureArgs,
+	args VerifySignatureArgs,
+	originator string,
 ) (*VerifySignatureResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
@@ -252,6 +255,7 @@ func (p *ProtoWallet) VerifySignature(
 // CreateHmac creates an HMAC for the provided data
 func (p *ProtoWallet) CreateHmac(
 	args CreateHmacArgs,
+	originator string,
 ) (*CreateHmacResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
@@ -286,6 +290,7 @@ func (p *ProtoWallet) CreateHmac(
 // VerifyHmac verifies an HMAC for the provided data
 func (p *ProtoWallet) VerifyHmac(
 	args VerifyHmacArgs,
+	originator string,
 ) (*VerifyHmacResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")

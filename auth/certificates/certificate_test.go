@@ -369,7 +369,7 @@ func TestCertificate(t *testing.T) {
 		require.NoError(t, err)
 
 		// Get the expected public key from the wallet
-		pubKey, err := certifierProtoWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+		pubKey, err := certifierProtoWallet.GetPublicKey(wallet.GetPublicKeyArgs{
 			IdentityKey: true,
 		}, "")
 		require.NoError(t, err)

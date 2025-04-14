@@ -73,7 +73,7 @@ type PeerSession struct {
 	PeerNonce string
 
 	// The peer's identity key
-	PeerIdentityKey string
+	PeerIdentityKey *ec.PublicKey
 
 	// The last time the session was updated (milliseconds since epoch)
 	LastUpdate int64

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/hex"
 	"fmt"
 	"sync"
 	"testing"
@@ -67,108 +66,109 @@ func PairTransports(transportA, transportB *MockTransport) {
 }
 
 // TestWallet implements wallet.Interface for testing
-type TestWallet struct {
-	privateKey       *ec.PrivateKey
-	publicKey        *ec.PublicKey
-	identityKey      string
-	mockCertificates []*certificates.VerifiableCertificate
-}
+// type TestWallet struct {
+// 	privateKey       *ec.PrivateKey
+// 	publicKey        *ec.PublicKey
+// 	identityKey      string
+// 	mockCertificates []*certificates.VerifiableCertificate
+// }
 
-func NewTestWallet(t *testing.T) *TestWallet {
-	privKey, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+// func NewTestWallet(t *testing.T) *TestWallet {
+// 	privKey, err := ec.NewPrivateKey()
+// 	require.NoError(t, err)
 
-	pubKey := privKey.PubKey()
-	pubKeyBytes := pubKey.Compressed()
-	identityKey := hex.EncodeToString(pubKeyBytes)
+// 	pubKey := privKey.PubKey()
+// 	pubKeyBytes := pubKey.Compressed()
+// 	identityKey := hex.EncodeToString(pubKeyBytes)
 
-	return &TestWallet{
-		privateKey:       privKey,
-		publicKey:        pubKey,
-		identityKey:      identityKey,
-		mockCertificates: make([]*certificates.VerifiableCertificate, 0),
-	}
-}
+// 	return &TestWallet{
+// 		privateKey:       privKey,
+// 		publicKey:        pubKey,
+// 		identityKey:      identityKey,
+// 		mockCertificates: make([]*certificates.VerifiableCertificate, 0),
+// 	}
+// }
 
-func (w *TestWallet) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-	return &wallet.CreateActionResult{}, nil
-}
+// func (w *TestWallet) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
+// 	return &wallet.CreateActionResult{}, nil
+// }
 
-func (w *TestWallet) GetHeight(args interface{}) (uint32, error) {
-	return 0, nil
-}
+// func (w *TestWallet) GetHeight(args interface{}) (uint32, error) {
+// 	return 0, nil
+// }
 
-func (w *TestWallet) GetNetwork(args interface{}) (string, error) {
-	return "test", nil
-}
+// func (w *TestWallet) GetNetwork(args interface{}) (string, error) {
+// 	return "test", nil
+// }
 
-func (w *TestWallet) GetVersion(args interface{}) (string, error) {
-	return "1.0.0", nil
-}
+// func (w *TestWallet) GetVersion(args interface{}) (string, error) {
+// 	return "1.0.0", nil
+// }
 
-func (w *TestWallet) IsAuthenticated(args interface{}) (bool, error) {
-	return true, nil
-}
+// func (w *TestWallet) IsAuthenticated(args interface{}) (bool, error) {
+// 	return true, nil
+// }
 
-func (w *TestWallet) GetPublicKey(args *wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-	return &wallet.GetPublicKeyResult{
-		PublicKey: w.publicKey,
-	}, nil
-}
+// func (w *TestWallet) GetPublicKey(args *wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+// 	return &wallet.GetPublicKeyResult{
+// 		PublicKey: w.publicKey,
+// 	}, nil
+// }
 
-func (w *TestWallet) CreateHmac(args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
-	return &wallet.CreateHmacResult{}, nil
-}
+// func (w *TestWallet) CreateHmac(args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
+// 	return &wallet.CreateHmacResult{}, nil
+// }
 
-func (w *TestWallet) VerifyHmac(args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
-	return &wallet.VerifyHmacResult{}, nil
-}
+// func (w *TestWallet) VerifyHmac(args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
+// 	return &wallet.VerifyHmacResult{}, nil
+// }
 
-func (w *TestWallet) CreateSignature(args *wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-	hash := args.Data
-	signature, err := w.privateKey.Sign(hash)
-	if err != nil {
-		return nil, err
-	}
-	return &wallet.CreateSignatureResult{
-		Signature: *signature,
-	}, nil
-}
+// func (w *TestWallet) CreateSignature(args *wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
+// 	hash := args.Data
+// 	signature, err := w.privateKey.Sign(hash)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &wallet.CreateSignatureResult{
+// 		Signature: *signature,
+// 	}, nil
+// }
 
-func (w *TestWallet) VerifySignature(args *wallet.VerifySignatureArgs) (*wallet.VerifySignatureResult, error) {
-	// For tests, always return valid=true
-	return &wallet.VerifySignatureResult{
-		Valid: true,
-	}, nil
-}
+// func (w *TestWallet) VerifySignature(args *wallet.VerifySignatureArgs) (*wallet.VerifySignatureResult, error) {
+// 	// For tests, always return valid=true
+// 	return &wallet.VerifySignatureResult{
+// 		Valid: true,
+// 	}, nil
+// }
 
-func (w *TestWallet) Encrypt(args *wallet.EncryptArgs) (*wallet.EncryptResult, error) {
-	return &wallet.EncryptResult{}, nil
-}
+// func (w *TestWallet) Encrypt(args *wallet.EncryptArgs) (*wallet.EncryptResult, error) {
+// 	return &wallet.EncryptResult{}, nil
+// }
 
-func (w *TestWallet) Decrypt(args *wallet.DecryptArgs) (*wallet.DecryptResult, error) {
-	return &wallet.DecryptResult{}, nil
-}
+// func (w *TestWallet) Decrypt(args *wallet.DecryptArgs) (*wallet.DecryptResult, error) {
+// 	return &wallet.DecryptResult{}, nil
+// }
 
-func (w *TestWallet) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
-	walletCerts := make([]wallet.Certificate, len(w.mockCertificates))
-	for i := range w.mockCertificates {
-		// Empty conversion as we're just trying to appease the type system
-		walletCerts[i] = wallet.Certificate{}
-	}
+// func (w *TestWallet) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
+// 	walletCerts := make([]wallet.CertificateResult, len(w.mockCertificates))
+// 	for i := range w.mockCertificates {
+// 		// Empty conversion as we're just trying to appease the type system
+// 		walletCerts[i] = wallet.CertificateResult{}
+// 	}
 
-	return &wallet.ListCertificatesResult{
-		Certificates: walletCerts,
-	}, nil
-}
+// 	return &wallet.ListCertificatesResult{
+// 		TotalCertificates: uint32(len(walletCerts)),
+// 		Certificates:      walletCerts,
+// 	}, nil
+// }
 
-func (w *TestWallet) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
-	return &wallet.ProveCertificateResult{}, nil
-}
+// func (w *TestWallet) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
+// 	return &wallet.ProveCertificateResult{}, nil
+// }
 
-func (w *TestWallet) SetMockCertificates(certs []*certificates.VerifiableCertificate) {
-	w.mockCertificates = certs
-}
+// func (w *TestWallet) SetMockCertificates(certs []*certificates.VerifiableCertificate) {
+// 	w.mockCertificates = certs
+// }
 
 // MockSessionManager for tests
 type MockSessionManager struct {
@@ -182,10 +182,15 @@ func NewMockSessionManager() *MockSessionManager {
 }
 
 // CreatePeerPair sets up two connected peers with their own wallets and transports
-func CreatePeerPair(t *testing.T) (*Peer, *Peer, *TestWallet, *TestWallet) {
+func CreatePeerPair(t *testing.T) (*Peer, *Peer, *utils.CompletedProtoWallet, *utils.CompletedProtoWallet) {
 	// Create wallets and transports
-	aliceWallet := NewTestWallet(t)
-	bobWallet := NewTestWallet(t)
+	alicePk, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	aliceWallet, err := utils.NewCompletedProtoWallet(alicePk)
+	require.NoError(t, err)
+	bobPk, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	bobWallet, err := utils.NewCompletedProtoWallet(bobPk)
 
 	aliceTransport := NewMockTransport()
 	bobTransport := NewMockTransport()
@@ -209,7 +214,10 @@ func CreatePeerPair(t *testing.T) (*Peer, *Peer, *TestWallet, *TestWallet) {
 
 // TestPeerInitialization tests that a peer initializes correctly
 func TestPeerInitialization(t *testing.T) {
-	wallet := NewTestWallet(t)
+	pk, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	wallet, err := utils.NewCompletedProtoWallet(pk)
+	require.NoError(t, err)
 	transport := NewMockTransport()
 
 	// Test default initialization
@@ -241,18 +249,20 @@ func TestPeerInitialization(t *testing.T) {
 
 // TestPeerMessageExchange tests basic message exchange between peers
 func TestPeerMessageExchange(t *testing.T) {
-	alice, bob, _, _ := CreatePeerPair(t)
+	alice, bob, _, bobWallet := CreatePeerPair(t)
 
 	// Set up message reception for Bob
 	messageReceived := make(chan []byte, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
+	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- payload
 		return nil
 	})
 
 	// Alice sends a message to Bob
 	testMessage := []byte("Hello Bob!")
-	err := alice.ToPeer(testMessage, "", 5000)
+	bobPubKey, err := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	require.NoError(t, err)
+	err = alice.ToPeer(testMessage, bobPubKey.PublicKey, 5000)
 	require.NoError(t, err, "Alice should send message successfully")
 
 	// Wait for Bob to receive the message
@@ -269,8 +279,8 @@ func TestPeerCallbacks(t *testing.T) {
 	alice, _, _, _ := CreatePeerPair(t)
 
 	// Test general message callbacks
-	cb1 := func(senderPubKey string, payload []byte) error { return nil }
-	cb2 := func(senderPubKey string, payload []byte) error { return nil }
+	cb1 := func(senderPubKey *ec.PublicKey, payload []byte) error { return nil }
+	cb2 := func(senderPubKey *ec.PublicKey, payload []byte) error { return nil }
 
 	id1 := alice.ListenForGeneralMessages(cb1)
 	id2 := alice.ListenForGeneralMessages(cb2)
@@ -284,7 +294,7 @@ func TestPeerCallbacks(t *testing.T) {
 	assert.Len(t, alice.onGeneralMessageReceivedCallbacks, 0, "Should have no callbacks after removal")
 
 	// Test certificate callbacks
-	certCb1 := func(senderPubKey string, certs []*certificates.VerifiableCertificate) error { return nil }
+	certCb1 := func(senderPubKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error { return nil }
 	certId1 := alice.ListenForCertificatesReceived(certCb1)
 
 	assert.Len(t, alice.onCertificateReceivedCallbacks, 1, "Should have one cert callback registered")
@@ -293,7 +303,7 @@ func TestPeerCallbacks(t *testing.T) {
 	assert.Len(t, alice.onCertificateReceivedCallbacks, 0, "Should have no cert callbacks after removal")
 
 	// Test certificate request callbacks
-	reqCb1 := func(senderPubKey string, req utils.RequestedCertificateSet) error { return nil }
+	reqCb1 := func(senderPubKey *ec.PublicKey, req utils.RequestedCertificateSet) error { return nil }
 	reqId1 := alice.ListenForCertificatesRequested(reqCb1)
 
 	assert.Len(t, alice.onCertificateRequestReceivedCallbacks, 1, "Should have one cert request callback registered")
@@ -314,19 +324,19 @@ func TestPeerAuthentication(t *testing.T) {
 	bobAuthenticated := make(chan bool, 1)
 
 	// Track when authentication completes
-	alice.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
+	alice.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
 		aliceAuthenticated <- true
 		return nil
 	})
 
-	bob.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
+	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
 		bobAuthenticated <- true
 		return nil
 	})
 
 	// Alice sends message to Bob, which should trigger authentication
 	go func() {
-		err := alice.ToPeer([]byte("Hello Bob!"), "", 5000)
+		err := alice.ToPeer([]byte("Hello Bob!"), nil, 5000)
 		require.NoError(t, err)
 	}()
 
@@ -341,10 +351,9 @@ func TestPeerAuthentication(t *testing.T) {
 	// Bob replies to Alice
 	go func() {
 		// Get Alice's identity key
-		alicePubKeyResult, _ := aliceWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
-		alicePubKeyStr := alicePubKeyResult.PublicKey.ToDERHex()
+		alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
-		err := bob.ToPeer([]byte("Hello Alice!"), alicePubKeyStr, 5000)
+		err := bob.ToPeer([]byte("Hello Alice!"), alicePubKeyResult.PublicKey, 5000)
 		require.NoError(t, err)
 	}()
 
@@ -357,8 +366,8 @@ func TestPeerAuthentication(t *testing.T) {
 	}
 
 	// Verify that sessions were created
-	alicePubKeyResult, _ := aliceWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
-	bobPubKeyResult, _ := bobWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	bobPubKeyResult, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
 	alicePubKeyStr := alicePubKeyResult.PublicKey.ToDERHex()
 	bobPubKeyStr := bobPubKeyResult.PublicKey.ToDERHex()
@@ -376,7 +385,7 @@ func TestPeerAuthentication(t *testing.T) {
 	assert.True(t, aliceSession.IsAuthenticated)
 
 	// Test session reuse for another message
-	err = alice.ToPeer([]byte("Another message"), bobPubKeyStr, 5000)
+	err = alice.ToPeer([]byte("Another message"), bobPubKeyResult.PublicKey, 5000)
 	assert.NoError(t, err, "Should reuse existing session")
 }
 
@@ -391,12 +400,12 @@ func TestPeerCertificateExchange(t *testing.T) {
 	aliceCertReceived := make(chan bool, 1)
 	bobCertReceived := make(chan bool, 1)
 
-	alice.ListenForCertificatesReceived(func(senderPublicKey string, certs []*certificates.VerifiableCertificate) error {
+	alice.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		aliceCertReceived <- true
 		return nil
 	})
 
-	bob.ListenForCertificatesReceived(func(senderPublicKey string, certs []*certificates.VerifiableCertificate) error {
+	bob.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		bobCertReceived <- true
 		return nil
 	})
@@ -452,7 +461,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	// Alice and Bob exchange messages to trigger authentication and certificate exchange
 	go func() {
-		err := alice.ToPeer([]byte("Hello Bob!"), "", 5000)
+		err := alice.ToPeer([]byte("Hello Bob!"), nil, 5000)
 		require.NoError(t, err)
 	}()
 
@@ -478,11 +487,10 @@ func TestPeerCertificateExchange(t *testing.T) {
 	}
 
 	// Verify manual certificate request
-	alicePubKeyResult, _ := aliceWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
-	bobPubKeyResult, _ := bobWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	// bobPubKeyResult, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
-	alicePubKeyStr := alicePubKeyResult.PublicKey.ToDERHex()
-	_ = bobPubKeyResult.PublicKey.ToDERHex()
+	// _ = bobPubKeyResult.PublicKey.ToDERHex()
 
 	// Bob makes a specific certificate request to Alice
 	customCertReqs := utils.RequestedCertificateSet{
@@ -492,7 +500,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 		},
 	}
 
-	err := bob.RequestCertificates(alicePubKeyStr, customCertReqs, 1000)
+	err := bob.RequestCertificates(alicePubKeyResult.PublicKey, customCertReqs, 1000)
 	assert.NoError(t, err, "Should request certificates successfully")
 }
 
@@ -504,8 +512,8 @@ func TestPeerSessionManagement(t *testing.T) {
 	require.NotNil(t, bob, "Bob peer should be created")
 
 	// Verify we can create a session manually
-	alicePubKeyResult, _ := aliceWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
-	bobPubKeyResult, _ := bobWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	bobPubKeyResult, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
 	alicePubKeyStr := alicePubKeyResult.PublicKey.ToDERHex()
 	bobPubKeyStr := bobPubKeyResult.PublicKey.ToDERHex()
@@ -516,7 +524,7 @@ func TestPeerSessionManagement(t *testing.T) {
 
 	// Create a session with a short timeout
 	go func() {
-		err := alice.ToPeer([]byte("Hello Bob!"), bobPubKeyStr, 100)
+		err := alice.ToPeer([]byte("Hello Bob!"), bobPubKeyResult.PublicKey, 100)
 		require.NoError(t, err)
 	}()
 
@@ -530,9 +538,9 @@ func TestPeerSessionManagement(t *testing.T) {
 	assert.True(t, session.IsAuthenticated)
 
 	// Test automatic use of the last interacted peer
-	err = alice.ToPeer([]byte("Using last peer"), "", 100)
+	err = alice.ToPeer([]byte("Using last peer"), nil, 100)
 	assert.NoError(t, err)
-	assert.Equal(t, bobPubKeyStr, alice.lastInteractedWithPeer, "Should track last interacted peer")
+	assert.Equal(t, bobPubKeyStr, alice.lastInteractedWithPeer.ToDERHex(), "Should track last interacted peer")
 }
 
 // TestPeerErrorHandling tests error handling in various scenarios
@@ -547,13 +555,6 @@ func TestPeerErrorHandling(t *testing.T) {
 	require.NotNil(t, bobWallet, "Bob wallet should be created")
 	require.NotNil(t, alice, "Alice peer should be created")
 
-	// Create an intentionally invalid session to test error handling
-	invalidPubKey := "not-a-valid-hex-key"
-
-	// This should fail because the public key is invalid
-	err := alice.ToPeer([]byte("Test with invalid identity"), invalidPubKey, 100)
-	assert.Error(t, err, "Should error with invalid identity key")
-
 	// Test timeout - use a very short timeout
 	// Create a new transport that is not paired with anything
 	unpairedTransport := NewMockTransport()
@@ -565,13 +566,16 @@ func TestPeerErrorHandling(t *testing.T) {
 	})
 
 	// This should time out because no one will respond
-	err = timeoutPeer.ToPeer([]byte("Test timeout"), "", 1) // 1ms timeout
+	err := timeoutPeer.ToPeer([]byte("Test timeout"), nil, 1) // 1ms timeout
 	assert.Error(t, err, "Should timeout during authentication")
 }
 
 // TestPeerBasics tests the very basic peer functionality that should always work
 func TestPeerBasics(t *testing.T) {
-	wallet := NewTestWallet(t)
+	pk, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	wallet, err := utils.NewCompletedProtoWallet(pk)
+	require.NoError(t, err)
 	transport := NewMockTransport()
 
 	// Test creating a peer
@@ -588,7 +592,7 @@ func TestPeerBasics(t *testing.T) {
 	assert.True(t, peer.autoPersistLastSession, "Peer should default to auto-persist last session")
 
 	// Test callback registration and removal
-	cb := func(senderPublicKey string, payload []byte) error { return nil }
+	cb := func(senderPublicKey *ec.PublicKey, payload []byte) error { return nil }
 	id := peer.ListenForGeneralMessages(cb)
 	assert.Len(t, peer.onGeneralMessageReceivedCallbacks, 1, "Should have one callback registered")
 

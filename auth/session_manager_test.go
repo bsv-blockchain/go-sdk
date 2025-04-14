@@ -3,6 +3,9 @@ package auth
 import (
 	"testing"
 	"time"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewSessionManager(t *testing.T) {
@@ -23,23 +26,25 @@ func TestNewSessionManager(t *testing.T) {
 func TestSessionManager(t *testing.T) {
 	manager := NewSessionManager()
 
+	pk, err := ec.NewPrivateKey()
+	require.NoError(t, err)
 	// Create a session
 	session := &PeerSession{
 		IsAuthenticated: true,
 		SessionNonce:    "test-nonce",
 		PeerNonce:       "peer-nonce",
-		PeerIdentityKey: "test-key",
+		PeerIdentityKey: pk.PubKey(),
 		LastUpdate:      time.Now().UnixNano() / int64(time.Millisecond),
 	}
 
 	// Add session
-	err := manager.AddSession(session)
+	err = manager.AddSession(session)
 	if err != nil {
 		t.Errorf("Failed to add session: %v", err)
 	}
 
 	// Get session by identity key
-	retrievedSession, err := manager.GetSession("test-key")
+	retrievedSession, err := manager.GetSession("test-nonce")
 	if err != nil {
 		t.Errorf("Failed to retrieve session by identity key: %v", err)
 	}
@@ -54,12 +59,12 @@ func TestSessionManager(t *testing.T) {
 		t.Errorf("Failed to retrieve session by nonce: %v", err)
 	}
 
-	if retrievedSession.PeerIdentityKey != "test-key" {
-		t.Errorf("Expected peer identity key 'test-key', got '%s'", retrievedSession.PeerIdentityKey)
+	if retrievedSession.PeerIdentityKey != pk.PubKey() {
+		t.Errorf("Expected peer identity key '%s', got '%s'", pk.PubKey(), retrievedSession.PeerIdentityKey)
 	}
 
 	// Test HasSession
-	if !manager.HasSession("test-key") {
+	if !manager.HasSession("test-nonce") {
 		t.Error("Expected HasSession to return true for identity key")
 	}
 
@@ -72,7 +77,7 @@ func TestSessionManager(t *testing.T) {
 	manager.UpdateSession(retrievedSession)
 
 	// Verify update
-	retrievedSession, err = manager.GetSession("test-key")
+	retrievedSession, err = manager.GetSession("test-nonce")
 	if err != nil {
 		t.Errorf("Failed to retrieve updated session: %v", err)
 	}
@@ -93,7 +98,7 @@ func TestSessionManager(t *testing.T) {
 	// Test adding session with missing nonce
 	invalidSession := &PeerSession{
 		IsAuthenticated: true,
-		PeerIdentityKey: "test-key-2",
+		PeerIdentityKey: pk.PubKey(),
 		LastUpdate:      time.Now().UnixNano() / int64(time.Millisecond),
 	}
 

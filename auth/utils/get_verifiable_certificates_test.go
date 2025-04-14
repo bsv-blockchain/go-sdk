@@ -3,8 +3,10 @@ package utils
 import (
 	"testing"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestRequestedCertificateTypeIDAndFieldList local structure for testing
@@ -94,10 +96,13 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// not the actual wallet integration, we'll simplify the tests
 	t.Run("Empty certificates handling", func(t *testing.T) {
 		// Create a mock wallet
-		testWallet := &TestWallet{}
+		pk, err := ec.NewPrivateKey()
+		require.NoError(t, err)
+		testWallet, err := NewCompletedProtoWallet(pk)
+		require.NoError(t, err)
 
 		// Test with nil requested certificates
-		verifiableCerts, err := GetVerifiableCertificates(testWallet, nil, "verifier_public_key")
+		verifiableCerts, err := GetVerifiableCertificates(testWallet, nil, nil)
 		assert.NoError(t, err, "Should not error with nil requested certificates")
 		assert.Empty(t, verifiableCerts, "Should return empty array with nil requested certificates")
 
@@ -106,7 +111,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 			Certifiers:       []string{},
 			CertificateTypes: make(TestRequestedCertificateTypeIDAndFieldList),
 		}
-		verifiableCerts, err = GetVerifiableCertificates(testWallet, empty, "verifier_public_key")
+		verifiableCerts, err = GetVerifiableCertificates(testWallet, empty, nil)
 		assert.NoError(t, err, "Should not error with empty requested certificates")
 		assert.Empty(t, verifiableCerts, "Should return empty array with empty requested certificates")
 	})

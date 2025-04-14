@@ -34,7 +34,7 @@ func CreateNonce(w wallet.Interface, counterparty wallet.CounterpartyType) (stri
 	}
 
 	// Create an HMAC for the random data using the wallet's key
-	hmac, err := w.CreateHmac(args)
+	hmac, err := w.CreateHmac(args, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to create HMAC: %w", err)
 	}

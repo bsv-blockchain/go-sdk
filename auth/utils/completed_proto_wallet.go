@@ -1,8 +1,7 @@
-package certificates
+package utils
 
 import (
-	"errors"
-
+	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -12,6 +11,10 @@ import (
 type CompletedProtoWallet struct {
 	*wallet.ProtoWallet // Embed ProtoWallet (like extends in TypeScript)
 	keyDeriver          *wallet.KeyDeriver
+	privateKey          *ec.PrivateKey
+	publicKey           *ec.PublicKey
+	identityKey         string
+	mockCertificates    []*certificates.VerifiableCertificate
 }
 
 // NewCompletedProtoWallet creates a new CompletedProtoWallet from a private key
@@ -30,7 +33,7 @@ func NewCompletedProtoWallet(privateKey *ec.PrivateKey) (*CompletedProtoWallet, 
 
 // CreateAction creates a new transaction (not needed for certificates)
 func (c *CompletedProtoWallet) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-	return nil, errors.New("CreateAction not implemented in CompletedProtoWallet")
+	return &wallet.CreateActionResult{}, nil
 }
 
 func (c *CompletedProtoWallet) AbortAction(args wallet.AbortActionArgs, originator string) (*wallet.AbortActionResult, error) {
@@ -39,12 +42,25 @@ func (c *CompletedProtoWallet) AbortAction(args wallet.AbortActionArgs, originat
 
 // ListCertificates lists certificates (not needed for our tests)
 func (c *CompletedProtoWallet) ListCertificates(args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
-	return nil, errors.New("ListCertificates not implemented in CompletedProtoWallet")
+	walletCerts := make([]wallet.CertificateResult, len(c.mockCertificates))
+	for i := range c.mockCertificates {
+		// Empty conversion as we're just trying to appease the type system
+		walletCerts[i] = wallet.CertificateResult{}
+	}
+
+	return &wallet.ListCertificatesResult{
+		TotalCertificates: uint32(len(walletCerts)),
+		Certificates:      walletCerts,
+	}, nil
 }
 
 // ProveCertificate creates verifiable certificates (not needed for our tests)
 func (c *CompletedProtoWallet) ProveCertificate(args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
-	return nil, errors.New("ProveCertificate not implemented in CompletedProtoWallet")
+	return &wallet.ProveCertificateResult{}, nil
+}
+
+func (c *CompletedProtoWallet) SetMockCertificates(certs []*certificates.VerifiableCertificate) {
+	c.mockCertificates = certs
 }
 
 func (c *CompletedProtoWallet) AcquireCertificate(args wallet.AcquireCertificateArgs, originator string) (*wallet.Certificate, error) {
@@ -53,22 +69,30 @@ func (c *CompletedProtoWallet) AcquireCertificate(args wallet.AcquireCertificate
 
 // IsAuthenticated checks if the wallet is authenticated
 func (c *CompletedProtoWallet) IsAuthenticated(args any, originator string) (*wallet.AuthenticatedResult, error) {
-	return nil, nil // Always authenticated for testing
+	return &wallet.AuthenticatedResult{
+		Authenticated: true, // Always return true for testing
+	}, nil // Always authenticated for testing
 }
 
 // GetHeight gets the current block height
 func (c *CompletedProtoWallet) GetHeight(args any, originator string) (*wallet.GetHeightResult, error) {
-	return nil, nil // Return 0 height for testing
+	return &wallet.GetHeightResult{
+		Height: 0, // Always return 0 for testing
+	}, nil
 }
 
 // GetNetwork gets the current network
 func (c *CompletedProtoWallet) GetNetwork(args any, originator string) (*wallet.GetNetworkResult, error) {
-	return nil, nil // Always test network for testing
+	return &wallet.GetNetworkResult{
+		Network: "test", // Always return mainnet for testing
+	}, nil
 }
 
 // GetVersion gets the wallet version
 func (c *CompletedProtoWallet) GetVersion(args any, originator string) (*wallet.GetVersionResult, error) {
-	return nil, nil // Always test version for testing
+	return &wallet.GetVersionResult{
+		Version: "1.0.0", // Always return version 1.0.0 for testing
+	}, nil // Always test version for testing
 }
 
 func (c *CompletedProtoWallet) SignAction(args wallet.SignActionArgs, originator string) (*wallet.SignActionResult, error) {

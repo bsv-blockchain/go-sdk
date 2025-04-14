@@ -32,8 +32,8 @@ func TestMasterCertificate(t *testing.T) {
 	certifierWallet, _ := certificates.NewCompletedProtoWallet(certifierPrivateKey)
 
 	// Get identity keys with the originator parameter
-	subjectIdentityKey, _ := subjectWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
-	certifierIdentityKey, _ := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
+	subjectIdentityKey, _ := subjectWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
+	certifierIdentityKey, _ := certifierWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
 
 	subjectCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: subjectIdentityKey.PublicKey}
 	certifierCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: certifierIdentityKey.PublicKey}
@@ -250,7 +250,7 @@ func TestMasterCertificate(t *testing.T) {
 		verifierPrivateKey, _ := ec.NewPrivateKey()
 		// Use a standard ProtoWallet for the verifier
 		verifierWallet, _ := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypePrivateKey, PrivateKey: verifierPrivateKey})
-		verifierIdentityKey, _ := verifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+		verifierIdentityKey, _ := verifierWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 		verifierCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: verifierIdentityKey.PublicKey}
 
 		t.Run("should create a verifier keyring for specified fields", func(t *testing.T) {

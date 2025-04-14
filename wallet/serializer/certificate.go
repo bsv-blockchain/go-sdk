@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -29,15 +31,7 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	}
 	w.writeBytes(typeBytes)
 
-	// Subject (hex)
-	subjectBytes, err := hex.DecodeString(cert.Subject)
-	if err != nil {
-		return nil, fmt.Errorf("invalid subject hex: %w", err)
-	}
-	if len(subjectBytes) != SizeSubject {
-		return nil, fmt.Errorf("subject must be %d bytes long", SizeSubject)
-	}
-	w.writeBytes(subjectBytes)
+	w.writeBytes(cert.Subject.Compressed())
 
 	// Serial number (base64)
 	serialBytes, err := base64.StdEncoding.DecodeString(cert.SerialNumber)
@@ -49,15 +43,7 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	}
 	w.writeBytes(serialBytes)
 
-	// Certifier (hex)
-	certifierBytes, err := hex.DecodeString(cert.Certifier)
-	if err != nil {
-		return nil, fmt.Errorf("invalid certifier hex: %w", err)
-	}
-	if len(certifierBytes) != SizeCertifier {
-		return nil, fmt.Errorf("certifier must be %d bytes long", SizeCertifier)
-	}
-	w.writeBytes(certifierBytes)
+	w.writeBytes(cert.Certifier.Compressed())
 
 	// Revocation outpoint
 	outpointBytes, err := encodeOutpoint(cert.RevocationOutpoint)
@@ -90,9 +76,9 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	return w.buf, nil
 }
 
-func DeserializeCertificate(data []byte) (*wallet.Certificate, error) {
+func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	r := newReaderHoldError(data)
-	cert := &wallet.Certificate{}
+	cert = &wallet.Certificate{}
 
 	// Read error byte (0 = success)
 	errorByte := r.readByte()
@@ -110,8 +96,7 @@ func DeserializeCertificate(data []byte) (*wallet.Certificate, error) {
 
 	// Read subject (hex)
 	subjectBytes := r.readBytes(SizeSubject)
-	cert.Subject = hex.EncodeToString(subjectBytes)
-
+	cert.Subject, err = ec.PublicKeyFromBytes(subjectBytes)
 	if r.err != nil {
 		return nil, fmt.Errorf("error 2: %w", r.err)
 	}
@@ -120,8 +105,7 @@ func DeserializeCertificate(data []byte) (*wallet.Certificate, error) {
 	cert.SerialNumber = base64.StdEncoding.EncodeToString(r.readBytes(SizeSerial))
 
 	// Read certifier (hex)
-	cert.Certifier = hex.EncodeToString(r.readBytes(SizeCertifier))
-
+	cert.Certifier, err = ec.PublicKeyFromBytes(r.readBytes(SizeCertifier))
 	if r.err != nil {
 		return nil, fmt.Errorf("error 3: %w", r.err)
 	}

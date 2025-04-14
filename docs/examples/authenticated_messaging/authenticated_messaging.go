@@ -70,7 +70,7 @@ func (w *MinimalWalletImpl) CreateAction(args wallet.CreateActionArgs, context s
 }
 
 func (w *MinimalWalletImpl) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
-	return &wallet.ListCertificatesResult{Certificates: []wallet.Certificate{}}, nil
+	return &wallet.ListCertificatesResult{Certificates: []wallet.CertificateResult{}}, nil
 }
 
 func (w *MinimalWalletImpl) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {

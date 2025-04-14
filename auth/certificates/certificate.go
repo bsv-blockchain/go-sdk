@@ -270,7 +270,7 @@ func (c *Certificate) Verify() error {
 	}
 
 	// Verify the signature using the certifier's public key
-	verifyArgs := &wallet.VerifySignatureArgs{
+	verifyArgs := wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -286,7 +286,7 @@ func (c *Certificate) Verify() error {
 		Signature: *sig,
 	}
 
-	verifyResult, err := verifier.VerifySignature(verifyArgs)
+	verifyResult, err := verifier.VerifySignature(verifyArgs, "")
 	if err != nil {
 		return fmt.Errorf("signature verification failed: %w", err)
 	}
@@ -306,7 +306,7 @@ func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
 	}
 
 	// Get the wallet's identity public key and update the certificate's certifier field
-	pubKeyResult, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	pubKeyResult, err := certifierWallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -321,7 +321,7 @@ func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
 	}
 
 	// Create signature with the certifier's wallet
-	signArgs := &wallet.CreateSignatureArgs{
+	signArgs := wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,

@@ -91,7 +91,7 @@ func CreateCertificateFields(
 
 		// 3. Encrypt the symmetric key for the certifier/subject
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number for master keyring creation
-		encryptedKey, err := creatorWallet.Encrypt(&wallet.EncryptArgs{
+		encryptedKey, err := creatorWallet.Encrypt(wallet.EncryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,
@@ -100,7 +100,7 @@ func CreateCertificateFields(
 				PrivilegedReason: privilegedReason,
 			},
 			Plaintext: fieldSymmetricKeyBytes,
-		})
+		}, "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to encrypt field revelation key for %s: %w", fieldName, err)
 		}
@@ -154,7 +154,7 @@ func IssueCertificateForSubject(
 	}
 
 	// 3. Get the identity public key of the certifier
-	certifierPubKey, err := certifierWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	certifierPubKey, err := certifierWallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -252,7 +252,7 @@ func DecryptField(
 
 	// 2. Decrypt the field revelation key
 	protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number
-	decryptedBytes, err := subjectOrCertifierWallet.Decrypt(&wallet.DecryptArgs{
+	decryptedBytes, err := subjectOrCertifierWallet.Decrypt(wallet.DecryptArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID:       protocolID,
 			KeyID:            keyID,
@@ -261,7 +261,7 @@ func DecryptField(
 			PrivilegedReason: privilegedReason,
 		},
 		Ciphertext: encryptedKeyBytes,
-	})
+	}, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt field revelation key for %s: %w", fieldName, err)
 	}
@@ -373,7 +373,7 @@ func CreateKeyringForVerifier(
 
 		// 2. Re-encrypt the field revelation key for the verifier
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(serialNumber))
-		encryptedKeyForVerifier, err := subjectWallet.Encrypt(&wallet.EncryptArgs{
+		encryptedKeyForVerifier, err := subjectWallet.Encrypt(wallet.EncryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,
@@ -382,7 +382,7 @@ func CreateKeyringForVerifier(
 				PrivilegedReason: privilegedReason,
 			},
 			Plaintext: fieldRevelationKey,
-		})
+		}, "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to encrypt field key for verifier: %w", err)
 		}

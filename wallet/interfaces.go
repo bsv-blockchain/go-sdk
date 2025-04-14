@@ -391,18 +391,10 @@ type CertificateResult struct {
 	Verifier string
 }
 
-// type ListCertificatesResult struct {
-// 	TotalCertificates uint32
-// 	Certificates      []CertificateResult
-// }
-
-// type ProveCertificateArgs struct {
-// 	Certificate      Certificate
-// 	FieldsToReveal   []string
-// 	Verifier         string
-// 	Privileged       *bool
-// 	PrivilegedReason string
-// }
+type ListCertificatesResult struct {
+	TotalCertificates uint32
+	Certificates      []CertificateResult
+}
 
 // type ProveCertificateResult struct {
 // 	KeyringForVerifier map[string]string
@@ -473,10 +465,10 @@ type GetVersionResult struct {
 }
 
 // ListCertificatesResult contains the results of listing certificates
-type ListCertificatesResult struct {
-	// The matching certificates
-	Certificates []Certificate
-}
+// type ListCertificatesResult struct {
+// 	// The matching certificates
+// 	Certificates []Certificate
+// }
 
 // ProveCertificateArgs contains parameters for creating verifiable certificates
 type ProveCertificateArgs struct {
@@ -487,7 +479,9 @@ type ProveCertificateArgs struct {
 	FieldsToReveal []string
 
 	// The verifier's identity key
-	Verifier string
+	Verifier         string
+	Privileged       *bool
+	PrivilegedReason string
 }
 
 // ProveCertificateResult contains the result of creating a verifiable certificate

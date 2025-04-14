@@ -17,9 +17,9 @@ import (
 // AUTH_VERSION is the version of the auth protocol
 const AUTH_VERSION = "0.1"
 
-type OnGeneralMessageReceivedCallback func(senderPublicKey string, payload []byte) error
-type OnCertificateReceivedCallback func(senderPublicKey string, certs []*certificates.VerifiableCertificate) error
-type OnCertificateRequestReceivedCallback func(senderPublicKey string, requestedCertificates utils.RequestedCertificateSet) error
+type OnGeneralMessageReceivedCallback func(senderPublicKey *ec.PublicKey, payload []byte) error
+type OnCertificateReceivedCallback func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error
+type OnCertificateRequestReceivedCallback func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error
 
 type Peer struct {
 	sessionManager                        *SessionManager
@@ -35,7 +35,7 @@ type Peer struct {
 	}
 	callbackIdCounter      int
 	autoPersistLastSession bool
-	lastInteractedWithPeer string
+	lastInteractedWithPeer *ec.PublicKey
 }
 
 type PeerOptions struct {
@@ -152,8 +152,8 @@ func (p *Peer) StopListeningForCertificatesRequested(callbackID int) {
 }
 
 // ToPeer sends a message to a peer, initiating authentication if needed
-func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error {
-	if p.autoPersistLastSession && p.lastInteractedWithPeer != "" && identityKey == "" {
+func (p *Peer) ToPeer(message []byte, identityKey *ec.PublicKey, maxWaitTime int) error {
+	if p.autoPersistLastSession && p.lastInteractedWithPeer != nil && identityKey == nil {
 		identityKey = p.lastInteractedWithPeer
 	}
 
@@ -166,7 +166,7 @@ func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error
 	requestNonce := utils.RandomBase64(32)
 
 	// Get identity key
-	identityKeyResult, err := p.wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey:    true,
 		EncryptionArgs: wallet.EncryptionArgs{},
 	}, "auth-peer")
@@ -185,7 +185,7 @@ func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error
 	}
 
 	// Sign the message
-	sigResult, err := p.wallet.CreateSignature(&wallet.CreateSignatureArgs{
+	sigResult, err := p.wallet.CreateSignature(wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -194,7 +194,7 @@ func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error
 			KeyID: fmt.Sprintf("%s %s", requestNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
-				Counterparty: nil,
+				Counterparty: peerSession.PeerIdentityKey,
 			},
 		},
 		Data: message,
@@ -226,10 +226,10 @@ func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error
 }
 
 // GetAuthenticatedSession retrieves or creates an authenticated session with a peer
-func (p *Peer) GetAuthenticatedSession(identityKey string, maxWaitTimeMs int) (*PeerSession, error) {
+func (p *Peer) GetAuthenticatedSession(identityKey *ec.PublicKey, maxWaitTimeMs int) (*PeerSession, error) {
 	// If we have an existing authenticated session, return it
-	if identityKey != "" {
-		session, _ := p.sessionManager.GetSession(identityKey)
+	if identityKey != nil {
+		session, _ := p.sessionManager.GetSession(identityKey.ToDERHex())
 		if session != nil && session.IsAuthenticated {
 			if p.autoPersistLastSession {
 				p.lastInteractedWithPeer = identityKey
@@ -252,7 +252,7 @@ func (p *Peer) GetAuthenticatedSession(identityKey string, maxWaitTimeMs int) (*
 }
 
 // initiateHandshake starts the mutual authentication handshake with a peer
-func (p *Peer) initiateHandshake(peerIdentityKey string, maxWaitTimeMs int) (*PeerSession, error) {
+func (p *Peer) initiateHandshake(peerIdentityKey *ec.PublicKey, maxWaitTimeMs int) (*PeerSession, error) {
 	// Create a session nonce
 	nonceBytes := make([]byte, 32)
 	_, err := rand.Read(nonceBytes)
@@ -276,7 +276,7 @@ func (p *Peer) initiateHandshake(peerIdentityKey string, maxWaitTimeMs int) (*Pe
 	}
 
 	// Get our identity key to include in the initial request
-	pubKey, err := p.wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	pubKey, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey:    true,
 		EncryptionArgs: wallet.EncryptionArgs{
 			// No specific protocol or key ID needed for identity key
@@ -369,36 +369,35 @@ func (p *Peer) handleIncomingMessage(message *AuthMessage) error {
 	}
 
 	// Extract the sender's identity key
-	senderPublicKey := message.IdentityKey.ToDERHex()
 
 	// Handle different message types
 	switch message.MessageType {
 	case MessageTypeInitialRequest:
-		if err := p.handleInitialRequest(message, senderPublicKey); err != nil {
+		if err := p.handleInitialRequest(message, &message.IdentityKey); err != nil {
 			fmt.Printf("Error handling initial request: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeInitialResponse:
-		if err := p.handleInitialResponse(message, senderPublicKey); err != nil {
+		if err := p.handleInitialResponse(message, &message.IdentityKey); err != nil {
 			fmt.Printf("Error handling initial response: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateRequest:
-		if err := p.handleCertificateRequest(message, senderPublicKey); err != nil {
+		if err := p.handleCertificateRequest(message, &message.IdentityKey); err != nil {
 			fmt.Printf("Error handling certificate request: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateResponse:
-		if err := p.handleCertificateResponse(message, senderPublicKey); err != nil {
+		if err := p.handleCertificateResponse(message, &message.IdentityKey); err != nil {
 			fmt.Printf("Error handling certificate response: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeGeneral:
-		if err := p.handleGeneralMessage(message, senderPublicKey); err != nil {
+		if err := p.handleGeneralMessage(message, &message.IdentityKey); err != nil {
 			fmt.Printf("Error handling general message: %v\n", err)
 			return err
 		}
@@ -411,7 +410,7 @@ func (p *Peer) handleIncomingMessage(message *AuthMessage) error {
 }
 
 // handleInitialRequest processes an initial authentication request
-func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey string) error {
+func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey *ec.PublicKey) error {
 	// Validate the request has an initial nonce
 	if message.InitialNonce == "" {
 		return ErrInvalidNonce
@@ -437,7 +436,7 @@ func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey string
 	}
 
 	// Get our identity key for the response
-	identityKeyResult, err := p.wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey:    true,
 		EncryptionArgs: wallet.EncryptionArgs{},
 	}, "auth-peer")
@@ -475,7 +474,7 @@ func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey string
 }
 
 // handleInitialResponse processes the response to our initial authentication request
-func (p *Peer) handleInitialResponse(message *AuthMessage, senderPublicKey string) error {
+func (p *Peer) handleInitialResponse(message *AuthMessage, senderPublicKey *ec.PublicKey) error {
 	// Validate the response has required nonces
 	if message.YourNonce == "" || message.InitialNonce == "" {
 		return ErrInvalidNonce
@@ -537,9 +536,9 @@ func (p *Peer) handleInitialResponse(message *AuthMessage, senderPublicKey strin
 }
 
 // handleCertificateRequest processes a certificate request message
-func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey string) error {
+func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey *ec.PublicKey) error {
 	// Validate the session exists and is authenticated
-	session, err := p.sessionManager.GetSession(senderPublicKey)
+	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
@@ -556,11 +555,11 @@ func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey st
 	session.LastUpdate = time.Now().UnixMilli()
 	p.sessionManager.UpdateSession(session)
 
-	// Verify message signature
-	senderPubKey, err := publicKeyFromString(senderPublicKey)
-	if err != nil {
-		return fmt.Errorf("failed to parse sender public key: %w", err)
-	}
+	// // Verify message signature
+	// senderPubKey, err := publicKeyFromString(senderPublicKey)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to parse sender public key: %w", err)
+	// }
 
 	// Convert json of requested certificates to bytes for verification
 	certRequestData, err := json.Marshal(message.RequestedCertificates)
@@ -569,7 +568,7 @@ func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey st
 	}
 
 	// Verify signature
-	verifyResult, err := p.wallet.VerifySignature(&wallet.VerifySignatureArgs{
+	verifyResult, err := p.wallet.VerifySignature(wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -578,12 +577,12 @@ func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey st
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
-				Counterparty: senderPubKey,
+				Counterparty: senderPublicKey,
 			},
 		},
 		Data:      certRequestData,
 		Signature: *convertBytesToSignature(message.Signature),
-	})
+	}, "")
 
 	if err != nil || !verifyResult.Valid {
 		return fmt.Errorf("invalid signature in certificate request: %w", err)
@@ -618,9 +617,9 @@ func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey st
 }
 
 // handleCertificateResponse processes a certificate response message
-func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey string) error {
+func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey *ec.PublicKey) error {
 	// Validate the session exists and is authenticated
-	session, err := p.sessionManager.GetSession(senderPublicKey)
+	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
@@ -637,12 +636,6 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey s
 	session.LastUpdate = time.Now().UnixMilli()
 	p.sessionManager.UpdateSession(session)
 
-	// Verify message signature
-	senderPubKey, err := publicKeyFromString(senderPublicKey)
-	if err != nil {
-		return fmt.Errorf("failed to parse sender public key: %w", err)
-	}
-
 	// Convert json of certificates to bytes for verification
 	certData, err := json.Marshal(message.Certificates)
 	if err != nil {
@@ -650,7 +643,7 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey s
 	}
 
 	// Verify signature
-	verifyResult, err := p.wallet.VerifySignature(&wallet.VerifySignatureArgs{
+	verifyResult, err := p.wallet.VerifySignature(wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -659,12 +652,12 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey s
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
-				Counterparty: senderPubKey,
+				Counterparty: senderPublicKey,
 			},
 		},
 		Data:      certData,
 		Signature: *convertBytesToSignature(message.Signature),
-	})
+	}, "")
 
 	if err != nil || !verifyResult.Valid {
 		return fmt.Errorf("invalid signature in certificate response: %w", err)
@@ -715,9 +708,9 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey s
 }
 
 // handleGeneralMessage processes a general message
-func (p *Peer) handleGeneralMessage(message *AuthMessage, senderPublicKey string) error {
+func (p *Peer) handleGeneralMessage(message *AuthMessage, senderPublicKey *ec.PublicKey) error {
 	// Validate the session exists and is authenticated
-	session, err := p.sessionManager.GetSession(senderPublicKey)
+	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
@@ -734,14 +727,8 @@ func (p *Peer) handleGeneralMessage(message *AuthMessage, senderPublicKey string
 	session.LastUpdate = time.Now().UnixMilli()
 	p.sessionManager.UpdateSession(session)
 
-	// Verify message signature
-	senderPubKey, err := publicKeyFromString(senderPublicKey)
-	if err != nil {
-		return fmt.Errorf("failed to parse sender public key: %w", err)
-	}
-
 	// Verify signature
-	verifyResult, err := p.wallet.VerifySignature(&wallet.VerifySignatureArgs{
+	verifyResult, err := p.wallet.VerifySignature(wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -750,12 +737,12 @@ func (p *Peer) handleGeneralMessage(message *AuthMessage, senderPublicKey string
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
-				Counterparty: senderPubKey,
+				Counterparty: senderPublicKey,
 			},
 		},
 		Data:      message.Payload,
 		Signature: *convertBytesToSignature(message.Signature),
-	})
+	}, "")
 
 	if err != nil || !verifyResult.Valid {
 		return fmt.Errorf("invalid signature in general message: %w", err)
@@ -779,7 +766,7 @@ func (p *Peer) handleGeneralMessage(message *AuthMessage, senderPublicKey string
 }
 
 // RequestCertificates sends a certificate request to a peer
-func (p *Peer) RequestCertificates(identityKey string, certificateRequirements utils.RequestedCertificateSet, maxWaitTime int) error {
+func (p *Peer) RequestCertificates(identityKey *ec.PublicKey, certificateRequirements utils.RequestedCertificateSet, maxWaitTime int) error {
 	peerSession, err := p.GetAuthenticatedSession(identityKey, maxWaitTime)
 	if err != nil {
 		return fmt.Errorf("failed to get authenticated session: %w", err)
@@ -792,7 +779,7 @@ func (p *Peer) RequestCertificates(identityKey string, certificateRequirements u
 	}
 
 	// Get identity key
-	identityKeyResult, err := p.wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -816,7 +803,7 @@ func (p *Peer) RequestCertificates(identityKey string, certificateRequirements u
 	}
 
 	// Sign the request
-	sigResult, err := p.wallet.CreateSignature(&wallet.CreateSignatureArgs{
+	sigResult, err := p.wallet.CreateSignature(wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -858,7 +845,7 @@ func (p *Peer) RequestCertificates(identityKey string, certificateRequirements u
 }
 
 // SendCertificateResponse sends certificates back to a peer in response to a request
-func (p *Peer) SendCertificateResponse(identityKey string, certificates []*certificates.VerifiableCertificate) error {
+func (p *Peer) SendCertificateResponse(identityKey *ec.PublicKey, certificates []*certificates.VerifiableCertificate) error {
 	peerSession, err := p.GetAuthenticatedSession(identityKey, 0)
 	if err != nil {
 		return fmt.Errorf("failed to get authenticated session: %w", err)
@@ -871,7 +858,7 @@ func (p *Peer) SendCertificateResponse(identityKey string, certificates []*certi
 	}
 
 	// Get identity key
-	identityKeyResult, err := p.wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -895,7 +882,7 @@ func (p *Peer) SendCertificateResponse(identityKey string, certificates []*certi
 	}
 
 	// Sign the response
-	sigResult, err := p.wallet.CreateSignature(&wallet.CreateSignatureArgs{
+	sigResult, err := p.wallet.CreateSignature(wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
