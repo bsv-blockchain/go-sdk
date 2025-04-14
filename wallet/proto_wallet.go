@@ -133,14 +133,16 @@ func (p *ProtoWallet) Decrypt(
 		return nil, errors.New("keyDeriver is undefined")
 	}
 
-	// Create protocol struct from the protocol ID array
-	protocol := args.ProtocolID
-
-	// Handle counterparty
+	// Handle uninitialized counterparty - default to self
 	counterpartyObj := args.Counterparty
+	if counterpartyObj.Type == CounterpartyUninitialized {
+		counterpartyObj = Counterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
 
 	// Derive a symmetric key for decryption
-	key, err := p.keyDeriver.DeriveSymmetricKey(protocol, args.KeyID, counterpartyObj)
+	key, err := p.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
 	}

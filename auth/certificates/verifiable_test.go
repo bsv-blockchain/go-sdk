@@ -10,6 +10,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVerifiableCertificate(t *testing.T) {
@@ -267,7 +268,7 @@ func TestVerifiableCertificate(t *testing.T) {
 					Fields:             verifiableCert.Fields,
 					Signature:          verifiableCert.Signature,
 				},
-				map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{}, // empty keyring
+				nil, // empty keyring
 			)
 
 			// Decrypt should fail due to empty keyring
@@ -279,7 +280,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			if err == nil {
 				t.Fatal("Expected DecryptFields to fail with empty keyring, but it succeeded")
 			}
-			expectedErrMsg := "A keyring is required to decrypt certificate fields for the verifier."
+			expectedErrMsg := "a keyring is required to decrypt certificate fields for the verifier"
 			if err.Error() != expectedErrMsg {
 				t.Errorf("Expected error message '%s', got: %v", expectedErrMsg, err)
 			}
@@ -314,6 +315,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			if !strings.Contains(err.Error(), "failed to decrypt selectively revealed certificate fields using keyring") {
 				t.Errorf("Expected error to contain failure message, got: %v", err)
 			}
+			require.Error(t, err)
 		})
 
 		t.Run("should be able to decrypt fields using the anyone wallet", func(t *testing.T) {

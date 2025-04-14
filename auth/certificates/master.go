@@ -340,7 +340,7 @@ func CreateKeyringForVerifier(
 	privileged bool,
 	privilegedReason string,
 ) (map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, error) { // Returns the verifier-specific keyring
-	if masterKeyring == nil || len(masterKeyring) == 0 {
+	if masterKeyring == nil {
 		return nil, ErrMissingMasterKeyring
 	}
 

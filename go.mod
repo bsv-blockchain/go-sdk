@@ -9,7 +9,7 @@ require (
 	golang.org/x/sync v0.11.0
 )
 
-require github.com/gorilla/websocket v1.5.3 // indirect
+require github.com/gorilla/websocket v1.5.3
 
 require (
 	github.com/pkg/errors v0.9.1
