@@ -1,6 +1,10 @@
 package lookup
 
-import "github.com/bsv-blockchain/go-sdk/overlay"
+import (
+	"encoding/json"
+
+	"github.com/bsv-blockchain/go-sdk/overlay"
+)
 
 type AnswerType string
 
@@ -12,12 +16,12 @@ var (
 
 type OutputListItem struct {
 	Beef        []byte `json:"beef"`
-	OutputIndex uint32 `json:"vout"`
+	OutputIndex uint32 `json:"outputIndex"`
 }
 
 type LookupQuestion struct {
-	Service string `json:"service"`
-	Query   any    `json:"query"`
+	Service string          `json:"service"`
+	Query   json.RawMessage `json:"query"`
 }
 
 type LookupFormula struct {
@@ -27,8 +31,8 @@ type LookupFormula struct {
 }
 
 type LookupAnswer struct {
-	Type     AnswerType
-	Outputs  []*OutputListItem
-	Formulas []LookupFormula
-	Result   any
+	Type     AnswerType        `json:"type"`
+	Outputs  []*OutputListItem `json:"outputs,omitempty"`
+	Formulas []LookupFormula   `json:"-"`
+	Result   any               `json:"result,omitempty"`
 }

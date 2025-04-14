@@ -88,3 +88,22 @@ func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error)
 	}
 	return headerState, nil
 }
+
+func (c *Client) GetChaintip(ctx context.Context) (*State, error) {
+	headerState := &State{}
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/chain/tip/longest", c.Url), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
+	if res, err := client.Do(req); err != nil {
+		return nil, err
+	} else {
+		defer res.Body.Close()
+		if err := json.NewDecoder(res.Body).Decode(headerState); err != nil {
+			return nil, err
+		}
+	}
+	return headerState, nil
+}

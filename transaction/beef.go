@@ -69,6 +69,7 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 				if err != nil {
 					return nil, err
 				}
+				beefTx.BumpIndex = int(bumpIndex)
 			}
 			// read the transaction data
 			_, err = beefTx.Transaction.ReadFrom(reader)
@@ -85,7 +86,7 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 				if sourceObj, ok := txs[sourceTxid]; ok {
 					input.SourceTransaction = sourceObj.Transaction
 				} else if beefTx.Transaction.MerklePath == nil && beefTx.KnownTxID == nil {
-					panic(fmt.Sprintf("Reference to unknown TXID in BUMP: %s", sourceTxid))
+					return nil, fmt.Errorf("reference to unknown txid in bump: %s", sourceTxid)
 				}
 			}
 
@@ -124,7 +125,7 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 				idx := -1
 				for i, bump := range BUMPs {
 					for _, leaf := range bump.Path[0] {
-						if leaf.Hash.String() == tx.TxID().String() {
+						if leaf.Hash != nil && tx.TxID().Equal(*leaf.Hash) {
 							idx = i
 						}
 					}
@@ -168,28 +169,62 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 
 func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	if len(beef) < 36 {
-		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+		return nil, nil, fmt.Errorf("provided atomic BEEF length (%d) is too short", len(beef))
 	} else if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
-		return nil, nil, fmt.Errorf("invalid-atomic-beef")
+		return nil, nil, fmt.Errorf("version %d is not atomic BEEF", version)
 	} else if txid, err := chainhash.NewHash(beef[4:36]); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid txid: %w", err)
 	} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid BEEF: %w", err)
 	} else {
 		return b, txid, nil
 	}
 }
 
+func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
+	if len(beefBytes) < 4 {
+		return nil, nil, nil, fmt.Errorf("invalid-version")
+	}
+	version := binary.LittleEndian.Uint32(beefBytes[:4])
+	switch version {
+	case ATOMIC_BEEF:
+		if len(beefBytes) < 36 {
+			return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+		}
+		if txid, err := chainhash.NewHash(beefBytes[4:36]); err != nil {
+			return nil, nil, nil, fmt.Errorf("invalid txid: %w", err)
+		} else if b, err := NewBeefFromBytes(beefBytes[36:]); err != nil {
+			return nil, nil, nil, fmt.Errorf("invalid BEEF: %w", err)
+		} else {
+			return b, b.FindTransaction(txid.String()), txid, nil
+		}
+	case BEEF_V1:
+		if tx, err := NewTransactionFromBEEF(beefBytes); err != nil {
+			return nil, nil, nil, err
+		} else if b, err := NewBeefFromTransaction(tx); err != nil {
+			return nil, nil, nil, err
+		} else {
+			return b, tx, tx.TxID(), nil
+		}
+	case BEEF_V2:
+		if beef, err := NewBeefFromBytes(beefBytes); err != nil {
+			return nil, nil, nil, err
+		} else {
+			return beef, nil, nil, nil
+		}
+	default:
+		return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+	}
+}
+
 func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
+	if t == nil {
+		return nil, fmt.Errorf("transaction is nil")
+	}
 	beef := &Beef{
 		Version:      BEEF_V2,
 		BUMPs:        []*MerklePath{},
 		Transactions: map[string]*BeefTx{},
-	}
-	b := new(bytes.Buffer)
-	err := binary.Write(b, binary.LittleEndian, BEEF_V1)
-	if err != nil {
-		return nil, err
 	}
 	bumpMap := map[uint32]int{}
 	txns := map[string]*Transaction{t.TxID().String(): t}
@@ -202,11 +237,11 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 		if tx.MerklePath == nil {
 			continue
 		}
-		if _, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
+		if bumpIdx, ok := bumpMap[tx.MerklePath.BlockHeight]; !ok {
 			bumpMap[tx.MerklePath.BlockHeight] = len(beef.BUMPs)
 			beef.BUMPs = append(beef.BUMPs, tx.MerklePath)
 		} else {
-			err := beef.BUMPs[bumpMap[tx.MerklePath.BlockHeight]].Combine(tx.MerklePath)
+			err = beef.BUMPs[bumpIdx].Combine(tx.MerklePath)
 			if err != nil {
 				return nil, err
 			}
@@ -214,11 +249,16 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	}
 	for _, txid := range ancestors {
 		tx := txns[txid]
-		beef.Transactions[txid] = &BeefTx{
-			DataFormat:  RawTx,
+		beefTx := &BeefTx{
 			Transaction: tx,
-			BumpIndex:   bumpMap[tx.MerklePath.BlockHeight],
 		}
+		if tx.MerklePath != nil {
+			beefTx.DataFormat = RawTxAndBumpIndex
+			beefTx.BumpIndex = bumpMap[tx.MerklePath.BlockHeight]
+		} else {
+			beefTx.DataFormat = RawTx
+		}
+		beef.Transactions[txid] = beefTx
 	}
 	return beef, nil
 }
@@ -407,9 +447,13 @@ func (t *Transaction) collectAncestors(txns map[string]*Transaction, allowPartia
 }
 
 func (b *Beef) FindBump(txid string) *MerklePath {
+	idHash, _ := chainhash.NewHashFromHex(txid)
+	if idHash == nil {
+		return nil
+	}
 	for _, bump := range b.BUMPs {
 		for _, leaf := range bump.Path[0] {
-			if leaf.Hash.String() == txid {
+			if leaf.Hash != nil && leaf.Hash.Equal(*idHash) {
 				return bump
 			}
 		}
@@ -514,10 +558,10 @@ func (b *Beef) MergeBump(bump *MerklePath) int {
 
 	// review if any transactions are proven by this bump
 	for _, tx := range b.Transactions {
-		txid := tx.Transaction.TxID().String()
+		txid := tx.Transaction.TxID()
 		if tx.Transaction.MerklePath == nil {
 			for _, node := range b.BUMPs[*bumpIndex].Path[0] {
-				if node.Hash.String() == txid {
+				if node.Hash != nil && node.Hash.Equal(*txid) {
 					tx.Transaction.MerklePath = b.BUMPs[*bumpIndex]
 					break
 				}
@@ -591,8 +635,9 @@ func (b *Beef) tryToValidateBumpIndex(tx *BeefTx) {
 	if tx.DataFormat == TxIDOnly || tx.Transaction == nil || tx.Transaction.MerklePath == nil {
 		return
 	}
+	txid := tx.Transaction.TxID()
 	for _, node := range tx.Transaction.MerklePath.Path[0] {
-		if node.Hash.String() == tx.Transaction.TxID().String() {
+		if node.Hash != nil && node.Hash.Equal(*txid) {
 			return
 		}
 	}
@@ -615,6 +660,7 @@ func (b *Beef) MergeTransaction(tx *Transaction) (*BeefTx, error) {
 	}
 	if bumpIndex != nil {
 		newTx.DataFormat = RawTxAndBumpIndex
+		newTx.BumpIndex = *bumpIndex
 	}
 
 	b.Transactions[txid] = newTx
@@ -672,10 +718,10 @@ func (b *Beef) MergeBeefBytes(beef []byte) error {
 	if err != nil {
 		return err
 	}
-	return b.mergeBeef(otherBeef)
+	return b.MergeBeef(otherBeef)
 }
 
-func (b *Beef) mergeBeef(otherBeef *Beef) error {
+func (b *Beef) MergeBeef(otherBeef *Beef) error {
 	for _, bump := range otherBeef.BUMPs {
 		b.MergeBump(bump)
 	}
@@ -984,15 +1030,46 @@ func (b *Beef) Bytes() ([]byte, error) {
 
 	// transactions / txids
 	beef = append(beef, VarInt(len(b.Transactions)).Bytes()...)
-	for _, tx := range b.Transactions {
-		beef = append(beef, byte(tx.DataFormat))
+	txs := make(map[string]struct{}, len(b.Transactions))
+	var appendTx func(tx *BeefTx) error
+	appendTx = func(tx *BeefTx) error {
+		var txid string
 		if tx.DataFormat == TxIDOnly {
+			if tx.KnownTxID == nil {
+				return fmt.Errorf("txid is nil")
+			}
+			txid = tx.KnownTxID.String()
+		} else if tx.Transaction == nil {
+			return fmt.Errorf("transaction is nil")
+		} else {
+			txid = tx.Transaction.TxID().String()
+		}
+		if _, ok := txs[txid]; ok {
+			return nil
+		}
+		if tx.DataFormat == TxIDOnly {
+			beef = append(beef, byte(tx.DataFormat))
 			beef = append(beef, tx.KnownTxID[:]...)
 		} else {
+			for _, txin := range tx.Transaction.Inputs {
+				if parentTx := b.findTxid(txin.SourceTXID.String()); parentTx != nil {
+					if err := appendTx(parentTx); err != nil {
+						return err
+					}
+				}
+			}
+			beef = append(beef, byte(tx.DataFormat))
 			if tx.DataFormat == RawTxAndBumpIndex {
 				beef = append(beef, VarInt(tx.BumpIndex).Bytes()...)
 			}
 			beef = append(beef, tx.Transaction.Bytes()...)
+		}
+		txs[txid] = struct{}{}
+		return nil
+	}
+	for _, tx := range b.Transactions {
+		if err := appendTx(tx); err != nil {
+			return nil, err
 		}
 	}
 
@@ -1004,7 +1081,12 @@ func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(append(util.LittleEndianBytes(ATOMIC_BEEF, 4), txid[:]...), beef...), nil
+	result := make([]byte, 0, 4+chainhash.HashSize+len(beef))
+	result = append(result, util.LittleEndianBytes(ATOMIC_BEEF, 4)...)
+	result = append(result, txid[:]...)
+	result = append(result, beef...)
+
+	return result, nil
 }
 
 func (b *Beef) TxidOnly() (*Beef, error) {
