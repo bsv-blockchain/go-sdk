@@ -140,13 +140,13 @@ func main() {
 	fmt.Printf("Bob's identity key: %s\n", bobIdentity)
 
 	// Set up message listeners
-	alicePeer.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
-		fmt.Printf("Alice received message from %s: %s\n", senderPublicKey, string(payload))
+	alicePeer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+		fmt.Printf("Alice received message from %s: %s\n", senderPublicKey.Compressed(), string(payload))
 		return nil
 	})
 
-	bobPeer.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
-		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey, string(payload))
+	bobPeer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey.Compressed(), string(payload))
 
 		// Reply to Alice
 		err := bobPeer.ToPeer([]byte("Hello back, Alice!"), senderPublicKey, 5000)
@@ -157,7 +157,7 @@ func main() {
 	})
 
 	// Alice sends a message to Bob
-	err := alicePeer.ToPeer([]byte("Hello, Bob!"), bobIdentity, 5000)
+	err := alicePeer.ToPeer([]byte("Hello, Bob!"), bobIdentityResult.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message: %v", err)
 	}

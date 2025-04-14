@@ -26,7 +26,7 @@ func (w *MinimalWalletImpl) CreateAction(args wallet.CreateActionArgs, context s
 }
 
 func (w *MinimalWalletImpl) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
-	return &wallet.ListCertificatesResult{Certificates: []wallet.Certificate{}}, nil
+	return &wallet.ListCertificatesResult{Certificates: []wallet.CertificateResult{}}, nil
 }
 
 func (w *MinimalWalletImpl) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
@@ -47,6 +47,14 @@ func (w *MinimalWalletImpl) GetNetwork(args interface{}) (string, error) {
 
 func (w *MinimalWalletImpl) GetVersion(args interface{}) (string, error) {
 	return "1.0", nil
+}
+
+func (w *MinimalWalletImpl) AbortAction(args wallet.AbortActionArgs, context string) (*wallet.AbortActionResult, error) {
+	return &wallet.AbortActionResult{}, nil
+}
+
+func (w *MinimalWalletImpl) AcquireCertificate(args wallet.AcquireCertificateArgs, context string) (*wallet.Certificate, error) {
+	return &wallet.Certificate{}, nil
 }
 
 // mockWebSocketServer is a simple in-memory message broker for testing
@@ -222,13 +230,14 @@ func main() {
 	})
 
 	// Set up message handlers
-	alicePeer.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
-		fmt.Printf("Alice received message from %s: %s\n", senderPublicKey, string(payload))
+	alicePeer.ListenForGeneralMessages(func(senderPubKey *ec.PublicKey, payload []byte) error {
+
+		fmt.Printf("Alice received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
 		return nil
 	})
 
-	bobPeer.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
-		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey, string(payload))
+	bobPeer.ListenForGeneralMessages(func(senderPubKey *ec.PublicKey, payload []byte) error {
+		fmt.Printf("Bob received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
 		return nil
 	})
 
@@ -252,7 +261,7 @@ func main() {
 
 	// Alice sends a message to Bob
 	fmt.Println("Alice is sending a message to Bob...")
-	err = alicePeer.ToPeer([]byte("Hello Bob, this is Alice!"), bobIdKeyString, 5000)
+	err = alicePeer.ToPeer([]byte("Hello Bob, this is Alice!"), bobIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Alice to Bob: %v", err)
 	}
@@ -262,7 +271,7 @@ func main() {
 
 	// Bob replies to Alice
 	fmt.Println("Bob is replying to Alice...")
-	err = bobPeer.ToPeer([]byte("Hello Alice, nice to hear from you!"), aliceIdKeyString, 5000)
+	err = bobPeer.ToPeer([]byte("Hello Alice, nice to hear from you!"), aliceIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Bob to Alice: %v", err)
 	}
