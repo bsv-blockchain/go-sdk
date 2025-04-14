@@ -38,7 +38,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 	domain string,
 	topicOrService string,
 ) (*script.Script, error) {
-	pub, err := o.PushDrop.Wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	pub, err := o.PushDrop.Wallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, o.PushDrop.Originator)
 	if err != nil {

@@ -100,6 +100,13 @@ func (p *ProtoWallet) Encrypt(
 	args EncryptArgs,
 	originator string,
 ) (*EncryptResult, error) {
+
+	if args.Counterparty.Type == CounterpartyUninitialized {
+		args.Counterparty = Counterparty{
+			Type: CounterpartyTypeSelf,
+		}
+	}
+
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -131,20 +138,21 @@ func (p *ProtoWallet) Decrypt(
 	args DecryptArgs,
 	originator string,
 ) (*DecryptResult, error) {
+
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
 
 	// Handle uninitialized counterparty - default to self
-	counterpartyObj := args.Counterparty
-	if counterpartyObj.Type == CounterpartyUninitialized {
-		counterpartyObj = Counterparty{
+	counterparty := args.Counterparty
+	if counterparty.Type == CounterpartyUninitialized {
+		counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
 
 	// Derive a symmetric key for decryption
-	key, err := p.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
+	key, err := p.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, counterparty)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
 	}
@@ -166,6 +174,10 @@ func (p *ProtoWallet) CreateSignature(
 ) (*CreateSignatureResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
+	}
+
+	if len(args.Data) == 0 && len(args.HashToDirectlySign) == 0 {
+		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
 	}
 
 	// Get hash to sign
@@ -214,6 +226,10 @@ func (p *ProtoWallet) VerifySignature(
 		return nil, errors.New("keyDeriver is undefined")
 	}
 
+	if len(args.Data) == 0 && len(args.HashToDirectlyVerify) == 0 {
+		return nil, fmt.Errorf("args.data or args.hashToDirectlyVerify must be valid")
+	}
+
 	// Get hash to verify
 	var dataHash []byte
 	if len(args.HashToDirectlyVerify) > 0 {
@@ -223,9 +239,9 @@ func (p *ProtoWallet) VerifySignature(
 	}
 
 	// Handle counterparty
-	counterpartyObj := args.Counterparty
-	if counterpartyObj.Type == CounterpartyUninitialized {
-		counterpartyObj = Counterparty{
+	counterparty := args.Counterparty
+	if counterparty.Type == CounterpartyUninitialized {
+		counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
@@ -234,7 +250,7 @@ func (p *ProtoWallet) VerifySignature(
 	pubKey, err := p.keyDeriver.DerivePublicKey(
 		args.ProtocolID,
 		args.KeyID,
-		counterpartyObj,
+		counterparty,
 		args.ForSelf,
 	)
 	if err != nil {
@@ -252,7 +268,8 @@ func (p *ProtoWallet) VerifySignature(
 	}, nil
 }
 
-// CreateHmac creates an HMAC for the provided data
+// CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
+// using a symmetric key derived from the protocol, key ID, and counterparty.
 func (p *ProtoWallet) CreateHmac(
 	args CreateHmacArgs,
 	originator string,
@@ -287,7 +304,8 @@ func (p *ProtoWallet) CreateHmac(
 	return &CreateHmacResult{Hmac: hmacValue}, nil
 }
 
-// VerifyHmac verifies an HMAC for the provided data
+// VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
+// The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
 func (p *ProtoWallet) VerifyHmac(
 	args VerifyHmacArgs,
 	originator string,
