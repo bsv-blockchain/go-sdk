@@ -58,10 +58,10 @@ func TestResultFrameRoundTrip(t *testing.T) {
 			result: []byte{0x01, 0x02, 0x03},
 		},
 		{
-			name:   "success empty",
+			name: "success empty",
 		},
 		{
-			name:   "error case",
+			name: "error case",
 			err: &wallet.Error{
 				Code:    0x01,
 				Message: "test error",

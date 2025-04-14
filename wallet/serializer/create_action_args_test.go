@@ -172,7 +172,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.writeBytes([]byte{0x01, 0x02})
 				return w.buf
 			}(),
-			err: "error reading outpoint: read past end of data",
+			err: "error decoding outpoint: invalid outpoint data length",
 		},
 		{
 			name: "invalid unlocking script",
@@ -191,7 +191,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.writeBytes([]byte{0x01, 0x02})
 				return w.buf
 			}(),
-			err: "error reading input description length: read past end of data",
+			err: "error reading string length",
 		},
 	}
 
@@ -202,8 +202,4 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 			require.Contains(t, err.Error(), tt.err)
 		})
 	}
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }

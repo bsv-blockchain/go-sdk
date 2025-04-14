@@ -39,7 +39,7 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 			},
 		},
 		{
-			name: "minimal result",
+			name:   "minimal result",
 			result: &wallet.CreateActionResult{},
 		},
 		{
@@ -94,7 +94,7 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 				w.writeBytes([]byte{0x01, 0x02}) // invalid length
 				return w.buf
 			}(),
-			err: "error reading txid",
+			err: "error reading tx",
 		},
 		{
 			name: "invalid status code",

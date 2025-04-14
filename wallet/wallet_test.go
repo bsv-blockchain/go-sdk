@@ -230,7 +230,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		hash := sha256.Sum256(sampleData)
 
 		// Create signature with hash
-		signArgs.DashToDirectlySign = hash[:]
+		signArgs.HashToDirectlySign = hash[:]
 		signArgs.Data = nil
 
 		signResult, err := userWallet.CreateSignature(signArgs, "")
@@ -511,8 +511,8 @@ func TestHmacCreateVerify(t *testing.T) {
 	// Verify HMAC
 	verifyHmacArgs := wallet.VerifyHmacArgs{
 		EncryptionArgs: baseArgs,
-		Hmac:                 createHmacResult.Hmac,
-		Data:                 sampleData,
+		Hmac:           createHmacResult.Hmac,
+		Data:           sampleData,
 	}
 	verifyHmacArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
