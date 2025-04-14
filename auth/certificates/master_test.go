@@ -117,8 +117,8 @@ func TestMasterCertificate(t *testing.T) {
 				t.Fatal("Expected an error due to missing key in masterKeyring, but got nil")
 			}
 			// Check for specific error message
-			expectedErr := "master keyring must contain a value for every field. Missing key for field: name"
-			if err.Error() != expectedErr {
+			expectedErr := certificates.ErrMissingMasterKeyring
+			if err.Error() != expectedErr.Error() {
 				t.Errorf("Expected error '%s', but got: %v", expectedErr, err)
 			}
 		})
@@ -196,7 +196,7 @@ func TestMasterCertificate(t *testing.T) {
 				t.Fatal("Expected error for empty masterKeyring, got nil")
 			}
 			// Check if the error message contains the expected substring for missing key
-			if !strings.Contains(err.Error(), "key not found in keyring") {
+			if !strings.Contains(err.Error(), certificates.ErrMissingMasterKeyring.Error()) {
 				t.Errorf("Expected error containing 'key not found in keyring', got %v", err)
 			}
 		})
