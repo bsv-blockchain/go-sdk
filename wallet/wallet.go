@@ -1,10 +1,7 @@
 package wallet
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"errors"
-	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
@@ -47,6 +44,7 @@ type Counterparty struct {
 // Wallet provides cryptographic operations for a specific identity.
 // It can encrypt/decrypt data, create/verify signatures, and manage keys.
 type Wallet struct {
+	ProtoWallet
 	privateKey *ec.PrivateKey
 	publicKey  *ec.PublicKey
 	keyDeriver *KeyDeriver
@@ -89,54 +87,6 @@ type DecryptResult struct {
 	Plaintext []byte
 }
 
-// Encrypt data using a symmetric key derived from the protocol, key ID, and counterparty.
-// The encrypted data can only be decrypted by the intended recipient.
-func (w *Wallet) Encrypt(args *EncryptArgs) (*EncryptResult, error) {
-	if args == nil {
-		return nil, errors.New("args must be provided")
-	}
-	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = Counterparty{
-			Type: CounterpartyTypeSelf,
-		}
-	}
-
-	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
-	}
-
-	ciphertext, err := key.Encrypt(args.Plaintext)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt data: %w", err)
-	}
-	return &EncryptResult{Ciphertext: ciphertext}, nil
-}
-
-// Decrypt data that was encrypted using the Encrypt method.
-// The protocol, key ID, and counterparty must match those used during encryption.
-func (w *Wallet) Decrypt(args *DecryptArgs) (*DecryptResult, error) {
-	if args == nil {
-		return nil, errors.New("args must be provided")
-	}
-	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = Counterparty{
-			Type: CounterpartyTypeSelf,
-		}
-	}
-
-	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
-	}
-
-	plaintext, err := key.Decrypt(args.Ciphertext)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt data: %w", err)
-	}
-	return &DecryptResult{Plaintext: plaintext}, nil
-}
-
 type GetPublicKeyArgs struct {
 	EncryptionArgs
 	IdentityKey bool
@@ -147,10 +97,7 @@ type GetPublicKeyResult struct {
 	PublicKey *ec.PublicKey `json:"publicKey"`
 }
 
-func (w *Wallet) GetPublicKey(args *GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
-	if args == nil {
-		return nil, errors.New("args must be provided")
-	}
+func (w *Wallet) GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
 	if args.IdentityKey {
 		return &GetPublicKeyResult{
 			PublicKey: w.keyDeriver.rootKey.PubKey(),
@@ -202,54 +149,6 @@ var (
 	SignOutputsSingle SignOutputs = SignOutputs(sighash.Single)
 )
 
-// CreateSignature generates a cryptographic signature over the provided data.
-// The signature is created using a private key derived from the protocol and key ID.
-func (w *Wallet) CreateSignature(args *CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
-	if args == nil {
-		return nil, errors.New("args must be provided")
-	}
-	if len(args.Data) == 0 && len(args.HashToDirectlySign) == 0 {
-		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
-	}
-
-	// Get hash to sign
-	var hash []byte
-	if len(args.HashToDirectlySign) > 0 {
-		hash = args.HashToDirectlySign
-	} else {
-		sum := sha256.Sum256(args.Data)
-		hash = sum[:]
-	}
-
-	// Handle default counterparty (anyone for signing)
-	counterparty := args.Counterparty
-	if counterparty.Type == CounterpartyUninitialized {
-		counterparty = Counterparty{
-			Type: CounterpartyTypeAnyone,
-		}
-	}
-
-	// Derive private key
-	privKey, err := w.keyDeriver.DerivePrivateKey(
-		args.ProtocolID,
-		args.KeyID,
-		counterparty,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive private key: %w", err)
-	}
-
-	// Create signature
-	signature, err := privKey.Sign(hash)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create signature: %w", err)
-	}
-
-	return &CreateSignatureResult{
-		Signature: *signature,
-	}, nil
-}
-
 type VerifySignatureArgs struct {
 	EncryptionArgs
 	Data                 []byte
@@ -281,101 +180,6 @@ type VerifySignatureResult struct {
 	Valid bool
 }
 
-// VerifySignature checks the validity of a cryptographic signature.
-// It verifies that the signature was created using the expected protocol and key ID.
-func (w *Wallet) VerifySignature(args *VerifySignatureArgs) (*VerifySignatureResult, error) {
-	if args == nil {
-		return nil, errors.New("args must be provided")
-	}
-	if len(args.Data) == 0 && len(args.HashToDirectlyVerify) == 0 {
-		return nil, fmt.Errorf("args.data or args.hashToDirectlyVerify must be valid")
-	}
-
-	// Get hash to verify
-	var hash []byte
-	if len(args.HashToDirectlyVerify) > 0 {
-		hash = args.HashToDirectlyVerify
-	} else {
-		sum := sha256.Sum256(args.Data)
-		hash = sum[:]
-	}
-
-	// Handle default counterparty (self for verification)
-	counterparty := args.Counterparty
-	if counterparty.Type == CounterpartyUninitialized {
-		counterparty = Counterparty{
-			Type: CounterpartyTypeSelf,
-		}
-	}
-
-	// Derive public key
-	pubKey, err := w.keyDeriver.DerivePublicKey(
-		args.ProtocolID,
-		args.KeyID,
-		counterparty,
-		args.ForSelf,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive public key: %w", err)
-	}
-
-	// Verify signature
-	valid := args.Signature.Verify(hash, pubKey)
-	if !valid {
-		return nil, fmt.Errorf("signature is not valid")
-	}
-
-	return &VerifySignatureResult{
-		Valid: valid,
-	}, nil
-}
-
 func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
 	return ec.PrivateKeyFromBytes([]byte{1})
-}
-
-// CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
-// using a symmetric key derived from the protocol, key ID, and counterparty.
-func (w *Wallet) CreateHmac(args CreateHmacArgs) (*CreateHmacResult, error) {
-	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = Counterparty{
-			Type: CounterpartyTypeSelf,
-		}
-	}
-
-	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
-	}
-
-	mac := hmac.New(sha256.New, key.ToBytes())
-	mac.Write(args.Data)
-	hmac := mac.Sum(nil)
-
-	return &CreateHmacResult{Hmac: hmac}, nil
-}
-
-// VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
-// The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
-func (w *Wallet) VerifyHmac(args VerifyHmacArgs) (*VerifyHmacResult, error) {
-	if args.Counterparty.Type == CounterpartyUninitialized {
-		args.Counterparty = Counterparty{
-			Type: CounterpartyTypeSelf,
-		}
-	}
-
-	key, err := w.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
-	}
-
-	mac := hmac.New(sha256.New, key.ToBytes())
-	mac.Write(args.Data)
-	expectedHmac := mac.Sum(nil)
-
-	if !hmac.Equal(expectedHmac, args.Hmac) {
-		return &VerifyHmacResult{Valid: false}, nil
-	}
-
-	return &VerifyHmacResult{Valid: true}, nil
 }

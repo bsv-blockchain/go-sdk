@@ -21,40 +21,88 @@ type MinimalWalletImpl struct {
 }
 
 // Required methods to satisfy wallet.Interface
-func (w *MinimalWalletImpl) CreateAction(args wallet.CreateActionArgs, context string) (*wallet.CreateActionResult, error) {
+func (w *MinimalWalletImpl) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 	return &wallet.CreateActionResult{Txid: "mock_tx", Tx: []byte{}}, nil
 }
 
-func (w *MinimalWalletImpl) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
+func (w *MinimalWalletImpl) ListCertificates(args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
 	return &wallet.ListCertificatesResult{Certificates: []wallet.CertificateResult{}}, nil
 }
 
-func (w *MinimalWalletImpl) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
+func (w *MinimalWalletImpl) ProveCertificate(args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
 	return &wallet.ProveCertificateResult{KeyringForVerifier: map[string]string{}}, nil
 }
 
-func (w *MinimalWalletImpl) IsAuthenticated(args interface{}) (bool, error) {
-	return true, nil
+func (w *MinimalWalletImpl) IsAuthenticated(args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+	return &wallet.AuthenticatedResult{Authenticated: true}, nil
 }
 
-func (w *MinimalWalletImpl) GetHeight(args interface{}) (uint32, error) {
-	return 0, nil
+func (w *MinimalWalletImpl) GetHeight(args interface{}, originator string) (*wallet.GetHeightResult, error) {
+	return &wallet.GetHeightResult{Height: 0}, nil
 }
 
-func (w *MinimalWalletImpl) GetNetwork(args interface{}) (string, error) {
-	return "test", nil
+func (w *MinimalWalletImpl) GetNetwork(args interface{}, originator string) (*wallet.GetNetworkResult, error) {
+	return &wallet.GetNetworkResult{Network: "test"}, nil
 }
 
-func (w *MinimalWalletImpl) GetVersion(args interface{}) (string, error) {
-	return "1.0", nil
+func (w *MinimalWalletImpl) GetVersion(args interface{}, originator string) (*wallet.GetVersionResult, error) {
+	return &wallet.GetVersionResult{Version: "1.0"}, nil
 }
 
-func (w *MinimalWalletImpl) AbortAction(args wallet.AbortActionArgs, context string) (*wallet.AbortActionResult, error) {
+func (w *MinimalWalletImpl) AbortAction(args wallet.AbortActionArgs, originator string) (*wallet.AbortActionResult, error) {
 	return &wallet.AbortActionResult{}, nil
 }
 
-func (w *MinimalWalletImpl) AcquireCertificate(args wallet.AcquireCertificateArgs, context string) (*wallet.Certificate, error) {
+func (w *MinimalWalletImpl) AcquireCertificate(args wallet.AcquireCertificateArgs, originator string) (*wallet.Certificate, error) {
 	return &wallet.Certificate{}, nil
+}
+
+func (w *MinimalWalletImpl) DiscoverByAttributes(args wallet.DiscoverByAttributesArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
+	return &wallet.DiscoverCertificatesResult{}, nil
+}
+
+func (w *MinimalWalletImpl) DiscoverByIdentityKey(args wallet.DiscoverByIdentityKeyArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
+	return &wallet.DiscoverCertificatesResult{}, nil
+}
+
+func (w *MinimalWalletImpl) GetHeaderForHeight(args wallet.GetHeaderArgs, originator string) (*wallet.GetHeaderResult, error) {
+	return &wallet.GetHeaderResult{}, nil
+}
+
+func (w *MinimalWalletImpl) InternalizeAction(args wallet.InternalizeActionArgs, originator string) (*wallet.InternalizeActionResult, error) {
+	return &wallet.InternalizeActionResult{}, nil
+}
+
+func (w *MinimalWalletImpl) ListOutputs(args wallet.ListOutputsArgs, originator string) (*wallet.ListOutputsResult, error) {
+	return &wallet.ListOutputsResult{}, nil
+}
+
+func (w *MinimalWalletImpl) ListActions(args wallet.ListActionsArgs, originator string) (*wallet.ListActionsResult, error) {
+	return &wallet.ListActionsResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RelinquishCertificate(args wallet.RelinquishCertificateArgs, originator string) (*wallet.RelinquishCertificateResult, error) {
+	return &wallet.RelinquishCertificateResult{}, nil
+}
+
+func (w *MinimalWalletImpl) SignAction(args wallet.SignActionArgs, originator string) (*wallet.SignActionResult, error) {
+	return &wallet.SignActionResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RelinquishOutput(args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
+	return &wallet.RelinquishOutputResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RevealCounterpartyKeyLinkage(args wallet.RevealCounterpartyKeyLinkageArgs, originator string) (*wallet.RevealCounterpartyKeyLinkageResult, error) {
+	return &wallet.RevealCounterpartyKeyLinkageResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RevealSpecificKeyLinkage(args wallet.RevealSpecificKeyLinkageArgs, originator string) (*wallet.RevealSpecificKeyLinkageResult, error) {
+	return &wallet.RevealSpecificKeyLinkageResult{}, nil
+}
+
+func (w *MinimalWalletImpl) WaitForAuthentication(args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+	return &wallet.AuthenticatedResult{Authenticated: true}, nil
 }
 
 // mockWebSocketServer is a simple in-memory message broker for testing
@@ -242,11 +290,11 @@ func main() {
 	})
 
 	// Get identity keys
-	aliceIdentityKey, _ := aliceWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	aliceIdentityKey, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 
-	bobIdentityKey, _ := bobWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	bobIdentityKey, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 
