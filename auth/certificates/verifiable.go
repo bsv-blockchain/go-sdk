@@ -82,7 +82,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 	privilegedReason string,
 ) (map[string]string, error) {
 	// Check if the KeyRing is nil or empty, matching the TS check.
-	if vc.Keyring == nil {
+	if len(vc.Keyring) == 0 {
 		return nil, errors.New("a keyring is required to decrypt certificate fields for the verifier")
 	}
 
