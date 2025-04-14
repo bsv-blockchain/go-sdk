@@ -106,9 +106,6 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 			return nil, err
 		}
 
-		// if nLeavesAtThisHeight == 0 {
-		// 	return nil, errors.New("There are no leaves at height: " + fmt.Sprint(lv) + " which makes this invalid")
-		// }
 		bump.Path[lv] = make([]*PathElement, nLeavesAtThisHeight)
 		for lf := uint64(0); lf < uint64(nLeavesAtThisHeight); lf++ {
 			// For each leaf we parse the offset, hash, txid and duplicate.

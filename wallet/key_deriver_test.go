@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/hex"
 	"testing"
 
@@ -57,7 +59,7 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should allow public key derivation as anyone", func(t *testing.T) {
-		anyoneDeriver := NewKeyDeriver(anyonePrivateKey)
+		anyoneDeriver := NewKeyDeriver(nil)
 		derivedPublicKey, err := anyoneDeriver.DerivePublicKey(
 			protocolID,
 			keyID,
@@ -177,16 +179,29 @@ func TestKeyDeriver(t *testing.T) {
 	})
 
 	t.Run("should reveal the specific key association", func(t *testing.T) {
-		sharedSecret, err := keyDeriver.DeriveSymmetricKey(
-			protocolID,
-			keyID,
+		secret, err := keyDeriver.RevealSpecificSecret(
 			Counterparty{
 				Type:         CounterpartyTypeOther,
 				Counterparty: counterpartyPublicKey,
 			},
+			protocolID,
+			keyID,
 		)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, sharedSecret)
+		assert.NotEmpty(t, secret)
+
+		// Verify HMAC computation
+		sharedSecret, err := rootPrivateKey.DeriveSharedSecret(counterpartyPublicKey)
+		assert.NoError(t, err)
+
+		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
+		assert.NoError(t, err)
+
+		mac := hmac.New(sha256.New, sharedSecret.X.Bytes())
+		mac.Write([]byte(invoiceNumber))
+		expected := mac.Sum(nil)
+
+		assert.Equal(t, expected, secret)
 	})
 
 	t.Run("should throw an error for invalid protocol names", func(t *testing.T) {
