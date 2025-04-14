@@ -151,17 +151,6 @@ func (p *Peer) StopListeningForCertificatesRequested(callbackID int) {
 	delete(p.onCertificateRequestReceivedCallbacks, callbackID)
 }
 
-// createNonce creates a random nonce for authentication
-func createNonce() (string, error) {
-	nonceBytes := make([]byte, 32)
-	_, err := rand.Read(nonceBytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate random nonce: %w", err)
-	}
-
-	return base64.StdEncoding.EncodeToString(nonceBytes), nil
-}
-
 // ToPeer sends a message to a peer, initiating authentication if needed
 func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error {
 	if p.autoPersistLastSession && p.lastInteractedWithPeer != "" && identityKey == "" {
@@ -174,10 +163,7 @@ func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error
 	}
 
 	// Create a nonce for this request
-	requestNonce, err := createNonce()
-	if err != nil {
-		return fmt.Errorf("failed to create nonce: %w", err)
-	}
+	requestNonce := utils.RandomBase64(32)
 
 	// Get identity key
 	identityKeyResult, err := p.wallet.GetPublicKey(&wallet.GetPublicKeyArgs{
@@ -193,7 +179,7 @@ func (p *Peer) ToPeer(message []byte, identityKey string, maxWaitTime int) error
 		Version:     AUTH_VERSION,
 		MessageType: MessageTypeGeneral,
 		IdentityKey: *identityKeyResult.PublicKey,
-		Nonce:       requestNonce,
+		Nonce:       string(requestNonce),
 		YourNonce:   peerSession.PeerNonce,
 		Payload:     message,
 	}
@@ -432,7 +418,7 @@ func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey string
 	}
 
 	// Create our session nonce
-	ourNonce, err := createNonce()
+	ourNonce, err := utils.CreateNonce(p.wallet, wallet.CounterpartyTypeSelf)
 	if err != nil {
 		return NewAuthError("failed to create session nonce", err)
 	}
@@ -800,7 +786,7 @@ func (p *Peer) RequestCertificates(identityKey string, certificateRequirements u
 	}
 
 	// Create a nonce for this request
-	requestNonce, err := createNonce()
+	requestNonce, err := utils.CreateNonce(p.wallet, wallet.CounterpartyTypeSelf)
 	if err != nil {
 		return fmt.Errorf("failed to create nonce: %w", err)
 	}
@@ -879,7 +865,7 @@ func (p *Peer) SendCertificateResponse(identityKey string, certificates []*certi
 	}
 
 	// Create a nonce for this response
-	responseNonce, err := createNonce()
+	responseNonce, err := utils.CreateNonce(p.wallet, wallet.CounterpartyTypeSelf)
 	if err != nil {
 		return fmt.Errorf("failed to create nonce: %w", err)
 	}

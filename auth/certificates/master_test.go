@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -100,12 +101,12 @@ func TestMasterCertificate(t *testing.T) {
 		})
 
 		t.Run("should return error if masterKeyring is missing a key for any field", func(t *testing.T) {
-			fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{"name": randomBase64(16)}
+			fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{"name": utils.RandomBase64(16)}
 			masterKeyring := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{} // Intentionally empty
 
 			baseCert := &certificates.Certificate{
-				Type:               randomBase64(16),
-				SerialNumber:       randomBase64(16),
+				Type:               utils.RandomBase64(16),
+				SerialNumber:       utils.RandomBase64(16),
 				Subject:            *subjectIdentityKey.PublicKey,
 				Certifier:          *certifierIdentityKey.PublicKey,
 				RevocationOutpoint: mockRevocationOutpoint,
@@ -135,9 +136,9 @@ func TestMasterCertificate(t *testing.T) {
 			certifierWallet.ProtoWallet,
 			subjectCounterparty,
 			plainFieldsStr,
-			string(randomBase64(32)), // Use valid Base64 for type
-			nil,                      // No revocation func
-			"",                       // No specific serial
+			string(utils.RandomBase64(32)), // Use valid Base64 for type
+			nil,                            // No revocation func
+			"",                             // No specific serial
 		)
 		if err != nil {
 			t.Fatalf("Setup for DecryptFields failed: Failed to issue certificate: %v", err)
@@ -205,7 +206,7 @@ func TestMasterCertificate(t *testing.T) {
 			// Create a bad keyring manually
 			badMasterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
 			for k := range issueCert.Fields { // Uses issuedCert from outer scope
-				badMasterKeyring[k] = randomBase64(64) // Provide structurally valid (>48 bytes) but incorrect key data
+				badMasterKeyring[k] = utils.RandomBase64(64) // Provide structurally valid (>48 bytes) but incorrect key data
 			}
 
 			_, err := certificates.DecryptFields(
@@ -237,7 +238,7 @@ func TestMasterCertificate(t *testing.T) {
 			certifierWallet.ProtoWallet,
 			subjectCounterparty,
 			plainFieldsKrStr,
-			string(randomBase64(32)), // Use valid Base64 for type
+			string(utils.RandomBase64(32)), // Use valid Base64 for type
 			nil,
 			"",
 		)
@@ -309,7 +310,7 @@ func TestMasterCertificate(t *testing.T) {
 			tamperedMasterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
 			for k, v := range issueCert.MasterKeyring { // Uses issuedCert from outer scope
 				if k == "name" {
-					tamperedMasterKeyring[k] = randomBase64(64) // Provide structurally valid (>48 bytes) but incorrect key data
+					tamperedMasterKeyring[k] = utils.RandomBase64(64) // Provide structurally valid (>48 bytes) but incorrect key data
 				} else {
 					tamperedMasterKeyring[k] = v
 				}
@@ -401,7 +402,7 @@ func TestMasterCertificate(t *testing.T) {
 				certifierWallet.ProtoWallet,
 				subjectCounterparty,
 				newPlaintextFields,
-				string(randomBase64(32)), // Use valid Base64 for type
+				string(utils.RandomBase64(32)),
 				mockRevocationFunc,
 				"",
 			)
@@ -440,13 +441,13 @@ func TestMasterCertificate(t *testing.T) {
 		})
 
 		t.Run("should allow passing a custom serial number", func(t *testing.T) {
-			customSerialNumber := randomBase64(32)
+			customSerialNumber := utils.RandomBase64(32)
 			newPlaintextFields := map[string]string{"status": "Approved"}
 			newCert, err := certificates.IssueCertificateForSubject(
 				certifierWallet.ProtoWallet,
 				subjectCounterparty,
 				newPlaintextFields,
-				string(randomBase64(32)), // Use valid Base64 for type
+				string(utils.RandomBase64(32)),
 				nil,
 				string(customSerialNumber),
 			)
@@ -469,7 +470,7 @@ func TestMasterCertificate(t *testing.T) {
 				subjectWallet.ProtoWallet,                              // Subject is certifier
 				wallet.Counterparty{Type: wallet.CounterpartyTypeSelf}, // Subject is self
 				selfSignedFields,
-				string(randomBase64(32)), // Use valid Base64 for type
+				string(utils.RandomBase64(32)),
 				nil,
 				"",
 			)
@@ -503,11 +504,4 @@ func TestMasterCertificate(t *testing.T) {
 			}
 		})
 	})
-}
-
-// randomBase64 generates a random byte sequence of specified length and returns it as base64 encoded string
-func randomBase64(length int) wallet.Base64String {
-	randomBytes := make([]byte, length)
-	_, _ = rand.Read(randomBytes)
-	return wallet.Base64String(base64.StdEncoding.EncodeToString(randomBytes))
 }

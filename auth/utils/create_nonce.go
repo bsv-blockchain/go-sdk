@@ -11,7 +11,7 @@ import (
 // CreateNonce generates a cryptographic nonce derived from the wallet
 // The nonce consists of random data combined with an HMAC calculated with the wallet
 // Follows the same pattern as the TypeScript SDK's createNonce function
-func CreateNonce(w *wallet.Wallet, counterparty wallet.CounterpartyType) (string, error) {
+func CreateNonce(w wallet.Interface, counterparty wallet.CounterpartyType) (string, error) {
 	// Generate 16 bytes of random data (matching TypeScript implementation)
 	randomBytes := make([]byte, 16)
 	if _, err := rand.Read(randomBytes); err != nil {
@@ -23,9 +23,9 @@ func CreateNonce(w *wallet.Wallet, counterparty wallet.CounterpartyType) (string
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "server hmac", // Match TypeScript SDK's protocol ID
+				Protocol:      "server hmac",
 			},
-			KeyID: fmt.Sprintf("%s", randomBytes), // Equivalent to Utils.toUTF8(data) in TS
+			KeyID: string(randomBytes),
 			Counterparty: wallet.Counterparty{
 				Type: counterparty,
 			},

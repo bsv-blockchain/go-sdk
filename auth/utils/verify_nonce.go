@@ -12,7 +12,7 @@ import (
 // This is the Go equivalent of the TypeScript SDK's verifyNonce function
 func VerifyNonce(
 	nonce string,
-	w *wallet.Wallet,
+	w wallet.Interface,
 	counterparty wallet.CounterpartyType,
 ) (bool, error) {
 	// Convert nonce from base64 to binary
