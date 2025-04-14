@@ -144,15 +144,15 @@ func (p *ProtoWallet) Decrypt(
 	}
 
 	// Handle uninitialized counterparty - default to self
-	counterpartyObj := args.Counterparty
-	if counterpartyObj.Type == CounterpartyUninitialized {
-		counterpartyObj = Counterparty{
+	counterparty := args.Counterparty
+	if counterparty.Type == CounterpartyUninitialized {
+		counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
 		}
 	}
 
 	// Derive a symmetric key for decryption
-	key, err := p.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, args.Counterparty)
+	key, err := p.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, counterparty)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
 	}
