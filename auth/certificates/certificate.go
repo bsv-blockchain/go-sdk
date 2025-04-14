@@ -16,6 +16,7 @@ import (
 var (
 	ErrInvalidCertificate = errors.New("invalid-certificate")
 	ErrAlreadySigned      = errors.New("certificate has already been signed")
+	ErrNotSigned          = errors.New("certificate is not signed")
 )
 
 // Certificate represents an Identity Certificate as per the Wallet interface specifications.
@@ -247,8 +248,7 @@ func CertificateFromBinary(data []byte) (*Certificate, error) {
 func (c *Certificate) Verify() error {
 	// Verify the certificate signature
 	if len(c.Signature) == 0 {
-		// provide a fallback value (empty string)
-		c.Signature = []byte("")
+		return ErrNotSigned
 	}
 
 	// Create a verifier wallet
