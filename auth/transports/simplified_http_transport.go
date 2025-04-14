@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 
@@ -53,14 +53,14 @@ func (t *SimplifiedHTTPTransport) Send(message *auth.AuthMessage) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("HTTP request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
 	// If we have a response, process it as a potential auth message
 	if resp.ContentLength > 0 {
 		var responseMsg auth.AuthMessage
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("failed to read response body: %w", err)
 		}
