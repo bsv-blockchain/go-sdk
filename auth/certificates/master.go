@@ -37,7 +37,7 @@ func NewMasterCertificate(
 	cert *Certificate,
 	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
 ) (*MasterCertificate, error) {
-	if masterKeyring == nil {
+	if len(masterKeyring) == 0 {
 		return nil, ErrMissingMasterKeyring
 	}
 
@@ -236,7 +236,7 @@ func DecryptField(
 	privileged bool,
 	privilegedReason string,
 ) (*DecryptFieldResult, error) {
-	if masterKeyring == nil {
+	if len(masterKeyring) == 0 {
 		return nil, ErrMissingMasterKeyring
 	}
 
@@ -296,7 +296,7 @@ func DecryptFields(
 	privileged bool,
 	privilegedReason string,
 ) (map[wallet.CertificateFieldNameUnder50Bytes]string, error) { // Returns map of plaintext values
-	if masterKeyring == nil {
+	if len(masterKeyring) == 0 {
 		return nil, ErrMissingMasterKeyring
 	}
 	if fields == nil {
@@ -340,7 +340,7 @@ func CreateKeyringForVerifier(
 	privileged bool,
 	privilegedReason string,
 ) (map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, error) { // Returns the verifier-specific keyring
-	if masterKeyring == nil {
+	if len(masterKeyring) == 0 {
 		return nil, ErrMissingMasterKeyring
 	}
 
