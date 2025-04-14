@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"sync"
@@ -170,12 +168,6 @@ func (w *TestWallet) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet
 
 func (w *TestWallet) SetMockCertificates(certs []*certificates.VerifiableCertificate) {
 	w.mockCertificates = certs
-}
-
-func createRandomNonce() string {
-	nonceBytes := make([]byte, 32)
-	_, _ = rand.Read(nonceBytes)
-	return base64.StdEncoding.EncodeToString(nonceBytes)
 }
 
 // MockSessionManager for tests
