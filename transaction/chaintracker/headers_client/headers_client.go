@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
@@ -43,8 +45,22 @@ func (c Client) IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool,
 func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, error) {
 	headers := []Header{}
 	client := &http.Client{}
-	url := fmt.Sprintf("%s/api/v1/chain/header/byHeight?height=%d", c.Url, height)
-	req, err := http.NewRequest("GET", url, nil)
+
+	// Parse the base URL
+	baseURL, err := url.Parse(c.Url)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Construct the path
+	baseURL.Path = baseURL.ResolveReference(&url.URL{Path: "api/v1/chain/header/byHeight"}).Path
+
+	// Add query parameters
+	q := baseURL.Query()
+	q.Add("height", strconv.FormatUint(uint64(height), 10))
+	baseURL.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("GET", baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +89,18 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error) {
 	headerState := &State{}
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/chain/header/state/%s", c.Url, hash), nil)
+
+	// Parse the base URL
+	baseURL, err := url.Parse(c.Url)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Construct the path with the hash
+	path := fmt.Sprintf("api/v1/chain/header/state/%s", hash)
+	baseURL.Path = baseURL.ResolveReference(&url.URL{Path: path}).Path
+
+	req, err := http.NewRequest("GET", baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}

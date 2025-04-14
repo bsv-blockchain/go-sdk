@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -105,25 +106,28 @@ func (a *Client) Request(method, path string, body any, serverIdentityKey string
 		bodyReader = bytes.NewBuffer(bodyBytes)
 	}
 
-	url := a.baseURL
+	// Parse the base URL
+	baseURL, err := url.Parse(a.baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid baseURL: %w", err)
+	}
+
+	// Resolve the path against the base URL
 	if path != "" {
-		if path[0] == '/' {
-			url += path
-		} else {
-			url += "/" + path
-		}
+		baseURL.Path = baseURL.ResolveReference(&url.URL{Path: path}).Path
 	}
 
 	// Add query parameters if provided
 	if options != nil && len(options.QueryParams) > 0 {
-		sep := "?"
-		for k, v := range options.QueryParams {
-			url += sep + k + "=" + v
-			sep = "&"
+		q := baseURL.Query()
+		for key, value := range options.QueryParams {
+			q.Add(key, value)
 		}
+		baseURL.RawQuery = q.Encode()
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	// Create the request with the fully constructed URL
+	req, err := http.NewRequest(method, baseURL.String(), bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
