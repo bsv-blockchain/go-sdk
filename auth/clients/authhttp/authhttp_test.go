@@ -110,7 +110,7 @@ func TestRequest(t *testing.T) {
 
 	// Test with query parameters
 	mockPeer.toPeerCalled = false
-	resp, err = client.Get("/test", "test-identity-key", &RequestOptions{
+	_, err = client.Get("/test", "test-identity-key", &RequestOptions{
 		QueryParams: map[string]string{
 			"param1": "value1",
 			"param2": "value2",
@@ -125,7 +125,7 @@ func TestRequest(t *testing.T) {
 
 	// Test with custom headers
 	mockPeer.toPeerCalled = false
-	resp, err = client.Get("/test", "test-identity-key", &RequestOptions{
+	_, err = client.Get("/test", "test-identity-key", &RequestOptions{
 		Headers: map[string]string{
 			"X-Custom-Header": "CustomValue",
 		},

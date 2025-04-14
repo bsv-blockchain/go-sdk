@@ -101,13 +101,13 @@ func ParsePubKey(pubKeyStr []byte) (key *PublicKey, err error) {
 			return nil, fmt.Errorf("ybit doesn't match oddness")
 		}
 
-		if pubkey.X.Cmp(pubkey.Curve.Params().P) >= 0 {
+		if pubkey.X.Cmp(pubkey.Params().P) >= 0 {
 			return nil, fmt.Errorf("pubkey X parameter is >= to P")
 		}
-		if pubkey.Y.Cmp(pubkey.Curve.Params().P) >= 0 {
+		if pubkey.Y.Cmp(pubkey.Params().P) >= 0 {
 			return nil, fmt.Errorf("pubkey Y parameter is >= to P")
 		}
-		if !pubkey.Curve.IsOnCurve(pubkey.X, pubkey.Y) {
+		if !pubkey.IsOnCurve(pubkey.X, pubkey.Y) {
 			return nil, fmt.Errorf("pubkey isn't on secp256k1 curve")
 		}
 
@@ -215,12 +215,12 @@ func PublicKeyFromBytes(pubKeyBytes []byte) (*PublicKey, error) {
 
 // validate key belongs on given curve
 func (p *PublicKey) Validate() bool {
-	return p.Curve.IsOnCurve(p.X, p.Y)
+	return p.IsOnCurve(p.X, p.Y)
 }
 
 // Multiplies this Point by a scalar value
 func (p *PublicKey) Mul(k *big.Int) *PublicKey {
-	x, y := p.Curve.ScalarMult(p.X, p.Y, k.Bytes())
+	x, y := p.ScalarMult(p.X, p.Y, k.Bytes())
 	return &PublicKey{
 		Curve: p.Curve,
 		X:     x,

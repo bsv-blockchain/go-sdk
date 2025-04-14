@@ -152,7 +152,7 @@ func (w *TestWallet) Decrypt(args *wallet.DecryptArgs) (*wallet.DecryptResult, e
 
 func (w *TestWallet) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
 	walletCerts := make([]wallet.Certificate, len(w.mockCertificates))
-	for i, _ := range w.mockCertificates {
+	for i := range w.mockCertificates {
 		// Empty conversion as we're just trying to appease the type system
 		walletCerts[i] = wallet.Certificate{}
 	}

@@ -567,7 +567,8 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 		return nil, err
 	}
 
-	if version == ATOMIC_BEEF {
+	switch version {
+	case ATOMIC_BEEF:
 		hash := make([]byte, 32)
 		if _, err := io.ReadFull(reader, hash); err != nil {
 			return nil, err
@@ -578,7 +579,7 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 		} else {
 			return b.FindAtomicTransaction(txid.String()), nil
 		}
-	} else if version == BEEF_V1 {
+	case BEEF_V1:
 		BUMPs, err := readBUMPs(reader)
 		if err != nil {
 			return nil, err
@@ -590,7 +591,7 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 		}
 
 		return transaction, nil
-	} else {
+	default:
 		return nil, fmt.Errorf("use NewBeefFromBytes to parse anything which isn't V1 BEEF or AtomicBEEF")
 	}
 

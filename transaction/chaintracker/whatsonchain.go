@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
@@ -46,17 +45,8 @@ func NewWhatsOnChain(network Network, apiKey string) *WhatsOnChain {
 
 // Assuming BlockHeader is defined elsewhere
 func (w *WhatsOnChain) GetBlockHeader(height uint32) (header *BlockHeader, err error) {
-	baseURL, err := url.Parse(w.baseURL)
-	if err != nil {
-		return nil, fmt.Errorf("invalid baseURL: %w", err)
-	}
-
-	// Construct the path using path.Join-like functionality
-	pathURL := baseURL.ResolveReference(&url.URL{
-		Path: fmt.Sprintf("block/%d/header", height),
-	})
-
-	req, err := http.NewRequestWithContext(context.Background(), "GET", pathURL.String(), nil)
+	url := fmt.Sprintf("%s/block/%d/header", w.baseURL, height)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
