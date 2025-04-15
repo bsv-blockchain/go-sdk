@@ -67,6 +67,11 @@ func NewCertificate(
 
 // ToBinary serializes the certificate into binary format
 func (c *Certificate) ToBinary(includeSignature bool) ([]byte, error) {
+	// ensure parameters are valid
+	if c.Type == "" || c.SerialNumber == "" || c.RevocationOutpoint == nil || c.Fields == nil {
+		return nil, ErrInvalidCertificate
+	}
+
 	writer := util.NewWriter()
 
 	// Write type (Base64String, 32 bytes)
