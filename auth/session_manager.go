@@ -74,13 +74,17 @@ func (sm *SessionManager) GetSession(identifier string) (*PeerSession, error) {
 	}
 
 	// Pick the "best" session
-	// - Choose the most recently updated
+	// - Choose the most recently updated, preferring authenticated sessions
 	var best *PeerSession
 	for nonce := range nonces {
 		if s, ok := sm.sessionNonceToSession[nonce]; ok {
 			if best == nil {
 				best = s
 			} else if s.LastUpdate > best.LastUpdate {
+				if s.IsAuthenticated || !best.IsAuthenticated {
+					best = s
+				}
+			} else if s.IsAuthenticated && !best.IsAuthenticated {
 				best = s
 			}
 		}
