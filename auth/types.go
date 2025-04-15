@@ -78,3 +78,15 @@ type PeerSession struct {
 	// The last time the session was updated (milliseconds since epoch)
 	LastUpdate int64
 }
+
+// CertificateQuery defines criteria for retrieving certificates
+type CertificateQuery struct {
+	// List of certifier identity keys (hex-encoded public keys)
+	Certifiers []string
+
+	// List of certificate type IDs
+	Types []string
+
+	// Subject identity key (who the certificate is about)
+	Subject string
+}
