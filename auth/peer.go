@@ -364,6 +364,11 @@ func publicKeyFromString(keyString string) (*ec.PublicKey, error) {
 
 // handleIncomingMessage processes incoming authentication messages
 func (p *Peer) handleIncomingMessage(message *AuthMessage) error {
+
+	if message.Version != AUTH_VERSION {
+		return fmt.Errorf("invalid or unsupported message auth version! Received: %s, expected: %s", message.Version, AUTH_VERSION)
+	}
+
 	if message == nil {
 		return ErrInvalidMessage
 	}
