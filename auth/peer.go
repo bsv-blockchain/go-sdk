@@ -22,7 +22,7 @@ type OnCertificateReceivedCallback func(senderPublicKey *ec.PublicKey, certs []*
 type OnCertificateRequestReceivedCallback func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error
 
 type Peer struct {
-	sessionManager                        *SessionManager
+	sessionManager                        SessionManager
 	transport                             Transport
 	wallet                                wallet.Interface
 	CertificatesToRequest                 utils.RequestedCertificateSet
@@ -42,7 +42,7 @@ type PeerOptions struct {
 	Wallet                 wallet.Interface
 	Transport              Transport
 	CertificatesToRequest  *utils.RequestedCertificateSet
-	SessionManager         *SessionManager
+	SessionManager         SessionManager
 	AutoPersistLastSession *bool
 }
 
