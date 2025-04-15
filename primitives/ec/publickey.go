@@ -3,6 +3,7 @@ package primitives
 import (
 	"crypto/ecdsa"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -136,6 +137,23 @@ func ParsePubKey(pubKeyStr []byte) (key *PublicKey, err error) {
 // PublicKey is an ecdsa.PublicKey with additional functions to
 // serialize in uncompressed, compressed, and hybrid formats.
 type PublicKey ecdsa.PublicKey
+
+func (p *PublicKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.ToDERHex())
+}
+
+func (p *PublicKey) UnmarshalJSON(data []byte) error {
+	var hexStr string
+	if err := json.Unmarshal(data, &hexStr); err != nil {
+		return err
+	}
+	pubKey, err := PublicKeyFromString(hexStr)
+	if err != nil {
+		return err
+	}
+	*p = *pubKey
+	return nil
+}
 
 // ToECDSA returns the public key as a *ecdsa.PublicKey.
 func (p *PublicKey) ToECDSA() *ecdsa.PublicKey {
