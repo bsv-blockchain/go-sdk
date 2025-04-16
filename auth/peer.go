@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
@@ -166,7 +167,7 @@ func (p *Peer) ToPeer(message []byte, identityKey *ec.PublicKey, maxWaitTime int
 	requestNonce := utils.RandomBase64(32)
 
 	// Get identity key
-	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey:    true,
 		EncryptionArgs: wallet.EncryptionArgs{},
 	}, "auth-peer")
@@ -185,7 +186,7 @@ func (p *Peer) ToPeer(message []byte, identityKey *ec.PublicKey, maxWaitTime int
 	}
 
 	// Sign the message
-	sigResult, err := p.wallet.CreateSignature(wallet.CreateSignatureArgs{
+	sigResult, err := p.wallet.CreateSignature(context.TODO(), wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -276,7 +277,7 @@ func (p *Peer) initiateHandshake(peerIdentityKey *ec.PublicKey, maxWaitTimeMs in
 	}
 
 	// Get our identity key to include in the initial request
-	pubKey, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	pubKey, err := p.wallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey:    true,
 		EncryptionArgs: wallet.EncryptionArgs{
 			// No specific protocol or key ID needed for identity key
@@ -443,7 +444,7 @@ func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey *ec.Pu
 	}
 
 	// Get our identity key for the response
-	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey:    true,
 		EncryptionArgs: wallet.EncryptionArgs{},
 	}, "auth-peer")
@@ -575,7 +576,7 @@ func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey *e
 	}
 
 	// Verify signature
-	verifyResult, err := p.wallet.VerifySignature(wallet.VerifySignatureArgs{
+	verifyResult, err := p.wallet.VerifySignature(context.TODO(), wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -650,7 +651,7 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey *
 	}
 
 	// Verify signature
-	verifyResult, err := p.wallet.VerifySignature(wallet.VerifySignatureArgs{
+	verifyResult, err := p.wallet.VerifySignature(context.TODO(), wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -735,7 +736,7 @@ func (p *Peer) handleGeneralMessage(message *AuthMessage, senderPublicKey *ec.Pu
 	p.sessionManager.UpdateSession(session)
 
 	// Verify signature
-	verifyResult, err := p.wallet.VerifySignature(wallet.VerifySignatureArgs{
+	verifyResult, err := p.wallet.VerifySignature(context.TODO(), wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -788,7 +789,7 @@ func (p *Peer) RequestCertificates(identityKey *ec.PublicKey, certificateRequire
 	}
 
 	// Get identity key
-	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -812,7 +813,7 @@ func (p *Peer) RequestCertificates(identityKey *ec.PublicKey, certificateRequire
 	}
 
 	// Sign the request
-	sigResult, err := p.wallet.CreateSignature(wallet.CreateSignatureArgs{
+	sigResult, err := p.wallet.CreateSignature(context.TODO(), wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -869,7 +870,7 @@ func (p *Peer) SendCertificateResponse(identityKey *ec.PublicKey, certificates [
 	}
 
 	// Get identity key
-	identityKeyResult, err := p.wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	identityKeyResult, err := p.wallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -893,7 +894,7 @@ func (p *Peer) SendCertificateResponse(identityKey *ec.PublicKey, certificates [
 	}
 
 	// Sign the response
-	sigResult, err := p.wallet.CreateSignature(wallet.CreateSignatureArgs{
+	sigResult, err := p.wallet.CreateSignature(context.TODO(), wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,

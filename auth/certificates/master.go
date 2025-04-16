@@ -1,6 +1,7 @@
 package certificates
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -91,7 +92,7 @@ func CreateCertificateFields(
 
 		// 3. Encrypt the symmetric key for the certifier/subject
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number for master keyring creation
-		encryptedKey, err := creatorWallet.Encrypt(wallet.EncryptArgs{
+		encryptedKey, err := creatorWallet.Encrypt(context.TODO(), wallet.EncryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,
@@ -154,7 +155,7 @@ func IssueCertificateForSubject(
 	}
 
 	// 3. Get the identity public key of the certifier
-	certifierPubKey, err := certifierWallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	certifierPubKey, err := certifierWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -252,7 +253,7 @@ func DecryptField(
 
 	// 2. Decrypt the field revelation key
 	protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number
-	decryptedBytes, err := subjectOrCertifierWallet.Decrypt(wallet.DecryptArgs{
+	decryptedBytes, err := subjectOrCertifierWallet.Decrypt(context.TODO(), wallet.DecryptArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID:       protocolID,
 			KeyID:            keyID,
@@ -373,7 +374,7 @@ func CreateKeyringForVerifier(
 
 		// 2. Re-encrypt the field revelation key for the verifier
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(serialNumber))
-		encryptedKeyForVerifier, err := subjectWallet.Encrypt(wallet.EncryptArgs{
+		encryptedKeyForVerifier, err := subjectWallet.Encrypt(context.TODO(), wallet.EncryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,

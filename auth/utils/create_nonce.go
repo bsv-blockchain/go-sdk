@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -32,7 +33,7 @@ func CreateNonce(w wallet.Interface, counterparty wallet.Counterparty) (string, 
 	}
 
 	// Create an HMAC for the random data using the wallet's key
-	hmac, err := w.CreateHmac(args, "")
+	hmac, err := w.CreateHmac(context.TODO(), args, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to create HMAC: %w", err)
 	}

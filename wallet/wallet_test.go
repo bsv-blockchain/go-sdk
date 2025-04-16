@@ -34,6 +34,8 @@ func TestEncryptDecryptMessage(t *testing.T) {
 	counterpartyWallet, err := wallet.NewWallet(counterpartyKey)
 	assert.NoError(t, err)
 
+	ctx := t.Context()
+
 	// Encrypt message
 	encryptResult, err := userWallet.Encrypt(wallet.EncryptArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -164,6 +166,8 @@ func TestDefaultEncryptDecryptOperations(t *testing.T) {
 		KeyID:      keyID,
 	}
 
+	ctx := t.Context()
+
 	t.Run("test encrypt/decrypt with implicit self", func(t *testing.T) {
 		// Test encryption/decryption with implicit self
 		encryptArgs := wallet.EncryptArgs{
@@ -204,6 +208,8 @@ func TestCreateVerifySignature(t *testing.T) {
 		KeyID:      keyID,
 	}
 
+	ctx := t.Context()
+
 	// Create signature
 	signArgs := wallet.CreateSignatureArgs{
 		EncryptionArgs: baseArgs,
@@ -214,7 +220,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		Counterparty: counterpartyKey.PubKey(),
 	}
 
-	signResult, err := userWallet.CreateSignature(signArgs, "")
+	signResult, err := userWallet.CreateSignature(ctx, signArgs, "")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, signResult.Signature)
 
@@ -241,7 +247,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		signArgs.HashToDirectlySign = hash[:]
 		signArgs.Data = nil
 
-		signResult, err := userWallet.CreateSignature(signArgs, "")
+		signResult, err := userWallet.CreateSignature(ctx, signArgs, "")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, signResult.Signature)
 
@@ -362,6 +368,8 @@ func TestDefaultSignatureOperations(t *testing.T) {
 		KeyID:      keyID,
 	}
 
+	ctx := t.Context()
+
 	t.Run("verify self sign signature", func(t *testing.T) {
 		// Create signature with self sign
 		selfSignArgs := wallet.CreateSignatureArgs{
@@ -371,7 +379,7 @@ func TestDefaultSignatureOperations(t *testing.T) {
 		selfSignArgs.Counterparty = wallet.Counterparty{
 			Type: wallet.CounterpartyTypeSelf,
 		}
-		selfSignResult, err := userWallet.CreateSignature(selfSignArgs, "")
+		selfSignResult, err := userWallet.CreateSignature(ctx, selfSignArgs, "")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, selfSignResult.Signature)
 
@@ -406,7 +414,7 @@ func TestDefaultSignatureOperations(t *testing.T) {
 			EncryptionArgs: baseArgs,
 			Data:           sampleData,
 		}
-		anyoneSignResult, err := userWallet.CreateSignature(anyoneSignArgs, "")
+		anyoneSignResult, err := userWallet.CreateSignature(ctx, anyoneSignArgs, "")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, anyoneSignResult.Signature)
 
@@ -467,6 +475,8 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 		KeyID:      keyID,
 	}
 
+	ctx := t.Context()
+
 	// Test public key derivation
 	getIdentityPubKeyArgs := wallet.GetPublicKeyArgs{
 		EncryptionArgs: baseArgs,
@@ -522,6 +532,8 @@ func TestHmacCreateVerify(t *testing.T) {
 		ProtocolID: protocol,
 		KeyID:      keyID,
 	}
+
+	ctx := t.Context()
 
 	// Create HMAC
 	createHmacArgs := wallet.CreateHmacArgs{

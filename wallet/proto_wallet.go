@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -55,7 +56,7 @@ func NewProtoWallet(rootKeyOrKeyDeriver ProtoWalletArgs) (*ProtoWallet, error) {
 }
 
 // GetPublicKey returns the public key for the wallet
-func (p *ProtoWallet) GetPublicKey(args GetPublicKeyArgs, _originator string) (*GetPublicKeyResult, error) {
+func (p *ProtoWallet) GetPublicKey(ctx context.Context, args GetPublicKeyArgs, _originator string) (*GetPublicKeyResult, error) {
 	if args.IdentityKey {
 		if p.keyDeriver == nil {
 			return nil, errors.New("keyDeriver is undefined")
@@ -97,6 +98,7 @@ func (p *ProtoWallet) GetPublicKey(args GetPublicKeyArgs, _originator string) (*
 
 // Encrypt encrypts data using the provided protocol ID and key ID
 func (p *ProtoWallet) Encrypt(
+	ctx context.Context,
 	args EncryptArgs,
 	originator string,
 ) (*EncryptResult, error) {
@@ -135,6 +137,7 @@ func (p *ProtoWallet) Encrypt(
 
 // Decrypt decrypts data using the provided protocol ID and key ID
 func (p *ProtoWallet) Decrypt(
+	ctx context.Context,
 	args DecryptArgs,
 	originator string,
 ) (*DecryptResult, error) {
@@ -169,6 +172,7 @@ func (p *ProtoWallet) Decrypt(
 
 // CreateSignature creates a signature for the provided data
 func (p *ProtoWallet) CreateSignature(
+	ctx context.Context,
 	args CreateSignatureArgs,
 	originator string,
 ) (*CreateSignatureResult, error) {
@@ -219,6 +223,7 @@ func (p *ProtoWallet) CreateSignature(
 
 // VerifySignature verifies a signature for the provided data
 func (p *ProtoWallet) VerifySignature(
+	ctx context.Context,
 	args VerifySignatureArgs,
 	originator string,
 ) (*VerifySignatureResult, error) {
@@ -271,6 +276,7 @@ func (p *ProtoWallet) VerifySignature(
 // CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
 // using a symmetric key derived from the protocol, key ID, and counterparty.
 func (p *ProtoWallet) CreateHmac(
+	ctx context.Context,
 	args CreateHmacArgs,
 	originator string,
 ) (*CreateHmacResult, error) {
@@ -307,6 +313,7 @@ func (p *ProtoWallet) CreateHmac(
 // VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
 // The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
 func (p *ProtoWallet) VerifyHmac(
+	ctx context.Context,
 	args VerifyHmacArgs,
 	originator string,
 ) (*VerifyHmacResult, error) {
