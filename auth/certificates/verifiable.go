@@ -1,6 +1,7 @@
 package certificates
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -108,7 +109,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 		// Use the certificate's serial number as required for verifier keyring decryption.
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(vc.SerialNumber))
 
-		decryptResult, err := verifierWallet.Decrypt(wallet.DecryptArgs{
+		decryptResult, err := verifierWallet.Decrypt(context.TODO(), wallet.DecryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,
