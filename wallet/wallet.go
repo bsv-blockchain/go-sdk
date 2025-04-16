@@ -1,8 +1,6 @@
 package wallet
 
 import (
-	"errors"
-
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
@@ -96,40 +94,6 @@ type GetPublicKeyArgs struct {
 
 type GetPublicKeyResult struct {
 	PublicKey *ec.PublicKey `json:"publicKey"`
-}
-
-func (w *Wallet) GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
-	if args.IdentityKey {
-		return &GetPublicKeyResult{
-			PublicKey: w.keyDeriver.rootKey.PubKey(),
-		}, nil
-	}
-
-	if args.ProtocolID.Protocol == "" || args.KeyID == "" {
-		return nil, errors.New("protocolID and keyID are required if identityKey is false or undefined")
-	}
-
-	// Handle default counterparty (self)
-	counterparty := args.Counterparty
-	if counterparty.Type == CounterpartyUninitialized {
-		counterparty = Counterparty{
-			Type: CounterpartyTypeSelf,
-		}
-	}
-
-	pubKey, err := w.keyDeriver.DerivePublicKey(
-		args.ProtocolID,
-		args.KeyID,
-		counterparty,
-		args.ForSelf,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &GetPublicKeyResult{
-		PublicKey: pubKey,
-	}, nil
 }
 
 type CreateSignatureArgs struct {
