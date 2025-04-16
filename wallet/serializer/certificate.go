@@ -91,15 +91,11 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	typeBytes := r.ReadBytes(SizeType)
 	cert.Type = base64.StdEncoding.EncodeToString(typeBytes)
 
-	if r.Err != nil {
-		return nil, fmt.Errorf("error 1: %w", r.Err)
-	}
-
 	// Read subject (hex)
 	subjectBytes := r.ReadBytes(SizeSubject)
 	cert.Subject, err = ec.PublicKeyFromBytes(subjectBytes)
-	if r.Err != nil {
-		return nil, fmt.Errorf("error 2: %w", r.Err)
+	if err != nil {
+		return nil, fmt.Errorf("error reading subject public key: %w", err)
 	}
 
 	// Read serial number (base64)
@@ -107,14 +103,14 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 
 	// Read certifier (hex)
 	cert.Certifier, err = ec.PublicKeyFromBytes(r.ReadBytes(SizeCertifier))
-	if r.Err != nil {
-		return nil, fmt.Errorf("error 3: %w", r.Err)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing certifier key: %w", err)
 	}
 
 	// Read revocation outpoint
 	outpoint, err := decodeOutpoint(r.ReadBytes(OutpointSize))
 	if err != nil {
-		return nil, fmt.Errorf("error decoding revocation outpoint: %w", r.Err)
+		return nil, fmt.Errorf("error decoding revocation outpoint: %w", err)
 	}
 	cert.RevocationOutpoint = outpoint
 
