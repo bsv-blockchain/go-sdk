@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -65,32 +66,32 @@ type MinimalWalletImpl struct {
 }
 
 // Required methods to satisfy wallet.Interface
-func (w *MinimalWalletImpl) CreateAction(args wallet.CreateActionArgs, context string) (*wallet.CreateActionResult, error) {
+func (w *MinimalWalletImpl) CreateAction(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 	return &wallet.CreateActionResult{Txid: "mock_tx", Tx: []byte{}}, nil
 }
 
-func (w *MinimalWalletImpl) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
+func (w *MinimalWalletImpl) ListCertificates(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
 	return &wallet.ListCertificatesResult{Certificates: []wallet.CertificateResult{}}, nil
 }
 
-func (w *MinimalWalletImpl) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
+func (w *MinimalWalletImpl) ProveCertificate(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
 	return &wallet.ProveCertificateResult{KeyringForVerifier: map[string]string{}}, nil
 }
 
-func (w *MinimalWalletImpl) IsAuthenticated(args interface{}) (bool, error) {
-	return true, nil
+func (w *MinimalWalletImpl) IsAuthenticated(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+	return &wallet.AuthenticatedResult{Authenticated: true}, nil
 }
 
-func (w *MinimalWalletImpl) GetHeight(args interface{}) (uint32, error) {
-	return 0, nil
+func (w *MinimalWalletImpl) GetHeight(ctx context.Context, args interface{}, originator string) (*wallet.GetHeightResult, error) {
+	return &wallet.GetHeightResult{}, nil
 }
 
-func (w *MinimalWalletImpl) GetNetwork(args interface{}) (string, error) {
-	return "test", nil
+func (w *MinimalWalletImpl) GetNetwork(ctx context.Context, args interface{}, originator string) (*wallet.GetNetworkResult, error) {
+	return &wallet.GetNetworkResult{Network: "test"}, nil
 }
 
-func (w *MinimalWalletImpl) GetVersion(args interface{}) (string, error) {
-	return "1.0", nil
+func (w *MinimalWalletImpl) GetVersion(ctx context.Context, args interface{}, originator string) (*wallet.GetVersionResult, error) {
+	return &wallet.GetVersionResult{Version: "1.0"}, nil
 }
 
 func main() {
@@ -126,12 +127,12 @@ func main() {
 	})
 
 	// Get identity keys
-	aliceIdentityResult, _ := aliceWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	aliceIdentityResult, _ := aliceWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 	aliceIdentity := hex.EncodeToString(aliceIdentityResult.PublicKey.Compressed())
 
-	bobIdentityResult, _ := bobWallet.GetPublicKey(&wallet.GetPublicKeyArgs{
+	bobIdentityResult, _ := bobWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 	bobIdentity := hex.EncodeToString(bobIdentityResult.PublicKey.Compressed())

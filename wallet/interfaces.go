@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"context"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
@@ -235,34 +236,34 @@ type ListOutputsResult struct {
 
 // Interface defines the core wallet operations for transaction creation, signing and querying.
 type Interface interface {
-	CreateAction(args CreateActionArgs, originator string) (*CreateActionResult, error)
-	SignAction(args SignActionArgs, originator string) (*SignActionResult, error)
-	AbortAction(args AbortActionArgs, originator string) (*AbortActionResult, error)
-	ListActions(args ListActionsArgs, originator string) (*ListActionsResult, error)
-	InternalizeAction(args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
-	ListOutputs(args ListOutputsArgs, originator string) (*ListOutputsResult, error)
-	RelinquishOutput(args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
-	GetPublicKey(args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
-	RevealCounterpartyKeyLinkage(args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
-	RevealSpecificKeyLinkage(args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
-	Encrypt(args EncryptArgs, originator string) (*EncryptResult, error)
-	Decrypt(args DecryptArgs, originator string) (*DecryptResult, error)
-	CreateHmac(args CreateHmacArgs, originator string) (*CreateHmacResult, error)
-	VerifyHmac(args VerifyHmacArgs, originator string) (*VerifyHmacResult, error)
-	CreateSignature(args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
-	VerifySignature(args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
-	AcquireCertificate(args AcquireCertificateArgs, originator string) (*Certificate, error)
-	ListCertificates(args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
-	ProveCertificate(args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
-	RelinquishCertificate(args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
-	DiscoverByIdentityKey(args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
-	DiscoverByAttributes(args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
-	IsAuthenticated(args interface{}, originator string) (*AuthenticatedResult, error)
-	WaitForAuthentication(args interface{}, originator string) (*AuthenticatedResult, error)
-	GetHeight(args interface{}, originator string) (*GetHeightResult, error)
-	GetHeaderForHeight(args GetHeaderArgs, originator string) (*GetHeaderResult, error)
-	GetNetwork(args interface{}, originator string) (*GetNetworkResult, error)
-	GetVersion(args interface{}, originator string) (*GetVersionResult, error)
+	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
+	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
+	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
+	ListActions(ctx context.Context, args ListActionsArgs, originator string) (*ListActionsResult, error)
+	InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
+	ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error)
+	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
+	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
+	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
+	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
+	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
+	CreateHmac(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error)
+	VerifyHmac(ctx context.Context, args VerifyHmacArgs, originator string) (*VerifyHmacResult, error)
+	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
+	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
+	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
+	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
+	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
+	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
+	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
+	IsAuthenticated(ctx context.Context, args interface{}, originator string) (*AuthenticatedResult, error)
+	WaitForAuthentication(ctx context.Context, args interface{}, originator string) (*AuthenticatedResult, error)
+	GetHeight(ctx context.Context, args interface{}, originator string) (*GetHeightResult, error)
+	GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error)
+	GetNetwork(ctx context.Context, args interface{}, originator string) (*GetNetworkResult, error)
+	GetVersion(ctx context.Context, args interface{}, originator string) (*GetVersionResult, error)
 }
 
 // AbortActionArgs identifies a transaction to abort using its reference string.

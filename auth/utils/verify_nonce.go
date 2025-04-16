@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -47,7 +48,7 @@ func VerifyNonce(
 	}
 
 	// Verify the hmac
-	result, err := w.VerifyHmac(args, "")
+	result, err := w.VerifyHmac(context.TODO(), args, "")
 	if err != nil {
 		return false, fmt.Errorf("failed to verify HMAC: %w", err)
 	}
