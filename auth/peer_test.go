@@ -260,7 +260,7 @@ func TestPeerMessageExchange(t *testing.T) {
 
 	// Alice sends a message to Bob
 	testMessage := []byte("Hello Bob!")
-	bobPubKey, err := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	bobPubKey, err := bobWallet.GetPublicKey(t.Context(), wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 	require.NoError(t, err)
 	err = alice.ToPeer(testMessage, bobPubKey.PublicKey, 5000)
 	require.NoError(t, err, "Alice should send message successfully")
@@ -323,6 +323,8 @@ func TestPeerAuthentication(t *testing.T) {
 	aliceAuthenticated := make(chan bool, 1)
 	bobAuthenticated := make(chan bool, 1)
 
+	ctx := t.Context()
+
 	// Track when authentication completes
 	alice.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
 		aliceAuthenticated <- true
@@ -351,7 +353,7 @@ func TestPeerAuthentication(t *testing.T) {
 	// Bob replies to Alice
 	go func() {
 		// Get Alice's identity key
-		alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+		alicePubKeyResult, _ := aliceWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
 		err := bob.ToPeer([]byte("Hello Alice!"), alicePubKeyResult.PublicKey, 5000)
 		require.NoError(t, err)
@@ -366,8 +368,8 @@ func TestPeerAuthentication(t *testing.T) {
 	}
 
 	// Verify that sessions were created
-	alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
-	bobPubKeyResult, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	alicePubKeyResult, _ := aliceWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	bobPubKeyResult, _ := bobWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
 	alicePubKeyStr := alicePubKeyResult.PublicKey.ToDERHex()
 	bobPubKeyStr := bobPubKeyResult.PublicKey.ToDERHex()
@@ -487,7 +489,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 	}
 
 	// Verify manual certificate request
-	alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	alicePubKeyResult, _ := aliceWallet.GetPublicKey(t.Context(), wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 	// bobPubKeyResult, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
 	// _ = bobPubKeyResult.PublicKey.ToDERHex()
@@ -508,12 +510,14 @@ func TestPeerCertificateExchange(t *testing.T) {
 func TestPeerSessionManagement(t *testing.T) {
 	alice, bob, aliceWallet, bobWallet := CreatePeerPair(t)
 
+	ctx := t.Context()
+
 	// Use all variables to avoid linter errors
 	require.NotNil(t, bob, "Bob peer should be created")
 
 	// Verify we can create a session manually
-	alicePubKeyResult, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
-	bobPubKeyResult, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	alicePubKeyResult, _ := aliceWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	bobPubKeyResult, _ := bobWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
 	alicePubKeyStr := alicePubKeyResult.PublicKey.ToDERHex()
 	bobPubKeyStr := bobPubKeyResult.PublicKey.ToDERHex()

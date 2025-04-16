@@ -376,7 +376,7 @@ func TestVerifiableCertificate(t *testing.T) {
 				t.Fatalf("Failed to create anyone wallet: %v", err)
 			}
 
-			anyoneCertPubKey, err := anyoneWallet.GetPublicKey(wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+			anyoneCertPubKey, err := anyoneWallet.GetPublicKey(t.Context(), wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 			if err != nil {
 				t.Fatalf("Failed to get anyone public key: %v", err)
 			}

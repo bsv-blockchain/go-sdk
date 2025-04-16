@@ -1,6 +1,7 @@
 package certificates
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -286,7 +287,7 @@ func (c *Certificate) Verify() error {
 		Signature: *sig,
 	}
 
-	verifyResult, err := verifier.VerifySignature(verifyArgs, "")
+	verifyResult, err := verifier.VerifySignature(context.TODO(), verifyArgs, "")
 	if err != nil {
 		return fmt.Errorf("signature verification failed: %w", err)
 	}
@@ -306,7 +307,7 @@ func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
 	}
 
 	// Get the wallet's identity public key and update the certificate's certifier field
-	pubKeyResult, err := certifierWallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	pubKeyResult, err := certifierWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -336,7 +337,7 @@ func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
 	}
 
 	// Create signature
-	signResult, err := certifierWallet.CreateSignature(signArgs, "go-sdk")
+	signResult, err := certifierWallet.CreateSignature(context.TODO(), signArgs, "go-sdk")
 	if err != nil {
 		return fmt.Errorf("failed to sign certificate: %w", err)
 	}

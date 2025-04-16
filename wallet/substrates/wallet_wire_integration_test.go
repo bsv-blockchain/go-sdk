@@ -18,6 +18,7 @@ func TestCreateAction(t *testing.T) {
 	// Setup mock
 	mock := wallet.NewMockWallet(t)
 	walletTransceiver := createTestWalletWire(mock)
+	ctx := t.Context()
 
 	t.Run("should create an action with valid inputs", func(t *testing.T) {
 		// Expected arguments and return value
@@ -41,7 +42,7 @@ func TestCreateAction(t *testing.T) {
 		}
 
 		// Execute test
-		result, err := walletTransceiver.CreateAction(*mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
+		result, err := walletTransceiver.CreateAction(ctx, *mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
 
 		// Verify results
 		require.NoError(t, err)
@@ -64,7 +65,7 @@ func TestCreateAction(t *testing.T) {
 		}
 
 		// Execute test
-		result, err := walletTransceiver.CreateAction(*mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
+		result, err := walletTransceiver.CreateAction(ctx, *mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
 
 		// Verify results
 		require.NoError(t, err)
