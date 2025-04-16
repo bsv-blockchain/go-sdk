@@ -1,8 +1,9 @@
-package utils
+package auth
 
 import (
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,9 +24,9 @@ func TestValidateCertificates(t *testing.T) {
 
 	t.Run("Validates certificate requirements structure", func(t *testing.T) {
 		// Test validate certificate requirements struct
-		reqs := &RequestedCertificateSet{
+		reqs := &utils.RequestedCertificateSet{
 			Certifiers: []string{"valid_certifier"},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				"requested_type": {"field1"},
 			},
 		}

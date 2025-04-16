@@ -1,9 +1,15 @@
 package auth
 
 import (
+	"bytes"
+	"fmt"
+	"slices"
+	"sync"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // MessageType defines the type of message exchanged in auth
@@ -27,7 +33,7 @@ type AuthMessage struct {
 	MessageType MessageType `json:"messageType"`
 
 	// Sender's identity key
-	IdentityKey ec.PublicKey `json:"identityKey"`
+	IdentityKey *ec.PublicKey `json:"identityKey"`
 
 	// Sender's nonce (256-bit random value)
 	Nonce string `json:"nonce,omitempty"`
@@ -49,6 +55,93 @@ type AuthMessage struct {
 
 	// Digital signature covering the entire message
 	Signature []byte `json:"signature,omitempty"`
+}
+
+// ValidateCertificates validates and processes the certificates received from a peer.
+// The certificatesRequested parameter can be nil or a RequestedCertificateSet
+func ValidateCertificates(
+	verifierWallet wallet.Interface,
+	message *AuthMessage,
+	certificatesRequested *utils.RequestedCertificateSet,
+) error {
+	// Check if certificates are provided
+	if message.Certificates == nil {
+		return fmt.Errorf("no certificates were provided in the AuthMessage")
+	}
+
+	// Use a wait group to wait for all certificate validations to complete
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(message.Certificates))
+
+	// Process each certificate concurrently
+	for _, incomingCert := range message.Certificates {
+		wg.Add(1)
+		go func(cert *certificates.VerifiableCertificate) {
+			defer wg.Done()
+
+			// Check that the certificate subject matches the message identity key
+			subjectKey := cert.Subject.ToDER()
+			messageIdentityKey := message.IdentityKey.ToDER()
+			if !bytes.Equal(subjectKey, messageIdentityKey) {
+				errCh <- fmt.Errorf(
+					"the subject of one of your certificates (\"%x\") is not the same as the request sender (\"%x\")",
+					subjectKey,
+					messageIdentityKey,
+				)
+				return
+			}
+
+			// Verify Certificate structure and signature
+			err := cert.Verify()
+			if err != nil {
+				errCh <- fmt.Errorf("the signature for the certificate with serial number %s is invalid: %v",
+					cert.SerialNumber, err)
+				return
+			}
+
+			// Check if the certificate matches requested certifiers, types, and fields
+			if certificatesRequested != nil {
+				certifiers := certificatesRequested.Certifiers
+				types := certificatesRequested.CertificateTypes
+
+				// Check certifier matches
+				certifierKey := cert.Certifier.ToDERHex()
+				if !slices.Contains(certifiers, certifierKey) {
+					errCh <- fmt.Errorf(
+						"certificate with serial number %s has an unrequested certifier: %s",
+						cert.SerialNumber,
+						certifierKey,
+					)
+					return
+				}
+
+				// Check type match
+				_, typeExists := types[string(cert.Type)]
+				if !typeExists {
+					errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
+					return
+				}
+			}
+
+			_, err = cert.DecryptFields(verifierWallet, false, "")
+			if err != nil {
+				errCh <- fmt.Errorf("failed to decrypt certificate fields: %v", err)
+				return
+			}
+		}(incomingCert)
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+	close(errCh)
+
+	// Check if any errors occurred
+	select {
+	case err := <-errCh:
+		return err
+	default:
+		return nil
+	}
 }
 
 // Transport defines the interface for sending and receiving AuthMessages
@@ -77,4 +170,16 @@ type PeerSession struct {
 
 	// The last time the session was updated (milliseconds since epoch)
 	LastUpdate int64
+}
+
+// CertificateQuery defines criteria for retrieving certificates
+type CertificateQuery struct {
+	// List of certifier identity keys (hex-encoded public keys)
+	Certifiers []string
+
+	// List of certificate type IDs
+	Types []string
+
+	// Subject identity key (who the certificate is about)
+	Subject string
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	script "github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -632,7 +633,7 @@ func TestBeefErrorHandling(t *testing.T) {
 		require.NoError(t, err)
 
 		// Skip number of BUMPs and BUMP data
-		var numberOfBUMPs VarInt
+		var numberOfBUMPs util.VarInt
 		_, err = numberOfBUMPs.ReadFrom(reader)
 		require.NoError(t, err)
 
@@ -644,7 +645,7 @@ func TestBeefErrorHandling(t *testing.T) {
 		}
 
 		// Skip number of transactions
-		var numberOfTransactions VarInt
+		var numberOfTransactions util.VarInt
 		_, err = numberOfTransactions.ReadFrom(reader)
 		require.NoError(t, err)
 
@@ -674,10 +675,10 @@ func TestBeefEdgeCases(t *testing.T) {
 		require.NoError(t, err)
 
 		// Write number of BUMPs (0)
-		buf.Write(VarInt(0).Bytes())
+		buf.Write(util.VarInt(0).Bytes())
 
 		// Write number of transactions (1)
-		buf.Write(VarInt(1).Bytes())
+		buf.Write(util.VarInt(1).Bytes())
 
 		// Write one TxIDOnly transaction
 		buf.WriteByte(byte(TxIDOnly)) // DataFormat
@@ -730,10 +731,10 @@ func TestBeefMergeBeefBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Write number of BUMPs (0)
-	buf.Write(VarInt(0).Bytes())
+	buf.Write(util.VarInt(0).Bytes())
 
 	// Write number of transactions (1)
-	buf.Write(VarInt(1).Bytes())
+	buf.Write(util.VarInt(1).Bytes())
 
 	// Write one RawTx transaction
 	buf.WriteByte(byte(RawTx))

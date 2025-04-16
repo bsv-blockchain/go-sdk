@@ -2,57 +2,59 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeDiscoverByAttributesArgs(args *wallet.DiscoverByAttributesArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Write attributes
 	attributeKeys := make([]string, 0, len(args.Attributes))
 	for k := range args.Attributes {
 		attributeKeys = append(attributeKeys, k)
 	}
-	w.writeVarInt(uint64(len(attributeKeys)))
+	w.WriteVarInt(uint64(len(attributeKeys)))
 	for _, key := range attributeKeys {
-		w.writeIntBytes([]byte(key))
-		w.writeIntBytes([]byte(args.Attributes[key]))
+		w.WriteIntBytes([]byte(key))
+		w.WriteIntBytes([]byte(args.Attributes[key]))
 	}
 
 	// Write limit, offset, seek permission
-	w.writeOptionalUint32(args.Limit)
-	w.writeOptionalUint32(args.Offset)
-	w.writeOptionalBool(args.SeekPermission)
+	w.WriteOptionalUint32(args.Limit)
+	w.WriteOptionalUint32(args.Offset)
+	w.WriteOptionalBool(args.SeekPermission)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeDiscoverByAttributesArgs(data []byte) (*wallet.DiscoverByAttributesArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.DiscoverByAttributesArgs{
 		Attributes: make(map[string]string),
 	}
 
 	// Read attributes
-	attributesLength := r.readVarInt()
+	attributesLength := r.ReadVarInt()
 	for i := uint64(0); i < attributesLength; i++ {
-		fieldKey := string(r.readIntBytes())
-		fieldValue := string(r.readIntBytes())
+		fieldKey := string(r.ReadIntBytes())
+		fieldValue := string(r.ReadIntBytes())
 
-		if r.err != nil {
-			return nil, fmt.Errorf("error reading attribute %d: %w", i, r.err)
+		if r.Err != nil {
+			return nil, fmt.Errorf("error reading attribute %d: %w", i, r.Err)
 		}
 
 		args.Attributes[fieldKey] = fieldValue
 	}
 
 	// Read limit, offset, seek permission
-	args.Limit = r.readOptionalUint32()
-	args.Offset = r.readOptionalUint32()
-	args.SeekPermission = r.readOptionalBool()
+	args.Limit = r.ReadOptionalUint32()
+	args.Offset = r.ReadOptionalUint32()
+	args.SeekPermission = r.ReadOptionalBool()
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error deserializing DiscoverByAttributes args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error deserializing DiscoverByAttributes args: %w", r.Err)
 	}
 
 	return args, nil

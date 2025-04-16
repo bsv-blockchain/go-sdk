@@ -20,12 +20,16 @@ func TestCreateNonce(t *testing.T) {
 	}
 
 	// Test creating a nonce
-	nonce, err := CreateNonce(completedWallet, wallet.CounterpartyTypeSelf)
+	nonce, err := CreateNonce(completedWallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	})
 	assert.NoError(t, err, "Should not error when creating nonce")
 	assert.NotEmpty(t, nonce, "Nonce should not be empty")
 
 	// Create another nonce to verify they're different
-	nonce2, err := CreateNonce(completedWallet, wallet.CounterpartyTypeSelf)
+	nonce2, err := CreateNonce(completedWallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	})
 	assert.NoError(t, err, "Should not error when creating second nonce")
 	assert.NotEmpty(t, nonce2, "Second nonce should not be empty")
 	assert.NotEqual(t, nonce, nonce2, "Two nonces should be different")
@@ -43,22 +47,26 @@ func TestVerifyNonce(t *testing.T) {
 	}
 
 	// Create a valid nonce
-	counterpartyType := wallet.CounterpartyTypeSelf
-	nonce, err := CreateNonce(completedWallet, counterpartyType)
+	counterparty := wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	}
+	nonce, err := CreateNonce(completedWallet, counterparty)
 	assert.NoError(t, err, "Failed to create nonce")
 
 	// Verify the valid nonce
-	valid, err := VerifyNonce(nonce, completedWallet, counterpartyType)
+	valid, err := VerifyNonce(nonce, completedWallet, counterparty)
 	assert.NoError(t, err, "Should not error when verifying a valid nonce")
 	assert.True(t, valid, "Valid nonce should verify successfully")
 
 	// Test invalid nonce (wrong format)
-	valid, err = VerifyNonce("invalidnonce", completedWallet, counterpartyType)
+	valid, err = VerifyNonce("invalidnonce", completedWallet, counterparty)
 	assert.Error(t, err, "Should error with invalid nonce format")
 	assert.False(t, valid, "Invalid nonce should not verify")
 
 	// Test with different counterparty type (should fail)
-	valid, err = VerifyNonce(nonce, completedWallet, wallet.CounterpartyTypeAnyone)
+	valid, err = VerifyNonce(nonce, completedWallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeAnyone,
+	})
 	assert.NoError(t, err, "Should not error with valid nonce format but invalid counterparty")
 	assert.False(t, valid, "Nonce with mismatched counterparty should not verify")
 }

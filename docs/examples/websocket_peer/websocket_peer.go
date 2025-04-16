@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -22,32 +21,88 @@ type MinimalWalletImpl struct {
 }
 
 // Required methods to satisfy wallet.Interface
-func (w *MinimalWalletImpl) CreateAction(ctx context.Context, args wallet.CreateActionArgs, context string) (*wallet.CreateActionResult, error) {
+func (w *MinimalWalletImpl) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 	return &wallet.CreateActionResult{Txid: "mock_tx", Tx: []byte{}}, nil
 }
 
-func (w *MinimalWalletImpl) ListCertificates(ctx context.Context, args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
+func (w *MinimalWalletImpl) ListCertificates(args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
 	return &wallet.ListCertificatesResult{Certificates: []wallet.CertificateResult{}}, nil
 }
 
-func (w *MinimalWalletImpl) ProveCertificate(ctx context.Context, args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
+func (w *MinimalWalletImpl) ProveCertificate(args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
 	return &wallet.ProveCertificateResult{KeyringForVerifier: map[string]string{}}, nil
 }
 
-func (w *MinimalWalletImpl) IsAuthenticated(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (w *MinimalWalletImpl) IsAuthenticated(args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
 	return &wallet.AuthenticatedResult{Authenticated: true}, nil
 }
 
-func (w *MinimalWalletImpl) GetHeight(ctx context.Context, args interface{}, originator string) (*wallet.GetHeightResult, error) {
-	return &wallet.GetHeightResult{}, nil
+func (w *MinimalWalletImpl) GetHeight(args interface{}, originator string) (*wallet.GetHeightResult, error) {
+	return &wallet.GetHeightResult{Height: 0}, nil
 }
 
-func (w *MinimalWalletImpl) GetNetwork(ctx context.Context, args interface{}, originator string) (*wallet.GetNetworkResult, error) {
+func (w *MinimalWalletImpl) GetNetwork(args interface{}, originator string) (*wallet.GetNetworkResult, error) {
 	return &wallet.GetNetworkResult{Network: "test"}, nil
 }
 
-func (w *MinimalWalletImpl) GetVersion(ctx context.Context, args interface{}, originator string) (*wallet.GetVersionResult, error) {
+func (w *MinimalWalletImpl) GetVersion(args interface{}, originator string) (*wallet.GetVersionResult, error) {
 	return &wallet.GetVersionResult{Version: "1.0"}, nil
+}
+
+func (w *MinimalWalletImpl) AbortAction(args wallet.AbortActionArgs, originator string) (*wallet.AbortActionResult, error) {
+	return &wallet.AbortActionResult{}, nil
+}
+
+func (w *MinimalWalletImpl) AcquireCertificate(args wallet.AcquireCertificateArgs, originator string) (*wallet.Certificate, error) {
+	return &wallet.Certificate{}, nil
+}
+
+func (w *MinimalWalletImpl) DiscoverByAttributes(args wallet.DiscoverByAttributesArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
+	return &wallet.DiscoverCertificatesResult{}, nil
+}
+
+func (w *MinimalWalletImpl) DiscoverByIdentityKey(args wallet.DiscoverByIdentityKeyArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
+	return &wallet.DiscoverCertificatesResult{}, nil
+}
+
+func (w *MinimalWalletImpl) GetHeaderForHeight(args wallet.GetHeaderArgs, originator string) (*wallet.GetHeaderResult, error) {
+	return &wallet.GetHeaderResult{}, nil
+}
+
+func (w *MinimalWalletImpl) InternalizeAction(args wallet.InternalizeActionArgs, originator string) (*wallet.InternalizeActionResult, error) {
+	return &wallet.InternalizeActionResult{}, nil
+}
+
+func (w *MinimalWalletImpl) ListOutputs(args wallet.ListOutputsArgs, originator string) (*wallet.ListOutputsResult, error) {
+	return &wallet.ListOutputsResult{}, nil
+}
+
+func (w *MinimalWalletImpl) ListActions(args wallet.ListActionsArgs, originator string) (*wallet.ListActionsResult, error) {
+	return &wallet.ListActionsResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RelinquishCertificate(args wallet.RelinquishCertificateArgs, originator string) (*wallet.RelinquishCertificateResult, error) {
+	return &wallet.RelinquishCertificateResult{}, nil
+}
+
+func (w *MinimalWalletImpl) SignAction(args wallet.SignActionArgs, originator string) (*wallet.SignActionResult, error) {
+	return &wallet.SignActionResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RelinquishOutput(args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
+	return &wallet.RelinquishOutputResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RevealCounterpartyKeyLinkage(args wallet.RevealCounterpartyKeyLinkageArgs, originator string) (*wallet.RevealCounterpartyKeyLinkageResult, error) {
+	return &wallet.RevealCounterpartyKeyLinkageResult{}, nil
+}
+
+func (w *MinimalWalletImpl) RevealSpecificKeyLinkage(args wallet.RevealSpecificKeyLinkageArgs, originator string) (*wallet.RevealSpecificKeyLinkageResult, error) {
+	return &wallet.RevealSpecificKeyLinkageResult{}, nil
+}
+
+func (w *MinimalWalletImpl) WaitForAuthentication(args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+	return &wallet.AuthenticatedResult{Authenticated: true}, nil
 }
 
 // mockWebSocketServer is a simple in-memory message broker for testing
@@ -195,11 +250,20 @@ func main() {
 	_, _ = rand.Read(bobKeyBytes)
 	bobPrivKey, _ := ec.PrivateKeyFromBytes(bobKeyBytes)
 
-	aliceWallet := &MinimalWalletImpl{Wallet: wallet.NewWallet(alicePrivKey)}
-	bobWallet := &MinimalWalletImpl{Wallet: wallet.NewWallet(bobPrivKey)}
+	aliceW, err := wallet.NewWallet(alicePrivKey)
+	if err != nil {
+		log.Fatalf("Failed to create alice wallet: %v", err)
+	}
+	aliceWallet := &MinimalWalletImpl{Wallet: aliceW}
+
+	bobW, err := wallet.NewWallet(bobPrivKey)
+	if err != nil {
+		log.Fatalf("Failed to create bob wallet: %v", err)
+	}
+	bobWallet := &MinimalWalletImpl{Wallet: bobW}
 
 	// Connect transports
-	err := aliceTransport.Connect()
+	err = aliceTransport.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect Alice's transport: %v", err)
 	}
@@ -223,22 +287,23 @@ func main() {
 	})
 
 	// Set up message handlers
-	alicePeer.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
-		fmt.Printf("Alice received message from %s: %s\n", senderPublicKey, string(payload))
+	alicePeer.ListenForGeneralMessages(func(senderPubKey *ec.PublicKey, payload []byte) error {
+
+		fmt.Printf("Alice received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
 		return nil
 	})
 
-	bobPeer.ListenForGeneralMessages(func(senderPublicKey string, payload []byte) error {
-		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey, string(payload))
+	bobPeer.ListenForGeneralMessages(func(senderPubKey *ec.PublicKey, payload []byte) error {
+		fmt.Printf("Bob received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
 		return nil
 	})
 
 	// Get identity keys
-	aliceIdentityKey, _ := aliceWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	aliceIdentityKey, _ := aliceWallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 
-	bobIdentityKey, _ := bobWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	bobIdentityKey, _ := bobWallet.GetPublicKey(wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 
@@ -253,7 +318,7 @@ func main() {
 
 	// Alice sends a message to Bob
 	fmt.Println("Alice is sending a message to Bob...")
-	err = alicePeer.ToPeer([]byte("Hello Bob, this is Alice!"), bobIdKeyString, 5000)
+	err = alicePeer.ToPeer([]byte("Hello Bob, this is Alice!"), bobIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Alice to Bob: %v", err)
 	}
@@ -263,7 +328,7 @@ func main() {
 
 	// Bob replies to Alice
 	fmt.Println("Bob is replying to Alice...")
-	err = bobPeer.ToPeer([]byte("Hello Alice, nice to hear from you!"), aliceIdKeyString, 5000)
+	err = bobPeer.ToPeer([]byte("Hello Alice, nice to hear from you!"), aliceIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Bob to Alice: %v", err)
 	}

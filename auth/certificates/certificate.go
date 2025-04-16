@@ -68,6 +68,11 @@ func NewCertificate(
 
 // ToBinary serializes the certificate into binary format
 func (c *Certificate) ToBinary(includeSignature bool) ([]byte, error) {
+	// ensure parameters are valid
+	if c.Type == "" || c.SerialNumber == "" || c.RevocationOutpoint == nil || c.Fields == nil {
+		return nil, ErrInvalidCertificate
+	}
+
 	writer := util.NewWriter()
 
 	// Write type (Base64String, 32 bytes)
@@ -128,7 +133,7 @@ func (c *Certificate) ToBinary(includeSignature bool) ([]byte, error) {
 		writer.WriteBytes(c.Signature)
 	}
 
-	return writer.Bytes(), nil
+	return writer.Buf, nil
 }
 
 // CertificateFromBinary deserializes a certificate from binary format
@@ -225,12 +230,8 @@ func CertificateFromBinary(data []byte) (*Certificate, error) {
 
 	// Read signature if present
 	var signature []byte
-	if !reader.EOF() {
-		remaining, err := reader.Read()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read signature: %w", err)
-		}
-		signature = remaining
+	if reader.Pos < len(data) {
+		signature = reader.ReadRemaining()
 	}
 
 	return &Certificate{

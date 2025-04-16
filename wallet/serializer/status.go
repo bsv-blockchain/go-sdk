@@ -3,21 +3,23 @@ package serializer
 import (
 	"encoding/hex"
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-func writeTxidSliceWithStatus(w *writer, results []wallet.SendWithResult) error {
+func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) error {
 	if results == nil {
-		w.writeVarInt(0)
+		w.WriteVarInt(0)
 		return nil
 	}
-	w.writeVarInt(uint64(len(results)))
+	w.WriteVarInt(uint64(len(results)))
 	for _, res := range results {
 		txidBytes, err := hex.DecodeString(res.Txid)
 		if err != nil {
 			return fmt.Errorf("error decoding txid: %w", err)
 		}
-		w.writeBytes(txidBytes)
+		w.WriteBytes(txidBytes)
 
 		var statusByte byte
 		switch res.Status {
@@ -30,13 +32,13 @@ func writeTxidSliceWithStatus(w *writer, results []wallet.SendWithResult) error 
 		default:
 			return fmt.Errorf("invalid status: %s", res.Status)
 		}
-		w.writeByte(statusByte)
+		w.WriteByte(statusByte)
 	}
 	return nil
 }
 
-func readTxidSliceWithStatus(r *reader) ([]wallet.SendWithResult, error) {
-	count, err := r.readVarInt()
+func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
+	count, err := r.ReadVarInt()
 	if err != nil {
 		return nil, err
 	}
@@ -46,12 +48,12 @@ func readTxidSliceWithStatus(r *reader) ([]wallet.SendWithResult, error) {
 
 	results := make([]wallet.SendWithResult, 0, count)
 	for i := uint64(0); i < count; i++ {
-		txid, err := r.readBytes(32)
+		txid, err := r.ReadBytes(32)
 		if err != nil {
 			return nil, err
 		}
 
-		statusCode, err := r.readByte()
+		statusCode, err := r.ReadByte()
 		if err != nil {
 			return nil, err
 		}

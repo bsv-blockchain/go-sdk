@@ -3,52 +3,54 @@ package serializer
 import (
 	"encoding/hex"
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Serialize labels
-	w.writeStringSlice(args.Labels)
+	w.WriteStringSlice(args.Labels)
 
 	// Serialize labelQueryMode
 	switch args.LabelQueryMode {
 	case "any":
-		w.writeByte(1)
+		w.WriteByte(1)
 	case "all":
-		w.writeByte(2)
+		w.WriteByte(2)
 	case "":
-		w.writeByte(0xFF) // -1
+		w.WriteByte(0xFF) // -1
 	default:
 		return nil, fmt.Errorf("invalid label query mode: %s", args.LabelQueryMode)
 	}
 
 	// Serialize include options
-	w.writeOptionalBool(args.IncludeLabels)
-	w.writeOptionalBool(args.IncludeInputs)
-	w.writeOptionalBool(args.IncludeInputSourceLockingScripts)
-	w.writeOptionalBool(args.IncludeInputUnlockingScripts)
-	w.writeOptionalBool(args.IncludeOutputs)
-	w.writeOptionalBool(args.IncludeOutputLockingScripts)
+	w.WriteOptionalBool(args.IncludeLabels)
+	w.WriteOptionalBool(args.IncludeInputs)
+	w.WriteOptionalBool(args.IncludeInputSourceLockingScripts)
+	w.WriteOptionalBool(args.IncludeInputUnlockingScripts)
+	w.WriteOptionalBool(args.IncludeOutputs)
+	w.WriteOptionalBool(args.IncludeOutputLockingScripts)
 
 	// Serialize limit, offset, and seekPermission
-	w.writeOptionalUint32(args.Limit)
-	w.writeOptionalUint32(args.Offset)
-	w.writeOptionalBool(args.SeekPermission)
+	w.WriteOptionalUint32(args.Limit)
+	w.WriteOptionalUint32(args.Offset)
+	w.WriteOptionalBool(args.SeekPermission)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.ListActionsArgs{}
 
 	// Deserialize labels
-	args.Labels = r.readStringSlice()
+	args.Labels = r.ReadStringSlice()
 
 	// Deserialize labelQueryMode
-	switch r.readByte() {
+	switch r.ReadByte() {
 	case 1:
 		args.LabelQueryMode = "any"
 	case 2:
@@ -56,140 +58,140 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	case 0xFF:
 		args.LabelQueryMode = ""
 	default:
-		return nil, fmt.Errorf("invalid label query mode byte: %d", r.readByte())
+		return nil, fmt.Errorf("invalid label query mode byte: %d", r.ReadByte())
 	}
 
 	// Deserialize include options
-	args.IncludeLabels = r.readOptionalBool()
-	args.IncludeInputs = r.readOptionalBool()
-	args.IncludeInputSourceLockingScripts = r.readOptionalBool()
-	args.IncludeInputUnlockingScripts = r.readOptionalBool()
-	args.IncludeOutputs = r.readOptionalBool()
-	args.IncludeOutputLockingScripts = r.readOptionalBool()
+	args.IncludeLabels = r.ReadOptionalBool()
+	args.IncludeInputs = r.ReadOptionalBool()
+	args.IncludeInputSourceLockingScripts = r.ReadOptionalBool()
+	args.IncludeInputUnlockingScripts = r.ReadOptionalBool()
+	args.IncludeOutputs = r.ReadOptionalBool()
+	args.IncludeOutputLockingScripts = r.ReadOptionalBool()
 
 	// Deserialize limit, offset, and seekPermission
-	args.Limit = r.readOptionalUint32()
-	args.Offset = r.readOptionalUint32()
-	args.SeekPermission = r.readOptionalBool()
+	args.Limit = r.ReadOptionalUint32()
+	args.Offset = r.ReadOptionalUint32()
+	args.SeekPermission = r.ReadOptionalBool()
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading list action args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading list action args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
 func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Serialize totalActions
-	w.writeVarInt(uint64(result.TotalActions))
+	w.WriteVarInt(uint64(result.TotalActions))
 
 	// Serialize actions
-	w.writeVarInt(uint64(len(result.Actions)))
+	w.WriteVarInt(uint64(len(result.Actions)))
 	for _, action := range result.Actions {
 		// Serialize basic action fields
 		txid, err := hex.DecodeString(action.Txid)
 		if err != nil {
 			return nil, fmt.Errorf("invalid txid hex: %w", err)
 		}
-		w.writeBytes(txid)
-		w.writeVarInt(action.Satoshis)
+		w.WriteBytes(txid)
+		w.WriteVarInt(action.Satoshis)
 
 		// Serialize status
 		switch action.Status {
 		case wallet.ActionStatusCompleted:
-			w.writeByte(byte(wallet.ActionStatusCodeCompleted))
+			w.WriteByte(byte(wallet.ActionStatusCodeCompleted))
 		case wallet.ActionStatusUnprocessed:
-			w.writeByte(byte(wallet.ActionStatusCodeUnprocessed))
+			w.WriteByte(byte(wallet.ActionStatusCodeUnprocessed))
 		case wallet.ActionStatusSending:
-			w.writeByte(byte(wallet.ActionStatusCodeSending))
+			w.WriteByte(byte(wallet.ActionStatusCodeSending))
 		case wallet.ActionStatusUnproven:
-			w.writeByte(byte(wallet.ActionStatusCodeUnproven))
+			w.WriteByte(byte(wallet.ActionStatusCodeUnproven))
 		case wallet.ActionStatusUnsigned:
-			w.writeByte(byte(wallet.ActionStatusCodeUnsigned))
+			w.WriteByte(byte(wallet.ActionStatusCodeUnsigned))
 		case wallet.ActionStatusNoSend:
-			w.writeByte(byte(wallet.ActionStatusCodeNoSend))
+			w.WriteByte(byte(wallet.ActionStatusCodeNoSend))
 		case wallet.ActionStatusNonFinal:
-			w.writeByte(byte(wallet.ActionStatusCodeNonFinal))
+			w.WriteByte(byte(wallet.ActionStatusCodeNonFinal))
 		default:
 			return nil, fmt.Errorf("invalid action status: %s", action.Status)
 		}
 
 		// Serialize IsOutgoing, Description, Labels, Version, and LockTime
-		w.writeOptionalBool(&action.IsOutgoing)
-		w.writeString(action.Description)
-		w.writeStringSlice(action.Labels)
-		w.writeVarInt(uint64(action.Version))
-		w.writeVarInt(uint64(action.LockTime))
+		w.WriteOptionalBool(&action.IsOutgoing)
+		w.WriteString(action.Description)
+		w.WriteStringSlice(action.Labels)
+		w.WriteVarInt(uint64(action.Version))
+		w.WriteVarInt(uint64(action.LockTime))
 
 		// Serialize inputs
-		w.writeVarInt(uint64(len(action.Inputs)))
+		w.WriteVarInt(uint64(len(action.Inputs)))
 		for _, input := range action.Inputs {
 			opBytes, err := encodeOutpoint(input.SourceOutpoint)
 			if err != nil {
 				return nil, fmt.Errorf("invalid source outpoint: %w", err)
 			}
-			w.writeBytes(opBytes)
-			w.writeVarInt(input.SourceSatoshis)
+			w.WriteBytes(opBytes)
+			w.WriteVarInt(input.SourceSatoshis)
 
 			// SourceLockingScript
-			if err = w.writeOptionalFromHex(input.SourceLockingScript); err != nil {
+			if err = w.WriteOptionalFromHex(input.SourceLockingScript); err != nil {
 				return nil, fmt.Errorf("invalid source locking script: %w", err)
 			}
 
 			// UnlockingScript
-			if err = w.writeOptionalFromHex(input.UnlockingScript); err != nil {
+			if err = w.WriteOptionalFromHex(input.UnlockingScript); err != nil {
 				return nil, fmt.Errorf("invalid unlocking script: %w", err)
 			}
 
-			w.writeString(input.InputDescription)
-			w.writeVarInt(uint64(input.SequenceNumber))
+			w.WriteString(input.InputDescription)
+			w.WriteVarInt(uint64(input.SequenceNumber))
 		}
 
 		// Serialize outputs
-		w.writeVarInt(uint64(len(action.Outputs)))
+		w.WriteVarInt(uint64(len(action.Outputs)))
 		for _, output := range action.Outputs {
-			w.writeVarInt(uint64(output.OutputIndex))
-			w.writeVarInt(output.Satoshis)
+			w.WriteVarInt(uint64(output.OutputIndex))
+			w.WriteVarInt(output.Satoshis)
 
 			// LockingScript
-			if err = w.writeOptionalFromHex(output.LockingScript); err != nil {
+			if err = w.WriteOptionalFromHex(output.LockingScript); err != nil {
 				return nil, fmt.Errorf("invalid locking script: %w", err)
 			}
 
 			// Serialize Spendable, OutputDescription, Basket, Tags, and CustomInstructions
-			w.writeOptionalBool(&output.Spendable)
-			w.writeString(output.OutputDescription)
-			w.writeString(output.Basket)
-			w.writeStringSlice(output.Tags)
-			w.writeOptionalString(output.CustomInstructions)
+			w.WriteOptionalBool(&output.Spendable)
+			w.WriteString(output.OutputDescription)
+			w.WriteString(output.Basket)
+			w.WriteStringSlice(output.Tags)
+			w.WriteOptionalString(output.CustomInstructions)
 		}
 	}
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	result := &wallet.ListActionsResult{}
 
 	// Deserialize totalActions
-	result.TotalActions = r.readVarInt32()
+	result.TotalActions = r.ReadVarInt32()
 
 	// Deserialize actions
-	actionCount := r.readVarInt()
+	actionCount := r.ReadVarInt()
 	result.Actions = make([]wallet.Action, 0, actionCount)
 	for i := uint64(0); i < actionCount; i++ {
 		action := wallet.Action{}
 
 		// Deserialize basic action fields
-		txid := r.readBytes(32)
+		txid := r.ReadBytes(32)
 		action.Txid = hex.EncodeToString(txid)
-		action.Satoshis = r.readVarInt()
+		action.Satoshis = r.ReadVarInt()
 
 		// Deserialize status
-		status := r.readByte()
+		status := r.ReadByte()
 		switch wallet.ActionStatusCode(status) {
 		case wallet.ActionStatusCodeCompleted:
 			action.Status = wallet.ActionStatusCompleted
@@ -210,71 +212,71 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		}
 
 		// Deserialize IsOutgoing, Description, Labels, Version, and LockTime
-		action.IsOutgoing = r.readByte() == 1
-		action.Description = r.readString()
-		action.Labels = r.readStringSlice()
-		action.Version = r.readVarInt32()
-		action.LockTime = r.readVarInt32()
+		action.IsOutgoing = r.ReadByte() == 1
+		action.Description = r.ReadString()
+		action.Labels = r.ReadStringSlice()
+		action.Version = r.ReadVarInt32()
+		action.LockTime = r.ReadVarInt32()
 
 		// Deserialize inputs
-		inputCount := r.readVarInt()
+		inputCount := r.ReadVarInt()
 		action.Inputs = make([]wallet.ActionInput, 0, inputCount)
 		for j := uint64(0); j < inputCount; j++ {
 			input := wallet.ActionInput{}
 
-			opBytes := r.readBytes(36)
+			opBytes := r.ReadBytes(36)
 			input.SourceOutpoint, _ = decodeOutpoint(opBytes)
 
 			// Serialize source satoshis, locking script, unlocking script, input description, and sequence number
-			input.SourceSatoshis = r.readVarInt()
-			input.SourceLockingScript = r.readOptionalToHex()
-			input.UnlockingScript = r.readOptionalToHex()
-			input.InputDescription = r.readString()
-			input.SequenceNumber = r.readVarInt32()
+			input.SourceSatoshis = r.ReadVarInt()
+			input.SourceLockingScript = r.ReadOptionalToHex()
+			input.UnlockingScript = r.ReadOptionalToHex()
+			input.InputDescription = r.ReadString()
+			input.SequenceNumber = r.ReadVarInt32()
 
 			// Check for error each loop
-			if r.err != nil {
-				return nil, fmt.Errorf("error reading list action input %d: %w", j, r.err)
+			if r.Err != nil {
+				return nil, fmt.Errorf("error reading list action input %d: %w", j, r.Err)
 			}
 
 			action.Inputs = append(action.Inputs, input)
 		}
 
 		// Deserialize outputs
-		outputCount := r.readVarInt()
+		outputCount := r.ReadVarInt()
 		action.Outputs = make([]wallet.ActionOutput, 0, outputCount)
 		for k := uint64(0); k < outputCount; k++ {
 			output := wallet.ActionOutput{}
 
 			// Serialize output index, satoshis, locking script, spendable, output description, basket, tags,
 			// and custom instructions
-			output.OutputIndex = r.readVarInt32()
-			output.Satoshis = r.readVarInt()
-			output.LockingScript = r.readOptionalToHex()
-			output.Spendable = r.readByte() == 1
-			output.OutputDescription = r.readString()
-			output.Basket = r.readString()
-			output.Tags = r.readStringSlice()
-			output.CustomInstructions = r.readString()
+			output.OutputIndex = r.ReadVarInt32()
+			output.Satoshis = r.ReadVarInt()
+			output.LockingScript = r.ReadOptionalToHex()
+			output.Spendable = r.ReadByte() == 1
+			output.OutputDescription = r.ReadString()
+			output.Basket = r.ReadString()
+			output.Tags = r.ReadStringSlice()
+			output.CustomInstructions = r.ReadString()
 
 			// Check for error each loop
-			if r.err != nil {
-				return nil, fmt.Errorf("error reading list action output %d: %w", k, r.err)
+			if r.Err != nil {
+				return nil, fmt.Errorf("error reading list action output %d: %w", k, r.Err)
 			}
 
 			action.Outputs = append(action.Outputs, output)
 		}
 
 		// Check for error each loop
-		if r.err != nil {
-			return nil, fmt.Errorf("error reading list action %d: %w", i, r.err)
+		if r.Err != nil {
+			return nil, fmt.Errorf("error reading list action %d: %w", i, r.Err)
 		}
 
 		result.Actions = append(result.Actions, action)
 	}
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading list action result: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading list action result: %w", r.Err)
 	}
 
 	return result, nil

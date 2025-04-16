@@ -1,9 +1,11 @@
 package serializer
 
 import (
+	"testing"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSerializeSignActionResult(t *testing.T) {
@@ -83,18 +85,18 @@ func TestDeserializeSignActionResult(t *testing.T) {
 		{
 			name: "full result",
 			data: func() []byte {
-				w := newWriter()
-				w.writeByte(1) // txid present
-				w.writeBytes(txidBytes)
-				w.writeByte(1) // tx present
-				w.writeVarInt(uint64(len(tx)))
-				w.writeBytes(tx)
-				w.writeVarInt(2) // 2 sendWith results
-				w.writeBytes(txidBytes)
-				w.writeByte(2) // status = sending
-				w.writeBytes(txidBytes)
-				w.writeByte(3) // status = failed
-				return w.buf
+				w := util.NewWriter()
+				w.WriteByte(1) // txid present
+				w.WriteBytes(txidBytes)
+				w.WriteByte(1) // tx present
+				w.WriteVarInt(uint64(len(tx)))
+				w.WriteBytes(tx)
+				w.WriteVarInt(2) // 2 sendWith results
+				w.WriteBytes(txidBytes)
+				w.WriteByte(2) // status = sending
+				w.WriteBytes(txidBytes)
+				w.WriteByte(3) // status = failed
+				return w.Buf
 			}(),
 			want: &wallet.SignActionResult{
 				Txid: txid,
@@ -109,12 +111,12 @@ func TestDeserializeSignActionResult(t *testing.T) {
 		{
 			name: "only txid",
 			data: func() []byte {
-				w := newWriter()
-				w.writeByte(1) // txid present
-				w.writeBytes(txidBytes)
-				w.writeByte(0)   // tx not present
-				w.writeVarInt(0) // no sendWith results
-				return w.buf
+				w := util.NewWriter()
+				w.WriteByte(1) // txid present
+				w.WriteBytes(txidBytes)
+				w.WriteByte(0)   // tx not present
+				w.WriteVarInt(0) // no sendWith results
+				return w.Buf
 			}(),
 			want: &wallet.SignActionResult{
 				Txid: txid,
@@ -124,21 +126,21 @@ func TestDeserializeSignActionResult(t *testing.T) {
 		{
 			name: "invalid status byte",
 			data: func() []byte {
-				w := newWriter()
-				w.writeVarInt(1) // 1 sendWith result
-				w.writeBytes(txidBytes)
-				w.writeByte(4) // invalid status
-				return w.buf
+				w := util.NewWriter()
+				w.WriteVarInt(1) // 1 sendWith result
+				w.WriteBytes(txidBytes)
+				w.WriteByte(4) // invalid status
+				return w.Buf
 			}(),
 			wantErr: true,
 		},
 		{
 			name: "invalid txid length",
 			data: func() []byte {
-				w := newWriter()
-				w.writeByte(1)                // txid present
-				w.writeBytes([]byte{1, 2, 3}) // invalid length
-				return w.buf
+				w := util.NewWriter()
+				w.WriteByte(1)                // txid present
+				w.WriteBytes([]byte{1, 2, 3}) // invalid length
+				return w.Buf
 			}(),
 			wantErr: true,
 		},

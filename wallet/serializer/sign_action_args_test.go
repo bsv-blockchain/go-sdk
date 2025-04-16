@@ -3,9 +3,11 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"testing"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSerializeSignActionArgs(t *testing.T) {
@@ -98,34 +100,34 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 		{
 			name: "full args",
 			data: func() []byte {
-				w := newWriter()
-				w.writeVarInt(2) // 2 spends
+				w := util.NewWriter()
+				w.WriteVarInt(2) // 2 spends
 
 				// Spend 0
-				w.writeVarInt(0)
-				w.writeVarInt(uint64(len(script)))
-				w.writeBytes(script)
-				w.writeVarInt(123)
+				w.WriteVarInt(0)
+				w.WriteVarInt(uint64(len(script)))
+				w.WriteBytes(script)
+				w.WriteVarInt(123)
 
 				// Spend 1
-				w.writeVarInt(1)
-				w.writeVarInt(uint64(len(script)))
-				w.writeBytes(script)
-				w.writeVarInt(456)
+				w.WriteVarInt(1)
+				w.WriteVarInt(uint64(len(script)))
+				w.WriteBytes(script)
+				w.WriteVarInt(456)
 
 				// Reference
-				w.writeVarInt(uint64(len(ref)))
-				w.writeBytes(ref)
+				w.WriteVarInt(uint64(len(ref)))
+				w.WriteBytes(ref)
 
 				// Options
-				w.writeByte(1)   // present
-				w.writeByte(1)   // acceptDelayedBroadcast = true
-				w.writeByte(0)   // returnTXIDOnly = false
-				w.writeByte(1)   // noSend = true
-				w.writeVarInt(2) // 2 sendWith
-				w.writeBytes(txidBytes)
-				w.writeBytes(txidBytes)
-				return w.buf
+				w.WriteByte(1)   // present
+				w.WriteByte(1)   // acceptDelayedBroadcast = true
+				w.WriteByte(0)   // returnTXIDOnly = false
+				w.WriteByte(1)   // noSend = true
+				w.WriteVarInt(2) // 2 sendWith
+				w.WriteBytes(txidBytes)
+				w.WriteBytes(txidBytes)
+				return w.Buf
 			}(),
 			want: &wallet.SignActionArgs{
 				Spends: map[uint32]wallet.SignActionSpend{
@@ -151,27 +153,27 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 		{
 			name: "invalid spend count",
 			data: func() []byte {
-				w := newWriter()
-				w.writeVarInt(1 << 32) // invalid count
-				return w.buf
+				w := util.NewWriter()
+				w.WriteVarInt(1 << 32) // invalid count
+				return w.Buf
 			}(),
 			wantErr: true,
 		},
 		{
 			name: "invalid txid length",
 			data: func() []byte {
-				w := newWriter()
-				w.writeVarInt(1) // 1 spend
-				w.writeVarInt(0) // index 0
-				w.writeVarInt(3) // script length
-				w.writeBytes([]byte{1, 2, 3})
-				w.writeVarInt(0) // sequence
-				w.writeVarInt(3) // ref length
-				w.writeBytes([]byte{1, 2, 3})
-				w.writeByte(1)                // options present
-				w.writeVarInt(1)              // 1 sendWith
-				w.writeBytes([]byte{1, 2, 3}) // invalid txid
-				return w.buf
+				w := util.NewWriter()
+				w.WriteVarInt(1) // 1 spend
+				w.WriteVarInt(0) // index 0
+				w.WriteVarInt(3) // script length
+				w.WriteBytes([]byte{1, 2, 3})
+				w.WriteVarInt(0) // sequence
+				w.WriteVarInt(3) // ref length
+				w.WriteBytes([]byte{1, 2, 3})
+				w.WriteByte(1)                // options present
+				w.WriteVarInt(1)              // 1 sendWith
+				w.WriteBytes([]byte{1, 2, 3}) // invalid txid
+				return w.Buf
 			}(),
 			wantErr: true,
 		},

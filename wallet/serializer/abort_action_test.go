@@ -2,10 +2,12 @@ package serializer
 
 import (
 	"encoding/base64"
+	"testing"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestAbortActionArgsSerializeAndDeserialize(t *testing.T) {
@@ -76,12 +78,12 @@ func TestAbortActionResultSerializeAndDeserialize(t *testing.T) {
 	// Test error case
 	t.Run("error response", func(t *testing.T) {
 		// Create error response data
-		w := newWriter()
-		w.writeByte(1) // error code
-		w.writeString("abort failed")
-		w.writeString("stack trace")
+		w := util.NewWriter()
+		w.WriteByte(1) // error code
+		w.WriteString("abort failed")
+		w.WriteString("stack trace")
 
-		_, err := DeserializeAbortActionResult(w.buf)
+		_, err := DeserializeAbortActionResult(w.Buf)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "abort failed")
 	})

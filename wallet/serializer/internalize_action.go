@@ -2,122 +2,124 @@ package serializer
 
 import (
 	"fmt"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte, error) {
-	w := newWriter()
+	w := util.NewWriter()
 
 	// Transaction BEEF - write length first
-	w.writeVarInt(uint64(len(args.Tx)))
-	w.writeBytes(args.Tx)
+	w.WriteVarInt(uint64(len(args.Tx)))
+	w.WriteBytes(args.Tx)
 
 	// Outputs
-	w.writeVarInt(uint64(len(args.Outputs)))
+	w.WriteVarInt(uint64(len(args.Outputs)))
 	for _, output := range args.Outputs {
-		w.writeVarInt(uint64(output.OutputIndex))
-		w.writeString(output.Protocol)
+		w.WriteVarInt(uint64(output.OutputIndex))
+		w.WriteString(output.Protocol)
 
 		// Payment remittance
 		if output.PaymentRemittance != nil {
-			w.writeByte(1) // present
-			w.writeString(output.PaymentRemittance.DerivationPrefix)
-			w.writeString(output.PaymentRemittance.DerivationSuffix)
-			w.writeString(output.PaymentRemittance.SenderIdentityKey)
+			w.WriteByte(1) // present
+			w.WriteString(output.PaymentRemittance.DerivationPrefix)
+			w.WriteString(output.PaymentRemittance.DerivationSuffix)
+			w.WriteString(output.PaymentRemittance.SenderIdentityKey)
 		} else {
-			w.writeByte(0) // not present
+			w.WriteByte(0) // not present
 		}
 
 		// Insertion remittance
 		if output.InsertionRemittance != nil {
-			w.writeByte(1) // present
-			w.writeString(output.InsertionRemittance.Basket)
-			w.writeOptionalString(output.InsertionRemittance.CustomInstructions)
-			w.writeStringSlice(output.InsertionRemittance.Tags)
+			w.WriteByte(1) // present
+			w.WriteString(output.InsertionRemittance.Basket)
+			w.WriteOptionalString(output.InsertionRemittance.CustomInstructions)
+			w.WriteStringSlice(output.InsertionRemittance.Tags)
 		} else {
-			w.writeByte(0) // not present
+			w.WriteByte(0) // not present
 		}
 	}
 
 	// Description, labels, and seek permission
-	w.writeString(args.Description)
-	w.writeStringSlice(args.Labels)
-	w.writeOptionalBool(args.SeekPermission)
+	w.WriteString(args.Description)
+	w.WriteStringSlice(args.Labels)
+	w.WriteOptionalBool(args.SeekPermission)
 
-	return w.buf, nil
+	return w.Buf, nil
 }
 
 func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArgs, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	args := &wallet.InternalizeActionArgs{}
 
 	// Transaction BEEF - read length first
-	txLen := r.readVarInt()
-	args.Tx = r.readBytes(int(txLen))
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading tx bytes: %w", r.err)
+	txLen := r.ReadVarInt()
+	args.Tx = r.ReadBytes(int(txLen))
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading tx bytes: %w", r.Err)
 	}
 
 	// Outputs
-	outputCount := r.readVarInt()
+	outputCount := r.ReadVarInt()
 	args.Outputs = make([]wallet.InternalizeOutput, 0, outputCount)
 	for i := uint64(0); i < outputCount; i++ {
 		output := wallet.InternalizeOutput{
-			OutputIndex: r.readVarInt32(),
-			Protocol:    r.readString(),
+			OutputIndex: r.ReadVarInt32(),
+			Protocol:    r.ReadString(),
 		}
 
 		// Payment remittance
-		if r.readByte() == 1 {
+		if r.ReadByte() == 1 {
 			output.PaymentRemittance = &wallet.Payment{
-				DerivationPrefix:  r.readString(),
-				DerivationSuffix:  r.readString(),
-				SenderIdentityKey: r.readString(),
+				DerivationPrefix:  r.ReadString(),
+				DerivationSuffix:  r.ReadString(),
+				SenderIdentityKey: r.ReadString(),
 			}
 		}
 
 		// Insertion remittance
-		if r.readByte() == 1 {
+		if r.ReadByte() == 1 {
 			output.InsertionRemittance = &wallet.BasketInsertion{
-				Basket:             r.readString(),
-				CustomInstructions: r.readString(),
-				Tags:               r.readStringSlice(),
+				Basket:             r.ReadString(),
+				CustomInstructions: r.ReadString(),
+				Tags:               r.ReadStringSlice(),
 			}
 		}
 
 		// Check error each loop
-		if r.err != nil {
-			return nil, fmt.Errorf("error reading internalize output: %w", r.err)
+		if r.Err != nil {
+			return nil, fmt.Errorf("error reading internalize output: %w", r.Err)
 		}
 
 		args.Outputs = append(args.Outputs, output)
 	}
 
 	// Description, labels, and seek permission
-	args.Description = r.readString()
-	args.Labels = r.readStringSlice()
-	args.SeekPermission = r.readOptionalBool()
+	args.Description = r.ReadString()
+	args.Labels = r.ReadStringSlice()
+	args.SeekPermission = r.ReadOptionalBool()
 
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading internalize action args: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading internalize action args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
 func SerializeInternalizeActionResult(result *wallet.InternalizeActionResult) ([]byte, error) {
-	w := newWriter()
-	w.writeByte(1) // accepted = true
-	return w.buf, nil
+	w := util.NewWriter()
+	w.WriteByte(1) // accepted = true
+	return w.Buf, nil
 }
 
 func DeserializeInternalizeActionResult(data []byte) (*wallet.InternalizeActionResult, error) {
-	r := newReaderHoldError(data)
+	r := util.NewReaderHoldError(data)
 	result := &wallet.InternalizeActionResult{}
-	accepted := r.readByte()
+	accepted := r.ReadByte()
 	result.Accepted = accepted == 1
-	if r.err != nil {
-		return nil, fmt.Errorf("error reading internalize action result: %w", r.err)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading internalize action result: %w", r.Err)
 	}
 	return result, nil
 }

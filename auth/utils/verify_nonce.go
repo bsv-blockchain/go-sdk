@@ -14,7 +14,7 @@ import (
 func VerifyNonce(
 	nonce string,
 	w wallet.Interface,
-	counterparty wallet.CounterpartyType,
+	counterparty wallet.Counterparty,
 ) (bool, error) {
 	// Convert nonce from base64 to binary
 	nonceBytes, err := base64.StdEncoding.DecodeString(nonce)
@@ -38,10 +38,8 @@ func VerifyNonce(
 				SecurityLevel: wallet.SecurityLevelEveryApp,
 				Protocol:      "server hmac", // Match TS SDK's protocol ID
 			},
-			KeyID: string(data), // Use data as key ID
-			Counterparty: wallet.Counterparty{
-				Type: counterparty,
-			},
+			KeyID:        string(data), // Use data as key ID
+			Counterparty: counterparty,
 		},
 		Data: data,
 		Hmac: hmac,
