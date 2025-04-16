@@ -14,11 +14,17 @@ func TestNewSessionManager(t *testing.T) {
 		t.Fatal("Expected session manager to be created")
 	}
 
-	if manager.sessionNonceToSession == nil {
+	// Type assert to DefaultSessionManager for field access
+	dsm, ok := manager.(*DefaultSessionManager)
+	if !ok {
+		t.Fatal("Expected manager to be of type *DefaultSessionManager")
+	}
+
+	if dsm.sessionNonceToSession == nil {
 		t.Error("Expected sessionNonceToSession map to be initialized")
 	}
 
-	if manager.identityKeyToNonces == nil {
+	if dsm.identityKeyToNonces == nil {
 		t.Error("Expected identityKeyToNonces map to be initialized")
 	}
 }

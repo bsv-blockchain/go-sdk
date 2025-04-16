@@ -2,9 +2,18 @@ package auth
 
 import "errors"
 
-// SessionManager manages sessions for peers, allowing multiple concurrent sessions
+// SessionManager defines the interface for managing peer sessions.
+type SessionManager interface {
+	AddSession(session *PeerSession) error
+	UpdateSession(session *PeerSession)
+	GetSession(identifier string) (*PeerSession, error)
+	RemoveSession(session *PeerSession)
+	HasSession(identifier string) bool
+}
+
+// DefaultSessionManager manages sessions for peers, allowing multiple concurrent sessions
 // per identity key. Primary lookup is always by sessionNonce.
-type SessionManager struct {
+type DefaultSessionManager struct {
 	// Maps sessionNonce -> PeerSession
 	sessionNonceToSession map[string]*PeerSession
 
@@ -13,8 +22,8 @@ type SessionManager struct {
 }
 
 // NewSessionManager creates a new session manager
-func NewSessionManager() *SessionManager {
-	return &SessionManager{
+func NewSessionManager() SessionManager {
+	return &DefaultSessionManager{
 		sessionNonceToSession: make(map[string]*PeerSession),
 		identityKeyToNonces:   make(map[string]map[string]struct{}),
 	}
@@ -25,7 +34,7 @@ func NewSessionManager() *SessionManager {
 //
 // This does NOT overwrite existing sessions for the same peerIdentityKey,
 // allowing multiple concurrent sessions for the same peer.
-func (sm *SessionManager) AddSession(session *PeerSession) error {
+func (sm *DefaultSessionManager) AddSession(session *PeerSession) error {
 	if session.SessionNonce == "" {
 		return errors.New("invalid session: sessionNonce is required to add a session")
 	}
@@ -48,7 +57,7 @@ func (sm *SessionManager) AddSession(session *PeerSession) error {
 
 // UpdateSession updates a session in the manager (primarily by re-adding it),
 // ensuring we record the latest data (e.g., isAuthenticated, lastUpdate, etc.).
-func (sm *SessionManager) UpdateSession(session *PeerSession) {
+func (sm *DefaultSessionManager) UpdateSession(session *PeerSession) {
 	// Remove the old references (if any) and re-add
 	sm.RemoveSession(session)
 	_ = sm.AddSession(session)
@@ -61,7 +70,7 @@ func (sm *SessionManager) UpdateSession(session *PeerSession) {
 // If it is a sessionNonce, returns that exact session.
 // If it is a peerIdentityKey, returns the "best" (e.g. most recently updated,
 // authenticated) session associated with that peer, if any.
-func (sm *SessionManager) GetSession(identifier string) (*PeerSession, error) {
+func (sm *DefaultSessionManager) GetSession(identifier string) (*PeerSession, error) {
 	// Check if this identifier is directly a sessionNonce
 	if direct, ok := sm.sessionNonceToSession[identifier]; ok {
 		return direct, nil
@@ -74,13 +83,17 @@ func (sm *SessionManager) GetSession(identifier string) (*PeerSession, error) {
 	}
 
 	// Pick the "best" session
-	// - Choose the most recently updated
+	// - Choose the most recently updated, preferring authenticated sessions
 	var best *PeerSession
 	for nonce := range nonces {
 		if s, ok := sm.sessionNonceToSession[nonce]; ok {
 			if best == nil {
 				best = s
 			} else if s.LastUpdate > best.LastUpdate {
+				if s.IsAuthenticated || !best.IsAuthenticated {
+					best = s
+				}
+			} else if s.IsAuthenticated && !best.IsAuthenticated {
 				best = s
 			}
 		}
@@ -90,7 +103,7 @@ func (sm *SessionManager) GetSession(identifier string) (*PeerSession, error) {
 }
 
 // RemoveSession removes a session from the manager by clearing all associated identifiers.
-func (sm *SessionManager) RemoveSession(session *PeerSession) {
+func (sm *DefaultSessionManager) RemoveSession(session *PeerSession) {
 	if session.SessionNonce != "" {
 		delete(sm.sessionNonceToSession, session.SessionNonce)
 	}
@@ -107,7 +120,7 @@ func (sm *SessionManager) RemoveSession(session *PeerSession) {
 }
 
 // HasSession checks if a session exists for a given identifier (either sessionNonce or identityKey).
-func (sm *SessionManager) HasSession(identifier string) bool {
+func (sm *DefaultSessionManager) HasSession(identifier string) bool {
 	// Check if the identifier is a sessionNonce
 	direct := sm.sessionNonceToSession[identifier] != nil
 	if direct {
