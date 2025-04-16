@@ -178,7 +178,7 @@ func (p *Peer) ToPeer(message []byte, identityKey *ec.PublicKey, maxWaitTime int
 	generalMessage := &AuthMessage{
 		Version:     AUTH_VERSION,
 		MessageType: MessageTypeGeneral,
-		IdentityKey: *identityKeyResult.PublicKey,
+		IdentityKey: identityKeyResult.PublicKey,
 		Nonce:       string(requestNonce),
 		YourNonce:   peerSession.PeerNonce,
 		Payload:     message,
@@ -290,7 +290,7 @@ func (p *Peer) initiateHandshake(peerIdentityKey *ec.PublicKey, maxWaitTimeMs in
 	initialRequest := &AuthMessage{
 		Version:               AUTH_VERSION,
 		MessageType:           MessageTypeInitialRequest,
-		IdentityKey:           *pubKey.PublicKey,
+		IdentityKey:           pubKey.PublicKey,
 		Nonce:                 "", // No nonce for initial request
 		InitialNonce:          sessionNonce,
 		RequestedCertificates: p.CertificatesToRequest,
@@ -378,31 +378,31 @@ func (p *Peer) handleIncomingMessage(message *AuthMessage) error {
 	// Handle different message types
 	switch message.MessageType {
 	case MessageTypeInitialRequest:
-		if err := p.handleInitialRequest(message, &message.IdentityKey); err != nil {
+		if err := p.handleInitialRequest(message, message.IdentityKey); err != nil {
 			fmt.Printf("Error handling initial request: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeInitialResponse:
-		if err := p.handleInitialResponse(message, &message.IdentityKey); err != nil {
+		if err := p.handleInitialResponse(message, message.IdentityKey); err != nil {
 			fmt.Printf("Error handling initial response: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateRequest:
-		if err := p.handleCertificateRequest(message, &message.IdentityKey); err != nil {
+		if err := p.handleCertificateRequest(message, message.IdentityKey); err != nil {
 			fmt.Printf("Error handling certificate request: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateResponse:
-		if err := p.handleCertificateResponse(message, &message.IdentityKey); err != nil {
+		if err := p.handleCertificateResponse(message, message.IdentityKey); err != nil {
 			fmt.Printf("Error handling certificate response: %v\n", err)
 			return err
 		}
 		return nil
 	case MessageTypeGeneral:
-		if err := p.handleGeneralMessage(message, &message.IdentityKey); err != nil {
+		if err := p.handleGeneralMessage(message, message.IdentityKey); err != nil {
 			fmt.Printf("Error handling general message: %v\n", err)
 			return err
 		}
@@ -422,7 +422,9 @@ func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey *ec.Pu
 	}
 
 	// Create our session nonce
-	ourNonce, err := utils.CreateNonce(p.wallet, wallet.CounterpartyTypeSelf)
+	ourNonce, err := utils.CreateNonce(p.wallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	})
 	if err != nil {
 		return NewAuthError("failed to create session nonce", err)
 	}
@@ -467,7 +469,7 @@ func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey *ec.Pu
 	response := &AuthMessage{
 		Version:      AUTH_VERSION,
 		MessageType:  MessageTypeInitialResponse,
-		IdentityKey:  *identityKeyResult.PublicKey,
+		IdentityKey:  identityKeyResult.PublicKey,
 		Nonce:        ourNonce,
 		YourNonce:    message.InitialNonce,
 		InitialNonce: message.InitialNonce,
@@ -491,7 +493,7 @@ func (p *Peer) handleInitialResponse(message *AuthMessage, senderPublicKey *ec.P
 			// Process certificates if included
 			if len(message.Certificates) > 0 {
 				// Create utils.AuthMessage from our message
-				utilsMessage := &utils.AuthMessage{
+				utilsMessage := &AuthMessage{
 					IdentityKey:  message.IdentityKey,
 					Certificates: message.Certificates,
 				}
@@ -509,7 +511,7 @@ func (p *Peer) handleInitialResponse(message *AuthMessage, senderPublicKey *ec.P
 				utilsRequestedCerts.CertificateTypes = certTypes
 
 				// Call ValidateCertificates with proper types
-				err := utils.ValidateCertificates(
+				err := ValidateCertificates(
 					p.wallet,
 					utilsMessage,
 					utilsRequestedCerts,
@@ -671,7 +673,7 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey *
 	// Process certificates if included
 	if len(message.Certificates) > 0 {
 		// Create utils.AuthMessage from our message
-		utilsMessage := &utils.AuthMessage{
+		utilsMessage := &AuthMessage{
 			IdentityKey:  message.IdentityKey,
 			Certificates: message.Certificates,
 		}
@@ -689,7 +691,7 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey *
 		utilsRequestedCerts.CertificateTypes = certTypes
 
 		// Call ValidateCertificates with proper types
-		err := utils.ValidateCertificates(
+		err := ValidateCertificates(
 			p.wallet, // Type assertion to wallet.Interface
 			utilsMessage,
 			utilsRequestedCerts,
@@ -778,7 +780,9 @@ func (p *Peer) RequestCertificates(identityKey *ec.PublicKey, certificateRequire
 	}
 
 	// Create a nonce for this request
-	requestNonce, err := utils.CreateNonce(p.wallet, wallet.CounterpartyTypeSelf)
+	requestNonce, err := utils.CreateNonce(p.wallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create nonce: %w", err)
 	}
@@ -795,7 +799,7 @@ func (p *Peer) RequestCertificates(identityKey *ec.PublicKey, certificateRequire
 	certRequest := &AuthMessage{
 		Version:               AUTH_VERSION,
 		MessageType:           MessageTypeCertificateRequest,
-		IdentityKey:           *identityKeyResult.PublicKey,
+		IdentityKey:           identityKeyResult.PublicKey,
 		Nonce:                 requestNonce,
 		YourNonce:             peerSession.PeerNonce,
 		RequestedCertificates: certificateRequirements,
@@ -857,7 +861,9 @@ func (p *Peer) SendCertificateResponse(identityKey *ec.PublicKey, certificates [
 	}
 
 	// Create a nonce for this response
-	responseNonce, err := utils.CreateNonce(p.wallet, wallet.CounterpartyTypeSelf)
+	responseNonce, err := utils.CreateNonce(p.wallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create nonce: %w", err)
 	}
@@ -874,7 +880,7 @@ func (p *Peer) SendCertificateResponse(identityKey *ec.PublicKey, certificates [
 	certResponse := &AuthMessage{
 		Version:      AUTH_VERSION,
 		MessageType:  MessageTypeCertificateResponse,
-		IdentityKey:  *identityKeyResult.PublicKey,
+		IdentityKey:  identityKeyResult.PublicKey,
 		Nonce:        responseNonce,
 		YourNonce:    peerSession.PeerNonce,
 		Certificates: certificates,

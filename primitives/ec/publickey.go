@@ -139,6 +139,9 @@ func ParsePubKey(pubKeyStr []byte) (key *PublicKey, err error) {
 type PublicKey ecdsa.PublicKey
 
 func (p *PublicKey) MarshalJSON() ([]byte, error) {
+	if p == nil {
+		return json.Marshal(nil)
+	}
 	return json.Marshal(p.ToDERHex())
 }
 
@@ -147,6 +150,10 @@ func (p *PublicKey) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &hexStr); err != nil {
 		return err
 	}
+	// if hexStr == "" {
+	// 	p = nil
+	// 	return nil
+	// }
 	pubKey, err := PublicKeyFromString(hexStr)
 	if err != nil {
 		return err
