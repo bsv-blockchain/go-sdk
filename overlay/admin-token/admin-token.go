@@ -1,6 +1,7 @@
 package admintoken
 
 import (
+	"context"
 	"encoding/hex"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
@@ -34,11 +35,12 @@ func Decode(s *script.Script) (*OverlayAdminTokenData, error) {
 }
 
 func (o *OverlayAdminTokenTemplate) Lock(
+	ctx context.Context,
 	protocol overlay.Protocol,
 	domain string,
 	topicOrService string,
 ) (*script.Script, error) {
-	pub, err := o.PushDrop.Wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	pub, err := o.PushDrop.Wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, o.PushDrop.Originator)
 	if err != nil {
@@ -55,6 +57,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 	}
 
 	return o.PushDrop.Lock(
+		ctx,
 		[][]byte{
 			[]byte(protocol),
 			pub.PublicKey.Compressed(),
@@ -73,6 +76,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 }
 
 func (o *OverlayAdminTokenTemplate) Unlock(
+	ctx context.Context,
 	protocol overlay.Protocol,
 ) *pushdrop.PushDropUnlocker {
 	protocolId := wallet.Protocol{
@@ -84,6 +88,7 @@ func (o *OverlayAdminTokenTemplate) Unlock(
 		protocolId.Protocol = "Service Lookup Availability"
 	}
 	return o.PushDrop.Unlock(
+		ctx,
 		protocolId,
 		"1",
 		wallet.Counterparty{
