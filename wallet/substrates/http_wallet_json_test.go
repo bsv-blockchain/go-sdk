@@ -124,31 +124,6 @@ func TestHTTPWalletJSON_API_Errors(t *testing.T) {
 	}
 }
 
-// TODO: Similar test patterns would be implemented for all other wallet methods
-func TestHTTPWalletJSON_CreateAction(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/createAction", r.URL.Path)
-
-		var args wallet.CreateActionArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, "test desc", args.Description)
-
-		resp := wallet.CreateActionResult{Txid: "test-txid"}
-		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(resp)
-		require.NoError(t, err)
-	}))
-	defer ts.Close()
-
-	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.CreateAction(wallet.CreateActionArgs{
-		Description: "test desc",
-	}, "")
-	require.NoError(t, err)
-	require.Equal(t, "test-txid", result.Txid)
-}
-
 func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 	// Test JSON marshaling error
 	t.Run("marshal error", func(t *testing.T) {
@@ -169,7 +144,8 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 	// Test invalid JSON response
 	t.Run("invalid JSON response", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("invalid json"))
+			_, err := w.Write([]byte("invalid json"))
+			require.NoError(t, err)
 		}))
 		defer ts.Close()
 
@@ -180,3 +156,138 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 	})
 }
 
+func writeJSONResponse(t *testing.T, w http.ResponseWriter, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(data)
+	require.NoError(t, err)
+}
+
+func TestHTTPWalletJSON_CreateAction(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/createAction", r.URL.Path)
+
+		var args wallet.CreateActionArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		require.NoError(t, err)
+		require.Equal(t, "test desc", args.Description)
+
+		writeJSONResponse(t, w, wallet.CreateActionResult{Txid: "test-txid"})
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+	result, err := client.CreateAction(wallet.CreateActionArgs{
+		Description: "test desc",
+	}, "")
+	require.NoError(t, err)
+	require.Equal(t, "test-txid", result.Txid)
+}
+
+func TestHTTPWalletJSON_SignAction(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/signAction", r.URL.Path)
+
+		var args wallet.SignActionArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		require.NoError(t, err)
+		require.Equal(t, "test-ref", args.Reference)
+		require.Len(t, args.Spends, 1)
+		require.Equal(t, "test-script", args.Spends[0].UnlockingScript)
+
+		writeJSONResponse(t, w, wallet.SignActionResult{Txid: "signed-txid"})
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+	result, err := client.SignAction(wallet.SignActionArgs{
+		Reference: "test-ref",
+		Spends: map[uint32]wallet.SignActionSpend{
+			0: {UnlockingScript: "test-script"},
+		},
+	}, "")
+	require.NoError(t, err)
+	require.Equal(t, "signed-txid", result.Txid)
+}
+
+func TestHTTPWalletJSON_AbortAction(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/abortAction", r.URL.Path)
+
+		var args wallet.AbortActionArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		require.NoError(t, err)
+		require.Equal(t, "test-ref", args.Reference)
+
+		writeJSONResponse(t, w, wallet.AbortActionResult{Aborted: true})
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+	result, err := client.AbortAction(wallet.AbortActionArgs{
+		Reference: "test-ref",
+	}, "")
+	require.NoError(t, err)
+	require.True(t, result.Aborted)
+}
+
+func TestHTTPWalletJSON_ListActions(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/listActions", r.URL.Path)
+
+		var args wallet.ListActionsArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		require.NoError(t, err)
+		require.Equal(t, []string{"test-label"}, args.Labels)
+		require.Equal(t, uint32(10), args.Limit)
+
+		writeJSONResponse(t, w, wallet.ListActionsResult{
+			TotalActions: 1,
+			Actions: []wallet.Action{
+				{
+					Txid:        "test-txid",
+					Description: "test-action",
+				},
+			},
+		})
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+	result, err := client.ListActions(wallet.ListActionsArgs{
+		Labels: []string{"test-label"},
+		Limit:  10,
+	}, "")
+	require.NoError(t, err)
+	require.Equal(t, uint32(1), result.TotalActions)
+	require.Len(t, result.Actions, 1)
+	require.Equal(t, "test-txid", result.Actions[0].Txid)
+}
+
+func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/internalizeAction", r.URL.Path)
+
+		var args wallet.InternalizeActionArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		require.NoError(t, err)
+		require.Equal(t, "test-desc", args.Description)
+		require.Len(t, args.Outputs, 1)
+		require.Equal(t, uint32(0), args.Outputs[0].OutputIndex)
+
+		writeJSONResponse(t, w, wallet.InternalizeActionResult{Accepted: true})
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+	result, err := client.InternalizeAction(wallet.InternalizeActionArgs{
+		Description: "test-desc",
+		Outputs: []wallet.InternalizeOutput{
+			{
+				OutputIndex: 0,
+				Protocol:    "wallet payment",
+			},
+		},
+	}, "")
+	require.NoError(t, err)
+	require.True(t, result.Accepted)
+}
