@@ -77,7 +77,7 @@ func TestHTTPWalletJSON_API(t *testing.T) {
 
 	// Test successful API call
 	args := map[string]string{"testKey": "testValue"}
-	data, err := client.api("testEndpoint", args)
+	data, err := client.api(t.Context(), "testEndpoint", args)
 	require.NoError(t, err, "api call failed")
 
 	var result map[string]string
@@ -117,7 +117,7 @@ func TestHTTPWalletJSON_API_Errors(t *testing.T) {
 			defer ts.Close()
 
 			client := NewHTTPWalletJSON(TestOriginator, ts.URL, nil)
-			_, err := client.api("testEndpoint", map[string]string{"key": "value"})
+			_, err := client.api(t.Context(), "testEndpoint", map[string]string{"key": "value"})
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tt.wantErr)
 		})
@@ -125,11 +125,12 @@ func TestHTTPWalletJSON_API_Errors(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
+	ctx := t.Context()
 	// Test JSON marshaling error
 	t.Run("marshal error", func(t *testing.T) {
 		client := NewHTTPWalletJSON("", "", nil)
 		// Pass a channel which can't be marshaled to JSON
-		_, err := client.api("test", make(chan int))
+		_, err := client.api(ctx, "test", make(chan int))
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to marshal request")
 	})
@@ -137,7 +138,7 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 	// Test HTTP request error
 	t.Run("HTTP error", func(t *testing.T) {
 		client := NewHTTPWalletJSON("", "http://invalid-url", nil)
-		_, err := client.api("test", map[string]string{"key": "value"})
+		_, err := client.api(ctx, "test", map[string]string{"key": "value"})
 		require.Error(t, err)
 	})
 
@@ -150,7 +151,7 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 		defer ts.Close()
 
 		client := NewHTTPWalletJSON("", ts.URL, nil)
-		_, err := client.CreateAction(wallet.CreateActionArgs{}, "")
+		_, err := client.CreateAction(ctx, wallet.CreateActionArgs{})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid character")
 	})
@@ -176,9 +177,9 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.CreateAction(wallet.CreateActionArgs{
+	result, err := client.CreateAction(t.Context(), wallet.CreateActionArgs{
 		Description: "test desc",
-	}, "")
+	})
 	require.NoError(t, err)
 	require.Equal(t, "test-txid", result.Txid)
 }
@@ -199,12 +200,12 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.SignAction(wallet.SignActionArgs{
+	result, err := client.SignAction(t.Context(), wallet.SignActionArgs{
 		Reference: "test-ref",
 		Spends: map[uint32]wallet.SignActionSpend{
 			0: {UnlockingScript: "test-script"},
 		},
-	}, "")
+	})
 	require.NoError(t, err)
 	require.Equal(t, "signed-txid", result.Txid)
 }
@@ -223,9 +224,9 @@ func TestHTTPWalletJSON_AbortAction(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.AbortAction(wallet.AbortActionArgs{
+	result, err := client.AbortAction(t.Context(), wallet.AbortActionArgs{
 		Reference: "test-ref",
-	}, "")
+	})
 	require.NoError(t, err)
 	require.True(t, result.Aborted)
 }
@@ -253,10 +254,10 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.ListActions(wallet.ListActionsArgs{
+	result, err := client.ListActions(t.Context(), wallet.ListActionsArgs{
 		Labels: []string{"test-label"},
 		Limit:  10,
-	}, "")
+	})
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), result.TotalActions)
 	require.Len(t, result.Actions, 1)
@@ -279,7 +280,7 @@ func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.InternalizeAction(wallet.InternalizeActionArgs{
+	result, err := client.InternalizeAction(t.Context(), wallet.InternalizeActionArgs{
 		Description: "test-desc",
 		Outputs: []wallet.InternalizeOutput{
 			{
@@ -287,7 +288,7 @@ func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
 				Protocol:    "wallet payment",
 			},
 		},
-	}, "")
+	})
 	require.NoError(t, err)
 	require.True(t, result.Accepted)
 }
