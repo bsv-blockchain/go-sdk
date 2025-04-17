@@ -2,9 +2,11 @@ package substrates
 
 import (
 	"encoding/json"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -291,4 +293,141 @@ func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, result.Accepted)
+}
+
+func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
+	testData := []byte("test data")
+	encryptedData := []byte("encrypted-data")
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/encrypt", r.URL.Path)
+
+		var args wallet.EncryptArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		require.NoError(t, err)
+		require.Equal(t, testData, args.Plaintext)
+
+		resp := wallet.EncryptResult{Ciphertext: encryptedData}
+		writeJSONResponse(t, w, resp)
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+	encryptResult, err := client.Encrypt(t.Context(), wallet.EncryptArgs{
+		Plaintext: testData,
+	})
+	require.NoError(t, err)
+	require.Equal(t, encryptedData, encryptResult.Ciphertext)
+
+	// Test decrypt
+	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/decrypt", r.URL.Path)
+
+		var args wallet.DecryptArgs
+		err := json.NewDecoder(r.Body).Decode(&args)
+		require.NoError(t, err)
+		require.Equal(t, encryptedData, args.Ciphertext)
+
+		resp := wallet.DecryptResult{Plaintext: testData}
+		writeJSONResponse(t, w, resp)
+	}))
+	defer ts.Close()
+
+	client = NewHTTPWalletJSON("", ts.URL, nil)
+	decryptResult, err := client.Decrypt(t.Context(), wallet.DecryptArgs{
+		Ciphertext: encryptedData,
+	})
+	require.NoError(t, err)
+	require.Equal(t, testData, decryptResult.Plaintext)
+}
+
+func TestHTTPWalletJSON_HmacOperations(t *testing.T) {
+	testData := []byte("test data")
+	testHmac := []byte("test-hmac")
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/createHmac" {
+			var args wallet.CreateHmacArgs
+			err := json.NewDecoder(r.Body).Decode(&args)
+			require.NoError(t, err)
+			require.Equal(t, testData, args.Data)
+
+			resp := wallet.CreateHmacResult{Hmac: testHmac}
+			writeJSONResponse(t, w, resp)
+		} else {
+			var args wallet.VerifyHmacArgs
+			err := json.NewDecoder(r.Body).Decode(&args)
+			require.NoError(t, err)
+			require.Equal(t, testData, args.Data)
+			require.Equal(t, testHmac, args.Hmac)
+
+			resp := wallet.VerifyHmacResult{Valid: true}
+			writeJSONResponse(t, w, resp)
+		}
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+
+	// Test create HMAC
+	hmacResult, err := client.CreateHmac(t.Context(), wallet.CreateHmacArgs{
+		Data: testData,
+	})
+	require.NoError(t, err)
+	require.Equal(t, testHmac, hmacResult.Hmac)
+
+	// Test verify HMAC
+	verifyResult, err := client.VerifyHmac(t.Context(), wallet.VerifyHmacArgs{
+		Data: testData,
+		Hmac: testHmac,
+	})
+	require.NoError(t, err)
+	require.True(t, verifyResult.Valid)
+}
+
+func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
+	testData := []byte("test data")
+	testSig := ec.Signature{
+		R: big.NewInt(1),
+		S: big.NewInt(2),
+	} // Sample signature
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/createSignature" {
+			var args wallet.CreateSignatureArgs
+			err := json.NewDecoder(r.Body).Decode(&args)
+			require.NoError(t, err)
+			require.Equal(t, testData, args.Data)
+
+			resp := wallet.CreateSignatureResult{Signature: testSig}
+			writeJSONResponse(t, w, resp)
+		} else {
+			var args wallet.VerifySignatureArgs
+			err := json.NewDecoder(r.Body).Decode(&args)
+			require.NoError(t, err)
+			require.Equal(t, testData, args.Data)
+			require.Equal(t, testSig, args.Signature)
+
+			resp := wallet.VerifySignatureResult{Valid: true}
+			writeJSONResponse(t, w, resp)
+		}
+	}))
+	defer ts.Close()
+
+	client := NewHTTPWalletJSON("", ts.URL, nil)
+
+	// Test create signature
+	sigResult, err := client.CreateSignature(t.Context(), wallet.CreateSignatureArgs{
+		Data: testData,
+	})
+	require.NoError(t, err)
+	require.Equal(t, testSig, sigResult.Signature)
+
+	// Test verify signature
+	verifyResult, err := client.VerifySignature(t.Context(), wallet.VerifySignatureArgs{
+		Data:      testData,
+		Signature: testSig,
+	})
+	require.NoError(t, err)
+	require.True(t, verifyResult.Valid)
 }
