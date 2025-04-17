@@ -1,6 +1,7 @@
 package pushdrop
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 
@@ -50,6 +51,7 @@ type PushDropTemplate struct {
 }
 
 func (p *PushDropTemplate) Lock(
+	ctx context.Context,
 	fields [][]byte,
 	protocolID wallet.Protocol,
 	keyID string,
@@ -58,7 +60,7 @@ func (p *PushDropTemplate) Lock(
 	includeSignatures bool,
 	lockPosBefore bool,
 ) (*script.Script, error) {
-	pub, err := p.Wallet.GetPublicKey(wallet.GetPublicKeyArgs{
+	pub, err := p.Wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID:   protocolID,
 			KeyID:        keyID,
@@ -83,7 +85,7 @@ func (p *PushDropTemplate) Lock(
 		for _, e := range fields {
 			dataToSign = append(dataToSign, e...)
 		}
-		sig, err := p.Wallet.CreateSignature(wallet.CreateSignatureArgs{
+		sig, err := p.Wallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:   protocolID,
 				KeyID:        keyID,
@@ -120,6 +122,7 @@ func (p *PushDropTemplate) Lock(
 }
 
 func (p *PushDropTemplate) Unlock(
+	ctx context.Context,
 	protocolID wallet.Protocol,
 	keyID string,
 	counterparty wallet.Counterparty,
@@ -127,6 +130,7 @@ func (p *PushDropTemplate) Unlock(
 	anyoneCanPay bool,
 ) *PushDropUnlocker {
 	return &PushDropUnlocker{
+		ctx:          ctx,
 		protocolID:   protocolID,
 		keyID:        keyID,
 		counterparty: counterparty,
@@ -137,6 +141,7 @@ func (p *PushDropTemplate) Unlock(
 }
 
 type PushDropUnlocker struct {
+	ctx          context.Context
 	protocolID   wallet.Protocol
 	keyID        string
 	counterparty wallet.Counterparty
@@ -166,7 +171,7 @@ func (p *PushDropUnlocker) Sign(
 		return nil, err
 	} else {
 		preimageHash := sha256.Sum256(sh)
-		sig, err := p.pushDrop.Wallet.CreateSignature(wallet.CreateSignatureArgs{
+		sig, err := p.pushDrop.Wallet.CreateSignature(p.ctx, wallet.CreateSignatureArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:   p.protocolID,
 				KeyID:        p.keyID,
