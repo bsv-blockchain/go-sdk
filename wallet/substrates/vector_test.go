@@ -5,7 +5,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,25 +34,39 @@ func TestVectors(t *testing.T) {
 
 			// Test JSON marshaling
 			t.Run("JSON", func(t *testing.T) {
+				// Define a function to check JSON serialization and deserialization
+				checkJson := func(emptyObj, expectedObj any) {
+					assert.NoError(t, json.Unmarshal(vectorFile["json"], emptyObj))
+					assert.Equal(t, expectedObj, emptyObj)
+					marshaled, err := json.MarshalIndent(expectedObj, "  ", "  ")
+					assert.NoError(t, err)
+					assert.Equal(t, string(vectorFile["json"]), string(marshaled))
+				}
+
 				// Marshal the object to JSON
 				switch obj := tt.Object.(type) {
 				case wallet.AbortActionArgs:
 					var deserialized wallet.AbortActionArgs
-					require.NoError(t, json.Unmarshal(vectorFile["json"], &deserialized))
-					assert.Equal(t, obj, deserialized)
-					// TODO: Test JSON Marshalled obj matches vectorFile["json"]
+					checkJson(&deserialized, &obj)
 				}
 			})
 
 			// Test wire format serialization
 			t.Run("Wire", func(t *testing.T) {
+				// Define a function to check wire serialization and deserialization
+				checkWireSerialize := func(obj, deserialized any, err1 error, serialized any, err2 error) {
+					assert.NoError(t, err1)
+					assert.Equal(t, obj, deserialized)
+					assert.NoError(t, err2)
+					assert.Equal(t, []byte(vectorFile["wire"]), serialized)
+				}
+
 				// Marshal the object to JSON
 				switch obj := tt.Object.(type) {
 				case wallet.AbortActionArgs:
-					deserialized, err := serializer.DeserializeAbortActionArgs(vectorFile["wire"])
-					require.NoError(t, err)
-					assert.Equal(t, obj, deserialized)
-					// TODO: Test serialized obj matches vectorFile["wire"]
+					deserialized, err1 := serializer.DeserializeAbortActionArgs(vectorFile["wire"])
+					serialized, err2 := serializer.SerializeAbortActionArgs(&obj)
+					checkWireSerialize(&obj, deserialized, err1, serialized, err2)
 				}
 			})
 		})
