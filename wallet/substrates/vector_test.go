@@ -48,6 +48,11 @@ func TestVectors(t *testing.T) {
 				case wallet.AbortActionArgs:
 					var deserialized wallet.AbortActionArgs
 					checkJson(&deserialized, &obj)
+				case wallet.CreateActionArgs:
+					var deserialized wallet.CreateActionArgs
+					checkJson(&deserialized, &obj)
+				default:
+					t.Fatalf("Unsupported object type: %T", obj)
 				}
 			})
 
@@ -67,6 +72,12 @@ func TestVectors(t *testing.T) {
 					deserialized, err1 := serializer.DeserializeAbortActionArgs(vectorFile["wire"])
 					serialized, err2 := serializer.SerializeAbortActionArgs(&obj)
 					checkWireSerialize(&obj, deserialized, err1, serialized, err2)
+				case wallet.CreateActionArgs:
+					deserialized, err1 := serializer.DeserializeCreateActionArgs(vectorFile["wire"])
+					serialized, err2 := serializer.SerializeCreateActionArgs(&obj)
+					checkWireSerialize(&obj, deserialized, err1, serialized, err2)
+				default:
+					t.Fatalf("Unsupported object type: %T", obj)
 				}
 			})
 		})
@@ -78,5 +89,19 @@ var vectorTests = []VectorTest{{
 	Filename: "abortAction-simple-args.json",
 	Object: wallet.AbortActionArgs{
 		Reference: "dGVzdA==",
+	},
+}, {
+	Filename: "createAction-1-out-args.json",
+	Object: wallet.CreateActionArgs{
+		Description: "Test action description",
+		Outputs: []wallet.CreateActionOutput{{
+			LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+			Satoshis:     999,
+			OutputDescription: "Test output",
+			Basket: "test-basket",
+			CustomInstructions: "Test instructions",
+			Tags: []string{"test-tag"},
+		}},
+		Labels: []string{"test-label"},
 	},
 }}

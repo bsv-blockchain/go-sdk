@@ -37,12 +37,12 @@ type CreateActionInput struct {
 
 // CreateActionOutput represents an output to be created in a transaction
 type CreateActionOutput struct {
-	LockingScript      string // Hex encoded
-	Satoshis           uint64
-	OutputDescription  string
-	Basket             string
-	CustomInstructions string
-	Tags               []string
+	LockingScript      string   `json:"locking_script,omitempty"` // Hex encoded
+	Satoshis           uint64   `json:"satoshis,omitempty"`
+	OutputDescription  string   `json:"output_description,omitempty"`
+	Basket             string   `json:"basket,omitempty"`
+	CustomInstructions string   `json:"custom_instructions,omitempty"`
+	Tags               []string `json:"tags,omitempty"`
 }
 
 // CreateActionOptions contains optional parameters for creating a new transaction
@@ -60,14 +60,14 @@ type CreateActionOptions struct {
 
 // CreateActionArgs contains all data needed to create a new transaction
 type CreateActionArgs struct {
-	Description string
-	InputBEEF   []byte
-	Inputs      []CreateActionInput
-	Outputs     []CreateActionOutput
-	LockTime    uint32
-	Version     uint32
-	Labels      []string
-	Options     *CreateActionOptions
+	Description string               `json:"description"`
+	InputBEEF   []byte               `json:"inputBEEF,omitempty"`
+	Inputs      []CreateActionInput  `json:"inputs,omitempty"`
+	Outputs     []CreateActionOutput `json:"outputs,omitempty"`
+	LockTime    uint32               `json:"lockTime,omitempty"`
+	Version     uint32               `json:"version,omitempty"`
+	Labels      []string             `json:"labels,omitempty"`
+	Options     *CreateActionOptions `json:"options,omitempty"`
 }
 
 // CreateActionResult contains the results of creating a transaction
