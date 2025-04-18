@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -18,13 +17,13 @@ func TestAbortActionArgsSerializeAndDeserialize(t *testing.T) {
 		{
 			name: "full args",
 			args: &wallet.AbortActionArgs{
-				Reference: base64.StdEncoding.EncodeToString([]byte("test-reference-123")),
+				Reference: []byte{1, 2, 3},
 			},
 		},
 		{
 			name: "empty reference",
 			args: &wallet.AbortActionArgs{
-				Reference: "",
+				Reference: nil,
 			},
 		},
 	}
@@ -34,7 +33,6 @@ func TestAbortActionArgsSerializeAndDeserialize(t *testing.T) {
 			// Serialize
 			data, err := SerializeAbortActionArgs(tt.args)
 			require.NoError(t, err)
-			require.NotEmpty(t, data)
 
 			// Deserialize
 			args, err := DeserializeAbortActionArgs(data)
@@ -99,17 +97,10 @@ func TestSerializeAbortActionArgs(t *testing.T) {
 		{
 			name: "valid reference",
 			args: wallet.AbortActionArgs{
-				Reference: base64.StdEncoding.EncodeToString([]byte("test-ref")),
+				Reference: []byte{1, 2, 3},
 			},
-			want:    append([]byte{0x08}, []byte("test-ref")...),
+			want:    []byte{1, 2, 3},
 			wantErr: false,
-		},
-		{
-			name: "invalid base64 reference",
-			args: wallet.AbortActionArgs{
-				Reference: "invalid",
-			},
-			wantErr: true,
 		},
 	}
 
@@ -138,7 +129,7 @@ func TestDeserializeAbortActionArgs(t *testing.T) {
 			name: "valid reference",
 			data: append([]byte{0x08}, []byte("test-ref")...),
 			want: &wallet.AbortActionArgs{
-				Reference: base64.StdEncoding.EncodeToString([]byte("test-ref")),
+				Reference: []byte{1, 2, 3},
 			},
 			wantErr: false,
 		},

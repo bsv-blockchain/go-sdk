@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -12,12 +11,7 @@ func SerializeAbortActionArgs(args *wallet.AbortActionArgs) ([]byte, error) {
 	w := util.NewWriter()
 
 	// Serialize reference
-	ref, err := base64.StdEncoding.DecodeString(args.Reference)
-	if err != nil {
-		return nil, fmt.Errorf("invalid reference base64: %w", err)
-	}
-	w.WriteVarInt(uint64(len(ref)))
-	w.WriteBytes(ref)
+	w.WriteBytes(args.Reference)
 
 	return w.Buf, nil
 }
@@ -27,9 +21,7 @@ func DeserializeAbortActionArgs(data []byte) (*wallet.AbortActionArgs, error) {
 	args := &wallet.AbortActionArgs{}
 
 	// Read reference
-	refLen := r.ReadVarInt()
-	reference := r.ReadBytes(int(refLen))
-	args.Reference = base64.StdEncoding.EncodeToString(reference)
+	args.Reference = r.ReadRemaining()
 
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading abort action args: %w", r.Err)

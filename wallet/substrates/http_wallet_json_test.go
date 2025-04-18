@@ -227,7 +227,7 @@ func TestHTTPWalletJSON_AbortAction(t *testing.T) {
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
 	result, err := client.AbortAction(t.Context(), wallet.AbortActionArgs{
-		Reference: "test-ref",
+		Reference: []byte{1, 2, 3, 4},
 	})
 	require.NoError(t, err)
 	require.True(t, result.Aborted)

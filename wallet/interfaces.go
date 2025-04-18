@@ -269,7 +269,7 @@ type Interface interface {
 // AbortActionArgs identifies a transaction to abort using its reference string.
 type AbortActionArgs struct {
 	// TODO: Use []byte instead of Base64 encoded string, will automatically Marshall/Unmarshall to/from Base64
-	Reference string `json:"reference"` // Base64 encoded reference
+	Reference []byte `json:"reference"` // Base64 encoded reference
 }
 
 // AbortActionResult confirms whether a transaction was successfully aborted.
