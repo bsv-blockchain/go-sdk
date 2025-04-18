@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
@@ -234,8 +235,20 @@ type ListOutputsResult struct {
 	Outputs      []Output
 }
 
+// KeyOperations defines the interface for cryptographic operations.
+type KeyOperations interface {
+	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
+	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
+	CreateHmac(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error)
+	VerifyHmac(ctx context.Context, args VerifyHmacArgs, originator string) (*VerifyHmacResult, error)
+	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
+	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+}
+
 // Interface defines the core wallet operations for transaction creation, signing and querying.
 type Interface interface {
+	KeyOperations
 	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
 	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
 	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
@@ -243,15 +256,8 @@ type Interface interface {
 	InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
 	ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error)
 	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
-	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
 	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
 	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
-	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
-	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
-	CreateHmac(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error)
-	VerifyHmac(ctx context.Context, args VerifyHmacArgs, originator string) (*VerifyHmacResult, error)
-	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
-	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
 	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
 	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
 	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)

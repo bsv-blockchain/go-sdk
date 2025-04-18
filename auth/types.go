@@ -2,6 +2,8 @@ package auth
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sync"
@@ -182,4 +184,59 @@ type CertificateQuery struct {
 
 	// Subject identity key (who the certificate is about)
 	Subject string
+}
+
+func (m *AuthMessage) MarshalJSON() ([]byte, error) {
+	type Alias AuthMessage
+
+	return json.Marshal(&struct {
+		IdentityKey string `json:"identityKey"`
+		Payload     string `json:"payload,omitempty"`
+		Signature   string `json:"signature,omitempty"`
+		*Alias
+	}{
+		IdentityKey: m.IdentityKey.ToDERHex(),
+		Payload:     base64.StdEncoding.EncodeToString(m.Payload),
+		Signature:   base64.StdEncoding.EncodeToString(m.Signature),
+		Alias:       (*Alias)(m),
+	})
+}
+
+func (m *AuthMessage) UnmarshalJSON(data []byte) error {
+	type Alias AuthMessage
+
+	aux := &struct {
+		IdentityKey string `json:"identityKey"`
+		Payload     string `json:"payload,omitempty"`
+		Signature   string `json:"signature,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling AuthMessage: %w", err)
+	}
+
+	pubKey, err := ec.PublicKeyFromString(aux.IdentityKey)
+	if err != nil {
+		return fmt.Errorf("invalid public key: %w", err)
+	}
+	m.IdentityKey = pubKey
+
+	if aux.Payload != "" {
+		m.Payload, err = base64.StdEncoding.DecodeString(aux.Payload)
+		if err != nil {
+			return fmt.Errorf("invalid payload base64: %w", err)
+		}
+	}
+
+	if aux.Signature != "" {
+		m.Signature, err = base64.StdEncoding.DecodeString(aux.Signature)
+		if err != nil {
+			return fmt.Errorf("invalid signature base64: %w", err)
+		}
+	}
+
+	return nil
 }
