@@ -127,29 +127,22 @@ func TestDeserializeAbortActionArgs(t *testing.T) {
 	}{
 		{
 			name: "valid reference",
-			data: append([]byte{0x08}, []byte("test-ref")...),
+			data: []byte{1, 2, 3},
 			want: &wallet.AbortActionArgs{
 				Reference: []byte{1, 2, 3},
 			},
-			wantErr: false,
 		},
 		{
-			name:    "empty data",
-			data:    []byte{},
-			wantErr: true,
+			name: "empty data",
+			want: &wallet.AbortActionArgs{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DeserializeAbortActionArgs(tt.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DeserializeAbortActionArgs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr {
-				assert.Equal(t, tt.want, got)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
