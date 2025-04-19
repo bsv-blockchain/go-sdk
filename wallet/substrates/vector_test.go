@@ -64,7 +64,42 @@ func TestVectors(t *testing.T) {
 			}},
 			Labels: []string{"test-label"},
 		},
-	}}
+	}/*, {
+		Filename: "listActions-simple-args",
+		IsResult: true,
+		Object: wallet.ListActionsArgs{
+			Labels:         []string{"test-label"},
+			Limit:          10,
+			IncludeOutputs: util.BoolPtr(true),
+		},
+	}, {
+		Filename: "listActions-simple-results",
+		IsResult: true,
+		Object: wallet.ListActionsResult{
+			TotalActions: 2,
+			Actions: []wallet.Action{{
+				Txid:        "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				Satoshis:    1000,
+				Status:      wallet.ActionStatusCompleted,
+				IsOutgoing:  true,
+				Description: "Test transaction 1",
+				Version:     1,
+				LockTime:    10,
+				Outputs: []wallet.ActionOutput{{
+					OutputIndex:       1,
+					OutputDescription: "Test output",
+					Basket:            "basket1",
+					Spendable:         true,
+					Tags:              []string{"tag1", "tag2"},
+					Satoshis:          1000,
+					LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+				}},
+			}, {
+				Status:  wallet.ActionStatusUnsigned,
+				Outputs: []wallet.ActionOutput{{}},
+			}},
+		},
+	}*/}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
 			// Read test vector file
