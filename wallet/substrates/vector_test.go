@@ -39,6 +39,17 @@ func TestVectors(t *testing.T) {
 			Aborted: true,
 		},
 	}, {
+		// TODO: This test is failing, I think also because of how ts-sdk handles -1
+		Filename: "signAction-simple-args",
+		Object: wallet.SignActionArgs{
+			Reference: "dGVzdA==",
+			Spends: map[uint32]wallet.SignActionSpend{
+				0: {
+					UnlockingScript: "76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac",
+				},
+			},
+		},
+	}, {
 		// TODO: This test is failing because of issues with how ts-sdk encodes/decodes -1
 		Filename: "createAction-1-out-args",
 		Object: wallet.CreateActionArgs{
@@ -92,6 +103,9 @@ func TestVectors(t *testing.T) {
 					checkJson(&deserialized, &obj)
 				case wallet.CreateActionArgs:
 					var deserialized wallet.CreateActionArgs
+					checkJson(&deserialized, &obj)
+				case wallet.SignActionArgs:
+					var deserialized wallet.SignActionArgs
 					checkJson(&deserialized, &obj)
 				case wallet.AbortActionResult:
 					var deserialized wallet.AbortActionResult
@@ -149,6 +163,10 @@ func TestVectors(t *testing.T) {
 					serialized, err1 := serializer.SerializeAbortActionResult(&obj)
 					deserialized, err2 := serializer.DeserializeAbortActionResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.SignActionArgs:
+					serialized, err1 := serializer.SerializeSignActionArgs(&obj)
+					deserialized, err2 := serializer.DeserializeSignActionArgs(frameParams)
+					checkWireSerialize(substrates.CallSignAction, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}

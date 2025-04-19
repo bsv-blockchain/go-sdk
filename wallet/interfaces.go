@@ -93,8 +93,8 @@ type SignableTransaction struct {
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
 type SignActionSpend struct {
-	UnlockingScript string // Hex encoded
-	SequenceNumber  uint32
+	UnlockingScript string `json:"unlockingScript"` // Hex encoded
+	SequenceNumber  uint32 `json:"sequenceNumber,omitempty"`
 }
 
 // SignActionOptions controls signing and broadcasting behavior.
@@ -107,9 +107,9 @@ type SignActionOptions struct {
 
 // SignActionArgs contains data needed to sign a previously created transaction.
 type SignActionArgs struct {
-	Spends    map[uint32]SignActionSpend // Key is input index
-	Reference string                     // Base64 encoded
-	Options   *SignActionOptions
+	Reference string                     `json:"reference"` // Base64 encoded
+	Spends    map[uint32]SignActionSpend `json:"spends"`    // Key is input index
+	Options   *SignActionOptions         `json:"options,omitempty"`
 }
 
 // SignActionResult contains the output of a successful signing operation.
