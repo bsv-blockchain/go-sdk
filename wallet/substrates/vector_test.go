@@ -64,7 +64,7 @@ func TestVectors(t *testing.T) {
 			}},
 			Labels: []string{"test-label"},
 		},
-	}/*, {
+	}, /*{
 		Filename: "listActions-simple-args",
 		IsResult: true,
 		Object: wallet.ListActionsArgs{
