@@ -31,9 +31,9 @@ func TestSerializeSignActionArgs(t *testing.T) {
 				},
 				Reference: base64.StdEncoding.EncodeToString([]byte("ref123")),
 				Options: &wallet.SignActionOptions{
-					AcceptDelayedBroadcast: boolPtr(true),
-					ReturnTXIDOnly:         boolPtr(false),
-					NoSend:                 boolPtr(true),
+					AcceptDelayedBroadcast: util.BoolPtr(true),
+					ReturnTXIDOnly:         util.BoolPtr(false),
+					NoSend:                 util.BoolPtr(true),
 					SendWith: []string{
 						"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 						"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
@@ -142,9 +142,9 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 				},
 				Reference: base64.StdEncoding.EncodeToString(ref),
 				Options: &wallet.SignActionOptions{
-					AcceptDelayedBroadcast: boolPtr(true),
-					ReturnTXIDOnly:         boolPtr(false),
-					NoSend:                 boolPtr(true),
+					AcceptDelayedBroadcast: util.BoolPtr(true),
+					ReturnTXIDOnly:         util.BoolPtr(false),
+					NoSend:                 util.BoolPtr(true),
 					SendWith:               []string{txid, txid},
 				},
 			},

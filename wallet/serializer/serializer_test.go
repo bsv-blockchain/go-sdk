@@ -30,7 +30,7 @@ func TestKeyRelatedParams(t *testing.T) {
 					Type:         wallet.CounterpartyTypeOther,
 					Counterparty: testPrivKey.PubKey(),
 				},
-				Privileged:       boolPtr(true),
+				Privileged:       util.BoolPtr(true),
 				PrivilegedReason: "test-reason",
 			},
 		},
@@ -164,12 +164,12 @@ func TestPrivilegedParams(t *testing.T) {
 	}{
 		{
 			name:             "privileged true with reason",
-			privileged:       boolPtr(true),
+			privileged:       util.BoolPtr(true),
 			privilegedReason: "test-reason",
 		},
 		{
 			name:             "privileged false with reason",
-			privileged:       boolPtr(false),
+			privileged:       util.BoolPtr(false),
 			privilegedReason: "test-reason",
 		},
 		{
@@ -178,7 +178,7 @@ func TestPrivilegedParams(t *testing.T) {
 		},
 		{
 			name:       "privileged true no reason",
-			privileged: boolPtr(true),
+			privileged: util.BoolPtr(true),
 		},
 		{
 			name: "all nil",
@@ -202,11 +202,6 @@ func TestPrivilegedParams(t *testing.T) {
 			require.Equal(t, tt.privilegedReason, gotReason)
 		})
 	}
-}
-
-// boolPtr is a helper function to create a pointer to a boolean value
-func boolPtr(b bool) *bool {
-	return &b
 }
 
 // fromHex is a helper function to create a public key from a hex string

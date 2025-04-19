@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -36,7 +37,7 @@ func TestInternalizeActionArgs(t *testing.T) {
 			},
 			Description:    "test description",
 			Labels:         []string{"label1", "label2"},
-			SeekPermission: boolPtr(true),
+			SeekPermission: util.BoolPtr(true),
 		},
 	}, {
 		name: "minimal args",

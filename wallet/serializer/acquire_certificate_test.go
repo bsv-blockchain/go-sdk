@@ -3,6 +3,7 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -29,7 +30,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			KeyringForSubject: map[string]string{
 				"field1": base64.StdEncoding.EncodeToString([]byte("keyring1")),
 			},
-			Privileged:       boolPtr(true),
+			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
 	}, {

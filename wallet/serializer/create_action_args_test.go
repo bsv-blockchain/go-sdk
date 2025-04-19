@@ -42,18 +42,18 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				Version:  1,
 				Labels:   []string{"label1", "label2"},
 				Options: &wallet.CreateActionOptions{
-					SignAndProcess:         boolPtr(true),
-					AcceptDelayedBroadcast: boolPtr(false),
+					SignAndProcess:         util.BoolPtr(true),
+					AcceptDelayedBroadcast: util.BoolPtr(false),
 					TrustSelf:              "known",
 					KnownTxids: []string{
 						"1111111111111111111111111111111111111111111111111111111111111111",
 						"2222222222222222222222222222222222222222222222222222222222222222",
 					},
-					ReturnTXIDOnly:   boolPtr(true),
-					NoSend:           boolPtr(false),
+					ReturnTXIDOnly:   util.BoolPtr(true),
+					NoSend:           util.BoolPtr(false),
 					NoSendChange:     []string{"abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"},
 					SendWith:         []string{"3333333333333333333333333333333333333333333333333333333333333333"},
-					RandomizeOutputs: boolPtr(true),
+					RandomizeOutputs: util.BoolPtr(true),
 				},
 			},
 		},
@@ -87,7 +87,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			name: "with options only",
 			args: &wallet.CreateActionArgs{
 				Options: &wallet.CreateActionOptions{
-					SignAndProcess: boolPtr(true),
+					SignAndProcess: util.BoolPtr(true),
 				},
 			},
 		},

@@ -290,6 +290,11 @@ func ReadOptionalBoolAsBool(opt *bool) bool {
 	return opt != nil && *opt
 }
 
+// BoolPtr is a helper function to create a pointer to a boolean value
+func BoolPtr(b bool) *bool {
+	return &b
+}
+
 func (r *ReaderHoldError) ReadTxidSlice() []string {
 	if r.Err != nil {
 		return nil
