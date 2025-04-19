@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -19,7 +20,7 @@ func TestDiscoverByAttributesArgs(t *testing.T) {
 			},
 			Limit:          10,
 			Offset:         5,
-			SeekPermission: boolPtr(true),
+			SeekPermission: util.BoolPtr(true),
 		},
 	}, {
 		name: "minimal args",
@@ -34,7 +35,7 @@ func TestDiscoverByAttributesArgs(t *testing.T) {
 			Attributes: map[string]string{
 				"field1": "value1",
 			},
-			SeekPermission: boolPtr(false),
+			SeekPermission: util.BoolPtr(false),
 		},
 	}}
 

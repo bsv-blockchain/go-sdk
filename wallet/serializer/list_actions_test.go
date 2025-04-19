@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -17,15 +18,15 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: wallet.ListActionsArgs{
 				Labels:                           []string{"label1", "label2"},
 				LabelQueryMode:                   "all",
-				IncludeLabels:                    boolPtr(true),
-				IncludeInputs:                    boolPtr(false),
-				IncludeInputSourceLockingScripts: boolPtr(true),
-				IncludeInputUnlockingScripts:     boolPtr(false),
-				IncludeOutputs:                   boolPtr(true),
-				IncludeOutputLockingScripts:      boolPtr(false),
+				IncludeLabels:                    util.BoolPtr(true),
+				IncludeInputs:                    util.BoolPtr(false),
+				IncludeInputSourceLockingScripts: util.BoolPtr(true),
+				IncludeInputUnlockingScripts:     util.BoolPtr(false),
+				IncludeOutputs:                   util.BoolPtr(true),
+				IncludeOutputLockingScripts:      util.BoolPtr(false),
 				Limit:                            100,
 				Offset:                           10,
-				SeekPermission:                   boolPtr(false),
+				SeekPermission:                   util.BoolPtr(false),
 			},
 			wantErr: false,
 		},

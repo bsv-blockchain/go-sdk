@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -21,7 +22,7 @@ func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
 					Protocol:      "test-protocol",
 				},
 				KeyID:            "test-key-id",
-				Privileged:       boolPtr(true),
+				Privileged:       util.BoolPtr(true),
 				PrivilegedReason: "admin request",
 			},
 		},

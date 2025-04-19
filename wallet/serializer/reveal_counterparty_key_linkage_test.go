@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,7 +17,7 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 			args: &wallet.RevealCounterpartyKeyLinkageArgs{
 				Counterparty:     "02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
 				Verifier:         "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-				Privileged:       boolPtr(true),
+				Privileged:       util.BoolPtr(true),
 				PrivilegedReason: "test-reason",
 			},
 		},
