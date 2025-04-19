@@ -59,8 +59,7 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 	if inputsLen == math.MaxUint64 { // -1 means nil
 		return nil, nil
 	}
-
-	inputs := make([]wallet.CreateActionInput, 0, inputsLen)
+	var inputs []wallet.CreateActionInput
 	var err error
 	for i := uint64(0); i < inputsLen; i++ {
 		input := wallet.CreateActionInput{}

@@ -219,7 +219,7 @@ func TestHTTPWalletJSON_AbortAction(t *testing.T) {
 		var args wallet.AbortActionArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-ref", args.Reference)
+		require.Equal(t, []byte{1, 2, 3, 4}, args.Reference)
 
 		writeJSONResponse(t, w, wallet.AbortActionResult{Aborted: true})
 	}))

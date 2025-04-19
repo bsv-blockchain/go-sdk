@@ -29,6 +29,8 @@ func (r *Reader) ReadByte() (byte, error) {
 func (r *Reader) ReadBytes(n int) ([]byte, error) {
 	if r.Pos+n > len(r.Data) {
 		return nil, errors.New("read past end of data")
+	} else if n < 0 {
+		return nil, fmt.Errorf("invalid read length: %d", n)
 	}
 	b := r.Data[r.Pos : r.Pos+n]
 	r.Pos += n

@@ -37,11 +37,11 @@ type CreateActionInput struct {
 
 // CreateActionOutput represents an output to be created in a transaction
 type CreateActionOutput struct {
-	LockingScript      string   `json:"locking_script,omitempty"` // Hex encoded
+	LockingScript      string   `json:"lockingScript,omitempty"` // Hex encoded
 	Satoshis           uint64   `json:"satoshis,omitempty"`
-	OutputDescription  string   `json:"output_description,omitempty"`
+	OutputDescription  string   `json:"outputDescription,omitempty"`
 	Basket             string   `json:"basket,omitempty"`
-	CustomInstructions string   `json:"custom_instructions,omitempty"`
+	CustomInstructions string   `json:"customInstructions,omitempty"`
 	Tags               []string `json:"tags,omitempty"`
 }
 
@@ -274,7 +274,7 @@ type AbortActionArgs struct {
 
 // AbortActionResult confirms whether a transaction was successfully aborted.
 type AbortActionResult struct {
-	Aborted bool
+	Aborted bool `json:"aborted"`
 }
 
 // Payment contains derivation and identity data for wallet payment outputs.
