@@ -1,142 +1,140 @@
-package authhttp
+package clients
 
 import (
-	"net/http"
-	"net/http/httptest"
+	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/bsv-blockchain/go-sdk/auth"
+	"github.com/bsv-blockchain/go-sdk/auth/certificates"
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/stretchr/testify/assert"
 )
 
-// MockPeer implements the PeerInterface for testing
-type MockPeer struct {
-	toPeerCalled      bool
-	lastMessage       []byte
-	lastIdentityKey   string
-	lastMaxWaitTimeMs int
+// MockSessionManager implements auth.SessionManager for testing
+type MockSessionManager struct {
+	Sessions map[string]*auth.PeerSession
 }
 
-func (m *MockPeer) ToPeer(message []byte, identityKey string, maxWaitTimeMs int) error {
-	m.toPeerCalled = true
-	m.lastMessage = message
-	m.lastIdentityKey = identityKey
-	m.lastMaxWaitTimeMs = maxWaitTimeMs
+func NewMockSessionManager() *MockSessionManager {
+	return &MockSessionManager{
+		Sessions: make(map[string]*auth.PeerSession),
+	}
+}
+
+func (m *MockSessionManager) AddSession(session *auth.PeerSession) error {
+	m.Sessions[session.SessionNonce] = session
 	return nil
 }
 
-func TestNew(t *testing.T) {
-	mockPeer := &MockPeer{}
-
-	// Test with valid options
-	client, err := New(Options{
-		BaseURL: "http://example.com",
-		Peer:    mockPeer,
-	})
-
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if client == nil {
-		t.Error("Expected client to be created")
-	}
-
-	// Test with missing BaseURL
-	_, err = New(Options{
-		Peer: mockPeer,
-	})
-
-	if err == nil {
-		t.Error("Expected error for missing BaseURL")
-	}
-
-	// Test with missing Peer
-	_, err = New(Options{
-		BaseURL: "http://example.com",
-	})
-
-	if err == nil {
-		t.Error("Expected error for missing Peer")
-	}
+func (m *MockSessionManager) UpdateSession(session *auth.PeerSession) {
+	m.Sessions[session.SessionNonce] = session
 }
 
-func TestRequest(t *testing.T) {
-	mockPeer := &MockPeer{}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte(`{"success": true}`))
-		require.NoError(t, err)
-	}))
-	defer server.Close()
+func (m *MockSessionManager) GetSession(identifier string) (*auth.PeerSession, error) {
+	if session, ok := m.Sessions[identifier]; ok {
+		return session, nil
+	}
+	return nil, auth.ErrSessionNotFound
+}
 
-	client, err := New(Options{
-		BaseURL: server.URL,
-		Peer:    mockPeer,
-	})
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+func (m *MockSessionManager) RemoveSession(session *auth.PeerSession) {
+	delete(m.Sessions, session.SessionNonce)
+}
 
-	// Test GET request
-	resp, err := client.Get("/test", "test-identity-key", nil)
-	if err != nil {
-		t.Errorf("Expected no error for GET, got %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status 200, got %d", resp.StatusCode)
-	}
-	if !mockPeer.toPeerCalled {
-		t.Error("Expected ToPeer to be called")
-	}
-	if mockPeer.lastIdentityKey != "test-identity-key" {
-		t.Errorf("Expected identity key 'test-identity-key', got '%s'", mockPeer.lastIdentityKey)
+func (m *MockSessionManager) HasSession(identifier string) bool {
+	_, exists := m.Sessions[identifier]
+	return exists
+}
+
+// TestNew tests the New function
+func TestNew(t *testing.T) {
+	// Set up dependencies
+	mockWallet := wallet.NewMockWallet(t)
+	mockSessionManager := NewMockSessionManager()
+	requestedCerts := &utils.RequestedCertificateSet{
+		Certifiers:       []string{},
+		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 
-	// Reset mock
-	mockPeer.toPeerCalled = false
+	// Create AuthFetch instance
+	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
 
-	// Test POST request with body
-	type TestBody struct {
-		Name string `json:"name"`
-	}
-	body := TestBody{Name: "Test Name"}
+	// Assertions
+	assert.NotNil(t, authFetch)
+	assert.Equal(t, mockWallet, authFetch.wallet)
+	assert.Equal(t, mockSessionManager, authFetch.sessionManager)
+	assert.Equal(t, requestedCerts, authFetch.requestedCertificates)
+	assert.Empty(t, authFetch.peers)
+	assert.Empty(t, authFetch.certificatesReceived)
+}
 
-	resp, err = client.Post("/test", body, "test-identity-key", nil)
-	if err != nil {
-		t.Errorf("Expected no error for POST, got %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status 200, got %d", resp.StatusCode)
-	}
-	if !mockPeer.toPeerCalled {
-		t.Error("Expected ToPeer to be called")
-	}
-
-	// Test with query parameters
-	mockPeer.toPeerCalled = false
-	_, err = client.Get("/test", "test-identity-key", &RequestOptions{
-		QueryParams: map[string]string{
-			"param1": "value1",
-			"param2": "value2",
-		},
-	})
-	if err != nil {
-		t.Errorf("Expected no error for GET with query params, got %v", err)
-	}
-	if !mockPeer.toPeerCalled {
-		t.Error("Expected ToPeer to be called")
+// TestNewWithNilSessionManager tests the New function with a nil session manager
+func TestNewWithNilSessionManager(t *testing.T) {
+	// Set up dependencies
+	mockWallet := wallet.NewMockWallet(t)
+	requestedCerts := &utils.RequestedCertificateSet{
+		Certifiers:       []string{},
+		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 
-	// Test with custom headers
-	mockPeer.toPeerCalled = false
-	_, err = client.Get("/test", "test-identity-key", &RequestOptions{
-		Headers: map[string]string{
-			"X-Custom-Header": "CustomValue",
-		},
-	})
-	if err != nil {
-		t.Errorf("Expected no error for GET with custom headers, got %v", err)
+	// Create AuthFetch instance with nil session manager
+	authFetch := New(mockWallet, requestedCerts, nil)
+
+	// Assertions
+	assert.NotNil(t, authFetch)
+	assert.NotNil(t, authFetch.sessionManager)
+}
+
+// TestConsumeReceivedCertificates tests the ConsumeReceivedCertificates method
+func TestConsumeReceivedCertificates(t *testing.T) {
+	// Set up dependencies
+	mockWallet := wallet.NewMockWallet(t)
+	mockSessionManager := NewMockSessionManager()
+	requestedCerts := &utils.RequestedCertificateSet{}
+
+	// Create AuthFetch instance
+	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+
+	// Add some mock certificates
+	cert1 := &certificates.VerifiableCertificate{}
+	cert2 := &certificates.VerifiableCertificate{}
+	authFetch.certificatesReceived = []*certificates.VerifiableCertificate{cert1, cert2}
+
+	// Consume certificates
+	receivedCerts := authFetch.ConsumeReceivedCertificates()
+
+	// Assertions
+	assert.Len(t, receivedCerts, 2)
+	assert.Contains(t, receivedCerts, cert1)
+	assert.Contains(t, receivedCerts, cert2)
+	assert.Empty(t, authFetch.certificatesReceived)
+}
+
+// TestFetchWithRetryCounterAtZero tests the Fetch method with retry counter at 0
+func TestFetchWithRetryCounterAtZero(t *testing.T) {
+	// Set up dependencies
+	mockWallet := wallet.NewMockWallet(t)
+	mockSessionManager := NewMockSessionManager()
+	requestedCerts := &utils.RequestedCertificateSet{}
+
+	// Create AuthFetch instance
+	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+
+	// Set up test parameters
+	ctx := context.Background()
+	url := "https://example.com"
+	retryCounter := 0
+	config := &SimplifiedFetchRequestOptions{
+		Method:       "GET",
+		RetryCounter: &retryCounter,
 	}
-	if !mockPeer.toPeerCalled {
-		t.Error("Expected ToPeer to be called")
-	}
+
+	// Call Fetch
+	resp, err := authFetch.Fetch(ctx, url, config)
+
+	// Assertions
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "maximum number of retries")
 }
