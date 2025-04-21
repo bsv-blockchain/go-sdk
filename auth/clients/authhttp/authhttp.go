@@ -175,7 +175,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					return err
 				}
 
-				err = a.peers[baseURL].Peer.SendCertificateResponse(verifier, certificatesToInclude)
+				err = a.peers[baseURL].Peer.SendCertificateResponse(ctx, verifier, certificatesToInclude)
 				if err != nil {
 					return err
 				}
@@ -389,7 +389,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			}
 		}
 
-		err = peerToUse.Peer.ToPeer(requestData, idKeyObject, 30000) // 30 second timeout
+		err = peerToUse.Peer.ToPeer(ctx, requestData, idKeyObject, 30000) // 30 second timeout
 		if err != nil {
 			if strings.Contains(err.Error(), "Session not found for nonce") {
 				// Session expired, retry with a new session
@@ -512,7 +512,7 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 
 	// Request certificates
 	go func() {
-		err := peerToUse.Peer.RequestCertificates(identityKey, *certificatesToRequest, 30000) // 30 second timeout
+		err := peerToUse.Peer.RequestCertificates(ctx, identityKey, *certificatesToRequest, 30000) // 30 second timeout
 		if err != nil {
 			peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
 			certChan <- struct {
@@ -715,7 +715,7 @@ func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, co
 	}
 
 	// Create a random suffix for the derivation path
-	nonceResult, err := utils.CreateNonce(a.wallet, wallet.Counterparty{
+	nonceResult, err := utils.CreateNonce(ctx, a.wallet, wallet.Counterparty{
 		Type: wallet.CounterpartyTypeSelf,
 	})
 	if err != nil {

@@ -16,7 +16,7 @@ func TestValidateCertificates(t *testing.T) {
 			Certificates: nil,
 		}
 
-		err := ValidateCertificates(mockWallet, message, nil)
+		err := ValidateCertificates(t.Context(), mockWallet, message, nil)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "no certificates were provided")

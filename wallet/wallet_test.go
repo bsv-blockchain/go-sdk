@@ -1,7 +1,6 @@
 package wallet_test
 
 import (
-	"context"
 	"crypto/sha256"
 	"testing"
 
@@ -72,7 +71,7 @@ func TestEncryptDecryptMessage(t *testing.T) {
 	t.Run("wrong protocol", func(t *testing.T) {
 		wrongProtocolArgs := decryptArgs
 		wrongProtocolArgs.ProtocolID.Protocol = "wrong"
-		_, err := counterpartyWallet.Decrypt(context.TODO(), wrongProtocolArgs, "example")
+		_, err := counterpartyWallet.Decrypt(t.Context(), wrongProtocolArgs, "example")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cipher: message authentication failed")
 	})

@@ -300,11 +300,11 @@ func main() {
 	})
 
 	// Get identity keys
-	aliceIdentityKey, _ := aliceWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	aliceIdentityKey, _ := aliceWallet.GetPublicKey(context.Background(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 
-	bobIdentityKey, _ := bobWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	bobIdentityKey, _ := bobWallet.GetPublicKey(context.Background(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 
@@ -319,7 +319,7 @@ func main() {
 
 	// Alice sends a message to Bob
 	fmt.Println("Alice is sending a message to Bob...")
-	err = alicePeer.ToPeer([]byte("Hello Bob, this is Alice!"), bobIdentityKey.PublicKey, 5000)
+	err = alicePeer.ToPeer(context.Background(), []byte("Hello Bob, this is Alice!"), bobIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Alice to Bob: %v", err)
 	}
@@ -329,7 +329,7 @@ func main() {
 
 	// Bob replies to Alice
 	fmt.Println("Bob is replying to Alice...")
-	err = bobPeer.ToPeer([]byte("Hello Alice, nice to hear from you!"), aliceIdentityKey.PublicKey, 5000)
+	err = bobPeer.ToPeer(context.Background(), []byte("Hello Alice, nice to hear from you!"), aliceIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Bob to Alice: %v", err)
 	}
