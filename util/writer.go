@@ -15,6 +15,7 @@ func NewWriter() *Writer {
 	return &Writer{}
 }
 
+//nolint:govet,stdmethods // suppress WriteByte signature mismatch
 func (w *Writer) WriteByte(b byte) {
 	w.Buf = append(w.Buf, b)
 }

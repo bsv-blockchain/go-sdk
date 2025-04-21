@@ -65,6 +65,7 @@ func TestListCertificatesArgs(t *testing.T) {
 func TestListCertificatesResult(t *testing.T) {
 	t.Run("full result", func(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
+		require.NoError(t, err)
 		result := &wallet.ListCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.CertificateResult{

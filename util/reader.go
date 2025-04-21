@@ -266,6 +266,9 @@ func (r *ReaderHoldError) ReadIntBytes() []byte {
 	return val
 }
 
+// ReadByte returns the next byte and holds any error internally
+//
+//nolint:govet // suppress signature mismatch for ReadByte method
 func (r *ReaderHoldError) ReadByte() byte {
 	if r.Err != nil {
 		return 0
