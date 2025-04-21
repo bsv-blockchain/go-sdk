@@ -9,6 +9,8 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewSimplifiedHTTPTransport(t *testing.T) {
@@ -197,4 +199,43 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 	if !callbackCalled {
 		t.Error("Expected callback to be called")
 	}
+}
+
+// TestSimplifiedHTTPTransportSendWithNoHandler tests that Send returns ErrNoHandlerRegistered when no handler is registered
+func TestSimplifiedHTTPTransportSendWithNoHandler(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{BaseURL: server.URL})
+	require.NoError(t, err)
+	require.NotNil(t, transport)
+
+	// Create a test message with a valid identity key
+	pubKeyHex := "02bbc996771abe50be940a9cfd91d6f28a70d139f340bedc8cdd4f236e5e9c9889"
+	pubKey, err := ec.PublicKeyFromString(pubKeyHex)
+	require.NoError(t, err)
+
+	testMessage := &auth.AuthMessage{
+		Version:     "0.1-test",
+		MessageType: "test-type",
+		IdentityKey: pubKey,
+		Payload:     []byte("hello http"),
+	}
+
+	// Send without registering a handler should fail
+	err = transport.Send(testMessage)
+	assert.ErrorIs(t, err, ErrNoHandlerRegistered, "Send should return ErrNoHandlerRegistered when no handler is registered")
+
+	// Now register a handler
+	err = transport.OnData(func(message *auth.AuthMessage) error {
+		return nil // Do nothing in this test
+	})
+	require.NoError(t, err, "OnData registration should succeed")
+
+	// Now send should not return the handler error
+	// Note: It may fail for other reasons (like invalid message format), but at least not for missing handler
+	err = transport.Send(testMessage)
+	assert.NotErrorIs(t, err, ErrNoHandlerRegistered, "Send should not return ErrNoHandlerRegistered after a handler is registered")
 }

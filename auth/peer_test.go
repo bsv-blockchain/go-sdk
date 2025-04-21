@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -417,9 +416,8 @@ func TestPeerSessionManagement(t *testing.T) {
 	alicePubKeyStr := alicePubKeyResult.PublicKey.ToDERHex()
 	bobPubKeyStr := bobPubKeyResult.PublicKey.ToDERHex()
 
-	// Use both key strings
-	fmt.Printf("Testing session with Alice's pubkey: %s\n", alicePubKeyStr)
-	fmt.Printf("Testing session with Bob's pubkey: %s\n", bobPubKeyStr)
+	t.Logf("Testing session with Alice's pubkey: %s", alicePubKeyStr)
+	t.Logf("Testing session with Bob's pubkey: %s", bobPubKeyStr)
 
 	// Create a session with a short timeout
 	go func() {
