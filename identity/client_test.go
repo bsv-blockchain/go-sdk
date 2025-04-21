@@ -322,7 +322,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		_, _, err := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "Certificate has no fields to reveal")
+		require.Contains(t, err.Error(), "certificate has no fields to reveal")
 	})
 
 	t.Run("should throw an error if fieldsToReveal is empty", func(t *testing.T) {
@@ -333,7 +333,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		_, _, err := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "You must reveal at least one field")
+		require.Contains(t, err.Error(), "you must reveal at least one field")
 	})
 
 	t.Run("should throw an error if certificate verification fails", func(t *testing.T) {
@@ -366,7 +366,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		// Call PubliclyRevealAttributes which should fail with Certificate verification
 		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "Certificate verification failed")
+		require.Contains(t, err.Error(), "certificate verification failed")
 	})
 
 	t.Run("should throw if createAction returns no tx", func(t *testing.T) {
@@ -443,7 +443,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		// Call PubliclyRevealAttributes which should fail with "failed to create action"
 		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "Public reveal failed: failed to create action")
+		require.Contains(t, err.Error(), "public reveal failed: failed to create action")
 	})
 
 	t.Run("should still fail properly with valid tx but NewTransactionFromBEEF failure", func(t *testing.T) {
@@ -583,7 +583,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			createActionCalled = true
 
 			return &wallet.CreateActionResult{
-				Tx: []byte{1, 2, 3, 4}, // Valid enough to pass nil check
+				Tx: []byte{1, 2, 3, 4}, // Mock BEEF data
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        []byte{1, 2, 3, 4},
 					Reference: "ref",
@@ -607,16 +607,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		testableClient, err := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
 		require.NoError(t, err)
 
-		// Mock the transaction and broadcaster - we'd need a way to hook these
-		// in a real test, for now expect the test to fail further downstream
-		// after we've verified our important mock calls
-
-		// Call PubliclyRevealAttributes
+		// Call PubliclyRevealAttributes (will fail but we can verify our mock calls)
 		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
-
-		// In a complete implementation, we'd have mocked Transaction.NewTransactionFromBEEF
-		// and topic.NewBroadcaster to verify full success, but for this test
-		// we're just making sure the right functions were called
 
 		// Verify our mock functions were called with the right parameters
 		require.True(t, proveCertificateCalled, "ProveCertificate was not called")
@@ -627,6 +619,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		require.Contains(t, err.Error(), "failed to create transaction from BEEF")
 	})
 
+	// New test case for the simple API
 	t.Run("should use simple API for TypeScript compatibility", func(t *testing.T) {
 		// Setup a certificate
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
@@ -692,8 +685,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		testableClient, err := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
 		require.NoError(t, err)
 
-		// Test the simple API. This will also fail since we're not fully mocking, but it will
-		// test the function signature and error handling in the simple wrapper
+		// Test the simple API
 		_, err = testableClient.PubliclyRevealAttributesSimple(context.Background(), certificate, fieldsToReveal)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to create transaction from BEEF")

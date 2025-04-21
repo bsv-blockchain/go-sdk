@@ -35,10 +35,18 @@ func (v *DefaultCertificateVerifier) Verify(ctx context.Context, certificate *wa
 	return nil
 }
 
+// TransactionCreator is a function that creates a Transaction from BEEF bytes
+type TransactionCreator func([]byte) (*transaction.Transaction, error)
+
+// BroadcasterFactory is a function that creates a topic.Broadcaster
+type BroadcasterFactory func(topics []string, config *topic.BroadcasterConfig) (*topic.Broadcaster, error)
+
 // TestableIdentityClient extends IdentityClient with features that make it easier to test
 type TestableIdentityClient struct {
 	*IdentityClient
 	certificateVerifier CertificateVerifier
+	transactionCreator  TransactionCreator
+	broadcasterFactory  BroadcasterFactory
 }
 
 // NewTestableIdentityClient creates a new TestableIdentityClient with the provided wallet and options
@@ -61,7 +69,21 @@ func NewTestableIdentityClient(
 	return &TestableIdentityClient{
 		IdentityClient:      baseClient,
 		certificateVerifier: verifier,
+		transactionCreator:  transaction.NewTransactionFromBEEF, // Default to actual implementation
+		broadcasterFactory:  topic.NewBroadcaster,               // Default to actual implementation
 	}, nil
+}
+
+// WithTransactionCreator sets a custom transaction creator for testing
+func (c *TestableIdentityClient) WithTransactionCreator(creator TransactionCreator) *TestableIdentityClient {
+	c.transactionCreator = creator
+	return c
+}
+
+// WithBroadcasterFactory sets a custom broadcaster factory for testing
+func (c *TestableIdentityClient) WithBroadcasterFactory(factory BroadcasterFactory) *TestableIdentityClient {
+	c.broadcasterFactory = factory
+	return c
 }
 
 // PubliclyRevealAttributes is a testable version that uses the injected certificate verifier
@@ -148,7 +170,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	}
 
 	// Create transaction from BEEF
-	tx, err := transaction.NewTransactionFromBEEF(createResult.Tx)
+	tx, err := c.transactionCreator(createResult.Tx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create transaction from BEEF: %w", err)
 	}
@@ -167,7 +189,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 		network = overlay.NetworkTestnet
 	}
 
-	broadcaster, err := topic.NewBroadcaster([]string{"tm_identity"}, &topic.BroadcasterConfig{
+	broadcaster, err := c.broadcasterFactory([]string{"tm_identity"}, &topic.BroadcasterConfig{
 		NetworkPreset: network,
 	})
 	if err != nil {
