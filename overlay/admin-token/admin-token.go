@@ -21,17 +21,16 @@ type OverlayAdminTokenTemplate struct {
 	PushDrop pushdrop.PushDropTemplate
 }
 
-func Decode(s *script.Script) (*OverlayAdminTokenData, error) {
-	if restult, err := pushdrop.Decode(s); err != nil {
-		return nil, err
-	} else {
+func Decode(s *script.Script) *OverlayAdminTokenData {
+	if result := pushdrop.Decode(s); result != nil {
 		return &OverlayAdminTokenData{
-			Protocol:       overlay.Protocol(string(restult.Fields[0])),
-			IdentityKey:    hex.EncodeToString(restult.Fields[0]),
-			Domain:         string(restult.Fields[1]),
-			TopicOrService: string(restult.Fields[2]),
-		}, nil
+			Protocol:       overlay.Protocol(string(result.Fields[0])),
+			IdentityKey:    hex.EncodeToString(result.Fields[0]),
+			Domain:         string(result.Fields[1]),
+			TopicOrService: string(result.Fields[2]),
+		}
 	}
+	return nil
 }
 
 func (o *OverlayAdminTokenTemplate) Lock(

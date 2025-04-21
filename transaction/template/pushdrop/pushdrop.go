@@ -17,12 +17,12 @@ type PushDropData struct {
 	Fields           [][]byte
 }
 
-func Decode(s *script.Script) (*PushDropData, error) {
+func Decode(s *script.Script) *PushDropData {
 	pushDrop := &PushDropData{}
 	if chunks, err := s.Chunks(); err != nil {
-		return nil, err
+		return nil
 	} else if pushDrop.LockingPublicKey, err = ec.PublicKeyFromBytes(chunks[0].Data); err != nil {
-		return nil, err
+		return nil
 	} else {
 		for i := 2; i < len(chunks); i++ {
 			nextOpcode := chunks[i+1].Op
@@ -41,7 +41,7 @@ func Decode(s *script.Script) (*PushDropData, error) {
 				break
 			}
 		}
-		return pushDrop, nil
+		return pushDrop
 	}
 }
 
