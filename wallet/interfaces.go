@@ -316,7 +316,7 @@ type InternalizeActionArgs struct {
 
 // InternalizeActionResult confirms whether a transaction was successfully internalized.
 type InternalizeActionResult struct {
-	Accepted bool
+	Accepted bool `json:"accepted"`
 }
 
 type RevealCounterpartyKeyLinkageArgs struct {
