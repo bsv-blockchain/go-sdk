@@ -8,7 +8,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // MockSessionManager implements auth.SessionManager for testing
@@ -61,12 +61,12 @@ func TestNew(t *testing.T) {
 	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
 
 	// Assertions
-	assert.NotNil(t, authFetch)
-	assert.Equal(t, mockWallet, authFetch.wallet)
-	assert.Equal(t, mockSessionManager, authFetch.sessionManager)
-	assert.Equal(t, requestedCerts, authFetch.requestedCertificates)
-	assert.Empty(t, authFetch.peers)
-	assert.Empty(t, authFetch.certificatesReceived)
+	require.NotNil(t, authFetch)
+	require.Equal(t, mockWallet, authFetch.wallet)
+	require.Equal(t, mockSessionManager, authFetch.sessionManager)
+	require.Equal(t, requestedCerts, authFetch.requestedCertificates)
+	require.Empty(t, authFetch.peers)
+	require.Empty(t, authFetch.certificatesReceived)
 }
 
 // TestNewWithNilSessionManager tests the New function with a nil session manager
@@ -82,8 +82,8 @@ func TestNewWithNilSessionManager(t *testing.T) {
 	authFetch := New(mockWallet, requestedCerts, nil)
 
 	// Assertions
-	assert.NotNil(t, authFetch)
-	assert.NotNil(t, authFetch.sessionManager)
+	require.NotNil(t, authFetch)
+	require.NotNil(t, authFetch.sessionManager)
 }
 
 // TestConsumeReceivedCertificates tests the ConsumeReceivedCertificates method
@@ -104,11 +104,10 @@ func TestConsumeReceivedCertificates(t *testing.T) {
 	// Consume certificates
 	receivedCerts := authFetch.ConsumeReceivedCertificates()
 
-	// Assertions
-	assert.Len(t, receivedCerts, 2)
-	assert.Contains(t, receivedCerts, cert1)
-	assert.Contains(t, receivedCerts, cert2)
-	assert.Empty(t, authFetch.certificatesReceived)
+	require.Len(t, receivedCerts, 2)
+	require.Contains(t, receivedCerts, cert1)
+	require.Contains(t, receivedCerts, cert2)
+	require.Empty(t, authFetch.certificatesReceived)
 }
 
 // TestFetchWithRetryCounterAtZero tests the Fetch method with retry counter at 0
@@ -133,8 +132,7 @@ func TestFetchWithRetryCounterAtZero(t *testing.T) {
 	// Call Fetch
 	resp, err := authFetch.Fetch(ctx, url, config)
 
-	// Assertions
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "maximum number of retries")
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Contains(t, err.Error(), "maximum number of retries")
 }
