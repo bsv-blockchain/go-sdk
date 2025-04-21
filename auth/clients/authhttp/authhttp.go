@@ -1,17 +1,20 @@
 package clients
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
+	"sort"
+	"strconv"
 	"strings"
-
-	"bytes"
-	"fmt"
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
@@ -440,9 +443,90 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 }
 
 // SendCertificateRequest requests Certificates from a Peer
-func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, certificatesToRequest *utils.RequestedCertificateSet) ([]certificates.VerifiableCertificate, error) {
-	// Implementation will go here
-	return nil, nil
+func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, certificatesToRequest *utils.RequestedCertificateSet) ([]*certificates.VerifiableCertificate, error) {
+	// Parse the URL to get the base URL
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	baseURLStr := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
+
+	// Get or create a peer for this base URL
+	var peerToUse *AuthPeer
+	if peer, exists := a.peers[baseURLStr]; exists {
+		peerToUse = peer
+	} else {
+		// Create a new transport for this base URL
+		transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
+			BaseURL: baseURLStr,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create transport: %w", err)
+		}
+
+		// Create a new peer with the transport
+		peerOpts := &auth.PeerOptions{
+			Wallet:                a.wallet,
+			Transport:             transport,
+			CertificatesToRequest: a.requestedCertificates,
+			SessionManager:        a.sessionManager,
+		}
+
+		peerToUse = &AuthPeer{
+			Peer:                       auth.NewPeer(peerOpts),
+			PendingCertificateRequests: []bool{},
+		}
+		a.peers[baseURLStr] = peerToUse
+	}
+
+	// Create a channel for waiting for certificates
+	certChan := make(chan struct {
+		certs []*certificates.VerifiableCertificate
+		err   error
+	})
+
+	// Set up certificate received listener
+	var callbackID int
+	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+		peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
+		a.certificatesReceived = append(a.certificatesReceived, certs...)
+		certChan <- struct {
+			certs []*certificates.VerifiableCertificate
+			err   error
+		}{certs, nil}
+		return nil
+	})
+
+	// Get peer identity key if available
+	var identityKey *ec.PublicKey
+	if peerToUse.IdentityKey != "" {
+		pubKey, err := ec.PublicKeyFromString(peerToUse.IdentityKey)
+		if err == nil {
+			identityKey = pubKey
+		}
+	}
+
+	// Request certificates
+	go func() {
+		err := peerToUse.Peer.RequestCertificates(identityKey, *certificatesToRequest, 30000) // 30 second timeout
+		if err != nil {
+			peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
+			certChan <- struct {
+				certs []*certificates.VerifiableCertificate
+				err   error
+			}{nil, err}
+		}
+	}()
+
+	// Wait for response or context cancellation
+	select {
+	case result := <-certChan:
+		return result.certs, result.err
+	case <-ctx.Done():
+		peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
+		return nil, ctx.Err()
+	}
 }
 
 // ConsumeReceivedCertificates returns any certificates collected thus far, then clears them out.
@@ -454,19 +538,259 @@ func (a *AuthFetch) ConsumeReceivedCertificates() []*certificates.VerifiableCert
 
 // serializeRequest serializes the HTTP request to be sent over the Transport.
 func (a *AuthFetch) serializeRequest(method string, headers map[string]string, body []byte, parsedURL *url.URL, requestNonce []byte) ([]byte, error) {
-	// Implementation will go here
-	return nil, nil
+	writer := util.NewWriter()
+
+	// Write request nonce
+	writer.WriteBytes(requestNonce)
+
+	// Write method
+	writer.WriteString(method)
+
+	// Handle pathname (e.g. /path/to/resource)
+	if parsedURL.Path != "" {
+		writer.WriteString(parsedURL.Path)
+	} else {
+		writer.WriteVarInt(math.MaxUint64) // -1 to indicate no path
+	}
+
+	// Handle search params (e.g. ?q=hello)
+	if parsedURL.RawQuery != "" {
+		writer.WriteString("?" + parsedURL.RawQuery)
+	} else {
+		writer.WriteVarInt(math.MaxUint64) // -1 to indicate no query
+	}
+
+	// Construct headers to send / sign:
+	// - Include custom headers prefixed with x-bsv (excluding those starting with x-bsv-auth)
+	// - Include a normalized version of the content-type header
+	// - Include the authorization header
+	includedHeaders := [][]string{}
+	for k, v := range headers {
+		headerKey := strings.ToLower(k) // Always sign lower-case header keys
+		if strings.HasPrefix(headerKey, "x-bsv-") || headerKey == "authorization" {
+			if strings.HasPrefix(headerKey, "x-bsv-auth") {
+				return nil, errors.New("no BSV auth headers allowed here")
+			}
+			includedHeaders = append(includedHeaders, []string{headerKey, v})
+		} else if strings.HasPrefix(headerKey, "content-type") {
+			// Normalize the Content-Type header by removing any parameters (e.g., "; charset=utf-8")
+			contentType := strings.Split(v, ";")[0]
+			includedHeaders = append(includedHeaders, []string{headerKey, strings.TrimSpace(contentType)})
+		} else {
+			// In Go we're more tolerant of headers, but log a warning
+			fmt.Printf("Warning: Unsupported header in simplified fetch: %s\n", k)
+		}
+	}
+
+	// Sort the headers by key to ensure a consistent order for signing and verification
+	sort.Slice(includedHeaders, func(i, j int) bool {
+		return includedHeaders[i][0] < includedHeaders[j][0]
+	})
+
+	// Write number of headers
+	writer.WriteVarInt(uint64(len(includedHeaders)))
+
+	// Write each header
+	for _, header := range includedHeaders {
+		// Write header key
+		writer.WriteString(header[0])
+		// Write header value
+		writer.WriteString(header[1])
+	}
+
+	// If method typically carries a body and body is empty, default it
+	methodsThatTypicallyHaveBody := []string{"POST", "PUT", "PATCH", "DELETE"}
+	if len(body) == 0 && contains(methodsThatTypicallyHaveBody, strings.ToUpper(method)) {
+		// Check if content-type is application/json
+		for _, header := range includedHeaders {
+			if header[0] == "content-type" && strings.Contains(header[1], "application/json") {
+				body = []byte("{}")
+				break
+			}
+		}
+
+		// If still empty and not JSON, use empty string
+		if len(body) == 0 {
+			body = []byte("")
+		}
+	}
+
+	// Write body length and body (or -1 for no body)
+	if len(body) > 0 {
+		writer.WriteVarInt(uint64(len(body)))
+		writer.WriteBytes(body)
+	} else {
+		writer.WriteVarInt(math.MaxUint64) // -1 for no body
+	}
+
+	return writer.Buf, nil
+}
+
+// contains checks if a string is present in a slice
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 // handleFetchAndValidate handles a non-authenticated fetch requests and validates that the server is not claiming to be authenticated.
 func (a *AuthFetch) handleFetchAndValidate(urlStr string, config *SimplifiedFetchRequestOptions, peerToUse *AuthPeer) (*http.Response, error) {
-	// Implementation will go here
-	return nil, nil
+	// Create HTTP client
+	client := &http.Client{}
+
+	// Create request
+	var reqBody io.Reader
+	if len(config.Body) > 0 {
+		reqBody = bytes.NewReader(config.Body)
+	}
+
+	req, err := http.NewRequest(config.Method, urlStr, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add headers
+	for k, v := range config.Headers {
+		req.Header.Add(k, v)
+	}
+
+	// Send request
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	// Validate that the server is not trying to fake authentication
+	for k := range response.Header {
+		if strings.ToLower(k) == "x-bsv-auth-identity-key" || strings.HasPrefix(strings.ToLower(k), "x-bsv-auth") {
+			return nil, errors.New("the server is trying to claim it has been authenticated when it has not")
+		}
+	}
+
+	// Set supportsMutualAuth to false if successful
+	if response.StatusCode < 400 {
+		supportsMutualAuth := false
+		peerToUse.SupportsMutualAuth = &supportsMutualAuth
+		return response, nil
+	}
+
+	return nil, fmt.Errorf("request failed with status: %d", response.StatusCode)
 }
 
 // handlePaymentAndRetry builds a transaction via wallet.CreateAction() and re-attempts the request with an x-bsv-payment header
 // if we get 402 Payment Required.
 func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, config *SimplifiedFetchRequestOptions, originalResponse *http.Response) (*http.Response, error) {
-	// Implementation will go here
-	return nil, nil
+	// Make sure the server is using the correct payment version
+	paymentVersion := originalResponse.Header.Get("x-bsv-payment-version")
+	if paymentVersion == "" || paymentVersion != PaymentVersion {
+		return nil, fmt.Errorf("unsupported x-bsv-payment-version response header. Client version: %s, Server version: %s",
+			PaymentVersion, paymentVersion)
+	}
+
+	// Get required headers from the 402 response
+	satoshisRequiredHeader := originalResponse.Header.Get("x-bsv-payment-satoshis-required")
+	if satoshisRequiredHeader == "" {
+		return nil, errors.New("missing x-bsv-payment-satoshis-required response header")
+	}
+
+	satoshisRequired, err := strconv.ParseUint(satoshisRequiredHeader, 10, 64)
+	if err != nil || satoshisRequired <= 0 {
+		return nil, errors.New("invalid x-bsv-payment-satoshis-required response header value")
+	}
+
+	serverIdentityKey := originalResponse.Header.Get("x-bsv-auth-identity-key")
+	if serverIdentityKey == "" {
+		return nil, errors.New("missing x-bsv-auth-identity-key response header")
+	}
+
+	derivationPrefix := originalResponse.Header.Get("x-bsv-payment-derivation-prefix")
+	if derivationPrefix == "" {
+		return nil, errors.New("missing x-bsv-payment-derivation-prefix response header")
+	}
+
+	// Create a random suffix for the derivation path
+	nonceResult, err := utils.CreateNonce(a.wallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create derivation suffix: %w", err)
+	}
+	derivationSuffix := nonceResult
+
+	// Convert server identity key to PublicKey object
+	serverPubKey, err := ec.PublicKeyFromString(serverIdentityKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid server identity key: %w", err)
+	}
+
+	// Derive the public key for payment
+	derivedKey, err := a.wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
+		EncryptionArgs: wallet.EncryptionArgs{
+			ProtocolID: wallet.Protocol{
+				SecurityLevel: 2,
+				Protocol:      "3241645161d8", // wallet payment protocol
+			},
+			KeyID: fmt.Sprintf("%s %s", derivationPrefix, derivationSuffix),
+			Counterparty: wallet.Counterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: serverPubKey,
+			},
+		},
+	}, "auth-payment")
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive payment key: %w", err)
+	}
+
+	// Use the wallet to create a P2PKH locking script from the derived key
+	// The wallet will handle the conversion of public key to address and script generation
+	randomizeOutputs := false
+	actionResult, err := a.wallet.CreateAction(ctx, wallet.CreateActionArgs{
+		Description: fmt.Sprintf("Payment for request to %s", urlStr),
+		Outputs: []wallet.CreateActionOutput{
+			{
+				Satoshis:      satoshisRequired,
+				LockingScript: fmt.Sprintf("P2PKH:%s", derivedKey.PublicKey.ToDERHex()),
+				CustomInstructions: fmt.Sprintf(`{"derivationPrefix":"%s","derivationSuffix":"%s","payee":"%s"}`,
+					derivationPrefix, derivationSuffix, serverIdentityKey),
+				OutputDescription: "HTTP request payment",
+			},
+		},
+		Options: &wallet.CreateActionOptions{
+			RandomizeOutputs: &randomizeOutputs,
+		},
+	}, "auth-payment")
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create payment transaction: %w", err)
+	}
+
+	// Attach payment info to request headers
+	paymentInfo := map[string]interface{}{
+		"derivationPrefix": derivationPrefix,
+		"derivationSuffix": derivationSuffix,
+		"transaction":      base64.StdEncoding.EncodeToString(actionResult.Tx),
+	}
+
+	paymentInfoJSON, err := json.Marshal(paymentInfo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize payment info: %w", err)
+	}
+
+	if config.Headers == nil {
+		config.Headers = make(map[string]string)
+	}
+	config.Headers["x-bsv-payment"] = string(paymentInfoJSON)
+
+	// Set up retry counter if not set
+	if config.RetryCounter == nil {
+		retryCount := 3
+		config.RetryCounter = &retryCount
+	}
+
+	// Re-attempt request with payment attached
+	return a.Fetch(ctx, urlStr, config)
 }
