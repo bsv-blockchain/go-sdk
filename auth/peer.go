@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
@@ -36,6 +37,7 @@ type Peer struct {
 	callbackIdCounter      int
 	autoPersistLastSession bool
 	lastInteractedWithPeer *ec.PublicKey
+	logger                 *log.Logger // Logger for debug messages
 }
 
 type PeerOptions struct {
@@ -44,6 +46,7 @@ type PeerOptions struct {
 	CertificatesToRequest  *utils.RequestedCertificateSet
 	SessionManager         SessionManager
 	AutoPersistLastSession *bool
+	Logger                 *log.Logger // Optional logger for debug messages
 }
 
 // NewPeer creates a new peer instance
@@ -59,6 +62,12 @@ func NewPeer(cfg *PeerOptions) *Peer {
 			Callback     func(sessionNonce string) error
 			SessionNonce string
 		}),
+		logger: cfg.Logger,
+	}
+
+	// Use a discard logger if none provided
+	if peer.logger == nil {
+		peer.logger = log.New(log.Writer(), "[Auth Peer] ", log.LstdFlags)
 	}
 
 	if peer.sessionManager == nil {
@@ -81,7 +90,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 	// Start the peer
 	err := peer.Start()
 	if err != nil {
-		fmt.Printf("Warning: Failed to start peer: %v\n", err)
+		peer.logger.Printf("Warning: Failed to start peer: %v", err)
 	}
 
 	return peer
@@ -93,7 +102,7 @@ func (p *Peer) Start() error {
 	err := p.transport.OnData(func(message *AuthMessage) error {
 		err := p.handleIncomingMessage(message)
 		if err != nil {
-			fmt.Printf("Error handling incoming message: %v\n", err)
+			p.logger.Printf("Error handling incoming message: %v", err)
 			return err
 		}
 		return nil
@@ -362,37 +371,37 @@ func (p *Peer) handleIncomingMessage(message *AuthMessage) error {
 	switch message.MessageType {
 	case MessageTypeInitialRequest:
 		if err := p.handleInitialRequest(message, message.IdentityKey); err != nil {
-			fmt.Printf("Error handling initial request: %v\n", err)
+			p.logger.Printf("Error handling initial request: %v", err)
 			return err
 		}
 		return nil
 	case MessageTypeInitialResponse:
 		if err := p.handleInitialResponse(message, message.IdentityKey); err != nil {
-			fmt.Printf("Error handling initial response: %v\n", err)
+			p.logger.Printf("Error handling initial response: %v", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateRequest:
 		if err := p.handleCertificateRequest(message, message.IdentityKey); err != nil {
-			fmt.Printf("Error handling certificate request: %v\n", err)
+			p.logger.Printf("Error handling certificate request: %v", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateResponse:
 		if err := p.handleCertificateResponse(message, message.IdentityKey); err != nil {
-			fmt.Printf("Error handling certificate response: %v\n", err)
+			p.logger.Printf("Error handling certificate response: %v", err)
 			return err
 		}
 		return nil
 	case MessageTypeGeneral:
 		if err := p.handleGeneralMessage(message, message.IdentityKey); err != nil {
-			fmt.Printf("Error handling general message: %v\n", err)
+			p.logger.Printf("Error handling general message: %v", err)
 			return err
 		}
 		return nil
 	default:
 		errMsg := fmt.Sprintf("unknown message type: %s", message.MessageType)
-		fmt.Println(errMsg)
+		p.logger.Println(errMsg)
 		return fmt.Errorf("%s", errMsg)
 	}
 }
@@ -444,7 +453,7 @@ func (p *Peer) handleInitialRequest(message *AuthMessage, senderPublicKey *ec.Pu
 		)
 		if err != nil {
 			// Log the error but continue - certificate error shouldn't stop auth
-			fmt.Printf("Warning: Failed to get certificates: %v\n", err)
+			p.logger.Printf("Warning: Failed to get certificates: %v", err)
 		}
 	}
 
@@ -501,7 +510,7 @@ func (p *Peer) handleInitialResponse(message *AuthMessage, senderPublicKey *ec.P
 				)
 				if err != nil {
 					// Log the error but continue - certificate error shouldn't stop auth
-					fmt.Printf("Warning: Certificate validation failed: %v\n", err)
+					p.logger.Printf("Warning: Certificate validation failed: %v", err)
 				}
 
 				// Notify certificate listeners
@@ -509,7 +518,7 @@ func (p *Peer) handleInitialResponse(message *AuthMessage, senderPublicKey *ec.P
 					err := callback(senderPublicKey, message.Certificates)
 					if err != nil {
 						// Log callback error but continue
-						fmt.Printf("Warning: Certificate callback error: %v\n", err)
+						p.logger.Printf("Warning: Certificate callback error: %v", err)
 					}
 				}
 			}
@@ -583,7 +592,7 @@ func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey *e
 		err := callback(senderPublicKey, message.RequestedCertificates)
 		if err != nil {
 			// Log callback error but continue
-			fmt.Printf("Warning: Certificate request callback error: %v\n", err)
+			p.logger.Printf("Warning: Certificate request callback error: %v", err)
 		}
 	}
 
@@ -598,7 +607,7 @@ func (p *Peer) handleCertificateRequest(message *AuthMessage, senderPublicKey *e
 			// Auto-respond with available certificates
 			err = p.SendCertificateResponse(senderPublicKey, certs)
 			if err != nil {
-				fmt.Printf("Warning: Failed to auto-respond with certificates: %v\n", err)
+				p.logger.Printf("Warning: Failed to auto-respond with certificates: %v", err)
 			}
 		}
 	}
@@ -681,7 +690,7 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey *
 		)
 		if err != nil {
 			// Log the error but continue - certificate error shouldn't stop auth
-			fmt.Printf("Warning: Certificate validation failed: %v\n", err)
+			p.logger.Printf("Warning: Certificate validation failed: %v", err)
 		}
 
 		// Notify certificate listeners
@@ -689,7 +698,7 @@ func (p *Peer) handleCertificateResponse(message *AuthMessage, senderPublicKey *
 			err := callback(senderPublicKey, message.Certificates)
 			if err != nil {
 				// Log callback error but continue
-				fmt.Printf("Warning: Certificate callback error: %v\n", err)
+				p.logger.Printf("Warning: Certificate callback error: %v", err)
 			}
 		}
 	}
@@ -748,7 +757,7 @@ func (p *Peer) handleGeneralMessage(message *AuthMessage, senderPublicKey *ec.Pu
 		err := callback(senderPublicKey, message.Payload)
 		if err != nil {
 			// Log callback error but continue
-			fmt.Printf("Warning: General message callback error: %v\n", err)
+			p.logger.Printf("Warning: General message callback error: %v", err)
 		}
 	}
 

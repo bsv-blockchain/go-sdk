@@ -45,6 +45,14 @@ func NewSimplifiedHTTPTransport(options *SimplifiedHTTPTransportOptions) (*Simpl
 
 // Send sends an AuthMessage via HTTP
 func (t *SimplifiedHTTPTransport) Send(message *auth.AuthMessage) error {
+	// Check if any handlers are registered
+	t.mu.Lock()
+	if len(t.onDataFuncs) == 0 {
+		t.mu.Unlock()
+		return ErrNoHandlerRegistered
+	}
+	t.mu.Unlock()
+
 	if message.MessageType == "general" {
 		// Step 1: Deserialize the payload into an HTTP request
 		req, _, err := t.deserializeRequestPayload(message.Payload)
@@ -250,7 +258,13 @@ func (t *SimplifiedHTTPTransport) deserializeRequestPayload(payload []byte) (*ht
 }
 
 // OnData registers a callback for incoming messages
+// This method will return an error only if the provided callback is nil.
+// It must be called at least once before sending any messages.
 func (t *SimplifiedHTTPTransport) OnData(callback func(*auth.AuthMessage) error) error {
+	if callback == nil {
+		return errors.New("callback cannot be nil")
+	}
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.onDataFuncs = append(t.onDataFuncs, callback)

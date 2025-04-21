@@ -189,6 +189,10 @@ type CertificateQuery struct {
 func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 	type Alias AuthMessage
 
+	if m.IdentityKey == nil {
+		return nil, fmt.Errorf("IdentityKey is required for marshaling AuthMessage")
+	}
+
 	return json.Marshal(&struct {
 		IdentityKey string `json:"identityKey"`
 		Payload     string `json:"payload,omitempty"`

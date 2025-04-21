@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -59,6 +60,7 @@ type AuthFetch struct {
 	certificatesReceived  []*certificates.VerifiableCertificate
 	requestedCertificates *utils.RequestedCertificateSet
 	peers                 map[string]*AuthPeer
+	logger                *log.Logger // Logger for debug/warning messages
 }
 
 // New constructs a new AuthFetch instance.
@@ -74,6 +76,7 @@ func New(w wallet.Interface, requestedCerts *utils.RequestedCertificateSet, sess
 		certificatesReceived:  []*certificates.VerifiableCertificate{},
 		requestedCertificates: requestedCerts,
 		peers:                 make(map[string]*AuthPeer),
+		logger:                log.New(log.Writer(), "[AuthHTTP] ", log.LstdFlags),
 	}
 }
 
@@ -578,7 +581,7 @@ func (a *AuthFetch) serializeRequest(method string, headers map[string]string, b
 			includedHeaders = append(includedHeaders, []string{headerKey, strings.TrimSpace(contentType)})
 		} else {
 			// In Go we're more tolerant of headers, but log a warning
-			fmt.Printf("Warning: Unsupported header in simplified fetch: %s\n", k)
+			a.logger.Printf("Warning: Unsupported header in simplified fetch: %s", k)
 		}
 	}
 
