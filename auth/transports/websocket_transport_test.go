@@ -46,7 +46,7 @@ func (s *testWsServer) handleWs(w http.ResponseWriter, r *http.Request) {
 			s.mu.Lock()
 			delete(s.conns, conn)
 			s.mu.Unlock()
-			conn.Close()
+			_ = conn.Close()
 		}()
 
 		for {
@@ -82,7 +82,7 @@ func (s *testWsServer) Close() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for conn := range s.conns {
-		conn.Close() // Attempt to close client connections
+		_ = conn.Close() // Attempt to close client connections
 	}
 	s.conns = make(map[*websocket.Conn]bool) // Clear map
 }
