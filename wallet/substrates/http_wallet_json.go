@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"io"
 	"net/http"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // HTTPWalletJSON implements wallet.Interface for HTTP transport using JSON
@@ -32,7 +33,7 @@ func NewHTTPWalletJSON(originator string, baseURL string, httpClient *http.Clien
 }
 
 // api makes an HTTP POST request to the wallet API
-func (h *HTTPWalletJSON) api(call string, args interface{}) ([]byte, error) {
+func (h *HTTPWalletJSON) api(call string, args any) ([]byte, error) {
 	// Marshal request body
 	reqBody, err := json.Marshal(args)
 	if err != nil {
@@ -55,7 +56,7 @@ func (h *HTTPWalletJSON) api(call string, args interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -309,7 +310,7 @@ func (h *HTTPWalletJSON) DiscoverByAttributes(args wallet.DiscoverByAttributesAr
 }
 
 // IsAuthenticated checks authentication status
-func (h *HTTPWalletJSON) IsAuthenticated(args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (h *HTTPWalletJSON) IsAuthenticated(args any, originator string) (*wallet.AuthenticatedResult, error) {
 	data, err := h.api("isAuthenticated", args)
 	if err != nil {
 		return nil, err
@@ -320,7 +321,7 @@ func (h *HTTPWalletJSON) IsAuthenticated(args interface{}, originator string) (*
 }
 
 // WaitForAuthentication waits until user is authenticated
-func (h *HTTPWalletJSON) WaitForAuthentication(args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (h *HTTPWalletJSON) WaitForAuthentication(args any, originator string) (*wallet.AuthenticatedResult, error) {
 	data, err := h.api("waitForAuthentication", args)
 	if err != nil {
 		return nil, err
@@ -331,7 +332,7 @@ func (h *HTTPWalletJSON) WaitForAuthentication(args interface{}, originator stri
 }
 
 // GetHeight gets current blockchain height
-func (h *HTTPWalletJSON) GetHeight(args interface{}, originator string) (*wallet.GetHeightResult, error) {
+func (h *HTTPWalletJSON) GetHeight(args any, originator string) (*wallet.GetHeightResult, error) {
 	data, err := h.api("getHeight", args)
 	if err != nil {
 		return nil, err
@@ -353,7 +354,7 @@ func (h *HTTPWalletJSON) GetHeaderForHeight(args wallet.GetHeaderArgs, originato
 }
 
 // GetNetwork gets current network (mainnet/testnet)
-func (h *HTTPWalletJSON) GetNetwork(args interface{}, originator string) (*wallet.GetNetworkResult, error) {
+func (h *HTTPWalletJSON) GetNetwork(args any, originator string) (*wallet.GetNetworkResult, error) {
 	data, err := h.api("getNetwork", args)
 	if err != nil {
 		return nil, err
@@ -364,7 +365,7 @@ func (h *HTTPWalletJSON) GetNetwork(args interface{}, originator string) (*walle
 }
 
 // GetVersion gets wallet version
-func (h *HTTPWalletJSON) GetVersion(args interface{}, originator string) (*wallet.GetVersionResult, error) {
+func (h *HTTPWalletJSON) GetVersion(args any, originator string) (*wallet.GetVersionResult, error) {
 	data, err := h.api("getVersion", args)
 	if err != nil {
 		return nil, err

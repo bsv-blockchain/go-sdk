@@ -327,15 +327,17 @@ func (t *Broadcaster) checkAcknowledgmentFromSpecificHosts(hostAcks map[string]m
 		}
 		var requiredTopics []string
 		var require RequireAck
-		if requiredHost.RequireAck == RequireAckAll || requiredHost.RequireAck == RequireAckAny {
+		switch requiredHost.RequireAck {
+		case RequireAckAll, RequireAckAny:
 			require = requiredHost.RequireAck
 			requiredTopics = t.Topics
-		} else if requiredHost.RequireAck == RequireAckSome {
+		case RequireAckSome:
 			require = RequireAckAll
 			requiredTopics = requiredHost.Topics
-		} else {
+		default:
 			continue
 		}
+
 		if require == RequireAckAll {
 			for _, topic := range requiredTopics {
 				if _, ok := acknowledgedTopics[topic]; !ok {

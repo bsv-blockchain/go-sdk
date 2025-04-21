@@ -266,7 +266,8 @@ func (r *ReaderHoldError) ReadIntBytes() []byte {
 	return val
 }
 
-func (r *ReaderHoldError) ReadByte() byte {
+// ReadByte returns the next byte and holds any error internally
+func (r *ReaderHoldError) ReadByte() byte { //nolint:govet
 	if r.Err != nil {
 		return 0
 	}
@@ -286,6 +287,11 @@ func (r *ReaderHoldError) ReadOptionalBool() *bool {
 
 func ReadOptionalBoolAsBool(opt *bool) bool {
 	return opt != nil && *opt
+}
+
+// BoolPtr is a helper function to create a pointer to a boolean value
+func BoolPtr(b bool) *bool {
+	return &b
 }
 
 func (r *ReaderHoldError) ReadTxidSlice() []string {

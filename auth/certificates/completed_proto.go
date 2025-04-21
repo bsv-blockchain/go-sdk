@@ -112,7 +112,7 @@ func (c *CompletedProtoWallet) DiscoverByAttributes(ctx context.Context, args wa
 	return nil, nil
 }
 
-func (c *CompletedProtoWallet) WaitForAuthentication(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (c *CompletedProtoWallet) WaitForAuthentication(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
 	return nil, nil
 }
 

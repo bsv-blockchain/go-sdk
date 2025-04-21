@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,7 +17,7 @@ func TestDiscoverByIdentityKeyArgs(t *testing.T) {
 			IdentityKey:    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
 			Limit:          10,
 			Offset:         5,
-			SeekPermission: boolPtr(true),
+			SeekPermission: util.BoolPtr(true),
 		},
 	}, {
 		name: "minimal args",
@@ -27,7 +28,7 @@ func TestDiscoverByIdentityKeyArgs(t *testing.T) {
 		name: "undefined limit/offset",
 		args: &wallet.DiscoverByIdentityKeyArgs{
 			IdentityKey:    "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
-			SeekPermission: boolPtr(false),
+			SeekPermission: util.BoolPtr(false),
 		},
 	}}
 

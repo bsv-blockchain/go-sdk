@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/util"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -27,7 +29,7 @@ func TestListCertificatesArgs(t *testing.T) {
 			},
 			Limit:            10,
 			Offset:           5,
-			Privileged:       boolPtr(true),
+			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
 	}, {
@@ -63,6 +65,7 @@ func TestListCertificatesArgs(t *testing.T) {
 func TestListCertificatesResult(t *testing.T) {
 	t.Run("full result", func(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
+		require.NoError(t, err)
 		result := &wallet.ListCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.CertificateResult{

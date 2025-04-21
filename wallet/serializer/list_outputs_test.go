@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -18,12 +19,12 @@ func TestListOutputsArgs(t *testing.T) {
 				Tags:                      []string{"tag1", "tag2"},
 				TagQueryMode:              "any",
 				Include:                   "entire transactions",
-				IncludeCustomInstructions: boolPtr(true),
-				IncludeTags:               boolPtr(true),
-				IncludeLabels:             boolPtr(false),
+				IncludeCustomInstructions: util.BoolPtr(true),
+				IncludeTags:               util.BoolPtr(true),
+				IncludeLabels:             util.BoolPtr(false),
 				Limit:                     100,
 				Offset:                    10,
-				SeekPermission:            boolPtr(true),
+				SeekPermission:            util.BoolPtr(true),
 			},
 		},
 		{

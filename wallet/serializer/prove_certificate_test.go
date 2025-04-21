@@ -3,6 +3,7 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -33,7 +34,7 @@ func TestProveCertificateArgs(t *testing.T) {
 			},
 			FieldsToReveal:   []string{"field1"},
 			Verifier:         hex.EncodeToString(make([]byte, SizeCertifier)),
-			Privileged:       boolPtr(true),
+			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
 	}, {

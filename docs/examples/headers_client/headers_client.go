@@ -51,7 +51,7 @@ func (b *BlockHeadersClient) IsValidRootForHeight(root []byte, height uint32) (b
 	if err != nil {
 		return false, fmt.Errorf("error sending request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

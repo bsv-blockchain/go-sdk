@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -348,34 +347,17 @@ func (p *Peer) initiateHandshake(peerIdentityKey *ec.PublicKey, maxWaitTimeMs in
 	}
 }
 
-// publicKeyFromString is a local helper to convert a hex string to a PublicKey
-func publicKeyFromString(keyString string) (*ec.PublicKey, error) {
-	keyBytes, err := hex.DecodeString(keyString)
-	if err != nil {
-		return nil, fmt.Errorf("invalid public key hex string: %w", err)
-	}
-
-	pubKey, err := ec.ParsePubKey(keyBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse public key: %w", err)
-	}
-
-	return pubKey, nil
-}
-
 // handleIncomingMessage processes incoming authentication messages
 func (p *Peer) handleIncomingMessage(message *AuthMessage) error {
+	if message == nil {
+		return ErrInvalidMessage
+	}
 
 	if message.Version != AUTH_VERSION {
 		return fmt.Errorf("invalid or unsupported message auth version! Received: %s, expected: %s", message.Version, AUTH_VERSION)
 	}
 
-	if message == nil {
-		return ErrInvalidMessage
-	}
-
 	// Extract the sender's identity key
-
 	// Handle different message types
 	switch message.MessageType {
 	case MessageTypeInitialRequest:

@@ -119,7 +119,7 @@ func parseShortForm(scriptStr string) (*script.Script, error) {
 
 // scriptTestName returns a descriptive test name for the given reference script
 // test data.
-func scriptTestName(test []interface{}) (string, error) {
+func scriptTestName(test []any) (string, error) {
 
 	// The test must consist of at least a signature script, public key script,
 	// flags, and expected error.  Finally, it may optionally contain a comment.
@@ -338,7 +338,7 @@ func TestScripts(t *testing.T) {
 		t.Fatalf("TestScripts: %v\n", err)
 	}
 
-	var tests [][]interface{}
+	var tests [][]any
 	err = json.Unmarshal(file, &tests)
 	if err != nil {
 		t.Fatalf("TestScripts couldn't Unmarshal: %v", err)
@@ -363,7 +363,7 @@ func TestScripts(t *testing.T) {
 		}
 
 		var inputAmt int64
-		if v, ok := test[0].([]interface{}); ok {
+		if v, ok := test[0].([]any); ok {
 			if f, ok := v[0].(float64); ok {
 				inputAmt = int64(f * 100000000)
 			}
@@ -491,7 +491,7 @@ func TestTxInvalidTests(t *testing.T) {
 		t.Fatalf("TestTxInvalidTests: %v\n", err)
 	}
 
-	var tests [][]interface{}
+	var tests [][]any
 	err = json.Unmarshal(file, &tests)
 	if err != nil {
 		t.Fatalf("TestTxInvalidTests couldn't Unmarshal: %v\n", err)
@@ -507,7 +507,7 @@ testloop:
 		if name, ok := test[0].(string); ok {
 			t.Log(name)
 		}
-		inputs, ok := test[0].([]interface{})
+		inputs, ok := test[0].([]any)
 		if !ok {
 			continue
 		}
@@ -551,7 +551,7 @@ testloop:
 
 		prevOuts := make(map[txIOKey]*transaction.TransactionOutput)
 		for j, iinput := range inputs {
-			input, ok := iinput.([]interface{})
+			input, ok := iinput.([]any)
 			if !ok {
 				t.Errorf("bad test (%dth input not array)"+
 					"%d: %v", j, i, test)
@@ -641,7 +641,7 @@ func TestTxValidTests(t *testing.T) {
 		t.Fatalf("TestTxValidTests: %v\n", err)
 	}
 
-	var tests [][]interface{}
+	var tests [][]any
 	err = json.Unmarshal(file, &tests)
 	if err != nil {
 		t.Fatalf("TestTxValidTests couldn't Unmarshal: %v\n", err)
@@ -659,7 +659,7 @@ testloop:
 			// if name == "Coinbase of size 2" {
 			// }
 		}
-		inputs, ok := test[0].([]interface{})
+		inputs, ok := test[0].([]any)
 		if !ok {
 			continue
 		}
@@ -701,7 +701,7 @@ testloop:
 
 		prevOuts := make(map[txIOKey]*transaction.TransactionOutput)
 		for j, iinput := range inputs {
-			input, ok := iinput.([]interface{})
+			input, ok := iinput.([]any)
 			if !ok {
 				t.Errorf("bad test (%dth input not array)"+
 					"%d: %v", j, i, test)

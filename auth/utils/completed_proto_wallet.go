@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -12,9 +13,9 @@ import (
 type CompletedProtoWallet struct {
 	*wallet.ProtoWallet // Embed ProtoWallet (like extends in TypeScript)
 	keyDeriver          *wallet.KeyDeriver
-	privateKey          *ec.PrivateKey
-	publicKey           *ec.PublicKey
-	identityKey         string
+	privateKey          *ec.PrivateKey //nolint:unused // Keep for potential future test use
+	publicKey           *ec.PublicKey  //nolint:unused // Keep for potential future test use
+	identityKey         string         //nolint:unused // Keep for potential future test use
 	mockCertificates    []*certificates.VerifiableCertificate
 }
 
@@ -136,7 +137,7 @@ func (c *CompletedProtoWallet) DiscoverByAttributes(ctx context.Context, args wa
 	return nil, nil
 }
 
-func (c *CompletedProtoWallet) WaitForAuthentication(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (c *CompletedProtoWallet) WaitForAuthentication(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
 	return nil, nil
 }
 

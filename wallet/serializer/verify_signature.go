@@ -74,13 +74,14 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	}
 	args.Signature = *sig
 
-	// Read data or hash
+	// Read data type flag
 	dataTypeFlag := r.ReadByte()
-	if dataTypeFlag == 1 {
+	switch dataTypeFlag {
+	case 1: // Data is provided directly
 		args.Data = r.ReadIntBytes()
-	} else if dataTypeFlag == 2 {
+	case 2: // Hash is provided directly
 		args.HashToDirectlyVerify = r.ReadBytes(sha256.Size)
-	} else {
+	default:
 		return nil, fmt.Errorf("invalid data type flag: %d", dataTypeFlag)
 	}
 

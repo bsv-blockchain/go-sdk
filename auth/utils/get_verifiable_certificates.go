@@ -14,7 +14,7 @@ type GetVerifiableCertificatesOptions struct {
 	FetchFromStorage bool
 
 	// Additional filters for certificate retrieval
-	AdditionalFilters map[string]interface{}
+	AdditionalFilters map[string]any
 
 	// Max number of certificates to return
 	Limit int
@@ -29,7 +29,7 @@ type GetVerifiableCertificatesOptions struct {
 // - A compatible structure: must have Certifiers ([]string) and CertificateTypes (map[string][]string) fields
 func GetVerifiableCertificates(
 	w wallet.Interface,
-	requestedCertificates interface{},
+	requestedCertificates any,
 	verifierIdentityKey *ec.PublicKey,
 ) ([]*certificates.VerifiableCertificate, error) {
 

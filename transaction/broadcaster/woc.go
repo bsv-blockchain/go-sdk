@@ -47,7 +47,7 @@ func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transact
 		b.Client = http.DefaultClient
 	}
 
-	bodyMap := map[string]interface{}{
+	bodyMap := map[string]any{
 		"txhex": t.Hex(),
 	}
 	if body, err := json.Marshal(bodyMap); err != nil {

@@ -133,17 +133,17 @@ func (m *MockWallet) DiscoverByAttributes(ctx context.Context, args DiscoverByAt
 	return nil, nil
 }
 
-func (m *MockWallet) IsAuthenticated(ctx context.Context, args interface{}, originator string) (*AuthenticatedResult, error) {
+func (m *MockWallet) IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error) {
 	require.Fail(m.T, "IsAuthenticated mock not implemented")
 	return nil, nil
 }
 
-func (m *MockWallet) WaitForAuthentication(ctx context.Context, args interface{}, originator string) (*AuthenticatedResult, error) {
+func (m *MockWallet) WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error) {
 	require.Fail(m.T, "WaitForAuthentication mock not implemented")
 	return nil, nil
 }
 
-func (m *MockWallet) GetHeight(ctx context.Context, args interface{}, originator string) (*GetHeightResult, error) {
+func (m *MockWallet) GetHeight(ctx context.Context, args any, originator string) (*GetHeightResult, error) {
 	require.Fail(m.T, "GetHeight mock not implemented")
 	return nil, nil
 }
@@ -153,12 +153,12 @@ func (m *MockWallet) GetHeaderForHeight(ctx context.Context, args GetHeaderArgs,
 	return nil, nil
 }
 
-func (m *MockWallet) GetNetwork(ctx context.Context, args interface{}, originator string) (*GetNetworkResult, error) {
+func (m *MockWallet) GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error) {
 	require.Fail(m.T, "GetNetwork mock not implemented")
 	return nil, nil
 }
 
-func (m *MockWallet) GetVersion(ctx context.Context, args interface{}, originator string) (*GetVersionResult, error) {
+func (m *MockWallet) GetVersion(ctx context.Context, args any, originator string) (*GetVersionResult, error) {
 	require.Fail(m.T, "GetVersion mock not implemented")
 	return nil, nil
 }

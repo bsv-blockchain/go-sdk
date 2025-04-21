@@ -264,12 +264,12 @@ type Interface interface {
 	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
 	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
 	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
-	IsAuthenticated(ctx context.Context, args interface{}, originator string) (*AuthenticatedResult, error)
-	WaitForAuthentication(ctx context.Context, args interface{}, originator string) (*AuthenticatedResult, error)
-	GetHeight(ctx context.Context, args interface{}, originator string) (*GetHeightResult, error)
+	IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
+	WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
+	GetHeight(ctx context.Context, args any, originator string) (*GetHeightResult, error)
 	GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error)
-	GetNetwork(ctx context.Context, args interface{}, originator string) (*GetNetworkResult, error)
-	GetVersion(ctx context.Context, args interface{}, originator string) (*GetVersionResult, error)
+	GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error)
+	GetVersion(ctx context.Context, args any, originator string) (*GetVersionResult, error)
 }
 
 // AbortActionArgs identifies a transaction to abort using its reference string.

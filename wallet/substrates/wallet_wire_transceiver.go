@@ -3,6 +3,7 @@ package substrates
 import (
 	"context"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
@@ -329,7 +330,7 @@ func (t *WalletWireTransceiver) DiscoverByAttributes(ctx context.Context, args w
 	return serializer.DeserializeDiscoverCertificatesResult(resp)
 }
 
-func (t *WalletWireTransceiver) IsAuthenticated(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (t *WalletWireTransceiver) IsAuthenticated(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
 	resp, err := t.transmit(ctx, CallIsAuthenticated, originator, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit is authenticated call: %w", err)
@@ -337,7 +338,7 @@ func (t *WalletWireTransceiver) IsAuthenticated(ctx context.Context, args interf
 	return serializer.DeserializeAuthenticatedResult(resp)
 }
 
-func (t *WalletWireTransceiver) WaitForAuthentication(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (t *WalletWireTransceiver) WaitForAuthentication(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
 	resp, err := t.transmit(ctx, CallWaitForAuthentication, originator, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit wait for authentication call: %w", err)
@@ -345,7 +346,7 @@ func (t *WalletWireTransceiver) WaitForAuthentication(ctx context.Context, args 
 	return serializer.DeserializeAuthenticatedResult(resp)
 }
 
-func (t *WalletWireTransceiver) GetHeight(ctx context.Context, args interface{}, originator string) (*wallet.GetHeightResult, error) {
+func (t *WalletWireTransceiver) GetHeight(ctx context.Context, args any, originator string) (*wallet.GetHeightResult, error) {
 	resp, err := t.transmit(ctx, CallGetHeight, originator, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit get height call: %w", err)
@@ -365,7 +366,7 @@ func (t *WalletWireTransceiver) GetHeaderForHeight(ctx context.Context, args wal
 	return serializer.DeserializeGetHeaderResult(resp)
 }
 
-func (t *WalletWireTransceiver) GetNetwork(ctx context.Context, args interface{}, originator string) (*wallet.GetNetworkResult, error) {
+func (t *WalletWireTransceiver) GetNetwork(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
 	resp, err := t.transmit(ctx, CallGetNetwork, originator, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit get network call: %w", err)
@@ -373,7 +374,7 @@ func (t *WalletWireTransceiver) GetNetwork(ctx context.Context, args interface{}
 	return serializer.DeserializeGetNetworkResult(resp)
 }
 
-func (t *WalletWireTransceiver) GetVersion(ctx context.Context, args interface{}, originator string) (*wallet.GetVersionResult, error) {
+func (t *WalletWireTransceiver) GetVersion(ctx context.Context, args any, originator string) (*wallet.GetVersionResult, error) {
 	resp, err := t.transmit(ctx, CallGetVersion, originator, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit get version call: %w", err)

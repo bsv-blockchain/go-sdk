@@ -189,19 +189,20 @@ func IssueCertificateForSubject(
 	}
 
 	// Set the Subject field based on counterparty type
-	if subject.Type == wallet.CounterpartyTypeSelf {
+	switch subject.Type {
+	case wallet.CounterpartyTypeSelf:
 		// For self-signed certs, use the certifier's identity key as the subject
 		baseCert.Subject = *certifierPubKey.PublicKey
-	} else if subject.Type == wallet.CounterpartyTypeOther {
+	case wallet.CounterpartyTypeOther:
 		// For other-signed certs, ensure the counterparty has a public key
 		if subject.Counterparty == nil {
 			return nil, fmt.Errorf("subject counterparty is TypeOther but has a nil public key")
 		}
 		baseCert.Subject = *subject.Counterparty
-	} else if subject.Type == wallet.CounterpartyTypeAnyone {
+	case wallet.CounterpartyTypeAnyone:
 		// For "anyone" counterparty, use the certifier's key as well
 		baseCert.Subject = *certifierPubKey.PublicKey
-	} else {
+	default:
 		return nil, fmt.Errorf("unhandled subject counterparty type: %v", subject.Type)
 	}
 

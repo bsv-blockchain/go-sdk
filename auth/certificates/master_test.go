@@ -79,12 +79,12 @@ func TestMasterCertificate(t *testing.T) {
 			}
 
 			masterCert, err := certificates.NewMasterCertificate(baseCert, masterKeyring)
-
 			if err != nil {
 				t.Fatalf("Constructor failed unexpectedly: %v", err)
 			}
 			if masterCert == nil {
 				t.Fatal("Constructor returned nil certificate")
+				return
 			}
 			if !reflect.DeepEqual(masterCert.Fields, fields) {
 				t.Errorf("Expected fields %v, got %v", fields, masterCert.Fields)
