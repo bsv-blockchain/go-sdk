@@ -76,7 +76,7 @@ func (t *WebSocketTransport) Send(message *auth.AuthMessage) error {
 		return fmt.Errorf("failed to marshal auth message: %w", err)
 	}
 
-	conn.SetDeadline(time.Now().Add(t.readDeadline))
+	_ = conn.SetDeadline(time.Now().Add(t.readDeadline))
 	err = websocket.Message.Send(conn, jsonData)
 	if err != nil {
 		t.mu.Lock()
