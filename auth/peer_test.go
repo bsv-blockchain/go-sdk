@@ -10,7 +10,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,111 +63,6 @@ func PairTransports(transportA, transportB *MockTransport) {
 	transportA.pairedTransport = transportB
 	transportB.pairedTransport = transportA
 }
-
-// TestWallet implements wallet.Interface for testing
-// type TestWallet struct {
-// 	privateKey       *ec.PrivateKey
-// 	publicKey        *ec.PublicKey
-// 	identityKey      string
-// 	mockCertificates []*certificates.VerifiableCertificate
-// }
-
-// func NewTestWallet(t *testing.T) *TestWallet {
-// 	privKey, err := ec.NewPrivateKey()
-// 	require.NoError(t, err)
-
-// 	pubKey := privKey.PubKey()
-// 	pubKeyBytes := pubKey.Compressed()
-// 	identityKey := hex.EncodeToString(pubKeyBytes)
-
-// 	return &TestWallet{
-// 		privateKey:       privKey,
-// 		publicKey:        pubKey,
-// 		identityKey:      identityKey,
-// 		mockCertificates: make([]*certificates.VerifiableCertificate, 0),
-// 	}
-// }
-
-// func (w *TestWallet) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-// 	return &wallet.CreateActionResult{}, nil
-// }
-
-// func (w *TestWallet) GetHeight(args any) (uint32, error) {
-// 	return 0, nil
-// }
-
-// func (w *TestWallet) GetNetwork(args any) (string, error) {
-// 	return "test", nil
-// }
-
-// func (w *TestWallet) GetVersion(args any) (string, error) {
-// 	return "1.0.0", nil
-// }
-
-// func (w *TestWallet) IsAuthenticated(args any) (bool, error) {
-// 	return true, nil
-// }
-
-// func (w *TestWallet) GetPublicKey(args *wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-// 	return &wallet.GetPublicKeyResult{
-// 		PublicKey: w.publicKey,
-// 	}, nil
-// }
-
-// func (w *TestWallet) CreateHmac(args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
-// 	return &wallet.CreateHmacResult{}, nil
-// }
-
-// func (w *TestWallet) VerifyHmac(args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
-// 	return &wallet.VerifyHmacResult{}, nil
-// }
-
-// func (w *TestWallet) CreateSignature(args *wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-// 	hash := args.Data
-// 	signature, err := w.privateKey.Sign(hash)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &wallet.CreateSignatureResult{
-// 		Signature: *signature,
-// 	}, nil
-// }
-
-// func (w *TestWallet) VerifySignature(args *wallet.VerifySignatureArgs) (*wallet.VerifySignatureResult, error) {
-// 	// For tests, always return valid=true
-// 	return &wallet.VerifySignatureResult{
-// 		Valid: true,
-// 	}, nil
-// }
-
-// func (w *TestWallet) Encrypt(args *wallet.EncryptArgs) (*wallet.EncryptResult, error) {
-// 	return &wallet.EncryptResult{}, nil
-// }
-
-// func (w *TestWallet) Decrypt(args *wallet.DecryptArgs) (*wallet.DecryptResult, error) {
-// 	return &wallet.DecryptResult{}, nil
-// }
-
-// func (w *TestWallet) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
-// 	walletCerts := make([]wallet.CertificateResult, len(w.mockCertificates))
-// 	for i := range w.mockCertificates {
-// 		// Empty conversion as we're just trying to appease the type system
-// 		walletCerts[i] = wallet.CertificateResult{}
-// 	}
-
-// 	return &wallet.ListCertificatesResult{
-// 		TotalCertificates: uint32(len(walletCerts)),
-// 		Certificates:      walletCerts,
-// 	}, nil
-// }
-
-// func (w *TestWallet) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
-// 	return &wallet.ProveCertificateResult{}, nil
-// }
-
-// func (w *TestWallet) SetMockCertificates(certs []*certificates.VerifiableCertificate) {
-// 	w.mockCertificates = certs
-// }
 
 // MockSessionManager for tests
 type MockSessionManager struct {
@@ -227,11 +121,11 @@ func TestPeerInitialization(t *testing.T) {
 		Transport: transport,
 	})
 
-	assert.NotNil(t, peer, "Peer should be created")
-	assert.Equal(t, wallet, peer.wallet, "Wallet should be set correctly")
-	assert.Equal(t, transport, peer.transport, "Transport should be set correctly")
-	assert.NotNil(t, peer.sessionManager, "SessionManager should be created")
-	assert.True(t, peer.autoPersistLastSession, "autoPersistLastSession should default to true")
+	require.NotNil(t, peer, "Peer should be created")
+	require.Equal(t, wallet, peer.wallet, "Wallet should be set correctly")
+	require.Equal(t, transport, peer.transport, "Transport should be set correctly")
+	require.NotNil(t, peer.sessionManager, "SessionManager should be created")
+	require.True(t, peer.autoPersistLastSession, "autoPersistLastSession should default to true")
 
 	// Test with custom session manager and autoPersistLastSession=false
 	sessionManager := NewSessionManager()
@@ -244,8 +138,8 @@ func TestPeerInitialization(t *testing.T) {
 		AutoPersistLastSession: &autoPersist,
 	})
 
-	assert.Equal(t, sessionManager, peer.sessionManager, "Custom SessionManager should be used")
-	assert.False(t, peer.autoPersistLastSession, "autoPersistLastSession should be false")
+	require.Equal(t, sessionManager, peer.sessionManager, "Custom SessionManager should be used")
+	require.False(t, peer.autoPersistLastSession, "autoPersistLastSession should be false")
 }
 
 // TestPeerMessageExchange tests basic message exchange between peers
@@ -269,9 +163,9 @@ func TestPeerMessageExchange(t *testing.T) {
 	// Wait for Bob to receive the message
 	select {
 	case receivedPayload := <-messageReceived:
-		assert.Equal(t, testMessage, receivedPayload, "Bob should receive Alice's message")
+		require.Equal(t, testMessage, receivedPayload, "Bob should receive Alice's message")
 	case <-time.After(2 * time.Second):
-		assert.Fail(t, "Timed out waiting for Bob to receive message")
+		require.Fail(t, "Timed out waiting for Bob to receive message")
 	}
 }
 
@@ -286,31 +180,31 @@ func TestPeerCallbacks(t *testing.T) {
 	id1 := alice.ListenForGeneralMessages(cb1)
 	id2 := alice.ListenForGeneralMessages(cb2)
 
-	assert.Len(t, alice.onGeneralMessageReceivedCallbacks, 2, "Should have two callbacks registered")
+	require.Len(t, alice.onGeneralMessageReceivedCallbacks, 2, "Should have two callbacks registered")
 
 	alice.StopListeningForGeneralMessages(id1)
-	assert.Len(t, alice.onGeneralMessageReceivedCallbacks, 1, "Should have one callback after removal")
+	require.Len(t, alice.onGeneralMessageReceivedCallbacks, 1, "Should have one callback after removal")
 
 	alice.StopListeningForGeneralMessages(id2)
-	assert.Len(t, alice.onGeneralMessageReceivedCallbacks, 0, "Should have no callbacks after removal")
+	require.Len(t, alice.onGeneralMessageReceivedCallbacks, 0, "Should have no callbacks after removal")
 
 	// Test certificate callbacks
 	certCb1 := func(senderPubKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error { return nil }
 	certId1 := alice.ListenForCertificatesReceived(certCb1)
 
-	assert.Len(t, alice.onCertificateReceivedCallbacks, 1, "Should have one cert callback registered")
+	require.Len(t, alice.onCertificateReceivedCallbacks, 1, "Should have one cert callback registered")
 
 	alice.StopListeningForCertificatesReceived(certId1)
-	assert.Len(t, alice.onCertificateReceivedCallbacks, 0, "Should have no cert callbacks after removal")
+	require.Len(t, alice.onCertificateReceivedCallbacks, 0, "Should have no cert callbacks after removal")
 
 	// Test certificate request callbacks
 	reqCb1 := func(senderPubKey *ec.PublicKey, req utils.RequestedCertificateSet) error { return nil }
 	reqId1 := alice.ListenForCertificatesRequested(reqCb1)
 
-	assert.Len(t, alice.onCertificateRequestReceivedCallbacks, 1, "Should have one cert request callback registered")
+	require.Len(t, alice.onCertificateRequestReceivedCallbacks, 1, "Should have one cert request callback registered")
 
 	alice.StopListeningForCertificatesRequested(reqId1)
-	assert.Len(t, alice.onCertificateRequestReceivedCallbacks, 0, "Should have no cert request callbacks after removal")
+	require.Len(t, alice.onCertificateRequestReceivedCallbacks, 0, "Should have no cert request callbacks after removal")
 }
 
 // TestPeerAuthentication tests the authentication flow between peers
@@ -348,7 +242,7 @@ func TestPeerAuthentication(t *testing.T) {
 	case <-bobAuthenticated:
 		// Authentication successful for Bob
 	case <-time.After(2 * time.Second):
-		assert.Fail(t, "Timed out waiting for Bob's authentication")
+		require.Fail(t, "Timed out waiting for Bob's authentication")
 	}
 
 	// Bob replies to Alice
@@ -365,7 +259,7 @@ func TestPeerAuthentication(t *testing.T) {
 	case <-aliceAuthenticated:
 		// Authentication successful for Alice
 	case <-time.After(2 * time.Second):
-		assert.Fail(t, "Timed out waiting for Alice's authentication")
+		require.Fail(t, "Timed out waiting for Alice's authentication")
 	}
 
 	// Verify that sessions were created
@@ -378,18 +272,18 @@ func TestPeerAuthentication(t *testing.T) {
 	// Get Bob's session with Alice
 	bobSession, err := bob.sessionManager.GetSession(alicePubKeyStr)
 	require.NoError(t, err)
-	assert.NotNil(t, bobSession)
-	assert.True(t, bobSession.IsAuthenticated)
+	require.NotNil(t, bobSession)
+	require.True(t, bobSession.IsAuthenticated)
 
 	// Get Alice's session with Bob
 	aliceSession, err := alice.sessionManager.GetSession(bobPubKeyStr)
 	require.NoError(t, err)
-	assert.NotNil(t, aliceSession)
-	assert.True(t, aliceSession.IsAuthenticated)
+	require.NotNil(t, aliceSession)
+	require.True(t, aliceSession.IsAuthenticated)
 
 	// Test session reuse for another message
 	err = alice.ToPeer([]byte("Another message"), bobPubKeyResult.PublicKey, 5000)
-	assert.NoError(t, err, "Should reuse existing session")
+	require.NoError(t, err, "Should reuse existing session")
 }
 
 // TestPeerCertificateExchange tests certificate request and exchange
@@ -480,10 +374,10 @@ func TestPeerCertificateExchange(t *testing.T) {
 			waitingForBob = false
 		case <-timeout:
 			if waitingForAlice {
-				assert.Fail(t, "Timed out waiting for Alice to receive cert")
+				require.Fail(t, "Timed out waiting for Alice to receive cert")
 			}
 			if waitingForBob {
-				assert.Fail(t, "Timed out waiting for Bob to receive cert")
+				require.Fail(t, "Timed out waiting for Bob to receive cert")
 			}
 			return
 		}
@@ -504,7 +398,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 	}
 
 	err := bob.RequestCertificates(alicePubKeyResult.PublicKey, customCertReqs, 1000)
-	assert.NoError(t, err, "Should request certificates successfully")
+	require.NoError(t, err, "Should request certificates successfully")
 }
 
 // TestPeerSessionManagement tests session creation, retrieval, and timeout
@@ -539,13 +433,13 @@ func TestPeerSessionManagement(t *testing.T) {
 	// Verify the session exists
 	session, err := alice.sessionManager.GetSession(bobPubKeyStr)
 	require.NoError(t, err)
-	assert.NotNil(t, session)
-	assert.True(t, session.IsAuthenticated)
+	require.NotNil(t, session)
+	require.True(t, session.IsAuthenticated)
 
 	// Test automatic use of the last interacted peer
 	err = alice.ToPeer([]byte("Using last peer"), nil, 100)
-	assert.NoError(t, err)
-	assert.Equal(t, bobPubKeyStr, alice.lastInteractedWithPeer.ToDERHex(), "Should track last interacted peer")
+	require.NoError(t, err)
+	require.Equal(t, bobPubKeyStr, alice.lastInteractedWithPeer.ToDERHex(), "Should track last interacted peer")
 }
 
 // TestPeerErrorHandling tests error handling in various scenarios
@@ -572,7 +466,7 @@ func TestPeerErrorHandling(t *testing.T) {
 
 	// This should time out because no one will respond
 	err := timeoutPeer.ToPeer([]byte("Test timeout"), nil, 1) // 1ms timeout
-	assert.Error(t, err, "Should timeout during authentication")
+	require.Error(t, err, "Should timeout during authentication")
 }
 
 // TestPeerBasics tests the very basic peer functionality that should always work
@@ -590,17 +484,17 @@ func TestPeerBasics(t *testing.T) {
 	})
 
 	// Check that the peer was created with the correct properties
-	assert.NotNil(t, peer, "Peer should be created")
-	assert.Equal(t, wallet, peer.wallet, "Peer should use the provided wallet")
-	assert.Equal(t, transport, peer.transport, "Peer should use the provided transport")
-	assert.NotNil(t, peer.sessionManager, "Peer should have a session manager")
-	assert.True(t, peer.autoPersistLastSession, "Peer should default to auto-persist last session")
+	require.NotNil(t, peer, "Peer should be created")
+	require.Equal(t, wallet, peer.wallet, "Peer should use the provided wallet")
+	require.Equal(t, transport, peer.transport, "Peer should use the provided transport")
+	require.NotNil(t, peer.sessionManager, "Peer should have a session manager")
+	require.True(t, peer.autoPersistLastSession, "Peer should default to auto-persist last session")
 
 	// Test callback registration and removal
 	cb := func(senderPublicKey *ec.PublicKey, payload []byte) error { return nil }
 	id := peer.ListenForGeneralMessages(cb)
-	assert.Len(t, peer.onGeneralMessageReceivedCallbacks, 1, "Should have one callback registered")
+	require.Len(t, peer.onGeneralMessageReceivedCallbacks, 1, "Should have one callback registered")
 
 	peer.StopListeningForGeneralMessages(id)
-	assert.Len(t, peer.onGeneralMessageReceivedCallbacks, 0, "Should have no callbacks after removal")
+	require.Len(t, peer.onGeneralMessageReceivedCallbacks, 0, "Should have no callbacks after removal")
 }

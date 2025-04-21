@@ -349,17 +349,15 @@ func (p *Peer) initiateHandshake(peerIdentityKey *ec.PublicKey, maxWaitTimeMs in
 
 // handleIncomingMessage processes incoming authentication messages
 func (p *Peer) handleIncomingMessage(message *AuthMessage) error {
+	if message == nil {
+		return ErrInvalidMessage
+	}
 
 	if message.Version != AUTH_VERSION {
 		return fmt.Errorf("invalid or unsupported message auth version! Received: %s, expected: %s", message.Version, AUTH_VERSION)
 	}
 
-	if message == nil {
-		return ErrInvalidMessage
-	}
-
 	// Extract the sender's identity key
-
 	// Handle different message types
 	switch message.MessageType {
 	case MessageTypeInitialRequest:
