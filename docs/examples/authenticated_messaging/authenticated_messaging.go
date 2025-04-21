@@ -78,19 +78,19 @@ func (w *MinimalWalletImpl) ProveCertificate(ctx context.Context, args wallet.Pr
 	return &wallet.ProveCertificateResult{KeyringForVerifier: map[string]string{}}, nil
 }
 
-func (w *MinimalWalletImpl) IsAuthenticated(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (w *MinimalWalletImpl) IsAuthenticated(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
 	return &wallet.AuthenticatedResult{Authenticated: true}, nil
 }
 
-func (w *MinimalWalletImpl) GetHeight(ctx context.Context, args interface{}, originator string) (*wallet.GetHeightResult, error) {
+func (w *MinimalWalletImpl) GetHeight(ctx context.Context, args any, originator string) (*wallet.GetHeightResult, error) {
 	return &wallet.GetHeightResult{Height: 0}, nil
 }
 
-func (w *MinimalWalletImpl) GetNetwork(ctx context.Context, args interface{}, originator string) (*wallet.GetNetworkResult, error) {
+func (w *MinimalWalletImpl) GetNetwork(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
 	return &wallet.GetNetworkResult{Network: "test"}, nil
 }
 
-func (w *MinimalWalletImpl) GetVersion(ctx context.Context, args interface{}, originator string) (*wallet.GetVersionResult, error) {
+func (w *MinimalWalletImpl) GetVersion(ctx context.Context, args any, originator string) (*wallet.GetVersionResult, error) {
 	return &wallet.GetVersionResult{Version: "1.0"}, nil
 }
 
@@ -146,7 +146,7 @@ func (w *MinimalWalletImpl) RevealSpecificKeyLinkage(ctx context.Context, args w
 	return &wallet.RevealSpecificKeyLinkageResult{}, nil
 }
 
-func (w *MinimalWalletImpl) WaitForAuthentication(ctx context.Context, args interface{}, originator string) (*wallet.AuthenticatedResult, error) {
+func (w *MinimalWalletImpl) WaitForAuthentication(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
 	return &wallet.AuthenticatedResult{Authenticated: true}, nil
 }
 

@@ -118,13 +118,3 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 
 	return result, nil
 }
-
-func writePubKeyHex(w *util.Writer, pubKey string) {
-	bytes, _ := hex.DecodeString(pubKey)
-	w.WriteBytes(bytes)
-}
-
-func readPubKeyHex(r *util.ReaderHoldError) string {
-	bytes := r.ReadBytes(33)
-	return hex.EncodeToString(bytes)
-}

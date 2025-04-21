@@ -27,22 +27,22 @@ func (w *TestWallet) CreateAction(args wallet.CreateActionArgs, originator strin
 }
 
 // GetHeight implements wallet.Interface
-func (w *TestWallet) GetHeight(args interface{}) (uint32, error) {
+func (w *TestWallet) GetHeight(args any) (uint32, error) {
 	return 0, nil
 }
 
 // GetNetwork implements wallet.Interface
-func (w *TestWallet) GetNetwork(args interface{}) (string, error) {
+func (w *TestWallet) GetNetwork(args any) (string, error) {
 	return "test", nil
 }
 
 // GetVersion implements wallet.Interface
-func (w *TestWallet) GetVersion(args interface{}) (string, error) {
+func (w *TestWallet) GetVersion(args any) (string, error) {
 	return "1.0.0", nil
 }
 
 // IsAuthenticated implements wallet.Interface
-func (w *TestWallet) IsAuthenticated(args interface{}) (bool, error) {
+func (w *TestWallet) IsAuthenticated(args any) (bool, error) {
 	return true, nil
 }
 

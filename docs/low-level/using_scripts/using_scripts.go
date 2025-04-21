@@ -6,7 +6,6 @@ import (
 	"log"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	opcodes "github.com/bsv-blockchain/go-sdk/script"
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 )
@@ -15,7 +14,7 @@ func main() {
 	// Generating and Deserializing Scripts
 
 	// From Hex
-	opTrueHex := hex.EncodeToString([]byte{opcodes.OpTRUE})
+	opTrueHex := hex.EncodeToString([]byte{script.OpTRUE})
 	scriptFromHex, err := script.NewFromHex(opTrueHex)
 	if err != nil {
 		log.Fatal(err)
@@ -31,7 +30,7 @@ func main() {
 	fmt.Println("Script from ASM:", scriptFromASM)
 
 	// From Binary
-	binaryData := []byte{opcodes.OpPUSHDATA1, 3, 1, 2, 3}
+	binaryData := []byte{script.OpPUSHDATA1, 3, 1, 2, 3}
 	scriptFromBinary := script.NewFromBytes(binaryData)
 	fmt.Println("Script from Binary:", scriptFromBinary)
 

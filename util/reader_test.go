@@ -1,24 +1,25 @@
 package util_test
 
 import (
+	"testing"
+
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestWriterReader(t *testing.T) {
 	tests := []struct {
 		name     string
 		writeFn  func(*util.Writer)
-		readFn   func(*util.Reader) (interface{}, error)
-		expected interface{}
+		readFn   func(*util.Reader) (any, error)
+		expected any
 	}{
 		{
 			name: "writeByte/readByte",
 			writeFn: func(w *util.Writer) {
 				w.WriteByte(0xAB)
 			},
-			readFn: func(r *util.Reader) (interface{}, error) {
+			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadByte()
 			},
 			expected: byte(0xAB),
@@ -28,7 +29,7 @@ func TestWriterReader(t *testing.T) {
 			writeFn: func(w *util.Writer) {
 				w.WriteBytes([]byte{0x01, 0x02, 0x03})
 			},
-			readFn: func(r *util.Reader) (interface{}, error) {
+			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadBytes(3)
 			},
 			expected: []byte{0x01, 0x02, 0x03},
@@ -38,7 +39,7 @@ func TestWriterReader(t *testing.T) {
 			writeFn: func(w *util.Writer) {
 				w.WriteVarInt(123456)
 			},
-			readFn: func(r *util.Reader) (interface{}, error) {
+			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadVarInt()
 			},
 			expected: uint64(123456),
@@ -48,7 +49,7 @@ func TestWriterReader(t *testing.T) {
 			writeFn: func(w *util.Writer) {
 				w.WriteVarInt(0)
 			},
-			readFn: func(r *util.Reader) (interface{}, error) {
+			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadVarInt()
 			},
 			expected: uint64(0),
@@ -58,7 +59,7 @@ func TestWriterReader(t *testing.T) {
 			writeFn: func(w *util.Writer) {
 				w.WriteBytes([]byte{0x01, 0x02, 0x03})
 			},
-			readFn: func(r *util.Reader) (interface{}, error) {
+			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadRemaining(), nil
 			},
 			expected: []byte{0x01, 0x02, 0x03},
@@ -85,13 +86,13 @@ func TestReaderErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		data    []byte
-		readFn  func(*util.Reader) (interface{}, error)
+		readFn  func(*util.Reader) (any, error)
 		wantErr string
 	}{
 		{
 			name: "readByte past end",
 			data: []byte{},
-			readFn: func(r *util.Reader) (interface{}, error) {
+			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadByte()
 			},
 			wantErr: "read past end of data",
@@ -99,7 +100,7 @@ func TestReaderErrors(t *testing.T) {
 		{
 			name: "readBytes past end",
 			data: []byte{0x01},
-			readFn: func(r *util.Reader) (interface{}, error) {
+			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadBytes(2)
 			},
 			wantErr: "read past end of data",

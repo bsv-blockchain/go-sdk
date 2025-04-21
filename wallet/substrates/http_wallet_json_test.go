@@ -61,7 +61,7 @@ func TestHTTPWalletJSON_API(t *testing.T) {
 		// Validate body
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		var req map[string]interface{}
+		var req map[string]any
 		err = json.Unmarshal(body, &req)
 		require.NoError(t, err)
 		require.Equal(t, "testValue", req["testKey"])

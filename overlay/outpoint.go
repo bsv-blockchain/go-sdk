@@ -94,7 +94,7 @@ func (o Outpoint) Value() (driver.Value, error) {
 	return o.Bytes(), nil
 }
 
-func (o *Outpoint) Scan(value interface{}) error {
+func (o *Outpoint) Scan(value any) error {
 	if b, ok := value.([]byte); !ok || len(b) != 36 {
 		return fmt.Errorf("invalid-outpoint")
 	} else {

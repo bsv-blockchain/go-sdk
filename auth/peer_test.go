@@ -93,19 +93,19 @@ func PairTransports(transportA, transportB *MockTransport) {
 // 	return &wallet.CreateActionResult{}, nil
 // }
 
-// func (w *TestWallet) GetHeight(args interface{}) (uint32, error) {
+// func (w *TestWallet) GetHeight(args any) (uint32, error) {
 // 	return 0, nil
 // }
 
-// func (w *TestWallet) GetNetwork(args interface{}) (string, error) {
+// func (w *TestWallet) GetNetwork(args any) (string, error) {
 // 	return "test", nil
 // }
 
-// func (w *TestWallet) GetVersion(args interface{}) (string, error) {
+// func (w *TestWallet) GetVersion(args any) (string, error) {
 // 	return "1.0.0", nil
 // }
 
-// func (w *TestWallet) IsAuthenticated(args interface{}) (bool, error) {
+// func (w *TestWallet) IsAuthenticated(args any) (bool, error) {
 // 	return true, nil
 // }
 
