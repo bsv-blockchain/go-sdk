@@ -156,7 +156,7 @@ func TestPeerMessageExchange(t *testing.T) {
 	testMessage := []byte("Hello Bob!")
 	bobPubKey, err := bobWallet.GetPublicKey(t.Context(), wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 	require.NoError(t, err)
-	err = alice.ToPeer(testMessage, bobPubKey.PublicKey, 5000)
+	err = alice.ToPeer(t.Context(), testMessage, bobPubKey.PublicKey, 5000)
 	require.NoError(t, err, "Alice should send message successfully")
 
 	// Wait for Bob to receive the message
@@ -232,7 +232,7 @@ func TestPeerAuthentication(t *testing.T) {
 
 	// Alice sends message to Bob, which should trigger authentication
 	go func() {
-		err := alice.ToPeer([]byte("Hello Bob!"), nil, 5000)
+		err := alice.ToPeer(ctx, []byte("Hello Bob!"), nil, 5000)
 		require.NoError(t, err)
 	}()
 
@@ -249,7 +249,7 @@ func TestPeerAuthentication(t *testing.T) {
 		// Get Alice's identity key
 		alicePubKeyResult, _ := aliceWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
-		err := bob.ToPeer([]byte("Hello Alice!"), alicePubKeyResult.PublicKey, 5000)
+		err := bob.ToPeer(ctx, []byte("Hello Alice!"), alicePubKeyResult.PublicKey, 5000)
 		require.NoError(t, err)
 	}()
 
@@ -281,7 +281,7 @@ func TestPeerAuthentication(t *testing.T) {
 	require.True(t, aliceSession.IsAuthenticated)
 
 	// Test session reuse for another message
-	err = alice.ToPeer([]byte("Another message"), bobPubKeyResult.PublicKey, 5000)
+	err = alice.ToPeer(ctx, []byte("Another message"), bobPubKeyResult.PublicKey, 5000)
 	require.NoError(t, err, "Should reuse existing session")
 }
 
@@ -357,7 +357,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	// Alice and Bob exchange messages to trigger authentication and certificate exchange
 	go func() {
-		err := alice.ToPeer([]byte("Hello Bob!"), nil, 5000)
+		err := alice.ToPeer(t.Context(), []byte("Hello Bob!"), nil, 5000)
 		require.NoError(t, err)
 	}()
 
@@ -396,7 +396,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 		},
 	}
 
-	err := bob.RequestCertificates(alicePubKeyResult.PublicKey, customCertReqs, 1000)
+	err := bob.RequestCertificates(t.Context(), alicePubKeyResult.PublicKey, customCertReqs, 1000)
 	require.NoError(t, err, "Should request certificates successfully")
 }
 
@@ -421,7 +421,7 @@ func TestPeerSessionManagement(t *testing.T) {
 
 	// Create a session with a short timeout
 	go func() {
-		err := alice.ToPeer([]byte("Hello Bob!"), bobPubKeyResult.PublicKey, 100)
+		err := alice.ToPeer(ctx, []byte("Hello Bob!"), bobPubKeyResult.PublicKey, 100)
 		require.NoError(t, err)
 	}()
 
@@ -435,7 +435,7 @@ func TestPeerSessionManagement(t *testing.T) {
 	require.True(t, session.IsAuthenticated)
 
 	// Test automatic use of the last interacted peer
-	err = alice.ToPeer([]byte("Using last peer"), nil, 100)
+	err = alice.ToPeer(ctx, []byte("Using last peer"), nil, 100)
 	require.NoError(t, err)
 	require.Equal(t, bobPubKeyStr, alice.lastInteractedWithPeer.ToDERHex(), "Should track last interacted peer")
 }
@@ -463,7 +463,7 @@ func TestPeerErrorHandling(t *testing.T) {
 	})
 
 	// This should time out because no one will respond
-	err := timeoutPeer.ToPeer([]byte("Test timeout"), nil, 1) // 1ms timeout
+	err := timeoutPeer.ToPeer(t.Context(), []byte("Test timeout"), nil, 1) // 1ms timeout
 	require.Error(t, err, "Should timeout during authentication")
 }
 

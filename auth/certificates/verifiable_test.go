@@ -61,6 +61,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Create certificate fields and master keyring
 			fieldResult, err := CreateCertificateFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				fieldsForEncryption,
@@ -81,6 +82,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			}
 
 			keyringForVerifier, err := CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				verifierCounterparty,
@@ -156,6 +158,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Create certificate fields and master keyring
 			fieldResult, err := CreateCertificateFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				fieldsForEncryption,
@@ -176,6 +179,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			}
 
 			keyringForVerifier, err := CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				verifierCounterparty,
@@ -215,6 +219,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Decrypt fields
 			decrypted, err := verifiableCert.DecryptFields(
+				t.Context(),
 				verifierWallet,
 				false,
 				"",
@@ -243,6 +248,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Decrypt should fail
 			_, err := verifiableCert.DecryptFields(
+				t.Context(),
 				wrongWallet,
 				false,
 				"",
@@ -274,6 +280,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Decrypt should fail due to empty keyring
 			_, err := emptyKeyringCert.DecryptFields(
+				t.Context(),
 				verifierWallet,
 				false,
 				"",
@@ -306,6 +313,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Decrypt should fail due to tampered keyring
 			_, err := verifiableCert.DecryptFields(
+				t.Context(),
 				verifierWallet,
 				false,
 				"",
@@ -328,6 +336,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Create certificate fields and master keyring
 			fieldResult, err := CreateCertificateFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				fieldsForEncryption,
@@ -351,6 +360,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			anyoneCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone}
 
 			keyringForVerifier, err := CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				anyoneCounterparty,
@@ -396,6 +406,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Decrypt with "anyone" wallet
 			decrypted, err := anyoneCert.DecryptFields(
+				t.Context(),
 				anyoneWallet,
 				false,
 				"",

@@ -12,6 +12,7 @@ import (
 // VerifyNonce verifies that a nonce was derived from the given wallet
 // This is the Go equivalent of the TypeScript SDK's verifyNonce function
 func VerifyNonce(
+	ctx context.Context,
 	nonce string,
 	w wallet.Interface,
 	counterparty wallet.Counterparty,
@@ -46,7 +47,7 @@ func VerifyNonce(
 	}
 
 	// Verify the hmac
-	result, err := w.VerifyHmac(context.TODO(), args, "")
+	result, err := w.VerifyHmac(ctx, args, "")
 	if err != nil {
 		return false, fmt.Errorf("failed to verify HMAC: %w", err)
 	}

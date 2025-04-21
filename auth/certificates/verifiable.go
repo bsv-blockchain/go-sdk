@@ -78,6 +78,7 @@ func NewVerifiableCertificateFromBinary(data []byte) (*VerifiableCertificate, er
 //	A map[string]string containing the decrypted field names and their plaintext values.
 //	An error if the keyring is missing/empty or if any decryption operation fails.
 func (vc *VerifiableCertificate) DecryptFields(
+	ctx context.Context,
 	verifierWallet wallet.Interface, // Use the interface type
 	privileged bool,
 	privilegedReason string,
@@ -109,7 +110,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 		// Use the certificate's serial number as required for verifier keyring decryption.
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(vc.SerialNumber))
 
-		decryptResult, err := verifierWallet.Decrypt(context.TODO(), wallet.DecryptArgs{
+		decryptResult, err := verifierWallet.Decrypt(ctx, wallet.DecryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,

@@ -193,12 +193,12 @@ func main() {
 	})
 
 	// Get identity keys
-	aliceIdentityResult, _ := aliceWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	aliceIdentityResult, _ := aliceWallet.GetPublicKey(context.Background(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 	aliceIdentity := hex.EncodeToString(aliceIdentityResult.PublicKey.Compressed())
 
-	bobIdentityResult, _ := bobWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	bobIdentityResult, _ := bobWallet.GetPublicKey(context.Background(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "example")
 	bobIdentity := hex.EncodeToString(bobIdentityResult.PublicKey.Compressed())
@@ -216,7 +216,7 @@ func main() {
 		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey.Compressed(), string(payload))
 
 		// Reply to Alice
-		err := bobPeer.ToPeer([]byte("Hello back, Alice!"), senderPublicKey, 5000)
+		err := bobPeer.ToPeer(context.Background(), []byte("Hello back, Alice!"), senderPublicKey, 5000)
 		if err != nil {
 			log.Printf("Bob failed to reply: %v", err)
 		}
@@ -224,7 +224,7 @@ func main() {
 	})
 
 	// Alice sends a message to Bob
-	err = alicePeer.ToPeer([]byte("Hello, Bob!"), bobIdentityResult.PublicKey, 5000)
+	err = alicePeer.ToPeer(context.Background(), []byte("Hello, Bob!"), bobIdentityResult.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message: %v", err)
 	}

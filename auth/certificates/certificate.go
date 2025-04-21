@@ -247,7 +247,7 @@ func CertificateFromBinary(data []byte) (*Certificate, error) {
 
 // Verify checks the certificate's validity including signature verification
 // A nil error response indicates a valid certificate
-func (c *Certificate) Verify() error {
+func (c *Certificate) Verify(ctx context.Context) error {
 	// Verify the certificate signature
 	if len(c.Signature) == 0 {
 		return ErrNotSigned
@@ -288,7 +288,7 @@ func (c *Certificate) Verify() error {
 		Signature: *sig,
 	}
 
-	verifyResult, err := verifier.VerifySignature(context.TODO(), verifyArgs, "")
+	verifyResult, err := verifier.VerifySignature(ctx, verifyArgs, "")
 	if err != nil {
 		return fmt.Errorf("signature verification failed: %w", err)
 	}
@@ -302,13 +302,13 @@ func (c *Certificate) Verify() error {
 
 // Sign adds a signature to the certificate using the certifier's wallet
 // Certificate must not be already signed.
-func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
+func (c *Certificate) Sign(ctx context.Context, certifierWallet *wallet.ProtoWallet) error {
 	if c.Signature != nil {
 		return ErrAlreadySigned
 	}
 
 	// Get the wallet's identity public key and update the certificate's certifier field
-	pubKeyResult, err := certifierWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	pubKeyResult, err := certifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -338,7 +338,7 @@ func (c *Certificate) Sign(certifierWallet *wallet.ProtoWallet) error {
 	}
 
 	// Create signature
-	signResult, err := certifierWallet.CreateSignature(context.TODO(), signArgs, "go-sdk")
+	signResult, err := certifierWallet.CreateSignature(ctx, signArgs, "go-sdk")
 	if err != nil {
 		return fmt.Errorf("failed to sign certificate: %w", err)
 	}

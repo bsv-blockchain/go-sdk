@@ -134,6 +134,7 @@ func TestMasterCertificate(t *testing.T) {
 			"department": "Engineering",
 		}
 		issueCert, err := certificates.IssueCertificateForSubject(
+			t.Context(),
 			certifierWallet.ProtoWallet,
 			subjectCounterparty,
 			plainFieldsStr,
@@ -147,6 +148,7 @@ func TestMasterCertificate(t *testing.T) {
 
 		t.Run("should decrypt all fields correctly using subject wallet", func(t *testing.T) {
 			decrypted, err := certificates.DecryptFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				issueCert.MasterKeyring, // Uses issuedCert from outer scope
 				issueCert.Fields,        // Uses issuedCert from outer scope
@@ -172,6 +174,7 @@ func TestMasterCertificate(t *testing.T) {
 
 		t.Run("should return error if masterKeyring is nil or empty", func(t *testing.T) {
 			_, err := certificates.DecryptFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				nil,              // Test nil keyring
 				issueCert.Fields, // Uses issuedCert from outer scope
@@ -187,6 +190,7 @@ func TestMasterCertificate(t *testing.T) {
 			}
 
 			_, err = certificates.DecryptFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{}, // Test empty keyring
 				issueCert.Fields, // Uses issuedCert from outer scope
@@ -211,6 +215,7 @@ func TestMasterCertificate(t *testing.T) {
 			}
 
 			_, err := certificates.DecryptFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				badMasterKeyring,
 				issueCert.Fields, // Uses issuedCert from outer scope
@@ -236,6 +241,7 @@ func TestMasterCertificate(t *testing.T) {
 			"department": "Engineering",
 		}
 		issueCert, err := certificates.IssueCertificateForSubject(
+			t.Context(),
 			certifierWallet.ProtoWallet,
 			subjectCounterparty,
 			plainFieldsKrStr,
@@ -258,6 +264,7 @@ func TestMasterCertificate(t *testing.T) {
 			fieldsToReveal := []wallet.CertificateFieldNameUnder50Bytes{"name"}
 
 			keyringForVerifier, err := certificates.CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				verifierCounterparty,
@@ -287,6 +294,7 @@ func TestMasterCertificate(t *testing.T) {
 		t.Run("should return error if fields to reveal are not a subset", func(t *testing.T) {
 			fieldsToReveal := []wallet.CertificateFieldNameUnder50Bytes{"nonexistent_field"}
 			_, err := certificates.CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				verifierCounterparty,
@@ -319,6 +327,7 @@ func TestMasterCertificate(t *testing.T) {
 
 			fieldsToReveal := []wallet.CertificateFieldNameUnder50Bytes{"name"}
 			_, err := certificates.CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				verifierCounterparty,
@@ -348,6 +357,7 @@ func TestMasterCertificate(t *testing.T) {
 
 			// Test 'anyone'
 			keyringAnyone, errAnyone := certificates.CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone},
@@ -367,6 +377,7 @@ func TestMasterCertificate(t *testing.T) {
 
 			// Test 'self'
 			keyringSelf, errSelf := certificates.CreateKeyringForVerifier(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				certifierCounterparty,
 				wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
@@ -400,6 +411,7 @@ func TestMasterCertificate(t *testing.T) {
 			}
 
 			newCert, err := certificates.IssueCertificateForSubject(
+				t.Context(),
 				certifierWallet.ProtoWallet,
 				subjectCounterparty,
 				newPlaintextFields,
@@ -445,6 +457,7 @@ func TestMasterCertificate(t *testing.T) {
 			customSerialNumber := utils.RandomBase64(32)
 			newPlaintextFields := map[string]string{"status": "Approved"}
 			newCert, err := certificates.IssueCertificateForSubject(
+				t.Context(),
 				certifierWallet.ProtoWallet,
 				subjectCounterparty,
 				newPlaintextFields,
@@ -468,7 +481,8 @@ func TestMasterCertificate(t *testing.T) {
 				"organization": "SelfCo",
 			}
 			selfSignedCert, err := certificates.IssueCertificateForSubject(
-				subjectWallet.ProtoWallet,                              // Subject is certifier
+				t.Context(),
+				subjectWallet.ProtoWallet, // Subject is certifier
 				wallet.Counterparty{Type: wallet.CounterpartyTypeSelf}, // Subject is self
 				selfSignedFields,
 				string(utils.RandomBase64(32)),
@@ -482,6 +496,7 @@ func TestMasterCertificate(t *testing.T) {
 
 			// Decrypt using the same wallet
 			decrypted, err := certificates.DecryptFields(
+				t.Context(),
 				subjectWallet.ProtoWallet,
 				selfSignedCert.MasterKeyring,
 				selfSignedCert.Fields,

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -62,6 +63,7 @@ type AuthMessage struct {
 // ValidateCertificates validates and processes the certificates received from a peer.
 // The certificatesRequested parameter can be nil or a RequestedCertificateSet
 func ValidateCertificates(
+	ctx context.Context,
 	verifierWallet wallet.Interface,
 	message *AuthMessage,
 	certificatesRequested *utils.RequestedCertificateSet,
@@ -94,7 +96,7 @@ func ValidateCertificates(
 			}
 
 			// Verify Certificate structure and signature
-			err := cert.Verify()
+			err := cert.Verify(ctx)
 			if err != nil {
 				errCh <- fmt.Errorf("the signature for the certificate with serial number %s is invalid: %v",
 					cert.SerialNumber, err)
@@ -125,7 +127,7 @@ func ValidateCertificates(
 				}
 			}
 
-			_, err = cert.DecryptFields(verifierWallet, false, "")
+			_, err = cert.DecryptFields(ctx, verifierWallet, false, "")
 			if err != nil {
 				errCh <- fmt.Errorf("failed to decrypt certificate fields: %v", err)
 				return
