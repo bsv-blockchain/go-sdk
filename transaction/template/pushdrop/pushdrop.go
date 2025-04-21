@@ -46,7 +46,7 @@ func Decode(s *script.Script) *PushDropData {
 }
 
 type PushDropTemplate struct {
-	Wallet     wallet.Wallet
+	Wallet     wallet.Interface
 	Originator string
 }
 
