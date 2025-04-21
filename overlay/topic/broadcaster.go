@@ -257,8 +257,8 @@ func (b *Broadcaster) FindInterestedHosts(ctx context.Context) ([]string, error)
 			continue
 		}
 		script := tx.Outputs[output.OutputIndex].LockingScript
-		parsed, err := admintoken.Decode(script)
-		if err != nil {
+		parsed := admintoken.Decode(script)
+		if parsed == nil {
 			log.Println(err)
 			continue
 		} else if !slices.Contains(b.Topics, parsed.TopicOrService) || parsed.Protocol != "SHIP" {
