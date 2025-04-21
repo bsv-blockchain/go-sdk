@@ -443,7 +443,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		// Call PubliclyRevealAttributes which should fail with "failed to create action"
 		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create action")
+		require.Contains(t, err.Error(), "Public reveal failed: failed to create action")
 	})
 
 	t.Run("should still fail properly with valid tx but NewTransactionFromBEEF failure", func(t *testing.T) {
@@ -623,6 +623,78 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		require.True(t, createActionCalled, "CreateAction was not called")
 
 		// We expect an error since we didn't fully mock the transaction creation
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to create transaction from BEEF")
+	})
+
+	t.Run("should use simple API for TypeScript compatibility", func(t *testing.T) {
+		// Setup a certificate
+		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
+
+		certificate := &wallet.Certificate{
+			Type:               KnownIdentityTypes.XCert,
+			SerialNumber:       "12345",
+			Subject:            pubKey,
+			Certifier:          pubKey,
+			Fields:             map[string]string{"name": "Alice"},
+			Signature:          "valid",
+			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
+		}
+		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
+
+		// Create a test-specific wallet
+		specificMockWallet := wallet.NewMockWallet(t)
+
+		// Mock necessary wallet functions
+		specificMockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+			return &wallet.GetPublicKeyResult{
+				PublicKey: pubKey,
+			}, nil
+		}
+
+		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
+			return &wallet.CreateSignatureResult{
+				Signature: ec.Signature{
+					R: big.NewInt(1),
+					S: big.NewInt(1),
+				},
+			}, nil
+		}
+
+		specificMockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
+			return &wallet.ProveCertificateResult{
+				KeyringForVerifier: map[string]string{"key": "value"},
+			}, nil
+		}
+
+		specificMockWallet.MockCreateAction = func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
+			return &wallet.CreateActionResult{
+				Tx: []byte{1, 2, 3, 4},
+				SignableTransaction: &wallet.SignableTransaction{
+					Tx:        []byte{1, 2, 3, 4},
+					Reference: "ref",
+				},
+			}, nil
+		}
+
+		specificMockWallet.MockGetNetwork = func(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
+			return &wallet.GetNetworkResult{Network: "testnet"}, nil
+		}
+
+		// Create a mock certificate verifier that succeeds
+		mockVerifier := &MockCertificateVerifier{
+			MockVerify: func(ctx context.Context, certificate *wallet.Certificate) error {
+				return nil
+			},
+		}
+
+		// Create a testable client with our mocks
+		testableClient, err := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
+		require.NoError(t, err)
+
+		// Test the simple API. This will also fail since we're not fully mocking, but it will
+		// test the function signature and error handling in the simple wrapper
+		_, err = testableClient.PubliclyRevealAttributesSimple(context.Background(), certificate, fieldsToReveal)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to create transaction from BEEF")
 	})

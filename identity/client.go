@@ -66,10 +66,10 @@ func (c *IdentityClient) PubliclyRevealAttributes(
 	fieldsToReveal []CertificateFieldNameUnder50Bytes,
 ) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure, error) {
 	if len(certificate.Fields) == 0 {
-		return nil, nil, errors.New("public reveal failed: Certificate has no fields to reveal")
+		return nil, nil, errors.New("certificate has no fields to reveal")
 	}
 	if len(fieldsToReveal) == 0 {
-		return nil, nil, errors.New("public reveal failed: You must reveal at least one field")
+		return nil, nil, errors.New("you must reveal at least one field")
 	}
 
 	revocationOutpoint, err := overlay.NewOutpointFromString(certificate.RevocationOutpoint)
@@ -95,7 +95,7 @@ func (c *IdentityClient) PubliclyRevealAttributes(
 
 	// Verify the certificate
 	if err := masterCert.Verify(ctx); err != nil {
-		return nil, nil, errors.New("public reveal failed: Certificate verification failed")
+		return nil, nil, errors.New("certificate verification failed")
 	}
 
 	// Convert field names to strings for wallet API
@@ -214,6 +214,29 @@ func (c *IdentityClient) PubliclyRevealAttributes(
 	return success, failure, nil
 }
 
+// PubliclyRevealAttributesSimple is a simplified version of PubliclyRevealAttributes that returns only
+// a broadcast result string, to mirror the TypeScript implementation's return signature.
+func (c *IdentityClient) PubliclyRevealAttributesSimple(
+	ctx context.Context,
+	certificate *wallet.Certificate,
+	fieldsToReveal []CertificateFieldNameUnder50Bytes,
+) (string, error) {
+	success, failure, err := c.PubliclyRevealAttributes(ctx, certificate, fieldsToReveal)
+	if err != nil {
+		return "", err
+	}
+
+	if success != nil {
+		return success.Txid, nil
+	}
+
+	if failure != nil {
+		return "", fmt.Errorf("broadcast failed: %s", failure.Description)
+	}
+
+	return "", errors.New("unknown error during broadcast")
+}
+
 // ResolveByIdentityKey resolves displayable identity certificates, issued to a given identity key by a trusted certifier.
 func (c *IdentityClient) ResolveByIdentityKey(
 	ctx context.Context,
@@ -329,20 +352,27 @@ func (c *IdentityClient) parseIdentity(identity *wallet.IdentityCertificate) Dis
 
 	// Create abbreviated key for display
 	abbreviatedKey := ""
-	if len(identity.Subject.Compressed()) > 0 {
-		subjStr := string(identity.Subject.Compressed())
-		if len(subjStr) > 10 {
-			abbreviatedKey = subjStr[0:10] + "..."
-		} else {
-			abbreviatedKey = subjStr
+	if identity.Type != "unknownType" {
+		if len(identity.Subject.Compressed()) > 0 {
+			subjStr := string(identity.Subject.Compressed())
+			if len(subjStr) > 10 {
+				abbreviatedKey = subjStr[0:10] + "..."
+			} else {
+				abbreviatedKey = subjStr
+			}
 		}
+	}
+
+	identityKey := ""
+	if identity.Type != "unknownType" {
+		identityKey = string(identity.Subject.Compressed())
 	}
 
 	return DisplayableIdentity{
 		Name:           name,
 		AvatarURL:      avatarURL,
 		AbbreviatedKey: abbreviatedKey,
-		IdentityKey:    string(identity.Subject.Compressed()),
+		IdentityKey:    identityKey,
 		BadgeIconURL:   badgeIconURL,
 		BadgeLabel:     badgeLabel,
 		BadgeClickURL:  badgeClickURL,

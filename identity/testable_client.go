@@ -71,15 +71,15 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	fieldsToReveal []CertificateFieldNameUnder50Bytes,
 ) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure, error) {
 	if len(certificate.Fields) == 0 {
-		return nil, nil, errors.New("public reveal failed: Certificate has no fields to reveal")
+		return nil, nil, errors.New("certificate has no fields to reveal")
 	}
 	if len(fieldsToReveal) == 0 {
-		return nil, nil, errors.New("public reveal failed: You must reveal at least one field")
+		return nil, nil, errors.New("you must reveal at least one field")
 	}
 
 	// Use the injected certificate verifier instead of direct verification
 	if err := c.certificateVerifier.Verify(ctx, certificate); err != nil {
-		return nil, nil, fmt.Errorf("public reveal failed: Certificate verification failed: %w", err)
+		return nil, nil, errors.New("certificate verification failed")
 	}
 
 	// Convert field names to strings for wallet API
@@ -177,6 +177,29 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	// Broadcast the transaction
 	success, failure := broadcaster.Broadcast(tx)
 	return success, failure, nil
+}
+
+// PubliclyRevealAttributesSimple is a simplified version of PubliclyRevealAttributes that returns only
+// a broadcast result string, to mirror the TypeScript implementation's return signature.
+func (c *TestableIdentityClient) PubliclyRevealAttributesSimple(
+	ctx context.Context,
+	certificate *wallet.Certificate,
+	fieldsToReveal []CertificateFieldNameUnder50Bytes,
+) (string, error) {
+	success, failure, err := c.PubliclyRevealAttributes(ctx, certificate, fieldsToReveal)
+	if err != nil {
+		return "", err
+	}
+
+	if success != nil {
+		return success.Txid, nil
+	}
+
+	if failure != nil {
+		return "", fmt.Errorf("broadcast failed: %s", failure.Description)
+	}
+
+	return "", errors.New("unknown error during broadcast")
 }
 
 // MockCertificateVerifier is a mock implementation of CertificateVerifier for testing
