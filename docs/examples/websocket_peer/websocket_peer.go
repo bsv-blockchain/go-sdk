@@ -268,13 +268,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect Alice's transport: %v", err)
 	}
-	defer aliceTransport.Disconnect()
+	defer func() { _ = aliceTransport.Disconnect() }()
 
 	err = bobTransport.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect Bob's transport: %v", err)
 	}
-	defer bobTransport.Disconnect()
+	defer func() { _ = bobTransport.Disconnect() }()
 
 	// Create peers
 	alicePeer := auth.NewPeer(&auth.PeerOptions{

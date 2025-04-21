@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // MockPeer implements the PeerInterface for testing
@@ -61,7 +63,8 @@ func TestRequest(t *testing.T) {
 	mockPeer := &MockPeer{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success": true}`))
+		_, err := w.Write([]byte(`{"success": true}`))
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 

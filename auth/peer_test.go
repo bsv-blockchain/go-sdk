@@ -40,7 +40,7 @@ func (t *MockTransport) Send(message *AuthMessage) error {
 
 	if t.isPaired && t.pairedTransport != nil && t.pairedTransport.messageHandler != nil {
 		go func() {
-			t.pairedTransport.messageHandler(message)
+			_ = t.pairedTransport.messageHandler(message)
 		}()
 	}
 	return nil
@@ -191,6 +191,7 @@ func CreatePeerPair(t *testing.T) (*Peer, *Peer, *utils.CompletedProtoWallet, *u
 	bobPk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	bobWallet, err := utils.NewCompletedProtoWallet(bobPk)
+	require.NoError(t, err)
 
 	aliceTransport := NewMockTransport()
 	bobTransport := NewMockTransport()

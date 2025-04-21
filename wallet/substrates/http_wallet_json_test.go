@@ -2,12 +2,13 @@ package substrates
 
 import (
 	"encoding/json"
-	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewHTTPWalletJSON(t *testing.T) {
@@ -169,7 +170,8 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 	// Test invalid JSON response
 	t.Run("invalid JSON response", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("invalid json"))
+			_, err := w.Write([]byte("invalid json"))
+			require.NoError(t, err) // Check write error
 		}))
 		defer ts.Close()
 
@@ -179,4 +181,3 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 		require.Contains(t, err.Error(), "invalid character")
 	})
 }
-

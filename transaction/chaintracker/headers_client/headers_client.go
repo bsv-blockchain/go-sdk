@@ -52,7 +52,7 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		if err := json.NewDecoder(res.Body).Decode(&headers); err != nil {
 			return nil, err
 		}
@@ -81,7 +81,7 @@ func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error)
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		if err := json.NewDecoder(res.Body).Decode(headerState); err != nil {
 			return nil, err
 		}
@@ -100,7 +100,7 @@ func (c *Client) GetChaintip(ctx context.Context) (*State, error) {
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		if err := json.NewDecoder(res.Body).Decode(headerState); err != nil {
 			return nil, err
 		}

@@ -183,7 +183,8 @@ func (p *PushDropUnlocker) Sign(
 			return nil, fmt.Errorf("unable to create wallet signature for sign: %w", err)
 		}
 		s := (&script.Script{})
-		s.AppendPushData(sig.Signature.Serialize())
+		// Error throws if data is too big which wont happen here
+		_ = s.AppendPushData(sig.Signature.Serialize())
 		return s, nil
 	}
 

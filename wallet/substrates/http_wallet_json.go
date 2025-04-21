@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"io"
 	"net/http"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // HTTPWalletJSON implements wallet.Interface for HTTP transport using JSON
@@ -55,7 +56,7 @@ func (h *HTTPWalletJSON) api(call string, args interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

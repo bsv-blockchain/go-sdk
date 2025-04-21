@@ -3,8 +3,9 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"testing"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
