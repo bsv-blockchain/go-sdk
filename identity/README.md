@@ -25,6 +25,7 @@ go get github.com/bsv-blockchain/go-sdk
 ```go
 import (
 	"github.com/bsv-blockchain/go-sdk/identity"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // Initialize with default wallet and options
@@ -32,7 +33,7 @@ identityClient := identity.NewIdentityClient(nil, nil, "")
 
 // Or with custom wallet and options
 options := &identity.IdentityClientOptions{
-	ProtocolID:  []interface{}{1, "identity"},
+	ProtocolID:  wallet.Protocol{SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty, Protocol: "identity"},
 	KeyID:       "1",
 	TokenAmount: 1,
 	OutputIndex: 0,
@@ -45,6 +46,17 @@ identityClient := identity.NewIdentityClient(walletClient, options, "")
 ```go
 success, failure, err := identityClient.PubliclyRevealAttributes(
 	context.Background(),
+	certificate,
+	[]identity.CertificateFieldNameUnder50Bytes{"name", "email"},
+)
+```
+
+### TypeScript-Compatible API
+
+```go
+// Simplified API that returns just the transaction ID like the TypeScript implementation
+txid, err := identityClient.PubliclyRevealAttributesSimple(
+	context.Background(), 
 	certificate,
 	[]identity.CertificateFieldNameUnder50Bytes{"name", "email"},
 )
@@ -71,6 +83,11 @@ identities, err := identityClient.ResolveByAttributes(
 	},
 )
 ```
+
+## Examples
+
+For a complete working example of using the identity client, see:
+- [Identity Client Example](../docs/examples/identity_client/README.md)
 
 ## Example in a Web Application
 
