@@ -267,9 +267,7 @@ func (r *ReaderHoldError) ReadIntBytes() []byte {
 }
 
 // ReadByte returns the next byte and holds any error internally
-//
-//nolint:govet // suppress signature mismatch for ReadByte method
-func (r *ReaderHoldError) ReadByte() byte {
+func (r *ReaderHoldError) ReadByte() byte { //nolint:govet
 	if r.Err != nil {
 		return 0
 	}

@@ -71,5 +71,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Script as Binary:", scriptAsBinary)
+	fmt.Println("Script:", hex.EncodeToString(scriptAsBinary))
 }

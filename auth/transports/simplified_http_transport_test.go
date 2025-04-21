@@ -23,6 +23,7 @@ func TestNewSimplifiedHTTPTransport(t *testing.T) {
 
 	if transport == nil {
 		t.Fatal("Expected transport to be created")
+		return
 	}
 
 	if transport.baseUrl != "http://example.com" {

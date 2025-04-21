@@ -117,6 +117,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			// Assertions
 			if verifiableCert == nil {
 				t.Fatal("Expected verifiableCert to be created, got nil")
+				return
 			}
 			if verifiableCert.Type != sampleType {
 				t.Errorf("Expected type %s, got %s", sampleType, verifiableCert.Type)
