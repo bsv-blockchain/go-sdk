@@ -2,12 +2,17 @@
 package storage
 
 import (
+	"context"
+
+	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // DownloaderConfig defines configuration options for StorageDownloader.
-// Currently no configuration options are necessary, but this struct is provided for future extensibility.
-type DownloaderConfig struct{}
+// Currently no additional configuration options are necessary beyond network preset.
+type DownloaderConfig struct {
+	Network overlay.Network // Network preset (Mainnet/Testnet/Local)
+}
 
 // DownloadResult is returned by StorageDownloader.Download.
 type DownloadResult struct {
@@ -16,6 +21,8 @@ type DownloadResult struct {
 }
 
 // UploaderConfig defines configuration options for StorageUploader.
+// StorageURL should point to the HTTP API base of the storage service.
+// Wallet is used for authenticated endpoints for find, list, and renew operations.
 type UploaderConfig struct {
 	StorageURL string           // Base URL of the storage service
 	Wallet     wallet.Interface // Wallet client for authenticated requests
@@ -53,4 +60,28 @@ type RenewFileResult struct {
 	PrevExpiryTime int64  // Previous expiration timestamp
 	NewExpiryTime  int64  // New expiration timestamp
 	Amount         int64  // Amount charged or refilled
+}
+
+// StorageDownloaderInterface defines the public API for downloading files
+type StorageDownloaderInterface interface {
+	// Resolve returns a list of HTTP URLs for a given UHRP URL
+	Resolve(ctx context.Context, uhrpURL string) ([]string, error)
+
+	// Download retrieves a file from the first available host
+	Download(ctx context.Context, uhrpURL string) (DownloadResult, error)
+}
+
+// StorageUploaderInterface defines the public API for uploading and managing files
+type StorageUploaderInterface interface {
+	// PublishFile uploads a file to the storage service with the specified retention period
+	PublishFile(ctx context.Context, file UploadableFile, retentionPeriod int) (UploadFileResult, error)
+
+	// FindFile retrieves metadata for a file matching the given UHRP URL
+	FindFile(ctx context.Context, uhrpURL string) (FindFileData, error)
+
+	// ListUploads lists all advertisements belonging to the user
+	ListUploads(ctx context.Context) (interface{}, error)
+
+	// RenewFile extends the hosting time for an existing file advertisement
+	RenewFile(ctx context.Context, uhrpURL string, additionalMinutes int) (RenewFileResult, error)
 }
