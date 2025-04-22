@@ -167,9 +167,12 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 				a.peers[baseURL].PendingCertificateRequests = append(a.peers[baseURL].PendingCertificateRequests, true)
 
 				certificatesToInclude, err := utils.GetVerifiableCertificates(
-					a.wallet,
-					requestedCertificates,
-					verifier,
+					ctx,
+					&utils.GetVerifiableCertificatesOptions{
+						Wallet:                a.wallet,
+						RequestedCertificates: &requestedCertificates,
+						VerifierIdentityKey:   verifier,
+					},
 				)
 				if err != nil {
 					return err

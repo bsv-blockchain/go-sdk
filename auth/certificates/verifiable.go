@@ -92,9 +92,15 @@ func (vc *VerifiableCertificate) DecryptFields(
 	decryptedFields := make(map[string]string)
 
 	// The counterparty for decrypting the field revelation keys is the Subject of the certificate.
+	// Check if the Subject field is initialized before using it
+	subjectKey := vc.Subject
+	if subjectKey.X == nil || subjectKey.Y == nil {
+		return nil, errors.New("certificate subject is invalid or not initialized")
+	}
+
 	subjectCounterparty := wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
-		Counterparty: &vc.Subject, // Use the Subject from the embedded Certificate
+		Counterparty: &subjectKey, // Use the Subject from the embedded Certificate
 	}
 
 	// Iterate through the fields specified in the verifier's KeyRing.

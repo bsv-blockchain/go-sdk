@@ -447,9 +447,12 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 	var certs []*certificates.VerifiableCertificate
 	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
 		certs, err = utils.GetVerifiableCertificates(
-			p.wallet,
-			message.RequestedCertificates,
-			senderPublicKey,
+			ctx,
+			&utils.GetVerifiableCertificatesOptions{
+				Wallet:                p.wallet,
+				RequestedCertificates: &message.RequestedCertificates,
+				VerifierIdentityKey:   senderPublicKey,
+			},
 		)
 		if err != nil {
 			// Log the error but continue - certificate error shouldn't stop auth
@@ -600,9 +603,12 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	// If we have auto-response enabled, automatically send certificates
 	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
 		certs, err := utils.GetVerifiableCertificates(
-			p.wallet,
-			message.RequestedCertificates,
-			senderPublicKey,
+			ctx,
+			&utils.GetVerifiableCertificatesOptions{
+				Wallet:                p.wallet,
+				RequestedCertificates: &message.RequestedCertificates,
+				VerifierIdentityKey:   senderPublicKey,
+			},
 		)
 		if err == nil && len(certs) > 0 {
 			// Auto-respond with available certificates

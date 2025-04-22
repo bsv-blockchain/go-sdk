@@ -1,125 +1,161 @@
 package utils
 
 import (
+	"context"
+	"encoding/base64"
+	"errors"
+
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestRequestedCertificateTypeIDAndFieldList local structure for testing
-type TestRequestedCertificateTypeIDAndFieldList map[string][]string
-
-// TestRequestedCertificateSet local structure for testing
-type TestRequestedCertificateSet struct {
-	Certifiers       []string
-	CertificateTypes TestRequestedCertificateTypeIDAndFieldList
-}
-
-// TestWallet implements wallet.Interface for testing
-type TestWallet struct{}
-
-// CreateAction implements wallet.Interface
-func (w *TestWallet) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-	return &wallet.CreateActionResult{}, nil
-}
-
-// GetHeight implements wallet.Interface
-func (w *TestWallet) GetHeight(args any) (uint32, error) {
-	return 0, nil
-}
-
-// GetNetwork implements wallet.Interface
-func (w *TestWallet) GetNetwork(args any) (string, error) {
-	return "test", nil
-}
-
-// GetVersion implements wallet.Interface
-func (w *TestWallet) GetVersion(args any) (string, error) {
-	return "1.0.0", nil
-}
-
-// IsAuthenticated implements wallet.Interface
-func (w *TestWallet) IsAuthenticated(args any) (bool, error) {
-	return true, nil
-}
-
-// GetPublicKey implements wallet.Interface
-func (w *TestWallet) GetPublicKey(args *wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-	return &wallet.GetPublicKeyResult{}, nil
-}
-
-// CreateHmac implements wallet.Interface
-func (w *TestWallet) CreateHmac(args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
-	return &wallet.CreateHmacResult{}, nil
-}
-
-// VerifyHmac implements wallet.Interface
-func (w *TestWallet) VerifyHmac(args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
-	return &wallet.VerifyHmacResult{}, nil
-}
-
-// CreateSignature implements wallet.Interface
-func (w *TestWallet) CreateSignature(args *wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-	return &wallet.CreateSignatureResult{}, nil
-}
-
-// VerifySignature implements wallet.Interface
-func (w *TestWallet) VerifySignature(args *wallet.VerifySignatureArgs) (*wallet.VerifySignatureResult, error) {
-	return &wallet.VerifySignatureResult{}, nil
-}
-
-// Encrypt implements wallet.Interface
-func (w *TestWallet) Encrypt(args *wallet.EncryptArgs) (*wallet.EncryptResult, error) {
-	return &wallet.EncryptResult{}, nil
-}
-
-// Decrypt implements wallet.Interface
-func (w *TestWallet) Decrypt(args *wallet.DecryptArgs) (*wallet.DecryptResult, error) {
-	return &wallet.DecryptResult{}, nil
-}
-
-// ListCertificates implements wallet.Interface
-func (w *TestWallet) ListCertificates(args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
-	return &wallet.ListCertificatesResult{}, nil
-}
-
-// ProveCertificate implements wallet.Interface
-func (w *TestWallet) ProveCertificate(args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
-	return &wallet.ProveCertificateResult{}, nil
-}
-
 func TestGetVerifiableCertificates(t *testing.T) {
-	// Since we're just testing the function signatures and structure,
-	// not the actual wallet integration, we'll simplify the tests
-	t.Run("Empty certificates handling", func(t *testing.T) {
-		// Create a mock wallet
-		pk, err := ec.NewPrivateKey()
-		require.NoError(t, err)
-		testWallet, err := NewCompletedProtoWallet(pk)
-		require.NoError(t, err)
+	ctx := context.Background()
+	// Create a single verifier key to be used by all tests
+	pubKeyBytes := []byte{
+		0x02, // Compressed key prefix (even y)
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	}
+	verifierKey, err := ec.PublicKeyFromBytes(pubKeyBytes)
+	require.NoError(t, err)
+	require.NotNil(t, verifierKey)
 
-		// Test with nil requested certificates
-		verifiableCerts, err := GetVerifiableCertificates(testWallet, nil, nil)
-		assert.NoError(t, err, "Should not error with nil requested certificates")
-		assert.Empty(t, verifiableCerts, "Should return empty array with nil requested certificates")
-
-		// Test with empty requested certificates
-		empty := &TestRequestedCertificateSet{
-			Certifiers:       []string{},
-			CertificateTypes: make(TestRequestedCertificateTypeIDAndFieldList),
+	// Test case 1: Retrieves matching certificates based on requested set
+	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		requestedCerts := &RequestedCertificateSet{
+			Certifiers: []string{"certifier1", "certifier2"},
+			CertificateTypes: map[string][]string{
+				"certType1": {"field1", "field2"},
+				"certType2": {"field3"},
+			},
 		}
-		verifiableCerts, err = GetVerifiableCertificates(testWallet, empty, nil)
-		assert.NoError(t, err, "Should not error with empty requested certificates")
-		assert.Empty(t, verifiableCerts, "Should return empty array with empty requested certificates")
+
+		// Create a mock subject and certifier public key
+		subject, _ := ec.PublicKeyFromBytes([]byte{0x04, 0x05, 0x06})
+		certifier, _ := ec.PublicKeyFromBytes([]byte{0x07, 0x08, 0x09})
+
+		// Mock wallet.ListCertificates response
+		revocationOutpoint, _ := overlay.NewOutpointFromString("abcd1234:0")
+		mockListResult := &wallet.ListCertificatesResult{
+			Certificates: []wallet.CertificateResult{
+				{
+					Certificate: wallet.Certificate{
+						Type:               "certType1",
+						SerialNumber:       "serial1",
+						Subject:            subject,
+						Certifier:          certifier,
+						RevocationOutpoint: "abcd1234:0",
+						Fields:             map[string]string{"field1": "encryptedData1", "field2": "encryptedData2"},
+						Signature:          "01020304",
+					},
+				},
+			},
+		}
+		mockWallet.ListCertificatesResult = mockListResult
+
+		// Mock wallet.ProveCertificate response
+		mockProveResult := &wallet.ProveCertificateResult{
+			KeyringForVerifier: map[string]string{"field1": "key1", "field2": "key2"},
+		}
+		mockWallet.ProveCertificateResult = mockProveResult
+
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: requestedCerts,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.NoError(t, err)
+		require.Len(t, certs, 1)
+		if len(certs) > 0 {
+			cert := certs[0]
+			// Compare against base64 encoded values
+			expectedTypeBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString([]byte("certType1")))
+			expectedSerialBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString([]byte("serial1")))
+			require.Equal(t, expectedTypeBase64, cert.Type)
+			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
+			require.NotNil(t, cert.RevocationOutpoint)
+			if cert.RevocationOutpoint != nil && revocationOutpoint != nil {
+				require.Equal(t, revocationOutpoint.OutputIndex, cert.RevocationOutpoint.OutputIndex)
+			}
+		}
 	})
 
-	// Most of the complex tests would require mocking the wallet's
-	// ListCertificates and ProveCertificate methods, which is difficult
-	// without a mocking framework. The function structure is sound though.
-	t.Run("Complex wallet interactions", func(t *testing.T) {
-		t.Skip("Skipping tests that require mocking wallet certificate methods")
+	// Test case 2: Returns an empty array when no matching certificates are found
+	t.Run("returns an empty array when no matching certificates are found", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		requestedCerts := &RequestedCertificateSet{
+			Certifiers: []string{"certifier1"},
+			CertificateTypes: map[string][]string{
+				"certType1": {"field1"},
+			},
+		}
+
+		// Mock ListCertificates to return empty results
+		mockWallet.ListCertificatesResult = &wallet.ListCertificatesResult{
+			Certificates: []wallet.CertificateResult{},
+		}
+
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: requestedCerts,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.NoError(t, err)
+		require.Empty(t, certs)
+	})
+
+	// Test case 3: Propagates errors from ListCertificates
+	t.Run("propagates errors from ListCertificates", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		requestedCerts := &RequestedCertificateSet{
+			Certifiers: []string{"certifier1"},
+			CertificateTypes: map[string][]string{
+				"certType1": {"field1"},
+			},
+		}
+
+		// Mock ListCertificates to return an error
+		mockWallet.ListCertificatesError = errors.New("listCertificates failed")
+
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: requestedCerts,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.Error(t, err)
+		require.Nil(t, certs)
+		require.Contains(t, err.Error(), "listCertificates failed")
+	})
+
+	// Test case 4: Handles nil requested certificates gracefully
+	t.Run("handles nil requested certificates gracefully", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: nil,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.NoError(t, err)
+		require.Empty(t, certs)
 	})
 }
