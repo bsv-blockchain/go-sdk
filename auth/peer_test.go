@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -1383,83 +1382,6 @@ var transport *MockTransport
 
 func init() {
 	transport = NewMockTransport()
-}
-
-// setupWalletWithCertificate creates a wallet with a certificate of the specified type and fields.
-// It returns the wallet, a cleanup function, and any error that occurred.
-func setupWalletWithCertificate(ctx context.Context, name, certifier, certType string, fields map[string]string) (*wallet.MockWallet, func(), error) {
-	// Create a private key for the wallet
-	userPk, err := ec.NewPrivateKey()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create private key: %w", err)
-	}
-
-	// Create certifier key
-	certifierPk, err := ec.NewPrivateKey()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create certifier key: %w", err)
-	}
-
-	// Create a signature for certificate
-	dummySig, err := userPk.Sign([]byte("test"))
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create signature: %w", err)
-	}
-
-	// Create the mock wallet
-	mockWallet := wallet.NewMockWallet(nil) // nil is OK for non-test context
-	mockWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: userPk.PubKey()}
-
-	// Setup basic crypto operations
-	mockWallet.CreateSignatureResult = &wallet.CreateSignatureResult{Signature: *dummySig}
-	mockWallet.VerifySignatureResult = &wallet.VerifySignatureResult{Valid: true}
-
-	hmacBytes := make([]byte, 32)
-	for i := range hmacBytes {
-		hmacBytes[i] = byte(i)
-	}
-
-	mockWallet.CreateHmacResult = &wallet.CreateHmacResult{Hmac: hmacBytes}
-	mockWallet.DecryptResult = &wallet.DecryptResult{Plaintext: []byte("decrypted")}
-
-	// Create the certificate
-	certRaw := wallet.Certificate{
-		Type:               certType,
-		SerialNumber:       fmt.Sprintf("%s-serial", name),
-		Subject:            userPk.PubKey(),
-		Certifier:          certifierPk.PubKey(),
-		Fields:             fields,
-		RevocationOutpoint: "abcd1234:0",
-	}
-
-	// Sign the certificate properly
-	cert, err := utils.SignCertificateForTest(ctx, certRaw, certifierPk)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to sign certificate: %w", err)
-	}
-
-	// Setup ListCertificates mock
-	mockWallet.ListCertificatesResult = &wallet.ListCertificatesResult{
-		Certificates: []wallet.CertificateResult{{Certificate: cert}},
-	}
-
-	// Setup ProveCertificate mock
-	keyringForVerifier := make(map[string]string)
-	for fieldName := range fields {
-		keyValue := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("key-for-%s", fieldName)))
-		keyringForVerifier[fieldName] = keyValue
-	}
-
-	mockWallet.ProveCertificateResult = &wallet.ProveCertificateResult{
-		KeyringForVerifier: keyringForVerifier,
-	}
-
-	// Return wallet, cleanup func, and nil error
-	cleanup := func() {
-		// Nothing to clean up in this implementation
-	}
-
-	return mockWallet, cleanup, nil
 }
 
 func TestNonmatchingCertificateRejection(t *testing.T) {

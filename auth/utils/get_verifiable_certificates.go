@@ -58,12 +58,12 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	// Process each certificate
 	for _, certResult := range listResult.Certificates {
 		// Skip if certificate is nil or has empty type
-		if certResult.Certificate.Type == "" {
+		if certResult.Type == "" {
 			continue
 		}
 
 		// Get requested fields for this certificate type
-		requestedFields, ok := options.RequestedCertificates.CertificateTypes[certResult.Certificate.Type]
+		requestedFields, ok := options.RequestedCertificates.CertificateTypes[certResult.Type]
 		if !ok || len(requestedFields) == 0 {
 			continue // Skip if no fields requested for this type
 		}
@@ -85,14 +85,14 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 			return nil, err
 		}
 		if proveResult == nil {
-			return nil, fmt.Errorf("nil result from ProveCertificate for certificate type: %s", certResult.Certificate.Type)
+			return nil, fmt.Errorf("nil result from ProveCertificate for certificate type: %s", certResult.Type)
 		}
 
 		// Handle short txids in revocation outpoints by padding them
 		var revocationOutpoint *overlay.Outpoint
-		if certResult.Certificate.RevocationOutpoint != "" {
+		if certResult.RevocationOutpoint != "" {
 			// NewOutpointFromString requires at least 66 characters (64 hex chars + separator + output index)
-			parts := strings.Split(certResult.Certificate.RevocationOutpoint, ":")
+			parts := strings.Split(certResult.RevocationOutpoint, ":")
 			if len(parts) == 2 {
 				txid := parts[0]
 				// Pad txid to 64 characters if needed
@@ -106,15 +106,15 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 				if parseErr != nil {
 					// Just log the error and continue without revocation outpoint
 					fmt.Printf("Warning: could not parse revocation outpoint '%s': %v\n",
-						certResult.Certificate.RevocationOutpoint, parseErr)
+						certResult.RevocationOutpoint, parseErr)
 				}
 			}
 		}
 
 		// Ensure Type and SerialNumber are properly formatted as base64 strings
 		// If not, continue with next certificate but don't fail
-		certType := certResult.Certificate.Type
-		certSerialNum := certResult.Certificate.SerialNumber
+		certType := certResult.Type
+		certSerialNum := certResult.SerialNumber
 
 		// Verify if Type is valid base64 - if not, try to encode it
 		if _, err := base64.StdEncoding.DecodeString(certType); err != nil {
@@ -137,29 +137,29 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		}
 
 		// Handle Signature
-		if certResult.Certificate.Signature != "" {
-			baseCert.Signature = []byte(certResult.Certificate.Signature)
+		if certResult.Signature != "" {
+			baseCert.Signature = []byte(certResult.Signature)
 		}
 
 		// Handle nil Subject and Certifier safely
-		if certResult.Certificate.Subject != nil {
-			baseCert.Subject = *certResult.Certificate.Subject
+		if certResult.Subject != nil {
+			baseCert.Subject = *certResult.Subject
 		} else {
 			// Initialize with empty public key to avoid nil pointer dereference
 			baseCert.Subject = ec.PublicKey{}
 		}
 
-		if certResult.Certificate.Certifier != nil {
-			baseCert.Certifier = *certResult.Certificate.Certifier
+		if certResult.Certifier != nil {
+			baseCert.Certifier = *certResult.Certifier
 		} else {
 			// Initialize with empty public key to avoid nil pointer dereference
 			baseCert.Certifier = ec.PublicKey{}
 		}
 
 		// Add certificate fields
-		if certResult.Certificate.Fields != nil {
+		if certResult.Fields != nil {
 			for _, fieldName := range requestedFields {
-				if value, ok := certResult.Certificate.Fields[fieldName]; ok {
+				if value, ok := certResult.Fields[fieldName]; ok {
 					// Check if the field value is valid base64
 					if _, err := base64.StdEncoding.DecodeString(value); err != nil {
 						// If not, encode it
