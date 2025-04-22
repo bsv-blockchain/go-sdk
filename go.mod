@@ -11,11 +11,8 @@ require (
 
 require golang.org/x/net v0.39.0
 
-require github.com/stretchr/objx v0.5.2 // indirect
-
 require (
 	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
