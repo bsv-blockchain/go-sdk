@@ -31,8 +31,11 @@ func base64ToBytes(t *testing.T, s string) []byte {
 func TestVectors(t *testing.T) {
 	privKey, err := ec.PrivateKeyFromHex("6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8")
 	require.NoError(t, err)
-	counterparty, err := ec.PublicKeyFromString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+	const CounterpartyHex = "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1"
+	counterparty, err := ec.PublicKeyFromString(CounterpartyHex)
 	require.NoError(t, err)
+	const VerifierHex = "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee"
+	const ProverHex = "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8"
 
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
@@ -211,6 +214,26 @@ func TestVectors(t *testing.T) {
 		Object: wallet.GetPublicKeyResult{
 			PublicKey: privKey.PubKey(),
 		},
+	}, {
+		Filename: "revealCounterpartyKeyLinkage-simple-args",
+		IsResult: true,
+		Object: wallet.RevealCounterpartyKeyLinkageArgs{
+			Counterparty:     CounterpartyHex,
+			Verifier:         VerifierHex,
+			Privileged:       util.BoolPtr(true),
+			PrivilegedReason: "test-reason",
+		},
+	}, {
+		Filename: "revealCounterpartyKeyLinkage-simple-result",
+		IsResult: true,
+		Object: wallet.RevealCounterpartyKeyLinkageResult{
+			Prover:                ProverHex,
+			Counterparty:          CounterpartyHex,
+			Verifier:              VerifierHex,
+			RevelationTime:        "2023-01-01T00:00:00Z",
+			EncryptedLinkage:      []byte{1, 2, 3, 4},
+			EncryptedLinkageProof: []byte{5, 6, 7, 8},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -283,6 +306,12 @@ func TestVectors(t *testing.T) {
 					checkJson(&deserialized, &obj)
 				case wallet.GetPublicKeyResult:
 					var deserialized wallet.GetPublicKeyResult
+					checkJson(&deserialized, &obj)
+				case wallet.RevealCounterpartyKeyLinkageArgs:
+					var deserialized wallet.RevealCounterpartyKeyLinkageArgs
+					checkJson(&deserialized, &obj)
+				case wallet.RevealCounterpartyKeyLinkageResult:
+					var deserialized wallet.RevealCounterpartyKeyLinkageResult
 					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

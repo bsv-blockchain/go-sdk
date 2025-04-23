@@ -342,19 +342,19 @@ type InternalizeActionResult struct {
 }
 
 type RevealCounterpartyKeyLinkageArgs struct {
-	Counterparty     string
-	Verifier         string
-	Privileged       *bool
-	PrivilegedReason string
+	Counterparty     string `json:"counterparty"`
+	Verifier         string `json:"verifier"`
+	Privileged       *bool  `json:"privileged,omitempty"`
+	PrivilegedReason string `json:"privilegedReason,omitempty"`
 }
 
 type RevealCounterpartyKeyLinkageResult struct {
-	EncryptedLinkage      []byte
-	EncryptedLinkageProof []byte
-	Prover                string
-	Verifier              string
-	Counterparty          string
-	RevelationTime        string
+	Prover                string           `json:"prover"`
+	Counterparty          string           `json:"counterparty"`
+	Verifier              string           `json:"verifier"`
+	RevelationTime        string           `json:"revelationTime"`
+	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
+	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
 }
 
 type RevealSpecificKeyLinkageArgs struct {
