@@ -166,6 +166,19 @@ func TestVectors(t *testing.T) {
 				Outpoint:  "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
 			}},
 		},
+	}, {
+		Filename: "relinquishOutput-simple-args",
+		IsResult: true,
+		Object: wallet.RelinquishOutputArgs{
+			Basket: "test-basket",
+			Output: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
+		},
+	}, {
+		Filename: "relinquishOutput-simple-result",
+		IsResult: true,
+		Object: wallet.RelinquishOutputResult{
+			Relinquished: true,
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -226,6 +239,12 @@ func TestVectors(t *testing.T) {
 					checkJson(&deserialized, &obj)
 				case wallet.ListOutputsResult:
 					var deserialized wallet.ListOutputsResult
+					checkJson(&deserialized, &obj)
+				case wallet.RelinquishOutputArgs:
+					var deserialized wallet.RelinquishOutputArgs
+					checkJson(&deserialized, &obj)
+				case wallet.RelinquishOutputResult:
+					var deserialized wallet.RelinquishOutputResult
 					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

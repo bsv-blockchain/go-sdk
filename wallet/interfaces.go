@@ -439,12 +439,12 @@ type RelinquishCertificateArgs struct {
 }
 
 type RelinquishOutputArgs struct {
-	Basket string
-	Output string
+	Basket string `json:"basket"`
+	Output string `json:"output"`
 }
 
 type RelinquishOutputResult struct {
-	Relinquished bool
+	Relinquished bool `json:"relinquished"`
 }
 
 type RelinquishCertificateResult struct {
