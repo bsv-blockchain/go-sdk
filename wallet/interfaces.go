@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"encoding/json"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
@@ -285,33 +286,54 @@ type AbortActionResult struct {
 
 // Payment contains derivation and identity data for wallet payment outputs.
 type Payment struct {
-	DerivationPrefix  string
-	DerivationSuffix  string
-	SenderIdentityKey string
+	DerivationPrefix  string `json:"derivationPrefix"`
+	DerivationSuffix  string `json:"derivationSuffix"`
+	SenderIdentityKey string `json:"senderIdentityKey"`
 }
 
 // BasketInsertion contains metadata for outputs being inserted into baskets.
 type BasketInsertion struct {
-	Basket             string
-	CustomInstructions string
-	Tags               []string
+	Basket             string   `json:"basket"`
+	CustomInstructions string   `json:"customInstructions"`
+	Tags               []string `json:"tags"`
 }
 
 // InternalizeOutput defines how to process a transaction output - as payment or basket insertion.
 type InternalizeOutput struct {
-	OutputIndex         uint32
-	Protocol            string // "wallet payment" | "basket insertion"
-	PaymentRemittance   *Payment
-	InsertionRemittance *BasketInsertion
+	OutputIndex         uint32           `json:"outputIndex"`
+	Protocol            string           `json:"protocol"` // "wallet payment" | "basket insertion"
+	PaymentRemittance   *Payment         `json:"paymentRemittance,omitempty"`
+	InsertionRemittance *BasketInsertion `json:"insertionRemittance,omitempty"`
+}
+
+// JsonByteNoBase64 is a custom type for JSON serialization of byte arrays that don't use base64 encoding.
+type JsonByteNoBase64 []byte
+
+func (s *JsonByteNoBase64) MarshalJSON() ([]byte, error) {
+	// Marshal as a plain number array, not base64
+	arr := make([]int, len(*s))
+	for i, b := range *s {
+		arr[i] = int(b)
+	}
+	return json.Marshal(arr)
+}
+
+func (s *JsonByteNoBase64) UnmarshalJSON(data []byte) error {
+	var temp []uint8
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+	*s = temp
+	return nil
 }
 
 // InternalizeActionArgs contains data needed to import an external transaction into the wallet.
 type InternalizeActionArgs struct {
-	Tx             []byte
-	Outputs        []InternalizeOutput
-	Description    string
-	Labels         []string
-	SeekPermission *bool
+	Tx             JsonByteNoBase64    `json:"tx"` // BEEF encoded transaction, uint8 makes json.Marshall use numbers
+	Description    string              `json:"description"`
+	Labels         []string            `json:"labels"`
+	SeekPermission *bool               `json:"seekPermission,omitempty"`
+	Outputs        []InternalizeOutput `json:"outputs"`
 }
 
 // InternalizeActionResult confirms whether a transaction was successfully internalized.

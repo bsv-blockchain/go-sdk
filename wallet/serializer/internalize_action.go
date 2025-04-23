@@ -107,19 +107,14 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	return args, nil
 }
 
-func SerializeInternalizeActionResult(result *wallet.InternalizeActionResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(1) // accepted = true
-	return w.Buf, nil
+func SerializeInternalizeActionResult(*wallet.InternalizeActionResult) ([]byte, error) {
+	// Frame indicates error or not, no additional data
+	return nil, nil
 }
 
-func DeserializeInternalizeActionResult(data []byte) (*wallet.InternalizeActionResult, error) {
-	r := util.NewReaderHoldError(data)
-	result := &wallet.InternalizeActionResult{}
-	accepted := r.ReadByte()
-	result.Accepted = accepted == 1
-	if r.Err != nil {
-		return nil, fmt.Errorf("error reading internalize action result: %w", r.Err)
-	}
-	return result, nil
+func DeserializeInternalizeActionResult([]byte) (*wallet.InternalizeActionResult, error) {
+	// Accepted is implicit
+	return &wallet.InternalizeActionResult{
+		Accepted: true,
+	}, nil
 }

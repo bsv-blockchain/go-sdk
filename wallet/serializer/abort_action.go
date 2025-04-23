@@ -30,24 +30,13 @@ func DeserializeAbortActionArgs(data []byte) (*wallet.AbortActionArgs, error) {
 	return args, nil
 }
 
-func SerializeAbortActionResult(result *wallet.AbortActionResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
-	return w.Buf, nil
+func SerializeAbortActionResult(*wallet.AbortActionResult) ([]byte, error) {
+	// Frame indicates error or not, no additional data
+	return nil, nil
 }
 
-func DeserializeAbortActionResult(data []byte) (*wallet.AbortActionResult, error) {
-	r := util.NewReaderHoldError(data)
-
-	// Read error byte
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		// Read error message if present
-		msgLen := r.ReadVarInt()
-		msg := r.ReadBytes(int(msgLen))
-		return nil, fmt.Errorf("abort action failed: %s", string(msg))
-	}
-
+func DeserializeAbortActionResult([]byte) (*wallet.AbortActionResult, error) {
+	// Accepted is implicit
 	return &wallet.AbortActionResult{
 		Aborted: true,
 	}, nil
