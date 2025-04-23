@@ -1,0 +1,14 @@
+{
+  "json": {
+    "basket": "test-basket",
+    "tags": [
+      "tag1",
+      "tag2"
+    ],
+    "tagQueryMode": "any",
+    "include": "locking scripts",
+    "includeTags": true,
+    "limit": 10
+  },
+  "wire": "06000b746573742d6261736b657402047461673104746167320201ff01ff0affff"
+}

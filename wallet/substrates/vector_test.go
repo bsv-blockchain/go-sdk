@@ -41,7 +41,7 @@ func TestVectors(t *testing.T) {
 			Aborted: true,
 		},
 	}, {
-		// TODO: This test is failing, I think also because of how ts-sdk handles -1
+		// TODO: This wire test is failing, I think also because of how ts-sdk handles -1
 		Filename: "signAction-simple-args",
 		Object: wallet.SignActionArgs{
 			Reference: "dGVzdA==",
@@ -52,7 +52,7 @@ func TestVectors(t *testing.T) {
 			},
 		},
 	}, {
-		// TODO: This test is failing because of issues with how ts-sdk encodes/decodes -1
+		// TODO: This wire test is failing because of issues with how ts-sdk encodes/decodes -1
 		Filename: "createAction-1-out-args",
 		Object: wallet.CreateActionArgs{
 			Description: "Test action description",
@@ -139,12 +139,39 @@ func TestVectors(t *testing.T) {
 		Object: wallet.InternalizeActionResult{
 			Accepted: true,
 		},
+	}, {
+		Filename: "listOutputs-simple-args",
+		IsResult: true,
+		Object: wallet.ListOutputsArgs{
+			Basket:       "test-basket",
+			Tags:         []string{"tag1", "tag2"},
+			TagQueryMode: "any",
+			Include:      "locking scripts",
+			IncludeTags:  util.BoolPtr(true),
+			Limit:        10,
+		},
+	}, {
+		Filename: "listOutputs-simple-result",
+		IsResult: true,
+		Object: wallet.ListOutputsResult{
+			TotalOutputs: 2,
+			BEEF:         []byte{1, 2, 3, 4},
+			Outputs: []wallet.Output{{
+				Satoshis:  1000,
+				Spendable: true,
+				Outpoint:  "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.0",
+			}, {
+				Satoshis:  5000,
+				Spendable: false,
+				Outpoint:  "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
+			}},
+		},
 	}}
 	for _, tt := range tests {
-		if tt.Skip {
-			continue // Skip this test
-		}
 		t.Run(tt.Filename, func(t *testing.T) {
+			if tt.Skip {
+				t.Skip()
+			}
 			// Read test vector file
 			data, err := os.ReadFile(filepath.Join("testdata", tt.Filename+".json"))
 			if err != nil {
@@ -193,6 +220,12 @@ func TestVectors(t *testing.T) {
 					checkJson(&deserialized, &obj)
 				case wallet.InternalizeActionResult:
 					var deserialized wallet.InternalizeActionResult
+					checkJson(&deserialized, &obj)
+				case wallet.ListOutputsArgs:
+					var deserialized wallet.ListOutputsArgs
+					checkJson(&deserialized, &obj)
+				case wallet.ListOutputsResult:
+					var deserialized wallet.ListOutputsResult
 					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

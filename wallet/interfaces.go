@@ -206,34 +206,34 @@ type ListActionsResult struct {
 
 // ListOutputsArgs defines filtering and options for listing wallet outputs.
 type ListOutputsArgs struct {
-	Basket                    string
-	Tags                      []string
-	TagQueryMode              string // "any" | "all"
-	Include                   string // "locking scripts" | "entire transactions"
-	IncludeCustomInstructions *bool
-	IncludeTags               *bool
-	IncludeLabels             *bool
-	Limit                     uint32 // Default 10, max 10000
-	Offset                    uint32
-	SeekPermission            *bool // Default true
+	Basket                    string   `json:"basket"`
+	Tags                      []string `json:"tags"`
+	TagQueryMode              string   `json:"tagQueryMode"` // "any" | "all"
+	Include                   string   `json:"include"`      // "locking scripts" | "entire transactions"
+	IncludeCustomInstructions *bool    `json:"includeCustomInstructions,omitempty"`
+	IncludeTags               *bool    `json:"includeTags,omitempty"`
+	IncludeLabels             *bool    `json:"includeLabels,omitempty"`
+	Limit                     uint32   `json:"limit"` // Default 10, max 10000
+	Offset                    uint32   `json:"offset,omitempty"`
+	SeekPermission            *bool    `json:"seekPermission,omitempty"` // Default true
 }
 
 // Output represents a wallet UTXO with its metadata
 type Output struct {
-	Satoshis           uint64
-	LockingScript      string // Hex encoded
-	Spendable          bool
-	CustomInstructions string
-	Tags               []string
-	Outpoint           string // Format: "txid.index"
-	Labels             []string
+	Satoshis           uint64   `json:"satoshis"`
+	LockingScript      string   `json:"lockingScript,omitempty"` // Hex encoded
+	Spendable          bool     `json:"spendable"`
+	CustomInstructions string   `json:"customInstructions,omitempty"`
+	Tags               []string `json:"tags,omitempty"`
+	Outpoint           string   `json:"outpoint"` // Format: "txid.index"
+	Labels             []string `json:"labels,omitempty"`
 }
 
 // ListOutputsResult contains a paginated list of wallet outputs matching the query.
 type ListOutputsResult struct {
-	TotalOutputs uint32
-	BEEF         []byte
-	Outputs      []Output
+	TotalOutputs uint32 `json:"totalOutputs"`
+	BEEF         JsonByteNoBase64
+	Outputs      []Output `json:"outputs"`
 }
 
 // KeyOperations defines the interface for cryptographic operations.
