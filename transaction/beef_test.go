@@ -137,6 +137,8 @@ func TestBeefMakeTxidOnly(t *testing.T) {
 	require.Equal(t, TxIDOnly, txidOnly.DataFormat)
 	require.NotNil(t, txidOnly.KnownTxID)
 	require.Equal(t, hash.String(), txidOnly.KnownTxID.String())
+
+	t.Log(beef.ToLogString())
 }
 
 func TestBeefSortTxs(t *testing.T) {

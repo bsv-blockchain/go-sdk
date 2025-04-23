@@ -936,16 +936,22 @@ func (b *Beef) ToLogString() string {
 		}
 		log += "    ]\n"
 	}
+txLoop:
 	for i, tx := range b.Transactions {
-		log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
-		if tx.DataFormat == RawTxAndBumpIndex {
-			log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
-		}
-		if tx.DataFormat == TxIDOnly {
-			log += "    txidOnly\n"
-		} else {
+		switch tx.DataFormat {
+		case RawTx:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
 			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+		case RawTxAndBumpIndex:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
+			log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
+			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+		case TxIDOnly:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.KnownTxID.String())
+			log += "    txidOnly\n"
+			continue txLoop
 		}
+
 		if len(tx.Transaction.Inputs) > 0 {
 			log += "    inputs: [\n"
 			for _, input := range tx.Transaction.Inputs {
