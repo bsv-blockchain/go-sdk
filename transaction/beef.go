@@ -586,13 +586,17 @@ func (b *Beef) MakeTxidOnly(txid string) *BeefTx {
 	if tx.DataFormat == TxIDOnly {
 		return tx
 	}
-	delete(b.Transactions, txid)
-	tx = &BeefTx{
-		DataFormat: TxIDOnly,
-		KnownTxID:  tx.KnownTxID,
+	if knowTxID, err := chainhash.NewHashFromHex(txid); err != nil {
+		return nil
+	} else {
+		tx = &BeefTx{
+			DataFormat: TxIDOnly,
+			KnownTxID:  knowTxID,
+		}
+		b.Transactions[txid] = tx
+		return tx
+
 	}
-	b.Transactions[txid] = tx
-	return tx
 }
 
 func (b *Beef) MergeRawTx(rawTx []byte, bumpIndex *int) (*BeefTx, error) {
@@ -932,21 +936,23 @@ func (b *Beef) ToLogString() string {
 		log += "    ]\n"
 	}
 	for i, tx := range b.Transactions {
-		log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
-		if tx.DataFormat == RawTxAndBumpIndex {
-			log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
-		}
-		if tx.DataFormat == TxIDOnly {
-			log += "    txidOnly\n"
-		} else {
-			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
-		}
-		if len(tx.Transaction.Inputs) > 0 {
-			log += "    inputs: [\n"
-			for _, input := range tx.Transaction.Inputs {
-				log += fmt.Sprintf("      '%s',\n", input.SourceTXID.String())
+		switch tx.DataFormat {
+		case RawTx, RawTxAndBumpIndex:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
+			if tx.DataFormat == RawTxAndBumpIndex {
+				log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
 			}
-			log += "    ]\n"
+			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+			if len(tx.Transaction.Inputs) > 0 {
+				log += "    inputs: [\n"
+				for _, input := range tx.Transaction.Inputs {
+					log += fmt.Sprintf("      '%s',\n", input.SourceTXID.String())
+				}
+				log += "    ]\n"
+			}
+		case TxIDOnly:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.KnownTxID.String())
+			log += "    txidOnly\n"
 		}
 	}
 	return log

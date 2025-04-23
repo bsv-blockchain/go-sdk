@@ -1208,3 +1208,21 @@ func hydrateInputs(t testing.TB, sourceTxs map[string]*SourceTx, inputs []*Trans
 		hydrateInputs(t, sourceTxs, input.SourceTransaction.Inputs)
 	}
 }
+
+func TestMakeTxidOnlyAndBytes(t *testing.T) {
+	// Decode the BEEF data from hex string
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	// Create a new Beef object
+	beef, err := NewBeefFromBytes(beefBytes)
+	require.NoError(t, err)
+
+	knownTxID := "b1fc0f44ba629dbdffab9e34fcc4faf9dbde3560a7365c55c26fe4daab052aac"
+
+	beef.MakeTxidOnly(knownTxID)
+
+	_, err = beef.Bytes() // <--------- it panics here
+	require.NoError(t, err)
+	_ = beef.ToLogString()
+}
