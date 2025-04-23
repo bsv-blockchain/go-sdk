@@ -28,6 +28,15 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
 
+## [Unreleased]
+  ### Added
+  - `NewBeefFromAtomicBytes`
+  - `ParseBeef`
+  - `NewBeefFromTransaction`
+  - `Beef.FindTransaction`
+  ### Fixed
+  - Missing nil checks in `beef.go`
+
 ## [1.1.21] - 2025-03-12
   ### Changed
   - Add support for AtomicBEEF to `NewTransactionFromBEEF`
