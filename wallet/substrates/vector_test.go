@@ -80,8 +80,6 @@ func TestVectors(t *testing.T) {
 			Labels: []string{"test-label"},
 		},
 	}, {
-		// TODO: These vectors are failing to generate, so test files don't exist yet
-		Skip:     true,
 		Filename: "listActions-simple-args",
 		IsResult: true,
 		Object: wallet.ListActionsArgs{
@@ -90,12 +88,10 @@ func TestVectors(t *testing.T) {
 			IncludeOutputs: util.BoolPtr(true),
 		},
 	}, {
-		// TODO: These vectors are failing to generate, so test files don't exist yet
-		Skip:     true,
 		Filename: "listActions-simple-result",
 		IsResult: true,
 		Object: wallet.ListActionsResult{
-			TotalActions: 2,
+			TotalActions: 1,
 			Actions: []wallet.Action{{
 				Txid:        "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				Satoshis:    1000,
@@ -113,9 +109,6 @@ func TestVectors(t *testing.T) {
 					Satoshis:          1000,
 					LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
 				}},
-			}, {
-				Status:  wallet.ActionStatusUnsigned,
-				Outputs: []wallet.ActionOutput{{}},
 			}},
 		},
 	}, {
@@ -319,6 +312,12 @@ func TestVectors(t *testing.T) {
 					checkJson(&deserialized, &obj)
 				case wallet.AbortActionResult:
 					var deserialized wallet.AbortActionResult
+					checkJson(&deserialized, &obj)
+				case wallet.ListActionsArgs:
+					var deserialized wallet.ListActionsArgs
+					checkJson(&deserialized, &obj)
+				case wallet.ListActionsResult:
+					var deserialized wallet.ListActionsResult
 					checkJson(&deserialized, &obj)
 				case wallet.InternalizeActionArgs:
 					var deserialized wallet.InternalizeActionArgs

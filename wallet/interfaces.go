@@ -123,24 +123,24 @@ type SignActionResult struct {
 
 // ActionInput describes a transaction input with full details.
 type ActionInput struct {
-	SourceOutpoint      string
-	SourceSatoshis      uint64
-	SourceLockingScript string // Hex encoded
-	UnlockingScript     string // Hex encoded
-	InputDescription    string
-	SequenceNumber      uint32
+	SourceOutpoint      string `json:"sourceOutpoint"`
+	SourceSatoshis      uint64 `json:"sourceSatoshis"`
+	SourceLockingScript string `json:"sourceLockingScript,omitempty"` // Hex encoded
+	UnlockingScript     string `json:"unlockingScript,omitempty"`     // Hex encoded
+	InputDescription    string `json:"inputDescription"`
+	SequenceNumber      uint32 `json:"sequenceNumber"`
 }
 
 // ActionOutput describes a transaction output with full details.
 type ActionOutput struct {
-	Satoshis           uint64
-	LockingScript      string // Hex encoded
-	Spendable          bool
-	CustomInstructions string
-	Tags               []string
-	OutputIndex        uint32
-	OutputDescription  string
-	Basket             string
+	Satoshis           uint64   `json:"satoshis"`
+	LockingScript      string   `json:"lockingScript,omitempty"` // Hex encoded
+	Spendable          bool     `json:"spendable"`
+	CustomInstructions string   `json:"customInstructions,omitempty"`
+	Tags               []string `json:"tags"`
+	OutputIndex        uint32   `json:"outputIndex"`
+	OutputDescription  string   `json:"outputDescription"`
+	Basket             string   `json:"basket"`
 }
 
 // ActionStatus represents the current state of a transaction.
@@ -171,37 +171,37 @@ const (
 
 // Action contains full details about a wallet transaction including inputs, outputs and metadata.
 type Action struct {
-	Txid        string
-	Satoshis    uint64
-	Status      ActionStatus
-	IsOutgoing  bool
-	Description string
-	Labels      []string
-	Version     uint32
-	LockTime    uint32
-	Inputs      []ActionInput
-	Outputs     []ActionOutput
+	Txid        string         `json:"txid"`
+	Satoshis    uint64         `json:"satoshis"`
+	Status      ActionStatus   `json:"status"`
+	IsOutgoing  bool           `json:"isOutgoing"`
+	Description string         `json:"description"`
+	Labels      []string       `json:"labels,omitempty"`
+	Version     uint32         `json:"version"`
+	LockTime    uint32         `json:"lockTime"`
+	Inputs      []ActionInput  `json:"inputs,omitempty"`
+	Outputs     []ActionOutput `json:"outputs,omitempty"`
 }
 
 // ListActionsArgs defines filtering and pagination options for listing wallet transactions.
 type ListActionsArgs struct {
-	Labels                           []string
-	LabelQueryMode                   string // "any" | "all"
-	IncludeLabels                    *bool
-	IncludeInputs                    *bool
-	IncludeInputSourceLockingScripts *bool
-	IncludeInputUnlockingScripts     *bool
-	IncludeOutputs                   *bool
-	IncludeOutputLockingScripts      *bool
-	Limit                            uint32 // Default 10, max 10000
-	Offset                           uint32
-	SeekPermission                   *bool // Default true
+	Labels                           []string `json:"labels"`
+	LabelQueryMode                   string   `json:"labelQueryMode,omitempty"` // "any" | "all"
+	IncludeLabels                    *bool    `json:"includeLabels,omitempty"`
+	IncludeInputs                    *bool    `json:"includeInputs,omitempty"`
+	IncludeInputSourceLockingScripts *bool    `json:"includeInputSourceLockingScripts,omitempty"`
+	IncludeInputUnlockingScripts     *bool    `json:"includeInputUnlockingScripts,omitempty"`
+	IncludeOutputs                   *bool    `json:"includeOutputs,omitempty"`
+	IncludeOutputLockingScripts      *bool    `json:"includeOutputLockingScripts,omitempty"`
+	Limit                            uint32   `json:"limit,omitempty"` // Default 10, max 10000
+	Offset                           uint32   `json:"offset,omitempty"`
+	SeekPermission                   *bool    `json:"seekPermission,omitempty"` // Default true
 }
 
 // ListActionsResult contains a paginated list of wallet transactions matching the query.
 type ListActionsResult struct {
-	TotalActions uint32
-	Actions      []Action
+	TotalActions uint32   `json:"totalActions"`
+	Actions      []Action `json:"actions"`
 }
 
 // ListOutputsArgs defines filtering and options for listing wallet outputs.
