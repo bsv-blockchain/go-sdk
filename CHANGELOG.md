@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
-- [1.1.22 - 2025-04-23](#1122---2025-04-23)
+- [1.1.23 - 2025-04-23](#1123---2025-04-23)
+- [1.1.22 - 2025-03-14](#1122---2025-03-14)
 - [1.1.21 - 2025-03-12](#1121---2025-03-12)
 - [1.1.20 - 2025-03-05](#1120---2025-03-05)
 - [1.1.19 - 2025-03-04](#1119---2025-03-04)
@@ -29,7 +30,7 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
 
-## [1.1.22] - 2025-04-23
+## [1.1.23] - 2025-04-23
   ### Added
   - `NewBeefFromAtomicBytes`
   - `ParseBeef`
