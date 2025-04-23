@@ -40,6 +40,10 @@ All notable changes to this project will be documented in this file. The format 
   - Missing nil checks in `beef.go`
   - Fix issues with handling of `TxidOnly` in `beef.go`
 
+## [1.1.22] - 2025-03-14
+  ### Updated
+  - update package to use `github.com/bsv-blockchain/go-sdk` path
+
 ## [1.1.21] - 2025-03-12
   ### Changed
   - Add support for AtomicBEEF to `NewTransactionFromBEEF`
