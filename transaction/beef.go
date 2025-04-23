@@ -587,13 +587,16 @@ func (b *Beef) MakeTxidOnly(txid string) *BeefTx {
 	if tx.DataFormat == TxIDOnly {
 		return tx
 	}
-	delete(b.Transactions, txid)
-	tx = &BeefTx{
-		DataFormat: TxIDOnly,
-		KnownTxID:  tx.KnownTxID,
+	if knownTxID, err := chainhash.NewHashFromHex(txid); err != nil {
+		return nil
+	} else {
+		tx = &BeefTx{
+			DataFormat: TxIDOnly,
+			KnownTxID:  knownTxID,
+		}
+		b.Transactions[txid] = tx
+		return tx
 	}
-	b.Transactions[txid] = tx
-	return tx
 }
 
 func (b *Beef) MergeRawTx(rawTx []byte, bumpIndex *int) (*BeefTx, error) {
