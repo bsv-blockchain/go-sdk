@@ -42,8 +42,8 @@ func decodeShare(share string) (*PointInFiniteField, int, string, error) {
 
 // NewKeySharesFromBackupFormat creates a new KeyShares object from a backup
 func NewKeySharesFromBackupFormat(shares []string) (keyShares *KeyShares, error error) {
-	var threshold int = 0
-	var integrity string = ""
+	var threshold = 0
+	var integrity = ""
 	points := make([]*PointInFiniteField, 0)
 	for idx, share := range shares {
 		point, tInt, i, err := decodeShare(share)

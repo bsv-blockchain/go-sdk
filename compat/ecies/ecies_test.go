@@ -108,7 +108,7 @@ func TestElectrumEncryptDecryptWithCounterparty(t *testing.T) {
 	// Electrum Encrypt
 	encryptedData, _ := ElectrumEncrypt([]byte(msgString), counterparty, pk1, false)
 	require.NoError(t, err)
-	log.Println("Encrypted data: ", encryptedData)
+	log.Println("Encrypted data: ", string(encryptedData))
 
 	// Electrum Decrypt
 	decryptedData, err := ElectrumDecrypt(encryptedData, pk1, counterparty)
@@ -124,7 +124,7 @@ func TestElectrumEncryptDecryptWithCounterpartyNoKey(t *testing.T) {
 	// Electrum Encrypt
 	encryptedData, _ := ElectrumEncrypt([]byte(msgString), counterparty, pk1, true)
 	require.NoError(t, err)
-	log.Println("Encrypted data: ", encryptedData)
+	log.Println("Encrypted data: ", string(encryptedData))
 
 	// Electrum Decrypt
 	decryptedData, err := ElectrumDecrypt(encryptedData, pk1, counterparty)

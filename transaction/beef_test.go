@@ -14,6 +14,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	script "github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -130,15 +131,14 @@ func TestBeefMakeTxidOnly(t *testing.T) {
 	hash, err := chainhash.NewHashFromHex(txid)
 	require.NoError(t, err)
 
-	// Set the KnownTxID field
-	originalTx.KnownTxID = hash
-
 	// Test MakeTxidOnly
 	txidOnly := beef.MakeTxidOnly(txid)
 	require.NotNil(t, txidOnly)
 	require.Equal(t, TxIDOnly, txidOnly.DataFormat)
 	require.NotNil(t, txidOnly.KnownTxID)
 	require.Equal(t, hash.String(), txidOnly.KnownTxID.String())
+
+	t.Log(beef.ToLogString())
 }
 
 func TestBeefSortTxs(t *testing.T) {
@@ -632,7 +632,7 @@ func TestBeefErrorHandling(t *testing.T) {
 		require.NoError(t, err)
 
 		// Skip number of BUMPs and BUMP data
-		var numberOfBUMPs VarInt
+		var numberOfBUMPs util.VarInt
 		_, err = numberOfBUMPs.ReadFrom(reader)
 		require.NoError(t, err)
 
@@ -644,7 +644,7 @@ func TestBeefErrorHandling(t *testing.T) {
 		}
 
 		// Skip number of transactions
-		var numberOfTransactions VarInt
+		var numberOfTransactions util.VarInt
 		_, err = numberOfTransactions.ReadFrom(reader)
 		require.NoError(t, err)
 
@@ -674,10 +674,10 @@ func TestBeefEdgeCases(t *testing.T) {
 		require.NoError(t, err)
 
 		// Write number of BUMPs (0)
-		buf.Write(VarInt(0).Bytes())
+		buf.Write(util.VarInt(0).Bytes())
 
 		// Write number of transactions (1)
-		buf.Write(VarInt(1).Bytes())
+		buf.Write(util.VarInt(1).Bytes())
 
 		// Write one TxIDOnly transaction
 		buf.WriteByte(byte(TxIDOnly)) // DataFormat
@@ -730,10 +730,10 @@ func TestBeefMergeBeefBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Write number of BUMPs (0)
-	buf.Write(VarInt(0).Bytes())
+	buf.Write(util.VarInt(0).Bytes())
 
 	// Write number of transactions (1)
-	buf.Write(VarInt(1).Bytes())
+	buf.Write(util.VarInt(1).Bytes())
 
 	// Write one RawTx transaction
 	buf.WriteByte(byte(RawTx))
@@ -1207,4 +1207,21 @@ func hydrateInputs(t testing.TB, sourceTxs map[string]*SourceTx, inputs []*Trans
 
 		hydrateInputs(t, sourceTxs, input.SourceTransaction.Inputs)
 	}
+}
+
+func TestMakeTxidOnlyAndBytes(t *testing.T) {
+	// Decode the BEEF data from hex string
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	// Create a new Beef object
+	beef, err := NewBeefFromBytes(beefBytes)
+	require.NoError(t, err)
+
+	knownTxID := "b1fc0f44ba629dbdffab9e34fcc4faf9dbde3560a7365c55c26fe4daab052aac"
+
+	beef.MakeTxidOnly(knownTxID)
+
+	_, err = beef.Bytes() // <--------- it panics here
+	require.NoError(t, err)
 }
