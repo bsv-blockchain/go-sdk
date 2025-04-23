@@ -358,23 +358,23 @@ type RevealCounterpartyKeyLinkageResult struct {
 }
 
 type RevealSpecificKeyLinkageArgs struct {
-	Counterparty     Counterparty
-	Verifier         string
-	ProtocolID       Protocol
-	KeyID            string
-	Privileged       *bool
-	PrivilegedReason string
+	Counterparty     Counterparty `json:"counterparty"`
+	Verifier         string       `json:"verifier"`
+	ProtocolID       Protocol     `json:"protocolID"`
+	KeyID            string       `json:"keyID"`
+	Privileged       *bool        `json:"privileged,omitempty"`
+	PrivilegedReason string       `json:"privilegedReason,omitempty"`
 }
 
 type RevealSpecificKeyLinkageResult struct {
-	EncryptedLinkage      []byte
-	EncryptedLinkageProof []byte
-	Prover                []byte
-	Verifier              []byte
-	Counterparty          Counterparty
-	ProtocolID            Protocol
-	KeyID                 string
-	ProofType             byte
+	EncryptedLinkage      []byte       `json:"encryptedLinkage"`
+	EncryptedLinkageProof []byte       `json:"encryptedLinkageProof"`
+	Prover                []byte       `json:"prover"`
+	Verifier              []byte       `json:"verifier"`
+	Counterparty          Counterparty `json:"counterparty"`
+	ProtocolID            Protocol     `json:"protocolID"`
+	KeyID                 string       `json:"keyID"`
+	ProofType             byte         `json:"proofType"`
 }
 
 type IdentityCertifier struct {

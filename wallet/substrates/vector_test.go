@@ -35,7 +35,11 @@ func TestVectors(t *testing.T) {
 	counterparty, err := ec.PublicKeyFromString(CounterpartyHex)
 	require.NoError(t, err)
 	const VerifierHex = "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee"
+	verifier, err := ec.PublicKeyFromString(VerifierHex)
+	require.NoError(t, err)
 	const ProverHex = "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8"
+	prover, err := ec.PublicKeyFromString(ProverHex)
+	require.NoError(t, err)
 
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
@@ -190,7 +194,6 @@ func TestVectors(t *testing.T) {
 		},
 	}, {
 		Filename: "getPublicKey-simple-args",
-		IsResult: true,
 		Object: wallet.GetPublicKeyArgs{
 			IdentityKey: true,
 			EncryptionArgs: wallet.EncryptionArgs{
@@ -216,7 +219,6 @@ func TestVectors(t *testing.T) {
 		},
 	}, {
 		Filename: "revealCounterpartyKeyLinkage-simple-args",
-		IsResult: true,
 		Object: wallet.RevealCounterpartyKeyLinkageArgs{
 			Counterparty:     CounterpartyHex,
 			Verifier:         VerifierHex,
@@ -233,6 +235,41 @@ func TestVectors(t *testing.T) {
 			RevelationTime:        "2023-01-01T00:00:00Z",
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},
+		},
+	}, {
+		Filename: "revealSpecificKeyLinkage-simple-args",
+		Object: wallet.RevealSpecificKeyLinkageArgs{
+			Counterparty: wallet.Counterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: counterparty,
+			},
+			Verifier: VerifierHex,
+			ProtocolID: wallet.Protocol{
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      "tests",
+			},
+			KeyID:            "test-key-id",
+			Privileged:       util.BoolPtr(true),
+			PrivilegedReason: "test-reason",
+		},
+	}, {
+		Filename: "revealSpecificKeyLinkage-simple-result",
+		IsResult: true,
+		Object: wallet.RevealSpecificKeyLinkageResult{
+			EncryptedLinkage:      []byte{1, 2, 3, 4},
+			EncryptedLinkageProof: []byte{5, 6, 7, 8},
+			Prover:                prover.ToDER(),
+			Verifier:              verifier.ToDER(),
+			Counterparty: wallet.Counterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: counterparty,
+			},
+			ProtocolID: wallet.Protocol{
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      "tests",
+			},
+			KeyID:     "test-key-id",
+			ProofType: 1,
 		},
 	}}
 	for _, tt := range tests {
@@ -313,12 +350,21 @@ func TestVectors(t *testing.T) {
 				case wallet.RevealCounterpartyKeyLinkageResult:
 					var deserialized wallet.RevealCounterpartyKeyLinkageResult
 					checkJson(&deserialized, &obj)
+				case wallet.RevealSpecificKeyLinkageArgs:
+					var deserialized wallet.RevealSpecificKeyLinkageArgs
+					checkJson(&deserialized, &obj)
+				case wallet.RevealSpecificKeyLinkageResult:
+					var deserialized wallet.RevealSpecificKeyLinkageResult
+					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
 			})
 
-			return // Skip wire tests for now
+			// TODO: Implement wire tests
+			// Currently discrepancies in varInt handling of negative numbers, so most wire tests don't match ts-sdk
+			// For now serializer tests verify wire objects are consistent between serializing and deserializing
+			return
 
 			// Test wire format serialization
 			t.Run("Wire", func(t *testing.T) {
@@ -354,7 +400,7 @@ func TestVectors(t *testing.T) {
 					require.EqualValues(t, obj, deserialized)
 				}
 
-				// Marshal the object to JSON
+				// Serialize and deserialize using the wire binary format
 				switch obj := tt.Object.(type) {
 				case wallet.AbortActionArgs:
 					serialized, err1 := serializer.SerializeAbortActionArgs(&obj)
