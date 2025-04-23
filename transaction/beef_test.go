@@ -47,6 +47,17 @@ func TestFromBEEF(t *testing.T) {
 	require.NoError(t, err, "NewTransactionFromBEEF method failed")
 	require.Equal(t, tx.TxID().String(), tx2.TxID().String(), "Transaction ID does not match")
 
+	_, txid, err := NewBeefFromAtomicBytes(atomic)
+	require.NoError(t, err, "NewBeefFromAtomicBytes method failed")
+	require.Equal(t, txid.String(), expectedTxID, "Transaction ID does not match")
+
+	_, txFromBeef, _, err := ParseBeef(beefBytes)
+	require.NoError(t, err, "ParseBeef method failed")
+	require.Equal(t, txFromBeef.TxID().String(), expectedTxID, "Transaction ID does not match")
+
+	_, err = NewBeefFromTransaction(tx)
+	require.NoError(t, err, "NewBeefFromTransaction method failed")
+
 }
 
 func TestNewBEEFFromBytes(t *testing.T) {
@@ -1196,4 +1207,22 @@ func hydrateInputs(t testing.TB, sourceTxs map[string]*SourceTx, inputs []*Trans
 
 		hydrateInputs(t, sourceTxs, input.SourceTransaction.Inputs)
 	}
+}
+
+func TestMakeTxidOnlyAndBytes(t *testing.T) {
+	// Decode the BEEF data from hex string
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	// Create a new Beef object
+	beef, err := NewBeefFromBytes(beefBytes)
+	require.NoError(t, err)
+
+	knownTxID := "b1fc0f44ba629dbdffab9e34fcc4faf9dbde3560a7365c55c26fe4daab052aac"
+
+	beef.MakeTxidOnly(knownTxID)
+
+	_, err = beef.Bytes() // <--------- it panics here
+	require.NoError(t, err)
+	_ = beef.ToLogString()
 }
