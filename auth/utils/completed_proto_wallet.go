@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 
-	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -13,10 +12,6 @@ import (
 type CompletedProtoWallet struct {
 	*wallet.ProtoWallet // Embed ProtoWallet (like extends in TypeScript)
 	keyDeriver          *wallet.KeyDeriver
-	privateKey          *ec.PrivateKey //nolint:unused // Keep for potential future test use
-	publicKey           *ec.PublicKey  //nolint:unused // Keep for potential future test use
-	identityKey         string         //nolint:unused // Keep for potential future test use
-	mockCertificates    []*certificates.VerifiableCertificate
 }
 
 // NewCompletedProtoWallet creates a new CompletedProtoWallet from a private key
@@ -33,7 +28,7 @@ func NewCompletedProtoWallet(privateKey *ec.PrivateKey) (*CompletedProtoWallet, 
 	}, nil
 }
 
-// CreateAction creates a new transaction (not needed for certificates)
+// CreateAction creates a new transaction
 func (c *CompletedProtoWallet) CreateAction(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 	return &wallet.CreateActionResult{}, nil
 }
@@ -42,27 +37,17 @@ func (c *CompletedProtoWallet) AbortAction(ctx context.Context, args wallet.Abor
 	return nil, nil
 }
 
-// ListCertificates lists certificates (not needed for our tests)
+// ListCertificates lists certificates
 func (c *CompletedProtoWallet) ListCertificates(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
-	walletCerts := make([]wallet.CertificateResult, len(c.mockCertificates))
-	for i := range c.mockCertificates {
-		// Empty conversion as we're just trying to appease the type system
-		walletCerts[i] = wallet.CertificateResult{}
-	}
-
 	return &wallet.ListCertificatesResult{
-		TotalCertificates: uint32(len(walletCerts)),
-		Certificates:      walletCerts,
+		TotalCertificates: 0,
+		Certificates:      []wallet.CertificateResult{},
 	}, nil
 }
 
-// ProveCertificate creates verifiable certificates (not needed for our tests)
+// ProveCertificate creates verifiable certificates
 func (c *CompletedProtoWallet) ProveCertificate(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
 	return &wallet.ProveCertificateResult{}, nil
-}
-
-func (c *CompletedProtoWallet) SetMockCertificates(certs []*certificates.VerifiableCertificate) {
-	c.mockCertificates = certs
 }
 
 func (c *CompletedProtoWallet) AcquireCertificate(ctx context.Context, args wallet.AcquireCertificateArgs, originator string) (*wallet.Certificate, error) {
@@ -72,29 +57,29 @@ func (c *CompletedProtoWallet) AcquireCertificate(ctx context.Context, args wall
 // IsAuthenticated checks if the wallet is authenticated
 func (c *CompletedProtoWallet) IsAuthenticated(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
 	return &wallet.AuthenticatedResult{
-		Authenticated: true, // Always return true for testing
-	}, nil // Always authenticated for testing
+		Authenticated: true,
+	}, nil
 }
 
 // GetHeight gets the current block height
 func (c *CompletedProtoWallet) GetHeight(ctx context.Context, args any, originator string) (*wallet.GetHeightResult, error) {
 	return &wallet.GetHeightResult{
-		Height: 0, // Always return 0 for testing
+		Height: 0,
 	}, nil
 }
 
 // GetNetwork gets the current network
 func (c *CompletedProtoWallet) GetNetwork(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
 	return &wallet.GetNetworkResult{
-		Network: "test", // Always return mainnet for testing
+		Network: "test",
 	}, nil
 }
 
 // GetVersion gets the wallet version
 func (c *CompletedProtoWallet) GetVersion(ctx context.Context, args any, originator string) (*wallet.GetVersionResult, error) {
 	return &wallet.GetVersionResult{
-		Version: "1.0.0", // Always return version 1.0.0 for testing
-	}, nil // Always test version for testing
+		Version: "1.0.0",
+	}, nil
 }
 
 func (c *CompletedProtoWallet) SignAction(ctx context.Context, args wallet.SignActionArgs, originator string) (*wallet.SignActionResult, error) {
@@ -143,4 +128,34 @@ func (c *CompletedProtoWallet) WaitForAuthentication(ctx context.Context, args a
 
 func (c *CompletedProtoWallet) GetHeaderForHeight(ctx context.Context, args wallet.GetHeaderArgs, originator string) (*wallet.GetHeaderResult, error) {
 	return nil, nil
+}
+
+// CreateHmac delegates to the embedded ProtoWallet
+func (c *CompletedProtoWallet) CreateHmac(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
+	return c.ProtoWallet.CreateHmac(ctx, args, originator)
+}
+
+// VerifyHmac delegates to the embedded ProtoWallet
+func (c *CompletedProtoWallet) VerifyHmac(ctx context.Context, args wallet.VerifyHmacArgs, originator string) (*wallet.VerifyHmacResult, error) {
+	return c.ProtoWallet.VerifyHmac(ctx, args, originator)
+}
+
+// CreateSignature delegates to the embedded ProtoWallet
+func (c *CompletedProtoWallet) CreateSignature(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
+	return c.ProtoWallet.CreateSignature(ctx, args, originator)
+}
+
+// VerifySignature delegates to the embedded ProtoWallet
+func (c *CompletedProtoWallet) VerifySignature(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
+	return c.ProtoWallet.VerifySignature(ctx, args, originator)
+}
+
+// Encrypt delegates to the embedded ProtoWallet
+func (c *CompletedProtoWallet) Encrypt(ctx context.Context, args wallet.EncryptArgs, originator string) (*wallet.EncryptResult, error) {
+	return c.ProtoWallet.Encrypt(ctx, args, originator)
+}
+
+// Decrypt delegates to the embedded ProtoWallet
+func (c *CompletedProtoWallet) Decrypt(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
+	return c.ProtoWallet.Decrypt(ctx, args, originator)
 }

@@ -6,7 +6,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.37.0
-	golang.org/x/sync v0.11.0
+	golang.org/x/sync v0.13.0
 )
 
 require golang.org/x/net v0.39.0
