@@ -1,6 +1,9 @@
 package wallet
 
 import (
+	"encoding/json"
+	"fmt"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
@@ -22,6 +25,34 @@ type Protocol struct {
 	Protocol      string
 }
 
+func (p *Protocol) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]interface{}{p.SecurityLevel, p.Protocol})
+}
+
+func (p *Protocol) UnmarshalJSON(data []byte) error {
+	var temp []interface{}
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+	if len(temp) != 2 {
+		return fmt.Errorf("expected array of length 2, but got %d", len(temp))
+	}
+
+	securityLevel, ok := temp[0].(float64)
+	if !ok {
+		return fmt.Errorf("expected SecurityLevel to be a number, but got %T", temp[0])
+	}
+	p.SecurityLevel = SecurityLevel(securityLevel)
+
+	protocol, ok := temp[1].(string)
+	if !ok {
+		return fmt.Errorf("expected Protocol to be a string, but got %T", temp[1])
+	}
+	p.Protocol = protocol
+
+	return nil
+}
+
 type CounterpartyType int
 
 const (
@@ -36,6 +67,44 @@ const (
 type Counterparty struct {
 	Type         CounterpartyType
 	Counterparty *ec.PublicKey
+}
+
+func (c *Counterparty) MarshalJSON() ([]byte, error) {
+	switch c.Type {
+	case CounterpartyTypeAnyone:
+		return json.Marshal("anyone")
+	case CounterpartyTypeSelf:
+		return json.Marshal("self")
+	case CounterpartyTypeOther:
+		if c.Counterparty == nil {
+			return json.Marshal(nil) // Or handle this as an error if it should never happen
+		}
+		return json.Marshal(c.Counterparty.ToDERHex())
+	default:
+		return json.Marshal(nil) // Or handle this as an error if it should never happen
+	}
+}
+
+func (c *Counterparty) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return fmt.Errorf("could not unmarshal Counterparty from JSON: %s", string(data))
+	}
+	switch s {
+	case "anyone":
+		c.Type = CounterpartyTypeAnyone
+	case "self":
+		c.Type = CounterpartyTypeSelf
+	default:
+		// Attempt to parse as a public key string
+		pubKey, err := ec.PublicKeyFromString(s)
+		if err != nil {
+			return err
+		}
+		c.Type = CounterpartyTypeOther
+		c.Counterparty = pubKey
+	}
+	return nil
 }
 
 // Wallet provides cryptographic operations for a specific identity.
@@ -60,12 +129,12 @@ func NewWallet(privateKey *ec.PrivateKey) (*Wallet, error) {
 }
 
 type EncryptionArgs struct {
-	ProtocolID       Protocol
-	KeyID            string
-	Counterparty     Counterparty
-	Privileged       bool
-	PrivilegedReason string
-	SeekPermission   bool
+	ProtocolID       Protocol     `json:"protocolID,omitempty"`
+	KeyID            string       `json:"keyID,omitempty"`
+	Counterparty     Counterparty `json:"counterparty,omitempty"`
+	Privileged       bool         `json:"privileged,omitempty"`
+	PrivilegedReason string       `json:"privilegedReason,omitempty"`
+	SeekPermission   bool         `json:"seekPermission,omitempty"`
 }
 
 type EncryptArgs struct {
@@ -88,8 +157,8 @@ type DecryptResult struct {
 
 type GetPublicKeyArgs struct {
 	EncryptionArgs
-	IdentityKey bool
-	ForSelf     bool
+	IdentityKey bool `json:"identityKey"`
+	ForSelf     bool `json:"forSelf,omitempty"`
 }
 
 type GetPublicKeyResult struct {

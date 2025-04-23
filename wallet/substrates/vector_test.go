@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
@@ -28,6 +29,11 @@ func base64ToBytes(t *testing.T, s string) []byte {
 }
 
 func TestVectors(t *testing.T) {
+	privKey, err := ec.PrivateKeyFromHex("6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8")
+	require.NoError(t, err)
+	counterparty, err := ec.PublicKeyFromString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+	require.NoError(t, err)
+
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
 		Filename: "abortAction-simple-args",
@@ -179,6 +185,32 @@ func TestVectors(t *testing.T) {
 		Object: wallet.RelinquishOutputResult{
 			Relinquished: true,
 		},
+	}, {
+		Filename: "getPublicKey-simple-args",
+		IsResult: true,
+		Object: wallet.GetPublicKeyArgs{
+			IdentityKey: true,
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID: wallet.Protocol{
+					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+					Protocol:      "tests",
+				},
+				Counterparty: wallet.Counterparty{
+					Type:         wallet.CounterpartyTypeOther,
+					Counterparty: counterparty,
+				},
+				KeyID:            "test-key-id",
+				Privileged:       true,
+				PrivilegedReason: "privileged reason",
+				SeekPermission:   true,
+			},
+		},
+	}, {
+		Filename: "getPublicKey-simple-result",
+		IsResult: true,
+		Object: wallet.GetPublicKeyResult{
+			PublicKey: privKey.PubKey(),
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -245,6 +277,12 @@ func TestVectors(t *testing.T) {
 					checkJson(&deserialized, &obj)
 				case wallet.RelinquishOutputResult:
 					var deserialized wallet.RelinquishOutputResult
+					checkJson(&deserialized, &obj)
+				case wallet.GetPublicKeyArgs:
+					var deserialized wallet.GetPublicKeyArgs
+					checkJson(&deserialized, &obj)
+				case wallet.GetPublicKeyResult:
+					var deserialized wallet.GetPublicKeyResult
 					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
