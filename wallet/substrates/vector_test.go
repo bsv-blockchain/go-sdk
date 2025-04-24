@@ -4,15 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 type VectorTest struct {
@@ -264,6 +265,28 @@ func TestVectors(t *testing.T) {
 			KeyID:     "test-key-id",
 			ProofType: 1,
 		},
+	}, {
+		Filename: "encrypt-simple-args",
+		Object: wallet.EncryptArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID: wallet.Protocol{
+					SecurityLevel: wallet.SecurityLevelEveryApp,
+					Protocol:      "test-protocol",
+				},
+				KeyID:            "test-key",
+				Counterparty:     wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
+				Privileged:       true,
+				PrivilegedReason: "test reason",
+				SeekPermission:   true,
+			},
+			Plaintext: []byte{1, 2, 3, 4},
+		},
+	}, {
+		Filename: "encrypt-simple-result",
+		IsResult: true,
+		Object: wallet.EncryptResult{
+			Ciphertext: []byte{1, 2, 3, 4, 5, 6, 7, 8},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -355,6 +378,12 @@ func TestVectors(t *testing.T) {
 				case wallet.RevealSpecificKeyLinkageResult:
 					var deserialized wallet.RevealSpecificKeyLinkageResult
 					checkJson(&deserialized, &obj)
+				case wallet.EncryptArgs:
+					var deserialized wallet.EncryptArgs
+					checkJson(&deserialized, &obj)
+				case wallet.EncryptResult:
+					var deserialized wallet.EncryptResult
+					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -424,6 +453,14 @@ func TestVectors(t *testing.T) {
 				case wallet.InternalizeActionResult:
 					serialized, err1 := serializer.SerializeInternalizeActionResult(&obj)
 					deserialized, err2 := serializer.DeserializeInternalizeActionResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.EncryptArgs:
+					serialized, err1 := serializer.SerializeEncryptArgs(&obj)
+					deserialized, err2 := serializer.DeserializeEncryptArgs(frameParams)
+					checkWireSerialize(substrates.CallEncrypt, &obj, serialized, err1, deserialized, err2)
+				case wallet.EncryptResult:
+					serialized, err1 := serializer.SerializeEncryptResult(&obj)
+					deserialized, err2 := serializer.DeserializeEncryptResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

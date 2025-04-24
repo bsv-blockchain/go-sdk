@@ -139,7 +139,7 @@ type EncryptionArgs struct {
 
 type EncryptArgs struct {
 	EncryptionArgs
-	Plaintext []byte
+	Plaintext JsonByteNoBase64 `json:"plaintext"`
 }
 
 type DecryptArgs struct {
@@ -148,11 +148,11 @@ type DecryptArgs struct {
 }
 
 type EncryptResult struct {
-	Ciphertext []byte
+	Ciphertext JsonByteNoBase64 `json:"ciphertext"`
 }
 
 type DecryptResult struct {
-	Plaintext []byte
+	Plaintext []byte `json:"plaintext"`
 }
 
 type GetPublicKeyArgs struct {
@@ -172,7 +172,7 @@ type CreateSignatureArgs struct {
 }
 
 type CreateSignatureResult struct {
-	Signature ec.Signature
+	Signature ec.Signature `json:"signature"`
 }
 
 type SignOutputs sighash.Flag
@@ -197,7 +197,7 @@ type CreateHmacArgs struct {
 }
 
 type CreateHmacResult struct {
-	Hmac []byte
+	Hmac []byte `json:"hmac"`
 }
 
 type VerifyHmacArgs struct {
@@ -207,11 +207,11 @@ type VerifyHmacArgs struct {
 }
 
 type VerifyHmacResult struct {
-	Valid bool
+	Valid bool `json:"valid"`
 }
 
 type VerifySignatureResult struct {
-	Valid bool
+	Valid bool `json:"valid"`
 }
 
 func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
