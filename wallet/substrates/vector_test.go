@@ -581,6 +581,36 @@ func TestVectors(t *testing.T) {
 		Object: wallet.AuthenticatedResult{
 			Authenticated: true,
 		},
+	}, {
+		// GetHeight doesn't have specific args
+		Filename: "getHeight-simple-result",
+		IsResult: true,
+		Object: wallet.GetHeightResult{
+			Height: 850000,
+		},
+	}, {
+		Filename: "getHeaderForHeight-simple-args",
+		Object: wallet.GetHeaderArgs{
+			Height: 850000,
+		},
+	}, {
+		Filename: "getHeaderForHeight-simple-result",
+		IsResult: true,
+		Object: wallet.GetHeaderResult{
+			Header: "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c", // Example header hex
+		},
+	}, {
+		Filename: "getNetwork-simple-result",
+		IsResult: true,
+		Object: wallet.GetNetworkResult{
+			Network: "mainnet",
+		},
+	}, {
+		Filename: "getVersion-simple-result",
+		IsResult: true,
+		Object: wallet.GetVersionResult{
+			Version: "1.0.0",
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -761,6 +791,26 @@ func TestVectors(t *testing.T) {
 					var deserialized wallet.AuthenticatedResult
 					expectedObj := tt.Object.(wallet.AuthenticatedResult)
 					checkJson(&deserialized, &expectedObj)
+				case wallet.GetHeightResult:
+					var deserialized wallet.GetHeightResult
+					expectedObj := tt.Object.(wallet.GetHeightResult)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.GetHeaderArgs:
+					var deserialized wallet.GetHeaderArgs
+					expectedObj := tt.Object.(wallet.GetHeaderArgs)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.GetHeaderResult:
+					var deserialized wallet.GetHeaderResult
+					expectedObj := tt.Object.(wallet.GetHeaderResult)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.GetNetworkResult:
+					var deserialized wallet.GetNetworkResult
+					expectedObj := tt.Object.(wallet.GetNetworkResult)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.GetVersionResult:
+					var deserialized wallet.GetVersionResult
+					expectedObj := tt.Object.(wallet.GetVersionResult)
+					checkJson(&deserialized, &expectedObj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -926,6 +976,26 @@ func TestVectors(t *testing.T) {
 				case wallet.AuthenticatedResult:
 					serialized, err1 := serializer.SerializeAuthenticatedResult(&obj)
 					deserialized, err2 := serializer.DeserializeAuthenticatedResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.GetHeightResult:
+					serialized, err1 := serializer.SerializeGetHeightResult(&obj)
+					deserialized, err2 := serializer.DeserializeGetHeightResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.GetHeaderArgs:
+					serialized, err1 := serializer.SerializeGetHeaderArgs(&obj)
+					deserialized, err2 := serializer.DeserializeGetHeaderArgs(frameParams)
+					checkWireSerialize(substrates.CallGetHeaderForHeight, &obj, serialized, err1, deserialized, err2)
+				case wallet.GetHeaderResult:
+					serialized, err1 := serializer.SerializeGetHeaderResult(&obj)
+					deserialized, err2 := serializer.DeserializeGetHeaderResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.GetNetworkResult:
+					serialized, err1 := serializer.SerializeGetNetworkResult(&obj)
+					deserialized, err2 := serializer.DeserializeGetNetworkResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.GetVersionResult:
+					serialized, err1 := serializer.SerializeGetVersionResult(&obj)
+					deserialized, err2 := serializer.DeserializeGetVersionResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

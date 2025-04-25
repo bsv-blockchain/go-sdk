@@ -667,23 +667,23 @@ type AuthenticatedResult struct {
 }
 
 type GetHeightResult struct {
-	Height uint32
+	Height uint32 `json:"height"`
 }
 
 type GetHeaderArgs struct {
-	Height uint32
+	Height uint32 `json:"height"`
 }
 
 type GetHeaderResult struct {
-	Header string
+	Header string `json:"header"`
 }
 
 type GetNetworkResult struct {
-	Network string // "mainnet" | "testnet"
+	Network string `json:"network"` // "mainnet" | "testnet"
 }
 
 type GetVersionResult struct {
-	Version string
+	Version string `json:"version"`
 }
 
 // ProveCertificateArgs contains parameters for creating verifiable certificates
