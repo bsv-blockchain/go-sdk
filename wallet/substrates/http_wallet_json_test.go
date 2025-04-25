@@ -2,14 +2,15 @@ package substrates
 
 import (
 	"encoding/json"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewHTTPWalletJSON(t *testing.T) {

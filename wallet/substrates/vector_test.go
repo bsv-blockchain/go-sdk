@@ -574,6 +574,13 @@ func TestVectors(t *testing.T) {
 		Object: wallet.AuthenticatedResult{
 			Authenticated: true,
 		},
+	}, {
+		// WaitForAuthentication also uses AuthenticatedResult
+		Filename: "waitForAuthentication-simple-result",
+		IsResult: true,
+		Object: wallet.AuthenticatedResult{
+			Authenticated: true,
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
