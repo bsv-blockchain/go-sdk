@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -311,9 +312,9 @@ type JsonByteNoBase64 []byte
 
 func (s *JsonByteNoBase64) MarshalJSON() ([]byte, error) {
 	// Marshal as a plain number array, not base64
-	arr := make([]int, len(*s))
+	arr := make([]uint16, len(*s))
 	for i, b := range *s {
-		arr[i] = int(b)
+		arr[i] = uint16(b)
 	}
 	return json.Marshal(arr)
 }
@@ -324,6 +325,28 @@ func (s *JsonByteNoBase64) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*s = temp
+	return nil
+}
+
+// JsonByteHex is a helper type for marshaling byte slices as hex strings.
+type JsonByteHex []byte
+
+// MarshalJSON implements the json.Marshaler interface.
+func (s *JsonByteHex) MarshalJSON() ([]byte, error) {
+	return json.Marshal(hex.EncodeToString(*s))
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (s *JsonByteHex) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	bytes, err := hex.DecodeString(str)
+	if err != nil {
+		return err
+	}
+	*s = bytes
 	return nil
 }
 
@@ -367,14 +390,14 @@ type RevealSpecificKeyLinkageArgs struct {
 }
 
 type RevealSpecificKeyLinkageResult struct {
-	EncryptedLinkage      []byte       `json:"encryptedLinkage"`
-	EncryptedLinkageProof []byte       `json:"encryptedLinkageProof"`
-	Prover                []byte       `json:"prover"`
-	Verifier              []byte       `json:"verifier"`
-	Counterparty          Counterparty `json:"counterparty"`
-	ProtocolID            Protocol     `json:"protocolID"`
-	KeyID                 string       `json:"keyID"`
-	ProofType             byte         `json:"proofType"`
+	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
+	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
+	Prover                JsonByteHex      `json:"prover"`   // Hex encoded DER public key
+	Verifier              JsonByteHex      `json:"verifier"` // Hex encoded DER public key
+	Counterparty          Counterparty     `json:"counterparty"`
+	ProtocolID            Protocol         `json:"protocolID"`
+	KeyID                 string           `json:"keyID"`
+	ProofType             byte             `json:"proofType"`
 }
 
 type IdentityCertifier struct {
