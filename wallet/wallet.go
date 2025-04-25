@@ -3,7 +3,6 @@ package wallet
 import (
 	"encoding/json"
 	"fmt"
-
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
@@ -172,7 +171,40 @@ type CreateSignatureArgs struct {
 }
 
 type CreateSignatureResult struct {
-	Signature ec.Signature `json:"signature"`
+	Signature ec.Signature `json:"-"` // Ignore original field for JSON
+}
+
+// MarshalJSON implements the json.Marshaler interface for CreateSignatureResult.
+func (c CreateSignatureResult) MarshalJSON() ([]byte, error) {
+	// Use an alias struct with JsonSignature for marshaling
+	type Alias CreateSignatureResult
+	return json.Marshal(&struct {
+		*Alias
+		Signature JsonSignature `json:"signature"` // Override Signature field
+	}{
+		Alias:     (*Alias)(&c),
+		Signature: JsonSignature{Signature: c.Signature},
+	})
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for CreateSignatureResult.
+func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
+	// Use an alias struct with JsonSignature for unmarshaling
+	type Alias CreateSignatureResult
+	aux := &struct {
+		*Alias
+		Signature JsonSignature `json:"signature"` // Override Signature field
+	}{
+		Alias: (*Alias)(c),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Assign the unmarshaled signature back
+	c.Signature = aux.Signature.Signature
+	return nil
 }
 
 type SignOutputs sighash.Flag
@@ -188,17 +220,24 @@ type JsonSignature struct {
 }
 
 func (s *JsonSignature) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.Serialize())
+	sig := s.Serialize()
+	sigInts := make([]uint16, len(sig))
+	for i, b := range sig {
+		sigInts[i] = uint16(b)
+	}
+	return json.Marshal(sigInts)
 }
 
 func (s *JsonSignature) UnmarshalJSON(data []byte) error {
 	var sigBytes []byte
+	// Unmarshal directly from JSON array of numbers into byte slice
 	if err := json.Unmarshal(data, &sigBytes); err != nil {
-		return fmt.Errorf("could not unmarshal signature: %w", err)
+		return fmt.Errorf("could not unmarshal signature byte array: %w", err)
 	}
+	// Parse the raw bytes as DER.
 	sig, err := ec.FromDER(sigBytes)
 	if err != nil {
-		return fmt.Errorf("could not parse signature: %w", err)
+		return fmt.Errorf("could not parse signature from DER: %w", err)
 	}
 	s.Signature = *sig
 	return nil
