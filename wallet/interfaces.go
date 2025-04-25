@@ -621,21 +621,21 @@ type GetVersionResult struct {
 // ProveCertificateArgs contains parameters for creating verifiable certificates
 type ProveCertificateArgs struct {
 	// The certificate to create a verifiable version of
-	Certificate Certificate
+	Certificate Certificate `json:"certificate"`
 
 	// Fields to reveal in the certificate
-	FieldsToReveal []string
+	FieldsToReveal []string `json:"fieldsToReveal"`
 
 	// The verifier's identity key
-	Verifier         string
-	Privileged       *bool
-	PrivilegedReason string
+	Verifier         string `json:"verifier"`
+	Privileged       *bool  `json:"privileged,omitempty"`
+	PrivilegedReason string `json:"privilegedReason,omitempty"`
 }
 
 // ProveCertificateResult contains the result of creating a verifiable certificate
 type ProveCertificateResult struct {
 	// Keyring for revealing specific fields to the verifier
-	KeyringForVerifier map[string]string
+	KeyringForVerifier map[string]string `json:"keyringForVerifier"`
 }
 
 type CertificateFieldNameUnder50Bytes string

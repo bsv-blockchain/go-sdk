@@ -462,6 +462,29 @@ func TestVectors(t *testing.T) {
 				Verifier: VerifierHex,
 			}},
 		},
+	}, {
+		Filename: "proveCertificate-simple-args",
+		Object: wallet.ProveCertificateArgs{
+			Certificate: wallet.Certificate{
+				Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+				SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+				Subject:            pubKey,       // Use key from test setup
+				Certifier:          counterparty, // Use key from test setup
+				RevocationOutpoint: "txid123:0",
+				Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
+				Signature:          "7369676e61747572652d686578", // hex for "signature-hex"
+			},
+			FieldsToReveal:   []string{"name"},
+			Verifier:         VerifierHex,
+			Privileged:       util.BoolPtr(false),
+			PrivilegedReason: "prove-reason",
+		},
+	}, {
+		Filename: "proveCertificate-simple-result",
+		IsResult: true,
+		Object: wallet.ProveCertificateResult{
+			KeyringForVerifier: map[string]string{"name": "name-key"},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -610,6 +633,14 @@ func TestVectors(t *testing.T) {
 					var deserialized wallet.ListCertificatesResult
 					expectedObj := tt.Object.(wallet.ListCertificatesResult)
 					checkJson(&deserialized, &expectedObj)
+				case wallet.ProveCertificateArgs:
+					var deserialized wallet.ProveCertificateArgs
+					expectedObj := tt.Object.(wallet.ProveCertificateArgs)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.ProveCertificateResult:
+					var deserialized wallet.ProveCertificateResult
+					expectedObj := tt.Object.(wallet.ProveCertificateResult)
+					checkJson(&deserialized, &expectedObj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -743,6 +774,14 @@ func TestVectors(t *testing.T) {
 				case wallet.ListCertificatesResult:
 					serialized, err1 := serializer.SerializeListCertificatesResult(&obj)
 					deserialized, err2 := serializer.DeserializeListCertificatesResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.ProveCertificateArgs:
+					serialized, err1 := serializer.SerializeProveCertificateArgs(&obj)
+					deserialized, err2 := serializer.DeserializeProveCertificateArgs(frameParams)
+					checkWireSerialize(substrates.CallProveCertificate, &obj, serialized, err1, deserialized, err2)
+				case wallet.ProveCertificateResult:
+					serialized, err1 := serializer.SerializeProveCertificateResult(&obj)
+					deserialized, err2 := serializer.DeserializeProveCertificateResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
