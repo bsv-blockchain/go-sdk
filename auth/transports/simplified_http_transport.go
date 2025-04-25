@@ -2,6 +2,7 @@ package transports
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +19,7 @@ import (
 type SimplifiedHTTPTransport struct {
 	baseUrl     string
 	client      *http.Client
-	onDataFuncs []func(*auth.AuthMessage) error
+	onDataFuncs []func(context.Context, *auth.AuthMessage) error
 	mu          sync.Mutex
 }
 
@@ -44,7 +45,7 @@ func NewSimplifiedHTTPTransport(options *SimplifiedHTTPTransportOptions) (*Simpl
 }
 
 // Send sends an AuthMessage via HTTP
-func (t *SimplifiedHTTPTransport) Send(message *auth.AuthMessage) error {
+func (t *SimplifiedHTTPTransport) Send(ctx context.Context, message *auth.AuthMessage) error {
 	// Check if any handlers are registered
 	t.mu.Lock()
 	if len(t.onDataFuncs) == 0 {
@@ -95,7 +96,7 @@ func (t *SimplifiedHTTPTransport) Send(message *auth.AuthMessage) error {
 			MessageType: message.MessageType, // 'general'
 			Payload:     respPayloadWriter.Buf,
 		}
-		t.notifyHandlers(responseMsg)
+		t.notifyHandlers(ctx, responseMsg)
 		return nil
 	}
 
@@ -135,7 +136,7 @@ func (t *SimplifiedHTTPTransport) Send(message *auth.AuthMessage) error {
 		}
 
 		// Notify handlers of the response message
-		t.notifyHandlers(&responseMsg)
+		t.notifyHandlers(ctx, &responseMsg)
 	}
 
 	return nil
@@ -260,7 +261,7 @@ func (t *SimplifiedHTTPTransport) deserializeRequestPayload(payload []byte) (*ht
 // OnData registers a callback for incoming messages
 // This method will return an error only if the provided callback is nil.
 // It must be called at least once before sending any messages.
-func (t *SimplifiedHTTPTransport) OnData(callback func(*auth.AuthMessage) error) error {
+func (t *SimplifiedHTTPTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
 	if callback == nil {
 		return errors.New("callback cannot be nil")
 	}
@@ -272,14 +273,14 @@ func (t *SimplifiedHTTPTransport) OnData(callback func(*auth.AuthMessage) error)
 }
 
 // notifyHandlers calls all registered callbacks with the received message
-func (t *SimplifiedHTTPTransport) notifyHandlers(message *auth.AuthMessage) {
+func (t *SimplifiedHTTPTransport) notifyHandlers(ctx context.Context, message *auth.AuthMessage) {
 	t.mu.Lock()
-	handlers := make([]func(*auth.AuthMessage) error, len(t.onDataFuncs))
+	handlers := make([]func(context.Context, *auth.AuthMessage) error, len(t.onDataFuncs))
 	copy(handlers, t.onDataFuncs)
 	t.mu.Unlock()
 
 	for _, handler := range handlers {
 		// Errors from handlers are not propagated to avoid breaking other handlers
-		_ = handler(message)
+		_ = handler(ctx, message)
 	}
 }

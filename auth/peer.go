@@ -88,7 +88,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 	}
 
 	// Start the peer
-	err := peer.Start(context.TODO())
+	err := peer.Start()
 	if err != nil {
 		peer.logger.Printf("Warning: Failed to start peer: %v", err)
 	}
@@ -97,9 +97,9 @@ func NewPeer(cfg *PeerOptions) *Peer {
 }
 
 // Start initializes the peer by setting up the transport's message handler
-func (p *Peer) Start(ctx context.Context) error {
+func (p *Peer) Start() error {
 	// Register the message handler with the transport
-	err := p.transport.OnData(func(message *AuthMessage) error {
+	err := p.transport.OnData(func(ctx context.Context, message *AuthMessage) error {
 		err := p.handleIncomingMessage(ctx, message)
 		if err != nil {
 			p.logger.Printf("Error handling incoming message: %v", err)
@@ -226,7 +226,7 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 	}
 
 	// Send the message
-	err = p.transport.Send(generalMessage)
+	err = p.transport.Send(ctx, generalMessage)
 	if err != nil {
 		return fmt.Errorf("failed to send message to peer %s: %w", peerSession.PeerIdentityKey, err)
 	}
@@ -336,7 +336,7 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	}()
 
 	// Send the initial request
-	err = p.transport.Send(initialRequest)
+	err = p.transport.Send(ctx, initialRequest)
 	if err != nil {
 		delete(p.onInitialResponseReceivedCallbacks, callbackID)
 		return nil, NewAuthError("failed to send initial request", err)
@@ -472,7 +472,7 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 	}
 
 	// Send the response
-	return p.transport.Send(response)
+	return p.transport.Send(ctx, response)
 }
 
 // handleInitialResponse processes the response to our initial authentication request
@@ -835,7 +835,7 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 	certRequest.Signature = sigResult.Signature.Serialize()
 
 	// Send the request
-	err = p.transport.Send(certRequest)
+	err = p.transport.Send(ctx, certRequest)
 	if err != nil {
 		return fmt.Errorf("failed to send certificate request: %w", err)
 	}
@@ -916,7 +916,7 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 	certResponse.Signature = sigResult.Signature.Serialize()
 
 	// Send the response
-	err = p.transport.Send(certResponse)
+	err = p.transport.Send(ctx, certResponse)
 	if err != nil {
 		return fmt.Errorf("failed to send certificate response: %w", err)
 	}
