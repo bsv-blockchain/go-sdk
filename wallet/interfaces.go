@@ -34,13 +34,13 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(&struct {
-		Subject      *string `json:"subject"`
-		Certifier    *string `json:"certifier"`
+		Subject   *string `json:"subject"`
+		Certifier *string `json:"certifier"`
 		*Alias
 	}{
-		Subject:      subjectHex,
-		Certifier:    certifierHex,
-		Alias:        (*Alias)(c),
+		Subject:   subjectHex,
+		Certifier: certifierHex,
+		Alias:     (*Alias)(c),
 	})
 }
 
@@ -48,8 +48,8 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 func (c *Certificate) UnmarshalJSON(data []byte) error {
 	type Alias Certificate // Use alias to avoid recursion
 	aux := &struct {
-		Subject      *string `json:"subject"`
-		Certifier    *string `json:"certifier"`
+		Subject   *string `json:"subject"`
+		Certifier *string `json:"certifier"`
 		*Alias
 	}{
 		Alias: (*Alias)(c),
@@ -479,23 +479,81 @@ type AcquireCertificateArgs struct {
 }
 
 type ListCertificatesArgs struct {
-	Certifiers       []string
-	Types            []string
-	Limit            uint32
-	Offset           uint32
-	Privileged       *bool
-	PrivilegedReason string
+	Certifiers       []string `json:"certifiers"`
+	Types            []string `json:"types"`
+	Limit            uint32   `json:"limit"`
+	Offset           uint32   `json:"offset"`
+	Privileged       *bool    `json:"privileged,omitempty"`
+	PrivilegedReason string   `json:"privilegedReason,omitempty"`
 }
 
 type CertificateResult struct {
-	Certificate
-	Keyring  map[string]string
-	Verifier string
+	Certificate                   // Embed certificate fields directly. They already have tags.
+	Keyring     map[string]string `json:"keyring"`
+	Verifier    string            `json:"verifier"`
+}
+
+// MarshalJSON implements the json.Marshaler interface for CertificateResult
+// It handles the flattening of the embedded Certificate fields.
+func (cr *CertificateResult) MarshalJSON() ([]byte, error) {
+	// Start with marshaling the embedded Certificate
+	certData, err := json.Marshal(cr.Certificate)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
+	}
+
+	// Unmarshal certData into a map
+	var certMap map[string]interface{}
+	if err := json.Unmarshal(certData, &certMap); err != nil {
+		return nil, fmt.Errorf("error unmarshaling cert data into map: %w", err)
+	}
+
+	// Add Keyring and Verifier to the map
+	if cr.Keyring != nil {
+		certMap["keyring"] = cr.Keyring
+	}
+	if cr.Verifier != "" {
+		certMap["verifier"] = cr.Verifier
+	}
+
+	// Marshal the final map
+	return json.Marshal(certMap)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for CertificateResult
+// It handles the flattening of the embedded Certificate fields.
+func (cr *CertificateResult) UnmarshalJSON(data []byte) error {
+	// Unmarshal into the embedded Certificate first
+	if err := json.Unmarshal(data, &cr.Certificate); err != nil {
+		return fmt.Errorf("error unmarshaling embedded Certificate: %w", err)
+	}
+
+	// Unmarshal into a temporary map to get Keyring and Verifier
+	var temp map[string]json.RawMessage
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return fmt.Errorf("error unmarshaling into temp map: %w", err)
+	}
+
+	// Unmarshal Keyring
+	if keyringData, ok := temp["keyring"]; ok {
+		if err := json.Unmarshal(keyringData, &cr.Keyring); err != nil {
+			return fmt.Errorf("error unmarshaling keyring: %w", err)
+		}
+	}
+
+	// Unmarshal Verifier
+	if verifierData, ok := temp["verifier"]; ok {
+		if err := json.Unmarshal(verifierData, &cr.Verifier); err != nil {
+			return fmt.Errorf("error unmarshaling verifier: %w", err)
+		}
+	}
+
+	return nil
 }
 
 type ListCertificatesResult struct {
-	TotalCertificates uint32
-	Certificates      []CertificateResult
+	TotalCertificates uint32              `json:"totalCertificates"`
+	Certificates      []CertificateResult `json:"certificates"`
 }
 
 type RelinquishCertificateArgs struct {
