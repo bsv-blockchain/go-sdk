@@ -450,18 +450,86 @@ type RevealSpecificKeyLinkageResult struct {
 }
 
 type IdentityCertifier struct {
-	Name        string
-	IconUrl     string
-	Description string
-	Trust       uint8
+	Name        string `json:"name"`
+	IconUrl     string `json:"iconUrl"`
+	Description string `json:"description"`
+	Trust       uint8  `json:"trust"`
 }
 
 type IdentityCertificate struct {
-	Certificate
-	CertifierInfo           IdentityCertifier
-	PubliclyRevealedKeyring map[string]string
-	DecryptedFields         map[string]string
+	Certificate                               // Embedded
+	CertifierInfo           IdentityCertifier `json:"certifierInfo"`
+	PubliclyRevealedKeyring map[string]string `json:"publiclyRevealedKeyring"`
+	DecryptedFields         map[string]string `json:"decryptedFields"`
 }
+
+// MarshalJSON implements the json.Marshaler interface for IdentityCertificate.
+// It handles the flattening of the embedded Certificate fields.
+func (ic *IdentityCertificate) MarshalJSON() ([]byte, error) {
+	// Start with marshaling the embedded Certificate
+	certData, err := json.Marshal(ic.Certificate)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
+	}
+
+	// Unmarshal certData into a map
+	var certMap map[string]interface{}
+	if err := json.Unmarshal(certData, &certMap); err != nil {
+		return nil, fmt.Errorf("error unmarshaling cert data into map: %w", err)
+	}
+
+	// Add IdentityCertificate specific fields to the map
+	certMap["certifierInfo"] = ic.CertifierInfo
+	if ic.PubliclyRevealedKeyring != nil {
+		certMap["publiclyRevealedKeyring"] = ic.PubliclyRevealedKeyring
+	}
+	if ic.DecryptedFields != nil {
+		certMap["decryptedFields"] = ic.DecryptedFields
+	}
+
+	// Marshal the final map
+	return json.Marshal(certMap)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for IdentityCertificate.
+// It handles the flattening of the embedded Certificate fields.
+func (ic *IdentityCertificate) UnmarshalJSON(data []byte) error {
+	// Unmarshal into the embedded Certificate first
+	if err := json.Unmarshal(data, &ic.Certificate); err != nil {
+		return fmt.Errorf("error unmarshaling embedded Certificate: %w", err)
+	}
+
+	// Unmarshal into a temporary map to get the other fields
+	var temp map[string]json.RawMessage
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return fmt.Errorf("error unmarshaling into temp map: %w", err)
+	}
+
+	// Unmarshal CertifierInfo
+	if certInfoData, ok := temp["certifierInfo"]; ok {
+		if err := json.Unmarshal(certInfoData, &ic.CertifierInfo); err != nil {
+			return fmt.Errorf("error unmarshaling certifierInfo: %w", err)
+		}
+	}
+
+	// Unmarshal PubliclyRevealedKeyring
+	if pubKeyringData, ok := temp["publiclyRevealedKeyring"]; ok {
+		if err := json.Unmarshal(pubKeyringData, &ic.PubliclyRevealedKeyring); err != nil {
+			return fmt.Errorf("error unmarshaling publiclyRevealedKeyring: %w", err)
+		}
+	}
+
+	// Unmarshal DecryptedFields
+	if decryptedData, ok := temp["decryptedFields"]; ok {
+		if err := json.Unmarshal(decryptedData, &ic.DecryptedFields); err != nil {
+			return fmt.Errorf("error unmarshaling decryptedFields: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// TODO: Add custom MarshalJSON/UnmarshalJSON for IdentityCertificate if needed - REMOVED
 
 type AcquireCertificateArgs struct {
 	Type                string            `json:"type"`
@@ -576,22 +644,22 @@ type RelinquishCertificateResult struct {
 }
 
 type DiscoverByIdentityKeyArgs struct {
-	IdentityKey    string
-	Limit          uint32
-	Offset         uint32
-	SeekPermission *bool
+	IdentityKey    string `json:"identityKey"`
+	Limit          uint32 `json:"limit"`
+	Offset         uint32 `json:"offset"`
+	SeekPermission *bool  `json:"seekPermission,omitempty"`
 }
 
 type DiscoverByAttributesArgs struct {
-	Attributes     map[string]string
-	Limit          uint32
-	Offset         uint32
-	SeekPermission *bool
+	Attributes     map[string]string `json:"attributes"`
+	Limit          uint32            `json:"limit"`
+	Offset         uint32            `json:"offset"`
+	SeekPermission *bool             `json:"seekPermission,omitempty"`
 }
 
 type DiscoverCertificatesResult struct {
-	TotalCertificates uint32
-	Certificates      []IdentityCertificate
+	TotalCertificates uint32                `json:"totalCertificates"`
+	Certificates      []IdentityCertificate `json:"certificates"`
 }
 
 type AuthenticatedResult struct {

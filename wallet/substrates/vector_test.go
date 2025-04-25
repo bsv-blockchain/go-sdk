@@ -498,6 +498,41 @@ func TestVectors(t *testing.T) {
 		Object: wallet.RelinquishCertificateResult{
 			Relinquished: true,
 		},
+	}, {
+		Filename: "discoverByIdentityKey-simple-args",
+		Object: wallet.DiscoverByIdentityKeyArgs{
+			IdentityKey:    CounterpartyHex,
+			Limit:          10,
+			Offset:         0,
+			SeekPermission: util.BoolPtr(true),
+		},
+	}, {
+		Filename: "discoverByIdentityKey-simple-result",
+		IsResult: true,
+		Object: wallet.DiscoverCertificatesResult{
+			TotalCertificates: 1,
+			Certificates: []wallet.IdentityCertificate{
+				{
+					Certificate: wallet.Certificate{
+						Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+						SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+						Subject:            pubKey,
+						Certifier:          counterparty,
+						RevocationOutpoint: "txid123:0",
+						Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
+						Signature:          "7369676e61747572652d686578",
+					},
+					CertifierInfo: wallet.IdentityCertifier{
+						Name:        "Test Certifier",
+						IconUrl:     "https://example.com/icon.png",
+						Description: "Certifier description",
+						Trust:       5, // Example trust level
+					},
+					PubliclyRevealedKeyring: map[string]string{"pubField": "pubKey"},
+					DecryptedFields:         map[string]string{"name": "Alice"},
+				},
+			},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -662,6 +697,14 @@ func TestVectors(t *testing.T) {
 					var deserialized wallet.RelinquishCertificateResult
 					expectedObj := tt.Object.(wallet.RelinquishCertificateResult)
 					checkJson(&deserialized, &expectedObj)
+				case wallet.DiscoverByIdentityKeyArgs:
+					var deserialized wallet.DiscoverByIdentityKeyArgs
+					expectedObj := tt.Object.(wallet.DiscoverByIdentityKeyArgs)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.DiscoverCertificatesResult:
+					var deserialized wallet.DiscoverCertificatesResult
+					expectedObj := tt.Object.(wallet.DiscoverCertificatesResult)
+					checkJson(&deserialized, &expectedObj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -811,6 +854,14 @@ func TestVectors(t *testing.T) {
 				case wallet.RelinquishCertificateResult:
 					serialized, err1 := serializer.SerializeRelinquishCertificateResult(&obj)
 					deserialized, err2 := serializer.DeserializeRelinquishCertificateResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.DiscoverByIdentityKeyArgs:
+					serialized, err1 := serializer.SerializeDiscoverByIdentityKeyArgs(&obj)
+					deserialized, err2 := serializer.DeserializeDiscoverByIdentityKeyArgs(frameParams)
+					checkWireSerialize(substrates.CallDiscoverByIdentityKey, &obj, serialized, err1, deserialized, err2)
+				case wallet.DiscoverCertificatesResult:
+					serialized, err1 := serializer.SerializeDiscoverCertificatesResult(&obj)
+					deserialized, err2 := serializer.DeserializeDiscoverCertificatesResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
