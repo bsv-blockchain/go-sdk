@@ -354,6 +354,29 @@ func TestVectors(t *testing.T) {
 		Object: wallet.VerifyHmacResult{
 			Valid: true,
 		},
+	}, {
+		Filename: "createSignature-simple-args",
+		Object: wallet.CreateSignatureArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID: wallet.Protocol{
+					SecurityLevel: wallet.SecurityLevelEveryApp,
+					Protocol:      "test-protocol",
+				},
+				KeyID:            "test-key",
+				Counterparty:     wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
+				Privileged:       true,
+				PrivilegedReason: "test reason",
+				SeekPermission:   true,
+			},
+			Data: []byte{11, 22, 33, 44},
+			// HashToDirectlySign: nil, // Omitting for simple test
+		},
+	}, {
+		Filename: "createSignature-simple-result",
+		IsResult: true,
+		Object: wallet.CreateSignatureResult{
+			Signature: *newTestSignature(t),
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -469,6 +492,12 @@ func TestVectors(t *testing.T) {
 				case wallet.VerifyHmacResult:
 					var deserialized wallet.VerifyHmacResult
 					checkJson(&deserialized, &obj)
+				case wallet.CreateSignatureArgs:
+					var deserialized wallet.CreateSignatureArgs
+					checkJson(&deserialized, &obj)
+				case wallet.CreateSignatureResult:
+					var deserialized wallet.CreateSignatureResult
+					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -571,10 +600,34 @@ func TestVectors(t *testing.T) {
 					serialized, err1 := serializer.SerializeVerifyHmacResult(&obj)
 					deserialized, err2 := serializer.DeserializeVerifyHmacResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.CreateSignatureArgs:
+					serialized, err1 := serializer.SerializeCreateSignatureArgs(&obj)
+					deserialized, err2 := serializer.DeserializeCreateSignatureArgs(frameParams)
+					checkWireSerialize(substrates.CallCreateSignature, &obj, serialized, err1, deserialized, err2)
+				case wallet.CreateSignatureResult:
+					serialized, err1 := serializer.SerializeCreateSignatureResult(&obj)
+					deserialized, err2 := serializer.DeserializeCreateSignatureResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
 			})
 		})
 	}
+}
+
+// newSignature is a helper function to create a new signature from a byte slice
+func newSignature(t *testing.T, data []byte) *ec.Signature {
+	sig, err := ec.FromDER(data)
+	require.NoError(t, err)
+	return sig
+}
+
+func newTestSignature(t *testing.T) *ec.Signature {
+	return newSignature(t, []byte{0x30, 0x25, 0x02, 0x20, 0x4e, 0x45, 0xe1, 0x69,
+		0x32, 0xb8, 0xaf, 0x51, 0x49, 0x61, 0xa1, 0xd3, 0xa1,
+		0xa2, 0x5f, 0xdf, 0x3f, 0x4f, 0x77, 0x32, 0xe9, 0xd6,
+		0x24, 0xc6, 0xc6, 0x15, 0x48, 0xab, 0x5f, 0xb8, 0xcd,
+		0x41, 0x02, 0x01, 0x00,
+	})
 }

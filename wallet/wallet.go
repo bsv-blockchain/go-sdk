@@ -167,8 +167,8 @@ type GetPublicKeyResult struct {
 
 type CreateSignatureArgs struct {
 	EncryptionArgs
-	Data               []byte
-	HashToDirectlySign []byte
+	Data               JsonByteNoBase64 `json:"data,omitempty"`
+	HashToDirectlySign JsonByteNoBase64 `json:"hashToDirectlySign,omitempty"`
 }
 
 type CreateSignatureResult struct {
@@ -183,12 +183,66 @@ var (
 	SignOutputsSingle SignOutputs = SignOutputs(sighash.Single)
 )
 
+type JsonSignature struct {
+	ec.Signature
+}
+
+func (s *JsonSignature) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Serialize())
+}
+
+func (s *JsonSignature) UnmarshalJSON(data []byte) error {
+	var sigBytes []byte
+	if err := json.Unmarshal(data, &sigBytes); err != nil {
+		return fmt.Errorf("could not unmarshal signature: %w", err)
+	}
+	sig, err := ec.FromDER(sigBytes)
+	if err != nil {
+		return fmt.Errorf("could not parse signature: %w", err)
+	}
+	s.Signature = *sig
+	return nil
+}
+
 type VerifySignatureArgs struct {
 	EncryptionArgs
-	Data                 []byte
-	HashToDirectlyVerify []byte
-	Signature            ec.Signature
-	ForSelf              bool
+	Data                 JsonByteNoBase64 `json:"data,omitempty"`
+	HashToDirectlyVerify JsonByteNoBase64 `json:"hashToDirectlyVerify,omitempty"`
+	Signature            ec.Signature     `json:"-"` // Ignore original field for JSON
+	ForSelf              bool             `json:"forSelf,omitempty"`
+}
+
+// MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
+func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
+	// Use an alias struct with JsonSignature for marshaling
+	type Alias VerifySignatureArgs
+	return json.Marshal(&struct {
+		*Alias
+		Signature JsonSignature `json:"signature"` // Override Signature field
+	}{
+		Alias:     (*Alias)(&v),
+		Signature: JsonSignature{Signature: v.Signature},
+	})
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for VerifySignatureArgs.
+func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
+	// Use an alias struct with JsonSignature for unmarshaling
+	type Alias VerifySignatureArgs
+	aux := &struct {
+		*Alias
+		Signature JsonSignature `json:"signature"` // Override Signature field
+	}{
+		Alias: (*Alias)(v),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Assign the unmarshaled signature back
+	v.Signature = aux.Signature.Signature
+	return nil
 }
 
 type CreateHmacArgs struct {
