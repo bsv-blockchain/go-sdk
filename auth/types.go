@@ -64,7 +64,7 @@ type AuthMessage struct {
 // The certificatesRequested parameter can be nil or a RequestedCertificateSet
 func ValidateCertificates(
 	ctx context.Context,
-	verifierWallet wallet.Interface,
+	verifierWallet wallet.AuthOperations,
 	message *AuthMessage,
 	certificatesRequested *utils.RequestedCertificateSet,
 ) error {
@@ -151,6 +151,9 @@ func ValidateCertificates(
 // Transport defines the interface for sending and receiving AuthMessages
 // This matches the TypeScript SDK's Transport interface exactly
 type Transport interface {
+	// GetRegisteredOnData returns the current callback function for handling incoming AuthMessages
+	GetRegisteredOnData() (func(context.Context, *AuthMessage) error, error)
+
 	// Send sends an AuthMessage to its destination
 	Send(ctx context.Context, message *AuthMessage) error
 

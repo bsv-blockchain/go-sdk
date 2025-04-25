@@ -351,3 +351,23 @@ func (p *ProtoWallet) VerifyHmac(
 
 	return &VerifyHmacResult{Valid: true}, nil
 }
+
+// ListCertificates lists all certificates associated with the wallet.
+func (p *ProtoWallet) ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// AcquireCertificate acquires a certificate, verifying its authenticity and integrity.
+func (p *ProtoWallet) AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// ProveCertificate proves a certificate, verifying its authenticity and integrity.
+func (p *ProtoWallet) ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// RelinquishCertificate relinquishes a certificate, making it invalid for future use.
+func (p *ProtoWallet) RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error) {
+	return nil, fmt.Errorf("not implemented")
+}

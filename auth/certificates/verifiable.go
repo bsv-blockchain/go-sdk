@@ -79,7 +79,7 @@ func NewVerifiableCertificateFromBinary(data []byte) (*VerifiableCertificate, er
 //	An error if the keyring is missing/empty or if any decryption operation fails.
 func (vc *VerifiableCertificate) DecryptFields(
 	ctx context.Context,
-	verifierWallet wallet.Interface, // Use the interface type
+	verifierWallet wallet.AuthOperations, // Use the interface type
 	privileged bool,
 	privilegedReason string,
 ) (map[string]string, error) {

@@ -246,9 +246,23 @@ type KeyOperations interface {
 	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
 }
 
+// CertificateOperations defines the interface for certificate management operations.
+type CertificateOperations interface {
+	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
+	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
+	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
+	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
+}
+
+// AuthOperations combines key and certificate operations for authentication.
+type AuthOperations interface {
+	KeyOperations
+	CertificateOperations
+}
+
 // Interface defines the core wallet operations for transaction creation, signing and querying.
 type Interface interface {
-	KeyOperations
+	AuthOperations
 	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
 	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
 	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
@@ -258,10 +272,6 @@ type Interface interface {
 	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
 	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
 	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
-	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
-	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
-	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
-	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
 	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
 	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
 	IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)

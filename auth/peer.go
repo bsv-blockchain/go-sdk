@@ -25,7 +25,7 @@ type OnCertificateRequestReceivedCallback func(senderPublicKey *ec.PublicKey, re
 type Peer struct {
 	sessionManager                        SessionManager
 	transport                             Transport
-	wallet                                wallet.Interface
+	wallet                                wallet.AuthOperations
 	CertificatesToRequest                 utils.RequestedCertificateSet
 	onGeneralMessageReceivedCallbacks     map[int]OnGeneralMessageReceivedCallback
 	onCertificateReceivedCallbacks        map[int]OnCertificateReceivedCallback
@@ -41,7 +41,7 @@ type Peer struct {
 }
 
 type PeerOptions struct {
-	Wallet                 wallet.Interface
+	Wallet                 wallet.AuthOperations
 	Transport              Transport
 	CertificatesToRequest  *utils.RequestedCertificateSet
 	SessionManager         SessionManager
