@@ -557,9 +557,9 @@ type ListCertificatesResult struct {
 }
 
 type RelinquishCertificateArgs struct {
-	Type         string
-	SerialNumber string
-	Certifier    string
+	Type         string `json:"type"`
+	SerialNumber string `json:"serialNumber"`
+	Certifier    string `json:"certifier"`
 }
 
 type RelinquishOutputArgs struct {
@@ -572,7 +572,7 @@ type RelinquishOutputResult struct {
 }
 
 type RelinquishCertificateResult struct {
-	Relinquished bool
+	Relinquished bool `json:"relinquished"`
 }
 
 type DiscoverByIdentityKeyArgs struct {

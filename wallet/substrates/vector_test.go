@@ -485,6 +485,19 @@ func TestVectors(t *testing.T) {
 		Object: wallet.ProveCertificateResult{
 			KeyringForVerifier: map[string]string{"name": "name-key"},
 		},
+	}, {
+		Filename: "relinquishCertificate-simple-args",
+		Object: wallet.RelinquishCertificateArgs{
+			Type:         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+			SerialNumber: "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+			Certifier:    CounterpartyHex,
+		},
+	}, {
+		Filename: "relinquishCertificate-simple-result",
+		IsResult: true,
+		Object: wallet.RelinquishCertificateResult{
+			Relinquished: true,
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -641,6 +654,14 @@ func TestVectors(t *testing.T) {
 					var deserialized wallet.ProveCertificateResult
 					expectedObj := tt.Object.(wallet.ProveCertificateResult)
 					checkJson(&deserialized, &expectedObj)
+				case wallet.RelinquishCertificateArgs:
+					var deserialized wallet.RelinquishCertificateArgs
+					expectedObj := tt.Object.(wallet.RelinquishCertificateArgs)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.RelinquishCertificateResult:
+					var deserialized wallet.RelinquishCertificateResult
+					expectedObj := tt.Object.(wallet.RelinquishCertificateResult)
+					checkJson(&deserialized, &expectedObj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -782,6 +803,14 @@ func TestVectors(t *testing.T) {
 				case wallet.ProveCertificateResult:
 					serialized, err1 := serializer.SerializeProveCertificateResult(&obj)
 					deserialized, err2 := serializer.DeserializeProveCertificateResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.RelinquishCertificateArgs:
+					serialized, err1 := serializer.SerializeRelinquishCertificateArgs(&obj)
+					deserialized, err2 := serializer.DeserializeRelinquishCertificateArgs(frameParams)
+					checkWireSerialize(substrates.CallRelinquishCertificate, &obj, serialized, err1, deserialized, err2)
+				case wallet.RelinquishCertificateResult:
+					serialized, err1 := serializer.SerializeRelinquishCertificateResult(&obj)
+					deserialized, err2 := serializer.DeserializeRelinquishCertificateResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
