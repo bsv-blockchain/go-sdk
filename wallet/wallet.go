@@ -144,7 +144,7 @@ type EncryptArgs struct {
 
 type DecryptArgs struct {
 	EncryptionArgs
-	Ciphertext []byte
+	Ciphertext JsonByteNoBase64 `json:"ciphertext"`
 }
 
 type EncryptResult struct {
@@ -152,7 +152,7 @@ type EncryptResult struct {
 }
 
 type DecryptResult struct {
-	Plaintext []byte `json:"plaintext"`
+	Plaintext JsonByteNoBase64 `json:"plaintext"`
 }
 
 type GetPublicKeyArgs struct {

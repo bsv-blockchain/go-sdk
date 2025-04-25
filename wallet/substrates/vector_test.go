@@ -287,6 +287,28 @@ func TestVectors(t *testing.T) {
 		Object: wallet.EncryptResult{
 			Ciphertext: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},
+	}, {
+		Filename: "decrypt-simple-args",
+		Object: wallet.DecryptArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID: wallet.Protocol{
+					SecurityLevel: wallet.SecurityLevelEveryApp,
+					Protocol:      "test-protocol",
+				},
+				KeyID:            "test-key",
+				Privileged:       true,
+				PrivilegedReason: "test reason",
+				SeekPermission:   true,
+				Counterparty:     wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
+			},
+			Ciphertext: []byte{1, 2, 3, 4, 5, 6, 7, 8},
+		},
+	}, {
+		Filename: "decrypt-simple-result",
+		IsResult: true,
+		Object: wallet.DecryptResult{
+			Plaintext: []byte{1, 2, 3, 4},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -384,6 +406,12 @@ func TestVectors(t *testing.T) {
 				case wallet.EncryptResult:
 					var deserialized wallet.EncryptResult
 					checkJson(&deserialized, &obj)
+				case wallet.DecryptArgs:
+					var deserialized wallet.DecryptArgs
+					checkJson(&deserialized, &obj)
+				case wallet.DecryptResult:
+					var deserialized wallet.DecryptResult
+					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -461,6 +489,14 @@ func TestVectors(t *testing.T) {
 				case wallet.EncryptResult:
 					serialized, err1 := serializer.SerializeEncryptResult(&obj)
 					deserialized, err2 := serializer.DeserializeEncryptResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.DecryptArgs:
+					serialized, err1 := serializer.SerializeDecryptArgs(&obj)
+					deserialized, err2 := serializer.DeserializeDecryptArgs(frameParams)
+					checkWireSerialize(substrates.CallDecrypt, &obj, serialized, err1, deserialized, err2)
+				case wallet.DecryptResult:
+					serialized, err1 := serializer.SerializeDecryptResult(&obj)
+					deserialized, err2 := serializer.DeserializeDecryptResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
