@@ -4,30 +4,79 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
-	Type               string            // Base64-encoded certificate type ID
-	SerialNumber       string            // Base64-encoded unique serial number
-	Subject            *ec.PublicKey     // Public key of the certificate subject
-	Certifier          *ec.PublicKey     // Public key of the certificate issuer
-	RevocationOutpoint string            // Format: "txid:outputIndex"
-	Fields             map[string]string // Field name -> field value (encrypted)
-	Signature          string            // Hex-encoded signature
+	Type               string            `json:"type"`                         // Base64-encoded certificate type ID
+	SerialNumber       string            `json:"serialNumber"`                 // Base64-encoded unique serial number
+	Subject            *ec.PublicKey     `json:"subject"`                      // Public key of the certificate subject
+	Certifier          *ec.PublicKey     `json:"certifier"`                    // Public key of the certificate issuer
+	RevocationOutpoint string            `json:"revocationOutpoint,omitempty"` // Format: "txid:outputIndex"
+	Fields             map[string]string `json:"fields,omitempty"`             // Field name -> field value (encrypted)
+	Signature          string            `json:"signature,omitempty"`          // Hex-encoded signature
 }
 
-// type Certificate struct {
-// 	Type               string
-// 	Subject            string
-// 	SerialNumber       string
-// 	Certifier          string
-// 	RevocationOutpoint string
-// 	Signature          string
-// 	Fields             map[string]string
-// }
+// MarshalJSON implements json.Marshaler interface for Certificate
+func (c *Certificate) MarshalJSON() ([]byte, error) {
+	type Alias Certificate // Use alias to avoid recursion
+	var subjectHex, certifierHex *string
+	if c.Subject != nil {
+		s := c.Subject.ToDERHex()
+		subjectHex = &s
+	}
+	if c.Certifier != nil {
+		cs := c.Certifier.ToDERHex()
+		certifierHex = &cs
+	}
+
+	return json.Marshal(&struct {
+		Subject      *string `json:"subject"`
+		Certifier    *string `json:"certifier"`
+		*Alias
+	}{
+		Subject:      subjectHex,
+		Certifier:    certifierHex,
+		Alias:        (*Alias)(c),
+	})
+}
+
+// UnmarshalJSON implements json.Unmarshaler interface for Certificate
+func (c *Certificate) UnmarshalJSON(data []byte) error {
+	type Alias Certificate // Use alias to avoid recursion
+	aux := &struct {
+		Subject      *string `json:"subject"`
+		Certifier    *string `json:"certifier"`
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Decode public key hex strings
+	if aux.Subject != nil {
+		sub, err := ec.PublicKeyFromString(*aux.Subject)
+		if err != nil {
+			return fmt.Errorf("error decoding subject public key hex: %w", err)
+		}
+		c.Subject = sub
+	}
+	if aux.Certifier != nil {
+		cert, err := ec.PublicKeyFromString(*aux.Certifier)
+		if err != nil {
+			return fmt.Errorf("error decoding certifier public key hex: %w", err)
+		}
+		c.Certifier = cert
+	}
+
+	return nil
+}
 
 // CreateActionInput represents an input to be spent in a transaction
 type CreateActionInput struct {
@@ -415,18 +464,18 @@ type IdentityCertificate struct {
 }
 
 type AcquireCertificateArgs struct {
-	Type                string
-	Certifier           string
-	AcquisitionProtocol string
-	Fields              map[string]string
-	SerialNumber        string
-	RevocationOutpoint  string
-	Signature           string
-	CertifierUrl        string
-	KeyringRevealer     string
-	KeyringForSubject   map[string]string
-	Privileged          *bool
-	PrivilegedReason    string
+	Type                string            `json:"type"`
+	Certifier           string            `json:"certifier"`
+	AcquisitionProtocol string            `json:"acquisitionProtocol"`
+	Fields              map[string]string `json:"fields,omitempty"`
+	SerialNumber        string            `json:"serialNumber"`
+	RevocationOutpoint  string            `json:"revocationOutpoint,omitempty"`
+	Signature           string            `json:"signature,omitempty"`
+	CertifierUrl        string            `json:"certifierUrl,omitempty"`
+	KeyringRevealer     string            `json:"keyringRevealer,omitempty"`
+	KeyringForSubject   map[string]string `json:"keyringForSubject,omitempty"`
+	Privileged          *bool             `json:"privileged,omitempty"`
+	PrivilegedReason    string            `json:"privilegedReason,omitempty"`
 }
 
 type ListCertificatesArgs struct {
@@ -448,12 +497,6 @@ type ListCertificatesResult struct {
 	TotalCertificates uint32
 	Certificates      []CertificateResult
 }
-
-// type ProveCertificateResult struct {
-// 	KeyringForVerifier map[string]string
-// 	Certificate        *Certificate
-// 	Verifier           string
-// }
 
 type RelinquishCertificateArgs struct {
 	Type         string
@@ -516,12 +559,6 @@ type GetNetworkResult struct {
 type GetVersionResult struct {
 	Version string
 }
-
-// ListCertificatesResult contains the results of listing certificates
-// type ListCertificatesResult struct {
-// 	// The matching certificates
-// 	Certificates []Certificate
-// }
 
 // ProveCertificateArgs contains parameters for creating verifiable certificates
 type ProveCertificateArgs struct {

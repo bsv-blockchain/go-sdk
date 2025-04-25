@@ -32,6 +32,9 @@ func base64ToBytes(t *testing.T, s string) []byte {
 func TestVectors(t *testing.T) {
 	privKey, err := ec.PrivateKeyFromHex("6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8")
 	require.NoError(t, err)
+	pubKey, err := ec.PublicKeyFromString("025ad43a22ac38d0bc1f8bacaabb323b5d634703b7a774c4268f6a09e4ddf79097")
+	require.NoError(t, err)
+	require.Equal(t, privKey.PubKey(), pubKey)
 	const CounterpartyHex = "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1"
 	counterparty, err := ec.PublicKeyFromString(CounterpartyHex)
 	require.NoError(t, err)
@@ -209,7 +212,7 @@ func TestVectors(t *testing.T) {
 		Filename: "getPublicKey-simple-result",
 		IsResult: true,
 		Object: wallet.GetPublicKeyResult{
-			PublicKey: privKey.PubKey(),
+			PublicKey: pubKey,
 		},
 	}, {
 		Filename: "revealCounterpartyKeyLinkage-simple-args",
@@ -402,6 +405,33 @@ func TestVectors(t *testing.T) {
 		Object: wallet.VerifySignatureResult{
 			Valid: true,
 		},
+	}, {
+		Filename: "acquireCertificate-simple-args",
+		Object: wallet.AcquireCertificateArgs{
+			Type:                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+			Certifier:           "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1", // Use hex string from TS
+			AcquisitionProtocol: "issuance",
+			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
+			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+			RevocationOutpoint:  "txid123:0",
+			Signature:           "sig-hex",
+			CertifierUrl:        "https://certifier.example.com",
+			KeyringRevealer:     "revealer-key-hex", // Keep as string
+			KeyringForSubject:   map[string]string{"field1": "key1", "field2": "key2"},
+			Privileged:          util.BoolPtr(false),
+		},
+	}, {
+		Filename: "acquireCertificate-simple-result",
+		IsResult: true,
+		Object: wallet.Certificate{
+			Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+			SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+			Subject:            pubKey,       // Use key from test setup
+			Certifier:          counterparty, // Use key from test setup
+			RevocationOutpoint: "txid123:0",
+			Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
+			Signature:          "sig-hex",
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -430,11 +460,14 @@ func TestVectors(t *testing.T) {
 			t.Run("JSON", func(t *testing.T) {
 				// Define a function to check JSON serialization and deserialization
 				checkJson := func(emptyObj, expectedObj any) {
-					require.NoError(t, json.Unmarshal(vectorFile["json"], emptyObj))
-					require.EqualValues(t, expectedObj, emptyObj)
+					// Unmarshall the vector file into a Go object to compare with test Go object
+					require.NoError(t, json.Unmarshal(vectorFile["json"], emptyObj), "Failed unmarshal JSON to object")
+					require.EqualValues(t, expectedObj, emptyObj, "Deserialized object mismatch")
+
+					// Marshal the test Go object to JSON to compare with the vector file
 					marshaled, err := json.MarshalIndent(expectedObj, "  ", "  ")
-					require.NoError(t, err)
-					require.Equal(t, string(vectorFile["json"]), string(marshaled))
+					require.NoError(t, err, "Failed to marshal object to JSON")
+					require.JSONEq(t, string(vectorFile["json"]), string(marshaled), "Marshaled JSON mismatch") // Use JSONEq for map order robustness
 				}
 
 				// Marshal the object to JSON
@@ -530,6 +563,14 @@ func TestVectors(t *testing.T) {
 				case wallet.VerifySignatureResult:
 					var deserialized wallet.VerifySignatureResult
 					expectedObj := tt.Object.(wallet.VerifySignatureResult)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.AcquireCertificateArgs:
+					var deserialized wallet.AcquireCertificateArgs
+					expectedObj := tt.Object.(wallet.AcquireCertificateArgs)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.Certificate:
+					var deserialized wallet.Certificate
+					expectedObj := tt.Object.(wallet.Certificate)
 					checkJson(&deserialized, &expectedObj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
@@ -648,6 +689,14 @@ func TestVectors(t *testing.T) {
 				case wallet.VerifySignatureResult:
 					serialized, err1 := serializer.SerializeVerifySignatureResult(&obj)
 					deserialized, err2 := serializer.DeserializeVerifySignatureResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.AcquireCertificateArgs:
+					serialized, err1 := serializer.SerializeAcquireCertificateArgs(&obj)
+					deserialized, err2 := serializer.DeserializeAcquireCertificateArgs(frameParams)
+					checkWireSerialize(substrates.CallAcquireCertificate, &obj, serialized, err1, deserialized, err2)
+				case wallet.Certificate:
+					serialized, err1 := serializer.SerializeCertificate(&obj)
+					deserialized, err2 := serializer.DeserializeCertificate(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
