@@ -377,6 +377,31 @@ func TestVectors(t *testing.T) {
 		Object: wallet.CreateSignatureResult{
 			Signature: *newTestSignature(t),
 		},
+	}, {
+		Filename: "verifySignature-simple-args",
+		Object: func() wallet.VerifySignatureArgs {
+			var args wallet.VerifySignatureArgs
+			// Unmarshal known good JSON to create the test object
+			argsJSON := `{
+				"protocolID": [1, "test-protocol"],
+				"keyID": "test-key",
+				"counterparty": "self",
+				"privileged": true,
+				"privilegedReason": "test reason",
+				"seekPermission": true,
+				"data": [11, 22, 33, 44],
+				"signature": [48,37,2,32,78,69,225,105,50,184,175,81,73,97,161,211,161,162,95,223,63,79,119,50,233,214,36,198,198,21,72,171,95,184,205,65,2,1,0]
+			}`
+			err := json.Unmarshal([]byte(argsJSON), &args)
+			require.NoError(t, err)
+			return args
+		}(),
+	}, {
+		Filename: "verifySignature-simple-result",
+		IsResult: true,
+		Object: wallet.VerifySignatureResult{
+			Valid: true,
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -498,6 +523,14 @@ func TestVectors(t *testing.T) {
 				case wallet.CreateSignatureResult:
 					var deserialized wallet.CreateSignatureResult
 					checkJson(&deserialized, &obj)
+				case wallet.VerifySignatureArgs:
+					var deserialized wallet.VerifySignatureArgs
+					expectedObj := tt.Object.(wallet.VerifySignatureArgs)
+					checkJson(&deserialized, &expectedObj)
+				case wallet.VerifySignatureResult:
+					var deserialized wallet.VerifySignatureResult
+					expectedObj := tt.Object.(wallet.VerifySignatureResult)
+					checkJson(&deserialized, &expectedObj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -607,6 +640,14 @@ func TestVectors(t *testing.T) {
 				case wallet.CreateSignatureResult:
 					serialized, err1 := serializer.SerializeCreateSignatureResult(&obj)
 					deserialized, err2 := serializer.DeserializeCreateSignatureResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.VerifySignatureArgs:
+					serialized, err1 := serializer.SerializeVerifySignatureArgs(&obj)
+					deserialized, err2 := serializer.DeserializeVerifySignatureArgs(frameParams)
+					checkWireSerialize(substrates.CallVerifySignature, &obj, serialized, err1, deserialized, err2)
+				case wallet.VerifySignatureResult:
+					serialized, err1 := serializer.SerializeVerifySignatureResult(&obj)
+					deserialized, err2 := serializer.DeserializeVerifySignatureResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

@@ -3,6 +3,7 @@ package wallet
 import (
 	"encoding/json"
 	"fmt"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
