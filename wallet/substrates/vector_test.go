@@ -568,6 +568,12 @@ func TestVectors(t *testing.T) {
 				},
 			},
 		},
+	}, {
+		Filename: "isAuthenticated-simple-result",
+		IsResult: true,
+		Object: wallet.AuthenticatedResult{
+			Authenticated: true,
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -744,6 +750,10 @@ func TestVectors(t *testing.T) {
 					var deserialized wallet.DiscoverByAttributesArgs
 					expectedObj := tt.Object.(wallet.DiscoverByAttributesArgs)
 					checkJson(&deserialized, &expectedObj)
+				case wallet.AuthenticatedResult:
+					var deserialized wallet.AuthenticatedResult
+					expectedObj := tt.Object.(wallet.AuthenticatedResult)
+					checkJson(&deserialized, &expectedObj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -906,6 +916,10 @@ func TestVectors(t *testing.T) {
 					serialized, err1 := serializer.SerializeDiscoverByAttributesArgs(&obj)
 					deserialized, err2 := serializer.DeserializeDiscoverByAttributesArgs(frameParams)
 					checkWireSerialize(substrates.CallDiscoverByAttributes, &obj, serialized, err1, deserialized, err2)
+				case wallet.AuthenticatedResult:
+					serialized, err1 := serializer.SerializeAuthenticatedResult(&obj)
+					deserialized, err2 := serializer.DeserializeAuthenticatedResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}

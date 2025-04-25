@@ -663,7 +663,7 @@ type DiscoverCertificatesResult struct {
 }
 
 type AuthenticatedResult struct {
-	Authenticated bool
+	Authenticated bool `json:"authenticated"`
 }
 
 type GetHeightResult struct {
