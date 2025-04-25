@@ -17,12 +17,12 @@ type PushDropData struct {
 	Fields           [][]byte
 }
 
-func Decode(s *script.Script) (*PushDropData, error) {
+func Decode(s *script.Script) *PushDropData {
 	pushDrop := &PushDropData{}
 	if chunks, err := s.Chunks(); err != nil {
-		return nil, err
+		return nil
 	} else if pushDrop.LockingPublicKey, err = ec.PublicKeyFromBytes(chunks[0].Data); err != nil {
-		return nil, err
+		return nil
 	} else {
 		for i := 2; i < len(chunks); i++ {
 			nextOpcode := chunks[i+1].Op
@@ -41,7 +41,7 @@ func Decode(s *script.Script) (*PushDropData, error) {
 				break
 			}
 		}
-		return pushDrop, nil
+		return pushDrop
 	}
 }
 
@@ -183,7 +183,8 @@ func (p *PushDropUnlocker) Sign(
 			return nil, fmt.Errorf("unable to create wallet signature for sign: %w", err)
 		}
 		s := (&script.Script{})
-		s.AppendPushData(sig.Signature.Serialize())
+		// Error throws if data is too big which wont happen here
+		_ = s.AppendPushData(sig.Signature.Serialize())
 		return s, nil
 	}
 

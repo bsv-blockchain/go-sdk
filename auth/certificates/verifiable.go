@@ -78,6 +78,7 @@ func NewVerifiableCertificateFromBinary(data []byte) (*VerifiableCertificate, er
 //	A map[string]string containing the decrypted field names and their plaintext values.
 //	An error if the keyring is missing/empty or if any decryption operation fails.
 func (vc *VerifiableCertificate) DecryptFields(
+	ctx context.Context,
 	verifierWallet wallet.Interface, // Use the interface type
 	privileged bool,
 	privilegedReason string,
@@ -91,9 +92,15 @@ func (vc *VerifiableCertificate) DecryptFields(
 	decryptedFields := make(map[string]string)
 
 	// The counterparty for decrypting the field revelation keys is the Subject of the certificate.
+	// Check if the Subject field is initialized before using it
+	subjectKey := vc.Subject
+	if subjectKey.X == nil || subjectKey.Y == nil {
+		return nil, errors.New("certificate subject is invalid or not initialized")
+	}
+
 	subjectCounterparty := wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
-		Counterparty: &vc.Subject, // Use the Subject from the embedded Certificate
+		Counterparty: &subjectKey, // Use the Subject from the embedded Certificate
 	}
 
 	// Iterate through the fields specified in the verifier's KeyRing.
@@ -109,7 +116,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 		// Use the certificate's serial number as required for verifier keyring decryption.
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(vc.SerialNumber))
 
-		decryptResult, err := verifierWallet.Decrypt(context.TODO(), wallet.DecryptArgs{
+		decryptResult, err := verifierWallet.Decrypt(ctx, wallet.DecryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,

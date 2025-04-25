@@ -39,7 +39,7 @@ func (f *HTTPSOverlayBroadcastFacilitator) Send(url string, taggedBEEF *overlay.
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			return nil, &util.HTTPError{
 				StatusCode: resp.StatusCode,

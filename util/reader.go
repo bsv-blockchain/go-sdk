@@ -268,7 +268,8 @@ func (r *ReaderHoldError) ReadIntBytes() []byte {
 	return val
 }
 
-func (r *ReaderHoldError) ReadByte() byte {
+// ReadByte returns the next byte and holds any error internally
+func (r *ReaderHoldError) ReadByte() byte { //nolint:govet
 	if r.Err != nil {
 		return 0
 	}

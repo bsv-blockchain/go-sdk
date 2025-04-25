@@ -1,10 +1,9 @@
 package interpreter_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
-
-	"context"
 
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -123,7 +122,7 @@ func ExampleEngine_Execute_concurrent() {
 	})
 
 	vm := interpreter.NewEngine()
-	errs, _ := errgroup.WithContext(context.TODO())
+	errs, _ := errgroup.WithContext(context.Background())
 	for _, e := range ee {
 		exec := e
 		errs.Go(func() error {

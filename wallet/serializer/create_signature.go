@@ -56,14 +56,17 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
-	// Read data or hash
+	// Read data type flag and content
 	dataTypeFlag := r.ReadByte()
-	if dataTypeFlag == 1 {
+	switch dataTypeFlag {
+	case 1:
+		// Data provided directly
 		dataLen := r.ReadVarInt()
 		args.Data = r.ReadBytes(int(dataLen))
-	} else if dataTypeFlag == 2 {
+	case 2:
+		// Hash provided directly
 		args.HashToDirectlySign = r.ReadBytes(32)
-	} else {
+	default:
 		return nil, fmt.Errorf("invalid data type flag: %d", dataTypeFlag)
 	}
 

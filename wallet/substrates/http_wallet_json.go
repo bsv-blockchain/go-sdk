@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"io"
 	"net/http"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // HTTPWalletJSON implements wallet.Interface for HTTP transport using JSON
@@ -310,7 +311,7 @@ func (h *HTTPWalletJSON) DiscoverByAttributes(ctx context.Context, args wallet.D
 }
 
 // IsAuthenticated checks authentication status
-func (h *HTTPWalletJSON) IsAuthenticated(ctx context.Context, args interface{}) (*wallet.AuthenticatedResult, error) {
+func (h *HTTPWalletJSON) IsAuthenticated(ctx context.Context, args any) (*wallet.AuthenticatedResult, error) {
 	data, err := h.api(ctx, "isAuthenticated", args)
 	if err != nil {
 		return nil, err
@@ -321,7 +322,7 @@ func (h *HTTPWalletJSON) IsAuthenticated(ctx context.Context, args interface{}) 
 }
 
 // WaitForAuthentication waits until user is authenticated
-func (h *HTTPWalletJSON) WaitForAuthentication(ctx context.Context, args interface{}) (*wallet.AuthenticatedResult, error) {
+func (h *HTTPWalletJSON) WaitForAuthentication(ctx context.Context, args any) (*wallet.AuthenticatedResult, error) {
 	data, err := h.api(ctx, "waitForAuthentication", args)
 	if err != nil {
 		return nil, err
@@ -332,7 +333,7 @@ func (h *HTTPWalletJSON) WaitForAuthentication(ctx context.Context, args interfa
 }
 
 // GetHeight gets current blockchain height
-func (h *HTTPWalletJSON) GetHeight(ctx context.Context, args interface{}) (*wallet.GetHeightResult, error) {
+func (h *HTTPWalletJSON) GetHeight(ctx context.Context, args any) (*wallet.GetHeightResult, error) {
 	data, err := h.api(ctx, "getHeight", args)
 	if err != nil {
 		return nil, err
@@ -354,7 +355,7 @@ func (h *HTTPWalletJSON) GetHeaderForHeight(ctx context.Context, args wallet.Get
 }
 
 // GetNetwork gets current network (mainnet/testnet)
-func (h *HTTPWalletJSON) GetNetwork(ctx context.Context, args interface{}) (*wallet.GetNetworkResult, error) {
+func (h *HTTPWalletJSON) GetNetwork(ctx context.Context, args any) (*wallet.GetNetworkResult, error) {
 	data, err := h.api(ctx, "getNetwork", args)
 	if err != nil {
 		return nil, err
@@ -365,7 +366,7 @@ func (h *HTTPWalletJSON) GetNetwork(ctx context.Context, args interface{}) (*wal
 }
 
 // GetVersion gets wallet version
-func (h *HTTPWalletJSON) GetVersion(ctx context.Context, args interface{}) (*wallet.GetVersionResult, error) {
+func (h *HTTPWalletJSON) GetVersion(ctx context.Context, args any) (*wallet.GetVersionResult, error) {
 	data, err := h.api(ctx, "getVersion", args)
 	if err != nil {
 		return nil, err

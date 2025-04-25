@@ -107,7 +107,7 @@ func TestCertificate(t *testing.T) {
 		// Create a ProtoWallet for signing
 		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
 
-		err = certificate.Sign(certifierProtoWallet)
+		err = certificate.Sign(t.Context(), certifierProtoWallet)
 		require.NoError(t, err)
 
 		serialized, err := certificate.ToBinary(true) // Include signature
@@ -140,11 +140,11 @@ func TestCertificate(t *testing.T) {
 		// Create a ProtoWallet for signing
 		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
 
-		err = certificate.Sign(certifierProtoWallet)
+		err = certificate.Sign(t.Context(), certifierProtoWallet)
 		require.NoError(t, err)
 
 		// Verify the signature
-		err = certificate.Verify()
+		err = certificate.Verify(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -162,14 +162,14 @@ func TestCertificate(t *testing.T) {
 		// Create a ProtoWallet for signing
 		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
 
-		err = certificate.Sign(certifierProtoWallet)
+		err = certificate.Sign(t.Context(), certifierProtoWallet)
 		require.NoError(t, err)
 
 		// Tamper with the certificate (modify a field)
 		certificate.Fields[wallet.CertificateFieldNameUnder50Bytes("email")] = wallet.Base64String("attacker@example.com")
 
 		// Verify the signature
-		err = certificate.Verify()
+		err = certificate.Verify(t.Context())
 		assert.Error(t, err)
 	})
 
@@ -185,7 +185,7 @@ func TestCertificate(t *testing.T) {
 		}
 
 		// Verify the signature
-		err = certificate.Verify()
+		err = certificate.Verify(t.Context())
 		assert.Error(t, err)
 	})
 
@@ -204,7 +204,7 @@ func TestCertificate(t *testing.T) {
 		}
 
 		// Verify the signature
-		err = certificate.Verify()
+		err = certificate.Verify(t.Context())
 		assert.Error(t, err)
 	})
 
@@ -222,7 +222,7 @@ func TestCertificate(t *testing.T) {
 		// Create a ProtoWallet for signing
 		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
 
-		err = certificate.Sign(certifierProtoWallet)
+		err = certificate.Sign(t.Context(), certifierProtoWallet)
 		require.NoError(t, err)
 
 		// Serialize and deserialize
@@ -235,7 +235,7 @@ func TestCertificate(t *testing.T) {
 		assert.Equal(t, sampleFieldsEmpty, deserializedCertificate.Fields)
 
 		// Verify the signature
-		err = deserializedCertificate.Verify()
+		err = deserializedCertificate.Verify(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -292,7 +292,7 @@ func TestCertificate(t *testing.T) {
 		// Create a ProtoWallet for signing
 		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
 
-		err = certificate.Sign(certifierProtoWallet)
+		err = certificate.Sign(t.Context(), certifierProtoWallet)
 		require.NoError(t, err)
 
 		// Serialize and deserialize
@@ -305,7 +305,7 @@ func TestCertificate(t *testing.T) {
 		assert.Equal(t, fields, deserializedCertificate.Fields)
 
 		// Verify the signature
-		err = deserializedCertificate.Verify()
+		err = deserializedCertificate.Verify(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -344,7 +344,7 @@ func TestCertificate(t *testing.T) {
 		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
 
 		// Trying to sign again should error
-		err = preSignedCertificate.Sign(certifierProtoWallet)
+		err = preSignedCertificate.Sign(t.Context(), certifierProtoWallet)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "certificate has already been signed")
 
@@ -365,7 +365,7 @@ func TestCertificate(t *testing.T) {
 
 		// Sign the certificate; it should automatically update
 		// the certifier field to match the wallet's actual public key
-		err = certificateWithMismatch.Sign(certifierProtoWallet)
+		err = certificateWithMismatch.Sign(t.Context(), certifierProtoWallet)
 		require.NoError(t, err)
 
 		// Get the expected public key from the wallet
@@ -375,7 +375,7 @@ func TestCertificate(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.True(t, certificateWithMismatch.Certifier.IsEqual(pubKey.PublicKey))
-		err = certificateWithMismatch.Verify()
+		err = certificateWithMismatch.Verify(t.Context())
 		assert.NoError(t, err)
 	})
 }

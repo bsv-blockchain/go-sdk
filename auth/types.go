@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -62,6 +63,7 @@ type AuthMessage struct {
 // ValidateCertificates validates and processes the certificates received from a peer.
 // The certificatesRequested parameter can be nil or a RequestedCertificateSet
 func ValidateCertificates(
+	ctx context.Context,
 	verifierWallet wallet.Interface,
 	message *AuthMessage,
 	certificatesRequested *utils.RequestedCertificateSet,
@@ -94,7 +96,7 @@ func ValidateCertificates(
 			}
 
 			// Verify Certificate structure and signature
-			err := cert.Verify()
+			err := cert.Verify(ctx)
 			if err != nil {
 				errCh <- fmt.Errorf("the signature for the certificate with serial number %s is invalid: %v",
 					cert.SerialNumber, err)
@@ -125,7 +127,7 @@ func ValidateCertificates(
 				}
 			}
 
-			_, err = cert.DecryptFields(verifierWallet, false, "")
+			_, err = cert.DecryptFields(ctx, verifierWallet, false, "")
 			if err != nil {
 				errCh <- fmt.Errorf("failed to decrypt certificate fields: %v", err)
 				return
@@ -189,16 +191,41 @@ type CertificateQuery struct {
 func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 	type Alias AuthMessage
 
+	if m.IdentityKey == nil {
+		return nil, fmt.Errorf("IdentityKey is required for marshaling AuthMessage")
+	}
+
+	// For certificates, ensure signature format is correct
+	formattedCerts := make([]*certificates.VerifiableCertificate, 0, len(m.Certificates))
+	for _, cert := range m.Certificates {
+		certCopy := *cert
+
+		// If signature is base64 encoded, decode it to raw bytes
+		if len(cert.Signature) > 0 {
+			// Check if it's already a valid ASN.1 DER signature
+			if _, err := ec.ParseSignature(cert.Signature); err != nil {
+				// It's not, try to decode from base64
+				if sigBytes, err := base64.StdEncoding.DecodeString(string(cert.Signature)); err == nil {
+					certCopy.Signature = sigBytes
+				}
+			}
+		}
+
+		formattedCerts = append(formattedCerts, &certCopy)
+	}
+
 	return json.Marshal(&struct {
-		IdentityKey string `json:"identityKey"`
-		Payload     string `json:"payload,omitempty"`
-		Signature   string `json:"signature,omitempty"`
+		IdentityKey  string                                `json:"identityKey"`
+		Payload      string                                `json:"payload,omitempty"`
+		Signature    string                                `json:"signature,omitempty"`
+		Certificates []*certificates.VerifiableCertificate `json:"certificates,omitempty"`
 		*Alias
 	}{
-		IdentityKey: m.IdentityKey.ToDERHex(),
-		Payload:     base64.StdEncoding.EncodeToString(m.Payload),
-		Signature:   base64.StdEncoding.EncodeToString(m.Signature),
-		Alias:       (*Alias)(m),
+		IdentityKey:  m.IdentityKey.ToDERHex(),
+		Payload:      base64.StdEncoding.EncodeToString(m.Payload),
+		Signature:    base64.StdEncoding.EncodeToString(m.Signature),
+		Certificates: formattedCerts,
+		Alias:        (*Alias)(m),
 	})
 }
 
@@ -235,6 +262,18 @@ func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 		m.Signature, err = base64.StdEncoding.DecodeString(aux.Signature)
 		if err != nil {
 			return fmt.Errorf("invalid signature base64: %w", err)
+		}
+	}
+
+	// Process certificates to ensure signature is in correct format for validation
+	for i, cert := range m.Certificates {
+		if cert != nil && len(cert.Signature) > 0 {
+			// If it's a base64 encoded string
+			sigStr := string(cert.Signature)
+			if _, err := base64.StdEncoding.DecodeString(sigStr); err == nil {
+				decodedSig, _ := base64.StdEncoding.DecodeString(sigStr)
+				m.Certificates[i].Signature = decodedSig
+			}
 		}
 	}
 

@@ -3,8 +3,9 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"testing"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -64,6 +65,7 @@ func TestListCertificatesArgs(t *testing.T) {
 func TestListCertificatesResult(t *testing.T) {
 	t.Run("full result", func(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
+		require.NoError(t, err)
 		result := &wallet.ListCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.CertificateResult{

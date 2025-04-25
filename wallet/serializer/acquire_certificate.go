@@ -34,7 +34,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Fields))
-	for k, _ := range args.Fields {
+	for k := range args.Fields {
 		fieldEntries = append(fieldEntries, k)
 	}
 	w.WriteVarInt(uint64(len(fieldEntries)))

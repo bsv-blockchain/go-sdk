@@ -14,7 +14,6 @@ type CachedKeyDeriver struct {
 	keyDeriver   keyDeriverInterface
 	cache        *lruCache
 	maxCacheSize int
-	mu           sync.Mutex
 }
 
 type cacheKey struct {
@@ -26,7 +25,7 @@ type cacheKey struct {
 }
 
 type cacheValue struct {
-	value interface{}
+	value any
 	elem  *list.Element
 }
 
@@ -152,7 +151,7 @@ func (c *CachedKeyDeriver) RevealSpecificSecret(counterparty Counterparty, proto
 }
 
 // cacheGet retrieves a value from cache and updates its LRU position.
-func (c *CachedKeyDeriver) cacheGet(key cacheKey) (interface{}, bool) {
+func (c *CachedKeyDeriver) cacheGet(key cacheKey) (any, bool) {
 	c.cache.mu.Lock()
 	defer c.cache.mu.Unlock()
 
@@ -164,7 +163,7 @@ func (c *CachedKeyDeriver) cacheGet(key cacheKey) (interface{}, bool) {
 }
 
 // cacheSet adds a value to cache, evicting LRU items if needed.
-func (c *CachedKeyDeriver) cacheSet(key cacheKey, value interface{}) {
+func (c *CachedKeyDeriver) cacheSet(key cacheKey, value any) {
 	c.cache.mu.Lock()
 	defer c.cache.mu.Unlock()
 

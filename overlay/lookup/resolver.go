@@ -164,9 +164,7 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 				log.Println("Error parsing transaction ID:", err)
 			} else {
 				script := tx.Outputs[output.OutputIndex].LockingScript
-				if parsed, err := admintoken.Decode(script); err != nil {
-					log.Println("Error parsing overlay admin token template:", err)
-				} else if parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
+				if parsed := admintoken.Decode(script); parsed == nil || parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
 					continue
 				} else if _, ok := hosts[parsed.Domain]; !ok {
 					competentHosts = append(competentHosts, parsed.Domain)

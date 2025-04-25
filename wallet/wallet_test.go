@@ -1,7 +1,6 @@
 package wallet_test
 
 import (
-	"context"
 	"crypto/sha256"
 	"testing"
 
@@ -72,7 +71,7 @@ func TestEncryptDecryptMessage(t *testing.T) {
 	t.Run("wrong protocol", func(t *testing.T) {
 		wrongProtocolArgs := decryptArgs
 		wrongProtocolArgs.ProtocolID.Protocol = "wrong"
-		_, err := counterpartyWallet.Decrypt(context.TODO(), wrongProtocolArgs, "example")
+		_, err := counterpartyWallet.Decrypt(t.Context(), wrongProtocolArgs, "example")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cipher: message authentication failed")
 	})
@@ -216,6 +215,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		EncryptionArgs: baseArgs,
 		Data:           sampleData,
 	}
+	//nolint:staticcheck // Explicit access is clear
 	signArgs.EncryptionArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: counterpartyKey.PubKey(),
@@ -231,6 +231,7 @@ func TestCreateVerifySignature(t *testing.T) {
 		Signature:      signResult.Signature,
 		Data:           sampleData,
 	}
+	//nolint:staticcheck // Explicit access is clear
 	verifyArgs.EncryptionArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: userKey.PubKey(),

@@ -66,6 +66,7 @@ type CertificateFieldsResult struct {
 // CreateCertificateFields encrypts certificate fields for a subject and generates a master keyring.
 // This static method mirrors the TypeScript implementation.
 func CreateCertificateFields(
+	ctx context.Context,
 	creatorWallet *wallet.ProtoWallet,
 	certifierOrSubject wallet.Counterparty,
 	fields map[wallet.CertificateFieldNameUnder50Bytes]string, // Plaintext field values
@@ -92,7 +93,7 @@ func CreateCertificateFields(
 
 		// 3. Encrypt the symmetric key for the certifier/subject
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number for master keyring creation
-		encryptedKey, err := creatorWallet.Encrypt(context.TODO(), wallet.EncryptArgs{
+		encryptedKey, err := creatorWallet.Encrypt(ctx, wallet.EncryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,
@@ -121,6 +122,7 @@ func CreateCertificateFields(
 // can also include a revocation outpoint to manage potential revocation.
 // This static method mirrors the TypeScript implementation.
 func IssueCertificateForSubject(
+	ctx context.Context,
 	certifierWallet *wallet.ProtoWallet,
 	subject wallet.Counterparty,
 	plainFields map[string]string, // Plaintext fields
@@ -149,13 +151,13 @@ func IssueCertificateForSubject(
 	}
 
 	// 2. Create encrypted certificate fields and associated master keyring
-	fieldResult, err := CreateCertificateFields(certifierWallet, subject, fieldsForEncryption, false, "")
+	fieldResult, err := CreateCertificateFields(ctx, certifierWallet, subject, fieldsForEncryption, false, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create certificate fields: %w", err)
 	}
 
 	// 3. Get the identity public key of the certifier
-	certifierPubKey, err := certifierWallet.GetPublicKey(context.TODO(), wallet.GetPublicKeyArgs{
+	certifierPubKey, err := certifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
 		IdentityKey: true,
 	}, "")
 	if err != nil {
@@ -189,19 +191,20 @@ func IssueCertificateForSubject(
 	}
 
 	// Set the Subject field based on counterparty type
-	if subject.Type == wallet.CounterpartyTypeSelf {
+	switch subject.Type {
+	case wallet.CounterpartyTypeSelf:
 		// For self-signed certs, use the certifier's identity key as the subject
 		baseCert.Subject = *certifierPubKey.PublicKey
-	} else if subject.Type == wallet.CounterpartyTypeOther {
+	case wallet.CounterpartyTypeOther:
 		// For other-signed certs, ensure the counterparty has a public key
 		if subject.Counterparty == nil {
 			return nil, fmt.Errorf("subject counterparty is TypeOther but has a nil public key")
 		}
 		baseCert.Subject = *subject.Counterparty
-	} else if subject.Type == wallet.CounterpartyTypeAnyone {
+	case wallet.CounterpartyTypeAnyone:
 		// For "anyone" counterparty, use the certifier's key as well
 		baseCert.Subject = *certifierPubKey.PublicKey
-	} else {
+	default:
 		return nil, fmt.Errorf("unhandled subject counterparty type: %v", subject.Type)
 	}
 
@@ -212,7 +215,7 @@ func IssueCertificateForSubject(
 	}
 
 	// 7. Sign the certificate
-	err = masterCert.Sign(certifierWallet)
+	err = masterCert.Sign(ctx, certifierWallet)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign certificate: %w", err)
 	}
@@ -229,6 +232,7 @@ type DecryptFieldResult struct {
 // DecryptField decrypts a single field using the master keyring.
 // This static method mirrors the TypeScript implementation.
 func DecryptField(
+	ctx context.Context,
 	subjectOrCertifierWallet *wallet.ProtoWallet,
 	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
 	fieldName wallet.CertificateFieldNameUnder50Bytes,
@@ -253,7 +257,7 @@ func DecryptField(
 
 	// 2. Decrypt the field revelation key
 	protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number
-	decryptedBytes, err := subjectOrCertifierWallet.Decrypt(context.TODO(), wallet.DecryptArgs{
+	decryptedBytes, err := subjectOrCertifierWallet.Decrypt(ctx, wallet.DecryptArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID:       protocolID,
 			KeyID:            keyID,
@@ -290,6 +294,7 @@ func DecryptField(
 // DecryptFields decrypts multiple fields using the master keyring.
 // This static method mirrors the TypeScript implementation.
 func DecryptFields(
+	ctx context.Context,
 	subjectOrCertifierWallet *wallet.ProtoWallet,
 	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
 	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // Encrypted fields
@@ -308,6 +313,7 @@ func DecryptFields(
 
 	for fieldName, encryptedFieldValue := range fields {
 		result, err := DecryptField(
+			ctx,
 			subjectOrCertifierWallet,
 			masterKeyring,
 			fieldName,
@@ -331,6 +337,7 @@ func DecryptFields(
 // This allows selective disclosure of certificate fields to specific verifiers.
 // This static method mirrors the TypeScript implementation.
 func CreateKeyringForVerifier(
+	ctx context.Context,
 	subjectWallet *wallet.ProtoWallet,
 	certifier wallet.Counterparty, // Counterparty used when decrypting master key
 	verifier wallet.Counterparty, // Counterparty to encrypt for
@@ -357,6 +364,7 @@ func CreateKeyringForVerifier(
 
 		// First decrypt the master key
 		decryptedKey, err := DecryptField(
+			ctx,
 			subjectWallet,
 			masterKeyring,
 			fieldName,
@@ -374,7 +382,7 @@ func CreateKeyringForVerifier(
 
 		// 2. Re-encrypt the field revelation key for the verifier
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(serialNumber))
-		encryptedKeyForVerifier, err := subjectWallet.Encrypt(context.TODO(), wallet.EncryptArgs{
+		encryptedKeyForVerifier, err := subjectWallet.Encrypt(ctx, wallet.EncryptArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID:       protocolID,
 				KeyID:            keyID,
