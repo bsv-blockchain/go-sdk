@@ -309,6 +309,28 @@ func TestVectors(t *testing.T) {
 		Object: wallet.DecryptResult{
 			Plaintext: []byte{1, 2, 3, 4},
 		},
+	}, {
+		Filename: "createHmac-simple-args",
+		Object: wallet.CreateHmacArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID: wallet.Protocol{
+					SecurityLevel: wallet.SecurityLevelEveryApp,
+					Protocol:      "test-protocol",
+				},
+				KeyID:            "test-key",
+				Counterparty:     wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
+				Privileged:       true,
+				PrivilegedReason: "test reason",
+				SeekPermission:   true,
+			},
+			Data: []byte{10, 20, 30, 40},
+		},
+	}, {
+		Filename: "createHmac-simple-result",
+		IsResult: true,
+		Object: wallet.CreateHmacResult{
+			Hmac: []byte{50, 60, 70, 80, 90, 100, 110, 120},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.Filename, func(t *testing.T) {
@@ -412,6 +434,12 @@ func TestVectors(t *testing.T) {
 				case wallet.DecryptResult:
 					var deserialized wallet.DecryptResult
 					checkJson(&deserialized, &obj)
+				case wallet.CreateHmacArgs:
+					var deserialized wallet.CreateHmacArgs
+					checkJson(&deserialized, &obj)
+				case wallet.CreateHmacResult:
+					var deserialized wallet.CreateHmacResult
+					checkJson(&deserialized, &obj)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
@@ -497,6 +525,14 @@ func TestVectors(t *testing.T) {
 				case wallet.DecryptResult:
 					serialized, err1 := serializer.SerializeDecryptResult(&obj)
 					deserialized, err2 := serializer.DeserializeDecryptResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.CreateHmacArgs:
+					serialized, err1 := serializer.SerializeCreateHmacArgs(&obj)
+					deserialized, err2 := serializer.DeserializeCreateHmacArgs(frameParams)
+					checkWireSerialize(substrates.CallCreateHmac, &obj, serialized, err1, deserialized, err2)
+				case wallet.CreateHmacResult:
+					serialized, err1 := serializer.SerializeCreateHmacResult(&obj)
+					deserialized, err2 := serializer.DeserializeCreateHmacResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

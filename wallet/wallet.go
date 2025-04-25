@@ -193,17 +193,17 @@ type VerifySignatureArgs struct {
 
 type CreateHmacArgs struct {
 	EncryptionArgs
-	Data []byte
+	Data JsonByteNoBase64 `json:"data"`
 }
 
 type CreateHmacResult struct {
-	Hmac []byte `json:"hmac"`
+	Hmac JsonByteNoBase64 `json:"hmac"`
 }
 
 type VerifyHmacArgs struct {
 	EncryptionArgs
-	Data []byte
-	Hmac []byte
+	Data JsonByteNoBase64 `json:"data"`
+	Hmac JsonByteNoBase64 `json:"hmac"`
 }
 
 type VerifyHmacResult struct {
