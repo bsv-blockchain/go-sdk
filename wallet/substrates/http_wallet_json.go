@@ -33,7 +33,7 @@ func NewHTTPWalletJSON(originator string, baseURL string, httpClient *http.Clien
 }
 
 // api makes an HTTP POST request to the wallet API
-func (h *HTTPWalletJSON) api(ctx context.Context, call string, args interface{}) ([]byte, error) {
+func (h *HTTPWalletJSON) api(ctx context.Context, call string, args any) ([]byte, error) {
 	// Marshal request body
 	reqBody, err := json.Marshal(args)
 	if err != nil {
@@ -157,7 +157,7 @@ func (h *HTTPWalletJSON) GetPublicKey(ctx context.Context, args wallet.GetPublic
 
 // RevealCounterpartyKeyLinkage reveals key linkage between counterparties
 func (h *HTTPWalletJSON) RevealCounterpartyKeyLinkage(ctx context.Context, args wallet.RevealCounterpartyKeyLinkageArgs) (*wallet.RevealCounterpartyKeyLinkageResult, error) {
-	data, err := h.api(ctx, "revealCounterpartyKeyLinkage", args)
+	data, err := h.api(ctx, "revealCounterpartyKeyLinkage", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (h *HTTPWalletJSON) RevealCounterpartyKeyLinkage(ctx context.Context, args 
 
 // RevealSpecificKeyLinkage reveals key linkage for a specific interaction
 func (h *HTTPWalletJSON) RevealSpecificKeyLinkage(ctx context.Context, args wallet.RevealSpecificKeyLinkageArgs) (*wallet.RevealSpecificKeyLinkageResult, error) {
-	data, err := h.api(ctx, "revealSpecificKeyLinkage", args)
+	data, err := h.api(ctx, "revealSpecificKeyLinkage", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (h *HTTPWalletJSON) RevealSpecificKeyLinkage(ctx context.Context, args wall
 
 // Encrypt encrypts data using derived keys
 func (h *HTTPWalletJSON) Encrypt(ctx context.Context, args wallet.EncryptArgs) (*wallet.EncryptResult, error) {
-	data, err := h.api(ctx, "encrypt", args)
+	data, err := h.api(ctx, "encrypt", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (h *HTTPWalletJSON) Encrypt(ctx context.Context, args wallet.EncryptArgs) (
 
 // Decrypt decrypts data using derived keys
 func (h *HTTPWalletJSON) Decrypt(ctx context.Context, args wallet.DecryptArgs) (*wallet.DecryptResult, error) {
-	data, err := h.api(ctx, "decrypt", args)
+	data, err := h.api(ctx, "decrypt", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (h *HTTPWalletJSON) Decrypt(ctx context.Context, args wallet.DecryptArgs) (
 
 // CreateHmac creates an HMAC for data
 func (h *HTTPWalletJSON) CreateHmac(ctx context.Context, args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
-	data, err := h.api(ctx, "createHmac", args)
+	data, err := h.api(ctx, "createHmac", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func (h *HTTPWalletJSON) CreateHmac(ctx context.Context, args wallet.CreateHmacA
 
 // VerifyHmac verifies an HMAC for data
 func (h *HTTPWalletJSON) VerifyHmac(ctx context.Context, args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
-	data, err := h.api(ctx, "verifyHmac", args)
+	data, err := h.api(ctx, "verifyHmac", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (h *HTTPWalletJSON) VerifyHmac(ctx context.Context, args wallet.VerifyHmacA
 
 // CreateSignature creates a digital signature
 func (h *HTTPWalletJSON) CreateSignature(ctx context.Context, args wallet.CreateSignatureArgs) (*wallet.CreateSignatureResult, error) {
-	data, err := h.api(ctx, "createSignature", args)
+	data, err := h.api(ctx, "createSignature", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func (h *HTTPWalletJSON) CreateSignature(ctx context.Context, args wallet.Create
 
 // VerifySignature verifies a digital signature
 func (h *HTTPWalletJSON) VerifySignature(ctx context.Context, args wallet.VerifySignatureArgs) (*wallet.VerifySignatureResult, error) {
-	data, err := h.api(ctx, "verifySignature", args)
+	data, err := h.api(ctx, "verifySignature", &args)
 	if err != nil {
 		return nil, err
 	}

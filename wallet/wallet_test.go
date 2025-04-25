@@ -66,7 +66,7 @@ func TestEncryptDecryptMessage(t *testing.T) {
 	}
 	decryptResult, err := counterpartyWallet.Decrypt(ctx, decryptArgs, "example")
 	assert.NoError(t, err)
-	assert.Equal(t, sampleData, decryptResult.Plaintext)
+	assert.Equal(t, sampleData, []byte(decryptResult.Plaintext))
 
 	// Test error cases
 	t.Run("wrong protocol", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestEncryptDecryptMessage(t *testing.T) {
 			},
 		}, "example")
 		assert.NoError(t, err)
-		assert.Equal(t, []byte("BRC-2 Encryption Compliance Validated!"), result.Plaintext)
+		assert.Equal(t, []byte("BRC-2 Encryption Compliance Validated!"), []byte(result.Plaintext))
 	})
 }
 
@@ -186,7 +186,7 @@ func TestDefaultEncryptDecryptOperations(t *testing.T) {
 		}
 		decryptResult, err := userWallet.Decrypt(ctx, decryptArgs, "example")
 		assert.NoError(t, err)
-		assert.Equal(t, sampleData, decryptResult.Plaintext)
+		assert.Equal(t, sampleData, []byte(decryptResult.Plaintext))
 	})
 }
 

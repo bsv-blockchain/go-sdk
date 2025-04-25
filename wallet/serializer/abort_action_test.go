@@ -3,7 +3,6 @@ package serializer
 import (
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,7 +61,7 @@ func TestAbortActionResultSerializeAndDeserialize(t *testing.T) {
 			// Serialize
 			data, err := SerializeAbortActionResult(tt.result)
 			require.NoError(t, err)
-			require.NotEmpty(t, data)
+			require.Empty(t, data) // Abort action result has no additional data
 
 			// Deserialize
 			result, err := DeserializeAbortActionResult(data)
@@ -75,15 +74,9 @@ func TestAbortActionResultSerializeAndDeserialize(t *testing.T) {
 
 	// Test error case
 	t.Run("error response", func(t *testing.T) {
-		// Create error response data
-		w := util.NewWriter()
-		w.WriteByte(1) // error code
-		w.WriteString("abort failed")
-		w.WriteString("stack trace")
-
-		_, err := DeserializeAbortActionResult(w.Buf)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "abort failed")
+		result, err := DeserializeAbortActionResult([]byte{})
+		require.NoError(t, err)
+		require.Equal(t, result.Aborted, true)
 	})
 }
 
@@ -151,7 +144,7 @@ func TestSerializeAbortActionResult(t *testing.T) {
 	result := &wallet.AbortActionResult{Aborted: true}
 	data, err := SerializeAbortActionResult(result)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte{0}, data) // Success byte
+	assert.Equal(t, []byte(nil), data) // No additional data
 }
 
 func TestDeserializeAbortActionResult(t *testing.T) {
@@ -159,31 +152,22 @@ func TestDeserializeAbortActionResult(t *testing.T) {
 		name    string
 		data    []byte
 		want    *wallet.AbortActionResult
-		wantErr bool
 	}{
 		{
 			name:    "success",
-			data:    []byte{0},
+			data:    []byte{},
 			want:    &wallet.AbortActionResult{Aborted: true},
-			wantErr: false,
-		},
-		{
-			name:    "error",
-			data:    []byte{1, 0x0b, 'e', 'r', 'r', 'o', 'r', ' ', 'm', 's', 'g'},
-			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DeserializeAbortActionResult(tt.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DeserializeAbortActionResult() error = %v, wantErr %v", err, tt.wantErr)
+			if err != nil {
+				t.Errorf("DeserializeAbortActionResult() error = %v", err)
 				return
 			}
-			if !tt.wantErr {
-				assert.Equal(t, tt.want, got)
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

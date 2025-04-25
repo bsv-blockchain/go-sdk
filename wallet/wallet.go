@@ -95,11 +95,13 @@ func (c *Counterparty) UnmarshalJSON(data []byte) error {
 		c.Type = CounterpartyTypeAnyone
 	case "self":
 		c.Type = CounterpartyTypeSelf
+	case "":
+		c.Type = CounterpartyUninitialized
 	default:
 		// Attempt to parse as a public key string
 		pubKey, err := ec.PublicKeyFromString(s)
 		if err != nil {
-			return err
+			return fmt.Errorf("error unmarshaling counterparty: %w", err)
 		}
 		c.Type = CounterpartyTypeOther
 		c.Counterparty = pubKey

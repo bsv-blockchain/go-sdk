@@ -303,12 +303,13 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 		require.Equal(t, "/encrypt", r.URL.Path)
 
 		var args wallet.EncryptArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		require.Equal(t, testData, args.Plaintext)
+		require.NoError(t, json.Unmarshal(body, &args))
+		require.Equal(t, testData, []byte(args.Plaintext))
 
 		resp := wallet.EncryptResult{Ciphertext: encryptedData}
-		writeJSONResponse(t, w, resp)
+		writeJSONResponse(t, w, &resp)
 	}))
 	defer ts.Close()
 
@@ -317,7 +318,7 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 		Plaintext: testData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, encryptedData, encryptResult.Ciphertext)
+	require.Equal(t, encryptedData, []byte(encryptResult.Ciphertext))
 
 	// Test decrypt
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -326,10 +327,10 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 		var args wallet.DecryptArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, encryptedData, args.Ciphertext)
+		require.Equal(t, encryptedData, []byte(args.Ciphertext))
 
 		resp := wallet.DecryptResult{Plaintext: testData}
-		writeJSONResponse(t, w, resp)
+		writeJSONResponse(t, w, &resp)
 	}))
 	defer ts.Close()
 
@@ -338,7 +339,7 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 		Ciphertext: encryptedData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, testData, decryptResult.Plaintext)
+	require.Equal(t, testData, []byte(decryptResult.Plaintext))
 }
 
 func TestHTTPWalletJSON_HmacOperations(t *testing.T) {
@@ -350,19 +351,19 @@ func TestHTTPWalletJSON_HmacOperations(t *testing.T) {
 			var args wallet.CreateHmacArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
-			require.Equal(t, testData, args.Data)
+			require.Equal(t, testData, []byte(args.Data))
 
 			resp := wallet.CreateHmacResult{Hmac: testHmac}
-			writeJSONResponse(t, w, resp)
+			writeJSONResponse(t, w, &resp)
 		} else {
 			var args wallet.VerifyHmacArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
-			require.Equal(t, testData, args.Data)
-			require.Equal(t, testHmac, args.Hmac)
+			require.Equal(t, testData, []byte(args.Data))
+			require.Equal(t, testHmac, []byte(args.Hmac))
 
 			resp := wallet.VerifyHmacResult{Valid: true}
-			writeJSONResponse(t, w, resp)
+			writeJSONResponse(t, w, &resp)
 		}
 	}))
 	defer ts.Close()
@@ -374,7 +375,7 @@ func TestHTTPWalletJSON_HmacOperations(t *testing.T) {
 		Data: testData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, testHmac, hmacResult.Hmac)
+	require.Equal(t, testHmac, []byte(hmacResult.Hmac))
 
 	// Test verify HMAC
 	verifyResult, err := client.VerifyHmac(t.Context(), wallet.VerifyHmacArgs{
@@ -397,19 +398,19 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 			var args wallet.CreateSignatureArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
-			require.Equal(t, testData, args.Data)
+			require.Equal(t, testData, []byte(args.Data))
 
 			resp := wallet.CreateSignatureResult{Signature: testSig}
-			writeJSONResponse(t, w, resp)
+			writeJSONResponse(t, w, &resp)
 		} else {
 			var args wallet.VerifySignatureArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
-			require.Equal(t, testData, args.Data)
+			require.Equal(t, testData, []byte(args.Data))
 			require.Equal(t, testSig, args.Signature)
 
 			resp := wallet.VerifySignatureResult{Valid: true}
-			writeJSONResponse(t, w, resp)
+			writeJSONResponse(t, w, &resp)
 		}
 	}))
 	defer ts.Close()
@@ -662,7 +663,7 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		result := wallet.RevealCounterpartyKeyLinkageResult{
 			EncryptedLinkage: []byte("encrypted-data"),
 		}
-		writeJSONResponse(t, w, result)
+		writeJSONResponse(t, w, &result)
 	}))
 	defer ts.Close()
 
@@ -672,7 +673,7 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		Verifier:     "test-verifier",
 	})
 	require.NoError(t, err)
-	require.Equal(t, []byte("encrypted-data"), linkageResult.EncryptedLinkage)
+	require.Equal(t, []byte("encrypted-data"), []byte(linkageResult.EncryptedLinkage))
 
 	// Test RevealSpecificKeyLinkage
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -687,7 +688,7 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		result := wallet.RevealSpecificKeyLinkageResult{
 			EncryptedLinkage: []byte("specific-encrypted"),
 		}
-		writeJSONResponse(t, w, result)
+		writeJSONResponse(t, w, &result)
 	}))
 	defer ts.Close()
 
@@ -699,7 +700,7 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		KeyID: "test-key",
 	})
 	require.NoError(t, err)
-	require.Equal(t, []byte("specific-encrypted"), specificResult.EncryptedLinkage)
+	require.Equal(t, []byte("specific-encrypted"), []byte(specificResult.EncryptedLinkage))
 }
 
 func TestHTTPWalletJSON_AuthOperations(t *testing.T) {
