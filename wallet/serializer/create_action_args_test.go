@@ -46,13 +46,13 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 					AcceptDelayedBroadcast: util.BoolPtr(false),
 					TrustSelf:              "known",
 					KnownTxids: []string{
-						"1111111111111111111111111111111111111111111111111111111111111111",
-						"2222222222222222222222222222222222222222222222222222222222222222",
+						"8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
+						"490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
 					},
 					ReturnTXIDOnly:   util.BoolPtr(true),
 					NoSend:           util.BoolPtr(false),
 					NoSendChange:     []string{"abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"},
-					SendWith:         []string{"3333333333333333333333333333333333333333333333333333333333333333"},
+					SendWith:         []string{"b95bbe3c3f3bd420048cbf57201fc6dd4e730b2e046bf170ac0b1f78de069e8e"},
 					RandomizeOutputs: util.BoolPtr(true),
 				},
 			},
@@ -96,13 +96,13 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:              "1111111111111111111111111111111111111111111111111111111111111111.0",
+						Outpoint:              "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0",
 						InputDescription:      "input 1",
 						UnlockingScript:       "abcd",
 						UnlockingScriptLength: 2, // "abcd" is 2 bytes when decoded from hex
 					},
 					{
-						Outpoint:              "2222222222222222222222222222222222222222222222222222222222222222.1",
+						Outpoint:              "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981.1",
 						InputDescription:      "input 2",
 						UnlockingScript:       "efef",
 						UnlockingScriptLength: 2, // "efef" is 2 bytes when decoded from hex
@@ -186,7 +186,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// inputs (1 item)
 				w.WriteVarInt(1)
 				// valid outpoint
-				w.WriteBytes(make([]byte, 36))
+				w.WriteBytes(make([]byte, OutpointSize))
 				// unlocking script length (invalid hex)
 				w.WriteVarInt(2)
 				w.WriteBytes([]byte{0x01, 0x02})

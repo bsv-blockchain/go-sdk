@@ -224,7 +224,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		for j := uint64(0); j < inputCount; j++ {
 			input := wallet.ActionInput{}
 
-			opBytes := r.ReadBytes(36)
+			opBytes := r.ReadBytes(OutpointSize)
 			input.SourceOutpoint, _ = decodeOutpoint(opBytes)
 
 			// Serialize source satoshis, locking script, unlocking script, input description, and sequence number

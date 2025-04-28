@@ -1,7 +1,9 @@
 package serializer
 
 import (
+	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -215,6 +217,157 @@ func TestPrivilegedParams(t *testing.T) {
 				require.Equal(t, *tt.privileged, *gotPrivileged, "decoded privileged flag value should match original")
 			}
 			require.Equal(t, tt.privilegedReason, gotReason, "decoded privileged reason should match original")
+		})
+	}
+}
+
+func TestDecodeOutpoint(t *testing.T) {
+	validTxid := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	validIndex := uint32(42)
+
+	// Create valid outpoint bytes
+	txidBytes, err := hex.DecodeString(validTxid)
+	require.NoError(t, err, "decoding valid txid hex should not error")
+	validData := make([]byte, OutpointSize)
+	copy(validData[:32], txidBytes)
+	binary.BigEndian.PutUint32(validData[32:36], validIndex)
+
+	tests := []struct {
+		name      string
+		input     []byte
+		want      string
+		expectErr bool
+	}{
+		{
+			name:      "valid outpoint",
+			input:     validData,
+			want:      fmt.Sprintf("%s.%d", validTxid, validIndex),
+			expectErr: false,
+		},
+		{
+			name:      "invalid length - too short",
+			input:     validData[:OutpointSize-1],
+			want:      "",
+			expectErr: true,
+		},
+		{
+			name:      "invalid length - too long",
+			input:     append(validData, 0x00), // Add an extra byte
+			want:      "",
+			expectErr: true,
+		},
+		{
+			name:      "nil input",
+			input:     nil,
+			want:      "",
+			expectErr: true,
+		},
+		{
+			name:      "empty input",
+			input:     []byte{},
+			want:      "",
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := decodeOutpoint(tt.input)
+
+			if tt.expectErr {
+				require.Error(t, err, "expected an error but got none")
+				require.Empty(t, got, "expected empty string on error")
+			} else {
+				require.NoError(t, err, "did not expect an error but got one")
+				require.Equal(t, tt.want, got, "decoded outpoint string does not match expected")
+			}
+		})
+	}
+}
+
+func TestEncodeOutpoint(t *testing.T) {
+	validTxid := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	validIndex := uint32(42)
+	validOutpointStr := fmt.Sprintf("%s.%d", validTxid, validIndex)
+
+	// Expected valid binary output
+	expectedBytes := make([]byte, OutpointSize)
+	txidBytes, _ := hex.DecodeString(validTxid)
+	copy(expectedBytes[:32], txidBytes)
+	binary.BigEndian.PutUint32(expectedBytes[32:36], validIndex)
+
+	tests := []struct {
+		name           string
+		input          string
+		expectErr      bool
+		expectedOutput []byte
+	}{
+		{
+			name:           "valid outpoint",
+			input:          validOutpointStr,
+			expectErr:      false,
+			expectedOutput: expectedBytes,
+		},
+		{
+			name:           "invalid format - no dot",
+			input:          "nodothere",
+			expectErr:      true,
+			expectedOutput: nil,
+		},
+		{
+			name:           "invalid format - multiple dots",
+			input:          "too.many.dots",
+			expectErr:      true,
+			expectedOutput: nil,
+		},
+		{
+			name:           "invalid txid - non-hex",
+			input:          "nothex.123",
+			expectErr:      true,
+			expectedOutput: nil,
+		},
+		{
+			name:           "invalid txid - wrong length",
+			input:          "0123456789abcdef.123", // Too short
+			expectErr:      true,
+			expectedOutput: nil,
+		},
+		{
+			name:           "invalid index - non-numeric",
+			input:          fmt.Sprintf("%s.abc", validTxid),
+			expectErr:      true,
+			expectedOutput: nil,
+		},
+		{
+			name:           "invalid index - negative",
+			input:          fmt.Sprintf("%s.-1", validTxid),
+			expectErr:      true,
+			expectedOutput: nil,
+		},
+		{
+			name:           "empty input",
+			input:          "",
+			expectErr:      true,
+			expectedOutput: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotBytes, err := encodeOutpoint(tt.input)
+
+			if tt.expectErr {
+				require.Error(t, err, "expected an error but got none")
+				require.Nil(t, gotBytes, "expected nil bytes on error")
+			} else {
+				require.NoError(t, err, "did not expect an error but got one: %v", err)
+				require.Equal(t, tt.expectedOutput, gotBytes, "encoded bytes do not match expected")
+
+				// Round trip test
+				decodedStr, decodeErr := decodeOutpoint(gotBytes)
+				require.NoError(t, decodeErr, "decoding the encoded bytes failed")
+				require.Equal(t, tt.input, decodedStr, "round trip failed: decoded string does not match original input")
+			}
 		})
 	}
 }

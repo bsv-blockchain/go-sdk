@@ -25,11 +25,11 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 				},
 				SendWithResults: []wallet.SendWithResult{
 					{
-						Txid:   "1111111111111111111111111111111111111111111111111111111111111111",
+						Txid:   "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
 						Status: "unproven",
 					},
 					{
-						Txid:   "2222222222222222222222222222222222222222222222222222222222222222",
+						Txid:   "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
 						Status: "sending",
 					},
 				},
@@ -95,7 +95,7 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 				w.WriteBytes([]byte{0x01, 0x02}) // invalid length
 				return w.Buf
 			}(),
-			err: "error reading tx",
+			err: "response indicates failure: 1",
 		},
 		{
 			name: "invalid status code",

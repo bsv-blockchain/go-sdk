@@ -26,6 +26,9 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid txid: %w", err)
 	}
+	if len(txid) != 32 { // TXID must be 32 bytes long
+		return nil, fmt.Errorf("invalid txid length: expected 32 bytes, got %d", len(txid))
+	}
 
 	var index uint32
 	if _, err := fmt.Sscanf(parts[1], "%d", &index); err != nil {
