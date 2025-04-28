@@ -12,7 +12,7 @@ import (
 
 func TestKeyRelatedParams(t *testing.T) {
 	testPrivKey, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+	require.NoError(t, err, "generating test private key should not error")
 
 	tests := []struct {
 		name   string
@@ -77,33 +77,40 @@ func TestKeyRelatedParams(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := encodeKeyRelatedParams(tt.params)
-			require.NoError(t, err)
+			require.NoError(t, err, "encoding key related params should not error")
 
 			// Test deserialization
-			got, err := decodeKeyRelatedParams(util.NewReaderHoldError(data))
-			require.NoError(t, err)
+			r := util.NewReaderHoldError(data)
+			got, err := decodeKeyRelatedParams(r)
+			require.NoError(t, err, "decoding key related params should not error")
+			require.NoError(t, r.Err, "reader should not have an error after decoding")
 
 			// Compare results
-			require.Equal(t, tt.params.ProtocolID, got.ProtocolID)
-			require.Equal(t, tt.params.KeyID, got.KeyID)
-			require.Equal(t, tt.params.Counterparty.Type, got.Counterparty.Type)
+			require.Equal(t, tt.params.ProtocolID, got.ProtocolID, "decoded ProtocolID should match")
+			require.Equal(t, tt.params.KeyID, got.KeyID, "decoded KeyID should match")
+			require.Equal(t, tt.params.Counterparty.Type, got.Counterparty.Type, "decoded Counterparty Type should match")
 
 			// Compare counterparty pubkey if present
 			if tt.params.Counterparty.Type == wallet.CounterpartyTypeOther {
+				require.NotNil(t, tt.params.Counterparty.Counterparty, "original counterparty pubkey should not be nil")
+				require.NotNil(t, got.Counterparty.Counterparty, "decoded counterparty pubkey should not be nil")
 				require.Equal(t,
 					tt.params.Counterparty.Counterparty.ToDER(),
-					got.Counterparty.Counterparty.ToDER())
+					got.Counterparty.Counterparty.ToDER(),
+					"decoded Counterparty pubkey should match")
+			} else {
+				require.Nil(t, got.Counterparty.Counterparty, "decoded counterparty pubkey should be nil for non-other types")
 			}
 
-			require.Equal(t, tt.params.Privileged, got.Privileged)
-			require.Equal(t, tt.params.PrivilegedReason, got.PrivilegedReason)
+			require.Equal(t, tt.params.Privileged, got.Privileged, "decoded Privileged flag should match")
+			require.Equal(t, tt.params.PrivilegedReason, got.PrivilegedReason, "decoded PrivilegedReason should match")
 		})
 	}
 }
 
 func TestCounterpartyEncoding(t *testing.T) {
 	testPrivKey, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+	require.NoError(t, err, "generating test private key should not error")
 
 	tests := []struct {
 		name         string
@@ -140,17 +147,22 @@ func TestCounterpartyEncoding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := util.NewWriter()
 			err := encodeCounterparty(w, tt.counterparty)
-			require.NoError(t, err)
+			require.NoError(t, err, "encoding counterparty should not error")
 
 			r := util.NewReaderHoldError(w.Buf)
 			got, err := decodeCounterparty(r)
-			require.NoError(t, err)
+			require.NoError(t, err, "decoding counterparty should not error")
+			require.NoError(t, r.Err, "reader should not have an error after decoding counterparty")
 
-			require.Equal(t, tt.counterparty.Type, got.Type)
+			require.Equal(t, tt.counterparty.Type, got.Type, "decoded counterparty type should match")
 			if tt.counterparty.Type == wallet.CounterpartyTypeOther {
+				require.NotNil(t, tt.counterparty.Counterparty, "original counterparty pubkey should not be nil for type other")
+				require.NotNil(t, got.Counterparty, "decoded counterparty pubkey should not be nil for type other")
 				require.Equal(t,
 					tt.counterparty.Counterparty.ToDER(),
-					got.Counterparty.ToDER())
+					got.Counterparty.ToDER(), "decoded counterparty pubkey should match original")
+			} else {
+				require.Nil(t, got.Counterparty, "decoded counterparty pubkey should be nil for non-other types")
 			}
 		})
 	}
@@ -191,15 +203,18 @@ func TestPrivilegedParams(t *testing.T) {
 			data := encodePrivilegedParams(tt.privileged, tt.privilegedReason)
 
 			// Test deserialization
-			gotPrivileged, gotReason := decodePrivilegedParams(util.NewReaderHoldError(data))
+			r := util.NewReaderHoldError(data)
+			gotPrivileged, gotReason := decodePrivilegedParams(r)
+			require.NoError(t, r.Err, "reader should not have an error after decoding privileged params")
 
 			// Compare results
 			if tt.privileged == nil {
-				require.Nil(t, gotPrivileged)
+				require.Nil(t, gotPrivileged, "decoded privileged flag should be nil when original is nil")
 			} else {
-				require.Equal(t, *tt.privileged, *gotPrivileged)
+				require.NotNil(t, gotPrivileged, "decoded privileged flag should not be nil when original is not nil")
+				require.Equal(t, *tt.privileged, *gotPrivileged, "decoded privileged flag value should match original")
 			}
-			require.Equal(t, tt.privilegedReason, gotReason)
+			require.Equal(t, tt.privilegedReason, gotReason, "decoded privileged reason should match original")
 		})
 	}
 }
@@ -207,14 +222,14 @@ func TestPrivilegedParams(t *testing.T) {
 // fromHex is a helper function to create a public key from a hex string
 func fromHex(t *testing.T, s string) []byte {
 	data, err := hex.DecodeString(s)
-	require.NoError(t, err)
+	require.NoError(t, err, "decoding hex string should not error")
 	return data
 }
 
 // newCounterparty is a helper function to create a new counterparty
 func newCounterparty(t *testing.T, pubKeyHex string) wallet.Counterparty {
 	pubKey, err := ec.PublicKeyFromString(pubKeyHex)
-	require.NoError(t, err)
+	require.NoError(t, err, "creating public key from string should not error")
 	return wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: pubKey,
@@ -224,7 +239,7 @@ func newCounterparty(t *testing.T, pubKeyHex string) wallet.Counterparty {
 // newSignature is a helper function to create a new signature from a byte slice
 func newSignature(t *testing.T, data []byte) *ec.Signature {
 	sig, err := ec.FromDER(data)
-	require.NoError(t, err)
+	require.NoError(t, err, "creating signature from DER bytes should not error")
 	return sig
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -75,23 +76,18 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeListActionsArgs(&tt.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeListActionsArgs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
 			if tt.wantErr {
+				require.Error(t, err, "serializing with invalid args should error")
 				return
 			}
+			require.NoError(t, err, "serializing valid ListActionsArgs should not error")
 
 			// Test deserialization
 			deserialized, err := DeserializeListActionsArgs(data)
-			if err != nil {
-				t.Errorf("DeserializeListActionsArgs() error = %v", err)
-				return
-			}
+			require.NoError(t, err, "deserializing valid ListActionsArgs should not error")
 
 			// Compare original and deserialized
-			assert.Equal(t, tt.args, *deserialized)
+			assert.Equal(t, tt.args, *deserialized, "deserialized args should match original args")
 		})
 	}
 }
@@ -196,23 +192,18 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeListActionsResult(&tt.result)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeListActionsResult() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
 			if tt.wantErr {
+				require.Error(t, err, "serializing with invalid result data should error")
 				return
 			}
+			require.NoError(t, err, "serializing valid ListActionsResult should not error")
 
 			// Test deserialization
 			deserialized, err := DeserializeListActionsResult(data)
-			if err != nil {
-				t.Errorf("DeserializeListActionsResult() error = %v", err)
-				return
-			}
+			require.NoError(t, err, "deserializing valid ListActionsResult should not error")
 
 			// Compare original and deserialized
-			assert.Equal(t, tt.result, *deserialized)
+			assert.Equal(t, tt.result, *deserialized, "deserialized result should match original result")
 		})
 	}
 }

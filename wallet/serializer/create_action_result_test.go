@@ -63,15 +63,15 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Serialize
 			data, err := SerializeCreateActionResult(tt.result)
-			require.NoError(t, err)
-			require.NotEmpty(t, data)
+			require.NoError(t, err, "serializing CreateActionResult should not error")
+			require.NotEmpty(t, data, "serialized data should not be empty")
 
 			// Deserialize
 			result, err := DeserializeCreateActionResult(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing CreateActionResult should not error")
 
 			// Compare
-			require.Equal(t, tt.result, result)
+			require.Equal(t, tt.result, result, "deserialized result should match original result")
 		})
 	}
 }
@@ -126,8 +126,8 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := DeserializeCreateActionResult(tt.data)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tt.err)
+			require.Error(t, err, "deserializing invalid data should produce an error")
+			require.Contains(t, err.Error(), tt.err, "error message should contain expected substring")
 		})
 	}
 }

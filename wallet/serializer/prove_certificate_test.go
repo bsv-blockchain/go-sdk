@@ -13,7 +13,7 @@ import (
 
 func TestProveCertificateArgs(t *testing.T) {
 	pk, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+	require.NoError(t, err, "generating private key should not error")
 	tests := []struct {
 		name string
 		args *wallet.ProveCertificateArgs
@@ -57,14 +57,14 @@ func TestProveCertificateArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeProveCertificateArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing ProveCertificateArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeProveCertificateArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing ProveCertificateArgs should not error")
 
 			// Compare results
-			require.Equal(t, tt.args, got)
+			require.Equal(t, tt.args, got, "deserialized args should match original args")
 		})
 	}
 }
@@ -77,17 +77,17 @@ func TestProveCertificateResult(t *testing.T) {
 			},
 		}
 		data, err := SerializeProveCertificateResult(result)
-		require.NoError(t, err)
+		require.NoError(t, err, "serializing ProveCertificateResult should not error")
 
 		got, err := DeserializeProveCertificateResult(data)
-		require.NoError(t, err)
-		require.Equal(t, result, got)
+		require.NoError(t, err, "deserializing ProveCertificateResult should not error")
+		require.Equal(t, result, got, "deserialized result should match original result")
 	})
 
 	t.Run("error byte", func(t *testing.T) {
 		data := []byte{1} // error byte = 1 (failure)
 		_, err := DeserializeProveCertificateResult(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "proveCertificate failed with error byte 1")
+		require.Error(t, err, "deserializing with error byte should produce an error")
+		require.Contains(t, err.Error(), "proveCertificate failed with error byte 1", "error message should indicate failure and error byte")
 	})
 }
