@@ -25,7 +25,7 @@ func TestCreateAction(t *testing.T) {
 		mock.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
-				LockingScript:      "00",
+				LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
 				Satoshis:           1000,
 				OutputDescription:  "Test output",
 				Basket:             "test-basket",
