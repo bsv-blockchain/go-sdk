@@ -60,6 +60,23 @@ func TestFromBEEF(t *testing.T) {
 
 }
 
+func TestNewEmptyBEEF(t *testing.T) {
+	t.Run("New Beef V1", func(t *testing.T) {
+		v1 := NewBeefV1()
+		beefBytes, err := v1.Bytes()
+
+		require.NoError(t, err)
+		require.Equal(t, "0100beef0000", hex.EncodeToString(beefBytes))
+	})
+	t.Run("New Beef V2", func(t *testing.T) {
+		v2 := NewBeefV2()
+		beefBytes, err := v2.Bytes()
+
+		require.NoError(t, err)
+		require.Equal(t, "0200beef0000", hex.EncodeToString(beefBytes))
+	})
+}
+
 func TestNewBEEFFromBytes(t *testing.T) {
 	// Decode the BEEF data from base64
 	beefBytes, err := hex.DecodeString(BEEFSet)
