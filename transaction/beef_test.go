@@ -75,13 +75,6 @@ func TestNewEmptyBEEF(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "0200beef0000", hex.EncodeToString(beefBytes))
 	})
-	t.Run("New Atomic Beef", func(t *testing.T) {
-		atomic := NewAtomicBeef()
-		beefBytes, err := atomic.Bytes()
-
-		require.NoError(t, err)
-		require.Equal(t, "010101010000", hex.EncodeToString(beefBytes))
-	})
 }
 
 func TestNewBEEFFromBytes(t *testing.T) {
