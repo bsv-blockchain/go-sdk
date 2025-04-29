@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.1.24 - 2025-04-24](#1123---2025-04-29)
 - [1.1.23 - 2025-04-23](#1123---2025-04-23)
 - [1.1.22 - 2025-03-14](#1122---2025-03-14)
 - [1.1.21 - 2025-03-12](#1121---2025-03-12)
@@ -29,6 +30,10 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.1.24] - 2025-04-29
+  ### Added
+  - `transaction.NewBeef`
 
 ## [1.1.23] - 2025-04-23
   ### Added
