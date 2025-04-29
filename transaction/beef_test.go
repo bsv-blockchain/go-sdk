@@ -61,6 +61,23 @@ func TestFromBEEF(t *testing.T) {
 
 }
 
+func TestNewEmptyBEEF(t *testing.T) {
+	t.Run("New Beef V1", func(t *testing.T) {
+		v1 := NewBeefV1()
+		beefBytes, err := v1.Bytes()
+
+		require.NoError(t, err)
+		require.Equal(t, "0100beef0000", hex.EncodeToString(beefBytes))
+	})
+	t.Run("New Beef V2", func(t *testing.T) {
+		v2 := NewBeefV2()
+		beefBytes, err := v2.Bytes()
+
+		require.NoError(t, err)
+		require.Equal(t, "0200beef0000", hex.EncodeToString(beefBytes))
+	})
+}
+
 func TestNewBEEFFromBytes(t *testing.T) {
 	// Decode the BEEF data from base64
 	beefBytes, err := hex.DecodeString(BEEFSet)
@@ -131,15 +148,14 @@ func TestBeefMakeTxidOnly(t *testing.T) {
 	hash, err := chainhash.NewHashFromHex(txid)
 	require.NoError(t, err)
 
-	// Set the KnownTxID field
-	originalTx.KnownTxID = hash
-
 	// Test MakeTxidOnly
 	txidOnly := beef.MakeTxidOnly(txid)
 	require.NotNil(t, txidOnly)
 	require.Equal(t, TxIDOnly, txidOnly.DataFormat)
 	require.NotNil(t, txidOnly.KnownTxID)
 	require.Equal(t, hash.String(), txidOnly.KnownTxID.String())
+
+	t.Log(beef.ToLogString())
 }
 
 func TestBeefSortTxs(t *testing.T) {
@@ -1208,4 +1224,22 @@ func hydrateInputs(t testing.TB, sourceTxs map[string]*SourceTx, inputs []*Trans
 
 		hydrateInputs(t, sourceTxs, input.SourceTransaction.Inputs)
 	}
+}
+
+func TestMakeTxidOnlyAndBytes(t *testing.T) {
+	// Decode the BEEF data from hex string
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	// Create a new Beef object
+	beef, err := NewBeefFromBytes(beefBytes)
+	require.NoError(t, err)
+
+	knownTxID := "b1fc0f44ba629dbdffab9e34fcc4faf9dbde3560a7365c55c26fe4daab052aac"
+
+	beef.MakeTxidOnly(knownTxID)
+
+	_, err = beef.Bytes() // <--------- it panics here
+	require.NoError(t, err)
+	_ = beef.ToLogString()
 }
