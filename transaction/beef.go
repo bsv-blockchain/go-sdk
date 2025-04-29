@@ -39,10 +39,6 @@ func NewBeefV2() *Beef {
 	return newEmptyBeef(BEEF_V2)
 }
 
-func NewAtomicBeef() *Beef {
-	return newEmptyBeef(ATOMIC_BEEF)
-}
-
 func newEmptyBeef(version uint32) *Beef {
 	return &Beef{
 		Version:      version,
