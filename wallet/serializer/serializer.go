@@ -31,7 +31,7 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 	}
 
 	var index uint32
-	if _, err := fmt.Sscanf(parts[1], "%d", &index); err != nil {
+	if _, err = fmt.Sscanf(parts[1], "%d", &index); err != nil {
 		return nil, fmt.Errorf("invalid index: %w", err)
 	}
 

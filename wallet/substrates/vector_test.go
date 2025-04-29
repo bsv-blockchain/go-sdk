@@ -2,7 +2,6 @@ package substrates_test
 
 import (
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -11,8 +10,6 @@ import (
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
-	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
 	"github.com/stretchr/testify/require"
 )
 
@@ -630,10 +627,6 @@ func TestVectors(t *testing.T) {
 			} else if len(vectorFile["json"]) == 0 || len(vectorFile["wire"]) == 0 {
 				t.Fatalf("Both json and wire format requried in test vector file")
 			}
-			var wireString string
-			require.NoError(t, json.Unmarshal(vectorFile["wire"], &wireString))
-			wire, err := hex.DecodeString(wireString)
-			require.NoError(t, err)
 
 			// Test JSON marshaling
 			t.Run("JSON", func(t *testing.T) {
@@ -819,10 +812,14 @@ func TestVectors(t *testing.T) {
 			// TODO: Implement wire tests
 			// Currently discrepancies in varInt handling of negative numbers, so most wire tests don't match ts-sdk
 			// For now serializer tests verify wire objects are consistent between serializing and deserializing
-			return
 
 			// Test wire format serialization
-			t.Run("Wire", func(t *testing.T) {
+			/*t.Run("Wire", func(t *testing.T) {
+				var wireString string
+				require.NoError(t, json.Unmarshal(vectorFile["wire"], &wireString))
+				wire, err := hex.DecodeString(wireString)
+				require.NoError(t, err)
+
 				var frameCall substrates.Call
 				var frameParams []byte
 				if tt.IsResult {
@@ -1000,7 +997,7 @@ func TestVectors(t *testing.T) {
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
-			})
+			})*/
 		})
 	}
 }
