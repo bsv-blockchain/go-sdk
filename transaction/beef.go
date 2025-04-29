@@ -21,6 +21,14 @@ type Beef struct {
 	Transactions map[string]*BeefTx
 }
 
+func NewBeef() *Beef {
+	return &Beef{
+		Version:      BEEF_V2,
+		BUMPs:        []*MerklePath{},
+		Transactions: make(map[string]*BeefTx),
+	}
+}
+
 const BEEF_V1 = uint32(4022206465)     // BRC-64
 const BEEF_V2 = uint32(4022206466)     // BRC-96
 const ATOMIC_BEEF = uint32(0x01010101) // BRC-95
