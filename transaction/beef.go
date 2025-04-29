@@ -31,6 +31,26 @@ func (t *Transaction) FromBEEF(beef []byte) error {
 	return err
 }
 
+func NewBeefV1() *Beef {
+	return newEmptyBeef(BEEF_V1)
+}
+
+func NewBeefV2() *Beef {
+	return newEmptyBeef(BEEF_V2)
+}
+
+func NewAtomicBeef() *Beef {
+	return newEmptyBeef(ATOMIC_BEEF)
+}
+
+func newEmptyBeef(version uint32) *Beef {
+	return &Beef{
+		Version:      version,
+		BUMPs:        []*MerklePath{},
+		Transactions: make(map[string]*BeefTx),
+	}
+}
+
 func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx, error) {
 	var numberOfTransactions VarInt
 	_, err := numberOfTransactions.ReadFrom(reader)
@@ -220,11 +240,7 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	if t == nil {
 		return nil, fmt.Errorf("transaction is nil")
 	}
-	beef := &Beef{
-		Version:      BEEF_V2,
-		BUMPs:        []*MerklePath{},
-		Transactions: map[string]*BeefTx{},
-	}
+	beef := NewBeefV2()
 	bumpMap := map[uint32]int{}
 	txns := map[string]*Transaction{t.TxID().String(): t}
 	ancestors, err := t.collectAncestors(txns, false)
