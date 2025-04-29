@@ -12,3 +12,5 @@ These documents cover high-level conceptual information that will augment develo
 - [How are Bitcoin Transactions Validated?](TX_VALID.md)
 - [Opcodes and Their Functionality Within Bitcoin Script](OP.md)
 - [What are Hashes and Why are they Important in Bitcoin?](HASHES.md)
+- [How does Authentication Work in the SDK?](AUTH.md)
+- [Overlay Tools](OVERLAY_TOOLS.md)

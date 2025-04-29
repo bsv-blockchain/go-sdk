@@ -8,6 +8,7 @@ import (
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	script "github.com/bsv-blockchain/go-sdk/script"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // defaultHex is used to fix a bug in the original client (see if statement in the CalcInputSignatureHash func)
@@ -113,7 +114,7 @@ func (tx *Transaction) CalcInputPreimage(inputNumber uint32, sigHashFlag sighash
 	buf = append(buf, oi...)
 
 	// scriptCode of the input (serialized as scripts inside CTxOuts)
-	buf = append(buf, VarInt(uint64(len(*in.SourceTxScript()))).Bytes()...)
+	buf = append(buf, util.VarInt(uint64(len(*in.SourceTxScript()))).Bytes()...)
 	buf = append(buf, *in.SourceTxScript()...)
 
 	// value of the output spent by this input (8-byte little endian)
@@ -231,7 +232,7 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 	binary.LittleEndian.PutUint32(v, tx.Version)
 	buf = append(buf, v...)
 
-	buf = append(buf, VarInt(uint64(len(txCopy.Inputs))).Bytes()...)
+	buf = append(buf, util.VarInt(uint64(len(txCopy.Inputs))).Bytes()...)
 	for _, in := range txCopy.Inputs {
 		buf = append(buf, in.SourceTXID.CloneBytes()...)
 
@@ -240,10 +241,10 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 		buf = append(buf, oi...)
 
 		if in.SourceTxScript() != nil {
-			buf = append(buf, VarInt(uint64(len(*in.SourceTxScript()))).Bytes()...)
+			buf = append(buf, util.VarInt(uint64(len(*in.SourceTxScript()))).Bytes()...)
 			buf = append(buf, *in.SourceTxScript()...)
 		} else {
-			buf = append(buf, VarInt(0).Bytes()...)
+			buf = append(buf, util.VarInt(0).Bytes()...)
 		}
 
 		sq := make([]byte, 4)
@@ -251,13 +252,13 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 		buf = append(buf, sq...)
 	}
 
-	buf = append(buf, VarInt(uint64(len(txCopy.Outputs))).Bytes()...)
+	buf = append(buf, util.VarInt(uint64(len(txCopy.Outputs))).Bytes()...)
 	for _, out := range txCopy.Outputs {
 		st := make([]byte, 8)
 		binary.LittleEndian.PutUint64(st, out.Satoshis)
 		buf = append(buf, st...)
 
-		buf = append(buf, VarInt(uint64(len(*out.LockingScript))).Bytes()...)
+		buf = append(buf, util.VarInt(uint64(len(*out.LockingScript))).Bytes()...)
 		buf = append(buf, *out.LockingScript...)
 	}
 

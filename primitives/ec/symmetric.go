@@ -3,6 +3,7 @@ package primitives
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"log"
 
 	aesgcm "github.com/bsv-blockchain/go-sdk/primitives/aesgcm"
@@ -34,6 +35,11 @@ func (s *SymmetricKey) Encrypt(message []byte) (ciphertext []byte, err error) {
 
 // Decrypt decrypts the given message using the symmetric key using AES-GCM
 func (s *SymmetricKey) Decrypt(message []byte) (plaintext []byte, err error) {
+	// Check if the message is too short to be a valid encrypted message
+	if len(message) < 32+16 {
+		return nil, errors.New("message is too short to be a valid encrypted message")
+	}
+
 	iv := message[:32]
 	ciphertext := message[32 : len(message)-16]
 	tag := message[len(message)-16:]

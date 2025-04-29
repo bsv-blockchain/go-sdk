@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 
-	"golang.org/x/crypto/ripemd160" //nolint:gosec // required
+	"golang.org/x/crypto/ripemd160" // nolint:staticcheck // required
 )
 
 // Sha256 calculates hash(b) and returns the resulting bytes.
@@ -42,7 +42,7 @@ func Sha512HMAC(b, key []byte) []byte {
 
 // Ripemd160 hashes with RIPEMD160
 func Ripemd160(b []byte) []byte {
-	ripe := ripemd160.New() //nolint:gosec // required
+	ripe := ripemd160.New() // nolint:gosec // required
 	_, _ = ripe.Write(b[:])
 	return ripe.Sum(nil)
 }
