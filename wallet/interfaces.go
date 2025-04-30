@@ -352,7 +352,6 @@ type Interface interface {
 
 // AbortActionArgs identifies a transaction to abort using its reference string.
 type AbortActionArgs struct {
-	// TODO: Use []byte instead of Base64 encoded string, will automatically Marshall/Unmarshall to/from Base64
 	Reference []byte `json:"reference"` // Base64 encoded reference
 }
 
@@ -572,21 +571,37 @@ func (ic *IdentityCertificate) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// TODO: Add custom MarshalJSON/UnmarshalJSON for IdentityCertificate if needed - REMOVED
+type AcquisitionProtocol string
+
+const (
+	AcquisitionProtocolDirect   AcquisitionProtocol = "direct"
+	AcquisitionProtocolIssuance AcquisitionProtocol = "issuance"
+)
+
+func AcquisitionProtocolFromString(s string) (AcquisitionProtocol, error) {
+	ap := AcquisitionProtocol(s)
+	switch ap {
+	case "", AcquisitionProtocolDirect, AcquisitionProtocolIssuance:
+		return ap, nil
+	}
+	return "", fmt.Errorf("invalid acquisition protocol: %s", s)
+}
+
+const KeyringRevealerCertifier = "certifier"
 
 type AcquireCertificateArgs struct {
-	Type                string            `json:"type"`
-	Certifier           string            `json:"certifier"`
-	AcquisitionProtocol string            `json:"acquisitionProtocol"`
-	Fields              map[string]string `json:"fields,omitempty"`
-	SerialNumber        string            `json:"serialNumber"`
-	RevocationOutpoint  string            `json:"revocationOutpoint,omitempty"`
-	Signature           string            `json:"signature,omitempty"`
-	CertifierUrl        string            `json:"certifierUrl,omitempty"`
-	KeyringRevealer     string            `json:"keyringRevealer,omitempty"`
-	KeyringForSubject   map[string]string `json:"keyringForSubject,omitempty"`
-	Privileged          *bool             `json:"privileged,omitempty"`
-	PrivilegedReason    string            `json:"privilegedReason,omitempty"`
+	Type                string              `json:"type"`
+	Certifier           string              `json:"certifier"`
+	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
+	Fields              map[string]string   `json:"fields,omitempty"`
+	SerialNumber        string              `json:"serialNumber"`
+	RevocationOutpoint  string              `json:"revocationOutpoint,omitempty"`
+	Signature           string              `json:"signature,omitempty"`
+	CertifierUrl        string              `json:"certifierUrl,omitempty"`
+	KeyringRevealer     string              `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
+	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
+	Privileged          *bool               `json:"privileged,omitempty"`
+	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
 }
 
 type ListCertificatesArgs struct {

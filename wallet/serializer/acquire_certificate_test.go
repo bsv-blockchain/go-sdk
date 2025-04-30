@@ -26,7 +26,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:          hex.EncodeToString(make([]byte, 64)),
-			KeyringRevealer:    "certifier",
+			KeyringRevealer:    wallet.KeyringRevealerCertifier,
 			KeyringForSubject: map[string]string{
 				"field1": base64.StdEncoding.EncodeToString([]byte("keyring1")),
 			},

@@ -44,69 +44,45 @@ func TestAbortActionArgsSerializeAndDeserialize(t *testing.T) {
 }
 
 func TestAbortActionResultSerializeAndDeserialize(t *testing.T) {
-	tests := []struct {
-		name   string
-		result *wallet.AbortActionResult
-	}{
-		{
-			name: "successful abort",
-			result: &wallet.AbortActionResult{
-				Aborted: true,
-			},
-		},
-	}
+	t.Run("successful abort", func(t *testing.T) {
+		testResult := &wallet.AbortActionResult{
+			Aborted: true,
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Serialize
-			data, err := SerializeAbortActionResult(tt.result)
-			require.NoError(t, err)
-			require.Empty(t, data) // Abort action result has no additional data
-
-			// Deserialize
-			result, err := DeserializeAbortActionResult(data)
-			require.NoError(t, err)
-
-			// Compare
-			require.Equal(t, tt.result, result)
-		})
-	}
-
-	// Test error case
-	t.Run("error response", func(t *testing.T) {
-		result, err := DeserializeAbortActionResult([]byte{})
+		// Serialize
+		data, err := SerializeAbortActionResult(testResult)
 		require.NoError(t, err)
-		require.Equal(t, result.Aborted, true)
+		require.Empty(t, data) // Abort action result has no additional data
+
+		// Deserialize
+		result, err := DeserializeAbortActionResult(data)
+		require.NoError(t, err)
+
+		// Compare
+		require.Equal(t, testResult, result)
 	})
 }
 
 func TestSerializeAbortActionArgs(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    wallet.AbortActionArgs
-		want    []byte
-		wantErr bool
+		name string
+		args wallet.AbortActionArgs
+		want []byte
 	}{
 		{
 			name: "valid reference",
 			args: wallet.AbortActionArgs{
 				Reference: []byte{1, 2, 3},
 			},
-			want:    []byte{1, 2, 3},
-			wantErr: false,
+			want: []byte{1, 2, 3},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := SerializeAbortActionArgs(&tt.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeAbortActionArgs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr {
-				assert.Equal(t, tt.want, got)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -149,14 +125,14 @@ func TestSerializeAbortActionResult(t *testing.T) {
 
 func TestDeserializeAbortActionResult(t *testing.T) {
 	tests := []struct {
-		name    string
-		data    []byte
-		want    *wallet.AbortActionResult
+		name string
+		data []byte
+		want *wallet.AbortActionResult
 	}{
 		{
-			name:    "success",
-			data:    []byte{},
-			want:    &wallet.AbortActionResult{Aborted: true},
+			name: "success",
+			data: []byte{},
+			want: &wallet.AbortActionResult{Aborted: true},
 		},
 	}
 

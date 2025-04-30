@@ -413,7 +413,7 @@ func TestVectors(t *testing.T) {
 			RevocationOutpoint:  "txid123:0",
 			Signature:           "sig-hex",
 			CertifierUrl:        "https://certifier.example.com",
-			KeyringRevealer:     "revealer-key-hex", // Keep as string
+			KeyringRevealer:     "revealer-key-hex", // TODO: change to real hex, e.g. 319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838
 			KeyringForSubject:   map[string]string{"field1": "key1", "field2": "key2"},
 			Privileged:          util.BoolPtr(false),
 		},

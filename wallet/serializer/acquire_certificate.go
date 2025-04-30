@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	AcquisitionProtocolDirect   = 1
-	AcquisitionProtocolIssuance = 2
+	acquisitionProtocolDirect   = 1
+	acquisitionProtocolIssuance = 2
 
-	KeyRingRevealerCertifier = 11
+	keyRingRevealerCertifier = 11
 )
 
 func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byte, error) {
@@ -59,13 +59,8 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
 
 	// Encode acquisition protocol (1 = direct, 2 = issuance)
-	if args.AcquisitionProtocol == "direct" {
-		w.WriteByte(AcquisitionProtocolDirect)
-	} else {
-		w.WriteByte(AcquisitionProtocolIssuance)
-	}
-
-	if args.AcquisitionProtocol == "direct" {
+	if args.AcquisitionProtocol == wallet.AcquisitionProtocolDirect {
+		w.WriteByte(acquisitionProtocolDirect)
 		// Serial number (base64)
 		serialBytes, err := base64.StdEncoding.DecodeString(args.SerialNumber)
 		if err != nil {
@@ -91,8 +86,8 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		w.WriteIntBytes(sigBytes)
 
 		// Keyring revealer
-		if args.KeyringRevealer == "certifier" {
-			w.WriteByte(KeyRingRevealerCertifier)
+		if args.KeyringRevealer == wallet.KeyringRevealerCertifier {
+			w.WriteByte(keyRingRevealerCertifier)
 		} else {
 			revealerBytes, err := hex.DecodeString(args.KeyringRevealer)
 			if err != nil {
@@ -121,11 +116,14 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 			w.WriteVarInt(uint64(len(valueBytes)))
 			w.WriteBytes(valueBytes)
 		}
-	} else {
+	} else if args.AcquisitionProtocol == wallet.AcquisitionProtocolIssuance {
+		w.WriteByte(acquisitionProtocolIssuance)
 		// Certifier URL
 		urlBytes := []byte(args.CertifierUrl)
 		w.WriteVarInt(uint64(len(urlBytes)))
 		w.WriteBytes(urlBytes)
+	} else {
+		return nil, fmt.Errorf("invalid acquisition protocol: %s", args.AcquisitionProtocol)
 	}
 
 	return w.Buf, nil
@@ -165,15 +163,15 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 	// Read acquisition protocol
 	acquisitionProtocolFlag := r.ReadByte()
 	switch acquisitionProtocolFlag {
-	case AcquisitionProtocolDirect:
-		args.AcquisitionProtocol = "direct"
-	case AcquisitionProtocolIssuance:
-		args.AcquisitionProtocol = "issuance"
+	case acquisitionProtocolDirect:
+		args.AcquisitionProtocol = wallet.AcquisitionProtocolDirect
+	case acquisitionProtocolIssuance:
+		args.AcquisitionProtocol = wallet.AcquisitionProtocolIssuance
 	default:
 		return nil, fmt.Errorf("invalid acquisition protocol flag: %d", acquisitionProtocolFlag)
 	}
 
-	if args.AcquisitionProtocol == "direct" {
+	if args.AcquisitionProtocol == wallet.AcquisitionProtocolDirect {
 		// Read serial number
 		serialNumberBytes := r.ReadBytes(sizeSerial)
 		args.SerialNumber = base64.StdEncoding.EncodeToString(serialNumberBytes)
@@ -190,8 +188,8 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 		// Read keyring revealer
 		keyringRevealerIdentifier := r.ReadByte()
-		if keyringRevealerIdentifier == KeyRingRevealerCertifier {
-			args.KeyringRevealer = "certifier"
+		if keyringRevealerIdentifier == keyRingRevealerCertifier {
+			args.KeyringRevealer = wallet.KeyringRevealerCertifier
 		} else {
 			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizeRevealer-1)...)
 			args.KeyringRevealer = hex.EncodeToString(keyringRevealerBytes)
