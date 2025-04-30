@@ -26,11 +26,11 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 				SendWithResults: []wallet.SendWithResult{
 					{
 						Txid:   "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
-						Status: "unproven",
+						Status: wallet.ActionResultStatusUnproven,
 					},
 					{
 						Txid:   "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
-						Status: "sending",
+						Status: wallet.ActionResultStatusSending,
 					},
 				},
 				SignableTransaction: &wallet.SignableTransaction{

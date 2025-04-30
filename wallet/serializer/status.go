@@ -21,18 +21,18 @@ func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) e
 		}
 		w.WriteBytes(txidBytes)
 
-		var statusByte byte
+		var statusByte wallet.ActionResultStatusCode
 		switch res.Status {
-		case "unproven":
-			statusByte = 1
-		case "sending":
-			statusByte = 2
-		case "failed":
-			statusByte = 3
+		case wallet.ActionResultStatusUnproven:
+			statusByte = wallet.ActionResultStatusCodeUnproven
+		case wallet.ActionResultStatusSending:
+			statusByte = wallet.ActionResultStatusCodeSending
+		case wallet.ActionResultStatusFailed:
+			statusByte = wallet.ActionResultStatusCodeFailed
 		default:
 			return fmt.Errorf("invalid status: %s", res.Status)
 		}
-		w.WriteByte(statusByte)
+		w.WriteByte(byte(statusByte))
 	}
 	return nil
 }
@@ -58,14 +58,14 @@ func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
 			return nil, err
 		}
 
-		var status string
-		switch statusCode {
-		case 1:
-			status = "unproven"
-		case 2:
-			status = "sending"
-		case 3:
-			status = "failed"
+		var status wallet.ActionResultStatus
+		switch wallet.ActionResultStatusCode(statusCode) {
+		case wallet.ActionResultStatusCodeUnproven:
+			status = wallet.ActionResultStatusUnproven
+		case wallet.ActionResultStatusCodeSending:
+			status = wallet.ActionResultStatusSending
+		case wallet.ActionResultStatusCodeFailed:
+			status = wallet.ActionResultStatusFailed
 		default:
 			return nil, fmt.Errorf("invalid status code: %d", statusCode)
 		}

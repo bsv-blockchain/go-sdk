@@ -23,8 +23,8 @@ func TestSerializeSignActionResult(t *testing.T) {
 				Txid: txid,
 				Tx:   tx,
 				SendWithResults: []wallet.SendWithResult{
-					{Txid: txid, Status: "sending"},
-					{Txid: txid, Status: "failed"},
+					{Txid: txid, Status: wallet.ActionResultStatusSending},
+					{Txid: txid, Status: wallet.ActionResultStatusFailed},
 				},
 			},
 			wantErr: false,
@@ -102,8 +102,8 @@ func TestDeserializeSignActionResult(t *testing.T) {
 				Txid: txid,
 				Tx:   tx,
 				SendWithResults: []wallet.SendWithResult{
-					{Txid: txid, Status: "sending"},
-					{Txid: txid, Status: "failed"},
+					{Txid: txid, Status: wallet.ActionResultStatusSending},
+					{Txid: txid, Status: wallet.ActionResultStatusFailed},
 				},
 			},
 			wantErr: false,

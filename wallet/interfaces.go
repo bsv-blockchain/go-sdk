@@ -131,10 +131,26 @@ type CreateActionResult struct {
 	SignableTransaction *SignableTransaction
 }
 
+type ActionResultStatus string
+
+const (
+	ActionResultStatusUnproven ActionResultStatus = "unproven"
+	ActionResultStatusSending  ActionResultStatus = "sending"
+	ActionResultStatusFailed   ActionResultStatus = "failed"
+)
+
+type ActionResultStatusCode uint8
+
+const (
+	ActionResultStatusCodeUnproven ActionResultStatusCode = 1
+	ActionResultStatusCodeSending  ActionResultStatusCode = 2
+	ActionResultStatusCodeFailed   ActionResultStatusCode = 3
+)
+
 // SendWithResult tracks the status of transactions sent as part of a batch.
 type SendWithResult struct {
 	Txid   string
-	Status string // "unproven" | "sending" | "failed"
+	Status ActionResultStatus
 }
 
 // SignableTransaction contains data needed to complete signing of a partial transaction.
