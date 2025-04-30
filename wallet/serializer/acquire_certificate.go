@@ -9,6 +9,13 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+const (
+	AcquisitionProtocolDirect   = 1
+	AcquisitionProtocolIssuance = 2
+
+	KeyRingRevealerCertifier = 11
+)
+
 func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byte, error) {
 	w := util.NewWriter()
 
@@ -34,6 +41,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Fields))
+	// TODO: Iterating over maps doesn't guarantee order to be consistent
 	for k := range args.Fields {
 		fieldEntries = append(fieldEntries, k)
 	}
@@ -52,9 +60,9 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 
 	// Encode acquisition protocol (1 = direct, 2 = issuance)
 	if args.AcquisitionProtocol == "direct" {
-		w.WriteByte(1)
+		w.WriteByte(AcquisitionProtocolDirect)
 	} else {
-		w.WriteByte(2)
+		w.WriteByte(AcquisitionProtocolIssuance)
 	}
 
 	if args.AcquisitionProtocol == "direct" {
@@ -84,7 +92,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 
 		// Keyring revealer
 		if args.KeyringRevealer == "certifier" {
-			w.WriteByte(11)
+			w.WriteByte(KeyRingRevealerCertifier)
 		} else {
 			revealerBytes, err := hex.DecodeString(args.KeyringRevealer)
 			if err != nil {
@@ -157,9 +165,9 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 	// Read acquisition protocol
 	acquisitionProtocolFlag := r.ReadByte()
 	switch acquisitionProtocolFlag {
-	case 1:
+	case AcquisitionProtocolDirect:
 		args.AcquisitionProtocol = "direct"
-	case 2:
+	case AcquisitionProtocolIssuance:
 		args.AcquisitionProtocol = "issuance"
 	default:
 		return nil, fmt.Errorf("invalid acquisition protocol flag: %d", acquisitionProtocolFlag)
@@ -182,7 +190,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 		// Read keyring revealer
 		keyringRevealerIdentifier := r.ReadByte()
-		if keyringRevealerIdentifier == 11 {
+		if keyringRevealerIdentifier == KeyRingRevealerCertifier {
 			args.KeyringRevealer = "certifier"
 		} else {
 			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(SizeRevealer-1)...)
