@@ -21,9 +21,9 @@ func TestDiscoverCertificatesResult(t *testing.T) {
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("dGVzdC10eXBl"), SizeType)),
+						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("dGVzdC10eXBl"), sizeType)),
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("c2VyaWFs"), SizeType)),
+						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("c2VyaWFs"), sizeType)),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 						Signature:          hex.EncodeToString(make([]byte, 64)),

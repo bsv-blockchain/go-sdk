@@ -21,9 +21,9 @@ func TestProveCertificateArgs(t *testing.T) {
 		name: "full args",
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
+				Type:               base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
 				Subject:            pk.PubKey(),
-				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
+				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
 				Certifier:          pk.PubKey(),
 				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 				Signature:          hex.EncodeToString(make([]byte, 64)),
@@ -33,7 +33,7 @@ func TestProveCertificateArgs(t *testing.T) {
 				},
 			},
 			FieldsToReveal:   []string{"field1"},
-			Verifier:         hex.EncodeToString(make([]byte, SizeCertifier)),
+			Verifier:         hex.EncodeToString(make([]byte, sizeCertifier)),
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
@@ -41,15 +41,15 @@ func TestProveCertificateArgs(t *testing.T) {
 		name: "minimal args",
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
+				Type:               base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
 				Subject:            pk.PubKey(),
-				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
+				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
 				Certifier:          pk.PubKey(),
 				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 				Signature:          hex.EncodeToString(make([]byte, 64)),
 			},
 			FieldsToReveal: []string{},
-			Verifier:       hex.EncodeToString(make([]byte, SizeCertifier)),
+			Verifier:       hex.EncodeToString(make([]byte, sizeCertifier)),
 		},
 	}}
 

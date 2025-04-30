@@ -17,8 +17,8 @@ func SerializeRelinquishCertificateArgs(args *wallet.RelinquishCertificateArgs) 
 	if err != nil {
 		return nil, fmt.Errorf("invalid type base64: %w", err)
 	}
-	if len(typeBytes) != SizeType {
-		return nil, fmt.Errorf("type must be %d bytes long", SizeType)
+	if len(typeBytes) != sizeType {
+		return nil, fmt.Errorf("type must be %d bytes long", sizeType)
 	}
 	w.WriteBytes(typeBytes)
 
@@ -27,8 +27,8 @@ func SerializeRelinquishCertificateArgs(args *wallet.RelinquishCertificateArgs) 
 	if err != nil {
 		return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
 	}
-	if len(serialBytes) != SizeSerial {
-		return nil, fmt.Errorf("serialNumber must be %d bytes long", SizeSerial)
+	if len(serialBytes) != sizeSerial {
+		return nil, fmt.Errorf("serialNumber must be %d bytes long", sizeSerial)
 	}
 	w.WriteBytes(serialBytes)
 
@@ -37,8 +37,8 @@ func SerializeRelinquishCertificateArgs(args *wallet.RelinquishCertificateArgs) 
 	if err != nil {
 		return nil, fmt.Errorf("invalid certifier hex: %w", err)
 	}
-	if len(certifierBytes) != SizeCertifier {
-		return nil, fmt.Errorf("certifier must be %d bytes long", SizeCertifier)
+	if len(certifierBytes) != sizeCertifier {
+		return nil, fmt.Errorf("certifier must be %d bytes long", sizeCertifier)
 	}
 	w.WriteBytes(certifierBytes)
 
@@ -50,15 +50,15 @@ func DeserializeRelinquishCertificateArgs(data []byte) (*wallet.RelinquishCertif
 	args := &wallet.RelinquishCertificateArgs{}
 
 	// Read type (base64)
-	typeBytes := r.ReadBytes(SizeType)
+	typeBytes := r.ReadBytes(sizeType)
 	args.Type = base64.StdEncoding.EncodeToString(typeBytes)
 
 	// Read serialNumber (base64)
-	serialBytes := r.ReadBytes(SizeSerial)
+	serialBytes := r.ReadBytes(sizeSerial)
 	args.SerialNumber = base64.StdEncoding.EncodeToString(serialBytes)
 
 	// Read certifier (hex)
-	certifierBytes := r.ReadBytes(SizeCertifier)
+	certifierBytes := r.ReadBytes(sizeCertifier)
 	args.Certifier = hex.EncodeToString(certifierBytes)
 
 	if r.Err != nil {

@@ -18,8 +18,8 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid type base64: %w", err)
 	}
-	if len(typeBytes) != SizeType {
-		return nil, fmt.Errorf("type must be %d bytes", SizeType)
+	if len(typeBytes) != sizeType {
+		return nil, fmt.Errorf("type must be %d bytes", sizeType)
 	}
 	w.WriteBytes(typeBytes)
 	w.WriteBytes(args.Certificate.Subject.Compressed())
@@ -29,8 +29,8 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
 	}
-	if len(serialBytes) != SizeType {
-		return nil, fmt.Errorf("serialNumber must be %d bytes", SizeType)
+	if len(serialBytes) != sizeType {
+		return nil, fmt.Errorf("serialNumber must be %d bytes", sizeType)
 	}
 	w.WriteBytes(serialBytes)
 
@@ -79,8 +79,8 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid verifier hex: %w", err)
 	}
-	if len(verifierBytes) != SizeCertifier {
-		return nil, fmt.Errorf("verifier must be %d bytes", SizeCertifier)
+	if len(verifierBytes) != sizeCertifier {
+		return nil, fmt.Errorf("verifier must be %d bytes", sizeCertifier)
 	}
 	w.WriteBytes(verifierBytes)
 
@@ -95,21 +95,21 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	args = &wallet.ProveCertificateArgs{}
 
 	// Read certificate type (base64)
-	typeBytes := r.ReadBytes(SizeType)
+	typeBytes := r.ReadBytes(sizeType)
 	args.Certificate.Type = base64.StdEncoding.EncodeToString(typeBytes)
 
 	// Read subject (hex)
-	subjectBytes := r.ReadBytes(SizeCertifier)
+	subjectBytes := r.ReadBytes(sizeCertifier)
 	if args.Certificate.Subject, err = ec.PublicKeyFromBytes(subjectBytes); err != nil {
 		return nil, err
 	}
 
 	// Read serialNumber (base64)
-	serialBytes := r.ReadBytes(SizeType)
+	serialBytes := r.ReadBytes(sizeType)
 	args.Certificate.SerialNumber = base64.StdEncoding.EncodeToString(serialBytes)
 
 	// Read certifier (hex)
-	certifierBytes := r.ReadBytes(SizeCertifier)
+	certifierBytes := r.ReadBytes(sizeCertifier)
 	if args.Certificate.Certifier, err = ec.PublicKeyFromBytes(certifierBytes); err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read verifier (hex)
-	verifierBytes := r.ReadBytes(SizeCertifier)
+	verifierBytes := r.ReadBytes(sizeCertifier)
 	args.Verifier = hex.EncodeToString(verifierBytes)
 
 	// Read privileged params

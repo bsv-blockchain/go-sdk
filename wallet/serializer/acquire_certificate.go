@@ -24,8 +24,8 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("invalid type base64: %w", err)
 	}
-	if len(typeBytes) != SizeType {
-		return nil, fmt.Errorf("type must be %d bytes long", SizeType)
+	if len(typeBytes) != sizeType {
+		return nil, fmt.Errorf("type must be %d bytes long", sizeType)
 	}
 	w.WriteBytes(typeBytes)
 
@@ -34,8 +34,8 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("invalid certifier hex: %w", err)
 	}
-	if len(certifierBytes) != SizeCertifier {
-		return nil, fmt.Errorf("certifier must be %d bytes long", SizeCertifier)
+	if len(certifierBytes) != sizeCertifier {
+		return nil, fmt.Errorf("certifier must be %d bytes long", sizeCertifier)
 	}
 	w.WriteBytes(certifierBytes)
 
@@ -71,8 +71,8 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		if err != nil {
 			return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
 		}
-		if len(serialBytes) != SizeSerial {
-			return nil, fmt.Errorf("serialNumber must be %d bytes long", SizeSerial)
+		if len(serialBytes) != sizeSerial {
+			return nil, fmt.Errorf("serialNumber must be %d bytes long", sizeSerial)
 		}
 		w.WriteBytes(serialBytes)
 
@@ -98,8 +98,8 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 			if err != nil {
 				return nil, fmt.Errorf("invalid keyringRevealer hex: %w", err)
 			}
-			if len(revealerBytes) != SizeRevealer {
-				return nil, fmt.Errorf("keyringRevealer must be %d bytes long", SizeRevealer)
+			if len(revealerBytes) != sizeRevealer {
+				return nil, fmt.Errorf("keyringRevealer must be %d bytes long", sizeRevealer)
 			}
 			w.WriteBytes(revealerBytes)
 		}
@@ -136,11 +136,11 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 	args := &wallet.AcquireCertificateArgs{}
 
 	// Read type (base64)
-	typeBytes := r.ReadBytes(SizeType)
+	typeBytes := r.ReadBytes(sizeType)
 	args.Type = base64.StdEncoding.EncodeToString(typeBytes)
 
 	// Read certifier (hex)
-	certifierBytes := r.ReadBytes(SizeCertifier)
+	certifierBytes := r.ReadBytes(sizeCertifier)
 	args.Certifier = hex.EncodeToString(certifierBytes)
 
 	// Read fields
@@ -175,7 +175,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	if args.AcquisitionProtocol == "direct" {
 		// Read serial number
-		serialNumberBytes := r.ReadBytes(SizeSerial)
+		serialNumberBytes := r.ReadBytes(sizeSerial)
 		args.SerialNumber = base64.StdEncoding.EncodeToString(serialNumberBytes)
 
 		// Read revocation outpoint
@@ -193,7 +193,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		if keyringRevealerIdentifier == KeyRingRevealerCertifier {
 			args.KeyringRevealer = "certifier"
 		} else {
-			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(SizeRevealer-1)...)
+			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizeRevealer-1)...)
 			args.KeyringRevealer = hex.EncodeToString(keyringRevealerBytes)
 		}
 

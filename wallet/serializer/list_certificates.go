@@ -20,8 +20,8 @@ func SerializeListCertificatesArgs(args *wallet.ListCertificatesArgs) ([]byte, e
 		if err != nil {
 			return nil, fmt.Errorf("invalid certifier hex: %w", err)
 		}
-		if len(certifierBytes) != SizeCertifier {
-			return nil, fmt.Errorf("certifier should be %d bytes, got %d", SizeCertifier, len(certifierBytes))
+		if len(certifierBytes) != sizeCertifier {
+			return nil, fmt.Errorf("certifier should be %d bytes, got %d", sizeCertifier, len(certifierBytes))
 		}
 		w.WriteBytes(certifierBytes)
 	}
@@ -33,8 +33,8 @@ func SerializeListCertificatesArgs(args *wallet.ListCertificatesArgs) ([]byte, e
 		if err != nil {
 			return nil, fmt.Errorf("invalid type base64: %w", err)
 		}
-		if len(typeBytes) != SizeType {
-			return nil, fmt.Errorf("type should be %d bytes, got %d", SizeType, len(typeBytes))
+		if len(typeBytes) != sizeType {
+			return nil, fmt.Errorf("type should be %d bytes, got %d", sizeType, len(typeBytes))
 		}
 		w.WriteBytes(typeBytes)
 	}
@@ -67,7 +67,7 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	certifiersLength := r.ReadVarInt()
 	args.Certifiers = make([]string, 0, certifiersLength)
 	for i := uint64(0); i < certifiersLength; i++ {
-		certifierBytes := r.ReadBytes(SizeCertifier)
+		certifierBytes := r.ReadBytes(sizeCertifier)
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing certifier: %w", r.Err)
 		}
@@ -78,7 +78,7 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	typesLength := r.ReadVarInt()
 	args.Types = make([]string, 0, typesLength)
 	for i := uint64(0); i < typesLength; i++ {
-		typeBytes := r.ReadBytes(SizeType)
+		typeBytes := r.ReadBytes(sizeType)
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing type: %w", r.Err)
 		}

@@ -15,9 +15,9 @@ func TestIdentityCertificate(t *testing.T) {
 	require.NoError(t, err, "generating private key should not error")
 	cert := &wallet.IdentityCertificate{
 		Certificate: wallet.Certificate{
-			Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), SizeType)),
+			Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), sizeType)),
 			Subject:            pk.PubKey(),
-			SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-serial"), SizeSerial)),
+			SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-serial"), sizeSerial)),
 			Certifier:          pk.PubKey(),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:          hex.EncodeToString(make([]byte, 64)),

@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	SizeType      = 32
-	SizeSubject   = 33
-	SizeCertifier = 33
-	SizeRevealer  = 33
-	SizeSerial    = 32
+	sizeType      = 32
+	sizeSubject   = 33
+	sizeCertifier = 33
+	sizeRevealer  = 33
+	sizeSerial    = 32
 )
 
 func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
@@ -27,8 +27,8 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid type base64: %w", err)
 	}
-	if len(typeBytes) != SizeType {
-		return nil, fmt.Errorf("type must be %d bytes long", SizeType)
+	if len(typeBytes) != sizeType {
+		return nil, fmt.Errorf("type must be %d bytes long", sizeType)
 	}
 	w.WriteBytes(typeBytes)
 
@@ -39,8 +39,8 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
 	}
-	if len(serialBytes) != SizeSerial {
-		return nil, fmt.Errorf("serialNumber must be %d bytes long", SizeSerial)
+	if len(serialBytes) != sizeSerial {
+		return nil, fmt.Errorf("serialNumber must be %d bytes long", sizeSerial)
 	}
 	w.WriteBytes(serialBytes)
 
@@ -88,21 +88,21 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	}
 
 	// Read type (base64)
-	typeBytes := r.ReadBytes(SizeType)
+	typeBytes := r.ReadBytes(sizeType)
 	cert.Type = base64.StdEncoding.EncodeToString(typeBytes)
 
 	// Read subject (hex)
-	subjectBytes := r.ReadBytes(SizeSubject)
+	subjectBytes := r.ReadBytes(sizeSubject)
 	cert.Subject, err = ec.PublicKeyFromBytes(subjectBytes)
 	if err != nil {
 		return nil, fmt.Errorf("error reading subject public key: %w", err)
 	}
 
 	// Read serial number (base64)
-	cert.SerialNumber = base64.StdEncoding.EncodeToString(r.ReadBytes(SizeSerial))
+	cert.SerialNumber = base64.StdEncoding.EncodeToString(r.ReadBytes(sizeSerial))
 
 	// Read certifier (hex)
-	cert.Certifier, err = ec.PublicKeyFromBytes(r.ReadBytes(SizeCertifier))
+	cert.Certifier, err = ec.PublicKeyFromBytes(r.ReadBytes(sizeCertifier))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing certifier key: %w", err)
 	}

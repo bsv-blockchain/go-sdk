@@ -16,14 +16,14 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}{{
 		name: "direct acquisition",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), SizeType)),
-			Certifier:           hex.EncodeToString(make([]byte, SizeCertifier)),
+			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), sizeType)),
+			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
 			AcquisitionProtocol: "direct",
 			Fields: map[string]string{
 				"field1": "value1",
 				"field2": "value2",
 			},
-			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, SizeSerial)),
+			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:          hex.EncodeToString(make([]byte, 64)),
 			KeyringRevealer:    "certifier",
@@ -36,8 +36,8 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}, {
 		name: "issuance acquisition",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("issuance-type"), SizeType)),
-			Certifier:           hex.EncodeToString(make([]byte, SizeCertifier)),
+			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("issuance-type"), sizeType)),
+			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
 			AcquisitionProtocol: "issuance",
 			Fields: map[string]string{
 				"field1": "value1",
@@ -47,13 +47,13 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}, {
 		name: "minimal args",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), SizeType)),
-			Certifier:           hex.EncodeToString(make([]byte, SizeCertifier)),
+			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), sizeType)),
+			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
 			AcquisitionProtocol: "direct",
-			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, SizeSerial)),
+			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			RevocationOutpoint:  "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:           hex.EncodeToString(make([]byte, 64)),
-			KeyringRevealer:     hex.EncodeToString(make([]byte, SizeRevealer)),
+			KeyringRevealer:     hex.EncodeToString(make([]byte, sizeRevealer)),
 		},
 	}}
 

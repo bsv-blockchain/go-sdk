@@ -15,16 +15,16 @@ func TestRelinquishCertificateArgs(t *testing.T) {
 	}{{
 		name: "full args",
 		args: &wallet.RelinquishCertificateArgs{
-			Type:         base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
-			SerialNumber: base64.StdEncoding.EncodeToString(make([]byte, SizeSerial)),
-			Certifier:    hex.EncodeToString(make([]byte, SizeCertifier)),
+			Type:         base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+			SerialNumber: base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
+			Certifier:    hex.EncodeToString(make([]byte, sizeCertifier)),
 		},
 	}, {
 		name: "minimal args",
 		args: &wallet.RelinquishCertificateArgs{
-			Type:         base64.StdEncoding.EncodeToString(make([]byte, SizeType)),
-			SerialNumber: base64.StdEncoding.EncodeToString(make([]byte, SizeSerial)),
-			Certifier:    hex.EncodeToString(make([]byte, SizeCertifier)),
+			Type:         base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+			SerialNumber: base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
+			Certifier:    hex.EncodeToString(make([]byte, sizeCertifier)),
 		},
 	}}
 
