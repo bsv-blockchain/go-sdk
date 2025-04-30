@@ -24,25 +24,24 @@ func SerializeGetNetworkResult(result *wallet.GetNetworkResult) ([]byte, error) 
 }
 
 func DeserializeGetNetworkResult(data []byte) (*wallet.GetNetworkResult, error) {
-	r := util.NewReader(data)
+	r := util.NewReaderHoldError(data)
 
 	// Read error byte
-	_, err := r.ReadByte()
-	if err != nil {
-		return nil, fmt.Errorf("error reading error byte: %w", err)
+	if r.ReadByte() != 0 {
+		return nil, fmt.Errorf("error byte indicates failure")
 	}
 
 	// Read network byte
-	networkByte, err := r.ReadByte()
-	if err != nil {
-		return nil, fmt.Errorf("error reading network byte: %w", err)
-	}
-
 	result := &wallet.GetNetworkResult{
 		Network: "mainnet",
 	}
-	if networkByte != 0 {
+	if r.ReadByte() != 0 {
 		result.Network = "testnet"
+	}
+
+	r.CheckComplete()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading get network result: %w", r.Err)
 	}
 
 	return result, nil

@@ -100,6 +100,7 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	args.Labels = r.ReadStringSlice()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading internalize action args: %w", r.Err)
 	}

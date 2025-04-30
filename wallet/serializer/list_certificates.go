@@ -80,6 +80,7 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing ListCertificates args: %w", r.Err)
 	}
@@ -174,6 +175,7 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 		result.Certificates = append(result.Certificates, certResult)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing ListCertificates result: %w", r.Err)
 	}

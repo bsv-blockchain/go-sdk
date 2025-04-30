@@ -82,6 +82,7 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading getPublicKey args: %w", r.Err)
 	}

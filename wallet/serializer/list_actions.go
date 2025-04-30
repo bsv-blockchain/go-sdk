@@ -74,6 +74,7 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	args.Offset = r.ReadOptionalUint32()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list action args: %w", r.Err)
 	}
@@ -275,6 +276,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		result.Actions = append(result.Actions, action)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list action result: %w", r.Err)
 	}

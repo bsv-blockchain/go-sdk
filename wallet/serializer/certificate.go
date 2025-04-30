@@ -133,6 +133,7 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 		cert.Fields[fieldName] = fieldValue
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing certificate: %w", r.Err)
 	}

@@ -162,6 +162,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing ProveCertificate args: %w", r.Err)
 	}
@@ -221,6 +222,7 @@ func DeserializeProveCertificateResult(data []byte) (*wallet.ProveCertificateRes
 		}
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing ProveCertificate result: %w", r.Err)
 	}

@@ -54,6 +54,7 @@ func DeserializeDiscoverCertificatesResult(data []byte) (*wallet.DiscoverCertifi
 		result.Certificates = append(result.Certificates, *cert)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing DiscoverCertificates result: %w", r.Err)
 	}

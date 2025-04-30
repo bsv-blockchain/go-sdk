@@ -88,6 +88,7 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing VerifySignature args: %w", r.Err)
 	}
@@ -120,6 +121,7 @@ func DeserializeVerifySignatureResult(data []byte) (*wallet.VerifySignatureResul
 	valid := r.ReadByte()
 	result.Valid = valid == 1
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing VerifySignature result: %w", r.Err)
 	}

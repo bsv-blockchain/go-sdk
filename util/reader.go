@@ -17,8 +17,12 @@ func NewReader(data []byte) *Reader {
 	return &Reader{Data: data}
 }
 
+func (r *Reader) IsComplete() bool {
+	return r.Pos >= len(r.Data)
+}
+
 func (r *Reader) ReadByte() (byte, error) {
-	if r.Pos >= len(r.Data) {
+	if r.IsComplete() {
 		return 0, errors.New("read past end of data")
 	}
 	b := r.Data[r.Pos]
@@ -67,7 +71,7 @@ func (r *Reader) ReadVarInt32() (uint32, error) {
 
 // Read implements the io.Reader interface
 func (r *Reader) Read(b []byte) (int, error) {
-	if r.Pos >= len(r.Data) {
+	if r.IsComplete() {
 		return 0, errors.New("read past end of data")
 	}
 	n := copy(b, r.Data[r.Pos:])
@@ -76,10 +80,12 @@ func (r *Reader) Read(b []byte) (int, error) {
 }
 
 func (r *Reader) ReadRemaining() []byte {
-	if r.Pos >= len(r.Data) {
+	if r.IsComplete() {
 		return nil
 	}
-	return r.Data[r.Pos:]
+	pos := r.Pos
+	r.Pos = len(r.Data)
+	return r.Data[pos:]
 }
 
 func (r *Reader) ReadString() (string, error) {
@@ -218,6 +224,19 @@ type ReaderHoldError struct {
 func NewReaderHoldError(data []byte) *ReaderHoldError {
 	return &ReaderHoldError{
 		Reader: Reader{Data: data},
+	}
+}
+
+func (r *ReaderHoldError) IsComplete() bool {
+	return r.Reader.IsComplete()
+}
+
+func (r *ReaderHoldError) CheckComplete() {
+	if r.Err != nil {
+		return
+	}
+	if !r.Reader.IsComplete() {
+		r.Err = errors.New("finished reading but not all data consumed")
 	}
 }
 

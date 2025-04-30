@@ -61,6 +61,7 @@ func DeserializeRelinquishCertificateArgs(data []byte) (*wallet.RelinquishCertif
 	certifierBytes := r.ReadBytes(sizeCertifier)
 	args.Certifier = hex.EncodeToString(certifierBytes)
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing RelinquishCertificate args: %w", r.Err)
 	}
@@ -89,6 +90,7 @@ func DeserializeRelinquishCertificateResult(data []byte) (*wallet.RelinquishCert
 	relinquished := r.ReadByte()
 	result.Relinquished = relinquished == 1
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing RelinquishCertificate result: %w", r.Err)
 	}

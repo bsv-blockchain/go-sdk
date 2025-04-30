@@ -20,21 +20,22 @@ func SerializeGetVersionResult(result *wallet.GetVersionResult) ([]byte, error) 
 }
 
 func DeserializeGetVersionResult(data []byte) (*wallet.GetVersionResult, error) {
-	r := util.NewReader(data)
+	r := util.NewReaderHoldError(data)
 
 	// Read error byte
-	_, err := r.ReadByte()
-	if err != nil {
-		return nil, fmt.Errorf("error reading error byte: %w", err)
+	if r.ReadByte() != 0 {
+		return nil, fmt.Errorf("error byte indicates failure")
 	}
 
 	// Read version string
-	version, err := r.ReadString()
-	if err != nil {
-		return nil, fmt.Errorf("error reading version string: %w", err)
+	result := &wallet.GetVersionResult{
+		Version: r.ReadString(),
 	}
 
-	return &wallet.GetVersionResult{
-		Version: version,
-	}, nil
+	r.CheckComplete()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading get version result: %w", r.Err)
+	}
+
+	return result, nil
 }

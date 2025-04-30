@@ -56,6 +56,7 @@ func DeserializeDecryptArgs(data []byte) (*wallet.DecryptArgs, error) {
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decrypting args: %w", r.Err)
 	}

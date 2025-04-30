@@ -224,6 +224,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		args.CertifierUrl = string(certifierUrlBytes)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing acquireCertificate args: %w", r.Err)
 	}

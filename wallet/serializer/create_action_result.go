@@ -102,6 +102,8 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 			Reference: string(refBytes),
 		}
 	}
+
+	resultReader.CheckComplete()
 	if resultReader.Err != nil {
 		return nil, fmt.Errorf("error reading signableTransaction: %w", resultReader.Err)
 	}

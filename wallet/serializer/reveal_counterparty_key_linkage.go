@@ -39,6 +39,7 @@ func DeserializeRevealCounterpartyKeyLinkageArgs(data []byte) (*wallet.RevealCou
 	// Read verifier public key
 	args.Verifier = r.ReadOptionalToHex()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decoding args: %w", r.Err)
 	}
@@ -96,6 +97,7 @@ func DeserializeRevealCounterpartyKeyLinkageResult(data []byte) (*wallet.RevealC
 	proofLen := r.ReadVarInt()
 	result.EncryptedLinkageProof = r.ReadBytes(int(proofLen))
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decoding result: %w", r.Err)
 	}

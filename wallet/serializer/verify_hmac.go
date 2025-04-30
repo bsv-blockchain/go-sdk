@@ -62,6 +62,7 @@ func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHmacArgs, error) {
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing VerifyHmac args: %w", r.Err)
 	}
@@ -84,6 +85,7 @@ func DeserializeVerifyHmacResult(data []byte) (*wallet.VerifyHmacResult, error) 
 		return nil, fmt.Errorf("verifyHmac failed with error byte %d", errorByte)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing VerifyHmac result: %w", r.Err)
 	}

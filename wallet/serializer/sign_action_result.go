@@ -43,5 +43,10 @@ func DeserializeSignActionResult(data []byte) (*wallet.SignActionResult, error) 
 	}
 	result.SendWithResults = results
 
+	r.CheckComplete()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error deserializing SignActionResult: %w", r.Err)
+	}
+
 	return result, nil
 }

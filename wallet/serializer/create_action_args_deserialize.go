@@ -50,6 +50,11 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 	}
 	args.Options = options
 
+	messageReader.CheckComplete()
+	if messageReader.Err != nil {
+		return nil, fmt.Errorf("error deserializing create action args: %w", messageReader.Err)
+	}
+
 	return args, nil
 }
 

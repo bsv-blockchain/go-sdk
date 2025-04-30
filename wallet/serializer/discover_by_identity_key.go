@@ -42,6 +42,7 @@ func DeserializeDiscoverByIdentityKeyArgs(data []byte) (*wallet.DiscoverByIdenti
 	args.Offset = r.ReadOptionalUint32()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing DiscoverByIdentityKey args: %w", r.Err)
 	}

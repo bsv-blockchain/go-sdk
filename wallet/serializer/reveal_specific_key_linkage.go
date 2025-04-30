@@ -112,6 +112,7 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 	// Read proof type
 	result.ProofType = r.ReadByte()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading result: %w", r.Err)
 	}

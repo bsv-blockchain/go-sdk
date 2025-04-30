@@ -101,6 +101,7 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 		args.Options.SendWith = r.ReadTxidSlice()
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading sign action args: %w", r.Err)
 	}

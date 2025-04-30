@@ -16,6 +16,7 @@ func SerializeGetHeightResult(result *wallet.GetHeightResult) ([]byte, error) {
 func DeserializeGetHeightResult(data []byte) (*wallet.GetHeightResult, error) {
 	r := util.NewReaderHoldError(data)
 	height := r.ReadVarInt32()
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading height: %w", r.Err)
 	}

@@ -46,6 +46,7 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 	args.Offset = r.ReadVarInt32()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list outputs args: %w", r.Err)
 	}
@@ -115,6 +116,7 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 		result.Outputs = append(result.Outputs, output)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list outputs result: %w", r.Err)
 	}
