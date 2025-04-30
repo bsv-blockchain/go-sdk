@@ -4,8 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"math"
-
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -39,19 +37,9 @@ func SerializeListCertificatesArgs(args *wallet.ListCertificatesArgs) ([]byte, e
 		w.WriteBytes(typeBytes)
 	}
 
-	// Write limit (or max uint64 if undefined)
-	if args.Limit > 0 {
-		w.WriteVarInt(uint64(args.Limit))
-	} else {
-		w.WriteVarInt(math.MaxUint64)
-	}
-
-	// Write offset (or max uint64 if undefined)
-	if args.Offset > 0 {
-		w.WriteVarInt(uint64(args.Offset))
-	} else {
-		w.WriteVarInt(math.MaxUint64)
-	}
+	// Write limit and offset
+	w.WriteOptionalUint32(args.Limit)
+	w.WriteOptionalUint32(args.Offset)
 
 	// Write privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -85,17 +73,9 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 		args.Types = append(args.Types, base64.StdEncoding.EncodeToString(typeBytes))
 	}
 
-	// Read limit
-	limit := r.ReadVarInt()
-	if limit != math.MaxUint64 {
-		args.Limit = uint32(limit)
-	}
-
-	// Read offset
-	offset := r.ReadVarInt()
-	if offset != math.MaxUint64 {
-		args.Offset = uint32(offset)
-	}
+	// Read limit and offset
+	args.Limit = r.ReadOptionalUint32()
+	args.Offset = r.ReadOptionalUint32()
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)

@@ -86,10 +86,7 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 		input.InputDescription = messageReader.ReadString()
 
 		// Read sequence number
-		seqNum := messageReader.ReadVarInt()
-		if seqNum != math.MaxUint64 { // -1 means nil
-			input.SequenceNumber = uint32(seqNum)
-		}
+		input.SequenceNumber = messageReader.ReadOptionalUint32()
 
 		if messageReader.Err != nil {
 			return nil, fmt.Errorf("error reading input %d: %w", i, messageReader.Err)
