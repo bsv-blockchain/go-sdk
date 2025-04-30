@@ -288,7 +288,7 @@ func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
 		Outputs: []wallet.InternalizeOutput{
 			{
 				OutputIndex: 0,
-				Protocol:    "wallet payment",
+				Protocol:    wallet.InternalizeProtocolWalletPayment,
 			},
 		},
 	})
@@ -766,14 +766,14 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 	// Test GetNetwork
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/getNetwork", r.URL.Path)
-		writeJSONResponse(t, w, wallet.GetNetworkResult{Network: "mainnet"})
+		writeJSONResponse(t, w, wallet.GetNetworkResult{Network: wallet.NetworkMainnet})
 	}))
 	defer ts.Close()
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
 	networkResult, err := client.GetNetwork(t.Context(), nil)
 	require.NoError(t, err)
-	require.Equal(t, "mainnet", networkResult.Network)
+	require.Equal(t, wallet.NetworkMainnet, networkResult.Network)
 
 	// Test GetVersion
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

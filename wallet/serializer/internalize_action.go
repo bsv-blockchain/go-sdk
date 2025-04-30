@@ -18,7 +18,7 @@ func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte,
 	w.WriteVarInt(uint64(len(args.Outputs)))
 	for _, output := range args.Outputs {
 		w.WriteVarInt(uint64(output.OutputIndex))
-		w.WriteString(output.Protocol)
+		w.WriteString(string(output.Protocol))
 
 		// Payment remittance
 		if output.PaymentRemittance != nil {
@@ -66,8 +66,13 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	for i := uint64(0); i < outputCount; i++ {
 		output := wallet.InternalizeOutput{
 			OutputIndex: r.ReadVarInt32(),
-			Protocol:    r.ReadString(),
 		}
+
+		protocol, err := wallet.InternalizeProtocolFromString(r.ReadString())
+		if err != nil {
+			return nil, fmt.Errorf("error reading protocol: %w", err)
+		}
+		output.Protocol = protocol
 
 		// Payment remittance
 		if r.ReadByte() == 1 {

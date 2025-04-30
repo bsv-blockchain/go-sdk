@@ -18,7 +18,7 @@ func TestInternalizeActionArgs(t *testing.T) {
 			Outputs: []wallet.InternalizeOutput{
 				{
 					OutputIndex: 0,
-					Protocol:    "wallet payment",
+					Protocol:    wallet.InternalizeProtocolWalletPayment,
 					PaymentRemittance: &wallet.Payment{
 						DerivationPrefix:  "prefix",
 						DerivationSuffix:  "suffix",
@@ -27,7 +27,7 @@ func TestInternalizeActionArgs(t *testing.T) {
 				},
 				{
 					OutputIndex: 1,
-					Protocol:    "basket insertion",
+					Protocol:    wallet.InternalizeProtocolBasketInsertion,
 					InsertionRemittance: &wallet.BasketInsertion{
 						Basket:             "test-basket",
 						CustomInstructions: "instructions",
@@ -47,7 +47,7 @@ func TestInternalizeActionArgs(t *testing.T) {
 			Outputs: []wallet.InternalizeOutput{
 				{
 					OutputIndex: 0,
-					Protocol:    "wallet payment",
+					Protocol:    wallet.InternalizeProtocolWalletPayment,
 				},
 			},
 		},

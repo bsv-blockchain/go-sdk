@@ -139,14 +139,6 @@ const (
 	ActionResultStatusFailed   ActionResultStatus = "failed"
 )
 
-type ActionResultStatusCode uint8
-
-const (
-	ActionResultStatusCodeUnproven ActionResultStatusCode = 1
-	ActionResultStatusCodeSending  ActionResultStatusCode = 2
-	ActionResultStatusCodeFailed   ActionResultStatusCode = 3
-)
-
 // SendWithResult tracks the status of transactions sent as part of a batch.
 type SendWithResult struct {
 	Txid   string
@@ -222,19 +214,6 @@ const (
 	ActionStatusNonFinal    ActionStatus = "nonfinal"
 )
 
-// ActionStatusCode is the numeric representation of ActionStatus.
-type ActionStatusCode uint8
-
-const (
-	ActionStatusCodeCompleted   ActionStatusCode = 1
-	ActionStatusCodeUnprocessed ActionStatusCode = 2
-	ActionStatusCodeSending     ActionStatusCode = 3
-	ActionStatusCodeUnproven    ActionStatusCode = 4
-	ActionStatusCodeUnsigned    ActionStatusCode = 5
-	ActionStatusCodeNoSend      ActionStatusCode = 6
-	ActionStatusCodeNonFinal    ActionStatusCode = 7
-)
-
 // Action contains full details about a wallet transaction including inputs, outputs and metadata.
 type Action struct {
 	Txid        string         `json:"txid"`
@@ -249,19 +228,35 @@ type Action struct {
 	Outputs     []ActionOutput `json:"outputs,omitempty"`
 }
 
+type QueryMode string
+
+const (
+	QueryModeAny QueryMode = "any"
+	QueryModeAll QueryMode = "all"
+)
+
+func QueryModeFromString(s string) (QueryMode, error) {
+	qms := QueryMode(s)
+	switch qms {
+	case "", QueryModeAny, QueryModeAll:
+		return qms, nil
+	}
+	return "", fmt.Errorf("invalid query mode: %s", s)
+}
+
 // ListActionsArgs defines filtering and pagination options for listing wallet transactions.
 type ListActionsArgs struct {
-	Labels                           []string `json:"labels"`
-	LabelQueryMode                   string   `json:"labelQueryMode,omitempty"` // "any" | "all"
-	IncludeLabels                    *bool    `json:"includeLabels,omitempty"`
-	IncludeInputs                    *bool    `json:"includeInputs,omitempty"`
-	IncludeInputSourceLockingScripts *bool    `json:"includeInputSourceLockingScripts,omitempty"`
-	IncludeInputUnlockingScripts     *bool    `json:"includeInputUnlockingScripts,omitempty"`
-	IncludeOutputs                   *bool    `json:"includeOutputs,omitempty"`
-	IncludeOutputLockingScripts      *bool    `json:"includeOutputLockingScripts,omitempty"`
-	Limit                            uint32   `json:"limit,omitempty"` // Default 10, max 10000
-	Offset                           uint32   `json:"offset,omitempty"`
-	SeekPermission                   *bool    `json:"seekPermission,omitempty"` // Default true
+	Labels                           []string  `json:"labels"`
+	LabelQueryMode                   QueryMode `json:"labelQueryMode,omitempty"` // "any" | "all"
+	IncludeLabels                    *bool     `json:"includeLabels,omitempty"`
+	IncludeInputs                    *bool     `json:"includeInputs,omitempty"`
+	IncludeInputSourceLockingScripts *bool     `json:"includeInputSourceLockingScripts,omitempty"`
+	IncludeInputUnlockingScripts     *bool     `json:"includeInputUnlockingScripts,omitempty"`
+	IncludeOutputs                   *bool     `json:"includeOutputs,omitempty"`
+	IncludeOutputLockingScripts      *bool     `json:"includeOutputLockingScripts,omitempty"`
+	Limit                            uint32    `json:"limit,omitempty"` // Default 10, max 10000
+	Offset                           uint32    `json:"offset,omitempty"`
+	SeekPermission                   *bool     `json:"seekPermission,omitempty"` // Default true
 }
 
 // ListActionsResult contains a paginated list of wallet transactions matching the query.
@@ -270,18 +265,34 @@ type ListActionsResult struct {
 	Actions      []Action `json:"actions"`
 }
 
+type OutputInclude string
+
+const (
+	OutputIncludeLockingScripts     OutputInclude = "locking scripts"
+	OutputIncludeEntireTransactions OutputInclude = "entire transactions"
+)
+
+func OutputIncludeFromString(s string) (OutputInclude, error) {
+	oi := OutputInclude(s)
+	switch oi {
+	case "", OutputIncludeLockingScripts, OutputIncludeEntireTransactions:
+		return oi, nil
+	}
+	return "", fmt.Errorf("invalid output include option: %s", s)
+}
+
 // ListOutputsArgs defines filtering and options for listing wallet outputs.
 type ListOutputsArgs struct {
-	Basket                    string   `json:"basket"`
-	Tags                      []string `json:"tags"`
-	TagQueryMode              string   `json:"tagQueryMode"` // "any" | "all"
-	Include                   string   `json:"include"`      // "locking scripts" | "entire transactions"
-	IncludeCustomInstructions *bool    `json:"includeCustomInstructions,omitempty"`
-	IncludeTags               *bool    `json:"includeTags,omitempty"`
-	IncludeLabels             *bool    `json:"includeLabels,omitempty"`
-	Limit                     uint32   `json:"limit"` // Default 10, max 10000
-	Offset                    uint32   `json:"offset,omitempty"`
-	SeekPermission            *bool    `json:"seekPermission,omitempty"` // Default true
+	Basket                    string        `json:"basket"`
+	Tags                      []string      `json:"tags"`
+	TagQueryMode              QueryMode     `json:"tagQueryMode"` // "any" | "all"
+	Include                   OutputInclude `json:"include"`      // "locking scripts" | "entire transactions"
+	IncludeCustomInstructions *bool         `json:"includeCustomInstructions,omitempty"`
+	IncludeTags               *bool         `json:"includeTags,omitempty"`
+	IncludeLabels             *bool         `json:"includeLabels,omitempty"`
+	Limit                     uint32        `json:"limit"` // Default 10, max 10000
+	Offset                    uint32        `json:"offset,omitempty"`
+	SeekPermission            *bool         `json:"seekPermission,omitempty"` // Default true
 }
 
 // Output represents a wallet UTXO with its metadata
@@ -364,12 +375,28 @@ type BasketInsertion struct {
 	Tags               []string `json:"tags"`
 }
 
+type InternalizeProtocol string
+
+const (
+	InternalizeProtocolWalletPayment   InternalizeProtocol = "wallet payment"
+	InternalizeProtocolBasketInsertion InternalizeProtocol = "basket insertion"
+)
+
+func InternalizeProtocolFromString(s string) (InternalizeProtocol, error) {
+	op := InternalizeProtocol(s)
+	switch op {
+	case "", InternalizeProtocolWalletPayment, InternalizeProtocolBasketInsertion:
+		return op, nil
+	}
+	return "", fmt.Errorf("invalid internalize protocol: %s", s)
+}
+
 // InternalizeOutput defines how to process a transaction output - as payment or basket insertion.
 type InternalizeOutput struct {
-	OutputIndex         uint32           `json:"outputIndex"`
-	Protocol            string           `json:"protocol"` // "wallet payment" | "basket insertion"
-	PaymentRemittance   *Payment         `json:"paymentRemittance,omitempty"`
-	InsertionRemittance *BasketInsertion `json:"insertionRemittance,omitempty"`
+	OutputIndex         uint32              `json:"outputIndex"`
+	Protocol            InternalizeProtocol `json:"protocol"` // "wallet payment" | "basket insertion"
+	PaymentRemittance   *Payment            `json:"paymentRemittance,omitempty"`
+	InsertionRemittance *BasketInsertion    `json:"insertionRemittance,omitempty"`
 }
 
 // JsonByteNoBase64 is a custom type for JSON serialization of byte arrays that don't use base64 encoding.
@@ -694,8 +721,24 @@ type GetHeaderResult struct {
 	Header string `json:"header"`
 }
 
+type Network string
+
+const (
+	NetworkMainnet Network = "mainnet"
+	NetworkTestnet Network = "testnet"
+)
+
+func NetworkFromString(s string) (Network, error) {
+	n := Network(s)
+	switch n {
+	case "", NetworkMainnet, NetworkTestnet:
+		return n, nil
+	}
+	return "", fmt.Errorf("invalid network: %s", s)
+}
+
 type GetNetworkResult struct {
-	Network string `json:"network"` // "mainnet" | "testnet"
+	Network Network `json:"network"` // "mainnet" | "testnet"
 }
 
 type GetVersionResult struct {

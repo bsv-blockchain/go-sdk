@@ -119,7 +119,7 @@ func TestVectors(t *testing.T) {
 			Outputs: []wallet.InternalizeOutput{
 				{
 					OutputIndex: 0,
-					Protocol:    "wallet payment",
+					Protocol:    wallet.InternalizeProtocolWalletPayment,
 					PaymentRemittance: &wallet.Payment{
 						DerivationPrefix:  "prefix",
 						DerivationSuffix:  "suffix",
@@ -128,7 +128,7 @@ func TestVectors(t *testing.T) {
 				},
 				{
 					OutputIndex: 1,
-					Protocol:    "basket insertion",
+					Protocol:    wallet.InternalizeProtocolBasketInsertion,
 					InsertionRemittance: &wallet.BasketInsertion{
 						Basket:             "test-basket",
 						CustomInstructions: "instruction",
@@ -152,8 +152,8 @@ func TestVectors(t *testing.T) {
 		Object: wallet.ListOutputsArgs{
 			Basket:       "test-basket",
 			Tags:         []string{"tag1", "tag2"},
-			TagQueryMode: "any",
-			Include:      "locking scripts",
+			TagQueryMode: wallet.QueryModeAny,
+			Include:      wallet.OutputIncludeLockingScripts,
 			IncludeTags:  util.BoolPtr(true),
 			Limit:        10,
 		},
@@ -600,7 +600,7 @@ func TestVectors(t *testing.T) {
 		Filename: "getNetwork-simple-result",
 		IsResult: true,
 		Object: wallet.GetNetworkResult{
-			Network: "mainnet",
+			Network: wallet.NetworkMainnet,
 		},
 	}, {
 		Filename: "getVersion-simple-result",

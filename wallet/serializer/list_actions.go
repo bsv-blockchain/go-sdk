@@ -8,6 +8,11 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+const (
+	queryModeAnyCode uint8 = 1
+	queryModeAllCode uint8 = 2
+)
+
 func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	w := util.NewWriter()
 
@@ -16,10 +21,10 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 
 	// Serialize labelQueryMode
 	switch args.LabelQueryMode {
-	case "any":
-		w.WriteByte(1)
-	case "all":
-		w.WriteByte(2)
+	case wallet.QueryModeAny:
+		w.WriteByte(queryModeAnyCode)
+	case wallet.QueryModeAll:
+		w.WriteByte(queryModeAllCode)
 	case "":
 		w.WriteByte(0xFF) // -1
 	default:
@@ -51,10 +56,10 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 
 	// Deserialize labelQueryMode
 	switch r.ReadByte() {
-	case 1:
-		args.LabelQueryMode = "any"
-	case 2:
-		args.LabelQueryMode = "all"
+	case queryModeAnyCode:
+		args.LabelQueryMode = wallet.QueryModeAny
+	case queryModeAllCode:
+		args.LabelQueryMode = wallet.QueryModeAll
 	case 0xFF:
 		args.LabelQueryMode = ""
 	default:
@@ -82,6 +87,19 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	return args, nil
 }
 
+// actionStatusCode is the numeric representation of ActionStatus.
+type actionStatusCode uint8
+
+const (
+	actionStatusCodeCompleted   actionStatusCode = 1
+	actionStatusCodeUnprocessed actionStatusCode = 2
+	actionStatusCodeSending     actionStatusCode = 3
+	actionStatusCodeUnproven    actionStatusCode = 4
+	actionStatusCodeUnsigned    actionStatusCode = 5
+	actionStatusCodeNoSend      actionStatusCode = 6
+	actionStatusCodeNonFinal    actionStatusCode = 7
+)
+
 func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error) {
 	w := util.NewWriter()
 
@@ -102,19 +120,19 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		// Serialize status
 		switch action.Status {
 		case wallet.ActionStatusCompleted:
-			w.WriteByte(byte(wallet.ActionStatusCodeCompleted))
+			w.WriteByte(byte(actionStatusCodeCompleted))
 		case wallet.ActionStatusUnprocessed:
-			w.WriteByte(byte(wallet.ActionStatusCodeUnprocessed))
+			w.WriteByte(byte(actionStatusCodeUnprocessed))
 		case wallet.ActionStatusSending:
-			w.WriteByte(byte(wallet.ActionStatusCodeSending))
+			w.WriteByte(byte(actionStatusCodeSending))
 		case wallet.ActionStatusUnproven:
-			w.WriteByte(byte(wallet.ActionStatusCodeUnproven))
+			w.WriteByte(byte(actionStatusCodeUnproven))
 		case wallet.ActionStatusUnsigned:
-			w.WriteByte(byte(wallet.ActionStatusCodeUnsigned))
+			w.WriteByte(byte(actionStatusCodeUnsigned))
 		case wallet.ActionStatusNoSend:
-			w.WriteByte(byte(wallet.ActionStatusCodeNoSend))
+			w.WriteByte(byte(actionStatusCodeNoSend))
 		case wallet.ActionStatusNonFinal:
-			w.WriteByte(byte(wallet.ActionStatusCodeNonFinal))
+			w.WriteByte(byte(actionStatusCodeNonFinal))
 		default:
 			return nil, fmt.Errorf("invalid action status: %s", action.Status)
 		}
@@ -193,20 +211,20 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 
 		// Deserialize status
 		status := r.ReadByte()
-		switch wallet.ActionStatusCode(status) {
-		case wallet.ActionStatusCodeCompleted:
+		switch actionStatusCode(status) {
+		case actionStatusCodeCompleted:
 			action.Status = wallet.ActionStatusCompleted
-		case wallet.ActionStatusCodeUnprocessed:
+		case actionStatusCodeUnprocessed:
 			action.Status = wallet.ActionStatusUnprocessed
-		case wallet.ActionStatusCodeSending:
+		case actionStatusCodeSending:
 			action.Status = wallet.ActionStatusSending
-		case wallet.ActionStatusCodeUnproven:
+		case actionStatusCodeUnproven:
 			action.Status = wallet.ActionStatusUnproven
-		case wallet.ActionStatusCodeUnsigned:
+		case actionStatusCodeUnsigned:
 			action.Status = wallet.ActionStatusUnsigned
-		case wallet.ActionStatusCodeNoSend:
+		case actionStatusCodeNoSend:
 			action.Status = wallet.ActionStatusNoSend
-		case wallet.ActionStatusCodeNonFinal:
+		case actionStatusCodeNonFinal:
 			action.Status = wallet.ActionStatusNonFinal
 		default:
 			return nil, fmt.Errorf("invalid status byte %d", status)

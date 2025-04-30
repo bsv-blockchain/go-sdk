@@ -18,7 +18,7 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 			name: "full args",
 			args: wallet.ListActionsArgs{
 				Labels:                           []string{"label1", "label2"},
-				LabelQueryMode:                   "all",
+				LabelQueryMode:                   wallet.QueryModeAll,
 				IncludeLabels:                    util.BoolPtr(true),
 				IncludeInputs:                    util.BoolPtr(false),
 				IncludeInputSourceLockingScripts: util.BoolPtr(true),

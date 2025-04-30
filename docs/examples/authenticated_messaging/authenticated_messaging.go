@@ -87,7 +87,7 @@ func (w *MinimalWalletImpl) GetHeight(ctx context.Context, args any, originator 
 }
 
 func (w *MinimalWalletImpl) GetNetwork(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
-	return &wallet.GetNetworkResult{Network: "test"}, nil
+	return &wallet.GetNetworkResult{Network: wallet.NetworkTestnet}, nil
 }
 
 func (w *MinimalWalletImpl) GetVersion(ctx context.Context, args any, originator string) (*wallet.GetVersionResult, error) {

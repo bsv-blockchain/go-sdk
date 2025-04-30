@@ -8,6 +8,15 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+// actionResultStatusCode is the numeric representation of ActionResultStatus.
+type actionResultStatusCode uint8
+
+const (
+	actionResultStatusCodeUnproven actionResultStatusCode = 1
+	actionResultStatusCodeSending  actionResultStatusCode = 2
+	actionResultStatusCodeFailed   actionResultStatusCode = 3
+)
+
 func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) error {
 	if results == nil {
 		w.WriteVarInt(0)
@@ -21,14 +30,14 @@ func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) e
 		}
 		w.WriteBytes(txidBytes)
 
-		var statusByte wallet.ActionResultStatusCode
+		var statusByte actionResultStatusCode
 		switch res.Status {
 		case wallet.ActionResultStatusUnproven:
-			statusByte = wallet.ActionResultStatusCodeUnproven
+			statusByte = actionResultStatusCodeUnproven
 		case wallet.ActionResultStatusSending:
-			statusByte = wallet.ActionResultStatusCodeSending
+			statusByte = actionResultStatusCodeSending
 		case wallet.ActionResultStatusFailed:
-			statusByte = wallet.ActionResultStatusCodeFailed
+			statusByte = actionResultStatusCodeFailed
 		default:
 			return fmt.Errorf("invalid status: %s", res.Status)
 		}
@@ -59,12 +68,12 @@ func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
 		}
 
 		var status wallet.ActionResultStatus
-		switch wallet.ActionResultStatusCode(statusCode) {
-		case wallet.ActionResultStatusCodeUnproven:
+		switch actionResultStatusCode(statusCode) {
+		case actionResultStatusCodeUnproven:
 			status = wallet.ActionResultStatusUnproven
-		case wallet.ActionResultStatusCodeSending:
+		case actionResultStatusCodeSending:
 			status = wallet.ActionResultStatusSending
-		case wallet.ActionResultStatusCodeFailed:
+		case actionResultStatusCodeFailed:
 			status = wallet.ActionResultStatusFailed
 		default:
 			return nil, fmt.Errorf("invalid status code: %d", statusCode)

@@ -17,8 +17,8 @@ func TestListOutputsArgs(t *testing.T) {
 			args: &wallet.ListOutputsArgs{
 				Basket:                    "test-basket",
 				Tags:                      []string{"tag1", "tag2"},
-				TagQueryMode:              "any",
-				Include:                   "entire transactions",
+				TagQueryMode:              wallet.QueryModeAny,
+				Include:                   wallet.OutputIncludeEntireTransactions,
 				IncludeCustomInstructions: util.BoolPtr(true),
 				IncludeTags:               util.BoolPtr(true),
 				IncludeLabels:             util.BoolPtr(false),

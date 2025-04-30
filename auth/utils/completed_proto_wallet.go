@@ -71,7 +71,7 @@ func (c *CompletedProtoWallet) GetHeight(ctx context.Context, args any, originat
 // GetNetwork gets the current network
 func (c *CompletedProtoWallet) GetNetwork(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
 	return &wallet.GetNetworkResult{
-		Network: "test",
+		Network: wallet.NetworkTestnet,
 	}, nil
 }
 
