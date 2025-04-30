@@ -1,12 +1,15 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+)
+
+const (
+	trustSelfKnown = 1
 )
 
 // SerializeCreateActionArgs serializes a wallet.CreateActionArgs object into a byte slice
@@ -77,12 +80,9 @@ func serializeCreateActionOutputs(paramWriter *util.Writer, outputs []wallet.Cre
 	paramWriter.WriteVarInt(uint64(len(outputs)))
 	for _, output := range outputs {
 		// Serialize locking script
-		script, err := hex.DecodeString(output.LockingScript)
-		if err != nil {
-			return fmt.Errorf("error decoding locking script: %w", err)
+		if err := paramWriter.WriteIntFromHex(output.LockingScript); err != nil {
+			return fmt.Errorf("error writing locking script: %w", err)
 		}
-		paramWriter.WriteVarInt(uint64(len(script)))
-		paramWriter.WriteBytes(script)
 
 		// Serialize satoshis, output description, basket, custom instructions, and tags
 		paramWriter.WriteVarInt(output.Satoshis)
@@ -106,8 +106,8 @@ func serializeCreateActionOptions(paramWriter *util.Writer, options *wallet.Crea
 	paramWriter.WriteOptionalBool(options.AcceptDelayedBroadcast)
 
 	// trustSelf
-	if options.TrustSelf == "known" {
-		paramWriter.WriteByte(1)
+	if options.TrustSelf == wallet.TrustSelfKnown {
+		paramWriter.WriteByte(trustSelfKnown)
 	} else {
 		paramWriter.WriteByte(0xFF) // -1
 	}

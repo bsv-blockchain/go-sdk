@@ -44,7 +44,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				Options: &wallet.CreateActionOptions{
 					SignAndProcess:         util.BoolPtr(true),
 					AcceptDelayedBroadcast: util.BoolPtr(false),
-					TrustSelf:              "known",
+					TrustSelf:              wallet.TrustSelfKnown,
 					KnownTxids: []string{
 						"8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
 						"490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",

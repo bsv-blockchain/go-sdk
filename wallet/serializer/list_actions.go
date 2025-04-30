@@ -1,8 +1,8 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -40,6 +40,9 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	w.WriteOptionalBool(args.IncludeOutputLockingScripts)
 
 	// Serialize limit, offset, and seekPermission
+	if args.Limit > wallet.MaxActionsLimit {
+		return nil, fmt.Errorf("limit exceeds maximum allowed value: %d", args.Limit)
+	}
 	w.WriteOptionalUint32(args.Limit)
 	w.WriteOptionalUint32(args.Offset)
 	w.WriteOptionalBool(args.SeekPermission)
@@ -110,11 +113,9 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 	w.WriteVarInt(uint64(len(result.Actions)))
 	for _, action := range result.Actions {
 		// Serialize basic action fields
-		txid, err := hex.DecodeString(action.Txid)
-		if err != nil {
+		if err := w.WriteSizeFromHex(action.Txid, chainhash.HashSize); err != nil {
 			return nil, fmt.Errorf("invalid txid hex: %w", err)
 		}
-		w.WriteBytes(txid)
 		w.WriteVarInt(action.Satoshis)
 
 		// Serialize status
@@ -175,7 +176,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 			w.WriteVarInt(output.Satoshis)
 
 			// LockingScript
-			if err = w.WriteOptionalFromHex(output.LockingScript); err != nil {
+			if err := w.WriteOptionalFromHex(output.LockingScript); err != nil {
 				return nil, fmt.Errorf("invalid locking script: %w", err)
 			}
 
@@ -205,8 +206,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		action := wallet.Action{}
 
 		// Deserialize basic action fields
-		txid := r.ReadBytes(32)
-		action.Txid = hex.EncodeToString(txid)
+		action.Txid = r.ReadHex(chainhash.HashSize)
 		action.Satoshis = r.ReadVarInt()
 
 		// Deserialize status

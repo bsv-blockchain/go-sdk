@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math"
@@ -51,15 +52,61 @@ func (w *Writer) WriteOptionalString(s string) {
 
 func (w *Writer) WriteOptionalFromHex(s string) error {
 	if s != "" {
-		b, err := hex.DecodeString(s)
-		if err != nil {
-			return fmt.Errorf("error write invalid hex: %w", err)
-		}
-		w.WriteVarInt(uint64(len(b)))
-		w.WriteBytes(b)
+		return w.WriteIntFromHex(s)
 	} else {
 		w.WriteVarInt(math.MaxUint64)
 	}
+	return nil
+}
+
+func (w *Writer) WriteRemainingFromHex(s string) error {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("error write invalid hex: %w", err)
+	}
+	w.WriteBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteIntFromHex(s string) error {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("error write invalid hex: %w", err)
+	}
+	w.WriteIntBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteSizeFromHex(s string, size int) error {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("invalid certifier hex: %w", err)
+	}
+	if len(b) != size {
+		return fmt.Errorf("hex must be %d bytes long", size, len(b))
+	}
+	w.WriteBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteIntFromBase64(s string) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("error write invalid base64: %w", err)
+	}
+	w.WriteIntBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteSizeFromBase64(s string, size int) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("invalid certifier base64: %w", err)
+	}
+	if len(b) != size {
+		return fmt.Errorf("base64 must be %d bytes long, got %d", size, len(b))
+	}
+	w.WriteBytes(b)
 	return nil
 }
 

@@ -97,11 +97,17 @@ type CreateActionOutput struct {
 	Tags               []string `json:"tags,omitempty"`
 }
 
+type TrustSelf string
+
+const (
+	TrustSelfKnown TrustSelf = "known"
+)
+
 // CreateActionOptions contains optional parameters for creating a new transaction
 type CreateActionOptions struct {
 	SignAndProcess         *bool
 	AcceptDelayedBroadcast *bool
-	TrustSelf              string // "known" or ""
+	TrustSelf              TrustSelf // "known" or ""
 	KnownTxids             []string
 	ReturnTXIDOnly         *bool
 	NoSend                 *bool
@@ -243,6 +249,8 @@ func QueryModeFromString(s string) (QueryMode, error) {
 	}
 	return "", fmt.Errorf("invalid query mode: %s", s)
 }
+
+const MaxActionsLimit = 10000
 
 // ListActionsArgs defines filtering and pagination options for listing wallet transactions.
 type ListActionsArgs struct {

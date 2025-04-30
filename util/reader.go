@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -278,6 +279,22 @@ func (r *ReaderHoldError) ReadBytes(n int) []byte {
 	return val
 }
 
+func (r *ReaderHoldError) ReadBase64Int() string {
+	return r.ReadBase64(int(r.ReadVarInt()))
+}
+
+func (r *ReaderHoldError) ReadBase64(n int) string {
+	return base64.StdEncoding.EncodeToString(r.ReadBytes(n))
+}
+
+func (r *ReaderHoldError) ReadHex(n int) string {
+	return hex.EncodeToString(r.ReadBytes(n))
+}
+
+func (r *ReaderHoldError) ReadRemainingHex() string {
+	return hex.EncodeToString(r.ReadRemaining())
+}
+
 func (r *ReaderHoldError) ReadIntBytes() []byte {
 	if r.Err != nil {
 		return nil
@@ -285,6 +302,10 @@ func (r *ReaderHoldError) ReadIntBytes() []byte {
 	val, err := r.Reader.ReadIntBytes()
 	r.Err = err
 	return val
+}
+
+func (r *ReaderHoldError) ReadIntBytesHex() string {
+	return hex.EncodeToString(r.ReadIntBytes())
 }
 
 // ReadByte returns the next byte and holds any error internally

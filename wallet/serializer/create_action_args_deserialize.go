@@ -152,8 +152,8 @@ func deserializeCreateActionOptions(messageReader *util.ReaderHoldError) (*walle
 	options.AcceptDelayedBroadcast = messageReader.ReadOptionalBool()
 
 	// Read trustSelf
-	if messageReader.ReadByte() == 1 {
-		options.TrustSelf = "known"
+	if messageReader.ReadByte() == trustSelfKnown {
+		options.TrustSelf = wallet.TrustSelfKnown
 	}
 
 	// Read knownTxids, returnTXIDOnly, and noSend

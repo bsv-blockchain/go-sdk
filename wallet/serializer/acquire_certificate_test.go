@@ -18,7 +18,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 		args: &wallet.AcquireCertificateArgs{
 			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), sizeType)),
 			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
-			AcquisitionProtocol: "direct",
+			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			Fields: map[string]string{
 				"field1": "value1",
 				"field2": "value2",
@@ -38,7 +38,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 		args: &wallet.AcquireCertificateArgs{
 			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("issuance-type"), sizeType)),
 			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
-			AcquisitionProtocol: "issuance",
+			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields: map[string]string{
 				"field1": "value1",
 			},
@@ -49,7 +49,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 		args: &wallet.AcquireCertificateArgs{
 			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), sizeType)),
 			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
-			AcquisitionProtocol: "direct",
+			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			RevocationOutpoint:  "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:           hex.EncodeToString(make([]byte, 64)),

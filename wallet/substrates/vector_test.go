@@ -407,7 +407,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.AcquireCertificateArgs{
 			Type:                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
 			Certifier:           "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1", // Use hex string from TS
-			AcquisitionProtocol: "issuance",
+			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
 			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 			RevocationOutpoint:  "txid123:0",

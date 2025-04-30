@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
 	"strings"
 
@@ -26,7 +27,7 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid txid: %w", err)
 	}
-	if len(txid) != 32 { // TXID must be 32 bytes long
+	if len(txid) != chainhash.HashSize { // TXID must be 32 bytes long
 		return nil, fmt.Errorf("invalid txid length: expected 32 bytes, got %d", len(txid))
 	}
 

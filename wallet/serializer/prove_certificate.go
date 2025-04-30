@@ -1,8 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -14,25 +12,16 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	w := util.NewWriter()
 
 	// Encode certificate type (base64)
-	typeBytes, err := base64.StdEncoding.DecodeString(args.Certificate.Type)
-	if err != nil {
+	if err := w.WriteSizeFromBase64(args.Certificate.Type, sizeType); err != nil {
 		return nil, fmt.Errorf("invalid type base64: %w", err)
 	}
-	if len(typeBytes) != sizeType {
-		return nil, fmt.Errorf("type must be %d bytes", sizeType)
-	}
-	w.WriteBytes(typeBytes)
+
 	w.WriteBytes(args.Certificate.Subject.Compressed())
 
 	// Encode serialNumber (base64)
-	serialBytes, err := base64.StdEncoding.DecodeString(args.Certificate.SerialNumber)
-	if err != nil {
+	if err := w.WriteSizeFromBase64(args.Certificate.SerialNumber, sizeSerial); err != nil {
 		return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
 	}
-	if len(serialBytes) != sizeType {
-		return nil, fmt.Errorf("serialNumber must be %d bytes", sizeType)
-	}
-	w.WriteBytes(serialBytes)
 
 	w.WriteBytes(args.Certificate.Certifier.Compressed())
 
@@ -44,12 +33,9 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	w.WriteBytes(outpointBytes)
 
 	// Encode signature (hex)
-	sigBytes, err := hex.DecodeString(args.Certificate.Signature)
-	if err != nil {
+	if err := w.WriteIntFromHex(args.Certificate.Signature); err != nil {
 		return nil, fmt.Errorf("invalid signature hex: %w", err)
 	}
-	w.WriteVarInt(uint64(len(sigBytes)))
-	w.WriteBytes(sigBytes)
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Certificate.Fields))
@@ -75,14 +61,9 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	}
 
 	// Encode verifier (hex)
-	verifierBytes, err := hex.DecodeString(args.Verifier)
-	if err != nil {
+	if err := w.WriteSizeFromHex(args.Verifier, sizeCertifier); err != nil {
 		return nil, fmt.Errorf("invalid verifier hex: %w", err)
 	}
-	if len(verifierBytes) != sizeCertifier {
-		return nil, fmt.Errorf("verifier must be %d bytes", sizeCertifier)
-	}
-	w.WriteBytes(verifierBytes)
 
 	// Encode privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -95,8 +76,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	args = &wallet.ProveCertificateArgs{}
 
 	// Read certificate type (base64)
-	typeBytes := r.ReadBytes(sizeType)
-	args.Certificate.Type = base64.StdEncoding.EncodeToString(typeBytes)
+	args.Certificate.Type = r.ReadBase64(sizeType)
 
 	// Read subject (hex)
 	subjectBytes := r.ReadBytes(sizeCertifier)
@@ -105,8 +85,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read serialNumber (base64)
-	serialBytes := r.ReadBytes(sizeType)
-	args.Certificate.SerialNumber = base64.StdEncoding.EncodeToString(serialBytes)
+	args.Certificate.SerialNumber = r.ReadBase64(sizeSerial)
 
 	// Read certifier (hex)
 	certifierBytes := r.ReadBytes(sizeCertifier)
@@ -122,9 +101,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read signature (hex)
-	sigLen := r.ReadVarInt()
-	sigBytes := r.ReadBytes(int(sigLen))
-	args.Certificate.Signature = hex.EncodeToString(sigBytes)
+	args.Certificate.Signature = r.ReadIntBytesHex()
 
 	// Read fields
 	fieldsLen := r.ReadVarInt()
@@ -156,8 +133,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read verifier (hex)
-	verifierBytes := r.ReadBytes(sizeCertifier)
-	args.Verifier = hex.EncodeToString(verifierBytes)
+	args.Verifier = r.ReadHex(sizeCertifier)
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
@@ -181,12 +157,9 @@ func SerializeProveCertificateResult(result *wallet.ProveCertificateResult) ([]b
 		w.WriteVarInt(uint64(len(keyBytes)))
 		w.WriteBytes(keyBytes)
 
-		valueBytes, err := base64.StdEncoding.DecodeString(v)
-		if err != nil {
+		if err := w.WriteIntFromBase64(v); err != nil {
 			return nil, fmt.Errorf("invalid keyring value base64: %w", err)
 		}
-		w.WriteVarInt(uint64(len(valueBytes)))
-		w.WriteBytes(valueBytes)
 	}
 
 	return w.Buf, nil
@@ -212,11 +185,8 @@ func DeserializeProveCertificateResult(data []byte) (*wallet.ProveCertificateRes
 		keyBytes := r.ReadBytes(int(keyLen))
 		key := string(keyBytes)
 
-		valueLen := r.ReadVarInt()
-		valueBytes := r.ReadBytes(int(valueLen))
-		value := base64.StdEncoding.EncodeToString(valueBytes)
+		result.KeyringForVerifier[key] = r.ReadBase64Int()
 
-		result.KeyringForVerifier[key] = value
 		if r.Err != nil {
 			return nil, fmt.Errorf("error reading keyring entry %s: %w", key, r.Err)
 		}

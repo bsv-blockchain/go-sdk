@@ -1,8 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -14,27 +12,17 @@ func SerializeListCertificatesArgs(args *wallet.ListCertificatesArgs) ([]byte, e
 	// Write certifiers
 	w.WriteVarInt(uint64(len(args.Certifiers)))
 	for _, certifier := range args.Certifiers {
-		certifierBytes, err := hex.DecodeString(certifier)
-		if err != nil {
+		if err := w.WriteSizeFromHex(certifier, sizeCertifier); err != nil {
 			return nil, fmt.Errorf("invalid certifier hex: %w", err)
 		}
-		if len(certifierBytes) != sizeCertifier {
-			return nil, fmt.Errorf("certifier should be %d bytes, got %d", sizeCertifier, len(certifierBytes))
-		}
-		w.WriteBytes(certifierBytes)
 	}
 
 	// Write types
 	w.WriteVarInt(uint64(len(args.Types)))
 	for _, typ := range args.Types {
-		typeBytes, err := base64.StdEncoding.DecodeString(typ)
-		if err != nil {
+		if err := w.WriteSizeFromBase64(typ, sizeType); err != nil {
 			return nil, fmt.Errorf("invalid type base64: %w", err)
 		}
-		if len(typeBytes) != sizeType {
-			return nil, fmt.Errorf("type should be %d bytes, got %d", sizeType, len(typeBytes))
-		}
-		w.WriteBytes(typeBytes)
 	}
 
 	// Write limit and offset
@@ -55,22 +43,22 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	certifiersLength := r.ReadVarInt()
 	args.Certifiers = make([]string, 0, certifiersLength)
 	for i := uint64(0); i < certifiersLength; i++ {
-		certifierBytes := r.ReadBytes(sizeCertifier)
+		certifier := r.ReadHex(sizeCertifier)
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing certifier: %w", r.Err)
 		}
-		args.Certifiers = append(args.Certifiers, hex.EncodeToString(certifierBytes))
+		args.Certifiers = append(args.Certifiers, certifier)
 	}
 
 	// Read types
 	typesLength := r.ReadVarInt()
 	args.Types = make([]string, 0, typesLength)
 	for i := uint64(0); i < typesLength; i++ {
-		typeBytes := r.ReadBytes(sizeType)
+		typeString := r.ReadBase64(sizeType)
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing type: %w", r.Err)
 		}
-		args.Types = append(args.Types, base64.StdEncoding.EncodeToString(typeBytes))
+		args.Types = append(args.Types, typeString)
 	}
 
 	// Read limit and offset
