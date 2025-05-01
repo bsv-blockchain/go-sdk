@@ -83,7 +83,7 @@ func (w *Writer) WriteSizeFromHex(s string, size int) error {
 		return fmt.Errorf("invalid certifier hex: %w", err)
 	}
 	if len(b) != size {
-		return fmt.Errorf("hex must be %d bytes long", size, len(b))
+		return fmt.Errorf("hex must be %d bytes long, got %d", size, len(b))
 	}
 	w.WriteBytes(b)
 	return nil

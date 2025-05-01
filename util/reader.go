@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
 )
 
@@ -125,7 +126,7 @@ func (r *Reader) ReadOptionalBytes(opts ...BytesOption) ([]byte, error) {
 	}
 	var length uint64
 	if txIdLen {
-		length = 32
+		length = chainhash.HashSize
 	} else {
 		var err error
 		length, err = r.ReadVarInt()
@@ -242,13 +243,11 @@ func (r *ReaderHoldError) CheckComplete() {
 }
 
 func (r *ReaderHoldError) ReadVarInt() uint64 {
-	var val uint64
-	if r.Err == nil {
-		val, r.Err = r.Reader.ReadVarInt()
-	}
 	if r.Err != nil {
 		return 0
 	}
+	val, err := r.Reader.ReadVarInt()
+	r.Err = err
 	return val
 }
 

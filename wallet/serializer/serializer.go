@@ -105,15 +105,21 @@ func decodeOutpoint(data []byte) (string, error) {
 	return fmt.Sprintf("%s.%d", txid, index), nil
 }
 
+const (
+	counterPartyTypeUninitializedCode uint8 = 0
+	counterPartyTypeSelfCode          uint8 = 11
+	counterPartyTypeAnyoneCode        uint8 = 12
+)
+
 // encodeCounterparty writes counterparty in the same format as TypeScript version
 func encodeCounterparty(w *util.Writer, counterparty wallet.Counterparty) error {
 	switch counterparty.Type {
 	case wallet.CounterpartyUninitialized:
-		w.WriteByte(0)
+		w.WriteByte(counterPartyTypeUninitializedCode)
 	case wallet.CounterpartyTypeSelf:
-		w.WriteByte(11)
+		w.WriteByte(counterPartyTypeSelfCode)
 	case wallet.CounterpartyTypeAnyone:
-		w.WriteByte(12)
+		w.WriteByte(counterPartyTypeAnyoneCode)
 	case wallet.CounterpartyTypeOther:
 		if counterparty.Counterparty == nil {
 			return errors.New("counterparty is nil for type other")
@@ -130,11 +136,11 @@ func decodeCounterparty(r *util.ReaderHoldError) (wallet.Counterparty, error) {
 	counterparty := wallet.Counterparty{}
 	counterpartyFlag := r.ReadByte()
 	switch counterpartyFlag {
-	case 0:
+	case counterPartyTypeUninitializedCode:
 		counterparty.Type = wallet.CounterpartyUninitialized
-	case 11:
+	case counterPartyTypeSelfCode:
 		counterparty.Type = wallet.CounterpartyTypeSelf
-	case 12:
+	case counterPartyTypeAnyoneCode:
 		counterparty.Type = wallet.CounterpartyTypeAnyone
 	default:
 		pubKey, err := ec.PublicKeyFromBytes(append([]byte{counterpartyFlag}, r.ReadBytes(32)...))
