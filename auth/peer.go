@@ -657,8 +657,9 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-103
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
@@ -743,8 +744,9 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-103
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
