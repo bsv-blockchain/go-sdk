@@ -15,6 +15,9 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+// AUTH_PROTOCOL_ID is the protocol ID for authentication messages as specified in BRC-103
+const AUTH_PROTOCOL_ID = "authrite message signature"
+
 // AUTH_VERSION is the version of the auth protocol
 const AUTH_VERSION = "0.1"
 
@@ -197,7 +200,8 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 	sigResult, err := p.wallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
+				//
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "auth message signature",
 			},
 			KeyID: fmt.Sprintf("%s %s", requestNonce, peerSession.PeerNonce),
@@ -574,8 +578,9 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-103
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
@@ -815,8 +820,9 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 	sigResult, err := p.wallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-103
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", requestNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
