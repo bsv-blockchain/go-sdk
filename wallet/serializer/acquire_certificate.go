@@ -48,7 +48,8 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
 
 	// Encode acquisition protocol (1 = direct, 2 = issuance)
-	if args.AcquisitionProtocol == wallet.AcquisitionProtocolDirect {
+	switch args.AcquisitionProtocol {
+	case wallet.AcquisitionProtocolDirect:
 		w.WriteByte(acquisitionProtocolDirect)
 		// Serial number (base64)
 		if err := w.WriteSizeFromBase64(args.SerialNumber, sizeSerial); err != nil {
@@ -88,13 +89,13 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 				return nil, fmt.Errorf("invalid keyringForSubject value base64: %w", err)
 			}
 		}
-	} else if args.AcquisitionProtocol == wallet.AcquisitionProtocolIssuance {
+	case wallet.AcquisitionProtocolIssuance:
 		w.WriteByte(acquisitionProtocolIssuance)
 		// Certifier URL
 		urlBytes := []byte(args.CertifierUrl)
 		w.WriteVarInt(uint64(len(urlBytes)))
 		w.WriteBytes(urlBytes)
-	} else {
+	default:
 		return nil, fmt.Errorf("invalid acquisition protocol: %s", args.AcquisitionProtocol)
 	}
 

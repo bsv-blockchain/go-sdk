@@ -98,7 +98,6 @@ func TestListActionArgsSerializeAndDeserializeError(t *testing.T) {
 			// Test serialization fails
 			_, err := SerializeListActionsArgs(&tt.args)
 			require.Error(t, err, "serializing with invalid args should error")
-			return
 		})
 	}
 }

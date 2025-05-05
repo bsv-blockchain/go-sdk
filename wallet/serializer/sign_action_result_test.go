@@ -5,7 +5,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSerializeSignActionResult(t *testing.T) {
@@ -64,8 +64,10 @@ func TestSerializeSignActionResult(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := SerializeSignActionResult(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeSignActionResult() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				require.Error(t, err, "expected error but got nil")
+			} else {
+				require.NoError(t, err, "expected no error but got %v", err)
 			}
 		})
 	}
@@ -149,13 +151,12 @@ func TestDeserializeSignActionResult(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DeserializeSignActionResult(tt.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DeserializeSignActionResult() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				require.Error(t, err, "expected error but got nil")
 				return
 			}
-			if !tt.wantErr {
-				assert.Equal(t, tt.want, got)
-			}
+			require.NoError(t, err, "expected no error but got %v", err)
+			require.Equal(t, tt.want, got, "expected %v but got %v", tt.want, got)
 		})
 	}
 }
