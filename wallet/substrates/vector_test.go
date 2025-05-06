@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -631,182 +632,23 @@ func TestVectors(t *testing.T) {
 			// Test JSON marshaling
 			t.Run("JSON", func(t *testing.T) {
 				// Define a function to check JSON serialization and deserialization
-				checkJson := func(emptyObj, expectedObj any) {
-					// Unmarshall the vector file into a Go object to compare with test Go object
-					require.NoError(t, json.Unmarshal(vectorFile["json"], emptyObj), "Failed unmarshal JSON to object")
-					require.EqualValues(t, expectedObj, emptyObj, "Deserialized object mismatch")
+				val := reflect.ValueOf(tt.Object)
+				typ := val.Type()
 
-					// Marshal the test Go object to JSON to compare with the vector file
-					marshaled, err := json.MarshalIndent(expectedObj, "  ", "  ")
-					require.NoError(t, err, "Failed to marshal object to JSON")
-					require.JSONEq(t, string(vectorFile["json"]), string(marshaled), "Marshaled JSON mismatch") // Use JSONEq for map order robustness
-				}
+				reflectEmptyObj := reflect.New(typ)
+				reflectExpectedObj := reflect.New(typ)
+				reflectExpectedObj.Elem().Set(val)
+				emptyObj := reflectEmptyObj.Interface()
+				expectedObj := reflectExpectedObj.Interface()
 
-				// Marshal the object to JSON
-				switch obj := tt.Object.(type) {
-				case wallet.AbortActionArgs:
-					var deserialized wallet.AbortActionArgs
-					checkJson(&deserialized, &obj)
-				case wallet.CreateActionArgs:
-					var deserialized wallet.CreateActionArgs
-					checkJson(&deserialized, &obj)
-				case wallet.SignActionArgs:
-					var deserialized wallet.SignActionArgs
-					checkJson(&deserialized, &obj)
-				case wallet.AbortActionResult:
-					var deserialized wallet.AbortActionResult
-					checkJson(&deserialized, &obj)
-				case wallet.ListActionsArgs:
-					var deserialized wallet.ListActionsArgs
-					checkJson(&deserialized, &obj)
-				case wallet.ListActionsResult:
-					var deserialized wallet.ListActionsResult
-					checkJson(&deserialized, &obj)
-				case wallet.InternalizeActionArgs:
-					var deserialized wallet.InternalizeActionArgs
-					checkJson(&deserialized, &obj)
-				case wallet.InternalizeActionResult:
-					var deserialized wallet.InternalizeActionResult
-					checkJson(&deserialized, &obj)
-				case wallet.ListOutputsArgs:
-					var deserialized wallet.ListOutputsArgs
-					checkJson(&deserialized, &obj)
-				case wallet.ListOutputsResult:
-					var deserialized wallet.ListOutputsResult
-					checkJson(&deserialized, &obj)
-				case wallet.RelinquishOutputArgs:
-					var deserialized wallet.RelinquishOutputArgs
-					checkJson(&deserialized, &obj)
-				case wallet.RelinquishOutputResult:
-					var deserialized wallet.RelinquishOutputResult
-					checkJson(&deserialized, &obj)
-				case wallet.GetPublicKeyArgs:
-					var deserialized wallet.GetPublicKeyArgs
-					checkJson(&deserialized, &obj)
-				case wallet.GetPublicKeyResult:
-					var deserialized wallet.GetPublicKeyResult
-					checkJson(&deserialized, &obj)
-				case wallet.RevealCounterpartyKeyLinkageArgs:
-					var deserialized wallet.RevealCounterpartyKeyLinkageArgs
-					checkJson(&deserialized, &obj)
-				case wallet.RevealCounterpartyKeyLinkageResult:
-					var deserialized wallet.RevealCounterpartyKeyLinkageResult
-					checkJson(&deserialized, &obj)
-				case wallet.RevealSpecificKeyLinkageArgs:
-					var deserialized wallet.RevealSpecificKeyLinkageArgs
-					checkJson(&deserialized, &obj)
-				case wallet.RevealSpecificKeyLinkageResult:
-					var deserialized wallet.RevealSpecificKeyLinkageResult
-					checkJson(&deserialized, &obj)
-				case wallet.EncryptArgs:
-					var deserialized wallet.EncryptArgs
-					checkJson(&deserialized, &obj)
-				case wallet.EncryptResult:
-					var deserialized wallet.EncryptResult
-					checkJson(&deserialized, &obj)
-				case wallet.DecryptArgs:
-					var deserialized wallet.DecryptArgs
-					checkJson(&deserialized, &obj)
-				case wallet.DecryptResult:
-					var deserialized wallet.DecryptResult
-					checkJson(&deserialized, &obj)
-				case wallet.CreateHmacArgs:
-					var deserialized wallet.CreateHmacArgs
-					checkJson(&deserialized, &obj)
-				case wallet.CreateHmacResult:
-					var deserialized wallet.CreateHmacResult
-					checkJson(&deserialized, &obj)
-				case wallet.VerifyHmacArgs:
-					var deserialized wallet.VerifyHmacArgs
-					checkJson(&deserialized, &obj)
-				case wallet.VerifyHmacResult:
-					var deserialized wallet.VerifyHmacResult
-					checkJson(&deserialized, &obj)
-				case wallet.CreateSignatureArgs:
-					var deserialized wallet.CreateSignatureArgs
-					checkJson(&deserialized, &obj)
-				case wallet.CreateSignatureResult:
-					var deserialized wallet.CreateSignatureResult
-					checkJson(&deserialized, &obj)
-				case wallet.VerifySignatureArgs:
-					var deserialized wallet.VerifySignatureArgs
-					expectedObj := tt.Object.(wallet.VerifySignatureArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.VerifySignatureResult:
-					var deserialized wallet.VerifySignatureResult
-					expectedObj := tt.Object.(wallet.VerifySignatureResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.AcquireCertificateArgs:
-					var deserialized wallet.AcquireCertificateArgs
-					expectedObj := tt.Object.(wallet.AcquireCertificateArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.Certificate:
-					var deserialized wallet.Certificate
-					expectedObj := tt.Object.(wallet.Certificate)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.ListCertificatesArgs:
-					var deserialized wallet.ListCertificatesArgs
-					expectedObj := tt.Object.(wallet.ListCertificatesArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.ListCertificatesResult:
-					var deserialized wallet.ListCertificatesResult
-					expectedObj := tt.Object.(wallet.ListCertificatesResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.ProveCertificateArgs:
-					var deserialized wallet.ProveCertificateArgs
-					expectedObj := tt.Object.(wallet.ProveCertificateArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.ProveCertificateResult:
-					var deserialized wallet.ProveCertificateResult
-					expectedObj := tt.Object.(wallet.ProveCertificateResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.RelinquishCertificateArgs:
-					var deserialized wallet.RelinquishCertificateArgs
-					expectedObj := tt.Object.(wallet.RelinquishCertificateArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.RelinquishCertificateResult:
-					var deserialized wallet.RelinquishCertificateResult
-					expectedObj := tt.Object.(wallet.RelinquishCertificateResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.DiscoverByIdentityKeyArgs:
-					var deserialized wallet.DiscoverByIdentityKeyArgs
-					expectedObj := tt.Object.(wallet.DiscoverByIdentityKeyArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.DiscoverCertificatesResult:
-					var deserialized wallet.DiscoverCertificatesResult
-					expectedObj := tt.Object.(wallet.DiscoverCertificatesResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.DiscoverByAttributesArgs:
-					var deserialized wallet.DiscoverByAttributesArgs
-					expectedObj := tt.Object.(wallet.DiscoverByAttributesArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.AuthenticatedResult:
-					var deserialized wallet.AuthenticatedResult
-					expectedObj := tt.Object.(wallet.AuthenticatedResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.GetHeightResult:
-					var deserialized wallet.GetHeightResult
-					expectedObj := tt.Object.(wallet.GetHeightResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.GetHeaderArgs:
-					var deserialized wallet.GetHeaderArgs
-					expectedObj := tt.Object.(wallet.GetHeaderArgs)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.GetHeaderResult:
-					var deserialized wallet.GetHeaderResult
-					expectedObj := tt.Object.(wallet.GetHeaderResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.GetNetworkResult:
-					var deserialized wallet.GetNetworkResult
-					expectedObj := tt.Object.(wallet.GetNetworkResult)
-					checkJson(&deserialized, &expectedObj)
-				case wallet.GetVersionResult:
-					var deserialized wallet.GetVersionResult
-					expectedObj := tt.Object.(wallet.GetVersionResult)
-					checkJson(&deserialized, &expectedObj)
-				default:
-					t.Fatalf("Unsupported object type: %T", obj)
-				}
+				// Unmarshall the vector file into a Go object to compare with test Go object
+				require.NoError(t, json.Unmarshal(vectorFile["json"], emptyObj), "Failed unmarshal JSON to object")
+				require.EqualValues(t, expectedObj, emptyObj, "Deserialized object mismatch")
+
+				// Marshal the test Go object to JSON to compare with the vector file
+				marshaled, err := json.MarshalIndent(expectedObj, "  ", "  ")
+				require.NoError(t, err, "Failed to marshal object to JSON")
+				require.JSONEq(t, string(vectorFile["json"]), string(marshaled), "Marshaled JSON mismatch") // Use JSONEq for map order robustness
 			})
 
 			// TODO: Implement wire tests
@@ -853,6 +695,7 @@ func TestVectors(t *testing.T) {
 				}
 
 				// Serialize and deserialize using the wire binary format
+				// TODO: Use reflect instead of switch statement, similar to JSON test
 				switch obj := tt.Object.(type) {
 				case wallet.AbortActionArgs:
 					serialized, err1 := serializer.SerializeAbortActionArgs(&obj)
