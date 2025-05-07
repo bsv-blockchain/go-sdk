@@ -40,8 +40,8 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid revocationOutpoint: %w", err)
 	}
-	if len(outpointBytes) != OutpointSize {
-		return nil, fmt.Errorf("revocationOutpoint must be %d bytes long", OutpointSize)
+	if len(outpointBytes) != outpointSize {
+		return nil, fmt.Errorf("revocationOutpoint must be %d bytes long", outpointSize)
 	}
 	w.WriteBytes(outpointBytes)
 
@@ -94,7 +94,7 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	}
 
 	// Read revocation outpoint
-	outpoint, err := decodeOutpoint(r.ReadBytes(OutpointSize))
+	outpoint, err := decodeOutpoint(r.ReadBytes(outpointSize))
 	if err != nil {
 		return nil, fmt.Errorf("error decoding revocation outpoint: %w", err)
 	}

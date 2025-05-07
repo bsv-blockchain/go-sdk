@@ -14,7 +14,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-const OutpointSize = 36
+const outpointSize = 36 // 32 txid + 4 index
 
 // encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint string) ([]byte, error) {
@@ -36,7 +36,7 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid index: %w", err)
 	}
 
-	buf := make([]byte, OutpointSize)
+	buf := make([]byte, outpointSize)
 	copy(buf[:32], txid)
 	binary.BigEndian.PutUint32(buf[32:36], index)
 
@@ -81,7 +81,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 
 	outpoints := make([]string, 0, count)
 	for i := uint64(0); i < count; i++ {
-		opBytes, err := r.ReadBytes(OutpointSize)
+		opBytes, err := r.ReadBytes(outpointSize)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 
 // decodeOutpoint converts binary outpoint data to string format "txid.index"
 func decodeOutpoint(data []byte) (string, error) {
-	if len(data) != OutpointSize {
+	if len(data) != outpointSize {
 		return "", errors.New("invalid outpoint data length")
 	}
 

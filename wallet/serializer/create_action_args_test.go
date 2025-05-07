@@ -186,7 +186,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// inputs (1 item)
 				w.WriteVarInt(1)
 				// valid outpoint
-				w.WriteBytes(make([]byte, OutpointSize))
+				w.WriteBytes(make([]byte, outpointSize))
 				// unlocking script length (invalid hex)
 				w.WriteVarInt(2)
 				w.WriteBytes([]byte{0x01, 0x02})

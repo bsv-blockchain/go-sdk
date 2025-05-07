@@ -228,7 +228,7 @@ func TestDecodeOutpoint(t *testing.T) {
 	// Create valid outpoint bytes
 	txidBytes, err := hex.DecodeString(validTxid)
 	require.NoError(t, err, "decoding valid txid hex should not error")
-	validData := make([]byte, OutpointSize)
+	validData := make([]byte, outpointSize)
 	copy(validData[:32], txidBytes)
 	binary.BigEndian.PutUint32(validData[32:36], validIndex)
 
@@ -246,7 +246,7 @@ func TestDecodeOutpoint(t *testing.T) {
 		},
 		{
 			name:      "invalid length - too short",
-			input:     validData[:OutpointSize-1],
+			input:     validData[:outpointSize-1],
 			want:      "",
 			expectErr: true,
 		},
@@ -291,7 +291,7 @@ func TestEncodeOutpoint(t *testing.T) {
 	validOutpointStr := fmt.Sprintf("%s.%d", validTxid, validIndex)
 
 	// Expected valid binary output
-	expectedBytes := make([]byte, OutpointSize)
+	expectedBytes := make([]byte, outpointSize)
 	txidBytes, _ := hex.DecodeString(validTxid)
 	copy(expectedBytes[:32], txidBytes)
 	binary.BigEndian.PutUint32(expectedBytes[32:36], validIndex)

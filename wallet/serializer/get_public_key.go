@@ -8,14 +8,15 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+const identityKeyFlag = 1
+
 // SerializeGetPublicKeyArgs serializes the wallet.GetPublicKeyArgs structure into a byte array.
 func SerializeGetPublicKeyArgs(args *wallet.GetPublicKeyArgs) ([]byte, error) {
 	w := util.NewWriter()
 
 	// Write identity key flag
-	// Write identity key flag
 	if args.IdentityKey {
-		w.WriteByte(1)
+		w.WriteByte(identityKeyFlag)
 	} else {
 		w.WriteByte(0)
 	}
@@ -53,8 +54,7 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 	args := &wallet.GetPublicKeyArgs{}
 
 	// Read identity key flag
-	identityKeyFlag := r.ReadByte()
-	if identityKeyFlag == 1 {
+	if r.ReadByte() == identityKeyFlag {
 		args.IdentityKey = true
 	}
 
