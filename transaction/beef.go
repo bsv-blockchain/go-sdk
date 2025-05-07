@@ -31,7 +31,7 @@ func (t *Transaction) FromBEEF(beef []byte) error {
 		return fmt.Errorf("failed to parse BEEF bytes: %w", err)
 	}
 	*t = *tx
-	return err
+	return nil
 }
 
 func NewBeefV1() *Beef {
