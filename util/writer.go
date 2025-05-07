@@ -34,6 +34,25 @@ func (w *Writer) WriteVarInt(n uint64) {
 	w.WriteBytes(VarInt(n).Bytes())
 }
 
+const NegativeOneByte = 0xFF
+const NegativeOne = math.MaxUint64
+
+func (w *Writer) WriteNegativeOne() {
+	w.WriteVarInt(NegativeOne)
+}
+
+func (w *Writer) WriteNegativeOneByte() {
+	w.WriteByte(NegativeOneByte)
+}
+
+func IsNegativeOne(val uint64) bool {
+	return val == NegativeOne
+}
+
+func IsNegativeOneByte(b byte) bool {
+	return b == NegativeOneByte
+}
+
 func (w *Writer) WriteString(s string) {
 	b := []byte(s)
 	w.WriteVarInt(uint64(len(b)))
@@ -46,7 +65,7 @@ func (w *Writer) WriteOptionalString(s string) {
 		w.WriteVarInt(uint64(len(b)))
 		w.WriteBytes(b)
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
 }
 
@@ -54,7 +73,7 @@ func (w *Writer) WriteOptionalFromHex(s string) error {
 	if s != "" {
 		return w.WriteIntFromHex(s)
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
 	return nil
 }
@@ -157,7 +176,7 @@ func (w *Writer) WriteOptionalUint32(n uint32) {
 	if n > 0 {
 		w.WriteVarInt(uint64(n))
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
 }
 
@@ -168,7 +187,7 @@ func (w *Writer) WriteStringSlice(slice []string) {
 			w.WriteOptionalString(s)
 		}
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
 }
 
@@ -180,7 +199,7 @@ func (w *Writer) WriteOptionalBool(b *bool) {
 			w.WriteByte(0)
 		}
 	} else {
-		w.WriteByte(0xFF) // -1
+		w.WriteNegativeOneByte()
 	}
 }
 

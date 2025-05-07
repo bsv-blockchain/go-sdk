@@ -30,7 +30,7 @@ func DeserializeDiscoverByIdentityKeyArgs(data []byte) (*wallet.DiscoverByIdenti
 	// Read identity key (33 bytes)
 	args.IdentityKey = r.ReadHex(sizeIdentity)
 
-	// Read limit (varint) or 9 bytes of 0xFF if undefined
+	// Read limit
 	args.Limit = r.ReadOptionalUint32()
 	args.Offset = r.ReadOptionalUint32()
 	args.SeekPermission = r.ReadOptionalBool()

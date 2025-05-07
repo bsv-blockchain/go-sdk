@@ -2,8 +2,6 @@ package serializer
 
 import (
 	"fmt"
-	"math"
-
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -45,7 +43,7 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 
 func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.CreateActionInput) error {
 	if inputs == nil {
-		paramWriter.WriteVarInt(math.MaxUint64) // -1
+		paramWriter.WriteNegativeOne()
 		return nil
 	}
 	paramWriter.WriteVarInt(uint64(len(inputs)))
@@ -74,7 +72,7 @@ func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.Creat
 
 func serializeCreateActionOutputs(paramWriter *util.Writer, outputs []wallet.CreateActionOutput) error {
 	if outputs == nil {
-		paramWriter.WriteVarInt(math.MaxUint64) // -1
+		paramWriter.WriteNegativeOne()
 		return nil
 	}
 	paramWriter.WriteVarInt(uint64(len(outputs)))
@@ -109,7 +107,7 @@ func serializeCreateActionOptions(paramWriter *util.Writer, options *wallet.Crea
 	if options.TrustSelf == wallet.TrustSelfKnown {
 		paramWriter.WriteByte(trustSelfKnown)
 	} else {
-		paramWriter.WriteByte(0xFF) // -1
+		paramWriter.WriteNegativeOneByte()
 	}
 
 	// knownTxids

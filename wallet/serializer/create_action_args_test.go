@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"math"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -166,7 +165,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// description (empty)
 				w.WriteVarInt(0)
 				// input BEEF (nil)
-				w.WriteVarInt(math.MaxUint64)
+				w.WriteVarInt(util.NegativeOne)
 				// inputs (1 item)
 				w.WriteVarInt(1)
 				// invalid outpoint (too short)
@@ -182,7 +181,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// description (empty)
 				w.WriteVarInt(0)
 				// input BEEF (nil)
-				w.WriteVarInt(math.MaxUint64)
+				w.WriteVarInt(util.NegativeOne)
 				// inputs (1 item)
 				w.WriteVarInt(1)
 				// valid outpoint

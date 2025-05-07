@@ -26,7 +26,7 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	case wallet.QueryModeAll:
 		w.WriteByte(queryModeAllCode)
 	case "":
-		w.WriteByte(0xFF) // -1
+		w.WriteNegativeOneByte()
 	default:
 		return nil, fmt.Errorf("invalid label query mode: %s", args.LabelQueryMode)
 	}
@@ -63,7 +63,7 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 		args.LabelQueryMode = wallet.QueryModeAny
 	case queryModeAllCode:
 		args.LabelQueryMode = wallet.QueryModeAll
-	case 0xFF:
+	case util.NegativeOneByte:
 		args.LabelQueryMode = ""
 	default:
 		return nil, fmt.Errorf("invalid label query mode byte: %d", r.ReadByte())

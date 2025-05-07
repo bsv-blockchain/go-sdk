@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"math"
 	"strings"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -75,7 +74,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if count == math.MaxUint64 {
+	if util.IsNegativeOne(count) {
 		return nil, nil
 	}
 
@@ -194,10 +193,7 @@ func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 			w.WriteByte(0)
 		}
 	} else {
-		// Write 9 bytes of 0xFF (-1) when undefined
-		for i := 0; i < 9; i++ {
-			w.WriteByte(0xFF)
-		}
+		w.WriteNegativeOne()
 	}
 
 	// Write privileged reason
@@ -205,10 +201,7 @@ func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 		w.WriteByte(byte(len(privilegedReason)))
 		w.WriteString(privilegedReason)
 	} else {
-		// Write 9 bytes of 0xFF (-1) when undefined
-		for i := 0; i < 9; i++ {
-			w.WriteByte(0xFF)
-		}
+		w.WriteNegativeOne()
 	}
 
 	return w.Buf
@@ -219,20 +212,18 @@ func decodePrivilegedParams(r *util.ReaderHoldError) (*bool, string) {
 	// Read privileged flag
 	var privileged *bool
 	flag := r.ReadByte()
-	if flag != 0xFF { // Not -1
+	if !util.IsNegativeOneByte(flag) {
 		val := flag == 1
 		privileged = &val
-	}
-
-	// Skip 8 more bytes if flag was 0xFF (TypeScript writes 9 bytes of 0xFF)
-	if flag == 0xFF {
+	} else {
+		// Skip 8 more bytes if flag was 0xFF (TypeScript writes 9 bytes of 0xFF)
 		r.ReadBytes(8)
 	}
 
 	// Read privileged reason length
 	var privilegedReason string
 	reasonLen := r.ReadByte()
-	if reasonLen != 0xFF { // Not -1
+	if !util.IsNegativeOneByte(reasonLen) {
 		privilegedReason = r.ReadString()
 	} else {
 		// Skip 8 more bytes if length was 0xFF (TypeScript writes 9 bytes of 0xFF)

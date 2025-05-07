@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"math"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -108,7 +107,7 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 				// tx flag
 				w.WriteByte(0)
 				// noSendChange (nil)
-				w.WriteVarInt(math.MaxUint64)
+				w.WriteVarInt(util.NegativeOne)
 				// sendWithResults (1 item)
 				w.WriteVarInt(1)
 				// txid

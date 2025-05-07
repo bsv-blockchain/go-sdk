@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
-
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -61,7 +59,7 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 // deserializeCreateActionInputs deserializes the inputs into a slice of wallet.CreateActionInput
 func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]wallet.CreateActionInput, error) {
 	inputsLen := messageReader.ReadVarInt()
-	if inputsLen == math.MaxUint64 { // -1 means nil
+	if util.IsNegativeOne(inputsLen) {
 		return nil, nil
 	}
 	var inputs []wallet.CreateActionInput
@@ -106,7 +104,7 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 // deserializeCreateActionOutputs deserializes the outputs into a slice of wallet.CreateActionOutput
 func deserializeCreateActionOutputs(messageReader *util.ReaderHoldError) ([]wallet.CreateActionOutput, error) {
 	outputsLen := messageReader.ReadVarInt()
-	if outputsLen == math.MaxUint64 { // -1 means nil
+	if util.IsNegativeOne(outputsLen) {
 		return nil, nil
 	}
 
