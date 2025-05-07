@@ -34,11 +34,13 @@ func (w *Writer) WriteVarInt(n uint64) {
 	w.WriteBytes(VarInt(n).Bytes())
 }
 
-const NegativeOneByte = 0xFF
-const NegativeOne = math.MaxUint64
+const (
+	NegativeOne     = math.MaxUint64
+	NegativeOneByte = 0xFF
+)
 
 func (w *Writer) WriteNegativeOne() {
-	w.WriteVarInt(NegativeOne)
+	w.WriteVarInt(NegativeOne) // 0xFFFFFFFFFFFFFFFFFF (9x 0xFF)
 }
 
 func (w *Writer) WriteNegativeOneByte() {
