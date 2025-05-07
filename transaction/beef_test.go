@@ -57,7 +57,12 @@ func TestFromBEEF(t *testing.T) {
 
 	_, err = NewBeefFromTransaction(tx)
 	require.NoError(t, err, "NewBeefFromTransaction method failed")
+}
 
+func TestFromBeefErrorCase(t *testing.T) {
+	tx := &Transaction{}
+	err := tx.FromBEEF([]byte("invalid data"))
+	require.Error(t, err, "FromBEEF method should fail with invalid data")
 }
 
 func TestNewEmptyBEEF(t *testing.T) {
