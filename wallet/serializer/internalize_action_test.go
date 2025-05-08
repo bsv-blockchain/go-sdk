@@ -18,7 +18,7 @@ func TestInternalizeActionArgs(t *testing.T) {
 			Outputs: []wallet.InternalizeOutput{
 				{
 					OutputIndex: 0,
-					Protocol:    "wallet payment",
+					Protocol:    wallet.InternalizeProtocolWalletPayment,
 					PaymentRemittance: &wallet.Payment{
 						DerivationPrefix:  "prefix",
 						DerivationSuffix:  "suffix",
@@ -27,7 +27,7 @@ func TestInternalizeActionArgs(t *testing.T) {
 				},
 				{
 					OutputIndex: 1,
-					Protocol:    "basket insertion",
+					Protocol:    wallet.InternalizeProtocolBasketInsertion,
 					InsertionRemittance: &wallet.BasketInsertion{
 						Basket:             "test-basket",
 						CustomInstructions: "instructions",
@@ -47,7 +47,7 @@ func TestInternalizeActionArgs(t *testing.T) {
 			Outputs: []wallet.InternalizeOutput{
 				{
 					OutputIndex: 0,
-					Protocol:    "wallet payment",
+					Protocol:    wallet.InternalizeProtocolWalletPayment,
 				},
 			},
 		},
@@ -64,14 +64,14 @@ func TestInternalizeActionArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeInternalizeActionArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing InternalizeActionArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeInternalizeActionArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing InternalizeActionArgs should not error")
 
 			// Compare results
-			require.Equal(t, tt.args, got)
+			require.Equal(t, tt.args, got, "deserialized args should match original args")
 		})
 	}
 }
@@ -80,10 +80,10 @@ func TestInternalizeActionResult(t *testing.T) {
 	t.Run("serialize/deserialize", func(t *testing.T) {
 		result := &wallet.InternalizeActionResult{Accepted: true}
 		data, err := SerializeInternalizeActionResult(result)
-		require.NoError(t, err)
+		require.NoError(t, err, "serializing InternalizeActionResult should not error")
 
 		got, err := DeserializeInternalizeActionResult(data)
-		require.NoError(t, err)
-		require.Equal(t, result, got)
+		require.NoError(t, err, "deserializing InternalizeActionResult should not error")
+		require.Equal(t, result, got, "deserialized result should match original result")
 	})
 }

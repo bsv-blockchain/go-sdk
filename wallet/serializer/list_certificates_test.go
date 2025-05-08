@@ -24,8 +24,8 @@ func TestListCertificatesArgs(t *testing.T) {
 				"02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
 			},
 			Types: []string{
-				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type1"), SizeType)),
-				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type2"), SizeType)),
+				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type1"), sizeType)),
+				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type2"), sizeType)),
 			},
 			Limit:            10,
 			Offset:           5,
@@ -36,7 +36,7 @@ func TestListCertificatesArgs(t *testing.T) {
 		name: "minimal args",
 		args: &wallet.ListCertificatesArgs{
 			Certifiers: []string{"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"},
-			Types:      []string{base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), SizeType))},
+			Types:      []string{base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), sizeType))},
 		},
 	}, {
 		name: "empty certifiers and types",
@@ -71,9 +71,9 @@ func TestListCertificatesResult(t *testing.T) {
 			Certificates: []wallet.CertificateResult{
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert1"), SizeType)),
+						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert1"), sizeType)),
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial1"), SizeSerial)),
+						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial1"), sizeSerial)),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 						Signature:          hex.EncodeToString(make([]byte, 64)),
@@ -88,9 +88,9 @@ func TestListCertificatesResult(t *testing.T) {
 				},
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert2"), SizeType)),
+						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert2"), sizeType)),
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial2"), SizeSerial)),
+						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial2"), sizeSerial)),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 					},

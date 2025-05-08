@@ -1,11 +1,16 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+)
+
+const (
+	queryModeAnyCode uint8 = 1
+	queryModeAllCode uint8 = 2
 )
 
 func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
@@ -16,12 +21,12 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 
 	// Serialize labelQueryMode
 	switch args.LabelQueryMode {
-	case "any":
-		w.WriteByte(1)
-	case "all":
-		w.WriteByte(2)
+	case wallet.QueryModeAny:
+		w.WriteByte(queryModeAnyCode)
+	case wallet.QueryModeAll:
+		w.WriteByte(queryModeAllCode)
 	case "":
-		w.WriteByte(0xFF) // -1
+		w.WriteNegativeOneByte()
 	default:
 		return nil, fmt.Errorf("invalid label query mode: %s", args.LabelQueryMode)
 	}
@@ -35,6 +40,9 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	w.WriteOptionalBool(args.IncludeOutputLockingScripts)
 
 	// Serialize limit, offset, and seekPermission
+	if args.Limit > wallet.MaxActionsLimit {
+		return nil, fmt.Errorf("limit exceeds maximum allowed value: %d", args.Limit)
+	}
 	w.WriteOptionalUint32(args.Limit)
 	w.WriteOptionalUint32(args.Offset)
 	w.WriteOptionalBool(args.SeekPermission)
@@ -51,11 +59,11 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 
 	// Deserialize labelQueryMode
 	switch r.ReadByte() {
-	case 1:
-		args.LabelQueryMode = "any"
-	case 2:
-		args.LabelQueryMode = "all"
-	case 0xFF:
+	case queryModeAnyCode:
+		args.LabelQueryMode = wallet.QueryModeAny
+	case queryModeAllCode:
+		args.LabelQueryMode = wallet.QueryModeAll
+	case util.NegativeOneByte:
 		args.LabelQueryMode = ""
 	default:
 		return nil, fmt.Errorf("invalid label query mode byte: %d", r.ReadByte())
@@ -74,12 +82,26 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	args.Offset = r.ReadOptionalUint32()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list action args: %w", r.Err)
 	}
 
 	return args, nil
 }
+
+// actionStatusCode is the numeric representation of ActionStatus.
+type actionStatusCode uint8
+
+const (
+	actionStatusCodeCompleted   actionStatusCode = 1
+	actionStatusCodeUnprocessed actionStatusCode = 2
+	actionStatusCodeSending     actionStatusCode = 3
+	actionStatusCodeUnproven    actionStatusCode = 4
+	actionStatusCodeUnsigned    actionStatusCode = 5
+	actionStatusCodeNoSend      actionStatusCode = 6
+	actionStatusCodeNonFinal    actionStatusCode = 7
+)
 
 func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error) {
 	w := util.NewWriter()
@@ -91,29 +113,27 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 	w.WriteVarInt(uint64(len(result.Actions)))
 	for _, action := range result.Actions {
 		// Serialize basic action fields
-		txid, err := hex.DecodeString(action.Txid)
-		if err != nil {
+		if err := w.WriteSizeFromHex(action.Txid, chainhash.HashSize); err != nil {
 			return nil, fmt.Errorf("invalid txid hex: %w", err)
 		}
-		w.WriteBytes(txid)
 		w.WriteVarInt(action.Satoshis)
 
 		// Serialize status
 		switch action.Status {
 		case wallet.ActionStatusCompleted:
-			w.WriteByte(byte(wallet.ActionStatusCodeCompleted))
+			w.WriteByte(byte(actionStatusCodeCompleted))
 		case wallet.ActionStatusUnprocessed:
-			w.WriteByte(byte(wallet.ActionStatusCodeUnprocessed))
+			w.WriteByte(byte(actionStatusCodeUnprocessed))
 		case wallet.ActionStatusSending:
-			w.WriteByte(byte(wallet.ActionStatusCodeSending))
+			w.WriteByte(byte(actionStatusCodeSending))
 		case wallet.ActionStatusUnproven:
-			w.WriteByte(byte(wallet.ActionStatusCodeUnproven))
+			w.WriteByte(byte(actionStatusCodeUnproven))
 		case wallet.ActionStatusUnsigned:
-			w.WriteByte(byte(wallet.ActionStatusCodeUnsigned))
+			w.WriteByte(byte(actionStatusCodeUnsigned))
 		case wallet.ActionStatusNoSend:
-			w.WriteByte(byte(wallet.ActionStatusCodeNoSend))
+			w.WriteByte(byte(actionStatusCodeNoSend))
 		case wallet.ActionStatusNonFinal:
-			w.WriteByte(byte(wallet.ActionStatusCodeNonFinal))
+			w.WriteByte(byte(actionStatusCodeNonFinal))
 		default:
 			return nil, fmt.Errorf("invalid action status: %s", action.Status)
 		}
@@ -156,7 +176,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 			w.WriteVarInt(output.Satoshis)
 
 			// LockingScript
-			if err = w.WriteOptionalFromHex(output.LockingScript); err != nil {
+			if err := w.WriteOptionalFromHex(output.LockingScript); err != nil {
 				return nil, fmt.Errorf("invalid locking script: %w", err)
 			}
 
@@ -186,26 +206,25 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		action := wallet.Action{}
 
 		// Deserialize basic action fields
-		txid := r.ReadBytes(32)
-		action.Txid = hex.EncodeToString(txid)
+		action.Txid = r.ReadHex(chainhash.HashSize)
 		action.Satoshis = r.ReadVarInt()
 
 		// Deserialize status
 		status := r.ReadByte()
-		switch wallet.ActionStatusCode(status) {
-		case wallet.ActionStatusCodeCompleted:
+		switch actionStatusCode(status) {
+		case actionStatusCodeCompleted:
 			action.Status = wallet.ActionStatusCompleted
-		case wallet.ActionStatusCodeUnprocessed:
+		case actionStatusCodeUnprocessed:
 			action.Status = wallet.ActionStatusUnprocessed
-		case wallet.ActionStatusCodeSending:
+		case actionStatusCodeSending:
 			action.Status = wallet.ActionStatusSending
-		case wallet.ActionStatusCodeUnproven:
+		case actionStatusCodeUnproven:
 			action.Status = wallet.ActionStatusUnproven
-		case wallet.ActionStatusCodeUnsigned:
+		case actionStatusCodeUnsigned:
 			action.Status = wallet.ActionStatusUnsigned
-		case wallet.ActionStatusCodeNoSend:
+		case actionStatusCodeNoSend:
 			action.Status = wallet.ActionStatusNoSend
-		case wallet.ActionStatusCodeNonFinal:
+		case actionStatusCodeNonFinal:
 			action.Status = wallet.ActionStatusNonFinal
 		default:
 			return nil, fmt.Errorf("invalid status byte %d", status)
@@ -224,7 +243,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		for j := uint64(0); j < inputCount; j++ {
 			input := wallet.ActionInput{}
 
-			opBytes := r.ReadBytes(36)
+			opBytes := r.ReadBytes(outpointSize)
 			input.SourceOutpoint, _ = decodeOutpoint(opBytes)
 
 			// Serialize source satoshis, locking script, unlocking script, input description, and sequence number
@@ -275,6 +294,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		result.Actions = append(result.Actions, action)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list action result: %w", r.Err)
 	}

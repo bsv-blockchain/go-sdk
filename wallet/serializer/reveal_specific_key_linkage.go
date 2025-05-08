@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -26,11 +25,9 @@ func SerializeRevealSpecificKeyLinkageArgs(args *wallet.RevealSpecificKeyLinkage
 	w.WriteBytes(keyParams)
 
 	// Write verifier public key
-	verifierBytes, err := hex.DecodeString(args.Verifier)
-	if err != nil {
+	if err := w.WriteRemainingFromHex(args.Verifier); err != nil {
 		return nil, fmt.Errorf("invalid verifier hex: %w", err)
 	}
-	w.WriteBytes(verifierBytes)
 
 	return w.Buf, nil
 }
@@ -51,7 +48,7 @@ func DeserializeRevealSpecificKeyLinkageArgs(data []byte) (*wallet.RevealSpecifi
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read verifier public key
-	args.Verifier = hex.EncodeToString(r.ReadRemaining())
+	args.Verifier = r.ReadRemainingHex()
 
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decoding args: %w", r.Err)
@@ -112,6 +109,7 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 	// Read proof type
 	result.ProofType = r.ReadByte()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading result: %w", r.Err)
 	}

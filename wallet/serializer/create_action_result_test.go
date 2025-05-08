@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"math"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -25,12 +24,12 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 				},
 				SendWithResults: []wallet.SendWithResult{
 					{
-						Txid:   "1111111111111111111111111111111111111111111111111111111111111111",
-						Status: "unproven",
+						Txid:   "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
+						Status: wallet.ActionResultStatusUnproven,
 					},
 					{
-						Txid:   "2222222222222222222222222222222222222222222222222222222222222222",
-						Status: "sending",
+						Txid:   "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
+						Status: wallet.ActionResultStatusSending,
 					},
 				},
 				SignableTransaction: &wallet.SignableTransaction{
@@ -63,15 +62,15 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Serialize
 			data, err := SerializeCreateActionResult(tt.result)
-			require.NoError(t, err)
-			require.NotEmpty(t, data)
+			require.NoError(t, err, "serializing CreateActionResult should not error")
+			require.NotEmpty(t, data, "serialized data should not be empty")
 
 			// Deserialize
 			result, err := DeserializeCreateActionResult(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing CreateActionResult should not error")
 
 			// Compare
-			require.Equal(t, tt.result, result)
+			require.Equal(t, tt.result, result, "deserialized result should match original result")
 		})
 	}
 }
@@ -95,7 +94,7 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 				w.WriteBytes([]byte{0x01, 0x02}) // invalid length
 				return w.Buf
 			}(),
-			err: "error reading tx",
+			err: "response indicates failure: 1",
 		},
 		{
 			name: "invalid status code",
@@ -108,7 +107,7 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 				// tx flag
 				w.WriteByte(0)
 				// noSendChange (nil)
-				w.WriteVarInt(math.MaxUint64)
+				w.WriteVarInt(util.NegativeOne)
 				// sendWithResults (1 item)
 				w.WriteVarInt(1)
 				// txid
@@ -126,8 +125,8 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := DeserializeCreateActionResult(tt.data)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tt.err)
+			require.Error(t, err, "deserializing invalid data should produce an error")
+			require.Contains(t, err.Error(), tt.err, "error message should contain expected substring")
 		})
 	}
 }

@@ -3,9 +3,19 @@ package serializer
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+)
+
+// actionResultStatusCode is the numeric representation of ActionResultStatus.
+type actionResultStatusCode uint8
+
+const (
+	actionResultStatusCodeUnproven actionResultStatusCode = 1
+	actionResultStatusCodeSending  actionResultStatusCode = 2
+	actionResultStatusCodeFailed   actionResultStatusCode = 3
 )
 
 func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) error {
@@ -15,24 +25,22 @@ func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) e
 	}
 	w.WriteVarInt(uint64(len(results)))
 	for _, res := range results {
-		txidBytes, err := hex.DecodeString(res.Txid)
-		if err != nil {
-			return fmt.Errorf("error decoding txid: %w", err)
+		if err := w.WriteSizeFromHex(res.Txid, chainhash.HashSize); err != nil {
+			return fmt.Errorf("invalid txid hex: %w", err)
 		}
-		w.WriteBytes(txidBytes)
 
-		var statusByte byte
+		var statusByte actionResultStatusCode
 		switch res.Status {
-		case "unproven":
-			statusByte = 1
-		case "sending":
-			statusByte = 2
-		case "failed":
-			statusByte = 3
+		case wallet.ActionResultStatusUnproven:
+			statusByte = actionResultStatusCodeUnproven
+		case wallet.ActionResultStatusSending:
+			statusByte = actionResultStatusCodeSending
+		case wallet.ActionResultStatusFailed:
+			statusByte = actionResultStatusCodeFailed
 		default:
 			return fmt.Errorf("invalid status: %s", res.Status)
 		}
-		w.WriteByte(statusByte)
+		w.WriteByte(byte(statusByte))
 	}
 	return nil
 }
@@ -48,7 +56,7 @@ func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
 
 	results := make([]wallet.SendWithResult, 0, count)
 	for i := uint64(0); i < count; i++ {
-		txid, err := r.ReadBytes(32)
+		txid, err := r.ReadBytes(chainhash.HashSize)
 		if err != nil {
 			return nil, err
 		}
@@ -58,14 +66,14 @@ func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
 			return nil, err
 		}
 
-		var status string
-		switch statusCode {
-		case 1:
-			status = "unproven"
-		case 2:
-			status = "sending"
-		case 3:
-			status = "failed"
+		var status wallet.ActionResultStatus
+		switch actionResultStatusCode(statusCode) {
+		case actionResultStatusCodeUnproven:
+			status = wallet.ActionResultStatusUnproven
+		case actionResultStatusCodeSending:
+			status = wallet.ActionResultStatusSending
+		case actionResultStatusCodeFailed:
+			status = wallet.ActionResultStatusFailed
 		default:
 			return nil, fmt.Errorf("invalid status code: %d", statusCode)
 		}

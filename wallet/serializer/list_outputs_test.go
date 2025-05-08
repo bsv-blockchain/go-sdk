@@ -17,8 +17,8 @@ func TestListOutputsArgs(t *testing.T) {
 			args: &wallet.ListOutputsArgs{
 				Basket:                    "test-basket",
 				Tags:                      []string{"tag1", "tag2"},
-				TagQueryMode:              "any",
-				Include:                   "entire transactions",
+				TagQueryMode:              wallet.QueryModeAny,
+				Include:                   wallet.OutputIncludeEntireTransactions,
 				IncludeCustomInstructions: util.BoolPtr(true),
 				IncludeTags:               util.BoolPtr(true),
 				IncludeLabels:             util.BoolPtr(false),
@@ -60,7 +60,7 @@ func TestListOutputsResult(t *testing.T) {
 			Outputs: []wallet.Output{
 				{
 					Satoshis:           1000,
-					LockingScript:      "00",
+					LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
 					Spendable:          true,
 					CustomInstructions: "instructions",
 					Tags:               []string{"tag1"},
@@ -69,7 +69,7 @@ func TestListOutputsResult(t *testing.T) {
 				},
 				{
 					Satoshis:      2000,
-					LockingScript: "01",
+					LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ad",
 					Spendable:     false,
 					Outpoint:      "txid.1",
 				},

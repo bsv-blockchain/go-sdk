@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"math"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -30,7 +29,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				},
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript:      "efef",
+						LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
 						Satoshis:           1000,
 						OutputDescription:  "output 1",
 						Basket:             "basket1",
@@ -44,15 +43,15 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				Options: &wallet.CreateActionOptions{
 					SignAndProcess:         util.BoolPtr(true),
 					AcceptDelayedBroadcast: util.BoolPtr(false),
-					TrustSelf:              "known",
+					TrustSelf:              wallet.TrustSelfKnown,
 					KnownTxids: []string{
-						"1111111111111111111111111111111111111111111111111111111111111111",
-						"2222222222222222222222222222222222222222222222222222222222222222",
+						"8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
+						"490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
 					},
 					ReturnTXIDOnly:   util.BoolPtr(true),
 					NoSend:           util.BoolPtr(false),
 					NoSendChange:     []string{"abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"},
-					SendWith:         []string{"3333333333333333333333333333333333333333333333333333333333333333"},
+					SendWith:         []string{"b95bbe3c3f3bd420048cbf57201fc6dd4e730b2e046bf170ac0b1f78de069e8e"},
 					RandomizeOutputs: util.BoolPtr(true),
 				},
 			},
@@ -77,7 +76,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript: "abcd",
+						LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
 						Satoshis:      1000,
 					},
 				},
@@ -96,13 +95,13 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:              "1111111111111111111111111111111111111111111111111111111111111111.0",
+						Outpoint:              "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0",
 						InputDescription:      "input 1",
 						UnlockingScript:       "abcd",
 						UnlockingScriptLength: 2, // "abcd" is 2 bytes when decoded from hex
 					},
 					{
-						Outpoint:              "2222222222222222222222222222222222222222222222222222222222222222.1",
+						Outpoint:              "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981.1",
 						InputDescription:      "input 2",
 						UnlockingScript:       "efef",
 						UnlockingScriptLength: 2, // "efef" is 2 bytes when decoded from hex
@@ -116,12 +115,12 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript:     "abcd",
+						LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
 						Satoshis:          1000,
 						OutputDescription: "output 1",
 					},
 					{
-						LockingScript:     "efef",
+						LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
 						Satoshis:          2000,
 						OutputDescription: "output 2",
 						Tags:              []string{"tag1", "tag2"},
@@ -135,15 +134,15 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Serialize
 			data, err := SerializeCreateActionArgs(tt.args)
-			require.NoError(t, err)
-			require.NotEmpty(t, data)
+			require.NoError(t, err, "serializing CreateActionArgs should not error")
+			require.NotEmpty(t, data, "serialized data should not be empty")
 
 			// Deserialize
 			args, err := DeserializeCreateActionArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing CreateActionArgs should not error")
 
 			// Compare
-			require.Equal(t, tt.args, args)
+			require.Equal(t, tt.args, args, "deserialized args should match original args")
 		})
 	}
 }
@@ -166,7 +165,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// description (empty)
 				w.WriteVarInt(0)
 				// input BEEF (nil)
-				w.WriteVarInt(math.MaxUint64)
+				w.WriteVarInt(util.NegativeOne)
 				// inputs (1 item)
 				w.WriteVarInt(1)
 				// invalid outpoint (too short)
@@ -182,11 +181,11 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// description (empty)
 				w.WriteVarInt(0)
 				// input BEEF (nil)
-				w.WriteVarInt(math.MaxUint64)
+				w.WriteVarInt(util.NegativeOne)
 				// inputs (1 item)
 				w.WriteVarInt(1)
 				// valid outpoint
-				w.WriteBytes(make([]byte, 36))
+				w.WriteBytes(make([]byte, outpointSize))
 				// unlocking script length (invalid hex)
 				w.WriteVarInt(2)
 				w.WriteBytes([]byte{0x01, 0x02})
@@ -199,8 +198,8 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := DeserializeCreateActionArgs(tt.data)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tt.err)
+			require.Error(t, err, "deserializing invalid data should produce an error")
+			require.Contains(t, err.Error(), tt.err, "error message should contain expected substring")
 		})
 	}
 }

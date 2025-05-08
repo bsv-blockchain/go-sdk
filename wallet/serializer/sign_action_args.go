@@ -1,8 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -18,24 +16,18 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 		w.WriteVarInt(uint64(index))
 
 		// Unlocking script
-		script, err := hex.DecodeString(spend.UnlockingScript)
-		if err != nil {
+		if err := w.WriteIntFromHex(spend.UnlockingScript); err != nil {
 			return nil, fmt.Errorf("invalid unlocking script hex: %w", err)
 		}
-		w.WriteVarInt(uint64(len(script)))
-		w.WriteBytes(script)
 
 		// Sequence number
 		w.WriteVarInt(uint64(spend.SequenceNumber))
 	}
 
 	// Reference
-	ref, err := base64.StdEncoding.DecodeString(args.Reference)
-	if err != nil {
+	if err := w.WriteIntFromBase64(args.Reference); err != nil {
 		return nil, fmt.Errorf("invalid reference base64: %w", err)
 	}
-	w.WriteVarInt(uint64(len(ref)))
-	w.WriteBytes(ref)
 
 	// Options
 	if args.Options != nil {
@@ -68,12 +60,8 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 		inputIndex := r.ReadVarInt32()
 		spend := wallet.SignActionSpend{}
 
-		// Unlocking script
-		scriptLen := r.ReadVarInt()
-		unlockingScript := r.ReadBytes(int(scriptLen))
-		spend.UnlockingScript = hex.EncodeToString(unlockingScript)
-
-		// Sequence number
+		// Unlocking script, sequence number
+		spend.UnlockingScript = r.ReadIntBytesHex()
 		spend.SequenceNumber = r.ReadVarInt32()
 
 		args.Spends[inputIndex] = spend
@@ -83,9 +71,7 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 	}
 
 	// Reference
-	refLen := r.ReadVarInt()
-	reference := r.ReadBytes(int(refLen))
-	args.Reference = base64.StdEncoding.EncodeToString(reference)
+	args.Reference = r.ReadBase64Int()
 
 	// Options
 	optionsPresent := r.ReadByte()
@@ -101,6 +87,7 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 		args.Options.SendWith = r.ReadTxidSlice()
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading sign action args: %w", r.Err)
 	}

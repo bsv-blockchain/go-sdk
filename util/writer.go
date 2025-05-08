@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math"
@@ -33,6 +34,27 @@ func (w *Writer) WriteVarInt(n uint64) {
 	w.WriteBytes(VarInt(n).Bytes())
 }
 
+const (
+	NegativeOne     = math.MaxUint64
+	NegativeOneByte = 0xFF
+)
+
+func (w *Writer) WriteNegativeOne() {
+	w.WriteVarInt(NegativeOne) // 0xFFFFFFFFFFFFFFFFFF (9x 0xFF)
+}
+
+func (w *Writer) WriteNegativeOneByte() {
+	w.WriteByte(NegativeOneByte)
+}
+
+func IsNegativeOne(val uint64) bool {
+	return val == NegativeOne
+}
+
+func IsNegativeOneByte(b byte) bool {
+	return b == NegativeOneByte
+}
+
 func (w *Writer) WriteString(s string) {
 	b := []byte(s)
 	w.WriteVarInt(uint64(len(b)))
@@ -45,21 +67,67 @@ func (w *Writer) WriteOptionalString(s string) {
 		w.WriteVarInt(uint64(len(b)))
 		w.WriteBytes(b)
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
 }
 
 func (w *Writer) WriteOptionalFromHex(s string) error {
 	if s != "" {
-		b, err := hex.DecodeString(s)
-		if err != nil {
-			return fmt.Errorf("error write invalid hex: %w", err)
-		}
-		w.WriteVarInt(uint64(len(b)))
-		w.WriteBytes(b)
+		return w.WriteIntFromHex(s)
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
+	return nil
+}
+
+func (w *Writer) WriteRemainingFromHex(s string) error {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("error write invalid hex: %w", err)
+	}
+	w.WriteBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteIntFromHex(s string) error {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("error write invalid hex: %w", err)
+	}
+	w.WriteIntBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteSizeFromHex(s string, size int) error {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("invalid certifier hex: %w", err)
+	}
+	if len(b) != size {
+		return fmt.Errorf("hex must be %d bytes long, got %d", size, len(b))
+	}
+	w.WriteBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteIntFromBase64(s string) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("error write invalid base64: %w", err)
+	}
+	w.WriteIntBytes(b)
+	return nil
+}
+
+func (w *Writer) WriteSizeFromBase64(s string, size int) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("invalid certifier base64: %w", err)
+	}
+	if len(b) != size {
+		return fmt.Errorf("base64 must be %d bytes long, got %d", size, len(b))
+	}
+	w.WriteBytes(b)
 	return nil
 }
 
@@ -110,7 +178,7 @@ func (w *Writer) WriteOptionalUint32(n uint32) {
 	if n > 0 {
 		w.WriteVarInt(uint64(n))
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
 }
 
@@ -121,7 +189,7 @@ func (w *Writer) WriteStringSlice(slice []string) {
 			w.WriteOptionalString(s)
 		}
 	} else {
-		w.WriteVarInt(math.MaxUint64)
+		w.WriteNegativeOne()
 	}
 }
 
@@ -133,7 +201,7 @@ func (w *Writer) WriteOptionalBool(b *bool) {
 			w.WriteByte(0)
 		}
 	} else {
-		w.WriteByte(0xFF) // -1
+		w.WriteNegativeOneByte()
 	}
 }
 

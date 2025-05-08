@@ -9,7 +9,7 @@ import (
 
 func TestGetPublicKeyArgs(t *testing.T) {
 	testCounterpartyPrivateKey, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+	require.NoError(t, err, "generating counterparty private key should not error")
 	tests := []struct {
 		name string
 		args *wallet.GetPublicKeyArgs
@@ -62,11 +62,11 @@ func TestGetPublicKeyArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeGetPublicKeyArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing GetPublicKeyArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeGetPublicKeyArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing GetPublicKeyArgs should not error")
 
 			// Compare results
 			require.Equal(t, tt.args, got)
@@ -76,16 +76,16 @@ func TestGetPublicKeyArgs(t *testing.T) {
 
 func TestGetPublicKeyResult(t *testing.T) {
 	testPrivKey, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+	require.NoError(t, err, "generating test private key should not error")
 	t.Run("serialize/deserialize", func(t *testing.T) {
 		result := &wallet.GetPublicKeyResult{
 			PublicKey: testPrivKey.PubKey(),
 		}
 		data, err := SerializeGetPublicKeyResult(result)
-		require.NoError(t, err)
+		require.NoError(t, err, "serializing GetPublicKeyResult should not error")
 
 		got, err := DeserializeGetPublicKeyResult(data)
-		require.NoError(t, err)
-		require.Equal(t, result, got)
+		require.NoError(t, err, "deserializing GetPublicKeyResult should not error")
+		require.Equal(t, result, got, "deserialized result should match original result")
 	})
 }

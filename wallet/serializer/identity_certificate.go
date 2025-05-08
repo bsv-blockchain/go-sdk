@@ -80,6 +80,7 @@ func DeserializeIdentityCertificate(data []byte) (*wallet.IdentityCertificate, e
 		}
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing identity certificate: %w", r.Err)
 	}

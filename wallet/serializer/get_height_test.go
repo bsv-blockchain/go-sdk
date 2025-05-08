@@ -30,12 +30,12 @@ func TestGetHeightResult(t *testing.T) {
 			// Test serialization
 			result := &wallet.GetHeightResult{Height: tt.height}
 			data, err := SerializeGetHeightResult(result)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing GetHeightResult should not error")
 
 			// Test deserialization
 			got, err := DeserializeGetHeightResult(data)
-			require.NoError(t, err)
-			require.Equal(t, result, got)
+			require.NoError(t, err, "deserializing GetHeightResult should not error")
+			require.Equal(t, result, got, "deserialized result should match original result")
 		})
 	}
 }
@@ -61,8 +61,8 @@ func TestDeserializeGetHeightResultErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := DeserializeGetHeightResult(tt.data)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tt.wantErr)
+			require.Error(t, err, "deserializing invalid data should produce an error")
+			require.Contains(t, err.Error(), tt.wantErr, "error message should contain expected substring")
 		})
 	}
 }

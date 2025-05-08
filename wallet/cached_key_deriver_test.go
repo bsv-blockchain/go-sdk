@@ -69,15 +69,15 @@ func TestDerivePublicKey(t *testing.T) {
 
 		// First call - should call through to real deriver
 		pubKey1, err := cachedDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
-		assert.NoError(t, err)
-		assert.NotNil(t, pubKey1)
-		assert.Equal(t, publicKey.ToDERHex(), pubKey1.ToDERHex())
+		assert.NoError(t, err, "first DerivePublicKey call should not error")
+		assert.NotNil(t, pubKey1, "first derived public key should not be nil")
+		assert.Equal(t, publicKey.ToDERHex(), pubKey1.ToDERHex(), "first derived public key should match expected key")
 
 		// Second call - should return cached value
 		pubKey2, err := cachedDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
-		assert.NoError(t, err)
-		assert.Equal(t, pubKey1.ToDERHex(), pubKey2.ToDERHex())
-		assert.Equal(t, mockKeyDeriver.publicKeyCallCount, 1)
+		assert.NoError(t, err, "second DerivePublicKey call (cached) should not error")
+		assert.Equal(t, pubKey1.ToDERHex(), pubKey2.ToDERHex(), "second derived public key should match the first (cached)")
+		assert.Equal(t, 1, mockKeyDeriver.publicKeyCallCount, "underlying deriver should only be called once")
 	})
 
 	t.Run("should handle different parameters correctly", func(t *testing.T) {
@@ -93,8 +93,8 @@ func TestDerivePublicKey(t *testing.T) {
 		}, "key1", Counterparty{
 			Type: CounterpartyTypeSelf,
 		}, false)
-		assert.NoError(t, err)
-		assert.Equal(t, publicKey.ToDERHex(), pubKey1.ToDERHex())
+		assert.NoError(t, err, "DerivePublicKey call with first params set should not error")
+		assert.Equal(t, publicKey.ToDERHex(), pubKey1.ToDERHex(), "derived public key with first params set should match expected key")
 
 		// Call with different params
 		pubKey2, err := cachedDeriver.DerivePublicKey(Protocol{
@@ -103,9 +103,9 @@ func TestDerivePublicKey(t *testing.T) {
 		}, "key2", Counterparty{
 			Type: CounterpartyTypeAnyone,
 		}, false)
-		assert.NoError(t, err)
-		assert.Equal(t, pubKey1.ToDERHex(), pubKey2.ToDERHex())
-		assert.Equal(t, mockKeyDeriver.publicKeyCallCount, 2)
+		assert.NoError(t, err, "DerivePublicKey call with second params set should not error")
+		assert.Equal(t, pubKey1.ToDERHex(), pubKey2.ToDERHex(), "derived public key with second params set should match (mock returns same key)")
+		assert.Equal(t, 2, mockKeyDeriver.publicKeyCallCount, "underlying deriver should be called twice for different parameters")
 	})
 }
 
@@ -126,7 +126,7 @@ func TestDerivePrivateKey(t *testing.T) {
 	t.Run("should call derivePrivateKey on KeyDeriver and cache the result", func(t *testing.T) {
 		// Generate keys
 		privateKey, err := ec.NewPrivateKey()
-		assert.NoError(t, err)
+		assert.NoError(t, err, "generating test private key should not error")
 
 		// Create a mock key deriver that returns a fixed private key
 		cachedDeriver := NewCachedKeyDeriver(rootKey, 0)
@@ -135,22 +135,22 @@ func TestDerivePrivateKey(t *testing.T) {
 
 		// First call - should call through to real deriver
 		privKey1, err := cachedDeriver.DerivePrivateKey(protocol, keyID, counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, privateKey.Wif(), privKey1.Wif())
+		assert.NoError(t, err, "first DerivePrivateKey call should not error")
+		assert.Equal(t, privateKey.Wif(), privKey1.Wif(), "first derived private key should match expected key")
 
 		// Second call - should return cached value
 		privKey2, err := cachedDeriver.DerivePrivateKey(protocol, keyID, counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, privKey1.Wif(), privKey2.Wif())
-		assert.Equal(t, mockKeyDeriver.privateKeyCallCount, 1)
+		assert.NoError(t, err, "second DerivePrivateKey call (cached) should not error")
+		assert.Equal(t, privKey1.Wif(), privKey2.Wif(), "second derived private key should match the first (cached)")
+		assert.Equal(t, 1, mockKeyDeriver.privateKeyCallCount, "underlying deriver should only be called once")
 	})
 
 	t.Run("should differentiate cache entries based on parameters", func(t *testing.T) {
 		// Generate keys
 		privateKey, err := ec.NewPrivateKey()
-		assert.NoError(t, err)
+		assert.NoError(t, err, "generating first test private key should not error")
 		privateKey2, err := ec.NewPrivateKey()
-		assert.NoError(t, err)
+		assert.NoError(t, err, "generating second test private key should not error")
 
 		// Create a mock key deriver that returns a fixed private key
 		cachedDeriver := NewCachedKeyDeriver(rootKey, 0)
@@ -159,15 +159,15 @@ func TestDerivePrivateKey(t *testing.T) {
 
 		// First call
 		privKey1, err := cachedDeriver.DerivePrivateKey(protocol, keyID, counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, privateKey.Wif(), privKey1.Wif())
+		assert.NoError(t, err, "first DerivePrivateKey call with first params set should not error")
+		assert.Equal(t, privateKey.Wif(), privKey1.Wif(), "first derived private key should match expected key 1")
 
 		// Second call with different keyID
 		mockKeyDeriver.privateKeyToReturn = privateKey2
 		privKey2, err := cachedDeriver.DerivePrivateKey(protocol, "key2", counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, privateKey2.Wif(), privKey2.Wif())
-		assert.Equal(t, mockKeyDeriver.privateKeyCallCount, 2)
+		assert.NoError(t, err, "second DerivePrivateKey call with different keyID should not error")
+		assert.Equal(t, privateKey2.Wif(), privKey2.Wif(), "second derived private key should match expected key 2")
+		assert.Equal(t, 2, mockKeyDeriver.privateKeyCallCount, "underlying deriver should be called twice for different key IDs")
 
 	})
 }
@@ -199,14 +199,14 @@ func TestDeriveSymmetricKey(t *testing.T) {
 
 		// First call
 		symmetricKey1, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, symmetricKey.ToBytes(), symmetricKey1.ToBytes())
+		assert.NoError(t, err, "first DeriveSymmetricKey call should not error")
+		assert.Equal(t, symmetricKey.ToBytes(), symmetricKey1.ToBytes(), "first derived symmetric key should match expected key")
 
 		// Second call with same parameters
 		symmetricKey2, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, symmetricKey1.ToBytes(), symmetricKey2.ToBytes())
-		assert.Equal(t, mockKeyDeriver.symmetricKeyCallCount, 1)
+		assert.NoError(t, err, "second DeriveSymmetricKey call (cached) should not error")
+		assert.Equal(t, symmetricKey1.ToBytes(), symmetricKey2.ToBytes(), "second derived symmetric key should match the first (cached)")
+		assert.Equal(t, 1, mockKeyDeriver.symmetricKeyCallCount, "underlying deriver should only be called once")
 	})
 
 	t.Run("should differentiate cache entries based on parameters", func(t *testing.T) {
@@ -221,15 +221,15 @@ func TestDeriveSymmetricKey(t *testing.T) {
 
 		// First call
 		result1, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, result1.ToBytes(), symmetricKey1.ToBytes())
+		assert.NoError(t, err, "first DeriveSymmetricKey call with first params set should not error")
+		assert.Equal(t, symmetricKey1.ToBytes(), result1.ToBytes(), "first derived symmetric key should match expected key 1")
 
 		// Second call with different keyID
 		mockKeyDeriver.symmetricKeyToReturn = symmetricKey2
 		result2, err := cachedDeriver.DeriveSymmetricKey(protocol, "key2", counterparty)
-		assert.NoError(t, err)
-		assert.Equal(t, result2.ToBytes(), symmetricKey2.ToBytes())
-		assert.Equal(t, mockKeyDeriver.symmetricKeyCallCount, 2)
+		assert.NoError(t, err, "second DeriveSymmetricKey call with different keyID should not error")
+		assert.Equal(t, symmetricKey2.ToBytes(), result2.ToBytes(), "second derived symmetric key should match expected key 2")
+		assert.Equal(t, 2, mockKeyDeriver.symmetricKeyCallCount, "underlying deriver should be called twice for different key IDs")
 	})
 
 	t.Run("should return an error when KeyDeriver returns an error", func(t *testing.T) {
@@ -240,8 +240,8 @@ func TestDeriveSymmetricKey(t *testing.T) {
 		cachedDeriver.keyDeriver = mockKeyDeriver
 
 		result1, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
-		assert.Nil(t, result1)
-		assert.Error(t, err, testErrorText)
+		assert.Nil(t, result1, "result should be nil when underlying deriver errors")
+		assert.ErrorContains(t, err, testErrorText, "error from underlying deriver should be propagated")
 	})
 }
 
@@ -300,7 +300,6 @@ func TestCacheManagement(t *testing.T) {
 }
 
 func TestRevealSpecificSecret(t *testing.T) {
-	// Create keys and cached key deriver
 	rootKey, _ := ec.PrivateKeyFromBytes([]byte{1})
 
 	t.Run("should call RevealSpecificSecret on KeyDeriver and cache the result", func(t *testing.T) {

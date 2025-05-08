@@ -28,7 +28,7 @@ func SerializeCreateHmacArgs(args *wallet.CreateHmacArgs) ([]byte, error) {
 	w.WriteVarInt(uint64(len(args.Data)))
 	w.WriteBytes(args.Data)
 
-	// Write seekPermission flag (-1 if undefined)
+	// Write seekPermission flag
 	w.WriteOptionalBool(&args.SeekPermission)
 
 	return w.Buf, nil
@@ -56,6 +56,7 @@ func DeserializeCreateHmacArgs(data []byte) (*wallet.CreateHmacArgs, error) {
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing CreateHmac args: %w", r.Err)
 	}

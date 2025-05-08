@@ -44,11 +44,11 @@ func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeRevealSpecificKeyLinkageArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing RevealSpecificKeyLinkageArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeRevealSpecificKeyLinkageArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing RevealSpecificKeyLinkageArgs should not error")
 
 			// Compare results
 			require.Equal(t, tt.args, got)
@@ -97,11 +97,11 @@ func TestRevealSpecificKeyLinkageResult(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeRevealSpecificKeyLinkageResult(tt.result)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing RevealSpecificKeyLinkageResult should not error")
 
 			// Test deserialization
 			got, err := DeserializeRevealSpecificKeyLinkageResult(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing RevealSpecificKeyLinkageResult should not error")
 
 			// Compare results
 			require.Equal(t, tt.result, got)

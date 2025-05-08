@@ -7,6 +7,11 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+const (
+	networkMainnetCode = 0
+	networkTestnetCode = 1
+)
+
 func SerializeGetNetworkResult(result *wallet.GetNetworkResult) ([]byte, error) {
 	w := util.NewWriter()
 
@@ -14,35 +19,35 @@ func SerializeGetNetworkResult(result *wallet.GetNetworkResult) ([]byte, error) 
 	w.WriteByte(0)
 
 	// Network byte (0 for mainnet, 1 for testnet)
-	if result.Network == "mainnet" {
-		w.WriteByte(0)
+	if result.Network == wallet.NetworkMainnet {
+		w.WriteByte(networkMainnetCode)
 	} else {
-		w.WriteByte(1)
+		w.WriteByte(networkTestnetCode)
 	}
 
 	return w.Buf, nil
 }
 
 func DeserializeGetNetworkResult(data []byte) (*wallet.GetNetworkResult, error) {
-	r := util.NewReader(data)
+	r := util.NewReaderHoldError(data)
 
 	// Read error byte
-	_, err := r.ReadByte()
-	if err != nil {
-		return nil, fmt.Errorf("error reading error byte: %w", err)
+	if r.ReadByte() != 0 {
+		return nil, fmt.Errorf("error byte indicates failure")
 	}
 
 	// Read network byte
-	networkByte, err := r.ReadByte()
-	if err != nil {
-		return nil, fmt.Errorf("error reading network byte: %w", err)
+	result := new(wallet.GetNetworkResult)
+	switch r.ReadByte() {
+	case networkMainnetCode:
+		result.Network = wallet.NetworkMainnet
+	case networkTestnetCode:
+		result.Network = wallet.NetworkTestnet
 	}
 
-	result := &wallet.GetNetworkResult{
-		Network: "mainnet",
-	}
-	if networkByte != 0 {
-		result.Network = "testnet"
+	r.CheckComplete()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading get network result: %w", r.Err)
 	}
 
 	return result, nil
