@@ -14,7 +14,7 @@ import (
 
 // GetVerifiableCertificatesOptions contains options for retrieving certificates
 type GetVerifiableCertificatesOptions struct {
-	Wallet                wallet.AuthOperations
+	Wallet                wallet.Interface
 	RequestedCertificates *RequestedCertificateSet
 	VerifierIdentityKey   *ec.PublicKey
 	Privileged            bool

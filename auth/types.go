@@ -64,7 +64,7 @@ type AuthMessage struct {
 // The certificatesRequested parameter can be nil or a RequestedCertificateSet
 func ValidateCertificates(
 	ctx context.Context,
-	verifierWallet wallet.AuthOperations,
+	verifierWallet wallet.Interface,
 	message *AuthMessage,
 	certificatesRequested *utils.RequestedCertificateSet,
 ) error {

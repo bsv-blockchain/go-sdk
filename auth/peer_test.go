@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -19,7 +20,7 @@ import (
 
 // MockTransport is a fake transport implementation for testing
 type MockTransport struct {
-	messageHandler   func(message *AuthMessage) error
+	messageHandler   func(ctx context.Context, message *AuthMessage) error
 	sentMessages     []*AuthMessage
 	sentMessagesChan chan *AuthMessage
 	mu               sync.Mutex
@@ -34,7 +35,7 @@ func NewMockTransport() *MockTransport {
 	}
 }
 
-func (t *MockTransport) Send(message *AuthMessage) error {
+func (t *MockTransport) Send(ctx context.Context, message *AuthMessage) error {
 	t.mu.Lock()
 	t.sentMessages = append(t.sentMessages, message)
 	t.mu.Unlock()
@@ -43,15 +44,23 @@ func (t *MockTransport) Send(message *AuthMessage) error {
 
 	if t.isPaired && t.pairedTransport != nil && t.pairedTransport.messageHandler != nil {
 		go func() {
-			_ = t.pairedTransport.messageHandler(message)
+			_ = t.pairedTransport.messageHandler(ctx, message)
 		}()
 	}
 	return nil
 }
 
-func (t *MockTransport) OnData(callback func(message *AuthMessage) error) error {
+func (t *MockTransport) OnData(callback func(context.Context, *AuthMessage) error) error {
 	t.messageHandler = callback
 	return nil
+}
+
+func (t *MockTransport) GetRegisteredOnData() (func(context.Context, *AuthMessage) error, error) {
+	if t.messageHandler == nil {
+		return nil, fmt.Errorf("no message handler registered")
+	}
+
+	return t.messageHandler, nil
 }
 
 func (t *MockTransport) GetSentMessages() []*AuthMessage {
@@ -325,7 +334,7 @@ func NewLoggingMockTransport(name string, logger *log.Logger) *LoggingMockTransp
 	}
 }
 
-func (t *LoggingMockTransport) Send(message *AuthMessage) error {
+func (t *LoggingMockTransport) Send(ctx context.Context, message *AuthMessage) error {
 	t.logger.Printf("[%s TRANSPORT] Sending message type: %s", t.name, message.MessageType)
 
 	// Log specifics based on message type
@@ -357,16 +366,16 @@ func (t *LoggingMockTransport) Send(message *AuthMessage) error {
 			t.logger.Printf("[%s TRANSPORT] Response includes %d certificates", t.name, len(message.Certificates))
 		}
 	}
-	return t.MockTransport.Send(message)
+	return t.MockTransport.Send(ctx, message)
 }
 
-func (t *LoggingMockTransport) OnData(callback func(message *AuthMessage) error) error {
-	wrappedCallback := func(message *AuthMessage) error {
+func (t *LoggingMockTransport) OnData(callback func(context.Context, *AuthMessage) error) error {
+	wrappedCallback := func(ctx context.Context, message *AuthMessage) error {
 		t.logger.Printf("[%s TRANSPORT] Received message type: %s", t.name, message.MessageType)
 		if message.IdentityKey != nil {
 			t.logger.Printf("[%s TRANSPORT] From identity key: %s", t.name, message.IdentityKey.ToDERHex())
 		}
-		return callback(message)
+		return callback(context.Background(), message)
 	}
 	return t.MockTransport.OnData(wrappedCallback)
 }

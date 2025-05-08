@@ -142,6 +142,17 @@ func (t *SimplifiedHTTPTransport) Send(ctx context.Context, message *auth.AuthMe
 	return nil
 }
 
+func (t *SimplifiedHTTPTransport) GetRegisteredOnData() (func(context.Context, *auth.AuthMessage) error, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if len(t.onDataFuncs) == 0 {
+		return nil, errors.New("no handlers registered")
+	}
+
+	// Return the first handler for simplicity
+	return t.onDataFuncs[0], nil
+}
+
 // deserializeRequestPayload parses the payload into an HTTP request and requestId (basic implementation)
 func (t *SimplifiedHTTPTransport) deserializeRequestPayload(payload []byte) (*http.Request, string, error) {
 	// This is a minimal implementation for alignment and test unblocking
