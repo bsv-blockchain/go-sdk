@@ -29,7 +29,7 @@ type Peer struct {
 	sessionManager                        SessionManager
 	transport                             Transport
 	wallet                                wallet.Interface
-	CertificatesToRequest                 utils.RequestedCertificateSet
+	CertificatesToRequest                 *utils.RequestedCertificateSet
 	onGeneralMessageReceivedCallbacks     map[int]OnGeneralMessageReceivedCallback
 	onCertificateReceivedCallbacks        map[int]OnCertificateReceivedCallback
 	onCertificateRequestReceivedCallbacks map[int]OnCertificateRequestReceivedCallback
@@ -82,12 +82,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 	}
 
 	if cfg.CertificatesToRequest != nil {
-		peer.CertificatesToRequest = *cfg.CertificatesToRequest
-	} else {
-		peer.CertificatesToRequest = utils.RequestedCertificateSet{
-			Certifiers:       []string{},
-			CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
-		}
+		peer.CertificatesToRequest = cfg.CertificatesToRequest
 	}
 
 	// Start the peer
@@ -306,7 +301,7 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 		IdentityKey:           pubKey.PublicKey,
 		Nonce:                 "", // No nonce for initial request
 		InitialNonce:          sessionNonce,
-		RequestedCertificates: p.CertificatesToRequest,
+		RequestedCertificates: *p.CertificatesToRequest,
 	}
 
 	// Set up channels for async response handling
@@ -433,6 +428,12 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 		PeerIdentityKey: senderPublicKey,
 		LastUpdate:      time.Now().UnixMilli(),
 	}
+
+	// in case we need ceritificates set current isAuthenticated status to false
+	if p.CertificatesToRequest != nil && len(p.CertificatesToRequest.CertificateTypes) > 0 {
+		session.IsAuthenticated = false
+	}
+
 	err = p.sessionManager.AddSession(session)
 	if err != nil {
 		return NewAuthError("failed to add session", err)
@@ -728,6 +729,10 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 		return ErrSessionNotFound
 	}
 	if !session.IsAuthenticated {
+		if p.CertificatesToRequest != nil && len(p.CertificatesToRequest.Certifiers) > 0 {
+			return ErrMissingCertificate
+		}
+
 		return ErrNotAuthenticated
 	}
 

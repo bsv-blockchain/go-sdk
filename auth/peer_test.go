@@ -564,14 +564,14 @@ func TestPeerCertificateExchange(t *testing.T) {
 	})
 
 	// Set certificate requirements - We need to use the RAW type string here, not base64 encoded
-	aliceCertReqs := utils.RequestedCertificateSet{
+	aliceCertReqs := &utils.RequestedCertificateSet{
 		Certifiers: []string{"any"}, // "any" is special value that accepts any certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
 		},
 	}
 
-	bobCertReqs := utils.RequestedCertificateSet{
+	bobCertReqs := &utils.RequestedCertificateSet{
 		Certifiers: []string{"any"}, // "any" is special value that accepts any certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
@@ -635,7 +635,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 	// Debug logs to check if Bob's transport is receiving requests
 	logger.Printf("Waiting for Bob to receive Alice's certificates...")
 	// Add explicit certificate request from Bob to Alice
-	err = bobPeer.RequestCertificates(ctx, alicePubKey, bobCertReqs, 1000)
+	err = bobPeer.RequestCertificates(ctx, alicePubKey, *bobCertReqs, 1000)
 	if err != nil {
 		logger.Printf("Error requesting certificates: %v", err)
 	} else {
@@ -994,7 +994,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 	})
 
 	// Setup certificate requirements - requesting two fields but accepting partial matches
-	requestedCertificates := utils.RequestedCertificateSet{
+	requestedCertificates := &utils.RequestedCertificateSet{
 		Certifiers: []string{"any"},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"name", "email"},
@@ -1030,7 +1030,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		bobPubKey, _ := bobWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
 
 		// Bob requests certificates from Alice
-		err := bob.RequestCertificates(ctx, alicePubKey.PublicKey, requestedCertificates, 5000)
+		err := bob.RequestCertificates(ctx, alicePubKey.PublicKey, *requestedCertificates, 5000)
 		if err != nil {
 			t.Logf("Error when Bob requested certificates from Alice: %v", err)
 		} else {
@@ -1041,7 +1041,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 
 		// Alice requests certificates from Bob
-		err = alice.RequestCertificates(ctx, bobPubKey.PublicKey, requestedCertificates, 5000)
+		err = alice.RequestCertificates(ctx, bobPubKey.PublicKey, *requestedCertificates, 5000)
 		if err != nil {
 			t.Logf("Error when Alice requested certificates from Bob: %v", err)
 		} else {
@@ -1234,7 +1234,7 @@ func TestLibraryCardVerification(t *testing.T) {
 	})
 
 	// Setup certificate requirements - Alice requires Bob's library card number
-	alice.CertificatesToRequest = utils.RequestedCertificateSet{
+	alice.CertificatesToRequest = &utils.RequestedCertificateSet{
 		Certifiers: []string{"any"},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"cardNumber"},

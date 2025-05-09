@@ -31,6 +31,9 @@ var (
 	// ErrInvalidNonce is returned when a nonce is invalid
 	ErrInvalidNonce = errors.New("invalid-nonce")
 
+	// ErrMissingCertificate is returned when a certificate is missing
+	ErrMissingCertificate = errors.New("missing-certificate")
+
 	// ErrCertificateValidation is returned when certificate validation fails
 	ErrCertificateValidation = errors.New("certificate-validation-failed")
 )
