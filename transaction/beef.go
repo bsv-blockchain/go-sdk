@@ -27,8 +27,11 @@ const ATOMIC_BEEF = uint32(0x01010101) // BRC-95
 
 func (t *Transaction) FromBEEF(beef []byte) error {
 	tx, err := NewTransactionFromBEEF(beef)
+	if err != nil {
+		return fmt.Errorf("failed to parse BEEF bytes: %w", err)
+	}
 	*t = *tx
-	return err
+	return nil
 }
 
 func NewBeefV1() *Beef {
