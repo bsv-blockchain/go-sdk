@@ -61,7 +61,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	outputsResult, err := kv.getOutputs(ctx, key, limit)
 	if err != nil {
 		// Wrap wallet operation error
-		return nil, WrapWalletOperation("ListOutputs", err)
+		return nil, fmt.Errorf("error ListOutputs: %w", err)
 	}
 
 	if len(outputsResult.Outputs) == 0 {
@@ -80,7 +80,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	// We need the BEEF data to extract the transaction
 	if len(outputsResult.BEEF) == 0 {
 		// This indicates an issue with ListOutputs or the data state
-		return nil, WrapDataParsing("BEEF", errors.New("missing BEEF data in ListOutputs result"))
+		return nil, fmt.Errorf("error BEEF")
 	}
 
 	// Use NewBeefFromAtomicBytes to handle the potential ATOMIC_BEEF prefix
@@ -91,7 +91,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 		// Let's try parsing as standard BEEF V1/V2 just in case, though wallet should provide atomic.
 		beefData, err = transaction.NewBeefFromBytes(outputsResult.BEEF)
 		if err != nil {
-			return nil, WrapDataParsing("BEEF/AtomicBEEF", err)
+			return nil, fmt.Errorf("error BEEF/AtomicBEEF: %w", err)
 		}
 		// If standard parsing worked, we don't have a subject TXID from the prefix
 		subjectTxidHash = nil
@@ -100,13 +100,13 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	// Extract txid and vout from outpoint string of the *most recent output*
 	outpointParts := strings.Split(mostRecentOutput.Outpoint, ".")
 	if len(outpointParts) != 2 {
-		return nil, WrapDataParsing("Outpoint", fmt.Errorf("invalid format: %s", mostRecentOutput.Outpoint))
+		return nil, fmt.Errorf("outpoint invalid format: %s", mostRecentOutput.Outpoint)
 	}
 	txidStr := outpointParts[0]
 	voutStr := outpointParts[1]
 	vout, err := strconv.Atoi(voutStr)
 	if err != nil {
-		return nil, WrapDataParsing("Outpoint Vout", fmt.Errorf("invalid vout in outpoint %s: %w", mostRecentOutput.Outpoint, err))
+		return nil, fmt.Errorf("outpoint vout invalid vout in outpoint %s: %w", mostRecentOutput.Outpoint, err)
 	}
 
 	// Find the transaction corresponding to the most recent output's txid within the BEEF data
@@ -117,23 +117,23 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 			tx = beefData.FindAtomicTransaction(subjectTxidHash.String()) // Re-find using the atomic method which links inputs
 		}
 		if tx == nil {
-			return nil, WrapDataParsing("BEEF Transaction", fmt.Errorf("transaction %s not found in BEEF data", txidStr))
+			return nil, fmt.Errorf("error BEEF transaction %s not found in BEEF data", txidStr)
 		}
 	}
 
 	// Check if vout is valid for the transaction
 	if vout < 0 || vout >= len(tx.Outputs) {
-		return nil, WrapDataParsing("Transaction Output Index", fmt.Errorf("vout %d out of range for tx %s with %d outputs", vout, txidStr, len(tx.Outputs)))
+		return nil, fmt.Errorf("error Transaction vout %d out of range for tx %s with %d outputs", vout, txidStr, len(tx.Outputs))
 	}
 	txOutput := tx.Outputs[vout]
 	if txOutput == nil || txOutput.LockingScript == nil {
-		return nil, WrapCorruptedState(fmt.Errorf("invalid output or locking script at index %d in transaction %s", vout, txidStr))
+		return nil, fmt.Errorf("invalid output or locking script at index %d in transaction %s", vout, txidStr)
 	}
 
 	// Extract push drop data from script object (which is already parsed)
 	pushDropData := pushdroptpl.Decode(txOutput.LockingScript)
 	if pushDropData == nil || len(pushDropData.Fields) < 1 {
-		return nil, WrapCorruptedState(fmt.Errorf("invalid pushdrop token format found for key %s in output %s", key, mostRecentOutput.Outpoint))
+		return nil, fmt.Errorf("invalid pushdrop token format found for key %s in output %s", key, mostRecentOutput.Outpoint)
 	}
 
 	valueBytes := pushDropData.Fields[0]
@@ -153,7 +153,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 		decryptResult, err := kv.wallet.Decrypt(ctx, decryptArgs, kv.originator)
 		if err != nil {
 			// Wrap encryption error
-			return nil, WrapEncryption(fmt.Errorf("for key %s: %w", key, err))
+			return nil, fmt.Errorf("for key %s: %w", key, err)
 		}
 		value = string(decryptResult.Plaintext)
 	}
@@ -185,13 +185,16 @@ func (kv *LocalKVStore) getOutputs(ctx context.Context, key string, limit int) (
 	result, err := kv.wallet.ListOutputs(ctx, listArgs, kv.originator)
 	if err != nil {
 		// Return wrapped wallet error
-		return nil, WrapWalletOperation(fmt.Sprintf("ListOutputs for key %s", key), err)
+		return nil, fmt.Errorf("error ListOutputs for key %s: %w", key, err)
 	}
 	return result, nil
 }
 
 // Get retrieves a value for the given key, or returns the defaultValue if not found.
 func (kv *LocalKVStore) Get(ctx context.Context, key string, defaultValue string) (string, error) {
+	if key == "" {
+		return "", ErrInvalidKey
+	}
 	result, err := kv.lookupValue(ctx, key, defaultValue, 5)
 	if err != nil {
 		// If lookup failed, return the error directly.
@@ -214,6 +217,12 @@ func (kv *LocalKVStore) Get(ctx context.Context, key string, defaultValue string
 
 // Set stores a value with the given key, returning the outpoint of the transaction output.
 func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (string, error) {
+	if key == "" {
+		return "", ErrInvalidKey
+	}
+	if value == "" {
+		return "", ErrInvalidValue
+	}
 	lookupResult, err := kv.lookupValue(ctx, key, "", 10)
 	// Handle specific errors from lookup
 	if err != nil && !errors.Is(err, ErrKeyNotFound) { // Proceed if key simply not found, otherwise log/handle error
@@ -245,7 +254,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 		}
 		encryptResult, err := kv.wallet.Encrypt(ctx, encryptArgs, kv.originator)
 		if err != nil {
-			return "", WrapEncryption(fmt.Errorf("for key %s: %w", key, err))
+			return "", fmt.Errorf("for key %s: %w", key, err)
 		}
 		valueBytes = encryptResult.Ciphertext
 	}
@@ -304,18 +313,18 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 	createResult, err := kv.wallet.CreateAction(ctx, createArgs, kv.originator)
 	if err != nil {
 		// Wrap wallet create action error
-		return "", WrapWalletOperation("CreateAction", err)
+		return "", fmt.Errorf("error CreateAction: %w", err)
 	}
 
 	if len(inputs) == 0 {
 		if createResult.Txid == "" {
-			return "", newError("CreateAction returned no txid and no signable transaction for new key", nil)
+			return "", errors.New("CreateAction returned no txid and no signable transaction for new key")
 		}
 		return fmt.Sprintf("%s.0", createResult.Txid), nil
 	}
 
 	if createResult.SignableTransaction == nil {
-		return "", newError("CreateAction did not return a signable transaction when inputs were provided", nil)
+		return "", errors.New("CreateAction did not return a signable transaction when inputs were provided")
 	}
 
 	spends, err := kv.prepareSpends(ctx, key, inputs, createResult.SignableTransaction.Tx, createArgs.InputBEEF)
@@ -344,7 +353,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 			}
 		}
 		// Return the original wrapped signing error
-		return "", WrapWalletOperation("SignAction", err)
+		return "", fmt.Errorf("error SignAction: %w", err)
 	}
 
 	return fmt.Sprintf("%s.0", signResult.Txid), nil
@@ -360,7 +369,7 @@ func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []
 		// Attempt atomic parse as fallback, though merged beef likely isn't atomic
 		beefDataAtomic, _, errAtomic := transaction.NewBeefFromAtomicBytes(inputBeef)
 		if errAtomic != nil {
-			return nil, WrapDataParsing("InputBEEF", fmt.Errorf("failed to decode input BEEF as standard or atomic: %w / %w", err, errAtomic))
+			return nil, fmt.Errorf("err InputBeef failed to decode input BEEF as standard or atomic: %w / %w", err, errAtomic)
 		}
 		beefData = beefDataAtomic // Use atomic if standard failed
 	}
@@ -368,13 +377,13 @@ func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []
 	// Parse the signable transaction bytes just to get its TxID
 	tempTx, err := transaction.NewTransactionFromBytes(signableTxBytes)
 	if err != nil {
-		return nil, WrapDataParsing("SignableTransactionBytes", fmt.Errorf("failed to decode signable tx bytes: %w", err))
+		return nil, fmt.Errorf("error SignableTransactionBytes failed to decode signable tx bytes: %w", err)
 	}
 
 	// Use FindTransactionForSigning with the parsed BEEF to get a TX with linked inputs
 	signableTx := beefData.FindTransactionForSigning(tempTx.TxID().String())
 	if signableTx == nil {
-		return nil, WrapDataParsing("SignableTransactionInBeef", fmt.Errorf("signable tx %s not found within provided InputBEEF context", tempTx.TxID()))
+		return nil, fmt.Errorf("error SignableTransactionInBeef signable tx %s not found within provided InputBEEF context", tempTx.TxID())
 	}
 
 	// Now signableTx.Inputs[i].SourceTransaction should be populated
@@ -409,6 +418,9 @@ func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []
 
 // Remove deletes all values for the given key by spending the outputs.
 func (kv *LocalKVStore) Remove(ctx context.Context, key string) ([]string, error) {
+	if key == "" {
+		return nil, ErrInvalidKey
+	}
 	removedTxids := []string{}
 
 	for {
@@ -455,11 +467,11 @@ func (kv *LocalKVStore) Remove(ctx context.Context, key string) ([]string, error
 			// *** Add Relinquish logic here? ***
 			// Should we relinquish if CreateAction fails? The TS reference might only do it on SignAction fail.
 			// Let's only add it to SignAction failure for now, mirroring the Set logic.
-			return removedTxids, WrapWalletOperation("CreateAction (Remove)", err)
+			return removedTxids, errors.New(fmt.Sprintln("CreateAction (Remove)", err))
 		}
 
 		if createResult.SignableTransaction == nil {
-			return removedTxids, newError("CreateAction did not return signable tx for removal", nil)
+			return removedTxids, errors.New("createAction did not return signable tx for removal")
 		}
 
 		spends, err := kv.prepareSpends(ctx, key, inputs, createResult.SignableTransaction.Tx, createArgs.InputBEEF)
@@ -486,7 +498,7 @@ func (kv *LocalKVStore) Remove(ctx context.Context, key string) ([]string, error
 				}
 			}
 			// Return the original wrapped signing error
-			return removedTxids, WrapWalletOperation("SignAction (Remove)", err)
+			return removedTxids, fmt.Errorf("SignAction (Remove): %w", err)
 		}
 
 		removedTxids = append(removedTxids, signResult.Txid)

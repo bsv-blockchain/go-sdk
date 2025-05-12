@@ -3,7 +3,6 @@ package kvstore
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -51,25 +50,25 @@ type KVStoreConfig struct {
 
 // Error definitions
 
-type kvStoreError struct {
-	message string
-	err     error // underlying error
-}
+// type kvStoreError struct {
+// 	message string
+// 	err     error // underlying error
+// }
 
-func (e *kvStoreError) Error() string {
-	if e.err != nil {
-		return e.message + ": " + e.err.Error()
-	}
-	return e.message
-}
+// func (e *kvStoreError) Error() string {
+// 	if e.err != nil {
+// 		return e.message + ": " + e.err.Error()
+// 	}
+// 	return e.message
+// }
 
-func (e *kvStoreError) Unwrap() error {
-	return e.err
-}
+// func (e *kvStoreError) Unwrap() error {
+// 	return e.err
+// }
 
-func newError(message string, cause error) error {
-	return &kvStoreError{message: message, err: cause}
-}
+// func newError(message string, cause error) error {
+// 	return &kvStoreError{message: message, err: cause}
+// }
 
 // Specific error types
 var (
@@ -116,18 +115,18 @@ type KeyValue struct {
 
 // Helper functions for creating wrapped errors (optional but can be useful)
 
-func WrapCorruptedState(cause error) error {
-	return newError(ErrCorruptedState.Error(), cause)
-}
+// func WrapCorruptedState(cause error) error {
+// 	return newError(ErrCorruptedState.Error(), cause)
+// }
 
-func WrapWalletOperation(opName string, cause error) error {
-	return newError(fmt.Sprintf("%s: %s", ErrWalletOperation.Error(), opName), cause)
-}
+// func WrapWalletOperation(opName string, cause error) error {
+// 	return newError(fmt.Sprintf("%s: %s", ErrWalletOperation.Error(), opName), cause)
+// }
 
-func WrapEncryption(cause error) error {
-	return newError(ErrEncryption.Error(), cause)
-}
+// func WrapEncryption(cause error) error {
+// 	return newError(ErrEncryption.Error(), cause)
+// }
 
-func WrapDataParsing(dataType string, cause error) error {
-	return newError(fmt.Sprintf("%s: %s", ErrDataParsing.Error(), dataType), cause)
-}
+// func WrapDataParsing(dataType string, cause error) error {
+// 	return newError(fmt.Sprintf("%s: %s", ErrDataParsing.Error(), dataType), cause)
+// }

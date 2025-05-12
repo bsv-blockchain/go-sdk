@@ -93,11 +93,11 @@ func (m *MockWallet) SignAction(ctx context.Context, args SignActionArgs, origin
 }
 
 func (m *MockWallet) ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error) {
-	if m.ListOutputsError != nil {
-		return nil, m.ListOutputsError
-	}
 	if m.ListOutputsResultToReturn == nil {
 		return &ListOutputsResult{Outputs: []Output{}}, nil
+	}
+	if m.ListOutputsError != nil {
+		return nil, m.ListOutputsError
 	}
 	return m.ListOutputsResultToReturn, nil
 }
