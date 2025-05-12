@@ -24,6 +24,7 @@ type MockWallet struct {
 	MockCreateHmac            func(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error)
 	MockDecrypt               func(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
 	MockVerifySignature       func(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+	MockListCertificates      func(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
 }
 
 func NewMockWallet(t *testing.T) *MockWallet {
@@ -141,6 +142,9 @@ func (m *MockWallet) AcquireCertificate(ctx context.Context, args AcquireCertifi
 }
 
 func (m *MockWallet) ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error) {
+	if m.MockListCertificates != nil {
+		return m.MockListCertificates(ctx, args, originator)
+	}
 	require.Fail(m.T, "ListCertificates mock not implemented")
 	return nil, nil
 }
