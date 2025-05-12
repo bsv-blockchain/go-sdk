@@ -550,9 +550,6 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
-	if !session.IsAuthenticated {
-		return ErrNotAuthenticated
-	}
 
 	// Verify nonces match
 	if message.YourNonce != session.SessionNonce {
@@ -634,9 +631,6 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
 	if err != nil || session == nil {
 		return ErrSessionNotFound
-	}
-	if !session.IsAuthenticated {
-		return ErrNotAuthenticated
 	}
 
 	// Verify nonces match
