@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// EXAMPLE 1: Create an identity client
-	client, err := identity.NewIdentityClient(nil, nil, "example.com")
+	client, err := identity.NewClient(nil, nil, "example.com")
 	if err != nil {
 		log.Fatalf("Failed to create identity client: %v", err)
 	}

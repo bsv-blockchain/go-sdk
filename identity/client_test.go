@@ -309,7 +309,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 	mockWallet := wallet.NewMockWallet(t)
 
 	// Create identity client with mock wallet
-	client, err := NewIdentityClient(mockWallet, nil, "")
+	client, err := NewClient(mockWallet, nil, "")
 	if err != nil {
 		t.Fatalf("failed to create identity client: %v", err)
 	}
@@ -698,7 +698,7 @@ func TestResolveByIdentityKey(t *testing.T) {
 	mockWallet := wallet.NewMockWallet(t)
 
 	// Create identity client with mock wallet
-	client, err := NewIdentityClient(mockWallet, nil, "")
+	client, err := NewClient(mockWallet, nil, "")
 	if err != nil {
 		t.Fatalf("failed to create identity client: %v", err)
 	}
@@ -753,7 +753,7 @@ func TestResolveByAttributes(t *testing.T) {
 	mockWallet := wallet.NewMockWallet(t)
 
 	// Create identity client with mock wallet
-	client, err := NewIdentityClient(mockWallet, nil, "")
+	client, err := NewClient(mockWallet, nil, "")
 	if err != nil {
 		t.Fatalf("failed to create identity client: %v", err)
 	}

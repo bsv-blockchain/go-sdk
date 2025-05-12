@@ -43,7 +43,7 @@ type BroadcasterFactory func(topics []string, config *topic.BroadcasterConfig) (
 
 // TestableIdentityClient extends IdentityClient with features that make it easier to test
 type TestableIdentityClient struct {
-	*IdentityClient
+	*Client
 	certificateVerifier CertificateVerifier
 	transactionCreator  TransactionCreator
 	broadcasterFactory  BroadcasterFactory
@@ -56,7 +56,7 @@ func NewTestableIdentityClient(
 	originator OriginatorDomainNameStringUnder250Bytes,
 	verifier CertificateVerifier,
 ) (*TestableIdentityClient, error) {
-	baseClient, err := NewIdentityClient(w, options, originator)
+	baseClient, err := NewClient(w, options, originator)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func NewTestableIdentityClient(
 	}
 
 	return &TestableIdentityClient{
-		IdentityClient:      baseClient,
+		Client:              baseClient,
 		certificateVerifier: verifier,
 		transactionCreator:  transaction.NewTransactionFromBEEF, // Default to actual implementation
 		broadcasterFactory:  topic.NewBroadcaster,               // Default to actual implementation

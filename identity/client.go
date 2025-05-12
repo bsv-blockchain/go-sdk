@@ -17,15 +17,15 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-// IdentityClient lets you discover who others are, and let the world know who you are.
-type IdentityClient struct {
+// Client lets you discover who others are, and let the world know who you are.
+type Client struct {
 	wallet     wallet.Interface
 	options    IdentityClientOptions
 	originator OriginatorDomainNameStringUnder250Bytes
 }
 
-// NewIdentityClient creates a new IdentityClient with the provided wallet and options
-func NewIdentityClient(w wallet.Interface, options *IdentityClientOptions, originator OriginatorDomainNameStringUnder250Bytes) (*IdentityClient, error) {
+// NewClient creates a new IdentityClient with the provided wallet and options
+func NewClient(w wallet.Interface, options *IdentityClientOptions, originator OriginatorDomainNameStringUnder250Bytes) (*Client, error) {
 	if w == nil {
 		randomKey, err := ec.NewPrivateKey()
 		if err != nil {
@@ -50,7 +50,7 @@ func NewIdentityClient(w wallet.Interface, options *IdentityClientOptions, origi
 		options = &opts
 	}
 
-	return &IdentityClient{
+	return &Client{
 		wallet:     w,
 		options:    *options,
 		originator: originator,
@@ -60,7 +60,7 @@ func NewIdentityClient(w wallet.Interface, options *IdentityClientOptions, origi
 // PubliclyRevealAttributes publicly reveals selected fields from a given certificate by creating a
 // publicly verifiable certificate. The publicly revealed certificate is included in a blockchain
 // transaction and broadcast to a federated overlay node.
-func (c *IdentityClient) PubliclyRevealAttributes(
+func (c *Client) PubliclyRevealAttributes(
 	ctx context.Context,
 	certificate *wallet.Certificate,
 	fieldsToReveal []CertificateFieldNameUnder50Bytes,
@@ -216,7 +216,7 @@ func (c *IdentityClient) PubliclyRevealAttributes(
 
 // PubliclyRevealAttributesSimple is a simplified version of PubliclyRevealAttributes that returns only
 // a broadcast result string, to mirror the TypeScript implementation's return signature.
-func (c *IdentityClient) PubliclyRevealAttributesSimple(
+func (c *Client) PubliclyRevealAttributesSimple(
 	ctx context.Context,
 	certificate *wallet.Certificate,
 	fieldsToReveal []CertificateFieldNameUnder50Bytes,
@@ -238,7 +238,7 @@ func (c *IdentityClient) PubliclyRevealAttributesSimple(
 }
 
 // ResolveByIdentityKey resolves displayable identity certificates, issued to a given identity key by a trusted certifier.
-func (c *IdentityClient) ResolveByIdentityKey(
+func (c *Client) ResolveByIdentityKey(
 	ctx context.Context,
 	args wallet.DiscoverByIdentityKeyArgs,
 ) ([]DisplayableIdentity, error) {
@@ -256,7 +256,7 @@ func (c *IdentityClient) ResolveByIdentityKey(
 }
 
 // ResolveByAttributes resolves displayable identity certificates by specific identity attributes, issued by a trusted entity.
-func (c *IdentityClient) ResolveByAttributes(
+func (c *Client) ResolveByAttributes(
 	ctx context.Context,
 	args wallet.DiscoverByAttributesArgs,
 ) ([]DisplayableIdentity, error) {
@@ -274,7 +274,7 @@ func (c *IdentityClient) ResolveByAttributes(
 }
 
 // ParseIdentity parse out identity and certifier attributes to display from an IdentityCertificate
-func (c *IdentityClient) parseIdentity(identity *wallet.IdentityCertificate) DisplayableIdentity {
+func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) DisplayableIdentity {
 	var name, avatarURL, badgeLabel, badgeIconURL, badgeClickURL string
 
 	// Parse out the name to display based on the specific certificate type which has clearly defined fields
@@ -381,6 +381,6 @@ func (c *IdentityClient) parseIdentity(identity *wallet.IdentityCertificate) Dis
 
 // ParseIdentity static version of the parseIdentity method for use without a client instance
 func ParseIdentity(identity *wallet.IdentityCertificate) DisplayableIdentity {
-	client := &IdentityClient{}
+	client := &Client{}
 	return client.parseIdentity(identity)
 }
