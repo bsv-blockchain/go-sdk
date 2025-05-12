@@ -57,7 +57,7 @@ func NewLookupResolver(cfg *LookupResolver) *LookupResolver {
 	return resolver
 }
 
-func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion, timeout time.Duration) (*LookupAnswer, error) {
+func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*LookupAnswer, error) {
 	var competentHosts []string
 	if l.NetworkPreset == overlay.NetworkLocal {
 		competentHosts = []string{"http://localhost:8080"}
@@ -84,7 +84,7 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion, ti
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			if answer, err := l.Facilitator.Lookup(ctx, host, question, timeout); err != nil {
+			if answer, err := l.Facilitator.Lookup(ctx, host, question); err != nil {
 				log.Println("Error querying host", host, err)
 			} else {
 				responses <- answer
@@ -145,7 +145,10 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			if answer, err := l.Facilitator.Lookup(ctx, url, query, MAX_TRACKER_WAIT_TIME); err != nil {
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, MAX_TRACKER_WAIT_TIME)
+			defer cancel()
+
+			if answer, err := l.Facilitator.Lookup(ctxWithTimeout, url, query); err != nil {
 				log.Println("Error querying tracker", url, err)
 			} else {
 				responses <- answer

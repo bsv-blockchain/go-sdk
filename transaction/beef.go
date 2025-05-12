@@ -112,8 +112,9 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 				sourceTxid := input.SourceTXID.String()
 				if sourceObj, ok := txs[sourceTxid]; ok {
 					input.SourceTransaction = sourceObj.Transaction
-				} else if beefTx.Transaction.MerklePath == nil && beefTx.KnownTxID == nil {
-					return nil, fmt.Errorf("reference to unknown txid in bump: %s", sourceTxid)
+					// TODO: Need to update logic to match ts-sdk
+					// } else if beefTx.Transaction.MerklePath == nil && beefTx.KnownTxID == nil {
+					// return nil, fmt.Errorf("reference to unknown txid in bump: %s", sourceTxid)
 				}
 			}
 
@@ -960,12 +961,26 @@ func (b *Beef) ToLogString() string {
 		log += "    ]\n"
 	}
 
+txLoop:
 	for i, tx := range b.Transactions {
 		switch tx.DataFormat {
-		case RawTx, RawTxAndBumpIndex:
+		case RawTx:
 			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
-			if tx.DataFormat == RawTxAndBumpIndex {
-				log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
+			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+		case RawTxAndBumpIndex:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
+			log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
+			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+		case TxIDOnly:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.KnownTxID.String())
+			log += "    txidOnly\n"
+			continue txLoop
+		}
+
+		if len(tx.Transaction.Inputs) > 0 {
+			log += "    inputs: [\n"
+			for _, input := range tx.Transaction.Inputs {
+				log += fmt.Sprintf("      '%s',\n", input.SourceTXID.String())
 			}
 			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
 			if len(tx.Transaction.Inputs) > 0 {
@@ -975,9 +990,6 @@ func (b *Beef) ToLogString() string {
 				}
 				log += "    ]\n"
 			}
-		case TxIDOnly:
-			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.KnownTxID.String())
-			log += "    txidOnly\n"
 		}
 	}
 	return log

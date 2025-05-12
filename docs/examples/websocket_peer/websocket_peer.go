@@ -158,7 +158,7 @@ type mockTransport struct {
 	clientID    string
 	server      *mockWebSocketServer
 	connected   bool
-	onDataFuncs []func(*auth.AuthMessage) error
+	onDataFuncs []func(context.Context, *auth.AuthMessage) error
 	mu          sync.Mutex
 }
 
@@ -169,7 +169,7 @@ func newMockTransport(clientID string, server *mockWebSocketServer) *mockTranspo
 	}
 }
 
-func (t *mockTransport) Connect() error {
+func (t *mockTransport) Connect(ctx context.Context) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -181,7 +181,7 @@ func (t *mockTransport) Connect() error {
 
 	// Register with the server to receive messages
 	t.server.registerClient(t.clientID, func(msg *auth.AuthMessage) {
-		t.handleMessage(msg)
+		t.handleMessage(ctx, msg)
 	})
 
 	return nil
@@ -200,7 +200,7 @@ func (t *mockTransport) Disconnect() error {
 	return nil
 }
 
-func (t *mockTransport) Send(message *auth.AuthMessage) error {
+func (t *mockTransport) Send(ctx context.Context, message *auth.AuthMessage) error {
 	t.mu.Lock()
 	connected := t.connected
 	t.mu.Unlock()
@@ -214,7 +214,7 @@ func (t *mockTransport) Send(message *auth.AuthMessage) error {
 	return nil
 }
 
-func (t *mockTransport) OnData(callback func(*auth.AuthMessage) error) error {
+func (t *mockTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -222,15 +222,26 @@ func (t *mockTransport) OnData(callback func(*auth.AuthMessage) error) error {
 	return nil
 }
 
-func (t *mockTransport) handleMessage(message *auth.AuthMessage) {
+func (t *mockTransport) GetRegisteredOnData() (func(context.Context, *auth.AuthMessage) error, error) {
 	t.mu.Lock()
-	handlers := make([]func(*auth.AuthMessage) error, len(t.onDataFuncs))
+	defer t.mu.Unlock()
+
+	if len(t.onDataFuncs) == 0 {
+		return nil, fmt.Errorf("no registered onData functions")
+	}
+
+	return t.onDataFuncs[0], nil
+}
+
+func (t *mockTransport) handleMessage(ctx context.Context, message *auth.AuthMessage) {
+	t.mu.Lock()
+	handlers := make([]func(context.Context, *auth.AuthMessage) error, len(t.onDataFuncs))
 	copy(handlers, t.onDataFuncs)
 	t.mu.Unlock()
 
 	for _, handler := range handlers {
 		// Errors from handlers are not propagated
-		_ = handler(message)
+		_ = handler(ctx, message)
 	}
 }
 
@@ -264,13 +275,13 @@ func main() {
 	bobWallet := &MinimalWalletImpl{Wallet: bobW}
 
 	// Connect transports
-	err = aliceTransport.Connect()
+	err = aliceTransport.Connect(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to connect Alice's transport: %v", err)
 	}
 	defer func() { _ = aliceTransport.Disconnect() }()
 
-	err = bobTransport.Connect()
+	err = bobTransport.Connect(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to connect Bob's transport: %v", err)
 	}

@@ -237,13 +237,14 @@ func (b *Broadcaster) FindInterestedHosts(ctx context.Context) ([]string, error)
 	if err != nil {
 		return nil, err
 	}
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, MAX_SHIP_QUERY_TIMEOUT)
+	defer cancel()
 	answer, err := b.Resolver.Query(
-		ctx,
+		ctxWithTimeout,
 		&lookup.LookupQuestion{
 			Service: "ls_ship",
 			Query:   query,
 		},
-		MAX_SHIP_QUERY_TIMEOUT,
 	)
 	if err != nil {
 		return nil, err

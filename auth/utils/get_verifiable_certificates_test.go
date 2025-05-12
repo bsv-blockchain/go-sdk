@@ -60,13 +60,17 @@ func TestGetVerifiableCertificates(t *testing.T) {
 				},
 			},
 		}
-		mockWallet.ListCertificatesResult = mockListResult
+		mockWallet.MockListCertificates = func(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
+			return mockListResult, nil
+		}
 
 		// Mock wallet.ProveCertificate response
 		mockProveResult := &wallet.ProveCertificateResult{
 			KeyringForVerifier: map[string]string{"field1": "key1", "field2": "key2"},
 		}
-		mockWallet.ProveCertificateResult = mockProveResult
+		mockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
+			return mockProveResult, nil
+		}
 
 		options := GetVerifiableCertificatesOptions{
 			Wallet:                mockWallet,
@@ -103,8 +107,10 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		}
 
 		// Mock ListCertificates to return empty results
-		mockWallet.ListCertificatesResult = &wallet.ListCertificatesResult{
-			Certificates: []wallet.CertificateResult{},
+		mockWallet.MockListCertificates = func(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
+			return &wallet.ListCertificatesResult{
+				Certificates: []wallet.CertificateResult{},
+			}, nil
 		}
 
 		options := GetVerifiableCertificatesOptions{
@@ -130,7 +136,9 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		}
 
 		// Mock ListCertificates to return an error
-		mockWallet.ListCertificatesError = errors.New("listCertificates failed")
+		mockWallet.MockListCertificates = func(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
+			return nil, errors.New("listCertificates failed")
+		}
 
 		options := GetVerifiableCertificatesOptions{
 			Wallet:                mockWallet,

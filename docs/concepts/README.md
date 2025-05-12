@@ -14,3 +14,4 @@ These documents cover high-level conceptual information that will augment develo
 - [What are Hashes and Why are they Important in Bitcoin?](HASHES.md)
 - [How does Authentication Work in the SDK?](AUTH.md)
 - [Overlay Tools](OVERLAY_TOOLS.md)
+- [Identity Concepts and Certificate Management](IDENTITY.md)
