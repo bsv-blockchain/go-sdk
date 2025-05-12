@@ -1,13 +1,16 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
+	"github.com/bsv-blockchain/go-sdk/overlay/topic"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -16,6 +19,20 @@ const (
 	// RegistrantTokenAmount is the satoshi value of registry entry tokens
 	RegistrantTokenAmount uint64 = 1
 )
+
+// BroadcasterInterface defines the interface for a topic broadcaster
+// This allows us to mock the broadcaster in tests
+type BroadcasterInterface interface {
+	BroadcastCtx(ctx context.Context, tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure)
+}
+
+// BroadcasterFactory creates a new broadcaster
+type BroadcasterFactory func(topics []string, cfg *topic.BroadcasterConfig) (transaction.Broadcaster, error)
+
+// DefaultBroadcasterFactory creates a real broadcaster
+func DefaultBroadcasterFactory(topics []string, cfg *topic.BroadcasterConfig) (transaction.Broadcaster, error) {
+	return topic.NewBroadcaster(topics, cfg)
+}
 
 // RegistryClient manages on-chain registry definitions for three types:
 // - basket (basket-based items)
@@ -28,10 +45,11 @@ const (
 // - List registry entries associated with the operator's wallet.
 // - Revoke an existing registry entry by spending its UTXO.
 type RegistryClient struct {
-	wallet        wallet.Interface
-	originator    string
-	network       overlay.Network
-	lookupFactory func() *lookup.LookupResolver
+	wallet             wallet.Interface
+	originator         string
+	network            overlay.Network
+	lookupFactory      func() *lookup.LookupResolver
+	broadcasterFactory BroadcasterFactory
 }
 
 // NewRegistryClient creates a new registry client with the provided wallet.
@@ -43,12 +61,18 @@ func NewRegistryClient(walletInstance wallet.Interface, originator string) *Regi
 		lookupFactory: func() *lookup.LookupResolver {
 			return lookup.NewLookupResolver(&lookup.LookupResolver{})
 		},
+		broadcasterFactory: DefaultBroadcasterFactory,
 	}
 }
 
 // SetNetwork explicitly sets the network for the client.
 func (c *RegistryClient) SetNetwork(network overlay.Network) {
 	c.network = network
+}
+
+// SetBroadcasterFactory sets a custom broadcaster factory for testing
+func (c *RegistryClient) SetBroadcasterFactory(factory BroadcasterFactory) {
+	c.broadcasterFactory = factory
 }
 
 // mapDefinitionTypeToWalletProtocol converts our definitionType to the wallet protocol format.

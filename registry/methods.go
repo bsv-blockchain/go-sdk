@@ -101,7 +101,7 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 	}
 
 	// Broadcast to the relevant topic
-	broadcaster, err := topic.NewBroadcaster(
+	broadcaster, err := c.broadcasterFactory(
 		[]string{mapDefinitionTypeToTopic(data.GetDefinitionType())},
 		&topic.BroadcasterConfig{
 			NetworkPreset: c.network,
@@ -125,44 +125,73 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 
 // ResolveBasket resolves basket registry entries using a lookup service.
 func (c *RegistryClient) ResolveBasket(ctx context.Context, query BasketQuery) ([]*BasketDefinitionData, error) {
+	fmt.Println("DEBUG: Starting ResolveBasket")
 	resolver := c.lookupFactory()
+	fmt.Println("DEBUG: Got lookup resolver")
 	serviceName := mapDefinitionTypeToServiceName(DefinitionTypeBasket)
+	fmt.Printf("DEBUG: Service name: %s\n", serviceName)
 
 	// Prepare the lookup query
 	queryJSON, err := json.Marshal(query)
 	if err != nil {
+		fmt.Printf("DEBUG: Error marshalling query: %v\n", err)
 		return nil, fmt.Errorf("error marshalling query: %w", err)
 	}
+	fmt.Printf("DEBUG: Query JSON: %s\n", string(queryJSON))
 
 	// Make the lookup query
+	fmt.Println("DEBUG: About to call resolver.Query")
 	result, err := resolver.Query(ctx, &lookup.LookupQuestion{
 		Service: serviceName,
 		Query:   queryJSON,
 	}, 0)
+	fmt.Println("DEBUG: Resolver.Query completed")
 	if err != nil {
+		fmt.Printf("DEBUG: Lookup query error: %v\n", err)
 		return nil, fmt.Errorf("lookup query error: %w", err)
 	}
 
+	fmt.Printf("DEBUG: Result type: %s\n", result.Type)
 	if result.Type != lookup.AnswerTypeOutputList {
+		fmt.Println("DEBUG: Unexpected lookup result type")
 		return nil, errors.New("unexpected lookup result type")
 	}
 
+	fmt.Printf("DEBUG: Outputs count: %d\n", len(result.Outputs))
 	parsedRecords := make([]*BasketDefinitionData, 0)
-	for _, output := range result.Outputs {
+	for i, output := range result.Outputs {
+		fmt.Printf("DEBUG: Processing output %d\n", i)
 		tx, err := transaction.NewTransactionFromBEEF(output.Beef)
 		if err != nil {
+			fmt.Printf("DEBUG: Error parsing transaction from BEEF: %v\n", err)
 			continue // Skip invalid transactions
 		}
+		fmt.Printf("DEBUG: Parsed transaction with %d outputs\n", len(tx.Outputs))
+
+		if int(output.OutputIndex) >= len(tx.Outputs) {
+			fmt.Printf("DEBUG: Output index %d out of range (max %d)\n", output.OutputIndex, len(tx.Outputs)-1)
+			continue
+		}
+
 		lockingScript := tx.Outputs[output.OutputIndex].LockingScript
+		fmt.Printf("DEBUG: Got locking script of length %d\n", len(lockingScript.Bytes()))
+
 		record, err := parseLockingScript(DefinitionTypeBasket, lockingScript)
 		if err != nil {
+			fmt.Printf("DEBUG: Error parsing locking script: %v\n", err)
 			continue // Skip invalid records
 		}
+		fmt.Println("DEBUG: Successfully parsed locking script")
+
 		if basketRecord, ok := record.(*BasketDefinitionData); ok {
+			fmt.Printf("DEBUG: Adding basket record: %s\n", basketRecord.BasketID)
 			parsedRecords = append(parsedRecords, basketRecord)
+		} else {
+			fmt.Printf("DEBUG: Record is not a BasketDefinitionData, type: %T\n", record)
 		}
 	}
 
+	fmt.Printf("DEBUG: Returning %d parsed records\n", len(parsedRecords))
 	return parsedRecords, nil
 }
 
@@ -270,6 +299,21 @@ func (c *RegistryClient) ListOwnRegistryEntries(ctx context.Context, definitionT
 		return nil, fmt.Errorf("failed to list outputs: %w", err)
 	}
 
+	// Add this for debugging tests
+	if testLogger, ok := ctx.Value("testLogger").(interface{ Logf(string, ...interface{}) }); ok {
+		testLogger.Logf("ListOwnRegistryEntries found %d outputs in basket %s", len(listResult.Outputs), relevantBasketName)
+		testLogger.Logf("BEEF length: %d", len(listResult.BEEF))
+		tx, txErr := transaction.NewTransactionFromBEEF(listResult.BEEF)
+		if txErr != nil {
+			testLogger.Logf("Error parsing BEEF: %v", txErr)
+		} else {
+			testLogger.Logf("Transaction has %d outputs", len(tx.Outputs))
+			for i, output := range tx.Outputs {
+				testLogger.Logf("Output %d: %d satoshis, script length: %d", i, output.Satoshis, len(output.LockingScript.Bytes()))
+			}
+		}
+	}
+
 	results := make([]*RegistryRecord, 0)
 	for _, output := range listResult.Outputs {
 		if !output.Spendable {
@@ -292,9 +336,23 @@ func (c *RegistryClient) ListOwnRegistryEntries(ctx context.Context, definitionT
 			continue // Skip invalid transaction
 		}
 
+		// Add this for debugging tests
+		if testLogger, ok := ctx.Value("testLogger").(interface{ Logf(string, ...interface{}) }); ok {
+			testLogger.Logf("Processing outpoint %s", output.Outpoint)
+			testLogger.Logf("Transaction has %d outputs, output index: %d", len(tx.Outputs), outputIndex)
+			if int(outputIndex) >= len(tx.Outputs) {
+				testLogger.Logf("Output index %d is out of bounds", outputIndex)
+				continue
+			}
+		}
+
 		lockingScript := tx.Outputs[uint32(outputIndex)].LockingScript
 		recordData, err := parseLockingScript(definitionType, lockingScript)
 		if err != nil {
+			// Add this for debugging tests
+			if testLogger, ok := ctx.Value("testLogger").(interface{ Logf(string, ...interface{}) }); ok {
+				testLogger.Logf("Error parsing locking script: %v", err)
+			}
 			continue // Skip invalid records
 		}
 
@@ -425,14 +483,29 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 	}
 
 	// Broadcast the revocation transaction
-	broadcaster, err := topic.NewBroadcaster(
-		[]string{mapDefinitionTypeToTopic(record.GetDefinitionType())},
-		&topic.BroadcasterConfig{
-			NetworkPreset: c.network,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create broadcaster: %w", err)
+	var broadcaster transaction.Broadcaster
+	if c.broadcasterFactory != nil {
+		broadcaster, err = c.broadcasterFactory(
+			[]string{mapDefinitionTypeToTopic(record.GetDefinitionType())},
+			&topic.BroadcasterConfig{
+				NetworkPreset: c.network,
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create broadcaster using factory: %w", err)
+		}
+	} else {
+		// Fallback to default creation method if no factory is set
+		broadcasterImpl, err := topic.NewBroadcaster(
+			[]string{mapDefinitionTypeToTopic(record.GetDefinitionType())},
+			&topic.BroadcasterConfig{
+				NetworkPreset: c.network,
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create broadcaster: %w", err)
+		}
+		broadcaster = broadcasterImpl
 	}
 
 	signedTx, err := transaction.NewTransactionFromBEEF(signResult.Tx)
