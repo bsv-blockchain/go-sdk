@@ -104,8 +104,8 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 				sourceTxid := input.SourceTXID.String()
 				if sourceObj, ok := txs[sourceTxid]; ok {
 					input.SourceTransaction = sourceObj.Transaction
-				} else if beefTx.Transaction.MerklePath == nil && beefTx.KnownTxID == nil {
 					// TODO: Need to update logic to match ts-sdk
+					// } else if beefTx.Transaction.MerklePath == nil && beefTx.KnownTxID == nil {
 					// return nil, fmt.Errorf("reference to unknown txid in bump: %s", sourceTxid)
 				}
 			}

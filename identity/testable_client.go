@@ -38,15 +38,12 @@ func (v *DefaultCertificateVerifier) Verify(ctx context.Context, certificate *wa
 // TransactionCreator is a function that creates a Transaction from BEEF bytes
 type TransactionCreator func([]byte) (*transaction.Transaction, error)
 
-// BroadcasterFactory is a function that creates a topic.Broadcaster
-type BroadcasterFactory func(topics []string, config *topic.BroadcasterConfig) (*topic.Broadcaster, error)
-
 // TestableIdentityClient extends IdentityClient with features that make it easier to test
 type TestableIdentityClient struct {
 	*Client
 	certificateVerifier CertificateVerifier
 	transactionCreator  TransactionCreator
-	broadcasterFactory  BroadcasterFactory
+	broadcaster         topic.Broadcaster
 }
 
 // NewTestableIdentityClient creates a new TestableIdentityClient with the provided wallet and options
@@ -70,7 +67,7 @@ func NewTestableIdentityClient(
 		Client:              baseClient,
 		certificateVerifier: verifier,
 		transactionCreator:  transaction.NewTransactionFromBEEF, // Default to actual implementation
-		broadcasterFactory:  topic.NewBroadcaster,               // Default to actual implementation
+		broadcaster:         topic.Broadcaster{},                // Default to actual implementation
 	}, nil
 }
 
@@ -81,8 +78,8 @@ func (c *TestableIdentityClient) WithTransactionCreator(creator TransactionCreat
 }
 
 // WithBroadcasterFactory sets a custom broadcaster factory for testing
-func (c *TestableIdentityClient) WithBroadcasterFactory(factory BroadcasterFactory) *TestableIdentityClient {
-	c.broadcasterFactory = factory
+func (c *TestableIdentityClient) WithBroadcaster(factory topic.Broadcaster) *TestableIdentityClient {
+	c.broadcaster = factory
 	return c
 }
 
@@ -189,7 +186,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 		network = overlay.NetworkTestnet
 	}
 
-	broadcaster, err := c.broadcasterFactory([]string{"tm_identity"}, &topic.BroadcasterConfig{
+	broadcaster, err := topic.NewBroadcaster([]string{"tm_identity"}, &topic.BroadcasterConfig{
 		NetworkPreset: network,
 	})
 	if err != nil {

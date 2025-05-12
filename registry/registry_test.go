@@ -215,36 +215,11 @@ func TestRegistryClient_ResolveBasket(t *testing.T) {
 	t.Log("Test completed successfully")
 }
 
-// mockLookupResolver implements both Query and Lookup methods for testing
-type mockLookupResolver struct {
-	t         *testing.T
-	queryFunc func(ctx context.Context, question *lookup.LookupQuestion, timeout any) (*lookup.LookupAnswer, error)
-}
-
-// Query implements the Query method formerly used by LookupResolver
-func (m *mockLookupResolver) Query(ctx context.Context, question *lookup.LookupQuestion, timeout any) (*lookup.LookupAnswer, error) {
-	m.t.Log("mockLookupResolver.Query called")
-	if m.queryFunc != nil {
-		return m.queryFunc(ctx, question, timeout)
-	}
-	return nil, fmt.Errorf("queryFunc not set")
-}
-
-// Lookup implements the lookup.Facilitator interface
-func (m *mockLookupResolver) Lookup(ctx context.Context, url string, question *lookup.LookupQuestion, timeout time.Duration) (*lookup.LookupAnswer, error) {
-	m.t.Log("mockLookupResolver.Lookup called")
-	// Forward to the queryFunc for simplicity
-	if m.queryFunc != nil {
-		return m.queryFunc(ctx, question, timeout)
-	}
-	return nil, fmt.Errorf("queryFunc not set")
-}
-
 func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 	// We can now implement this test using our MockRegistry
 	ctx := context.Background()
 	// Add the test logger to the context
-	ctx = context.WithValue(ctx, "testLogger", t)
+	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck
 
 	mockRegistry := NewMockRegistry(t)
 
@@ -526,7 +501,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "testLogger", t)
+	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck
 
 	mockRegistry := NewMockRegistry(t)
 
