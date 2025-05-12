@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -85,33 +86,53 @@ func CreatePeerPair(t *testing.T) (*Peer, *Peer, *wallet.MockWallet, *wallet.Moc
 	alicePk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	aliceWallet := wallet.NewMockWallet(t)
-	aliceWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: alicePk.PubKey()}
+	aliceWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: alicePk.PubKey()}, nil
+	}
 
 	bobPk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	bobWallet := wallet.NewMockWallet(t)
-	bobWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: bobPk.PubKey()}
+	bobWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: bobPk.PubKey()}, nil
+	}
 
 	// Setup basic crypto operations
 	dummySig, err := alicePk.Sign([]byte("test"))
 	require.NoError(t, err)
 
-	aliceWallet.CreateSignatureResult = &wallet.CreateSignatureResult{Signature: *dummySig}
-	bobWallet.CreateSignatureResult = &wallet.CreateSignatureResult{Signature: *dummySig}
+	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
+		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+	}
+	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
+		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+	}
 
-	aliceWallet.VerifySignatureResult = &wallet.VerifySignatureResult{Valid: true}
-	bobWallet.VerifySignatureResult = &wallet.VerifySignatureResult{Valid: true}
+	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
+		return &wallet.VerifySignatureResult{Valid: true}, nil
+	}
+	bobWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
+		return &wallet.VerifySignatureResult{Valid: true}, nil
+	}
 
 	hmacBytes := make([]byte, 32)
 	for i := range hmacBytes {
 		hmacBytes[i] = byte(i)
 	}
 
-	aliceWallet.CreateHmacResult = &wallet.CreateHmacResult{Hmac: hmacBytes}
-	bobWallet.CreateHmacResult = &wallet.CreateHmacResult{Hmac: hmacBytes}
+	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
+		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	}
+	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
+		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	}
 
-	aliceWallet.DecryptResult = &wallet.DecryptResult{Plaintext: []byte("decrypted")}
-	bobWallet.DecryptResult = &wallet.DecryptResult{Plaintext: []byte("decrypted")}
+	aliceWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
+		return &wallet.DecryptResult{Plaintext: []byte("decrypted")}, nil
+	}
+	bobWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
+		return &wallet.DecryptResult{Plaintext: []byte("decrypted")}, nil
+	}
 
 	aliceTransport := NewMockTransport()
 	bobTransport := NewMockTransport()
@@ -138,7 +159,9 @@ func TestPeerInitialization(t *testing.T) {
 	pk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	mockWallet := wallet.NewMockWallet(t)
-	mockWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: pk.PubKey()}
+	mockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: pk.PubKey()}, nil
+	}
 	transport := NewMockTransport()
 
 	// Test default initialization
@@ -393,11 +416,15 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	// Create Alice's wallet first so we can get her identity key
 	aliceWallet := wallet.NewMockWallet(t)
-	aliceWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: aliceSubject}
+	aliceWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: aliceSubject}, nil
+	}
 
 	// Create Bob's wallet to get his identity key
 	bobWallet := wallet.NewMockWallet(t)
-	bobWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: bobSubject}
+	bobWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: bobSubject}, nil
+	}
 
 	// Create a valid signature that will actually verify
 	dummyKey, err := ec.NewPrivateKey()
@@ -668,11 +695,15 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 	alicePk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	aliceWallet1 := wallet.NewMockWallet(t)
-	aliceWallet1.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: alicePk.PubKey()}
+	aliceWallet1.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: alicePk.PubKey()}, nil
+	}
 
 	// Second device uses the same key
 	aliceWallet2 := wallet.NewMockWallet(t)
-	aliceWallet2.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: alicePk.PubKey()}
+	aliceWallet2.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: alicePk.PubKey()}, nil
+	}
 
 	// Setup crypto operations for both Alice wallets
 	dummyAliceSig, err := alicePk.Sign([]byte("test"))
@@ -698,7 +729,9 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 	bobPk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	bobWallet := wallet.NewMockWallet(t)
-	bobWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: bobPk.PubKey()}
+	bobWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: bobPk.PubKey()}, nil
+	}
 
 	// Setup Bob's crypto operations
 	dummyBobSig, err := bobPk.Sign([]byte("test"))
@@ -819,12 +852,16 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 	aliceKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	aliceWallet := wallet.NewMockWallet(t)
-	aliceWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: aliceKey.PubKey()}
+	aliceWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: aliceKey.PubKey()}, nil
+	}
 
 	bobKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	bobWallet := wallet.NewMockWallet(t)
-	bobWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: bobKey.PubKey()}
+	bobWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: bobKey.PubKey()}, nil
+	}
 
 	// Create valid signatures
 	dummyKey, err := ec.NewPrivateKey()
@@ -1101,12 +1138,16 @@ func TestLibraryCardVerification(t *testing.T) {
 	aliceKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	aliceWallet := wallet.NewMockWallet(t)
-	aliceWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: aliceKey.PubKey()}
+	aliceWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: aliceKey.PubKey()}, nil
+	}
 
 	bobKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	bobWallet := wallet.NewMockWallet(t)
-	bobWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: bobKey.PubKey()}
+	bobWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: bobKey.PubKey()}, nil
+	}
 
 	// Create valid signatures
 	dummyKey, err := ec.NewPrivateKey()
@@ -1353,7 +1394,9 @@ func TestPeerBasics(t *testing.T) {
 	pk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	mockWallet := wallet.NewMockWallet(t)
-	mockWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: pk.PubKey()}
+	mockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: pk.PubKey()}, nil
+	}
 	transport := NewMockTransport()
 
 	// Test creating a peer
@@ -1392,10 +1435,14 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 	require.NoError(t, err)
 
 	aliceWallet := wallet.NewMockWallet(t)
-	aliceWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: aliceKey.PubKey()}
+	aliceWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: aliceKey.PubKey()}, nil
+	}
 
 	bobWallet := wallet.NewMockWallet(t)
-	bobWallet.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: bobKey.PubKey()}
+	bobWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
+		return &wallet.GetPublicKeyResult{PublicKey: bobKey.PubKey()}, nil
+	}
 
 	// Set up crypto functions
 	dummySig, err := aliceKey.Sign([]byte("test"))

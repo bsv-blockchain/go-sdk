@@ -13,21 +13,17 @@ type MockWallet struct {
 	ExpectedCreateActionArgs   *CreateActionArgs
 	CreateActionResultToReturn *CreateActionResult
 
-	// Add these fields for custom test behavior
-	ListCertificatesResult *ListCertificatesResult
-	ListCertificatesError  error
-	ProveCertificateResult *ProveCertificateResult
-	ProveCertificateError  error
-	GetPublicKeyResult     *GetPublicKeyResult
-	GetPublicKeyError      error
-	CreateHmacResult       *CreateHmacResult
-	CreateHmacError        error
-	CreateSignatureResult  *CreateSignatureResult
-	CreateSignatureError   error
-	VerifySignatureResult  *VerifySignatureResult
-	VerifySignatureError   error
-	DecryptResult          *DecryptResult
-	DecryptError           error
+	// Function implementations for methods needed by identity client tests
+	MockProveCertificate      func(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
+	MockCreateAction          func(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
+	MockGetNetwork            func(ctx context.Context, args any, originator string) (*GetNetworkResult, error)
+	MockDiscoverByIdentityKey func(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
+	MockDiscoverByAttributes  func(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
+	MockGetPublicKey          func(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+	MockCreateSignature       func(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
+	MockCreateHmac            func(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error)
+	MockDecrypt               func(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
+	MockVerifySignature       func(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
 }
 
 func NewMockWallet(t *testing.T) *MockWallet {
@@ -35,6 +31,11 @@ func NewMockWallet(t *testing.T) *MockWallet {
 }
 
 func (m *MockWallet) CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error) {
+	// Use MockCreateAction if provided, but don't remove the existing functionality
+	if m.MockCreateAction != nil {
+		return m.MockCreateAction(ctx, args, originator)
+	}
+
 	if m.ExpectedCreateActionArgs != nil {
 		require.Equal(m.T, m.ExpectedCreateActionArgs.Description, args.Description)
 		require.Equal(m.T, m.ExpectedCreateActionArgs.Outputs, args.Outputs)
@@ -75,8 +76,8 @@ func (m *MockWallet) RelinquishOutput(ctx context.Context, args RelinquishOutput
 }
 
 func (m *MockWallet) GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
-	if m.GetPublicKeyResult != nil || m.GetPublicKeyError != nil {
-		return m.GetPublicKeyResult, m.GetPublicKeyError
+	if m.MockGetPublicKey != nil {
+		return m.MockGetPublicKey(ctx, args, originator)
 	}
 	require.Fail(m.T, "GetPublicKey mock not implemented")
 	return nil, nil
@@ -98,16 +99,16 @@ func (m *MockWallet) Encrypt(ctx context.Context, args EncryptArgs, originator s
 }
 
 func (m *MockWallet) Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error) {
-	if m.DecryptResult != nil || m.DecryptError != nil {
-		return m.DecryptResult, m.DecryptError
+	if m.MockDecrypt != nil {
+		return m.MockDecrypt(ctx, args, originator)
 	}
 	require.Fail(m.T, "Decrypt mock not implemented")
 	return nil, nil
 }
 
 func (m *MockWallet) CreateHmac(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error) {
-	if m.CreateHmacResult != nil || m.CreateHmacError != nil {
-		return m.CreateHmacResult, m.CreateHmacError
+	if m.MockCreateHmac != nil {
+		return m.MockCreateHmac(ctx, args, originator)
 	}
 	require.Fail(m.T, "CreateHmac mock not implemented")
 	return nil, nil
@@ -119,16 +120,16 @@ func (m *MockWallet) VerifyHmac(ctx context.Context, args VerifyHmacArgs, origin
 }
 
 func (m *MockWallet) CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
-	if m.CreateSignatureResult != nil || m.CreateSignatureError != nil {
-		return m.CreateSignatureResult, m.CreateSignatureError
+	if m.MockCreateSignature != nil {
+		return m.MockCreateSignature(ctx, args, originator)
 	}
 	require.Fail(m.T, "CreateSignature mock not implemented")
 	return nil, nil
 }
 
 func (m *MockWallet) VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error) {
-	if m.VerifySignatureResult != nil || m.VerifySignatureError != nil {
-		return m.VerifySignatureResult, m.VerifySignatureError
+	if m.MockVerifySignature != nil {
+		return m.MockVerifySignature(ctx, args, originator)
 	}
 	require.Fail(m.T, "VerifySignature mock not implemented")
 	return nil, nil
@@ -140,16 +141,13 @@ func (m *MockWallet) AcquireCertificate(ctx context.Context, args AcquireCertifi
 }
 
 func (m *MockWallet) ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error) {
-	if m.ListCertificatesResult != nil || m.ListCertificatesError != nil {
-		return m.ListCertificatesResult, m.ListCertificatesError
-	}
 	require.Fail(m.T, "ListCertificates mock not implemented")
 	return nil, nil
 }
 
 func (m *MockWallet) ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error) {
-	if m.ProveCertificateResult != nil || m.ProveCertificateError != nil {
-		return m.ProveCertificateResult, m.ProveCertificateError
+	if m.MockProveCertificate != nil {
+		return m.MockProveCertificate(ctx, args, originator)
 	}
 	require.Fail(m.T, "ProveCertificate mock not implemented")
 	return nil, nil
@@ -161,11 +159,17 @@ func (m *MockWallet) RelinquishCertificate(ctx context.Context, args RelinquishC
 }
 
 func (m *MockWallet) DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error) {
+	if m.MockDiscoverByIdentityKey != nil {
+		return m.MockDiscoverByIdentityKey(ctx, args, originator)
+	}
 	require.Fail(m.T, "DiscoverByIdentityKey mock not implemented")
 	return nil, nil
 }
 
 func (m *MockWallet) DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error) {
+	if m.MockDiscoverByAttributes != nil {
+		return m.MockDiscoverByAttributes(ctx, args, originator)
+	}
 	require.Fail(m.T, "DiscoverByAttributes mock not implemented")
 	return nil, nil
 }
@@ -191,6 +195,9 @@ func (m *MockWallet) GetHeaderForHeight(ctx context.Context, args GetHeaderArgs,
 }
 
 func (m *MockWallet) GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error) {
+	if m.MockGetNetwork != nil {
+		return m.MockGetNetwork(ctx, args, originator)
+	}
 	require.Fail(m.T, "GetNetwork mock not implemented")
 	return nil, nil
 }

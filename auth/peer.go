@@ -570,6 +570,12 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
 
+	// Try to parse the signature
+	sig, err := ec.ParseSignature(message.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to parse signature: %w", err)
+	}
+
 	// Verify signature
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -584,7 +590,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 			},
 		},
 		Data:      certRequestData,
-		Signature: *convertBytesToSignature(message.Signature),
+		Signature: *sig,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -648,6 +654,12 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 		return fmt.Errorf("failed to serialize certificate data: %w", err)
 	}
 
+	// Try to parse the signature
+	sig, err := ec.ParseSignature(message.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to parse signature: %w", err)
+	}
+
 	// Verify signature
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -662,7 +674,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 			},
 		},
 		Data:      certData,
-		Signature: *convertBytesToSignature(message.Signature),
+		Signature: *sig,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -734,6 +746,12 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	session.LastUpdate = time.Now().UnixMilli()
 	p.sessionManager.UpdateSession(session)
 
+	// Try to parse the signature
+	sig, err := ec.ParseSignature(message.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to parse signature: %w", err)
+	}
+
 	// Verify signature
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -748,7 +766,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 			},
 		},
 		Data:      message.Payload,
-		Signature: *convertBytesToSignature(message.Signature),
+		Signature: *sig,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -932,20 +950,4 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 	}
 
 	return nil
-}
-
-// convertBytesToSignature converts a byte slice to an EC signature
-func convertBytesToSignature(sigBytes []byte) *ec.Signature {
-	if len(sigBytes) == 0 {
-		return nil
-	}
-
-	// Try to parse the signature
-	sig, err := ec.ParseSignature(sigBytes)
-	if err != nil {
-		// Return a nil signature if parsing fails
-		return nil
-	}
-
-	return sig
 }
