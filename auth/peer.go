@@ -83,6 +83,11 @@ func NewPeer(cfg *PeerOptions) *Peer {
 
 	if cfg.CertificatesToRequest != nil {
 		peer.CertificatesToRequest = cfg.CertificatesToRequest
+	} else {
+		peer.CertificatesToRequest = &utils.RequestedCertificateSet{
+			Certifiers:       []string{},
+			CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
+		}
 	}
 
 	// Start the peer
