@@ -1,0 +1,161 @@
+package utils
+
+import (
+	"context"
+	"encoding/base64"
+	"errors"
+
+	"testing"
+
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetVerifiableCertificates(t *testing.T) {
+	ctx := context.Background()
+	// Create a single verifier key to be used by all tests
+	pubKeyBytes := []byte{
+		0x02, // Compressed key prefix (even y)
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	}
+	verifierKey, err := ec.PublicKeyFromBytes(pubKeyBytes)
+	require.NoError(t, err)
+	require.NotNil(t, verifierKey)
+
+	// Test case 1: Retrieves matching certificates based on requested set
+	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		requestedCerts := &RequestedCertificateSet{
+			Certifiers: []string{"certifier1", "certifier2"},
+			CertificateTypes: map[string][]string{
+				"certType1": {"field1", "field2"},
+				"certType2": {"field3"},
+			},
+		}
+
+		// Create a mock subject and certifier public key
+		subject, _ := ec.PublicKeyFromBytes([]byte{0x04, 0x05, 0x06})
+		certifier, _ := ec.PublicKeyFromBytes([]byte{0x07, 0x08, 0x09})
+
+		// Mock wallet.ListCertificates response
+		revocationOutpoint, _ := overlay.NewOutpointFromString("abcd1234:0")
+		mockListResult := &wallet.ListCertificatesResult{
+			Certificates: []wallet.CertificateResult{
+				{
+					Certificate: wallet.Certificate{
+						Type:               "certType1",
+						SerialNumber:       "serial1",
+						Subject:            subject,
+						Certifier:          certifier,
+						RevocationOutpoint: "abcd1234:0",
+						Fields:             map[string]string{"field1": "encryptedData1", "field2": "encryptedData2"},
+						Signature:          "01020304",
+					},
+				},
+			},
+		}
+		mockWallet.ListCertificatesResult = mockListResult
+
+		// Mock wallet.ProveCertificate response
+		mockProveResult := &wallet.ProveCertificateResult{
+			KeyringForVerifier: map[string]string{"field1": "key1", "field2": "key2"},
+		}
+		mockWallet.ProveCertificateResult = mockProveResult
+
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: requestedCerts,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.NoError(t, err)
+		require.Len(t, certs, 1)
+		if len(certs) > 0 {
+			cert := certs[0]
+			// Compare against base64 encoded values
+			expectedTypeBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString([]byte("certType1")))
+			expectedSerialBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString([]byte("serial1")))
+			require.Equal(t, expectedTypeBase64, cert.Type)
+			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
+			require.NotNil(t, cert.RevocationOutpoint)
+			if cert.RevocationOutpoint != nil && revocationOutpoint != nil {
+				require.Equal(t, revocationOutpoint.OutputIndex, cert.RevocationOutpoint.OutputIndex)
+			}
+		}
+	})
+
+	// Test case 2: Returns an empty array when no matching certificates are found
+	t.Run("returns an empty array when no matching certificates are found", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		requestedCerts := &RequestedCertificateSet{
+			Certifiers: []string{"certifier1"},
+			CertificateTypes: map[string][]string{
+				"certType1": {"field1"},
+			},
+		}
+
+		// Mock ListCertificates to return empty results
+		mockWallet.ListCertificatesResult = &wallet.ListCertificatesResult{
+			Certificates: []wallet.CertificateResult{},
+		}
+
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: requestedCerts,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.NoError(t, err)
+		require.Empty(t, certs)
+	})
+
+	// Test case 3: Propagates errors from ListCertificates
+	t.Run("propagates errors from ListCertificates", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		requestedCerts := &RequestedCertificateSet{
+			Certifiers: []string{"certifier1"},
+			CertificateTypes: map[string][]string{
+				"certType1": {"field1"},
+			},
+		}
+
+		// Mock ListCertificates to return an error
+		mockWallet.ListCertificatesError = errors.New("listCertificates failed")
+
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: requestedCerts,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.Error(t, err)
+		require.Nil(t, certs)
+		require.Contains(t, err.Error(), "listCertificates failed")
+	})
+
+	// Test case 4: Handles nil requested certificates gracefully
+	t.Run("handles nil requested certificates gracefully", func(t *testing.T) {
+		// Create a fresh mock for each test to avoid unexpected state
+		mockWallet := wallet.NewMockWallet(t)
+		options := GetVerifiableCertificatesOptions{
+			Wallet:                mockWallet,
+			RequestedCertificates: nil,
+			VerifierIdentityKey:   verifierKey,
+		}
+
+		certs, err := GetVerifiableCertificates(ctx, &options)
+		require.NoError(t, err)
+		require.Empty(t, certs)
+	})
+}

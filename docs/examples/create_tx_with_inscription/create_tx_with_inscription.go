@@ -45,11 +45,14 @@ func main() {
 		return
 	}
 	s, _ := p2pkh.Lock(add)
-	tx.Inscribe(&script.InscriptionArgs{
+	err = tx.Inscribe(&script.InscriptionArgs{
 		LockingScript: s,
 		Data:          data,
 		ContentType:   contentType,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	changeAdd, _ := script.NewAddressFromString("17ujiveRLkf2JQiGR8Sjtwb37evX7vG3WG")
 

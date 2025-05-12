@@ -1,11 +1,11 @@
-package transaction_test
+package util_test
 
 import (
 	"bytes"
 	"encoding/binary"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func TestDecodeVarInt(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			r, s := transaction.NewVarIntFromBytes(test.input)
+			r, s := util.NewVarIntFromBytes(test.input)
 			assert.Equal(t, test.expectedResult, uint64(r))
 			assert.Equal(t, test.expectedSize, s)
 		})
@@ -60,7 +60,7 @@ func TestVarIntUpperLimitInc(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			r := transaction.VarInt(test.input).UpperLimitInc()
+			r := util.VarInt(test.input).UpperLimitInc()
 			assert.Equal(t, test.expectedResult, r)
 		})
 	}
@@ -86,38 +86,38 @@ func TestVarInt(t *testing.T) {
 
 	for _, varIntTest := range varIntTests {
 		t.Run(varIntTest.testName, func(t *testing.T) {
-			assert.Len(t, transaction.VarInt(varIntTest.input).Bytes(), varIntTest.expectedLen)
+			assert.Len(t, util.VarInt(varIntTest.input).Bytes(), varIntTest.expectedLen)
 		})
 	}
 }
 
 func TestVarInt_Size(t *testing.T) {
 	tests := map[string]struct {
-		v       transaction.VarInt
+		v       util.VarInt
 		expSize int
 	}{
 		"252 returns 1": {
-			v:       transaction.VarInt(252),
+			v:       util.VarInt(252),
 			expSize: 1,
 		},
 		"253 returns 3": {
-			v:       transaction.VarInt(253),
+			v:       util.VarInt(253),
 			expSize: 3,
 		},
 		"65535 returns 3": {
-			v:       transaction.VarInt(65535),
+			v:       util.VarInt(65535),
 			expSize: 3,
 		},
 		"65536 returns 5": {
-			v:       transaction.VarInt(65536),
+			v:       util.VarInt(65536),
 			expSize: 5,
 		},
 		"4294967295 returns 5": {
-			v:       transaction.VarInt(4294967295),
+			v:       util.VarInt(4294967295),
 			expSize: 5,
 		},
 		"4294967296 returns 9": {
-			v:       transaction.VarInt(4294967296),
+			v:       util.VarInt(4294967296),
 			expSize: 9,
 		},
 	}
