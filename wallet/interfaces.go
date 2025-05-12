@@ -13,7 +13,7 @@ type Certificate struct {
 	Subject            *ec.PublicKey     // Public key of the certificate subject
 	Certifier          *ec.PublicKey     // Public key of the certificate issuer
 	RevocationOutpoint string            // Format: "txid:outputIndex"
-	Fields             map[string]string // Field name -> field value (encrypted)
+	Fields             map[string]string // Field name -> field value
 	Signature          string            // Hex-encoded signature
 }
 
