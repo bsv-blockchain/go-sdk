@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
@@ -88,7 +89,8 @@ func (d *StorageDownloader) Resolve(ctx context.Context, uhrpURL string) ([]stri
 		// Add host URL (field 2) to results if it's a valid string
 		if len(pd.Fields) > 2 {
 			hostURL := string(pd.Fields[2])
-			if hostURL != "" {
+			_, err := url.Parse(hostURL)
+			if hostURL != "" && err == nil {
 				hosts = append(hosts, hostURL)
 			}
 		}
