@@ -22,7 +22,7 @@ func main() {
 	content := []byte("This is a sample file uploaded using the Storage package.")
 
 	// Set up the uploader with a storage service URL and wallet
-	uploader, err := storage.NewStorageUploader(storage.UploaderConfig{
+	uploader, err := storage.NewUploader(storage.UploaderConfig{
 		StorageURL: "https://storage-api.bsv.com",
 		Wallet:     &MockWallet{}, // This is a mock wallet for the example
 	})

@@ -13,14 +13,14 @@ import (
 	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
 )
 
-// StorageUploader implements the StorageUploaderInterface
-type StorageUploader struct {
+// Uploader implements the StorageUploaderInterface
+type Uploader struct {
 	baseURL   string              // Base URL of the storage service
 	authFetch *authhttp.AuthFetch // Authenticated HTTP client for API requests
 }
 
-// NewStorageUploader creates a new uploader instance
-func NewStorageUploader(config UploaderConfig) (*StorageUploader, error) {
+// NewUploader creates a new uploader instance
+func NewUploader(config UploaderConfig) (*Uploader, error) {
 	if config.StorageURL == "" {
 		return nil, errors.New("storage URL is required")
 	}
@@ -31,7 +31,7 @@ func NewStorageUploader(config UploaderConfig) (*StorageUploader, error) {
 	// Create auth fetch client
 	authClient := authhttp.New(config.Wallet, nil, nil)
 
-	return &StorageUploader{
+	return &Uploader{
 		baseURL:   config.StorageURL,
 		authFetch: authClient,
 	}, nil
@@ -46,8 +46,8 @@ type uploadInfo struct {
 }
 
 // getUploadInfo requests information from the server to upload a file
-func (u *StorageUploader) getUploadInfo(ctx context.Context, fileSize int, retentionPeriod int) (*uploadInfo, error) {
-	url := fmt.Sprintf("%s/upload", u.baseURL)
+func (u *Uploader) getUploadInfo(ctx context.Context, fileSize int, retentionPeriod int) (*uploadInfo, error) {
+	uploadUrl := fmt.Sprintf("%s/upload", u.baseURL)
 	requestBody := map[string]interface{}{
 		"fileSize":        fileSize,
 		"retentionPeriod": retentionPeriod,
@@ -66,13 +66,11 @@ func (u *StorageUploader) getUploadInfo(ctx context.Context, fileSize int, reten
 		Body: requestJSON,
 	}
 
-	resp, err := u.authFetch.Fetch(ctx, url, reqOpts)
+	resp, err := u.authFetch.Fetch(ctx, uploadUrl, reqOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get upload info: %w", err)
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("upload info request failed: HTTP %d", resp.StatusCode)
@@ -83,6 +81,7 @@ func (u *StorageUploader) getUploadInfo(ctx context.Context, fileSize int, reten
 		return nil, fmt.Errorf("failed to decode upload info response: %w", err)
 	}
 
+	// TODO: Figure out possible values and use a constant
 	if info.Status == "error" {
 		return nil, errors.New("upload route returned an error")
 	}
@@ -91,7 +90,7 @@ func (u *StorageUploader) getUploadInfo(ctx context.Context, fileSize int, reten
 }
 
 // uploadFile performs the file upload to the presigned URL
-func (u *StorageUploader) uploadFile(ctx context.Context, uploadURL string, file UploadableFile, requiredHeaders map[string]string) (UploadFileResult, error) {
+func (u *Uploader) uploadFile(ctx context.Context, uploadURL string, file UploadableFile, requiredHeaders map[string]string) (UploadFileResult, error) {
 	// Create HTTP client
 	client := &http.Client{}
 
@@ -112,13 +111,7 @@ func (u *StorageUploader) uploadFile(ctx context.Context, uploadURL string, file
 	if err != nil {
 		return UploadFileResult{}, fmt.Errorf("file upload failed: %w", err)
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			// Just log the error and continue
-			fmt.Printf("warning: error closing response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -141,7 +134,7 @@ func (u *StorageUploader) uploadFile(ctx context.Context, uploadURL string, file
 // It follows a two-step process:
 // 1. Request an upload URL from the server
 // 2. Upload the file to the provided URL
-func (u *StorageUploader) PublishFile(ctx context.Context, file UploadableFile, retentionPeriod int) (UploadFileResult, error) {
+func (u *Uploader) PublishFile(ctx context.Context, file UploadableFile, retentionPeriod int) (UploadFileResult, error) {
 	fileSize := len(file.Data)
 
 	// Step 1: Get upload info from server
@@ -155,7 +148,7 @@ func (u *StorageUploader) PublishFile(ctx context.Context, file UploadableFile, 
 }
 
 // FindFile retrieves metadata for a file matching the given UHRP URL
-func (u *StorageUploader) FindFile(ctx context.Context, uhrpURL string) (FindFileData, error) {
+func (u *Uploader) FindFile(ctx context.Context, uhrpURL string) (FindFileData, error) {
 	// Build the URL with the uhrpURL as a query parameter
 	findURL, err := url.Parse(fmt.Sprintf("%s/find", u.baseURL))
 	if err != nil {
@@ -175,13 +168,7 @@ func (u *StorageUploader) FindFile(ctx context.Context, uhrpURL string) (FindFil
 	if err != nil {
 		return FindFileData{}, fmt.Errorf("findFile request failed: %w", err)
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			// Just log the error and continue
-			fmt.Printf("warning: error closing response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return FindFileData{}, fmt.Errorf("findFile request failed: HTTP %d", resp.StatusCode)
@@ -200,6 +187,7 @@ func (u *StorageUploader) FindFile(ctx context.Context, uhrpURL string) (FindFil
 	}
 
 	// Check for errors in the response
+	// TODO: Maybe abstract this to a common function
 	if response.Status == "error" {
 		errCode := response.Code
 		if errCode == "" {
@@ -216,25 +204,19 @@ func (u *StorageUploader) FindFile(ctx context.Context, uhrpURL string) (FindFil
 }
 
 // ListUploads lists all advertisements belonging to the user
-func (u *StorageUploader) ListUploads(ctx context.Context) (interface{}, error) {
-	url := fmt.Sprintf("%s/list", u.baseURL)
+func (u *Uploader) ListUploads(ctx context.Context) (interface{}, error) {
+	uploadUrl := fmt.Sprintf("%s/list", u.baseURL)
 
 	// Make authenticated request
 	reqOpts := &authhttp.SimplifiedFetchRequestOptions{
 		Method: "GET",
 	}
 
-	resp, err := u.authFetch.Fetch(ctx, url, reqOpts)
+	resp, err := u.authFetch.Fetch(ctx, uploadUrl, reqOpts)
 	if err != nil {
 		return nil, fmt.Errorf("listUploads request failed: %w", err)
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			// Just log the error and continue
-			fmt.Printf("warning: error closing response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("listUploads request failed: HTTP %d", resp.StatusCode)
@@ -269,8 +251,8 @@ func (u *StorageUploader) ListUploads(ctx context.Context) (interface{}, error) 
 }
 
 // RenewFile extends the hosting time for an existing file advertisement
-func (u *StorageUploader) RenewFile(ctx context.Context, uhrpURL string, additionalMinutes int) (RenewFileResult, error) {
-	url := fmt.Sprintf("%s/renew", u.baseURL)
+func (u *Uploader) RenewFile(ctx context.Context, uhrpURL string, additionalMinutes int) (RenewFileResult, error) {
+	uploadUrl := fmt.Sprintf("%s/renew", u.baseURL)
 	requestBody := map[string]interface{}{
 		"uhrpUrl":           uhrpURL,
 		"additionalMinutes": additionalMinutes,
@@ -289,17 +271,11 @@ func (u *StorageUploader) RenewFile(ctx context.Context, uhrpURL string, additio
 		Body: requestJSON,
 	}
 
-	resp, err := u.authFetch.Fetch(ctx, url, reqOpts)
+	resp, err := u.authFetch.Fetch(ctx, uploadUrl, reqOpts)
 	if err != nil {
 		return RenewFileResult{}, fmt.Errorf("renewFile request failed: %w", err)
 	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			// Just log the error and continue
-			fmt.Printf("warning: error closing response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return RenewFileResult{}, fmt.Errorf("renewFile request failed: HTTP %d", resp.StatusCode)

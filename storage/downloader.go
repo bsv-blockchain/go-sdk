@@ -49,7 +49,7 @@ func (d *StorageDownloader) Resolve(ctx context.Context, uhrpURL string) ([]stri
 	defer cancel()
 
 	// Query the lookup service
-	ans, err := d.resolver.Query(ctxWithTimeout, q, 5*time.Second)
+	ans, err := d.resolver.Query(ctxWithTimeout, q)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve UHRP URL: %w", err)
 	}
