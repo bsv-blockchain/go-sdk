@@ -58,7 +58,29 @@ func TestFromBEEF(t *testing.T) {
 
 	_, err = NewBeefFromTransaction(tx)
 	require.NoError(t, err, "NewBeefFromTransaction method failed")
+}
 
+func TestFromBeefErrorCase(t *testing.T) {
+	tx := &Transaction{}
+	err := tx.FromBEEF([]byte("invalid data"))
+	require.Error(t, err, "FromBEEF method should fail with invalid data")
+}
+
+func TestNewEmptyBEEF(t *testing.T) {
+	t.Run("New Beef V1", func(t *testing.T) {
+		v1 := NewBeefV1()
+		beefBytes, err := v1.Bytes()
+
+		require.NoError(t, err)
+		require.Equal(t, "0100beef0000", hex.EncodeToString(beefBytes))
+	})
+	t.Run("New Beef V2", func(t *testing.T) {
+		v2 := NewBeefV2()
+		beefBytes, err := v2.Bytes()
+
+		require.NoError(t, err)
+		require.Equal(t, "0200beef0000", hex.EncodeToString(beefBytes))
+	})
 }
 
 func TestNewBEEFFromBytes(t *testing.T) {
@@ -1224,4 +1246,5 @@ func TestMakeTxidOnlyAndBytes(t *testing.T) {
 
 	_, err = beef.Bytes() // <--------- it panics here
 	require.NoError(t, err)
+	_ = beef.ToLogString()
 }

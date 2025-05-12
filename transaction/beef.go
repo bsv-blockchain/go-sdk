@@ -27,8 +27,27 @@ const ATOMIC_BEEF = uint32(0x01010101) // BRC-95
 
 func (t *Transaction) FromBEEF(beef []byte) error {
 	tx, err := NewTransactionFromBEEF(beef)
+	if err != nil {
+		return fmt.Errorf("failed to parse BEEF bytes: %w", err)
+	}
 	*t = *tx
-	return err
+	return nil
+}
+
+func NewBeefV1() *Beef {
+	return newEmptyBeef(BEEF_V1)
+}
+
+func NewBeefV2() *Beef {
+	return newEmptyBeef(BEEF_V2)
+}
+
+func newEmptyBeef(version uint32) *Beef {
+	return &Beef{
+		Version:      version,
+		BUMPs:        []*MerklePath{},
+		Transactions: make(map[string]*BeefTx),
+	}
 }
 
 func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx, error) {
@@ -221,11 +240,7 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	if t == nil {
 		return nil, fmt.Errorf("transaction is nil")
 	}
-	beef := &Beef{
-		Version:      BEEF_V2,
-		BUMPs:        []*MerklePath{},
-		Transactions: map[string]*BeefTx{},
-	}
+	beef := NewBeefV2()
 	bumpMap := map[uint32]int{}
 	txns := map[string]*Transaction{t.TxID().String(): t}
 	ancestors, err := t.collectAncestors(txns, false)
@@ -957,7 +972,14 @@ txLoop:
 			for _, input := range tx.Transaction.Inputs {
 				log += fmt.Sprintf("      '%s',\n", input.SourceTXID.String())
 			}
-			log += "    ]\n"
+			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+			if len(tx.Transaction.Inputs) > 0 {
+				log += "    inputs: [\n"
+				for _, input := range tx.Transaction.Inputs {
+					log += fmt.Sprintf("      '%s',\n", input.SourceTXID.String())
+				}
+				log += "    ]\n"
+			}
 		}
 	}
 	return log
