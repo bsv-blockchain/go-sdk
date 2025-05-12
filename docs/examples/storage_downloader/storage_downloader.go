@@ -20,19 +20,6 @@ func main() {
 	// This is an example URL pointing to a test file
 	uhrpURL := "uhrp://Tq71srNSBVHg69m3V8MeBy7YafjmYn21JDqc9iYaQSxmeSyGJ"
 
-	// First demonstrate resolving the URL to find hosting servers
-	fmt.Println("Resolving hosting servers for:", uhrpURL)
-	hosts, err := downloader.Resolve(context.Background(), uhrpURL)
-	if err != nil {
-		log.Fatalf("Failed to resolve UHRP URL: %v", err)
-	}
-
-	fmt.Printf("Found %d hosting servers:\n", len(hosts))
-	for i, host := range hosts {
-		fmt.Printf("  %d. %s\n", i+1, host)
-	}
-	fmt.Println()
-
 	// Now download the file
 	fmt.Println("Downloading file...")
 	result, err := downloader.Download(context.Background(), uhrpURL)

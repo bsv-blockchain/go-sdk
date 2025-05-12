@@ -6,26 +6,23 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type Facilitator interface {
-	Lookup(ctx context.Context, url string, question *LookupQuestion, timeout time.Duration) (*LookupAnswer, error)
+	Lookup(ctx context.Context, url string, question *LookupQuestion) (*LookupAnswer, error)
 }
 
 type HTTPSOverlayLookupFacilitator struct {
 	Client util.HTTPClient
 }
 
-func (f *HTTPSOverlayLookupFacilitator) Lookup(ctx context.Context, url string, question *LookupQuestion, timeout time.Duration) (*LookupAnswer, error) {
-	timeoutContext, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+func (f *HTTPSOverlayLookupFacilitator) Lookup(ctx context.Context, url string, question *LookupQuestion) (*LookupAnswer, error) {
 	if q, err := json.Marshal(question); err != nil {
 		return nil, err
 	} else {
-		req, err := http.NewRequestWithContext(timeoutContext, "POST", url+"/lookup", bytes.NewBuffer(q))
+		req, err := http.NewRequestWithContext(ctx, "POST", url+"/lookup", bytes.NewBuffer(q))
 		if err != nil {
 			return nil, err
 		}

@@ -17,14 +17,14 @@ type MockWallet struct {
 	wallet.Interface
 }
 
-func TestNewStorageUploader(t *testing.T) {
+func TestNewUploader(t *testing.T) {
 	// Test with valid config
 	config := UploaderConfig{
 		StorageURL: "https://example.com/storage",
 		Wallet:     &MockWallet{},
 	}
 
-	uploader, err := NewStorageUploader(config)
+	uploader, err := NewUploader(config)
 	require.NoError(t, err)
 	assert.NotNil(t, uploader)
 	assert.Equal(t, config.StorageURL, uploader.baseURL)
@@ -36,7 +36,7 @@ func TestNewStorageUploader(t *testing.T) {
 		Wallet:     &MockWallet{},
 	}
 
-	uploader, err = NewStorageUploader(config)
+	uploader, err = NewUploader(config)
 	assert.Error(t, err)
 	assert.Nil(t, uploader)
 	assert.Contains(t, err.Error(), "storage URL is required")
@@ -47,7 +47,7 @@ func TestNewStorageUploader(t *testing.T) {
 		Wallet:     nil,
 	}
 
-	uploader, err = NewStorageUploader(config)
+	uploader, err = NewUploader(config)
 	assert.Error(t, err)
 	assert.Nil(t, uploader)
 	assert.Contains(t, err.Error(), "wallet is required")
@@ -80,7 +80,7 @@ func TestStorageUploader_PublishFile(t *testing.T) {
 	defer server.Close()
 
 	// Create uploader with the test server URL
-	uploader, err := NewStorageUploader(UploaderConfig{
+	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: server.URL,
 		Wallet:     &MockWallet{},
 	})
@@ -126,7 +126,7 @@ func TestStorageUploader_FindFile(t *testing.T) {
 	defer server.Close()
 
 	// Create uploader with the test server URL
-	uploader, err := NewStorageUploader(UploaderConfig{
+	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: server.URL,
 		Wallet:     &MockWallet{},
 	})

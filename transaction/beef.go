@@ -27,8 +27,27 @@ const ATOMIC_BEEF = uint32(0x01010101) // BRC-95
 
 func (t *Transaction) FromBEEF(beef []byte) error {
 	tx, err := NewTransactionFromBEEF(beef)
+	if err != nil {
+		return fmt.Errorf("failed to parse BEEF bytes: %w", err)
+	}
 	*t = *tx
-	return err
+	return nil
+}
+
+func NewBeefV1() *Beef {
+	return newEmptyBeef(BEEF_V1)
+}
+
+func NewBeefV2() *Beef {
+	return newEmptyBeef(BEEF_V2)
+}
+
+func newEmptyBeef(version uint32) *Beef {
+	return &Beef{
+		Version:      version,
+		BUMPs:        []*MerklePath{},
+		Transactions: make(map[string]*BeefTx),
+	}
 }
 
 func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx, error) {
@@ -221,11 +240,7 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	if t == nil {
 		return nil, fmt.Errorf("transaction is nil")
 	}
-	beef := &Beef{
-		Version:      BEEF_V2,
-		BUMPs:        []*MerklePath{},
-		Transactions: map[string]*BeefTx{},
-	}
+	beef := NewBeefV2()
 	bumpMap := map[uint32]int{}
 	txns := map[string]*Transaction{t.TxID().String(): t}
 	ancestors, err := t.collectAncestors(txns, false)
@@ -587,13 +602,16 @@ func (b *Beef) MakeTxidOnly(txid string) *BeefTx {
 	if tx.DataFormat == TxIDOnly {
 		return tx
 	}
-	delete(b.Transactions, txid)
-	tx = &BeefTx{
-		DataFormat: TxIDOnly,
-		KnownTxID:  tx.KnownTxID,
+	if knownTxID, err := chainhash.NewHashFromHex(txid); err != nil {
+		return nil
+	} else {
+		tx = &BeefTx{
+			DataFormat: TxIDOnly,
+			KnownTxID:  knownTxID,
+		}
+		b.Transactions[txid] = tx
+		return tx
 	}
-	b.Transactions[txid] = tx
-	return tx
 }
 
 func (b *Beef) MergeRawTx(rawTx []byte, bumpIndex *int) (*BeefTx, error) {
@@ -933,22 +951,35 @@ func (b *Beef) ToLogString() string {
 		}
 		log += "    ]\n"
 	}
+txLoop:
 	for i, tx := range b.Transactions {
-		log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
-		if tx.DataFormat == RawTxAndBumpIndex {
-			log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
-		}
-		if tx.DataFormat == TxIDOnly {
-			log += "    txidOnly\n"
-		} else {
+		switch tx.DataFormat {
+		case RawTx:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
 			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+		case RawTxAndBumpIndex:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.Transaction.TxID().String())
+			log += fmt.Sprintf("    bumpIndex: %d\n", tx.Transaction.MerklePath.BlockHeight)
+			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+		case TxIDOnly:
+			log += fmt.Sprintf("  TX %s\n    txid: %s\n", i, tx.KnownTxID.String())
+			log += "    txidOnly\n"
+			continue txLoop
 		}
+
 		if len(tx.Transaction.Inputs) > 0 {
 			log += "    inputs: [\n"
 			for _, input := range tx.Transaction.Inputs {
 				log += fmt.Sprintf("      '%s',\n", input.SourceTXID.String())
 			}
-			log += "    ]\n"
+			log += fmt.Sprintf("    rawTx length=%d\n", len(tx.Transaction.Bytes()))
+			if len(tx.Transaction.Inputs) > 0 {
+				log += "    inputs: [\n"
+				for _, input := range tx.Transaction.Inputs {
+					log += fmt.Sprintf("      '%s',\n", input.SourceTXID.String())
+				}
+				log += "    ]\n"
+			}
 		}
 	}
 	return log
