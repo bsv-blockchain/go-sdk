@@ -468,7 +468,7 @@ func signRFC6979(privkey *PrivateKey, hash []byte) (*Signature, error) {
 	halfOrder := S256().halfOrder
 	k := nonceRFC6979(privkey.D, hash)
 	inv := new(big.Int).ModInverse(k, N)
-	r, _ := privkey.Curve.ScalarBaseMult(k.Bytes())
+	r, _ := privkey.ScalarBaseMult(k.Bytes())
 	r.Mod(r, N)
 
 	if r.Sign() == 0 {

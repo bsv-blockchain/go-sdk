@@ -2,12 +2,12 @@ package interpreter
 
 import (
 	"bytes"
-	"crypto/sha1" //nolint:gosec // OP_SHA1 support requires this
+	"crypto/sha1" // nolint:gosec // OP_SHA1 support requires this
 	"crypto/sha256"
 	"hash"
 	"math/big"
 
-	"golang.org/x/crypto/ripemd160" //nolint:gosec // required
+	"golang.org/x/crypto/ripemd160" // nolint:staticcheck // required
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
@@ -607,8 +607,8 @@ func opcodeReturn(op *ParsedOpcode, t *thread) error {
 func verifyLockTime(txLockTime, threshold, lockTime int64) error {
 	// The lockTimes in both the script and transaction must be of the same
 	// type.
-	if !((txLockTime < threshold && lockTime < threshold) ||
-		(txLockTime >= threshold && lockTime >= threshold)) {
+	if (txLockTime < threshold && lockTime >= threshold) ||
+		(txLockTime >= threshold && lockTime < threshold) {
 		return errs.NewError(errs.ErrUnsatisfiedLockTime,
 			"mismatched locktime types -- tx locktime %d, stack locktime %d", txLockTime, lockTime)
 	}

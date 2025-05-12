@@ -7,6 +7,7 @@ import (
 	"io"
 
 	script "github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/pkg/errors"
 )
 
@@ -16,7 +17,7 @@ Field	                        Description	                                Size
 -----------------------------------------------------------------------------------------------------
 value                         non-negative integer giving the number of   8 bytes
                               Satoshis(BTC/10^8) to be transferred
-Txout-script length           non-negative integer                        1 - 9 bytes VI = VarInt
+Txout-script length           non-negative integer                        1 - 9 bytes VI = util.VarInt
 Txout-script / scriptPubKey   Script                                      <out-script length>-many bytes
 (lockingScript)
 
@@ -41,7 +42,7 @@ func (o *TransactionOutput) ReadFrom(r io.Reader) (int64, error) {
 		return bytesRead, errors.Wrapf(err, "satoshis(8): got %d bytes", n)
 	}
 
-	var l VarInt
+	var l util.VarInt
 	n64, err := l.ReadFrom(r)
 	bytesRead += n64
 	if err != nil {
@@ -81,7 +82,7 @@ func (o *TransactionOutput) Bytes() []byte {
 
 	h := make([]byte, 0)
 	h = append(h, b...)
-	h = append(h, VarInt(uint64(len(*o.LockingScript))).Bytes()...)
+	h = append(h, util.VarInt(uint64(len(*o.LockingScript))).Bytes()...)
 	h = append(h, *o.LockingScript...)
 
 	return h
@@ -96,7 +97,7 @@ func (o *TransactionOutput) BytesForSigHash() []byte {
 	binary.LittleEndian.PutUint64(satoshis, o.Satoshis)
 	buf = append(buf, satoshis...)
 
-	buf = append(buf, VarInt(uint64(len(*o.LockingScript))).Bytes()...)
+	buf = append(buf, util.VarInt(uint64(len(*o.LockingScript))).Bytes()...)
 	buf = append(buf, *o.LockingScript...)
 
 	return buf

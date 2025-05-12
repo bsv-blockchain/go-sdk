@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type Example struct {
@@ -17,8 +18,8 @@ func (e *Example) ComputeFee(tx transaction.Transaction) uint64 {
 	}
 
 	// Compute the (potentially estimated) size of the transaction
-	size := 4                                                   // version
-	size += transaction.VarInt(uint64(len(tx.Inputs))).Length() // number of inputs
+	size := 4                                            // version
+	size += util.VarInt(uint64(len(tx.Inputs))).Length() // number of inputs
 	for i := 0; i < len(tx.Inputs); i++ {
 		input := tx.Inputs[i]
 		size += 40 // txid, output index, sequence number
@@ -28,15 +29,15 @@ func (e *Example) ComputeFee(tx transaction.Transaction) uint64 {
 		} else {
 			panic("All inputs must have an unlocking script or an unlocking script template for sat/kb fee computation.")
 		}
-		size += transaction.VarInt(scriptLength).Length() // unlocking script length
-		size += scriptLength                              // unlocking script
+		size += util.VarInt(scriptLength).Length() // unlocking script length
+		size += scriptLength                       // unlocking script
 	}
-	size += transaction.VarInt(len(tx.Outputs)).Length() // number of outputs
+	size += util.VarInt(len(tx.Outputs)).Length() // number of outputs
 	for _, out := range tx.Outputs {
 		size += 8 // satoshis
 		length := len(*out.LockingScript)
-		size += transaction.VarInt(length).Length() // script length
-		size += length                              // script
+		size += util.VarInt(length).Length() // script length
+		size += length                       // script
 	}
 	size += 4 // lock time
 	fee := float64((size / 1000) * e.Value)

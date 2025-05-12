@@ -1,0 +1,40 @@
+{
+  "json": {
+    "tx": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "description": "test transaction",
+    "labels": [
+      "label1",
+      "label2"
+    ],
+    "seekPermission": true,
+    "outputs": [
+      {
+        "outputIndex": 0,
+        "protocol": "wallet payment",
+        "paymentRemittance": {
+          "derivationPrefix": "prefix",
+          "derivationSuffix": "suffix",
+          "senderIdentityKey": "sender-key"
+        }
+      },
+      {
+        "outputIndex": 1,
+        "protocol": "basket insertion",
+        "insertionRemittance": {
+          "basket": "test-basket",
+          "customInstructions": "instruction",
+          "tags": [
+            "tag1",
+            "tag2"
+          ]
+        }
+      }
+    ]
+  },
+  "wire": "05000401020304020001000ede000e04a6b79f8b04b2e7df8b01020b746573742d6261736b65740b696e737472756374696f6e020474616731047461673202066c6162656c31066c6162656c321074657374207472616e73616374696f6e01"
+}

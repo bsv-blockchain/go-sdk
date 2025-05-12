@@ -57,13 +57,7 @@ func (w *WhatsOnChain) GetBlockHeader(height uint32) (header *BlockHeader, err e
 	if err != nil {
 		return nil, err
 	}
-	// Ensure resp.Body.Close() is called and its error is handled
-	defer func() {
-		closeErr := resp.Body.Close()
-		if closeErr != nil && err == nil {
-			err = closeErr
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil

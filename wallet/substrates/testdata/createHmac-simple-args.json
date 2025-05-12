@@ -1,0 +1,20 @@
+{
+  "json": {
+    "protocolID": [
+      1,
+      "test-protocol"
+    ],
+    "keyID": "test-key",
+    "counterparty": "self",
+    "privileged": true,
+    "privilegedReason": "test reason",
+    "seekPermission": true,
+    "data": [
+      10,
+      20,
+      30,
+      40
+    ]
+  },
+  "wire": "0d00010d746573742d70726f746f636f6c08746573742d6b65790b010b7465737420726561736f6e040a141e2801"
+}
