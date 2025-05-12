@@ -16,7 +16,7 @@ import (
 
 // MemoryTransport implements auth.Transport for in-memory message passing
 type MemoryTransport struct {
-	callback func(*auth.AuthMessage) error
+	callback func(context.Context, *auth.AuthMessage) error
 	receiver *MemoryTransport
 	mu       sync.Mutex
 }
@@ -33,7 +33,7 @@ func (t *MemoryTransport) Connect(other *MemoryTransport) {
 	t.receiver = other
 }
 
-func (t *MemoryTransport) Send(message *auth.AuthMessage) error {
+func (t *MemoryTransport) Send(ctx context.Context, message *auth.AuthMessage) error {
 	t.mu.Lock()
 	receiver := t.receiver
 	t.mu.Unlock()
@@ -46,18 +46,28 @@ func (t *MemoryTransport) Send(message *auth.AuthMessage) error {
 	go func() {
 		time.Sleep(50 * time.Millisecond)
 		if receiver.callback != nil {
-			_ = receiver.callback(message)
+			_ = receiver.callback(ctx, message)
 		}
 	}()
 
 	return nil
 }
 
-func (t *MemoryTransport) OnData(callback func(*auth.AuthMessage) error) error {
+func (t *MemoryTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.callback = callback
 	return nil
+}
+
+func (t *MemoryTransport) GetRegisteredOnData() (func(context.Context, *auth.AuthMessage) error, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.callback == nil {
+		return nil, fmt.Errorf("no callback registered")
+	}
+
+	return t.callback, nil
 }
 
 // MinimalWalletImpl is a minimal implementation of wallet.Interface

@@ -275,7 +275,7 @@ func (c *Certificate) Verify(ctx context.Context) error {
 	verifyArgs := wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "certificate signature",
 			},
 			KeyID: fmt.Sprintf("%s %s", c.Type, c.SerialNumber),
@@ -326,7 +326,7 @@ func (c *Certificate) Sign(ctx context.Context, certifierWallet *wallet.ProtoWal
 	signArgs := wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "certificate signature",
 			},
 			KeyID: fmt.Sprintf("%s %s", c.Type, c.SerialNumber),

@@ -151,11 +151,14 @@ func ValidateCertificates(
 // Transport defines the interface for sending and receiving AuthMessages
 // This matches the TypeScript SDK's Transport interface exactly
 type Transport interface {
+	// GetRegisteredOnData returns the current callback function for handling incoming AuthMessages
+	GetRegisteredOnData() (func(context.Context, *AuthMessage) error, error)
+
 	// Send sends an AuthMessage to its destination
-	Send(message *AuthMessage) error
+	Send(ctx context.Context, message *AuthMessage) error
 
 	// OnData registers a callback to be called when a message is received
-	OnData(callback func(message *AuthMessage) error) error
+	OnData(callback func(ctx context.Context, message *AuthMessage) error) error
 }
 
 // PeerSession represents a session with a peer

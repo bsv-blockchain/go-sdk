@@ -1,6 +1,7 @@
 package transports
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -106,7 +107,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 
 	// Register an OnData handler to decode and check the response payload
 	responseChecked := false
-	err = transport.OnData(func(msg *auth.AuthMessage) error {
+	err = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
 		if msg.MessageType != auth.MessageTypeGeneral {
 			t.Errorf("Expected response message type 'general', got '%s'", msg.MessageType)
 		}
@@ -153,7 +154,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 	}
 
 	// Send the message
-	err = transport.Send(testMessage)
+	err = transport.Send(context.Background(), testMessage)
 	if err != nil {
 		t.Errorf("Failed to send message: %v", err)
 	}
@@ -178,7 +179,7 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 
 	// Test registering callbacks
 	callbackCalled := false
-	err = transport.OnData(func(msg *auth.AuthMessage) error {
+	err = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
 		callbackCalled = true
 		return nil
 	})
@@ -194,7 +195,7 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 		Payload:     []byte("test payload"),
 	}
 
-	transport.notifyHandlers(testMessage)
+	transport.notifyHandlers(t.Context(), testMessage)
 
 	if !callbackCalled {
 		t.Error("Expected callback to be called")
@@ -225,17 +226,17 @@ func TestSimplifiedHTTPTransportSendWithNoHandler(t *testing.T) {
 	}
 
 	// Send without registering a handler should fail
-	err = transport.Send(testMessage)
+	err = transport.Send(t.Context(), testMessage)
 	assert.ErrorIs(t, err, ErrNoHandlerRegistered, "Send should return ErrNoHandlerRegistered when no handler is registered")
 
 	// Now register a handler
-	err = transport.OnData(func(message *auth.AuthMessage) error {
+	err = transport.OnData(func(ctx context.Context, message *auth.AuthMessage) error {
 		return nil // Do nothing in this test
 	})
 	require.NoError(t, err, "OnData registration should succeed")
 
 	// Now send should not return the handler error
 	// Note: It may fail for other reasons (like invalid message format), but at least not for missing handler
-	err = transport.Send(testMessage)
+	err = transport.Send(t.Context(), testMessage)
 	assert.NotErrorIs(t, err, ErrNoHandlerRegistered, "Send should not return ErrNoHandlerRegistered after a handler is registered")
 }

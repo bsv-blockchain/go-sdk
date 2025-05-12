@@ -14,7 +14,7 @@ import (
 func VerifyNonce(
 	ctx context.Context,
 	nonce string,
-	w wallet.Interface,
+	w wallet.KeyOperations,
 	counterparty wallet.Counterparty,
 ) (bool, error) {
 	// Convert nonce from base64 to binary

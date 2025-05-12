@@ -15,6 +15,9 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+// AUTH_PROTOCOL_ID is the protocol ID for authentication messages as specified in BRC-31 (Authrite)
+const AUTH_PROTOCOL_ID = "authrite message signature"
+
 // AUTH_VERSION is the version of the auth protocol
 const AUTH_VERSION = "0.1"
 
@@ -26,7 +29,7 @@ type Peer struct {
 	sessionManager                        SessionManager
 	transport                             Transport
 	wallet                                wallet.Interface
-	CertificatesToRequest                 utils.RequestedCertificateSet
+	CertificatesToRequest                 *utils.RequestedCertificateSet
 	onGeneralMessageReceivedCallbacks     map[int]OnGeneralMessageReceivedCallback
 	onCertificateReceivedCallbacks        map[int]OnCertificateReceivedCallback
 	onCertificateRequestReceivedCallbacks map[int]OnCertificateRequestReceivedCallback
@@ -79,16 +82,16 @@ func NewPeer(cfg *PeerOptions) *Peer {
 	}
 
 	if cfg.CertificatesToRequest != nil {
-		peer.CertificatesToRequest = *cfg.CertificatesToRequest
+		peer.CertificatesToRequest = cfg.CertificatesToRequest
 	} else {
-		peer.CertificatesToRequest = utils.RequestedCertificateSet{
+		peer.CertificatesToRequest = &utils.RequestedCertificateSet{
 			Certifiers:       []string{},
 			CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 		}
 	}
 
 	// Start the peer
-	err := peer.Start(context.TODO())
+	err := peer.Start()
 	if err != nil {
 		peer.logger.Printf("Warning: Failed to start peer: %v", err)
 	}
@@ -97,9 +100,9 @@ func NewPeer(cfg *PeerOptions) *Peer {
 }
 
 // Start initializes the peer by setting up the transport's message handler
-func (p *Peer) Start(ctx context.Context) error {
+func (p *Peer) Start() error {
 	// Register the message handler with the transport
-	err := p.transport.OnData(func(message *AuthMessage) error {
+	err := p.transport.OnData(func(ctx context.Context, message *AuthMessage) error {
 		err := p.handleIncomingMessage(ctx, message)
 		if err != nil {
 			p.logger.Printf("Error handling incoming message: %v", err)
@@ -197,8 +200,9 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 	sigResult, err := p.wallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", requestNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
@@ -226,7 +230,7 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 	}
 
 	// Send the message
-	err = p.transport.Send(generalMessage)
+	err = p.transport.Send(ctx, generalMessage)
 	if err != nil {
 		return fmt.Errorf("failed to send message to peer %s: %w", peerSession.PeerIdentityKey, err)
 	}
@@ -302,7 +306,7 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 		IdentityKey:           pubKey.PublicKey,
 		Nonce:                 "", // No nonce for initial request
 		InitialNonce:          sessionNonce,
-		RequestedCertificates: p.CertificatesToRequest,
+		RequestedCertificates: *p.CertificatesToRequest,
 	}
 
 	// Set up channels for async response handling
@@ -336,7 +340,7 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	}()
 
 	// Send the initial request
-	err = p.transport.Send(initialRequest)
+	err = p.transport.Send(ctx, initialRequest)
 	if err != nil {
 		delete(p.onInitialResponseReceivedCallbacks, callbackID)
 		return nil, NewAuthError("failed to send initial request", err)
@@ -429,6 +433,12 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 		PeerIdentityKey: senderPublicKey,
 		LastUpdate:      time.Now().UnixMilli(),
 	}
+
+	// in case we need ceritificates set current isAuthenticated status to false
+	if p.CertificatesToRequest != nil && len(p.CertificatesToRequest.CertificateTypes) > 0 {
+		session.IsAuthenticated = false
+	}
+
 	err = p.sessionManager.AddSession(session)
 	if err != nil {
 		return NewAuthError("failed to add session", err)
@@ -472,7 +482,7 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 	}
 
 	// Send the response
-	return p.transport.Send(response)
+	return p.transport.Send(ctx, response)
 }
 
 // handleInitialResponse processes the response to our initial authentication request
@@ -545,9 +555,6 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
-	if !session.IsAuthenticated {
-		return ErrNotAuthenticated
-	}
 
 	// Verify nonces match
 	if message.YourNonce != session.SessionNonce {
@@ -580,8 +587,9 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
@@ -635,9 +643,6 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
-	if !session.IsAuthenticated {
-		return ErrNotAuthenticated
-	}
 
 	// Verify nonces match
 	if message.YourNonce != session.SessionNonce {
@@ -664,8 +669,9 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
@@ -734,6 +740,10 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 		return ErrSessionNotFound
 	}
 	if !session.IsAuthenticated {
+		if p.CertificatesToRequest != nil && len(p.CertificatesToRequest.Certifiers) > 0 {
+			return ErrMissingCertificate
+		}
+
 		return ErrNotAuthenticated
 	}
 
@@ -756,8 +766,9 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
@@ -833,8 +844,9 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 	sigResult, err := p.wallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", requestNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
@@ -853,7 +865,7 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 	certRequest.Signature = sigResult.Signature.Serialize()
 
 	// Send the request
-	err = p.transport.Send(certRequest)
+	err = p.transport.Send(ctx, certRequest)
 	if err != nil {
 		return fmt.Errorf("failed to send certificate request: %w", err)
 	}
@@ -914,8 +926,9 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 	sigResult, err := p.wallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
-				SecurityLevel: wallet.SecurityLevelEveryApp,
-				Protocol:      "auth message signature",
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
 			},
 			KeyID: fmt.Sprintf("%s %s", responseNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
@@ -934,7 +947,7 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 	certResponse.Signature = sigResult.Signature.Serialize()
 
 	// Send the response
-	err = p.transport.Send(certResponse)
+	err = p.transport.Send(ctx, certResponse)
 	if err != nil {
 		return fmt.Errorf("failed to send certificate response: %w", err)
 	}
