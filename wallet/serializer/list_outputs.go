@@ -15,10 +15,10 @@ func SerializeListOutputsArgs(args *wallet.ListOutputsArgs) ([]byte, error) {
 
 	// Tags and query mode
 	w.WriteStringSlice(args.Tags)
-	w.WriteString(args.TagQueryMode)
+	w.WriteString(string(args.TagQueryMode))
 
 	// Include options
-	w.WriteString(args.Include)
+	w.WriteString(string(args.Include))
 	w.WriteOptionalBool(args.IncludeCustomInstructions)
 	w.WriteOptionalBool(args.IncludeTags)
 	w.WriteOptionalBool(args.IncludeLabels)
@@ -37,8 +37,22 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 
 	args.Basket = r.ReadString()
 	args.Tags = r.ReadStringSlice()
-	args.TagQueryMode = r.ReadString()
-	args.Include = r.ReadString()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading basket/tags: %w", r.Err)
+	}
+
+	qm, err := wallet.QueryModeFromString(r.ReadString())
+	if err != nil {
+		return nil, fmt.Errorf("error reading tag query mode: %w", err)
+	}
+	args.TagQueryMode = qm
+
+	inc, err := wallet.OutputIncludeFromString(r.ReadString())
+	if err != nil {
+		return nil, fmt.Errorf("error reading include option: %w", err)
+	}
+	args.Include = inc
+
 	args.IncludeCustomInstructions = r.ReadOptionalBool()
 	args.IncludeTags = r.ReadOptionalBool()
 	args.IncludeLabels = r.ReadOptionalBool()
@@ -46,6 +60,7 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 	args.Offset = r.ReadVarInt32()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list outputs args: %w", r.Err)
 	}
@@ -115,6 +130,7 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 		result.Outputs = append(result.Outputs, output)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading list outputs result: %w", r.Err)
 	}

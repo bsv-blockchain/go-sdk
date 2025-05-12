@@ -1,11 +1,7 @@
 package serializer
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
-	"math"
-
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -16,42 +12,22 @@ func SerializeListCertificatesArgs(args *wallet.ListCertificatesArgs) ([]byte, e
 	// Write certifiers
 	w.WriteVarInt(uint64(len(args.Certifiers)))
 	for _, certifier := range args.Certifiers {
-		certifierBytes, err := hex.DecodeString(certifier)
-		if err != nil {
+		if err := w.WriteSizeFromHex(certifier, sizeCertifier); err != nil {
 			return nil, fmt.Errorf("invalid certifier hex: %w", err)
 		}
-		if len(certifierBytes) != SizeCertifier {
-			return nil, fmt.Errorf("certifier should be %d bytes, got %d", SizeCertifier, len(certifierBytes))
-		}
-		w.WriteBytes(certifierBytes)
 	}
 
 	// Write types
 	w.WriteVarInt(uint64(len(args.Types)))
 	for _, typ := range args.Types {
-		typeBytes, err := base64.StdEncoding.DecodeString(typ)
-		if err != nil {
+		if err := w.WriteSizeFromBase64(typ, sizeType); err != nil {
 			return nil, fmt.Errorf("invalid type base64: %w", err)
 		}
-		if len(typeBytes) != SizeType {
-			return nil, fmt.Errorf("type should be %d bytes, got %d", SizeType, len(typeBytes))
-		}
-		w.WriteBytes(typeBytes)
 	}
 
-	// Write limit (or max uint64 if undefined)
-	if args.Limit > 0 {
-		w.WriteVarInt(uint64(args.Limit))
-	} else {
-		w.WriteVarInt(math.MaxUint64)
-	}
-
-	// Write offset (or max uint64 if undefined)
-	if args.Offset > 0 {
-		w.WriteVarInt(uint64(args.Offset))
-	} else {
-		w.WriteVarInt(math.MaxUint64)
-	}
+	// Write limit and offset
+	w.WriteOptionalUint32(args.Limit)
+	w.WriteOptionalUint32(args.Offset)
 
 	// Write privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -67,39 +43,32 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	certifiersLength := r.ReadVarInt()
 	args.Certifiers = make([]string, 0, certifiersLength)
 	for i := uint64(0); i < certifiersLength; i++ {
-		certifierBytes := r.ReadBytes(SizeCertifier)
+		certifier := r.ReadHex(sizeCertifier)
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing certifier: %w", r.Err)
 		}
-		args.Certifiers = append(args.Certifiers, hex.EncodeToString(certifierBytes))
+		args.Certifiers = append(args.Certifiers, certifier)
 	}
 
 	// Read types
 	typesLength := r.ReadVarInt()
 	args.Types = make([]string, 0, typesLength)
 	for i := uint64(0); i < typesLength; i++ {
-		typeBytes := r.ReadBytes(SizeType)
+		typeString := r.ReadBase64(sizeType)
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing type: %w", r.Err)
 		}
-		args.Types = append(args.Types, base64.StdEncoding.EncodeToString(typeBytes))
+		args.Types = append(args.Types, typeString)
 	}
 
-	// Read limit
-	limit := r.ReadVarInt()
-	if limit != math.MaxUint64 {
-		args.Limit = uint32(limit)
-	}
-
-	// Read offset
-	offset := r.ReadVarInt()
-	if offset != math.MaxUint64 {
-		args.Offset = uint32(offset)
-	}
+	// Read limit and offset
+	args.Limit = r.ReadOptionalUint32()
+	args.Offset = r.ReadOptionalUint32()
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing ListCertificates args: %w", r.Err)
 	}
@@ -194,6 +163,7 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 		result.Certificates = append(result.Certificates, certResult)
 	}
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing ListCertificates result: %w", r.Err)
 	}

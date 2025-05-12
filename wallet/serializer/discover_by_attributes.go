@@ -53,6 +53,7 @@ func DeserializeDiscoverByAttributesArgs(data []byte) (*wallet.DiscoverByAttribu
 	args.Offset = r.ReadOptionalUint32()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing DiscoverByAttributes args: %w", r.Err)
 	}

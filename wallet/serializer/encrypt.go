@@ -28,7 +28,7 @@ func SerializeEncryptArgs(args *wallet.EncryptArgs) ([]byte, error) {
 	w.WriteVarInt(uint64(len(args.Plaintext)))
 	w.WriteBytes(args.Plaintext)
 
-	// Write seekPermission flag (-1 for undefined, 0 for false, 1 for true)
+	// Write seekPermission flag
 	w.WriteOptionalBool(&args.SeekPermission)
 
 	return w.Buf, nil
@@ -56,6 +56,7 @@ func DeserializeEncryptArgs(data []byte) (*wallet.EncryptArgs, error) {
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decrypting encrypt args: %w", r.Err)
 	}

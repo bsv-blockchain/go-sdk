@@ -61,14 +61,14 @@ func TestVerifySignatureArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeVerifySignatureArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing VerifySignatureArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeVerifySignatureArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing VerifySignatureArgs should not error")
 
 			// Compare results
-			require.Equal(t, tt.args, got)
+			require.Equal(t, tt.args, got, "deserialized args should match original args")
 		})
 	}
 }
@@ -77,27 +77,27 @@ func TestVerifySignatureResult(t *testing.T) {
 	t.Run("valid signature", func(t *testing.T) {
 		result := &wallet.VerifySignatureResult{Valid: true}
 		data, err := SerializeVerifySignatureResult(result)
-		require.NoError(t, err)
+		require.NoError(t, err, "serializing valid VerifySignatureResult should not error")
 
 		got, err := DeserializeVerifySignatureResult(data)
-		require.NoError(t, err)
-		require.Equal(t, result, got)
+		require.NoError(t, err, "deserializing valid VerifySignatureResult should not error")
+		require.Equal(t, result, got, "deserialized valid result should match original result")
 	})
 
 	t.Run("invalid signature", func(t *testing.T) {
 		result := &wallet.VerifySignatureResult{Valid: false}
 		data, err := SerializeVerifySignatureResult(result)
-		require.NoError(t, err)
+		require.NoError(t, err, "serializing invalid VerifySignatureResult should not error")
 
 		got, err := DeserializeVerifySignatureResult(data)
-		require.NoError(t, err)
-		require.Equal(t, result, got)
+		require.NoError(t, err, "deserializing invalid VerifySignatureResult should not error")
+		require.Equal(t, result, got, "deserialized invalid result should match original result")
 	})
 
 	t.Run("error byte", func(t *testing.T) {
 		data := []byte{1} // error byte = 1 (failure)
 		_, err := DeserializeVerifySignatureResult(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "verifySignature failed with error byte 1")
+		require.Error(t, err, "deserializing with error byte should produce an error")
+		require.Contains(t, err.Error(), "verifySignature failed with error byte 1", "error message should indicate failure and error byte")
 	})
 }

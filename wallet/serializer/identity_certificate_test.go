@@ -12,12 +12,12 @@ import (
 
 func TestIdentityCertificate(t *testing.T) {
 	pk, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+	require.NoError(t, err, "generating private key should not error")
 	cert := &wallet.IdentityCertificate{
 		Certificate: wallet.Certificate{
-			Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), SizeType)),
+			Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), sizeType)),
 			Subject:            pk.PubKey(),
-			SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-serial"), SizeSerial)),
+			SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-serial"), sizeSerial)),
 			Certifier:          pk.PubKey(),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:          hex.EncodeToString(make([]byte, 64)),
@@ -44,12 +44,12 @@ func TestIdentityCertificate(t *testing.T) {
 
 	// Test serialization
 	data, err := SerializeIdentityCertificate(cert)
-	require.NoError(t, err)
+	require.NoError(t, err, "serializing IdentityCertificate should not error")
 
 	// Test deserialization
 	got, err := DeserializeIdentityCertificate(data)
-	require.NoError(t, err)
+	require.NoError(t, err, "deserializing IdentityCertificate should not error")
 
 	// Compare results
-	require.Equal(t, cert, got)
+	require.Equal(t, cert, got, "deserialized certificate should match original certificate")
 }

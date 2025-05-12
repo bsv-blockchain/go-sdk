@@ -35,7 +35,7 @@ func SerializeCreateSignatureArgs(args *wallet.CreateSignatureArgs) ([]byte, err
 		w.WriteBytes(args.HashToDirectlySign)
 	}
 
-	// Write seekPermission flag (-1 if undefined)
+	// Write seekPermission flag
 	w.WriteOptionalBool(&args.SeekPermission)
 
 	return w.Buf, nil
@@ -73,6 +73,7 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing CreateSignature args: %w", r.Err)
 	}

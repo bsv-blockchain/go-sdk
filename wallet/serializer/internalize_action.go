@@ -18,7 +18,7 @@ func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte,
 	w.WriteVarInt(uint64(len(args.Outputs)))
 	for _, output := range args.Outputs {
 		w.WriteVarInt(uint64(output.OutputIndex))
-		w.WriteString(output.Protocol)
+		w.WriteString(string(output.Protocol))
 
 		// Payment remittance
 		if output.PaymentRemittance != nil {
@@ -66,8 +66,13 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	for i := uint64(0); i < outputCount; i++ {
 		output := wallet.InternalizeOutput{
 			OutputIndex: r.ReadVarInt32(),
-			Protocol:    r.ReadString(),
 		}
+
+		protocol, err := wallet.InternalizeProtocolFromString(r.ReadString())
+		if err != nil {
+			return nil, fmt.Errorf("error reading protocol: %w", err)
+		}
+		output.Protocol = protocol
 
 		// Payment remittance
 		if r.ReadByte() == 1 {
@@ -100,6 +105,7 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	args.Labels = r.ReadStringSlice()
 	args.SeekPermission = r.ReadOptionalBool()
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading internalize action args: %w", r.Err)
 	}
@@ -107,19 +113,14 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	return args, nil
 }
 
-func SerializeInternalizeActionResult(result *wallet.InternalizeActionResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(1) // accepted = true
-	return w.Buf, nil
+func SerializeInternalizeActionResult(*wallet.InternalizeActionResult) ([]byte, error) {
+	// Frame indicates error or not, no additional data
+	return nil, nil
 }
 
-func DeserializeInternalizeActionResult(data []byte) (*wallet.InternalizeActionResult, error) {
-	r := util.NewReaderHoldError(data)
-	result := &wallet.InternalizeActionResult{}
-	accepted := r.ReadByte()
-	result.Accepted = accepted == 1
-	if r.Err != nil {
-		return nil, fmt.Errorf("error reading internalize action result: %w", r.Err)
-	}
-	return result, nil
+func DeserializeInternalizeActionResult([]byte) (*wallet.InternalizeActionResult, error) {
+	// Accepted is implicit
+	return &wallet.InternalizeActionResult{
+		Accepted: true,
+	}, nil
 }

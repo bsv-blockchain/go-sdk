@@ -62,7 +62,9 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	result := &wallet.CreateActionResult{}
 
 	// Read success byte (0 for success)
-	_ = resultReader.ReadByte()
+	if statusByte := resultReader.ReadByte(); statusByte != 0x00 {
+		return nil, fmt.Errorf("response indicates failure: %b", statusByte)
+	}
 
 	// Parse txid and tx
 	txIdBytes := resultReader.ReadOptionalBytes(util.BytesOptionWithFlag, util.BytesOptionTxIdLen)
@@ -100,6 +102,8 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 			Reference: string(refBytes),
 		}
 	}
+
+	resultReader.CheckComplete()
 	if resultReader.Err != nil {
 		return nil, fmt.Errorf("error reading signableTransaction: %w", resultReader.Err)
 	}

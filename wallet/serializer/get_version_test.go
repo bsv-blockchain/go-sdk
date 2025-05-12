@@ -35,13 +35,13 @@ func TestGetVersionResult(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeGetVersionResult(tt.result)
-			require.NoError(t, err)
-			require.GreaterOrEqual(t, len(data), 1) // At least error byte
+			require.NoError(t, err, "serializing GetVersionResult should not error")
+			require.GreaterOrEqual(t, len(data), 1, "serialized data should have at least error byte") // At least error byte
 
 			// Test deserialization
 			got, err := DeserializeGetVersionResult(data)
-			require.NoError(t, err)
-			require.Equal(t, tt.result, got)
+			require.NoError(t, err, "deserializing GetVersionResult should not error")
+			require.Equal(t, tt.result, got, "deserialized result should match original result")
 		})
 	}
 }

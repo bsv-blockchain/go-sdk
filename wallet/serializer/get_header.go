@@ -21,6 +21,8 @@ func DeserializeGetHeaderArgs(data []byte) (*wallet.GetHeaderArgs, error) {
 	args := &wallet.GetHeaderArgs{
 		Height: r.ReadVarInt32(),
 	}
+
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing GetHeaderArgs: %w", r.Err)
 	}

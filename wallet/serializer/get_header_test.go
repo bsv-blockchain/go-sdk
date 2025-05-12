@@ -25,14 +25,14 @@ func TestGetHeaderArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeGetHeaderArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing GetHeaderArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeGetHeaderArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing GetHeaderArgs should not error")
 
 			// Compare results
-			require.Equal(t, tt.args, got)
+			require.Equal(t, tt.args, got, "deserialized args should match original args")
 		})
 	}
 }
@@ -56,14 +56,14 @@ func TestGetHeaderResult(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeGetHeaderResult(tt.result)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing GetHeaderResult should not error")
 
 			// Test deserialization
 			got, err := DeserializeGetHeaderResult(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing GetHeaderResult should not error")
 
 			// Compare results
-			require.Equal(t, tt.result, got)
+			require.Equal(t, tt.result, got, "deserialized result should match original result")
 		})
 	}
 }
@@ -72,6 +72,6 @@ func TestGetHeaderResultError(t *testing.T) {
 	// Test error byte handling
 	data := []byte{1} // Error byte = 1
 	_, err := DeserializeGetHeaderResult(data)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "error byte indicates failure")
+	require.Error(t, err, "deserializing with error byte should produce an error")
+	require.Contains(t, err.Error(), "error byte indicates failure", "error message should indicate failure")
 }

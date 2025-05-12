@@ -1,9 +1,11 @@
 package util
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
 )
 
@@ -17,8 +19,12 @@ func NewReader(data []byte) *Reader {
 	return &Reader{Data: data}
 }
 
+func (r *Reader) IsComplete() bool {
+	return r.Pos >= len(r.Data)
+}
+
 func (r *Reader) ReadByte() (byte, error) {
-	if r.Pos >= len(r.Data) {
+	if r.IsComplete() {
 		return 0, errors.New("read past end of data")
 	}
 	b := r.Data[r.Pos]
@@ -29,6 +35,9 @@ func (r *Reader) ReadByte() (byte, error) {
 func (r *Reader) ReadBytes(n int) ([]byte, error) {
 	if r.Pos+n > len(r.Data) {
 		return nil, errors.New("read past end of data")
+	}
+	if n < 0 {
+		return nil, fmt.Errorf("invalid read length: %d", n)
 	}
 	b := r.Data[r.Pos : r.Pos+n]
 	r.Pos += n
@@ -65,7 +74,7 @@ func (r *Reader) ReadVarInt32() (uint32, error) {
 
 // Read implements the io.Reader interface
 func (r *Reader) Read(b []byte) (int, error) {
-	if r.Pos >= len(r.Data) {
+	if r.IsComplete() {
 		return 0, errors.New("read past end of data")
 	}
 	n := copy(b, r.Data[r.Pos:])
@@ -74,10 +83,12 @@ func (r *Reader) Read(b []byte) (int, error) {
 }
 
 func (r *Reader) ReadRemaining() []byte {
-	if r.Pos >= len(r.Data) {
+	if r.IsComplete() {
 		return nil
 	}
-	return r.Data[r.Pos:]
+	pos := r.Pos
+	r.Pos = len(r.Data)
+	return r.Data[pos:]
 }
 
 func (r *Reader) ReadString() (string, error) {
@@ -116,7 +127,7 @@ func (r *Reader) ReadOptionalBytes(opts ...BytesOption) ([]byte, error) {
 	}
 	var length uint64
 	if txIdLen {
-		length = 32
+		length = chainhash.HashSize
 	} else {
 		var err error
 		length, err = r.ReadVarInt()
@@ -219,14 +230,25 @@ func NewReaderHoldError(data []byte) *ReaderHoldError {
 	}
 }
 
-func (r *ReaderHoldError) ReadVarInt() uint64 {
-	var val uint64
-	if r.Err == nil {
-		val, r.Err = r.Reader.ReadVarInt()
+func (r *ReaderHoldError) IsComplete() bool {
+	return r.Reader.IsComplete()
+}
+
+func (r *ReaderHoldError) CheckComplete() {
+	if r.Err != nil {
+		return
 	}
+	if !r.Reader.IsComplete() {
+		r.Err = errors.New("finished reading but not all data consumed")
+	}
+}
+
+func (r *ReaderHoldError) ReadVarInt() uint64 {
 	if r.Err != nil {
 		return 0
 	}
+	val, err := r.Reader.ReadVarInt()
+	r.Err = err
 	return val
 }
 
@@ -257,6 +279,22 @@ func (r *ReaderHoldError) ReadBytes(n int) []byte {
 	return val
 }
 
+func (r *ReaderHoldError) ReadBase64Int() string {
+	return r.ReadBase64(int(r.ReadVarInt()))
+}
+
+func (r *ReaderHoldError) ReadBase64(n int) string {
+	return base64.StdEncoding.EncodeToString(r.ReadBytes(n))
+}
+
+func (r *ReaderHoldError) ReadHex(n int) string {
+	return hex.EncodeToString(r.ReadBytes(n))
+}
+
+func (r *ReaderHoldError) ReadRemainingHex() string {
+	return hex.EncodeToString(r.ReadRemaining())
+}
+
 func (r *ReaderHoldError) ReadIntBytes() []byte {
 	if r.Err != nil {
 		return nil
@@ -264,6 +302,10 @@ func (r *ReaderHoldError) ReadIntBytes() []byte {
 	val, err := r.Reader.ReadIntBytes()
 	r.Err = err
 	return val
+}
+
+func (r *ReaderHoldError) ReadIntBytesHex() string {
+	return hex.EncodeToString(r.ReadIntBytes())
 }
 
 // ReadByte returns the next byte and holds any error internally

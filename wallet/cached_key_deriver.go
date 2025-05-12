@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -35,12 +36,14 @@ type lruCache struct {
 	mu    sync.Mutex
 }
 
+const defaultMaxCacheSize = 1000
+
 // NewCachedKeyDeriver creates a new CachedKeyDeriver instance.
 // rootKey is the root private key or 'anyone' key.
 // maxCacheSize specifies the maximum number of items to cache (default 1000 if <= 0).
 func NewCachedKeyDeriver(rootKey *ec.PrivateKey, maxCacheSize int) *CachedKeyDeriver {
 	if maxCacheSize <= 0 {
-		maxCacheSize = 1000
+		maxCacheSize = defaultMaxCacheSize
 	}
 
 	return &CachedKeyDeriver{
@@ -71,7 +74,7 @@ func (c *CachedKeyDeriver) DerivePublicKey(protocol Protocol, keyID string, coun
 
 	pubKey, err := c.keyDeriver.DerivePublicKey(protocol, keyID, counterparty, forSelf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to derive public key: %w", err)
 	}
 
 	c.cacheSet(key, pubKey)
@@ -95,7 +98,7 @@ func (c *CachedKeyDeriver) DerivePrivateKey(protocol Protocol, keyID string, cou
 
 	privKey, err := c.keyDeriver.DerivePrivateKey(protocol, keyID, counterparty)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to derive private key: %w", err)
 	}
 
 	c.cacheSet(key, privKey)
@@ -119,7 +122,7 @@ func (c *CachedKeyDeriver) DeriveSymmetricKey(protocol Protocol, keyID string, c
 
 	symKey, err := c.keyDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
 	c.cacheSet(key, symKey)
@@ -143,7 +146,7 @@ func (c *CachedKeyDeriver) RevealSpecificSecret(counterparty Counterparty, proto
 
 	secret, err := c.keyDeriver.RevealSpecificSecret(counterparty, protocol, keyID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to reveal specific secret: %w", err)
 	}
 
 	c.cacheSet(key, secret)

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"strings"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -13,7 +13,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-const OutpointSize = 36
+const outpointSize = 36 // 32 txid + 4 index
 
 // encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint string) ([]byte, error) {
@@ -26,13 +26,16 @@ func encodeOutpoint(outpoint string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid txid: %w", err)
 	}
+	if len(txid) != chainhash.HashSize { // TXID must be 32 bytes long
+		return nil, fmt.Errorf("invalid txid length: expected 32 bytes, got %d", len(txid))
+	}
 
 	var index uint32
-	if _, err := fmt.Sscanf(parts[1], "%d", &index); err != nil {
+	if _, err = fmt.Sscanf(parts[1], "%d", &index); err != nil {
 		return nil, fmt.Errorf("invalid index: %w", err)
 	}
 
-	buf := make([]byte, OutpointSize)
+	buf := make([]byte, outpointSize)
 	copy(buf[:32], txid)
 	binary.BigEndian.PutUint32(buf[32:36], index)
 
@@ -71,13 +74,13 @@ func decodeOutpoints(data []byte) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if count == math.MaxUint64 {
+	if util.IsNegativeOne(count) {
 		return nil, nil
 	}
 
 	outpoints := make([]string, 0, count)
 	for i := uint64(0); i < count; i++ {
-		opBytes, err := r.ReadBytes(OutpointSize)
+		opBytes, err := r.ReadBytes(outpointSize)
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +95,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 
 // decodeOutpoint converts binary outpoint data to string format "txid.index"
 func decodeOutpoint(data []byte) (string, error) {
-	if len(data) != OutpointSize {
+	if len(data) != outpointSize {
 		return "", errors.New("invalid outpoint data length")
 	}
 
@@ -101,15 +104,21 @@ func decodeOutpoint(data []byte) (string, error) {
 	return fmt.Sprintf("%s.%d", txid, index), nil
 }
 
+const (
+	counterPartyTypeUninitializedCode uint8 = 0
+	counterPartyTypeSelfCode          uint8 = 11
+	counterPartyTypeAnyoneCode        uint8 = 12
+)
+
 // encodeCounterparty writes counterparty in the same format as TypeScript version
 func encodeCounterparty(w *util.Writer, counterparty wallet.Counterparty) error {
 	switch counterparty.Type {
 	case wallet.CounterpartyUninitialized:
-		w.WriteByte(0)
+		w.WriteByte(counterPartyTypeUninitializedCode)
 	case wallet.CounterpartyTypeSelf:
-		w.WriteByte(11)
+		w.WriteByte(counterPartyTypeSelfCode)
 	case wallet.CounterpartyTypeAnyone:
-		w.WriteByte(12)
+		w.WriteByte(counterPartyTypeAnyoneCode)
 	case wallet.CounterpartyTypeOther:
 		if counterparty.Counterparty == nil {
 			return errors.New("counterparty is nil for type other")
@@ -126,11 +135,11 @@ func decodeCounterparty(r *util.ReaderHoldError) (wallet.Counterparty, error) {
 	counterparty := wallet.Counterparty{}
 	counterpartyFlag := r.ReadByte()
 	switch counterpartyFlag {
-	case 0:
+	case counterPartyTypeUninitializedCode:
 		counterparty.Type = wallet.CounterpartyUninitialized
-	case 11:
+	case counterPartyTypeSelfCode:
 		counterparty.Type = wallet.CounterpartyTypeSelf
-	case 12:
+	case counterPartyTypeAnyoneCode:
 		counterparty.Type = wallet.CounterpartyTypeAnyone
 	default:
 		pubKey, err := ec.PublicKeyFromBytes(append([]byte{counterpartyFlag}, r.ReadBytes(32)...))
@@ -184,10 +193,7 @@ func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 			w.WriteByte(0)
 		}
 	} else {
-		// Write 9 bytes of 0xFF (-1) when undefined
-		for i := 0; i < 9; i++ {
-			w.WriteByte(0xFF)
-		}
+		w.WriteNegativeOne()
 	}
 
 	// Write privileged reason
@@ -195,10 +201,7 @@ func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 		w.WriteByte(byte(len(privilegedReason)))
 		w.WriteString(privilegedReason)
 	} else {
-		// Write 9 bytes of 0xFF (-1) when undefined
-		for i := 0; i < 9; i++ {
-			w.WriteByte(0xFF)
-		}
+		w.WriteNegativeOne()
 	}
 
 	return w.Buf
@@ -209,20 +212,18 @@ func decodePrivilegedParams(r *util.ReaderHoldError) (*bool, string) {
 	// Read privileged flag
 	var privileged *bool
 	flag := r.ReadByte()
-	if flag != 0xFF { // Not -1
+	if !util.IsNegativeOneByte(flag) {
 		val := flag == 1
 		privileged = &val
-	}
-
-	// Skip 8 more bytes if flag was 0xFF (TypeScript writes 9 bytes of 0xFF)
-	if flag == 0xFF {
+	} else {
+		// Skip 8 more bytes if flag was 0xFF (TypeScript writes 9 bytes of 0xFF)
 		r.ReadBytes(8)
 	}
 
 	// Read privileged reason length
 	var privilegedReason string
 	reasonLen := r.ReadByte()
-	if reasonLen != 0xFF { // Not -1
+	if !util.IsNegativeOneByte(reasonLen) {
 		privilegedReason = r.ReadString()
 	} else {
 		// Skip 8 more bytes if length was 0xFF (TypeScript writes 9 bytes of 0xFF)

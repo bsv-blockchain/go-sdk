@@ -130,6 +130,8 @@ func NewScriptFromScriptOps(parts []*ScriptChunk) (*Script, error) {
 		case OpPUSHDATA4:
 			// length of data + 4 bytes for length
 			length += 4 + len(p.Data)
+		case OpRETURN:
+			length += len(p.Data)
 		default:
 			if p.Op >= OpDATA1 && p.Op < OpPUSHDATA1 {
 				// length of data
@@ -150,6 +152,10 @@ func NewScriptFromScriptOps(parts []*ScriptChunk) (*Script, error) {
 			if err != nil {
 				return nil, err
 			}
+		}
+		if p.Op == OpRETURN && len(p.Data) > 0 {
+			s = append(s, p.Data...)
+			break
 		}
 	}
 	return &s, nil
@@ -231,9 +237,24 @@ func DecodeScriptHex(s string) ([]*ScriptChunk, error) {
 // pushed to the stack).
 func DecodeScript(b []byte) ([]*ScriptChunk, error) {
 	var ops []*ScriptChunk
+	conditionalBlock := 0
 	for len(b) > 0 {
 		// Handle OP codes
-		switch b[0] {
+		op := &ScriptChunk{Op: b[0]}
+		switch op.Op {
+		case OpIF, OpNOTIF, OpVERIF, OpVERNOTIF:
+			conditionalBlock++
+			b = b[1:]
+		case OpENDIF:
+			conditionalBlock--
+			b = b[1:]
+		case OpRETURN:
+			if conditionalBlock == 0 {
+				op.Data = b
+				b = nil
+			} else {
+				b = b[1:]
+			}
 		case OpPUSHDATA1:
 			if len(b) < 2 {
 				return ops, ErrDataTooSmall
@@ -245,8 +266,7 @@ func DecodeScript(b []byte) ([]*ScriptChunk, error) {
 			if len(b) < l {
 				return ops, ErrDataTooSmall
 			}
-
-			ops = append(ops, &ScriptChunk{Op: OpPUSHDATA1, Data: b[:l]})
+			op.Data = b[:l]
 			b = b[l:]
 
 		case OpPUSHDATA2:
@@ -261,8 +281,7 @@ func DecodeScript(b []byte) ([]*ScriptChunk, error) {
 			if len(b) < l {
 				return ops, ErrDataTooSmall
 			}
-
-			ops = append(ops, &ScriptChunk{Op: OpPUSHDATA2, Data: b[:l]})
+			op.Data = b[:l]
 			b = b[l:]
 
 		case OpPUSHDATA4:
@@ -278,23 +297,22 @@ func DecodeScript(b []byte) ([]*ScriptChunk, error) {
 				return ops, ErrDataTooSmall
 			}
 
-			ops = append(ops, &ScriptChunk{Op: OpPUSHDATA4, Data: b[:l]})
+			op.Data = b[:l]
 			b = b[l:]
 
 		default:
-			if b[0] >= 0x01 && b[0] <= OpPUSHDATA4 {
-				l := b[0]
+			if op.Op >= 0x01 && op.Op <= OpPUSHDATA4 {
+				l := op.Op
 				if len(b) < int(1+l) {
 					return ops, ErrDataTooSmall
 				}
-				ops = append(ops, &ScriptChunk{Op: l, Data: b[1 : l+1]})
+				op.Data = b[1 : 1+l]
 				b = b[1+l:]
 			} else {
-				ops = append(ops, &ScriptChunk{Op: b[0]})
 				b = b[1:]
 			}
 		}
-
+		ops = append(ops, op)
 	}
 
 	return ops, nil

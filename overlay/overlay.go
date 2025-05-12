@@ -49,9 +49,9 @@ var NetworkNames = map[Network]string{
 }
 
 type MetaData struct {
-	Name        string
-	Description string
-	Icon        string
-	Version     string
-	InfoUrl     string
+	Name        string `json:"name"`
+	Description string `json:"shortDescription"`
+	Icon        string `json:"iconURL"`
+	Version     string `json:"version"`
+	InfoUrl     string `json:"informationURL"`
 }

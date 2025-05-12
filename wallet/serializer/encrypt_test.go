@@ -57,14 +57,14 @@ func TestEncryptArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeEncryptArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing EncryptArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeEncryptArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing EncryptArgs should not error")
 
 			// Compare results
-			require.Equal(t, tt.args, got)
+			require.Equal(t, tt.args, got, "deserialized args should match original args")
 		})
 	}
 }
@@ -73,17 +73,17 @@ func TestEncryptResult(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		result := &wallet.EncryptResult{Ciphertext: []byte{1, 2, 3}}
 		data, err := SerializeEncryptResult(result)
-		require.NoError(t, err)
+		require.NoError(t, err, "serializing EncryptResult should not error")
 
 		got, err := DeserializeEncryptResult(data)
-		require.NoError(t, err)
-		require.Equal(t, result, got)
+		require.NoError(t, err, "deserializing EncryptResult should not error")
+		require.Equal(t, result, got, "deserialized result should match original result")
 	})
 
 	t.Run("error byte", func(t *testing.T) {
 		data := []byte{1} // error byte = 1 (failure)
 		_, err := DeserializeEncryptResult(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed with error byte 1")
+		require.Error(t, err, "deserializing with error byte should produce an error")
+		require.Contains(t, err.Error(), "failed with error byte 1", "error message should indicate failure and error byte")
 	})
 }

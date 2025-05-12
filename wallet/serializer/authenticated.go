@@ -24,7 +24,7 @@ func SerializeAuthenticatedResult(result *wallet.AuthenticatedResult) ([]byte, e
 }
 
 func DeserializeAuthenticatedResult(data []byte) (*wallet.AuthenticatedResult, error) {
-	if len(data) < 2 {
+	if len(data) != 2 {
 		return nil, fmt.Errorf("invalid data length for authenticated result")
 	}
 

@@ -34,14 +34,14 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeRevealCounterpartyKeyLinkageArgs(tt.args)
-			require.NoError(t, err)
+			require.NoError(t, err, "serializing RevealCounterpartyKeyLinkageArgs should not error")
 
 			// Test deserialization
 			got, err := DeserializeRevealCounterpartyKeyLinkageArgs(data)
-			require.NoError(t, err)
+			require.NoError(t, err, "deserializing RevealCounterpartyKeyLinkageArgs should not error")
 
 			// Compare results
-			require.Equal(t, tt.args, got)
+			require.Equal(t, tt.args, got, "deserialized args should match original args")
 		})
 	}
 }
@@ -58,10 +58,10 @@ func TestRevealCounterpartyKeyLinkageResult(t *testing.T) {
 		}
 
 		data, err := SerializeRevealCounterpartyKeyLinkageResult(result)
-		require.NoError(t, err)
+		require.NoError(t, err, "serializing RevealCounterpartyKeyLinkageResult should not error")
 
 		got, err := DeserializeRevealCounterpartyKeyLinkageResult(data)
-		require.NoError(t, err)
-		require.Equal(t, result, got)
+		require.NoError(t, err, "deserializing RevealCounterpartyKeyLinkageResult should not error")
+		require.Equal(t, result, got, "deserialized result should match original result")
 	})
 }

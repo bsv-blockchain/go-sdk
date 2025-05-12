@@ -1,9 +1,11 @@
 package headers_client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -33,11 +35,47 @@ type Client struct {
 }
 
 func (c Client) IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool, error) {
-	if header, err := c.BlockByHeight(c.Ctx, height); err != nil {
-		return false, err
-	} else {
-		return header.MerkleRoot.Equal(*root), nil
+	type requestBody struct {
+		MerkleRoot  string `json:"merkleRoot"`
+		BlockHeight uint32 `json:"blockHeight"`
 	}
+
+	payload := []requestBody{{MerkleRoot: root.String(), BlockHeight: height}}
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return false, fmt.Errorf("error marshaling JSON: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", c.Url+"/api/v1/chain/merkleroot/verify", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return false, fmt.Errorf("error creating request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error sending request: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("error reading response body: %v", err)
+	}
+
+	var response struct {
+		ConfirmationState string `json:"confirmationState"`
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return false, fmt.Errorf("error unmarshaling JSON: %v", err)
+	}
+
+	return response.ConfirmationState == "CONFIRMED", nil
 }
 
 func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, error) {

@@ -29,24 +29,24 @@ func TestKeyDeriver(t *testing.T) {
 
 	t.Run("should compute the correct invoice number", func(t *testing.T) {
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
-		assert.NoError(t, err)
-		assert.Equal(t, "0-testprotocol-12345", invoiceNumber)
+		assert.NoError(t, err, "computing invoice number should not error")
+		assert.Equal(t, "0-testprotocol-12345", invoiceNumber, "computed invoice number should match expected value")
 	})
 
 	t.Run("should normalize counterparty correctly for self", func(t *testing.T) {
 		normalized, err := keyDeriver.normalizeCounterparty(Counterparty{
 			Type: CounterpartyTypeSelf,
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, rootPublicKey.ToDERHex(), normalized.ToDERHex())
+		assert.NoError(t, err, "normalizing self counterparty should not error")
+		assert.Equal(t, rootPublicKey.ToDERHex(), normalized.ToDERHex(), "normalized self counterparty should be root public key")
 	})
 
 	t.Run("should normalize counterparty correctly for anyone", func(t *testing.T) {
 		normalized, err := keyDeriver.normalizeCounterparty(Counterparty{
 			Type: CounterpartyTypeAnyone,
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, anyonePublicKey.ToDERHex(), normalized.ToDERHex())
+		assert.NoError(t, err, "normalizing anyone counterparty should not error")
+		assert.Equal(t, anyonePublicKey.ToDERHex(), normalized.ToDERHex(), "normalized anyone counterparty should be anyone public key")
 	})
 
 	t.Run("should normalize counterparty correctly when given as a public key", func(t *testing.T) {
@@ -54,8 +54,8 @@ func TestKeyDeriver(t *testing.T) {
 			Type:         CounterpartyTypeOther,
 			Counterparty: counterpartyPublicKey,
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, counterpartyPublicKey.ToDERHex(), normalized.ToDERHex())
+		assert.NoError(t, err, "normalizing other counterparty (public key) should not error")
+		assert.Equal(t, counterpartyPublicKey.ToDERHex(), normalized.ToDERHex(), "normalized other counterparty should be the provided public key")
 	})
 
 	t.Run("should allow public key derivation as anyone", func(t *testing.T) {
@@ -69,8 +69,8 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			false,
 		)
-		assert.NoError(t, err)
-		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
+		assert.NoError(t, err, "deriving public key as anyone should not error")
+		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey, "derived key should be a public key")
 	})
 
 	t.Run("should derive the correct public key for counterparty", func(t *testing.T) {
@@ -83,8 +83,8 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			false,
 		)
-		assert.NoError(t, err)
-		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
+		assert.NoError(t, err, "deriving public key for counterparty should not error")
+		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey, "derived key should be a public key")
 	})
 
 	t.Run("should derive the correct public key for self", func(t *testing.T) {
@@ -97,8 +97,8 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			true,
 		)
-		assert.NoError(t, err)
-		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey)
+		assert.NoError(t, err, "deriving public key for self should not error")
+		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey, "derived key should be a public key")
 	})
 
 	t.Run("should derive the correct private key", func(t *testing.T) {
@@ -110,8 +110,8 @@ func TestKeyDeriver(t *testing.T) {
 				Counterparty: counterpartyPublicKey,
 			},
 		)
-		assert.NoError(t, err)
-		assert.IsType(t, &ec.PrivateKey{}, derivedPrivateKey)
+		assert.NoError(t, err, "deriving private key should not error")
+		assert.IsType(t, &ec.PrivateKey{}, derivedPrivateKey, "derived key should be a private key")
 	})
 
 	t.Run("should derive the correct symmetric key", func(t *testing.T) {
@@ -123,9 +123,9 @@ func TestKeyDeriver(t *testing.T) {
 				Counterparty: counterpartyPublicKey,
 			},
 		)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, derivedSymmetricKey)
-		assert.Equal(t, "4ce8e868f2006e3fa8fc61ea4bc4be77d397b412b44b4dca047fb7ec3ca7cfd8", hex.EncodeToString(derivedSymmetricKey.ToBytes()))
+		assert.NoError(t, err, "deriving symmetric key should not error")
+		assert.NotEmpty(t, derivedSymmetricKey, "derived symmetric key should not be empty")
+		assert.Equal(t, "4ce8e868f2006e3fa8fc61ea4bc4be77d397b412b44b4dca047fb7ec3ca7cfd8", hex.EncodeToString(derivedSymmetricKey.ToBytes()), "derived symmetric key should match expected value")
 	})
 
 	t.Run("should be able to derive symmetric key with anyone", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestKeyDeriver(t *testing.T) {
 				Type: CounterpartyTypeAnyone,
 			},
 		)
-		assert.NoError(t, err)
+		assert.NoError(t, err, "deriving symmetric key with anyone should not error")
 	})
 
 	t.Run("should reveal the correct counterparty shared secret", func(t *testing.T) {
@@ -148,21 +148,21 @@ func TestKeyDeriver(t *testing.T) {
 				Counterparty: counterpartyPublicKey,
 			},
 		)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, sharedSecret)
+		assert.NoError(t, err, "deriving symmetric key for shared secret test should not error")
+		assert.NotEmpty(t, sharedSecret, "shared secret should not be empty")
 	})
 
 	t.Run("should not reveal shared secret for self", func(t *testing.T) {
 		_, err := keyDeriver.RevealCounterpartySecret(Counterparty{
 			Type: CounterpartyTypeSelf,
 		})
-		assert.EqualError(t, err, "counterparty secrets cannot be revealed for counterparty=self")
+		assert.EqualError(t, err, "counterparty secrets cannot be revealed for counterparty=self", "revealing secret for self should error")
 
 		_, err = keyDeriver.RevealCounterpartySecret(Counterparty{
 			Type:         CounterpartyTypeOther,
 			Counterparty: rootPublicKey,
 		})
-		assert.EqualError(t, err, "counterparty secrets cannot be revealed if counterparty key is self")
+		assert.EqualError(t, err, "counterparty secrets cannot be revealed if counterparty key is self", "revealing secret for self (via public key) should error")
 	})
 
 	t.Run("should reveal the correct counterparty shared secret", func(t *testing.T) {
@@ -170,12 +170,12 @@ func TestKeyDeriver(t *testing.T) {
 			Type:         CounterpartyTypeOther,
 			Counterparty: counterpartyPublicKey,
 		})
-		assert.NoError(t, err)
-		assert.NotEmpty(t, sharedSecret)
+		assert.NoError(t, err, "revealing counterparty secret should not error")
+		assert.NotEmpty(t, sharedSecret, "revealed shared secret should not be empty")
 
 		expected, err := rootPrivateKey.DeriveSharedSecret(counterpartyPublicKey)
-		assert.NoError(t, err)
-		assert.Equal(t, expected.ToDER(), sharedSecret.ToDER())
+		assert.NoError(t, err, "deriving expected shared secret should not error")
+		assert.Equal(t, expected.ToDER(), sharedSecret.ToDER(), "revealed shared secret should match expected value")
 	})
 
 	t.Run("should reveal the specific key association", func(t *testing.T) {
@@ -187,21 +187,21 @@ func TestKeyDeriver(t *testing.T) {
 			protocolID,
 			keyID,
 		)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, secret)
+		assert.NoError(t, err, "revealing specific secret should not error")
+		assert.NotEmpty(t, secret, "revealed specific secret should not be empty")
 
 		// Verify HMAC computation
 		sharedSecret, err := rootPrivateKey.DeriveSharedSecret(counterpartyPublicKey)
-		assert.NoError(t, err)
+		assert.NoError(t, err, "deriving shared secret for verification should not error")
 
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
-		assert.NoError(t, err)
+		assert.NoError(t, err, "computing invoice number for verification should not error")
 
 		mac := hmac.New(sha256.New, sharedSecret.X.Bytes())
 		mac.Write([]byte(invoiceNumber))
 		expected := mac.Sum(nil)
 
-		assert.Equal(t, expected, secret)
+		assert.Equal(t, expected, secret, "revealed specific secret should match computed HMAC")
 	})
 
 	t.Run("should throw an error for invalid protocol names", func(t *testing.T) {
@@ -279,7 +279,7 @@ func TestKeyDeriver(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				_, err := keyDeriver.computeInvoiceNumber(tc.protocol, tc.keyID)
-				assert.Error(t, err)
+				assert.Error(t, err, "computing invoice number with invalid input should error predictably")
 			})
 		}
 	})

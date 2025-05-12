@@ -43,7 +43,7 @@ func SerializeVerifySignatureArgs(args *wallet.VerifySignatureArgs) ([]byte, err
 		return nil, fmt.Errorf("invalid data or hash to directly verify")
 	}
 
-	// Write seekPermission flag (-1 if undefined)
+	// Write seekPermission flag
 	w.WriteOptionalBool(&args.SeekPermission)
 
 	return w.Buf, nil
@@ -88,6 +88,7 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	// Read seekPermission
 	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing VerifySignature args: %w", r.Err)
 	}
@@ -120,6 +121,7 @@ func DeserializeVerifySignatureResult(data []byte) (*wallet.VerifySignatureResul
 	valid := r.ReadByte()
 	result.Valid = valid == 1
 
+	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing VerifySignature result: %w", r.Err)
 	}

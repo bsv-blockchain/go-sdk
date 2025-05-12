@@ -2,6 +2,7 @@ package substrates
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,7 +34,7 @@ func NewHTTPWalletJSON(originator string, baseURL string, httpClient *http.Clien
 }
 
 // api makes an HTTP POST request to the wallet API
-func (h *HTTPWalletJSON) api(call string, args any) ([]byte, error) {
+func (h *HTTPWalletJSON) api(ctx context.Context, call string, args any) ([]byte, error) {
 	// Marshal request body
 	reqBody, err := json.Marshal(args)
 	if err != nil {
@@ -41,7 +42,7 @@ func (h *HTTPWalletJSON) api(call string, args any) ([]byte, error) {
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequest("POST", h.baseURL+"/"+call, bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", h.baseURL+"/"+call, bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -68,8 +69,8 @@ func (h *HTTPWalletJSON) api(call string, args any) ([]byte, error) {
 }
 
 // CreateAction creates a new transaction
-func (h *HTTPWalletJSON) CreateAction(args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-	data, err := h.api("createAction", args)
+func (h *HTTPWalletJSON) CreateAction(ctx context.Context, args wallet.CreateActionArgs) (*wallet.CreateActionResult, error) {
+	data, err := h.api(ctx, "createAction", args)
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +80,8 @@ func (h *HTTPWalletJSON) CreateAction(args wallet.CreateActionArgs, originator s
 }
 
 // SignAction signs a previously created transaction
-func (h *HTTPWalletJSON) SignAction(args wallet.SignActionArgs, originator string) (*wallet.SignActionResult, error) {
-	data, err := h.api("signAction", args)
+func (h *HTTPWalletJSON) SignAction(ctx context.Context, args wallet.SignActionArgs) (*wallet.SignActionResult, error) {
+	data, err := h.api(ctx, "signAction", args)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +91,8 @@ func (h *HTTPWalletJSON) SignAction(args wallet.SignActionArgs, originator strin
 }
 
 // AbortAction aborts a transaction in progress
-func (h *HTTPWalletJSON) AbortAction(args wallet.AbortActionArgs, originator string) (*wallet.AbortActionResult, error) {
-	data, err := h.api("abortAction", args)
+func (h *HTTPWalletJSON) AbortAction(ctx context.Context, args wallet.AbortActionArgs) (*wallet.AbortActionResult, error) {
+	data, err := h.api(ctx, "abortAction", args)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +102,8 @@ func (h *HTTPWalletJSON) AbortAction(args wallet.AbortActionArgs, originator str
 }
 
 // ListActions lists wallet transactions matching filters
-func (h *HTTPWalletJSON) ListActions(args wallet.ListActionsArgs, originator string) (*wallet.ListActionsResult, error) {
-	data, err := h.api("listActions", args)
+func (h *HTTPWalletJSON) ListActions(ctx context.Context, args wallet.ListActionsArgs) (*wallet.ListActionsResult, error) {
+	data, err := h.api(ctx, "listActions", args)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +113,8 @@ func (h *HTTPWalletJSON) ListActions(args wallet.ListActionsArgs, originator str
 }
 
 // InternalizeAction imports an external transaction into the wallet
-func (h *HTTPWalletJSON) InternalizeAction(args wallet.InternalizeActionArgs, originator string) (*wallet.InternalizeActionResult, error) {
-	data, err := h.api("internalizeAction", args)
+func (h *HTTPWalletJSON) InternalizeAction(ctx context.Context, args wallet.InternalizeActionArgs) (*wallet.InternalizeActionResult, error) {
+	data, err := h.api(ctx, "internalizeAction", args)
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +124,8 @@ func (h *HTTPWalletJSON) InternalizeAction(args wallet.InternalizeActionArgs, or
 }
 
 // ListOutputs lists wallet outputs matching filters
-func (h *HTTPWalletJSON) ListOutputs(args wallet.ListOutputsArgs, originator string) (*wallet.ListOutputsResult, error) {
-	data, err := h.api("listOutputs", args)
+func (h *HTTPWalletJSON) ListOutputs(ctx context.Context, args wallet.ListOutputsArgs) (*wallet.ListOutputsResult, error) {
+	data, err := h.api(ctx, "listOutputs", args)
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +135,8 @@ func (h *HTTPWalletJSON) ListOutputs(args wallet.ListOutputsArgs, originator str
 }
 
 // RelinquishOutput removes an output from basket tracking
-func (h *HTTPWalletJSON) RelinquishOutput(args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
-	data, err := h.api("relinquishOutput", args)
+func (h *HTTPWalletJSON) RelinquishOutput(ctx context.Context, args wallet.RelinquishOutputArgs) (*wallet.RelinquishOutputResult, error) {
+	data, err := h.api(ctx, "relinquishOutput", args)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +146,8 @@ func (h *HTTPWalletJSON) RelinquishOutput(args wallet.RelinquishOutputArgs, orig
 }
 
 // GetPublicKey retrieves a derived or identity public key
-func (h *HTTPWalletJSON) GetPublicKey(args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-	data, err := h.api("getPublicKey", args)
+func (h *HTTPWalletJSON) GetPublicKey(ctx context.Context, args wallet.GetPublicKeyArgs) (*wallet.GetPublicKeyResult, error) {
+	data, err := h.api(ctx, "getPublicKey", args)
 	if err != nil {
 		return nil, err
 	}
@@ -156,8 +157,8 @@ func (h *HTTPWalletJSON) GetPublicKey(args wallet.GetPublicKeyArgs, originator s
 }
 
 // RevealCounterpartyKeyLinkage reveals key linkage between counterparties
-func (h *HTTPWalletJSON) RevealCounterpartyKeyLinkage(args wallet.RevealCounterpartyKeyLinkageArgs, originator string) (*wallet.RevealCounterpartyKeyLinkageResult, error) {
-	data, err := h.api("revealCounterpartyKeyLinkage", args)
+func (h *HTTPWalletJSON) RevealCounterpartyKeyLinkage(ctx context.Context, args wallet.RevealCounterpartyKeyLinkageArgs) (*wallet.RevealCounterpartyKeyLinkageResult, error) {
+	data, err := h.api(ctx, "revealCounterpartyKeyLinkage", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +168,8 @@ func (h *HTTPWalletJSON) RevealCounterpartyKeyLinkage(args wallet.RevealCounterp
 }
 
 // RevealSpecificKeyLinkage reveals key linkage for a specific interaction
-func (h *HTTPWalletJSON) RevealSpecificKeyLinkage(args wallet.RevealSpecificKeyLinkageArgs, originator string) (*wallet.RevealSpecificKeyLinkageResult, error) {
-	data, err := h.api("revealSpecificKeyLinkage", args)
+func (h *HTTPWalletJSON) RevealSpecificKeyLinkage(ctx context.Context, args wallet.RevealSpecificKeyLinkageArgs) (*wallet.RevealSpecificKeyLinkageResult, error) {
+	data, err := h.api(ctx, "revealSpecificKeyLinkage", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -178,8 +179,8 @@ func (h *HTTPWalletJSON) RevealSpecificKeyLinkage(args wallet.RevealSpecificKeyL
 }
 
 // Encrypt encrypts data using derived keys
-func (h *HTTPWalletJSON) Encrypt(args wallet.EncryptArgs, originator string) (*wallet.EncryptResult, error) {
-	data, err := h.api("encrypt", args)
+func (h *HTTPWalletJSON) Encrypt(ctx context.Context, args wallet.EncryptArgs) (*wallet.EncryptResult, error) {
+	data, err := h.api(ctx, "encrypt", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +190,8 @@ func (h *HTTPWalletJSON) Encrypt(args wallet.EncryptArgs, originator string) (*w
 }
 
 // Decrypt decrypts data using derived keys
-func (h *HTTPWalletJSON) Decrypt(args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
-	data, err := h.api("decrypt", args)
+func (h *HTTPWalletJSON) Decrypt(ctx context.Context, args wallet.DecryptArgs) (*wallet.DecryptResult, error) {
+	data, err := h.api(ctx, "decrypt", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -200,8 +201,8 @@ func (h *HTTPWalletJSON) Decrypt(args wallet.DecryptArgs, originator string) (*w
 }
 
 // CreateHmac creates an HMAC for data
-func (h *HTTPWalletJSON) CreateHmac(args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-	data, err := h.api("createHmac", args)
+func (h *HTTPWalletJSON) CreateHmac(ctx context.Context, args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
+	data, err := h.api(ctx, "createHmac", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -211,8 +212,8 @@ func (h *HTTPWalletJSON) CreateHmac(args wallet.CreateHmacArgs, originator strin
 }
 
 // VerifyHmac verifies an HMAC for data
-func (h *HTTPWalletJSON) VerifyHmac(args wallet.VerifyHmacArgs, originator string) (*wallet.VerifyHmacResult, error) {
-	data, err := h.api("verifyHmac", args)
+func (h *HTTPWalletJSON) VerifyHmac(ctx context.Context, args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
+	data, err := h.api(ctx, "verifyHmac", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -222,8 +223,8 @@ func (h *HTTPWalletJSON) VerifyHmac(args wallet.VerifyHmacArgs, originator strin
 }
 
 // CreateSignature creates a digital signature
-func (h *HTTPWalletJSON) CreateSignature(args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-	data, err := h.api("createSignature", args)
+func (h *HTTPWalletJSON) CreateSignature(ctx context.Context, args wallet.CreateSignatureArgs) (*wallet.CreateSignatureResult, error) {
+	data, err := h.api(ctx, "createSignature", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +234,8 @@ func (h *HTTPWalletJSON) CreateSignature(args wallet.CreateSignatureArgs, origin
 }
 
 // VerifySignature verifies a digital signature
-func (h *HTTPWalletJSON) VerifySignature(args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
-	data, err := h.api("verifySignature", args)
+func (h *HTTPWalletJSON) VerifySignature(ctx context.Context, args wallet.VerifySignatureArgs) (*wallet.VerifySignatureResult, error) {
+	data, err := h.api(ctx, "verifySignature", &args)
 	if err != nil {
 		return nil, err
 	}
@@ -244,8 +245,8 @@ func (h *HTTPWalletJSON) VerifySignature(args wallet.VerifySignatureArgs, origin
 }
 
 // AcquireCertificate acquires an identity certificate
-func (h *HTTPWalletJSON) AcquireCertificate(args wallet.AcquireCertificateArgs, originator string) (*wallet.Certificate, error) {
-	data, err := h.api("acquireCertificate", args)
+func (h *HTTPWalletJSON) AcquireCertificate(ctx context.Context, args wallet.AcquireCertificateArgs) (*wallet.Certificate, error) {
+	data, err := h.api(ctx, "acquireCertificate", args)
 	if err != nil {
 		return nil, err
 	}
@@ -255,8 +256,8 @@ func (h *HTTPWalletJSON) AcquireCertificate(args wallet.AcquireCertificateArgs, 
 }
 
 // ListCertificates lists identity certificates
-func (h *HTTPWalletJSON) ListCertificates(args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
-	data, err := h.api("listCertificates", args)
+func (h *HTTPWalletJSON) ListCertificates(ctx context.Context, args wallet.ListCertificatesArgs) (*wallet.ListCertificatesResult, error) {
+	data, err := h.api(ctx, "listCertificates", args)
 	if err != nil {
 		return nil, err
 	}
@@ -266,8 +267,8 @@ func (h *HTTPWalletJSON) ListCertificates(args wallet.ListCertificatesArgs, orig
 }
 
 // ProveCertificate proves select fields of a certificate
-func (h *HTTPWalletJSON) ProveCertificate(args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
-	data, err := h.api("proveCertificate", args)
+func (h *HTTPWalletJSON) ProveCertificate(ctx context.Context, args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
+	data, err := h.api(ctx, "proveCertificate", args)
 	if err != nil {
 		return nil, err
 	}
@@ -277,8 +278,8 @@ func (h *HTTPWalletJSON) ProveCertificate(args wallet.ProveCertificateArgs, orig
 }
 
 // RelinquishCertificate removes an identity certificate
-func (h *HTTPWalletJSON) RelinquishCertificate(args wallet.RelinquishCertificateArgs, originator string) (*wallet.RelinquishCertificateResult, error) {
-	data, err := h.api("relinquishCertificate", args)
+func (h *HTTPWalletJSON) RelinquishCertificate(ctx context.Context, args wallet.RelinquishCertificateArgs) (*wallet.RelinquishCertificateResult, error) {
+	data, err := h.api(ctx, "relinquishCertificate", args)
 	if err != nil {
 		return nil, err
 	}
@@ -288,8 +289,8 @@ func (h *HTTPWalletJSON) RelinquishCertificate(args wallet.RelinquishCertificate
 }
 
 // DiscoverByIdentityKey discovers certificates by identity key
-func (h *HTTPWalletJSON) DiscoverByIdentityKey(args wallet.DiscoverByIdentityKeyArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
-	data, err := h.api("discoverByIdentityKey", args)
+func (h *HTTPWalletJSON) DiscoverByIdentityKey(ctx context.Context, args wallet.DiscoverByIdentityKeyArgs) (*wallet.DiscoverCertificatesResult, error) {
+	data, err := h.api(ctx, "discoverByIdentityKey", args)
 	if err != nil {
 		return nil, err
 	}
@@ -299,8 +300,8 @@ func (h *HTTPWalletJSON) DiscoverByIdentityKey(args wallet.DiscoverByIdentityKey
 }
 
 // DiscoverByAttributes discovers certificates by attributes
-func (h *HTTPWalletJSON) DiscoverByAttributes(args wallet.DiscoverByAttributesArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
-	data, err := h.api("discoverByAttributes", args)
+func (h *HTTPWalletJSON) DiscoverByAttributes(ctx context.Context, args wallet.DiscoverByAttributesArgs) (*wallet.DiscoverCertificatesResult, error) {
+	data, err := h.api(ctx, "discoverByAttributes", args)
 	if err != nil {
 		return nil, err
 	}
@@ -310,8 +311,8 @@ func (h *HTTPWalletJSON) DiscoverByAttributes(args wallet.DiscoverByAttributesAr
 }
 
 // IsAuthenticated checks authentication status
-func (h *HTTPWalletJSON) IsAuthenticated(args any, originator string) (*wallet.AuthenticatedResult, error) {
-	data, err := h.api("isAuthenticated", args)
+func (h *HTTPWalletJSON) IsAuthenticated(ctx context.Context, args any) (*wallet.AuthenticatedResult, error) {
+	data, err := h.api(ctx, "isAuthenticated", args)
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +322,8 @@ func (h *HTTPWalletJSON) IsAuthenticated(args any, originator string) (*wallet.A
 }
 
 // WaitForAuthentication waits until user is authenticated
-func (h *HTTPWalletJSON) WaitForAuthentication(args any, originator string) (*wallet.AuthenticatedResult, error) {
-	data, err := h.api("waitForAuthentication", args)
+func (h *HTTPWalletJSON) WaitForAuthentication(ctx context.Context, args any) (*wallet.AuthenticatedResult, error) {
+	data, err := h.api(ctx, "waitForAuthentication", args)
 	if err != nil {
 		return nil, err
 	}
@@ -332,8 +333,8 @@ func (h *HTTPWalletJSON) WaitForAuthentication(args any, originator string) (*wa
 }
 
 // GetHeight gets current blockchain height
-func (h *HTTPWalletJSON) GetHeight(args any, originator string) (*wallet.GetHeightResult, error) {
-	data, err := h.api("getHeight", args)
+func (h *HTTPWalletJSON) GetHeight(ctx context.Context, args any) (*wallet.GetHeightResult, error) {
+	data, err := h.api(ctx, "getHeight", args)
 	if err != nil {
 		return nil, err
 	}
@@ -343,8 +344,8 @@ func (h *HTTPWalletJSON) GetHeight(args any, originator string) (*wallet.GetHeig
 }
 
 // GetHeaderForHeight gets block header at height
-func (h *HTTPWalletJSON) GetHeaderForHeight(args wallet.GetHeaderArgs, originator string) (*wallet.GetHeaderResult, error) {
-	data, err := h.api("getHeaderForHeight", args)
+func (h *HTTPWalletJSON) GetHeaderForHeight(ctx context.Context, args wallet.GetHeaderArgs) (*wallet.GetHeaderResult, error) {
+	data, err := h.api(ctx, "getHeaderForHeight", args)
 	if err != nil {
 		return nil, err
 	}
@@ -354,8 +355,8 @@ func (h *HTTPWalletJSON) GetHeaderForHeight(args wallet.GetHeaderArgs, originato
 }
 
 // GetNetwork gets current network (mainnet/testnet)
-func (h *HTTPWalletJSON) GetNetwork(args any, originator string) (*wallet.GetNetworkResult, error) {
-	data, err := h.api("getNetwork", args)
+func (h *HTTPWalletJSON) GetNetwork(ctx context.Context, args any) (*wallet.GetNetworkResult, error) {
+	data, err := h.api(ctx, "getNetwork", args)
 	if err != nil {
 		return nil, err
 	}
@@ -365,8 +366,8 @@ func (h *HTTPWalletJSON) GetNetwork(args any, originator string) (*wallet.GetNet
 }
 
 // GetVersion gets wallet version
-func (h *HTTPWalletJSON) GetVersion(args any, originator string) (*wallet.GetVersionResult, error) {
-	data, err := h.api("getVersion", args)
+func (h *HTTPWalletJSON) GetVersion(ctx context.Context, args any) (*wallet.GetVersionResult, error) {
+	data, err := h.api(ctx, "getVersion", args)
 	if err != nil {
 		return nil, err
 	}

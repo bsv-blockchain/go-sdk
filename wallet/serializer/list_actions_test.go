@@ -4,20 +4,22 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
+type ListActionArgsSerializeTest struct {
+	name string
+	args wallet.ListActionsArgs
+}
+
 func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
-	tests := []struct {
-		name    string
-		args    wallet.ListActionsArgs
-		wantErr bool
-	}{
+	tests := []ListActionArgsSerializeTest{
 		{
 			name: "full args",
 			args: wallet.ListActionsArgs{
 				Labels:                           []string{"label1", "label2"},
-				LabelQueryMode:                   "all",
+				LabelQueryMode:                   wallet.QueryModeAll,
 				IncludeLabels:                    util.BoolPtr(true),
 				IncludeInputs:                    util.BoolPtr(false),
 				IncludeInputSourceLockingScripts: util.BoolPtr(true),
@@ -28,21 +30,18 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 				Offset:                           10,
 				SeekPermission:                   util.BoolPtr(false),
 			},
-			wantErr: false,
 		},
 		{
 			name: "minimal args",
 			args: wallet.ListActionsArgs{
 				Labels: []string{"label1"},
 			},
-			wantErr: false,
 		},
 		{
 			name: "empty labels",
 			args: wallet.ListActionsArgs{
 				Labels: []string{},
 			},
-			wantErr: false,
 		},
 		{
 			name: "nil options",
@@ -59,15 +58,6 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 				Offset:                           0,
 				SeekPermission:                   nil,
 			},
-			wantErr: false,
-		},
-		{
-			name: "invalid label query mode",
-			args: wallet.ListActionsArgs{
-				Labels:         []string{"label1"},
-				LabelQueryMode: "invalid",
-			},
-			wantErr: true,
 		},
 	}
 
@@ -75,35 +65,52 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
 			data, err := SerializeListActionsArgs(&tt.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeListActionsArgs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.wantErr {
-				return
-			}
+			require.NoError(t, err, "serializing valid ListActionsArgs should not error")
 
 			// Test deserialization
 			deserialized, err := DeserializeListActionsArgs(data)
-			if err != nil {
-				t.Errorf("DeserializeListActionsArgs() error = %v", err)
-				return
-			}
+			require.NoError(t, err, "deserializing valid ListActionsArgs should not error")
 
 			// Compare original and deserialized
-			assert.Equal(t, tt.args, *deserialized)
+			assert.Equal(t, tt.args, *deserialized, "deserialized args should match original args")
 		})
 	}
 }
 
-func TestListActionResultSerializeAndDeserialize(t *testing.T) {
-	txid := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+func TestListActionArgsSerializeAndDeserializeError(t *testing.T) {
+	tests := []ListActionArgsSerializeTest{{
+		name: "invalid label query mode",
+		args: wallet.ListActionsArgs{
+			Labels:         []string{"label1"},
+			LabelQueryMode: "invalid",
+		},
+	}, {
+		name: "invalid label query mode",
+		args: wallet.ListActionsArgs{
+			Labels:         []string{"label1"},
+			LabelQueryMode: "invalid",
+			Limit:          100000,
+		},
+	}}
 
-	tests := []struct {
-		name    string
-		result  wallet.ListActionsResult
-		wantErr bool
-	}{
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test serialization fails
+			_, err := SerializeListActionsArgs(&tt.args)
+			require.Error(t, err, "serializing with invalid args should error")
+		})
+	}
+}
+
+type ListActionResultSerializeTest struct {
+	name   string
+	result wallet.ListActionsResult
+}
+
+func TestListActionResultSerializeAndDeserialize(t *testing.T) {
+	txid := "b1f4d452814bba0ac422318083850b706d5f23ce232c789eefe5cbdcf2cc47de"
+
+	tests := []ListActionResultSerializeTest{
 		{
 			name: "full result",
 			result: wallet.ListActionsResult{
@@ -155,7 +162,6 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "empty result",
@@ -163,8 +169,28 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 				TotalActions: 0,
 				Actions:      []wallet.Action{},
 			},
-			wantErr: false,
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test serialization
+			data, err := SerializeListActionsResult(&tt.result)
+			require.NoError(t, err, "serializing valid ListActionsResult should not error")
+
+			// Test deserialization
+			deserialized, err := DeserializeListActionsResult(data)
+			require.NoError(t, err, "deserializing valid ListActionsResult should not error")
+
+			// Compare original and deserialized
+			assert.Equal(t, tt.result, *deserialized, "deserialized result should match original result")
+		})
+	}
+}
+
+func TestListActionResultSerializeAndDeserializeError(t *testing.T) {
+	txid := "912e0a97a189347a94f634a6eb4d67e13df9afc8fea670287b31d277e8d658d8"
+	tests := []ListActionResultSerializeTest{
 		{
 			name: "invalid txid",
 			result: wallet.ListActionsResult{
@@ -175,7 +201,6 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
 		},
 		{
 			name: "invalid status",
@@ -188,31 +213,14 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
-			data, err := SerializeListActionsResult(&tt.result)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SerializeListActionsResult() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.wantErr {
-				return
-			}
-
-			// Test deserialization
-			deserialized, err := DeserializeListActionsResult(data)
-			if err != nil {
-				t.Errorf("DeserializeListActionsResult() error = %v", err)
-				return
-			}
-
-			// Compare original and deserialized
-			assert.Equal(t, tt.result, *deserialized)
+			_, err := SerializeListActionsResult(&tt.result)
+			require.Error(t, err, "serializing with invalid result data should error")
 		})
 	}
 }

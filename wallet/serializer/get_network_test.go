@@ -14,13 +14,13 @@ func TestGetNetworkResult(t *testing.T) {
 		{
 			name: "mainnet",
 			result: &wallet.GetNetworkResult{
-				Network: "mainnet",
+				Network: wallet.NetworkMainnet,
 			},
 		},
 		{
 			name: "testnet",
 			result: &wallet.GetNetworkResult{
-				Network: "testnet",
+				Network: wallet.NetworkTestnet,
 			},
 		},
 	}
