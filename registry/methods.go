@@ -144,7 +144,7 @@ func (c *RegistryClient) ResolveBasket(ctx context.Context, query BasketQuery) (
 	result, err := resolver.Query(ctx, &lookup.LookupQuestion{
 		Service: serviceName,
 		Query:   queryJSON,
-	}, 0)
+	})
 	fmt.Println("DEBUG: Resolver.Query completed")
 	if err != nil {
 		fmt.Printf("DEBUG: Lookup query error: %v\n", err)
@@ -210,7 +210,7 @@ func (c *RegistryClient) ResolveProtocol(ctx context.Context, query ProtocolQuer
 	result, err := resolver.Query(ctx, &lookup.LookupQuestion{
 		Service: serviceName,
 		Query:   queryJSON,
-	}, 0)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("lookup query error: %w", err)
 	}
@@ -253,7 +253,7 @@ func (c *RegistryClient) ResolveCertificate(ctx context.Context, query Certifica
 	result, err := resolver.Query(ctx, &lookup.LookupQuestion{
 		Service: serviceName,
 		Query:   queryJSON,
-	}, 0)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("lookup query error: %w", err)
 	}
