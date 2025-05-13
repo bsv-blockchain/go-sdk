@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
@@ -122,10 +123,8 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 	}
 
 	if version == ATOMIC_BEEF {
-		txid := make([]byte, 32)
-		if _, err = reader.Read(txid); err != nil {
-			return nil, err
-		} else if version, err = readVersion(reader); err != nil {
+		reader.Seek(32, io.SeekCurrent)
+		if version, err = readVersion(reader); err != nil {
 			return nil, err
 		}
 	}
