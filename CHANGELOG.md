@@ -3,9 +3,9 @@
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Table of Contents
-
-- [1.1.25 - 2025-05-09](#1124---2025-05-09)
-- [1.1.24 - 2025-04-24](#1123---2025-04-29)
+- [1.1.26 - 2025-05-14](#1126---2025-05-14)
+- [1.1.25 - 2025-05-09](#1125---2025-05-09)
+- [1.1.24 - 2025-04-24](#1124---2025-04-29)
 - [1.1.23 - 2025-04-23](#1123---2025-04-23)
 - [1.1.22 - 2025-03-14](#1122---2025-03-14)
 - [1.1.21 - 2025-03-12](#1121---2025-03-12)
@@ -31,6 +31,10 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.1.26] - 2025-05-14
+  ### Updated
+  - Support AtomicBeef in NewBeefFromBytes
 
 ## [1.1.25] - 2025-05-09
   ### Fix
