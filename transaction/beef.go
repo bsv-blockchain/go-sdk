@@ -103,8 +103,6 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 				sourceTxid := input.SourceTXID.String()
 				if sourceObj, ok := txs[sourceTxid]; ok {
 					input.SourceTransaction = sourceObj.Transaction
-				} else if beefTx.Transaction.MerklePath == nil && beefTx.KnownTxID == nil {
-					return nil, fmt.Errorf("reference to unknown txid in bump: %s", sourceTxid)
 				}
 			}
 
@@ -117,8 +115,12 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 }
 
 func NewBeefFromBytes(beef []byte) (*Beef, error) {
-	reader := bytes.NewReader(beef)
-
+	var reader *bytes.Reader
+	if binary.LittleEndian.Uint32(beef[:4]) == ATOMIC_BEEF {
+		reader = bytes.NewReader(beef[36:])
+	} else {
+		reader = bytes.NewReader(beef)
+	}
 	version, err := readVersion(reader)
 	if err != nil {
 		return nil, err
