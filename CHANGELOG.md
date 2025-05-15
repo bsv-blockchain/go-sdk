@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Table of Contents
+- [1.1.27 - 2025-05-15](#1127---2025-05-15)
 - [1.1.26 - 2025-05-14](#1126---2025-05-14)
 - [1.1.25 - 2025-05-09](#1125---2025-05-09)
 - [1.1.24 - 2025-04-24](#1124---2025-04-29)
@@ -32,13 +33,17 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
 
+## [1.1.25] - 2025-05-09
+  ### Fix
+  - Fix BRC77 message signing to match ts-sdk
+
 ## [1.1.26] - 2025-05-14
   ### Updated
   - Support AtomicBeef in NewBeefFromBytes
 
 ## [1.1.25] - 2025-05-09
   ### Fix
-  - nill pointer
+  - nil pointer
 
 ## [1.1.24] - 2025-04-29
   ### Added
