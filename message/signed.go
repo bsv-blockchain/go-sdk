@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 
@@ -37,7 +38,8 @@ func Sign(message []byte, signer *ec.PrivateKey, verifier *ec.PublicKey) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	signature, err := signingPriv.Sign(message)
+	hashedMessage := sha256.Sum256(message)
+	signature, err := signingPriv.Sign(hashedMessage[:])
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +82,11 @@ func Verify(message []byte, sig []byte, recipient *ec.PrivateKey) (bool, error) 
 		counter += 32
 		verifierDER := append([]byte{verifierFirst}, verifierRest...)
 		if recipient == nil {
-			return false, nil
+			return false, fmt.Errorf("this signature can only be verified with knowledge of a specific private key. The associated public key is: %x", verifierDER)
 		}
 		recipientDER := recipient.PubKey().Compressed()
 		if !bytes.Equal(verifierDER, recipientDER) {
-			errorStr := "the recipient public key is %x but the signature requres the recipient to have public key %x"
+			errorStr := "the recipient public key is %x but the signature requires the recipient to have public key %x"
 			err = fmt.Errorf(errorStr, recipientDER, verifierDER)
 			return false, err
 		}
@@ -102,7 +104,8 @@ func Verify(message []byte, sig []byte, recipient *ec.PrivateKey) (bool, error) 
 	if err != nil {
 		return false, err
 	}
-	verified := signature.Verify(message, signingKey)
+	hashedMessage := sha256.Sum256(message)
+	verified := signature.Verify(hashedMessage[:], signingKey)
 	return verified, nil
 
 }
