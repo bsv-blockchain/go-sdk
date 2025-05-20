@@ -9,10 +9,10 @@ import (
 func TestCreateHmacArgs(t *testing.T) {
 	tests := []struct {
 		name string
-		args *wallet.CreateHmacArgs
+		args *wallet.CreateHMACArgs
 	}{{
 		name: "full args",
-		args: &wallet.CreateHmacArgs{
+		args: &wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -28,7 +28,7 @@ func TestCreateHmacArgs(t *testing.T) {
 		},
 	}, {
 		name: "minimal args",
-		args: &wallet.CreateHmacArgs{
+		args: &wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelSilent,
@@ -40,7 +40,7 @@ func TestCreateHmacArgs(t *testing.T) {
 		},
 	}, {
 		name: "empty data",
-		args: &wallet.CreateHmacArgs{
+		args: &wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelSilent,
@@ -70,7 +70,7 @@ func TestCreateHmacArgs(t *testing.T) {
 
 func TestCreateHmacResult(t *testing.T) {
 	t.Run("serialize/deserialize", func(t *testing.T) {
-		result := &wallet.CreateHmacResult{Hmac: []byte{1, 2, 3, 4}}
+		result := &wallet.CreateHMACResult{Hmac: []byte{1, 2, 3, 4}}
 		data, err := SerializeCreateHmacResult(result)
 		require.NoError(t, err)
 

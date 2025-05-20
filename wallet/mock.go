@@ -33,7 +33,7 @@ type MockWallet struct {
 	ProveCertificateError  error
 	GetPublicKeyResult     *GetPublicKeyResult
 	GetPublicKeyError      error
-	CreateHmacResult       *CreateHmacResult
+	CreateHmacResult       *CreateHMACResult
 	CreateHmacError        error
 	CreateSignatureResult  *CreateSignatureResult
 	CreateSignatureError   error
@@ -49,7 +49,7 @@ type MockWallet struct {
 	MockDiscoverByAttributes  func(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
 	MockGetPublicKey          func(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
 	MockCreateSignature       func(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
-	MockCreateHmac            func(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error)
+	MockCreateHmac            func(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
 	MockDecrypt               func(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
 	MockVerifySignature       func(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
 	MockListCertificates      func(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
@@ -191,13 +191,13 @@ func (m *MockWallet) RevealSpecificKeyLinkage(ctx context.Context, args RevealSp
 	return nil, errors.New("RevealSpecificKeyLinkage mock not implemented")
 }
 
-func (m *MockWallet) CreateHmac(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error) {
+func (m *MockWallet) CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error) {
 	if m.MockCreateHmac != nil {
 		return m.MockCreateHmac(ctx, args, originator)
 	}
 	if m.CreateHmacResult == nil {
-		require.Fail(m.T, "CreateHmac mock called but CreateHmacResult not set")
-		return nil, errors.New("CreateHmac mock result not configured")
+		require.Fail(m.T, "CreateHMAC mock called but CreateHMACResult not set")
+		return nil, errors.New("CreateHMAC mock result not configured")
 	}
 	if m.CreateHmacError != nil {
 		return nil, m.CreateHmacError
@@ -205,9 +205,9 @@ func (m *MockWallet) CreateHmac(ctx context.Context, args CreateHmacArgs, origin
 	return m.CreateHmacResult, nil
 }
 
-func (m *MockWallet) VerifyHmac(ctx context.Context, args VerifyHmacArgs, originator string) (*VerifyHmacResult, error) {
-	require.Fail(m.T, "VerifyHmac mock not implemented")
-	return nil, errors.New("VerifyHmac mock not implemented")
+func (m *MockWallet) VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error) {
+	require.Fail(m.T, "VerifyHMAC mock not implemented")
+	return nil, errors.New("VerifyHMAC mock not implemented")
 }
 
 func (m *MockWallet) VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error) {

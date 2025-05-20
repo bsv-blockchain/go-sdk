@@ -7,7 +7,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-func SerializeVerifyHmacArgs(args *wallet.VerifyHmacArgs) ([]byte, error) {
+func SerializeVerifyHmacArgs(args *wallet.VerifyHMACArgs) ([]byte, error) {
 	w := util.NewWriter()
 
 	// Encode key related params (protocol, key, counterparty, privileged)
@@ -37,9 +37,9 @@ func SerializeVerifyHmacArgs(args *wallet.VerifyHmacArgs) ([]byte, error) {
 	return w.Buf, nil
 }
 
-func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHmacArgs, error) {
+func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHMACArgs, error) {
 	r := util.NewReaderHoldError(data)
-	args := &wallet.VerifyHmacArgs{}
+	args := &wallet.VerifyHMACArgs{}
 
 	// Decode key related params
 	params, err := decodeKeyRelatedParams(r)
@@ -64,19 +64,19 @@ func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHmacArgs, error) {
 
 	r.CheckComplete()
 	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing VerifyHmac args: %w", r.Err)
+		return nil, fmt.Errorf("error deserializing VerifyHMAC args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
-func SerializeVerifyHmacResult(result *wallet.VerifyHmacResult) ([]byte, error) {
+func SerializeVerifyHmacResult(result *wallet.VerifyHMACResult) ([]byte, error) {
 	w := util.NewWriter()
 	w.WriteByte(0) // errorByte = 0 (success)
 	return w.Buf, nil
 }
 
-func DeserializeVerifyHmacResult(data []byte) (*wallet.VerifyHmacResult, error) {
+func DeserializeVerifyHmacResult(data []byte) (*wallet.VerifyHMACResult, error) {
 	r := util.NewReaderHoldError(data)
 
 	// Read error byte (0 = success)
@@ -87,8 +87,8 @@ func DeserializeVerifyHmacResult(data []byte) (*wallet.VerifyHmacResult, error) 
 
 	r.CheckComplete()
 	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing VerifyHmac result: %w", r.Err)
+		return nil, fmt.Errorf("error deserializing VerifyHMAC result: %w", r.Err)
 	}
 
-	return &wallet.VerifyHmacResult{Valid: true}, nil
+	return &wallet.VerifyHMACResult{Valid: true}, nil
 }

@@ -275,11 +275,11 @@ func (p *ProtoWallet) VerifySignature(
 
 // CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
 // using a symmetric key derived from the protocol, key ID, and counterparty.
-func (p *ProtoWallet) CreateHmac(
+func (p *ProtoWallet) CreateHMAC(
 	ctx context.Context,
-	args CreateHmacArgs,
+	args CreateHMACArgs,
 	originator string,
-) (*CreateHmacResult, error) {
+) (*CreateHMACResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -307,16 +307,16 @@ func (p *ProtoWallet) CreateHmac(
 	mac.Write(args.Data)
 	hmacValue := mac.Sum(nil)
 
-	return &CreateHmacResult{Hmac: hmacValue}, nil
+	return &CreateHMACResult{Hmac: hmacValue}, nil
 }
 
 // VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
 // The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
-func (p *ProtoWallet) VerifyHmac(
+func (p *ProtoWallet) VerifyHMAC(
 	ctx context.Context,
-	args VerifyHmacArgs,
+	args VerifyHMACArgs,
 	originator string,
-) (*VerifyHmacResult, error) {
+) (*VerifyHMACResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -346,8 +346,8 @@ func (p *ProtoWallet) VerifyHmac(
 
 	// Verify HMAC
 	if !hmac.Equal(expectedHmac, args.Hmac) {
-		return &VerifyHmacResult{Valid: false}, nil
+		return &VerifyHMACResult{Valid: false}, nil
 	}
 
-	return &VerifyHmacResult{Valid: true}, nil
+	return &VerifyHMACResult{Valid: true}, nil
 }

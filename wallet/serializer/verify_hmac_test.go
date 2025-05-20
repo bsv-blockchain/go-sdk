@@ -9,10 +9,10 @@ import (
 func TestVerifyHmacArgs(t *testing.T) {
 	tests := []struct {
 		name string
-		args *wallet.VerifyHmacArgs
+		args *wallet.VerifyHMACArgs
 	}{{
 		name: "full args",
-		args: &wallet.VerifyHmacArgs{
+		args: &wallet.VerifyHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -29,7 +29,7 @@ func TestVerifyHmacArgs(t *testing.T) {
 		},
 	}, {
 		name: "minimal args",
-		args: &wallet.VerifyHmacArgs{
+		args: &wallet.VerifyHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelSilent,
@@ -42,7 +42,7 @@ func TestVerifyHmacArgs(t *testing.T) {
 		},
 	}, {
 		name: "empty data",
-		args: &wallet.VerifyHmacArgs{
+		args: &wallet.VerifyHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelSilent,
@@ -73,7 +73,7 @@ func TestVerifyHmacArgs(t *testing.T) {
 
 func TestVerifyHmacResult(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		result := &wallet.VerifyHmacResult{Valid: true}
+		result := &wallet.VerifyHMACResult{Valid: true}
 		data, err := SerializeVerifyHmacResult(result)
 		require.NoError(t, err)
 

@@ -326,8 +326,8 @@ type KeyOperations interface {
 	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
 	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
 	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
-	CreateHmac(ctx context.Context, args CreateHmacArgs, originator string) (*CreateHmacResult, error)
-	VerifyHmac(ctx context.Context, args VerifyHmacArgs, originator string) (*VerifyHmacResult, error)
+	CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
+	VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error)
 	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
 	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
 }

@@ -128,11 +128,11 @@ func CreatePeerPair(t *testing.T) (*Peer, *Peer, *wallet.MockWallet, *wallet.Moc
 		hmacBytes[i] = byte(i)
 	}
 
-	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
-	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
 
 	aliceWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
@@ -553,11 +553,11 @@ func TestPeerCertificateExchange(t *testing.T) {
 		hmacBytes[i] = byte(i)
 	}
 
-	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
-	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
 
 	// Set up transport with logging
@@ -765,11 +765,11 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 		hmacBytes1[i] = byte(i)
 	}
 
-	aliceWallet1.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes1}, nil
+	aliceWallet1.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes1}, nil
 	}
-	aliceWallet2.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes1}, nil
+	aliceWallet2.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes1}, nil
 	}
 
 	aliceWallet1.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
@@ -802,8 +802,8 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 		hmacBytes2[i] = byte(i)
 	}
 
-	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes2}, nil
+	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes2}, nil
 	}
 	bobWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
 		return &wallet.DecryptResult{Plaintext: []byte("decrypted")}, nil
@@ -1039,11 +1039,11 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		hmacBytes[i] = byte(i)
 	}
 
-	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
-	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
 
 	// Create mocked transports
@@ -1317,11 +1317,11 @@ func TestLibraryCardVerification(t *testing.T) {
 		hmacBytes[i] = byte(i)
 	}
 
-	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
-	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
 
 	// Create mocked transports
@@ -1639,11 +1639,11 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 	for i := range hmacBytes {
 		hmacBytes[i] = byte(i)
 	}
-	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	aliceWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
-	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{Hmac: hmacBytes}, nil
+	bobWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{Hmac: hmacBytes}, nil
 	}
 
 	// Setup transports

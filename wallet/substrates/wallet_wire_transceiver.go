@@ -189,7 +189,7 @@ func (t *WalletWireTransceiver) Decrypt(ctx context.Context, args wallet.Decrypt
 	return serializer.DeserializeDecryptResult(resp)
 }
 
-func (t *WalletWireTransceiver) CreateHmac(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
+func (t *WalletWireTransceiver) CreateHMAC(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
 	data, err := serializer.SerializeCreateHmacArgs(&args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize create hmac arguments: %w", err)
@@ -201,7 +201,7 @@ func (t *WalletWireTransceiver) CreateHmac(ctx context.Context, args wallet.Crea
 	return serializer.DeserializeCreateHmacResult(resp)
 }
 
-func (t *WalletWireTransceiver) VerifyHmac(ctx context.Context, args wallet.VerifyHmacArgs, originator string) (*wallet.VerifyHmacResult, error) {
+func (t *WalletWireTransceiver) VerifyHMAC(ctx context.Context, args wallet.VerifyHMACArgs, originator string) (*wallet.VerifyHMACResult, error) {
 	data, err := serializer.SerializeVerifyHmacArgs(&args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize verify hmac arguments: %w", err)

@@ -287,22 +287,22 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type CreateHmacArgs struct {
+type CreateHMACArgs struct {
 	EncryptionArgs
 	Data JsonByteNoBase64 `json:"data"`
 }
 
-type CreateHmacResult struct {
+type CreateHMACResult struct {
 	Hmac JsonByteNoBase64 `json:"hmac"`
 }
 
-type VerifyHmacArgs struct {
+type VerifyHMACArgs struct {
 	EncryptionArgs
 	Data JsonByteNoBase64 `json:"data"`
 	Hmac JsonByteNoBase64 `json:"hmac"`
 }
 
-type VerifyHmacResult struct {
+type VerifyHMACResult struct {
 	Valid bool `json:"valid"`
 }
 

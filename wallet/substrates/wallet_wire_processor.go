@@ -242,7 +242,7 @@ func (w *WalletWireProcessor) processCreateHmac(ctx context.Context, requestFram
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize create hmac args: %w", err)
 	}
-	result, err := w.Wallet.CreateHmac(ctx, *args, requestFrame.Originator)
+	result, err := w.Wallet.CreateHMAC(ctx, *args, requestFrame.Originator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process create hmac: %w", err)
 	}
@@ -254,7 +254,7 @@ func (w *WalletWireProcessor) processVerifyHmac(ctx context.Context, requestFram
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize verify hmac args: %w", err)
 	}
-	result, err := w.Wallet.VerifyHmac(ctx, *args, requestFrame.Originator)
+	result, err := w.Wallet.VerifyHMAC(ctx, *args, requestFrame.Originator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process verify hmac: %w", err)
 	}
