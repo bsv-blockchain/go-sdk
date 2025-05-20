@@ -97,9 +97,19 @@ func TestNewBEEFFromBytes(t *testing.T) {
 	require.Len(t, beef.BUMPs, 3, "BUMPs length does not match")
 	require.Len(t, beef.Transactions, 3, "Transactions length does not match")
 
+	tx := beef.FindTransaction("b1fc0f44ba629dbdffab9e34fcc4faf9dbde3560a7365c55c26fe4daab052aac")
+	require.NotNil(t, tx, "Transaction not found in BEEF data")
+
+	atomic, err := tx.AtomicBEEF(false)
+	require.NoError(t, err, "AtomicBEEF method failed")
+
+	_, err = NewTransactionFromBEEF(atomic)
+	require.NoError(t, err, "NewTransactionFromBEEF method failed")
+
 	binary.LittleEndian.PutUint32(beefBytes[0:4], 0xdeadbeef)
 	_, err = NewTransactionFromBEEF(beefBytes)
 	require.Error(t, err, "use NewBeefFromBytes to parse anything which isn't V1 BEEF or AtomicBEEF")
+
 }
 
 func TestBeefTransactionFinding(t *testing.T) {
