@@ -55,7 +55,7 @@ func (h *HTTPWalletJSON) api(ctx context.Context, call string, args any) ([]byte
 	// Send request
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 

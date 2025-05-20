@@ -140,7 +140,7 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 
 	// Test HTTP request error
 	t.Run("HTTP error", func(t *testing.T) {
-		client := NewHTTPWalletJSON("", "http://invalid-url", nil)
+		client := NewHTTPWalletJSON("", "htp://invalid-url", nil)
 		_, err := client.api(ctx, "test", map[string]string{"key": "value"})
 		require.Error(t, err)
 	})
