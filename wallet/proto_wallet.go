@@ -273,7 +273,7 @@ func (p *ProtoWallet) VerifySignature(
 	}, nil
 }
 
-// CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
+// CreateHMAC generates an HMAC (Hash-based Message Authentication Code) for the provided data
 // using a symmetric key derived from the protocol, key ID, and counterparty.
 func (p *ProtoWallet) CreateHMAC(
 	ctx context.Context,
@@ -307,10 +307,10 @@ func (p *ProtoWallet) CreateHMAC(
 	mac.Write(args.Data)
 	hmacValue := mac.Sum(nil)
 
-	return &CreateHMACResult{Hmac: hmacValue}, nil
+	return &CreateHMACResult{HMAC: hmacValue}, nil
 }
 
-// VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
+// VerifyHMAC verifies that the provided HMAC matches the expected value for the given data.
 // The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
 func (p *ProtoWallet) VerifyHMAC(
 	ctx context.Context,
@@ -342,10 +342,10 @@ func (p *ProtoWallet) VerifyHMAC(
 	// Create expected HMAC
 	mac := hmac.New(sha256.New, key.ToBytes())
 	mac.Write(args.Data)
-	expectedHmac := mac.Sum(nil)
+	expectedHMAC := mac.Sum(nil)
 
 	// Verify HMAC
-	if !hmac.Equal(expectedHmac, args.Hmac) {
+	if !hmac.Equal(expectedHMAC, args.HMAC) {
 		return &VerifyHMACResult{Valid: false}, nil
 	}
 

@@ -7,7 +7,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-func SerializeVerifyHmacArgs(args *wallet.VerifyHMACArgs) ([]byte, error) {
+func SerializeVerifyHMACArgs(args *wallet.VerifyHMACArgs) ([]byte, error) {
 	w := util.NewWriter()
 
 	// Encode key related params (protocol, key, counterparty, privileged)
@@ -25,7 +25,7 @@ func SerializeVerifyHmacArgs(args *wallet.VerifyHMACArgs) ([]byte, error) {
 	w.WriteBytes(keyParams)
 
 	// Write HMAC bytes (fixed 32 bytes)
-	w.WriteBytes(args.Hmac)
+	w.WriteBytes(args.HMAC)
 
 	// Write data length + bytes
 	w.WriteVarInt(uint64(len(args.Data)))
@@ -37,7 +37,7 @@ func SerializeVerifyHmacArgs(args *wallet.VerifyHMACArgs) ([]byte, error) {
 	return w.Buf, nil
 }
 
-func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHMACArgs, error) {
+func DeserializeVerifyHMACArgs(data []byte) (*wallet.VerifyHMACArgs, error) {
 	r := util.NewReaderHoldError(data)
 	args := &wallet.VerifyHMACArgs{}
 
@@ -53,7 +53,7 @@ func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHMACArgs, error) {
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read HMAC (fixed 32 bytes)
-	args.Hmac = r.ReadBytes(32)
+	args.HMAC = r.ReadBytes(32)
 
 	// Read data
 	dataLen := r.ReadVarInt()
@@ -70,19 +70,19 @@ func DeserializeVerifyHmacArgs(data []byte) (*wallet.VerifyHMACArgs, error) {
 	return args, nil
 }
 
-func SerializeVerifyHmacResult(result *wallet.VerifyHMACResult) ([]byte, error) {
+func SerializeVerifyHMACResult(result *wallet.VerifyHMACResult) ([]byte, error) {
 	w := util.NewWriter()
 	w.WriteByte(0) // errorByte = 0 (success)
 	return w.Buf, nil
 }
 
-func DeserializeVerifyHmacResult(data []byte) (*wallet.VerifyHMACResult, error) {
+func DeserializeVerifyHMACResult(data []byte) (*wallet.VerifyHMACResult, error) {
 	r := util.NewReaderHoldError(data)
 
 	// Read error byte (0 = success)
 	errorByte := r.ReadByte()
 	if errorByte != 0 {
-		return nil, fmt.Errorf("verifyHmac failed with error byte %d", errorByte)
+		return nil, fmt.Errorf("verifyHMAC failed with error byte %d", errorByte)
 	}
 
 	r.CheckComplete()

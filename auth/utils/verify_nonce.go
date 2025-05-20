@@ -43,7 +43,7 @@ func VerifyNonce(
 			Counterparty: counterparty,
 		},
 		Data: data,
-		Hmac: hmac,
+		HMAC: hmac,
 	}
 
 	// Verify the hmac

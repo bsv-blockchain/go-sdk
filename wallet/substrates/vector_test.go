@@ -311,7 +311,7 @@ func TestVectors(t *testing.T) {
 			Plaintext: []byte{1, 2, 3, 4},
 		},
 	}, {
-		Filename: "createHmac-simple-args",
+		Filename: "createHMAC-simple-args",
 		Object: wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
@@ -327,13 +327,13 @@ func TestVectors(t *testing.T) {
 			Data: []byte{10, 20, 30, 40},
 		},
 	}, {
-		Filename: "createHmac-simple-result",
+		Filename: "createHMAC-simple-result",
 		IsResult: true,
 		Object: wallet.CreateHMACResult{
-			Hmac: []byte{50, 60, 70, 80, 90, 100, 110, 120},
+			HMAC: []byte{50, 60, 70, 80, 90, 100, 110, 120},
 		},
 	}, {
-		Filename: "verifyHmac-simple-args",
+		Filename: "verifyHMAC-simple-args",
 		Object: wallet.VerifyHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
@@ -347,10 +347,10 @@ func TestVectors(t *testing.T) {
 				SeekPermission:   true,
 			},
 			Data: []byte{10, 20, 30, 40},
-			Hmac: []byte{50, 60, 70, 80, 90, 100, 110, 120},
+			HMAC: []byte{50, 60, 70, 80, 90, 100, 110, 120},
 		},
 	}, {
-		Filename: "verifyHmac-simple-result",
+		Filename: "verifyHMAC-simple-result",
 		IsResult: true,
 		Object: wallet.VerifyHMACResult{
 			Valid: true,
@@ -738,20 +738,20 @@ func TestVectors(t *testing.T) {
 					deserialized, err2 := serializer.DeserializeDecryptResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				case wallet.CreateHMACArgs:
-					serialized, err1 := serializer.SerializeCreateHmacArgs(&obj)
-					deserialized, err2 := serializer.DeserializeCreateHmacArgs(frameParams)
-					checkWireSerialize(substrates.CallCreateHmac, &obj, serialized, err1, deserialized, err2)
+					serialized, err1 := serializer.SerializeCreateHMACArgs(&obj)
+					deserialized, err2 := serializer.DeserializeCreateHMACArgs(frameParams)
+					checkWireSerialize(substrates.CallCreateHMAC, &obj, serialized, err1, deserialized, err2)
 				case wallet.CreateHMACResult:
-					serialized, err1 := serializer.SerializeCreateHmacResult(&obj)
-					deserialized, err2 := serializer.DeserializeCreateHmacResult(frameParams)
+					serialized, err1 := serializer.SerializeCreateHMACResult(&obj)
+					deserialized, err2 := serializer.DeserializeCreateHMACResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				case wallet.VerifyHMACArgs:
-					serialized, err1 := serializer.SerializeVerifyHmacArgs(&obj)
-					deserialized, err2 := serializer.DeserializeVerifyHmacArgs(frameParams)
-					checkWireSerialize(substrates.CallVerifyHmac, &obj, serialized, err1, deserialized, err2)
+					serialized, err1 := serializer.SerializeVerifyHMACArgs(&obj)
+					deserialized, err2 := serializer.DeserializeVerifyHMACArgs(frameParams)
+					checkWireSerialize(substrates.CallVerifyHMAC, &obj, serialized, err1, deserialized, err2)
 				case wallet.VerifyHMACResult:
-					serialized, err1 := serializer.SerializeVerifyHmacResult(&obj)
-					deserialized, err2 := serializer.DeserializeVerifyHmacResult(frameParams)
+					serialized, err1 := serializer.SerializeVerifyHMACResult(&obj)
+					deserialized, err2 := serializer.DeserializeVerifyHMACResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				case wallet.CreateSignatureArgs:
 					serialized, err1 := serializer.SerializeCreateSignatureArgs(&obj)

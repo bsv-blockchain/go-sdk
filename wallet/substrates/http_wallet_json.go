@@ -200,8 +200,8 @@ func (h *HTTPWalletJSON) Decrypt(ctx context.Context, args wallet.DecryptArgs) (
 	return &result, err
 }
 
-// CreateHmac creates an HMAC for data
-func (h *HTTPWalletJSON) CreateHmac(ctx context.Context, args wallet.CreateHMACArgs) (*wallet.CreateHMACResult, error) {
+// CreateHMAC creates an HMAC for data
+func (h *HTTPWalletJSON) CreateHMAC(ctx context.Context, args wallet.CreateHMACArgs) (*wallet.CreateHMACResult, error) {
 	data, err := h.api(ctx, "createHmac", &args)
 	if err != nil {
 		return nil, err
@@ -211,8 +211,8 @@ func (h *HTTPWalletJSON) CreateHmac(ctx context.Context, args wallet.CreateHMACA
 	return &result, err
 }
 
-// VerifyHmac verifies an HMAC for data
-func (h *HTTPWalletJSON) VerifyHmac(ctx context.Context, args wallet.VerifyHMACArgs) (*wallet.VerifyHMACResult, error) {
+// VerifyHMAC verifies an HMAC for data
+func (h *HTTPWalletJSON) VerifyHMAC(ctx context.Context, args wallet.VerifyHMACArgs) (*wallet.VerifyHMACResult, error) {
 	data, err := h.api(ctx, "verifyHmac", &args)
 	if err != nil {
 		return nil, err

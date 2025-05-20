@@ -52,10 +52,10 @@ func (w *WalletWireProcessor) TransmitToWallet(ctx context.Context, message []by
 		response, err = w.processEncrypt(ctx, requestFrame)
 	case CallDecrypt:
 		response, err = w.processDecrypt(ctx, requestFrame)
-	case CallCreateHmac:
-		response, err = w.processCreateHmac(ctx, requestFrame)
-	case CallVerifyHmac:
-		response, err = w.processVerifyHmac(ctx, requestFrame)
+	case CallCreateHMAC:
+		response, err = w.processCreateHMAC(ctx, requestFrame)
+	case CallVerifyHMAC:
+		response, err = w.processVerifyHMAC(ctx, requestFrame)
 	case CallCreateSignature:
 		response, err = w.processCreateSignature(ctx, requestFrame)
 	case CallVerifySignature:
@@ -237,8 +237,8 @@ func (w *WalletWireProcessor) processDecrypt(ctx context.Context, requestFrame *
 	return serializer.SerializeDecryptResult(result)
 }
 
-func (w *WalletWireProcessor) processCreateHmac(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {
-	args, err := serializer.DeserializeCreateHmacArgs(requestFrame.Params)
+func (w *WalletWireProcessor) processCreateHMAC(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {
+	args, err := serializer.DeserializeCreateHMACArgs(requestFrame.Params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize create hmac args: %w", err)
 	}
@@ -246,11 +246,11 @@ func (w *WalletWireProcessor) processCreateHmac(ctx context.Context, requestFram
 	if err != nil {
 		return nil, fmt.Errorf("failed to process create hmac: %w", err)
 	}
-	return serializer.SerializeCreateHmacResult(result)
+	return serializer.SerializeCreateHMACResult(result)
 }
 
-func (w *WalletWireProcessor) processVerifyHmac(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {
-	args, err := serializer.DeserializeVerifyHmacArgs(requestFrame.Params)
+func (w *WalletWireProcessor) processVerifyHMAC(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {
+	args, err := serializer.DeserializeVerifyHMACArgs(requestFrame.Params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize verify hmac args: %w", err)
 	}
@@ -258,7 +258,7 @@ func (w *WalletWireProcessor) processVerifyHmac(ctx context.Context, requestFram
 	if err != nil {
 		return nil, fmt.Errorf("failed to process verify hmac: %w", err)
 	}
-	return serializer.SerializeVerifyHmacResult(result)
+	return serializer.SerializeVerifyHMACResult(result)
 }
 
 func (w *WalletWireProcessor) processCreateSignature(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {

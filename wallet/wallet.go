@@ -293,13 +293,13 @@ type CreateHMACArgs struct {
 }
 
 type CreateHMACResult struct {
-	Hmac JsonByteNoBase64 `json:"hmac"`
+	HMAC JsonByteNoBase64 `json:"hmac"`
 }
 
 type VerifyHMACArgs struct {
 	EncryptionArgs
 	Data JsonByteNoBase64 `json:"data"`
-	Hmac JsonByteNoBase64 `json:"hmac"`
+	HMAC JsonByteNoBase64 `json:"hmac"`
 }
 
 type VerifyHMACResult struct {

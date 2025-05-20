@@ -33,8 +33,8 @@ type MockWallet struct {
 	ProveCertificateError  error
 	GetPublicKeyResult     *GetPublicKeyResult
 	GetPublicKeyError      error
-	CreateHmacResult       *CreateHMACResult
-	CreateHmacError        error
+	CreateHMACResult       *CreateHMACResult
+	CreateHMACError        error
 	CreateSignatureResult  *CreateSignatureResult
 	CreateSignatureError   error
 	VerifySignatureResult  *VerifySignatureResult
@@ -49,7 +49,7 @@ type MockWallet struct {
 	MockDiscoverByAttributes  func(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
 	MockGetPublicKey          func(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
 	MockCreateSignature       func(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
-	MockCreateHmac            func(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
+	MockCreateHMAC            func(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
 	MockDecrypt               func(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
 	MockVerifySignature       func(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
 	MockListCertificates      func(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
@@ -192,17 +192,17 @@ func (m *MockWallet) RevealSpecificKeyLinkage(ctx context.Context, args RevealSp
 }
 
 func (m *MockWallet) CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error) {
-	if m.MockCreateHmac != nil {
-		return m.MockCreateHmac(ctx, args, originator)
+	if m.MockCreateHMAC != nil {
+		return m.MockCreateHMAC(ctx, args, originator)
 	}
-	if m.CreateHmacResult == nil {
+	if m.CreateHMACResult == nil {
 		require.Fail(m.T, "CreateHMAC mock called but CreateHMACResult not set")
 		return nil, errors.New("CreateHMAC mock result not configured")
 	}
-	if m.CreateHmacError != nil {
-		return nil, m.CreateHmacError
+	if m.CreateHMACError != nil {
+		return nil, m.CreateHMACError
 	}
-	return m.CreateHmacResult, nil
+	return m.CreateHMACResult, nil
 }
 
 func (m *MockWallet) VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error) {

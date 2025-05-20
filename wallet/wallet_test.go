@@ -516,7 +516,7 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 		byCounterpartyPubKeyResult.PublicKey.Compressed())
 }
 
-func TestHmacCreateVerify(t *testing.T) {
+func TestHMACCreateVerify(t *testing.T) {
 	// Generate keys
 	userKey, err := ec.NewPrivateKey()
 	assert.NoError(t, err, "generating user private key should not error")
@@ -538,64 +538,64 @@ func TestHmacCreateVerify(t *testing.T) {
 	ctx := t.Context()
 
 	// Create HMAC
-	createHmacArgs := wallet.CreateHMACArgs{
+	createHMACArgs := wallet.CreateHMACArgs{
 		EncryptionArgs: baseArgs,
 		Data:           sampleData,
 	}
-	createHmacArgs.Counterparty = wallet.Counterparty{
+	createHMACArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: counterpartyKey.PubKey(),
 	}
 
-	createHmacResult, err := userWallet.CreateHMAC(ctx, createHmacArgs, "example")
+	createHMACResult, err := userWallet.CreateHMAC(ctx, createHMACArgs, "example")
 	assert.NoError(t, err)
-	assert.Len(t, createHmacResult.Hmac, 32)
+	assert.Len(t, createHMACResult.HMAC, 32)
 
 	// Verify HMAC
-	verifyHmacArgs := wallet.VerifyHMACArgs{
+	verifyHMACArgs := wallet.VerifyHMACArgs{
 		EncryptionArgs: baseArgs,
-		Hmac:           createHmacResult.Hmac,
+		HMAC:           createHMACResult.HMAC,
 		Data:           sampleData,
 	}
-	verifyHmacArgs.Counterparty = wallet.Counterparty{
+	verifyHMACArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
 		Counterparty: userKey.PubKey(),
 	}
 
-	verifyHmacResult, err := counterpartyWallet.VerifyHMAC(ctx, verifyHmacArgs, "example")
+	verifyHMACResult, err := counterpartyWallet.VerifyHMAC(ctx, verifyHMACArgs, "example")
 	assert.NoError(t, err)
-	assert.True(t, verifyHmacResult.Valid)
+	assert.True(t, verifyHMACResult.Valid)
 
 	// Test error cases
 	t.Run("fails to verify HMAC with wrong data", func(t *testing.T) {
-		invalidVerifyHmacArgs := verifyHmacArgs
-		invalidVerifyHmacArgs.Data = append([]byte{0}, sampleData...)
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHmacArgs, "example")
+		invalidVerifyHMACArgs := verifyHMACArgs
+		invalidVerifyHMACArgs.Data = append([]byte{0}, sampleData...)
+		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
 		assert.NoError(t, err)
 		assert.False(t, valid.Valid)
 	})
 
 	t.Run("fails to verify HMAC with wrong protocol", func(t *testing.T) {
-		invalidVerifyHmacArgs := verifyHmacArgs
-		invalidVerifyHmacArgs.ProtocolID.Protocol = "wrong"
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHmacArgs, "example")
+		invalidVerifyHMACArgs := verifyHMACArgs
+		invalidVerifyHMACArgs.ProtocolID.Protocol = "wrong"
+		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
 		assert.NoError(t, err)
 		assert.False(t, valid.Valid)
 	})
 
 	t.Run("fails to verify HMAC with wrong key ID", func(t *testing.T) {
-		invalidVerifyHmacArgs := verifyHmacArgs
-		invalidVerifyHmacArgs.KeyID = "wrong"
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHmacArgs, "example")
+		invalidVerifyHMACArgs := verifyHMACArgs
+		invalidVerifyHMACArgs.KeyID = "wrong"
+		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
 		assert.NoError(t, err)
 		assert.False(t, valid.Valid)
 	})
 
 	t.Run("fails to verify HMAC with wrong counterparty", func(t *testing.T) {
-		invalidVerifyHmacArgs := verifyHmacArgs
+		invalidVerifyHMACArgs := verifyHMACArgs
 		wrongKey, _ := ec.NewPrivateKey()
-		invalidVerifyHmacArgs.Counterparty.Counterparty = wrongKey.PubKey()
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHmacArgs, "example")
+		invalidVerifyHMACArgs.Counterparty.Counterparty = wrongKey.PubKey()
+		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
 		assert.NoError(t, err)
 		assert.False(t, valid.Valid)
 	})
@@ -622,7 +622,7 @@ func TestHmacCreateVerify(t *testing.T) {
 				},
 			},
 			Data: []byte("BRC-2 HMAC Compliance Validated!"),
-			Hmac: []byte{
+			HMAC: []byte{
 				81, 240, 18, 153, 163, 45, 174, 85, 9, 246, 142, 125, 209, 133, 82, 76,
 				254, 103, 46, 182, 86, 59, 219, 61, 126, 30, 176, 232, 233, 100, 234, 14,
 			},

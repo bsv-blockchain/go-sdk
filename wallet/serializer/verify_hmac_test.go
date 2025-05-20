@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestVerifyHmacArgs(t *testing.T) {
+func TestVerifyHMACArgs(t *testing.T) {
 	tests := []struct {
 		name string
 		args *wallet.VerifyHMACArgs
@@ -25,7 +25,7 @@ func TestVerifyHmacArgs(t *testing.T) {
 				SeekPermission:   true,
 			},
 			Data: []byte{1, 2, 3, 4},
-			Hmac: make([]byte, 32), // 32 byte HMAC
+			HMAC: make([]byte, 32), // 32 byte HMAC
 		},
 	}, {
 		name: "minimal args",
@@ -38,7 +38,7 @@ func TestVerifyHmacArgs(t *testing.T) {
 				KeyID: "minimal-key",
 			},
 			Data: []byte{1},
-			Hmac: make([]byte, 32),
+			HMAC: make([]byte, 32),
 		},
 	}, {
 		name: "empty data",
@@ -51,18 +51,18 @@ func TestVerifyHmacArgs(t *testing.T) {
 				KeyID: "empty-key",
 			},
 			Data: []byte{},
-			Hmac: make([]byte, 32),
+			HMAC: make([]byte, 32),
 		},
 	}}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
-			data, err := SerializeVerifyHmacArgs(tt.args)
+			data, err := SerializeVerifyHMACArgs(tt.args)
 			require.NoError(t, err)
 
 			// Test deserialization
-			got, err := DeserializeVerifyHmacArgs(data)
+			got, err := DeserializeVerifyHMACArgs(data)
 			require.NoError(t, err)
 
 			// Compare results
@@ -71,21 +71,21 @@ func TestVerifyHmacArgs(t *testing.T) {
 	}
 }
 
-func TestVerifyHmacResult(t *testing.T) {
+func TestVerifyHMACResult(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		result := &wallet.VerifyHMACResult{Valid: true}
-		data, err := SerializeVerifyHmacResult(result)
+		data, err := SerializeVerifyHMACResult(result)
 		require.NoError(t, err)
 
-		got, err := DeserializeVerifyHmacResult(data)
+		got, err := DeserializeVerifyHMACResult(data)
 		require.NoError(t, err)
 		require.Equal(t, result, got)
 	})
 
 	t.Run("error byte", func(t *testing.T) {
 		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeVerifyHmacResult(data)
+		_, err := DeserializeVerifyHMACResult(data)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "verifyHmac failed with error byte 1")
+		require.Contains(t, err.Error(), "verifyHMAC failed with error byte 1")
 	})
 }

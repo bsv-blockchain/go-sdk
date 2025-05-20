@@ -343,9 +343,9 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 	require.Equal(t, testData, []byte(decryptResult.Plaintext))
 }
 
-func TestHTTPWalletJSON_HmacOperations(t *testing.T) {
+func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 	testData := []byte("test data")
-	testHmac := []byte("test-hmac")
+	testHMAC := []byte("test-hmac")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/createHmac" {
@@ -354,14 +354,14 @@ func TestHTTPWalletJSON_HmacOperations(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, testData, []byte(args.Data))
 
-			resp := wallet.CreateHMACResult{Hmac: testHmac}
+			resp := wallet.CreateHMACResult{HMAC: testHMAC}
 			writeJSONResponse(t, w, &resp)
 		} else {
 			var args wallet.VerifyHMACArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
 			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testHmac, []byte(args.Hmac))
+			require.Equal(t, testHMAC, []byte(args.HMAC))
 
 			resp := wallet.VerifyHMACResult{Valid: true}
 			writeJSONResponse(t, w, &resp)
@@ -372,16 +372,16 @@ func TestHTTPWalletJSON_HmacOperations(t *testing.T) {
 	client := NewHTTPWalletJSON("", ts.URL, nil)
 
 	// Test create HMAC
-	hmacResult, err := client.CreateHmac(t.Context(), wallet.CreateHMACArgs{
+	hmacResult, err := client.CreateHMAC(t.Context(), wallet.CreateHMACArgs{
 		Data: testData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, testHmac, []byte(hmacResult.Hmac))
+	require.Equal(t, testHMAC, []byte(hmacResult.HMAC))
 
 	// Test verify HMAC
-	verifyResult, err := client.VerifyHmac(t.Context(), wallet.VerifyHMACArgs{
+	verifyResult, err := client.VerifyHMAC(t.Context(), wallet.VerifyHMACArgs{
 		Data: testData,
-		Hmac: testHmac,
+		HMAC: testHMAC,
 	})
 	require.NoError(t, err)
 	require.True(t, verifyResult.Valid)

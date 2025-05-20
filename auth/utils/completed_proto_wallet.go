@@ -130,12 +130,12 @@ func (c *CompletedProtoWallet) GetHeaderForHeight(ctx context.Context, args wall
 	return nil, nil
 }
 
-// CreateHmac delegates to the embedded ProtoWallet
+// CreateHMAC delegates to the embedded ProtoWallet
 func (c *CompletedProtoWallet) CreateHMAC(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
 	return c.ProtoWallet.CreateHMAC(ctx, args, originator)
 }
 
-// VerifyHmac delegates to the embedded ProtoWallet
+// VerifyHMAC delegates to the embedded ProtoWallet
 func (c *CompletedProtoWallet) VerifyHMAC(ctx context.Context, args wallet.VerifyHMACArgs, originator string) (*wallet.VerifyHMACResult, error) {
 	return c.ProtoWallet.VerifyHMAC(ctx, args, originator)
 }
