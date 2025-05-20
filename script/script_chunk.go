@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"slices"
 )
 
 type ScriptChunk struct {
@@ -232,10 +233,16 @@ func DecodeScriptHex(s string) ([]*ScriptChunk, error) {
 	return DecodeScript(b)
 }
 
+type DecodeOptions int
+
+const (
+	DecodeOptionsParseOpReturn DecodeOptions = 0
+)
+
 // DecodeScript takes bytes and decodes the opcodes in it
 // returning an array of opcode parts (which could be opcodes or data
 // pushed to the stack).
-func DecodeScript(b []byte) ([]*ScriptChunk, error) {
+func DecodeScript(b []byte, options ...DecodeOptions) ([]*ScriptChunk, error) {
 	var ops []*ScriptChunk
 	conditionalBlock := 0
 	for len(b) > 0 {
@@ -249,11 +256,11 @@ func DecodeScript(b []byte) ([]*ScriptChunk, error) {
 			conditionalBlock--
 			b = b[1:]
 		case OpRETURN:
-			if conditionalBlock == 0 {
+			if (slices.Contains(options, DecodeOptionsParseOpReturn)) || conditionalBlock > 0 {
+				b = b[1:]
+			} else {
 				op.Data = b
 				b = nil
-			} else {
-				b = b[1:]
 			}
 		case OpPUSHDATA1:
 			if len(b) < 2 {
