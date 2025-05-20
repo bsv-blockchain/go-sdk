@@ -8,6 +8,7 @@ import (
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,7 +78,7 @@ func TestNewOpReturnOutput(t *testing.T) {
 	require.NoError(t, err)
 
 	script := tx.Outputs[0].LockingScriptHex()
-	dataLength := transaction.VarInt(uint64(len(dataBytes))).Bytes()
+	dataLength := util.VarInt(uint64(len(dataBytes))).Bytes()
 
 	require.Equal(t, "006a4d2201"+hex.EncodeToString(dataBytes), script)
 	require.Equal(t, "fd2201", fmt.Sprintf("%x", dataLength))

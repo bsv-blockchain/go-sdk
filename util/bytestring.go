@@ -47,7 +47,7 @@ func (s ByteString) Value() (driver.Value, error) {
 	return []byte(s), nil
 }
 
-func (s *ByteString) Scan(value interface{}) error {
+func (s *ByteString) Scan(value any) error {
 	b, ok := value.([]byte)
 	if !ok {
 		return errors.New("type assertion to []byte failed")

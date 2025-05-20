@@ -426,7 +426,7 @@ func (e Error) Error() string {
 }
 
 // NewError creates an Error given a set of arguments.
-func NewError(c ErrorCode, desc string, fmtArgs ...interface{}) Error {
+func NewError(c ErrorCode, desc string, fmtArgs ...any) Error {
 	return Error{ErrorCode: c, Description: fmt.Sprintf(desc, fmtArgs...)}
 }
 

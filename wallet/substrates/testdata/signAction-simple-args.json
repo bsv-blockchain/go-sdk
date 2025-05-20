@@ -1,0 +1,11 @@
+{
+  "json": {
+    "reference": "dGVzdA==",
+    "spends": {
+      "0": {
+        "unlockingScript": "76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac"
+      }
+    }
+  },
+  "wire": "020001001976a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88acff047465737400"
+}

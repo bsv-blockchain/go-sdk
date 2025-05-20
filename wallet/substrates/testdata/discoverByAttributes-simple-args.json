@@ -1,0 +1,12 @@
+{
+  "json": {
+    "attributes": {
+      "email": "alice@example.com",
+      "role": "admin"
+    },
+    "limit": 5,
+    "offset": 0,
+    "seekPermission": false
+  },
+  "wire": "16000205656d61696c11616c696365406578616d706c652e636f6d04726f6c650561646d696e050000"
+}

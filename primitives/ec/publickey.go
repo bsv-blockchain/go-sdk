@@ -3,6 +3,7 @@ package primitives
 import (
 	"crypto/ecdsa"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -101,13 +102,13 @@ func ParsePubKey(pubKeyStr []byte) (key *PublicKey, err error) {
 			return nil, fmt.Errorf("ybit doesn't match oddness")
 		}
 
-		if pubkey.X.Cmp(pubkey.Curve.Params().P) >= 0 {
+		if pubkey.X.Cmp(pubkey.Params().P) >= 0 {
 			return nil, fmt.Errorf("pubkey X parameter is >= to P")
 		}
-		if pubkey.Y.Cmp(pubkey.Curve.Params().P) >= 0 {
+		if pubkey.Y.Cmp(pubkey.Params().P) >= 0 {
 			return nil, fmt.Errorf("pubkey Y parameter is >= to P")
 		}
-		if !pubkey.Curve.IsOnCurve(pubkey.X, pubkey.Y) {
+		if !pubkey.IsOnCurve(pubkey.X, pubkey.Y) {
 			return nil, fmt.Errorf("pubkey isn't on secp256k1 curve")
 		}
 
@@ -136,6 +137,30 @@ func ParsePubKey(pubKeyStr []byte) (key *PublicKey, err error) {
 // PublicKey is an ecdsa.PublicKey with additional functions to
 // serialize in uncompressed, compressed, and hybrid formats.
 type PublicKey ecdsa.PublicKey
+
+func (p *PublicKey) MarshalJSON() ([]byte, error) {
+	if p == nil {
+		return json.Marshal(nil)
+	}
+	return json.Marshal(p.ToDERHex())
+}
+
+func (p *PublicKey) UnmarshalJSON(data []byte) error {
+	var hexStr string
+	if err := json.Unmarshal(data, &hexStr); err != nil {
+		return err
+	}
+	// if hexStr == "" {
+	// 	p = nil
+	// 	return nil
+	// }
+	pubKey, err := PublicKeyFromString(hexStr)
+	if err != nil {
+		return err
+	}
+	*p = *pubKey
+	return nil
+}
 
 // ToECDSA returns the public key as a *ecdsa.PublicKey.
 func (p *PublicKey) ToECDSA() *ecdsa.PublicKey {
@@ -205,14 +230,22 @@ func PublicKeyFromString(pubKeyHex string) (*PublicKey, error) {
 	return pubKey, nil
 }
 
+func PublicKeyFromBytes(pubKeyBytes []byte) (*PublicKey, error) {
+	pubKey, err := ParsePubKey(pubKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
 // validate key belongs on given curve
 func (p *PublicKey) Validate() bool {
-	return p.Curve.IsOnCurve(p.X, p.Y)
+	return p.IsOnCurve(p.X, p.Y)
 }
 
 // Multiplies this Point by a scalar value
 func (p *PublicKey) Mul(k *big.Int) *PublicKey {
-	x, y := p.Curve.ScalarMult(p.X, p.Y, k.Bytes())
+	x, y := p.ScalarMult(p.X, p.Y, k.Bytes())
 	return &PublicKey{
 		Curve: p.Curve,
 		X:     x,
@@ -229,38 +262,38 @@ func (p *PublicKey) Mul(k *big.Int) *PublicKey {
  * const publicKeyHash = pubkey.Hash()
  */
 func (p *PublicKey) Hash() []byte {
-	return crypto.Ripemd160(crypto.Sha256(p.encode(true)))
+	return crypto.Ripemd160(crypto.Sha256(p.Compressed()))
 }
 
-//nolint:unparam // only compact is used
-func (p *PublicKey) encode(compact bool) []byte {
-	byteLen := (p.Curve.Params().BitSize + 7) >> 3
+// //nolint:unparam // only compact is used
+// func (p *PublicKey) encode(compact bool) []byte {
+// 	byteLen := (p.Curve.Params().BitSize + 7) >> 3
 
-	xBytes := p.X.Bytes()
-	yBytes := p.Y.Bytes()
+// 	xBytes := p.X.Bytes()
+// 	yBytes := p.Y.Bytes()
 
-	// Prepend zeros if necessary to match byteLen
-	for len(xBytes) < byteLen {
-		xBytes = append([]byte{0}, xBytes...)
-	}
-	for len(yBytes) < byteLen {
-		yBytes = append([]byte{0}, yBytes...)
-	}
+// 	// Prepend zeros if necessary to match byteLen
+// 	for len(xBytes) < byteLen {
+// 		xBytes = append([]byte{0}, xBytes...)
+// 	}
+// 	for len(yBytes) < byteLen {
+// 		yBytes = append([]byte{0}, yBytes...)
+// 	}
 
-	if compact {
-		prefix := byte(0x02)
-		if new(big.Int).And(p.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0 {
-			prefix = 0x03
-		}
-		return append([]byte{prefix}, xBytes...)
-	}
+// 	if compact {
+// 		prefix := byte(0x02)
+// 		if new(big.Int).And(p.Y, big.NewInt(1)).Cmp(big.NewInt(0)) != 0 {
+// 			prefix = 0x03
+// 		}
+// 		return append([]byte{prefix}, xBytes...)
+// 	}
 
-	// Non-compact format
-	return append(append([]byte{0x04}, xBytes...), yBytes...)
-}
+// 	// Non-compact format
+// 	return append(append([]byte{0x04}, xBytes...), yBytes...)
+// }
 
 func (p *PublicKey) ToDER() []byte {
-	encoded := p.encode(true)
+	encoded := p.Compressed()
 	return encoded
 }
 
@@ -274,7 +307,7 @@ func (p *PublicKey) DeriveChild(privateKey *PrivateKey, invoiceNumber string) (*
 	if err != nil {
 		return nil, err
 	}
-	pubKeyEncoded := sharedSecret.encode(true)
+	pubKeyEncoded := sharedSecret.Compressed()
 	hmac := crypto.Sha256HMAC(invoiceNumberBin, pubKeyEncoded)
 
 	newPointX, newPointY := S256().ScalarBaseMult(hmac)

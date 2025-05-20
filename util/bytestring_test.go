@@ -123,7 +123,7 @@ func TestByteStringValue(t *testing.T) {
 func TestByteStringScan(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected util.ByteString
 		wantErr  bool
 	}{

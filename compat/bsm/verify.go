@@ -8,7 +8,7 @@ import (
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // PubKeyFromSignature gets a publickey for a signature and tells you whether is was compressed
@@ -18,12 +18,12 @@ func PubKeyFromSignature(sig, data []byte) (pubKey *ec.PublicKey, wasCompressed 
 	// we will compare it with the key next
 	var buf bytes.Buffer
 
-	varInt := transaction.VarInt(len(hBSV))
+	varInt := util.VarInt(len(hBSV))
 	buf.Write(varInt.Bytes())
 	// append the hBsv to buff
 	buf.WriteString(hBSV)
 
-	varInt = transaction.VarInt(len(data))
+	varInt = util.VarInt(len(data))
 	buf.Write(varInt.Bytes())
 	// append the data to buff
 	buf.Write(data)

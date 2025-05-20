@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type WOCNetwork string
@@ -18,17 +19,20 @@ var (
 	WOCTestnet WOCNetwork = "test"
 )
 
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
 type WhatsOnChain struct {
 	Network WOCNetwork
 	ApiKey  string
-	Client  HTTPClient
+	Client  util.HTTPClient
 }
 
 func (b *WhatsOnChain) Broadcast(t *transaction.Transaction) (
+	*transaction.BroadcastSuccess,
+	*transaction.BroadcastFailure,
+) {
+	return b.BroadcastCtx(context.Background(), t)
+}
+
+func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (
 	*transaction.BroadcastSuccess,
 	*transaction.BroadcastFailure,
 ) {
@@ -43,7 +47,7 @@ func (b *WhatsOnChain) Broadcast(t *transaction.Transaction) (
 		b.Client = http.DefaultClient
 	}
 
-	bodyMap := map[string]interface{}{
+	bodyMap := map[string]any{
 		"txhex": t.Hex(),
 	}
 	if body, err := json.Marshal(bodyMap); err != nil {
@@ -53,7 +57,6 @@ func (b *WhatsOnChain) Broadcast(t *transaction.Transaction) (
 		}
 	} else {
 		url := fmt.Sprintf("https://api.whatsonchain.com/v1/bsv/%s/tx/raw", b.Network)
-		ctx := context.Background()
 		req, err := http.NewRequestWithContext(
 			ctx,
 			"POST",

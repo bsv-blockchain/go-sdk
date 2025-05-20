@@ -406,7 +406,7 @@ func badMnemonicSentences() []vector {
 	}
 }
 
-func assertEqual(t *testing.T, a, b interface{}) {
+func assertEqual(t *testing.T, a, b any) {
 	if a != b {
 		t.Errorf("Objects not equal, expected `%s` and got `%s`", a, b)
 	}

@@ -1,0 +1,9 @@
+{
+  "json": {
+    "identityKey": "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1",
+    "limit": 10,
+    "offset": 0,
+    "seekPermission": true
+  },
+  "wire": "15000294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a10a0001"
+}
