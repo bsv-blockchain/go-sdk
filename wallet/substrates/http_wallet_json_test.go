@@ -2,6 +2,7 @@ package substrates
 
 import (
 	"encoding/json"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"io"
 	"math/big"
 	"net/http"
@@ -140,7 +141,7 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 
 	// Test HTTP request error
 	t.Run("HTTP error", func(t *testing.T) {
-		client := NewHTTPWalletJSON("", "http://invalid-url", nil)
+		client := NewHTTPWalletJSON("", "htp://invalid-url", nil)
 		_, err := client.api(ctx, "test", map[string]string{"key": "value"})
 		require.Error(t, err)
 	})
@@ -435,8 +436,8 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
-	var typeTest wallet.Base64Bytes32
-	copy(typeTest[:], "test-type")
+	typeTest := wallet.Base64Bytes32(tu.GetByte32FromString("test-type"))
+	serialNumber := wallet.Base64Bytes32(tu.GetByte32FromString("12345"))
 	// Test AcquireCertificate
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/acquireCertificate", r.URL.Path)
@@ -448,7 +449,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		require.Equal(t, "test-certifier", args.Certifier)
 
 		cert := wallet.Certificate{
-			SerialNumber: "12345",
+			SerialNumber: serialNumber,
 			Type:         typeTest,
 		}
 		writeJSONResponse(t, w, &cert)
@@ -462,7 +463,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, typeTest, cert.Type)
-	require.Equal(t, "12345", cert.SerialNumber)
+	require.Equal(t, serialNumber, cert.SerialNumber)
 
 	// Test ListCertificates
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

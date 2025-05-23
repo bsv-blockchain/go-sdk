@@ -3,6 +3,7 @@ package substrates_test
 import (
 	"encoding/base64"
 	"encoding/json"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -43,10 +44,10 @@ func TestVectors(t *testing.T) {
 	prover, err := ec.PublicKeyFromString(ProverHex)
 	require.NoError(t, err)
 
-	typeBytes, err := base64.StdEncoding.DecodeString("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
+	typeArray, err := tu.GetByte32FromBase64String("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
 	require.NoError(t, err)
-	typeArray := [32]byte{}
-	copy(typeArray[:], typeBytes)
+	serialArray, err := tu.GetByte32FromBase64String("AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
+	require.NoError(t, err)
 
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
@@ -428,7 +429,7 @@ func TestVectors(t *testing.T) {
 		IsResult: true,
 		Object: wallet.Certificate{
 			Type:               typeArray,
-			SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+			SerialNumber:       serialArray,
 			Subject:            pubKey,       // Use key from test setup
 			Certifier:          counterparty, // Use key from test setup
 			RevocationOutpoint: "txid123:0",
@@ -454,7 +455,7 @@ func TestVectors(t *testing.T) {
 			Certificates: []wallet.CertificateResult{{
 				Certificate: wallet.Certificate{
 					Type:               typeArray,
-					SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+					SerialNumber:       serialArray,
 					Subject:            pubKey,
 					Certifier:          counterparty,
 					RevocationOutpoint: "txid123:0",
@@ -470,7 +471,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
 				Type:               typeArray,
-				SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+				SerialNumber:       serialArray,
 				Subject:            pubKey,       // Use key from test setup
 				Certifier:          counterparty, // Use key from test setup
 				RevocationOutpoint: "txid123:0",
@@ -518,7 +519,7 @@ func TestVectors(t *testing.T) {
 				{
 					Certificate: wallet.Certificate{
 						Type:               wallet.Base64Bytes32(typeArray),
-						SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,
 						RevocationOutpoint: "txid123:0",
@@ -553,7 +554,7 @@ func TestVectors(t *testing.T) {
 				{
 					Certificate: wallet.Certificate{
 						Type:               typeArray,
-						SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,
 						RevocationOutpoint: "txid123:0",

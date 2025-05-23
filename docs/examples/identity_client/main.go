@@ -28,7 +28,7 @@ func main() {
 	certificate := &wallet.Certificate{
 		// Certificate fields would be populated here
 		Type:         typeXCert,
-		SerialNumber: "12345",
+		SerialNumber: [32]byte{0x01, 0x02, 0x03},
 		// Other fields...
 		Fields: map[string]string{
 			"userName":     "Alice",

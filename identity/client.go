@@ -85,7 +85,7 @@ func (c *Client) PubliclyRevealAttributes(
 	// Convert Go certificate to Certificate instance to verify it
 	masterCert := &certificates.Certificate{
 		Type:               wallet.Base64StringFromArray(certificate.Type),
-		SerialNumber:       wallet.Base64String(certificate.SerialNumber),
+		SerialNumber:       wallet.Base64StringFromArray(certificate.SerialNumber),
 		Subject:            *certificate.Subject,
 		Certifier:          *certificate.Certifier,
 		RevocationOutpoint: revocationOutpoint,

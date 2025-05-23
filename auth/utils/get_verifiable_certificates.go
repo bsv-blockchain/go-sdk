@@ -58,7 +58,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	// Process each certificate
 	for _, certResult := range listResult.Certificates {
 		// Skip if certificate is nil or has empty type
-		if len(certResult.Type) == 0 {
+		if certResult.Type == [32]byte{} {
 			continue
 		}
 
@@ -116,16 +116,10 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		certType := certResult.Type
 		certSerialNum := certResult.SerialNumber
 
-		// Verify if SerialNumber is valid base64 - if not, try to encode it
-		if _, err := base64.StdEncoding.DecodeString(certSerialNum); err != nil {
-			// It's not valid base64, try to encode it directly
-			certSerialNum = base64.StdEncoding.EncodeToString([]byte(certSerialNum))
-		}
-
 		// Create the base certificate
 		baseCert := &certificates.Certificate{
 			Type:               wallet.Base64String(base64.StdEncoding.EncodeToString(certType[:])),
-			SerialNumber:       wallet.Base64String(certSerialNum),
+			SerialNumber:       wallet.Base64String(base64.StdEncoding.EncodeToString(certSerialNum[:])),
 			RevocationOutpoint: revocationOutpoint,
 			Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
 		}

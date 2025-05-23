@@ -13,7 +13,7 @@ import (
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
 	Type               Base64Bytes32     `json:"type"`                         // Base64-encoded certificate type ID
-	SerialNumber       string            `json:"serialNumber"`                 // Base64-encoded unique serial number
+	SerialNumber       Base64Bytes32     `json:"serialNumber"`                 // Base64-encoded unique serial number
 	Subject            *ec.PublicKey     `json:"subject"`                      // Public key of the certificate subject
 	Certifier          *ec.PublicKey     `json:"certifier"`                    // Public key of the certificate issuer
 	RevocationOutpoint string            `json:"revocationOutpoint,omitempty"` // Format: "txid:outputIndex"

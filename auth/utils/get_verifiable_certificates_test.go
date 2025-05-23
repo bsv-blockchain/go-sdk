@@ -2,8 +2,8 @@ package utils
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 
 	"testing"
 
@@ -27,10 +27,9 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, verifierKey)
 
-	var certType1 [32]byte
-	copy(certType1[:], "certType1")
-	var certType2 [32]byte
-	copy(certType2[:], "certType2")
+	certType1 := tu.GetByte32FromString("certType1")
+	certType2 := tu.GetByte32FromString("certType2")
+	serial1 := tu.GetByte32FromString("serial1")
 
 	// Test case 1: Retrieves matching certificates based on requested set
 	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
@@ -55,7 +54,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 				{
 					Certificate: wallet.Certificate{
 						Type:               certType1,
-						SerialNumber:       "serial1",
+						SerialNumber:       serial1,
 						Subject:            subject,
 						Certifier:          certifier,
 						RevocationOutpoint: "abcd1234:0",
@@ -90,7 +89,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 			cert := certs[0]
 			// Compare against base64 encoded values
 			expectedTypeBase64 := wallet.Base64StringFromArray(certType1)
-			expectedSerialBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString([]byte("serial1")))
+			expectedSerialBase64 := wallet.Base64StringFromArray(serial1)
 			require.Equal(t, expectedTypeBase64, cert.Type)
 			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
 			require.NotNil(t, cert.RevocationOutpoint)

@@ -68,19 +68,14 @@ func TestListCertificatesResult(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
 		require.NoError(t, err)
 
-		var typeCert1 [32]byte
-		copy(typeCert1[:], []byte("cert1"))
-		var typeCert2 [32]byte
-		copy(typeCert2[:], []byte("cert2"))
-
 		result := &wallet.ListCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.CertificateResult{
 				{
 					Certificate: wallet.Certificate{
-						Type:               typeCert1,
+						Type:               tu.GetByte32FromString("cert1"),
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("serial1"), sizeSerial)),
+						SerialNumber:       tu.GetByte32FromString("serial1"),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 						Signature:          hex.EncodeToString(make([]byte, 64)),
@@ -95,9 +90,9 @@ func TestListCertificatesResult(t *testing.T) {
 				},
 				{
 					Certificate: wallet.Certificate{
-						Type:               typeCert2,
+						Type:               tu.GetByte32FromString("cert2"),
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("serial2"), sizeSerial)),
+						SerialNumber:       tu.GetByte32FromString("serial2"),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 					},

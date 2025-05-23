@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"testing"
@@ -26,7 +25,7 @@ func TestDiscoverCertificatesResult(t *testing.T) {
 					Certificate: wallet.Certificate{
 						Type:               certType,
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("c2VyaWFs"), sizeType)),
+						SerialNumber:       tu.GetByte32FromString("c2VyaWFs"),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 						Signature:          hex.EncodeToString(make([]byte, 64)),

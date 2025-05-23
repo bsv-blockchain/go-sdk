@@ -3,6 +3,7 @@ package identity
 import (
 	"context"
 	"fmt"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"math/big"
 	"testing"
 
@@ -341,7 +342,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
-			SerialNumber:       "dummySerial",
+			SerialNumber:       tu.GetByte32FromString("dummySerial"),
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
@@ -379,7 +380,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		// Use a valid outpoint format so we get past the verification error
 		certificate := &wallet.Certificate{
 			Type:               typeXCert,
-			SerialNumber:       "12345",
+			SerialNumber:       tu.GetByte32FromString("12345"),
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
@@ -455,7 +456,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		certificate := &wallet.Certificate{
 			Type:               typeXCert,
-			SerialNumber:       "12345",
+			SerialNumber:       tu.GetByte32FromString("12345"),
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
@@ -531,7 +532,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		certificate := &wallet.Certificate{
 			Type:               typeXCert,
-			SerialNumber:       "12345",
+			SerialNumber:       tu.GetByte32FromString("12345"),
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
@@ -629,7 +630,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		certificate := &wallet.Certificate{
 			Type:               typeXCert,
-			SerialNumber:       "12345",
+			SerialNumber:       tu.GetByte32FromString("12345"),
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},

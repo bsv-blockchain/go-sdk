@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"testing"
 
@@ -16,7 +15,6 @@ func TestCertificate(t *testing.T) {
 		require.NoError(t, err)
 		cert := &wallet.Certificate{
 			Subject:            pk.PubKey(),
-			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			Certifier:          pk.PubKey(),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:          hex.EncodeToString(make([]byte, 64)),
