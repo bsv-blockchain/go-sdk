@@ -2,6 +2,7 @@ package tu
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -39,6 +40,30 @@ func GetByte32FromBase64String(s string) ([32]byte, error) {
 	}
 	if len(b) > 32 {
 		return a, fmt.Errorf("byte length must be less than 32")
+	}
+	copy(a[:], b)
+	return a, nil
+}
+
+// GetByte33FromString returns a [33]byte from a hex string
+func GetByte33FromString(s string) [33]byte {
+	if len([]byte(s)) > 33 {
+		panic(fmt.Sprintf("string byte length must be less than 33, got %d", len([]byte(s))))
+	}
+	var b [33]byte
+	copy(b[:], s)
+	return b
+}
+
+// GetByte33FromHexString returns a [32]byte from a base64 string
+func GetByte33FromHexString(s string) ([33]byte, error) {
+	var a [33]byte
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return a, err
+	}
+	if len(b) > 33 {
+		return a, fmt.Errorf("byte length must be less than 33")
 	}
 	copy(a[:], b)
 	return a, nil

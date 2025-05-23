@@ -24,9 +24,10 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	}
 
 	// Encode certifier (hex)
-	if err := w.WriteSizeFromHex(args.Certifier, sizeCertifier); err != nil {
-		return nil, fmt.Errorf("invalid certifier hex: %w", err)
+	if args.Certifier == [33]byte{} {
+		return nil, fmt.Errorf("certifier is empty")
 	}
+	w.WriteBytes(args.Certifier[:])
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Fields))
@@ -108,7 +109,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	// Read type (base64) and certifier (hex)
 	args.Type = r.ReadBase64(sizeType)
-	args.Certifier = r.ReadHex(sizeCertifier)
+	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
 
 	// Read fields
 	fieldsLength := r.ReadVarInt()

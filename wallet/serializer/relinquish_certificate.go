@@ -23,9 +23,10 @@ func SerializeRelinquishCertificateArgs(args *wallet.RelinquishCertificateArgs) 
 	w.WriteBytes(args.SerialNumber[:])
 
 	// Encode certifier (hex)
-	if err := w.WriteSizeFromHex(args.Certifier, sizeCertifier); err != nil {
-		return nil, fmt.Errorf("invalid certifier hex: %w", err)
+	if args.Certifier == [33]byte{} {
+		return nil, fmt.Errorf("certifier is empty")
 	}
+	w.WriteBytes(args.Certifier[:])
 
 	return w.Buf, nil
 }
@@ -37,7 +38,7 @@ func DeserializeRelinquishCertificateArgs(data []byte) (*wallet.RelinquishCertif
 	// Read type (base64), serialNumber (base64), certifier (hex)
 	copy(args.Type[:], r.ReadBytes(sizeType))
 	copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
-	args.Certifier = r.ReadHex(sizeCertifier)
+	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
 
 	r.CheckComplete()
 	if r.Err != nil {

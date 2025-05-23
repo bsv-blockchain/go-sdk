@@ -439,6 +439,7 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 	typeTest := wallet.Base64Bytes32(tu.GetByte32FromString("test-type"))
 	serialNumber := wallet.Base64Bytes32(tu.GetByte32FromString("12345"))
+	certifier := wallet.HexBytes33(tu.GetByte33FromString("test-certifier"))
 	// Test AcquireCertificate
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/acquireCertificate", r.URL.Path)
@@ -447,7 +448,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
 		require.Equal(t, "test-type", args.Type)
-		require.Equal(t, "test-certifier", args.Certifier)
+		require.Equal(t, certifier, args.Certifier)
 
 		cert := wallet.Certificate{
 			SerialNumber: serialNumber,
@@ -458,9 +459,9 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	cert, err := client.AcquireCertificate(t.Context(), wallet.AcquireCertificateArgs{
+	cert, err := client.AcquireCertificate(t.Context(), &wallet.AcquireCertificateArgs{
 		Type:      "test-type",
-		Certifier: "test-certifier",
+		Certifier: certifier,
 	})
 	require.NoError(t, err)
 	require.Equal(t, typeTest, cert.Type)

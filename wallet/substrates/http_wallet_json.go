@@ -245,7 +245,7 @@ func (h *HTTPWalletJSON) VerifySignature(ctx context.Context, args wallet.Verify
 }
 
 // AcquireCertificate acquires an identity certificate
-func (h *HTTPWalletJSON) AcquireCertificate(ctx context.Context, args wallet.AcquireCertificateArgs) (*wallet.Certificate, error) {
+func (h *HTTPWalletJSON) AcquireCertificate(ctx context.Context, args *wallet.AcquireCertificateArgs) (*wallet.Certificate, error) {
 	data, err := h.api(ctx, "acquireCertificate", args)
 	if err != nil {
 		return nil, err

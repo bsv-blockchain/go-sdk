@@ -48,6 +48,8 @@ func TestVectors(t *testing.T) {
 	require.NoError(t, err)
 	serialArray, err := tu.GetByte32FromBase64String("AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
 	require.NoError(t, err)
+	certifier, err := tu.GetByte33FromHexString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1") // Use hex string from TS
+	require.NoError(t, err)
 
 	ref, err := base64.StdEncoding.DecodeString("dGVzdA==")
 	require.NoError(t, err)
@@ -416,7 +418,7 @@ func TestVectors(t *testing.T) {
 		Filename: "acquireCertificate-simple-args",
 		Object: wallet.AcquireCertificateArgs{
 			Type:                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-			Certifier:           "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1", // Use hex string from TS
+			Certifier:           certifier,
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
 			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
@@ -497,7 +499,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.RelinquishCertificateArgs{
 			Type:         typeArray,
 			SerialNumber: serialArray,
-			Certifier:    CounterpartyHex,
+			Certifier:    certifier,
 		},
 	}, {
 		Filename: "relinquishCertificate-simple-result",

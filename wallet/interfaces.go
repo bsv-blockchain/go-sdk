@@ -601,7 +601,7 @@ const KeyringRevealerCertifier = "certifier"
 
 type AcquireCertificateArgs struct {
 	Type                string              `json:"type"`
-	Certifier           string              `json:"certifier"`
+	Certifier           HexBytes33          `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
 	SerialNumber        string              `json:"serialNumber"`
@@ -695,7 +695,7 @@ type ListCertificatesResult struct {
 type RelinquishCertificateArgs struct {
 	Type         Base64Bytes32 `json:"type"`
 	SerialNumber Base64Bytes32 `json:"serialNumber"`
-	Certifier    string        `json:"certifier"`
+	Certifier    HexBytes33    `json:"certifier"`
 }
 
 type RelinquishOutputArgs struct {
@@ -833,6 +833,29 @@ func (b *Base64Bytes32) UnmarshalJSON(data []byte) error {
 	}
 	if len(decoded) != 32 {
 		return fmt.Errorf("expected 32 bytes, got %d", len(decoded))
+	}
+	copy(b[:], decoded)
+	return nil
+}
+
+type HexBytes33 [33]byte
+
+func (b *HexBytes33) MarshalJSON() ([]byte, error) {
+	s := hex.EncodeToString(b[:])
+	return json.Marshal(s)
+}
+
+func (b *HexBytes33) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	decoded, err := hex.DecodeString(s)
+	if err != nil {
+		return err
+	}
+	if len(decoded) != 33 {
+		return fmt.Errorf("expected 33 bytes, got %d", len(decoded))
 	}
 	copy(b[:], decoded)
 	return nil
