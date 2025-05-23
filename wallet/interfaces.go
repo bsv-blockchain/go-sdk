@@ -693,9 +693,9 @@ type ListCertificatesResult struct {
 }
 
 type RelinquishCertificateArgs struct {
-	Type         string `json:"type"`
-	SerialNumber string `json:"serialNumber"`
-	Certifier    string `json:"certifier"`
+	Type         Base64Bytes32 `json:"type"`
+	SerialNumber Base64Bytes32 `json:"serialNumber"`
+	Certifier    string        `json:"certifier"`
 }
 
 type RelinquishOutputArgs struct {

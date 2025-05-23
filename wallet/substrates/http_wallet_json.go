@@ -278,7 +278,7 @@ func (h *HTTPWalletJSON) ProveCertificate(ctx context.Context, args *wallet.Prov
 }
 
 // RelinquishCertificate removes an identity certificate
-func (h *HTTPWalletJSON) RelinquishCertificate(ctx context.Context, args wallet.RelinquishCertificateArgs) (*wallet.RelinquishCertificateResult, error) {
+func (h *HTTPWalletJSON) RelinquishCertificate(ctx context.Context, args *wallet.RelinquishCertificateArgs) (*wallet.RelinquishCertificateResult, error) {
 	data, err := h.api(ctx, "relinquishCertificate", args)
 	if err != nil {
 		return nil, err

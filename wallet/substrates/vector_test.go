@@ -495,8 +495,8 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "relinquishCertificate-simple-args",
 		Object: wallet.RelinquishCertificateArgs{
-			Type:         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-			SerialNumber: "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+			Type:         typeArray,
+			SerialNumber: serialArray,
 			Certifier:    CounterpartyHex,
 		},
 	}, {

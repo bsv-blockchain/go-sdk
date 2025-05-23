@@ -529,15 +529,15 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.RelinquishCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-type", args.Type)
+		require.Equal(t, typeTest, args.Type)
 
 		writeJSONResponse(t, w, wallet.RelinquishCertificateResult{Relinquished: true})
 	}))
 	defer ts.Close()
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
-	relinquishResult, err := client.RelinquishCertificate(t.Context(), wallet.RelinquishCertificateArgs{
-		Type: "test-type",
+	relinquishResult, err := client.RelinquishCertificate(t.Context(), &wallet.RelinquishCertificateArgs{
+		Type: typeTest,
 	})
 	require.NoError(t, err)
 	require.True(t, relinquishResult.Relinquished)

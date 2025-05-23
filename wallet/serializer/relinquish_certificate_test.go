@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -15,15 +14,15 @@ func TestRelinquishCertificateArgs(t *testing.T) {
 	}{{
 		name: "full args",
 		args: &wallet.RelinquishCertificateArgs{
-			Type:         base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
-			SerialNumber: base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
+			Type:         [32]byte{1},
+			SerialNumber: [32]byte{2},
 			Certifier:    hex.EncodeToString(make([]byte, sizeCertifier)),
 		},
 	}, {
 		name: "minimal args",
 		args: &wallet.RelinquishCertificateArgs{
-			Type:         base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
-			SerialNumber: base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
+			Type:         [32]byte{3},
+			SerialNumber: [32]byte{4},
 			Certifier:    hex.EncodeToString(make([]byte, sizeCertifier)),
 		},
 	}}
