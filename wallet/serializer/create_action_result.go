@@ -42,9 +42,8 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 		resultWriter.WriteVarInt(uint64(len(result.SignableTransaction.Tx)))
 		resultWriter.WriteBytes(result.SignableTransaction.Tx)
 
-		refBytes := []byte(result.SignableTransaction.Reference)
-		resultWriter.WriteVarInt(uint64(len(refBytes)))
-		resultWriter.WriteBytes(refBytes)
+		resultWriter.WriteVarInt(uint64(len(result.SignableTransaction.Reference)))
+		resultWriter.WriteBytes(result.SignableTransaction.Reference)
 	} else {
 		resultWriter.WriteByte(0) // flag not present
 	}
@@ -91,15 +90,9 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	// Parse signableTransaction
 	signableTxFlag := resultReader.ReadByte()
 	if signableTxFlag == 1 {
-		txLen := resultReader.ReadVarInt()
-		txBytes := resultReader.ReadBytes(int(txLen))
-
-		refLen := resultReader.ReadVarInt()
-		refBytes := resultReader.ReadBytes(int(refLen))
-
 		result.SignableTransaction = &wallet.SignableTransaction{
-			Tx:        txBytes,
-			Reference: string(refBytes),
+			Tx:        resultReader.ReadIntBytes(),
+			Reference: resultReader.ReadIntBytes(),
 		}
 	}
 

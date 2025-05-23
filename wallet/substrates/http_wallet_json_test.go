@@ -189,13 +189,14 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_SignAction(t *testing.T) {
+	var testRef = []byte("test-ref")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/signAction", r.URL.Path)
 
 		var args wallet.SignActionArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-ref", args.Reference)
+		require.Equal(t, testRef, args.Reference)
 		require.Len(t, args.Spends, 1)
 		require.Equal(t, "test-script", args.Spends[0].UnlockingScript)
 
@@ -205,7 +206,7 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
 	result, err := client.SignAction(t.Context(), wallet.SignActionArgs{
-		Reference: "test-ref",
+		Reference: testRef,
 		Spends: map[uint32]wallet.SignActionSpend{
 			0: {UnlockingScript: "test-script"},
 		},

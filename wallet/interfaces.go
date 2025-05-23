@@ -156,7 +156,7 @@ type SendWithResult struct {
 // SignableTransaction contains data needed to complete signing of a partial transaction.
 type SignableTransaction struct {
 	Tx        []byte
-	Reference string
+	Reference []byte
 }
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
@@ -175,7 +175,7 @@ type SignActionOptions struct {
 
 // SignActionArgs contains data needed to sign a previously created transaction.
 type SignActionArgs struct {
-	Reference string                     `json:"reference"` // Base64 encoded
+	Reference []byte                     `json:"reference"` // Base64 encoded
 	Spends    map[uint32]SignActionSpend `json:"spends"`    // Key is input index
 	Options   *SignActionOptions         `json:"options,omitempty"`
 }

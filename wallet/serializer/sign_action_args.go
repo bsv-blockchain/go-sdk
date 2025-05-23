@@ -25,9 +25,7 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 	}
 
 	// Reference
-	if err := w.WriteIntFromBase64(args.Reference); err != nil {
-		return nil, fmt.Errorf("invalid reference base64: %w", err)
-	}
+	w.WriteIntBytes(args.Reference)
 
 	// Options
 	if args.Options != nil {
@@ -71,7 +69,7 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 	}
 
 	// Reference
-	args.Reference = r.ReadBase64Int()
+	args.Reference = r.ReadIntBytes()
 
 	// Options
 	optionsPresent := r.ReadByte()

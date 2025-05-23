@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestSerializeSignActionArgs(t *testing.T) {
 						SequenceNumber:  456,
 					},
 				},
-				Reference: base64.StdEncoding.EncodeToString([]byte("ref123")),
+				Reference: []byte("ref123"),
 				Options: &wallet.SignActionOptions{
 					AcceptDelayedBroadcast: util.BoolPtr(true),
 					ReturnTXIDOnly:         util.BoolPtr(false),
@@ -51,7 +50,6 @@ func TestSerializeSignActionArgs(t *testing.T) {
 						SequenceNumber:  0,
 					},
 				},
-				Reference: base64.StdEncoding.EncodeToString([]byte("")),
 			},
 			wantErr: false,
 		},
@@ -63,13 +61,6 @@ func TestSerializeSignActionArgs(t *testing.T) {
 						UnlockingScript: "invalid",
 					},
 				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid base64 reference",
-			args: wallet.SignActionArgs{
-				Reference: "invalid",
 			},
 			wantErr: true,
 		},
@@ -142,7 +133,7 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 						SequenceNumber:  456,
 					},
 				},
-				Reference: base64.StdEncoding.EncodeToString(ref),
+				Reference: ref,
 				Options: &wallet.SignActionOptions{
 					AcceptDelayedBroadcast: util.BoolPtr(true),
 					ReturnTXIDOnly:         util.BoolPtr(false),

@@ -97,7 +97,7 @@ func TestRegistryClient_RegisterDefinition(t *testing.T) {
 		Tx: beef,
 		SignableTransaction: &wallet.SignableTransaction{
 			Tx:        beef,
-			Reference: "mock-reference",
+			Reference: []byte("mock-reference"),
 		},
 	}
 
@@ -414,7 +414,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 		Tx: beef,
 		SignableTransaction: &wallet.SignableTransaction{
 			Tx:        beef,
-			Reference: "mock-reference",
+			Reference: []byte("mock-reference"),
 		},
 	}
 
@@ -640,7 +640,7 @@ func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 		Tx: beef,
 		SignableTransaction: &wallet.SignableTransaction{
 			Tx:        beef,
-			Reference: "mock-reference",
+			Reference: []byte("mock-reference"),
 		},
 	}
 

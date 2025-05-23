@@ -49,6 +49,9 @@ func TestVectors(t *testing.T) {
 	serialArray, err := tu.GetByte32FromBase64String("AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
 	require.NoError(t, err)
 
+	ref, err := base64.StdEncoding.DecodeString("dGVzdA==")
+	require.NoError(t, err)
+
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
 		Filename: "abortAction-simple-args",
@@ -65,7 +68,7 @@ func TestVectors(t *testing.T) {
 		// TODO: This wire test is failing, I think also because of how ts-sdk handles -1
 		Filename: "signAction-simple-args",
 		Object: wallet.SignActionArgs{
-			Reference: "dGVzdA==",
+			Reference: ref,
 			Spends: map[uint32]wallet.SignActionSpend{
 				0: {
 					UnlockingScript: "76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac",

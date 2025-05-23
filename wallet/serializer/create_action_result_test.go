@@ -34,7 +34,7 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 				},
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        []byte{0x04, 0x05, 0x06},
-					Reference: "test-ref",
+					Reference: []byte("test-ref"),
 				},
 			},
 		},

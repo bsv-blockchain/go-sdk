@@ -423,7 +423,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 				Tx: nil,
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        nil,
-					Reference: "ref",
+					Reference: []byte("ref"),
 				},
 			}, nil
 		}
@@ -499,7 +499,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 				Tx: []byte{1, 2, 3}, // This will fail in NewTransactionFromBEEF
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        []byte{1, 2, 3},
-					Reference: "ref",
+					Reference: []byte("ref"),
 				},
 			}, nil
 		}
@@ -590,7 +590,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 				Tx: []byte{1, 2, 3, 4}, // Mock BEEF data
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        []byte{1, 2, 3, 4},
-					Reference: "ref",
+					Reference: []byte("ref"),
 				},
 			}, nil
 		}
@@ -669,7 +669,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 				Tx: []byte{1, 2, 3, 4},
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        []byte{1, 2, 3, 4},
-					Reference: "ref",
+					Reference: []byte("ref"),
 				},
 			}, nil
 		}
