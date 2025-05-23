@@ -119,8 +119,14 @@ func ValidateCertificates(
 					return
 				}
 
+				certType, err := cert.Type.ToArray()
+				if err != nil {
+					errCh <- fmt.Errorf("failed to convert certificate type to byte array: %v", err)
+					return
+				}
+
 				// Check type match
-				_, typeExists := types[string(cert.Type)]
+				_, typeExists := types[certType]
 				if !typeExists {
 					errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
 					return

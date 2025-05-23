@@ -12,9 +12,10 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	w := util.NewWriter()
 
 	// Encode certificate type (base64)
-	if err := w.WriteSizeFromBase64(args.Certificate.Type, sizeType); err != nil {
-		return nil, fmt.Errorf("invalid type base64: %w", err)
+	if args.Certificate.Type == [32]byte{} {
+		return nil, fmt.Errorf("certificate type is empty")
 	}
+	w.WriteBytes(args.Certificate.Type[:])
 
 	w.WriteBytes(args.Certificate.Subject.Compressed())
 
@@ -76,7 +77,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	args = &wallet.ProveCertificateArgs{}
 
 	// Read certificate type (base64)
-	args.Certificate.Type = r.ReadBase64(sizeType)
+	copy(args.Certificate.Type[:], r.ReadBytes(sizeType))
 
 	// Read subject (hex)
 	subjectBytes := r.ReadBytes(sizeCertifier)

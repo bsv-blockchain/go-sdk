@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,7 +17,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}{{
 		name: "direct acquisition",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), sizeType)),
+			Type:                base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("test-type"), sizeType)),
 			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			Fields: map[string]string{
@@ -36,7 +37,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}, {
 		name: "issuance acquisition",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("issuance-type"), sizeType)),
+			Type:                base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("issuance-type"), sizeType)),
 			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields: map[string]string{
@@ -47,7 +48,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}, {
 		name: "minimal args",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), sizeType)),
+			Type:                base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("minimal"), sizeType)),
 			Certifier:           hex.EncodeToString(make([]byte, sizeCertifier)),
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),

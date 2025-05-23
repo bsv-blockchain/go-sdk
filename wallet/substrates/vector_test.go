@@ -43,6 +43,11 @@ func TestVectors(t *testing.T) {
 	prover, err := ec.PublicKeyFromString(ProverHex)
 	require.NoError(t, err)
 
+	typeBytes, err := base64.StdEncoding.DecodeString("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
+	require.NoError(t, err)
+	typeArray := [32]byte{}
+	copy(typeArray[:], typeBytes)
+
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
 		Filename: "abortAction-simple-args",
@@ -422,7 +427,7 @@ func TestVectors(t *testing.T) {
 		Filename: "acquireCertificate-simple-result",
 		IsResult: true,
 		Object: wallet.Certificate{
-			Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+			Type:               typeArray,
 			SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 			Subject:            pubKey,       // Use key from test setup
 			Certifier:          counterparty, // Use key from test setup
@@ -448,7 +453,7 @@ func TestVectors(t *testing.T) {
 			TotalCertificates: 1,
 			Certificates: []wallet.CertificateResult{{
 				Certificate: wallet.Certificate{
-					Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+					Type:               typeArray,
 					SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 					Subject:            pubKey,
 					Certifier:          counterparty,
@@ -464,7 +469,7 @@ func TestVectors(t *testing.T) {
 		Filename: "proveCertificate-simple-args",
 		Object: wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+				Type:               typeArray,
 				SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 				Subject:            pubKey,       // Use key from test setup
 				Certifier:          counterparty, // Use key from test setup
@@ -512,7 +517,7 @@ func TestVectors(t *testing.T) {
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+						Type:               wallet.Base64Bytes32(typeArray),
 						SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 						Subject:            pubKey,
 						Certifier:          counterparty,
@@ -524,7 +529,7 @@ func TestVectors(t *testing.T) {
 						Name:        "Test Certifier",
 						IconUrl:     "https://example.com/icon.png",
 						Description: "Certifier description",
-						Trust:       5, // Example trust level
+						Trust:       5,
 					},
 					PubliclyRevealedKeyring: map[string]string{"pubField": "pubKey"},
 					DecryptedFields:         map[string]string{"name": "Alice"},
@@ -547,7 +552,7 @@ func TestVectors(t *testing.T) {
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+						Type:               typeArray,
 						SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 						Subject:            pubKey,
 						Certifier:          counterparty,

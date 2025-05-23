@@ -3,6 +3,7 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -24,8 +25,8 @@ func TestListCertificatesArgs(t *testing.T) {
 				"02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
 			},
 			Types: []string{
-				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type1"), sizeType)),
-				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type2"), sizeType)),
+				base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("type1"), sizeType)),
+				base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("type2"), sizeType)),
 			},
 			Limit:            10,
 			Offset:           5,
@@ -36,7 +37,7 @@ func TestListCertificatesArgs(t *testing.T) {
 		name: "minimal args",
 		args: &wallet.ListCertificatesArgs{
 			Certifiers: []string{"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"},
-			Types:      []string{base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), sizeType))},
+			Types:      []string{base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("minimal"), sizeType))},
 		},
 	}, {
 		name: "empty certifiers and types",
@@ -66,14 +67,20 @@ func TestListCertificatesResult(t *testing.T) {
 	t.Run("full result", func(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
 		require.NoError(t, err)
+
+		var typeCert1 [32]byte
+		copy(typeCert1[:], []byte("cert1"))
+		var typeCert2 [32]byte
+		copy(typeCert2[:], []byte("cert2"))
+
 		result := &wallet.ListCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.CertificateResult{
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert1"), sizeType)),
+						Type:               typeCert1,
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial1"), sizeSerial)),
+						SerialNumber:       base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("serial1"), sizeSerial)),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 						Signature:          hex.EncodeToString(make([]byte, 64)),
@@ -88,9 +95,9 @@ func TestListCertificatesResult(t *testing.T) {
 				},
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert2"), sizeType)),
+						Type:               typeCert2,
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial2"), sizeSerial)),
+						SerialNumber:       base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("serial2"), sizeSerial)),
 						Certifier:          pk.PubKey(),
 						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 					},

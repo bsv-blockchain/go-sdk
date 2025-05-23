@@ -341,7 +341,6 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
-			Type:               "dummyType",
 			SerialNumber:       "dummySerial",
 			Subject:            pubKey,
 			Certifier:          pubKey,
@@ -349,6 +348,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Signature:          "invalid",
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
 		}
+		copy(certificate.Type[:], "dummyType")
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
 		// Create a mock certificate verifier that fails
@@ -369,13 +369,16 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		require.Contains(t, err.Error(), "certificate verification failed")
 	})
 
+	typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+	require.NoError(t, err)
+
 	t.Run("should throw if createAction returns no tx", func(t *testing.T) {
 		// Setup a certificate
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		// Use a valid outpoint format so we get past the verification error
 		certificate := &wallet.Certificate{
-			Type:               KnownIdentityTypes.XCert,
+			Type:               typeXCert,
 			SerialNumber:       "12345",
 			Subject:            pubKey,
 			Certifier:          pubKey,
@@ -451,7 +454,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
-			Type:               KnownIdentityTypes.XCert,
+			Type:               typeXCert,
 			SerialNumber:       "12345",
 			Subject:            pubKey,
 			Certifier:          pubKey,
@@ -527,7 +530,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
-			Type:               KnownIdentityTypes.XCert,
+			Type:               typeXCert,
 			SerialNumber:       "12345",
 			Subject:            pubKey,
 			Certifier:          pubKey,
@@ -625,7 +628,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
-			Type:               KnownIdentityTypes.XCert,
+			Type:               typeXCert,
 			SerialNumber:       "12345",
 			Subject:            pubKey,
 			Certifier:          pubKey,
@@ -707,13 +710,16 @@ func TestResolveByIdentityKey(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := privateKeyFromInt(123)
 
+		typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+		require.NoError(t, err)
+
 		// Setup mock DiscoverByIdentityKey
 		mockWallet.MockDiscoverByIdentityKey = func(ctx context.Context, args wallet.DiscoverByIdentityKeyArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
 			return &wallet.DiscoverCertificatesResult{
 				Certificates: []wallet.IdentityCertificate{
 					{
 						Certificate: wallet.Certificate{
-							Type:    KnownIdentityTypes.XCert,
+							Type:    typeXCert,
 							Subject: pubKey,
 						},
 						DecryptedFields: map[string]string{
@@ -762,13 +768,16 @@ func TestResolveByAttributes(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := privateKeyFromInt(123)
 
+		typeEmailCert, err := wallet.Base64String(KnownIdentityTypes.EmailCert).ToArray()
+		require.NoError(t, err)
+
 		// Setup mock DiscoverByAttributes
 		mockWallet.MockDiscoverByAttributes = func(ctx context.Context, args wallet.DiscoverByAttributesArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
 			return &wallet.DiscoverCertificatesResult{
 				Certificates: []wallet.IdentityCertificate{
 					{
 						Certificate: wallet.Certificate{
-							Type:    KnownIdentityTypes.EmailCert,
+							Type:    typeEmailCert,
 							Subject: pubKey,
 						},
 						DecryptedFields: map[string]string{
@@ -807,10 +816,13 @@ func TestParseIdentity(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
+		typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+		require.NoError(t, err)
+
 		// Setup certificate
 		certificate := &wallet.IdentityCertificate{
 			Certificate: wallet.Certificate{
-				Type:    KnownIdentityTypes.XCert,
+				Type:    typeXCert,
 				Subject: pubKey,
 			},
 			DecryptedFields: map[string]string{
@@ -841,10 +853,13 @@ func TestParseIdentity(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
+		var typeUnknown [32]byte
+		copy(typeUnknown[:], "unknownType")
+
 		// Setup certificate with unknown type
 		certificate := &wallet.IdentityCertificate{
 			Certificate: wallet.Certificate{
-				Type:    "unknownType",
+				Type:    typeUnknown,
 				Subject: pubKey,
 			},
 			DecryptedFields: map[string]string{

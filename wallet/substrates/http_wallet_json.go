@@ -267,7 +267,7 @@ func (h *HTTPWalletJSON) ListCertificates(ctx context.Context, args wallet.ListC
 }
 
 // ProveCertificate proves select fields of a certificate
-func (h *HTTPWalletJSON) ProveCertificate(ctx context.Context, args wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
+func (h *HTTPWalletJSON) ProveCertificate(ctx context.Context, args *wallet.ProveCertificateArgs) (*wallet.ProveCertificateResult, error) {
 	data, err := h.api(ctx, "proveCertificate", args)
 	if err != nil {
 		return nil, err

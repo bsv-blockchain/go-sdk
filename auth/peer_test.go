@@ -404,7 +404,8 @@ func (t *LoggingMockTransport) OnData(callback func(context.Context, *AuthMessag
 
 // TestPeerCertificateExchange tests certificate request and exchange
 func TestPeerCertificateExchange(t *testing.T) {
-	certType := "testCertType"
+	var certType [32]byte
+	copy(certType[:], "testCertType")
 	requiredField := "testField"
 
 	// Setup logging
@@ -907,7 +908,8 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 // if at least one required field is present
 func TestPartialCertificateAcceptance(t *testing.T) {
 	// Create a mock function to intercept certificate requests
-	certType := "identityCert"
+	var certType [32]byte
+	copy(certType[:], "identityCert")
 
 	// Create test wallets with recognizable identities
 	aliceKey, err := ec.NewPrivateKey()
@@ -1221,7 +1223,8 @@ func TestLibraryCardVerification(t *testing.T) {
 	t.Skip("Temporarily skipping until we fix signature verification issue")
 
 	// Create a mock function to intercept certificate requests
-	certType := "libraryCard"
+	var certType [32]byte
+	copy(certType[:], "libraryCard")
 
 	// Create test wallets with recognizable identities
 	aliceKey, err := ec.NewPrivateKey()
@@ -1575,10 +1578,15 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
+	var certTypeA [32]byte
+	copy(certTypeA[:], "partnerA")
+	var certTypeB [32]byte
+	copy(certTypeB[:], "partnerB")
+
 	// Alice has "partnerA" certificate, Bob has "partnerB" certificate
 	// They shouldn't accept each other's certificates
 	aliceCertRaw := wallet.Certificate{
-		Type:               "partnerA",
+		Type:               certTypeA,
 		SerialNumber:       "alice-serial",
 		Subject:            aliceKey.PubKey(),
 		Certifier:          bobKey.PubKey(),
@@ -1587,7 +1595,7 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 	}
 
 	bobCertRaw := wallet.Certificate{
-		Type:               "partnerB",
+		Type:               certTypeB,
 		SerialNumber:       "bob-serial",
 		Subject:            bobKey.PubKey(),
 		Certifier:          aliceKey.PubKey(),
@@ -1655,14 +1663,14 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 	aliceRequiredCerts := utils.RequestedCertificateSet{
 		Certifiers: []string{"any"},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
-			"partnerA": []string{"name"}, // Alice only accepts partnerA certs
+			certTypeA: []string{"name"}, // Alice only accepts partnerA certs
 		},
 	}
 
 	bobRequiredCerts := utils.RequestedCertificateSet{
 		Certifiers: []string{"any"},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
-			"partnerB": []string{"name"}, // Bob only accepts partnerB certs
+			certTypeB: []string{"name"}, // Bob only accepts partnerB certs
 		},
 	}
 

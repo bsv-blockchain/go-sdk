@@ -15,7 +15,6 @@ func TestCertificate(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
 		require.NoError(t, err)
 		cert := &wallet.Certificate{
-			Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-cert"), sizeType)),
 			Subject:            pk.PubKey(),
 			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			Certifier:          pk.PubKey(),
@@ -26,6 +25,7 @@ func TestCertificate(t *testing.T) {
 				"field2": "value2",
 			},
 		}
+		copy(cert.Type[:], []byte("test-cert"))
 
 		data, err := SerializeCertificate(cert)
 		require.NoError(t, err)

@@ -23,19 +23,21 @@ func TestValidateCertificates(t *testing.T) {
 	})
 
 	t.Run("Validates certificate requirements structure", func(t *testing.T) {
+		var certType wallet.Base64Bytes32
+		copy(certType[:], "requested_type")
 		// Test validate certificate requirements struct
 		reqs := &utils.RequestedCertificateSet{
 			Certifiers: []string{"valid_certifier"},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
-				"requested_type": {"field1"},
+				certType: {"field1"},
 			},
 		}
 
 		assert.NotNil(t, reqs)
 		assert.Len(t, reqs.Certifiers, 1)
 		assert.Len(t, reqs.CertificateTypes, 1)
-		assert.Contains(t, reqs.CertificateTypes, "requested_type")
-		assert.Contains(t, reqs.CertificateTypes["requested_type"], "field1")
+		assert.Contains(t, reqs.CertificateTypes, certType)
+		assert.Contains(t, reqs.CertificateTypes[certType], "field1")
 	})
 
 	// The complex tests that require mocking certificates and their methods

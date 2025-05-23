@@ -21,7 +21,7 @@ func TestProveCertificateArgs(t *testing.T) {
 		name: "full args",
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+				Type:               [32]byte{0x1},
 				Subject:            pk.PubKey(),
 				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
 				Certifier:          pk.PubKey(),
@@ -41,7 +41,7 @@ func TestProveCertificateArgs(t *testing.T) {
 		name: "minimal args",
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+				Type:               [32]byte{0x1},
 				Subject:            pk.PubKey(),
 				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
 				Certifier:          pk.PubKey(),

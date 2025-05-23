@@ -37,6 +37,13 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 	require.NoError(t, err)
 	differentSubjectKey := differentSubject.PubKey()
 
+	var requestedType [32]byte
+	copy(requestedType[:], "requested_type")
+	var anotherType [32]byte
+	copy(anotherType[:], "another_type")
+	var type1 [32]byte
+	copy(type1[:], "type1")
+
 	// This test will bypass the real ValidateCertificates function and instead
 	// test the behavior we expect directly, since this is a unit test of the functionality
 
@@ -90,7 +97,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 		certificatesRequested := &RequestedCertificateSet{
 			Certifiers: []string{"another_certifier"}, // Different from certifierHex
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
-				"requested_type": []string{"field1"},
+				requestedType: []string{"field1"},
 			},
 		}
 
@@ -104,7 +111,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 		certificatesRequested := &RequestedCertificateSet{
 			Certifiers: []string{"any"}, // Special value that matches any certifier
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
-				"requested_type": []string{"field1"},
+				requestedType: []string{"field1"},
 			},
 		}
 
@@ -113,19 +120,16 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 	})
 
 	t.Run("throws an error for unrequested certificate type", func(t *testing.T) {
-		// Create type from certificate
-		certType := wallet.Base64String("requested_type")
-
 		// Create certificate request with different type
 		certificatesRequested := &RequestedCertificateSet{
 			Certifiers: []string{"any"},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
-				"another_type": []string{"field1"}, // Different from "requested_type"
+				anotherType: []string{"field1"}, // Different from "requested_type"
 			},
 		}
 
 		// Check type match logic
-		_, typeExists := certificatesRequested.CertificateTypes[string(certType)]
+		_, typeExists := certificatesRequested.CertificateTypes[requestedType]
 		assert.False(t, typeExists, "Certificate type should not match requested type")
 	})
 
@@ -134,7 +138,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 		req := &RequestedCertificateSet{
 			Certifiers: []string{},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
-				"type1": []string{"field1"},
+				type1: []string{"field1"},
 			},
 		}
 		err := ValidateRequestedCertificateSet(req)
@@ -154,7 +158,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 		req = &RequestedCertificateSet{
 			Certifiers: []string{"certifier1"},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
-				"": []string{"field1"},
+				[32]byte{}: []string{"field1"},
 			},
 		}
 		err = ValidateRequestedCertificateSet(req)
@@ -165,7 +169,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 		req = &RequestedCertificateSet{
 			Certifiers: []string{"certifier1"},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
-				"type1": []string{},
+				type1: []string{},
 			},
 		}
 		err = ValidateRequestedCertificateSet(req)
@@ -176,7 +180,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 		req = &RequestedCertificateSet{
 			Certifiers: []string{"certifier1"},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
-				"type1": []string{"field1"},
+				type1: []string{"field1"},
 			},
 		}
 		err = ValidateRequestedCertificateSet(req)

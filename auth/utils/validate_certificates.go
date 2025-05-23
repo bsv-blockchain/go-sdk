@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -19,7 +21,38 @@ var (
 )
 
 // RequestedCertificateTypeIDAndFieldList maps certificate type IDs to required fields
-type RequestedCertificateTypeIDAndFieldList map[string][]string
+type RequestedCertificateTypeIDAndFieldList map[wallet.Base64Bytes32][]string
+
+func (m RequestedCertificateTypeIDAndFieldList) MarshalJSON() ([]byte, error) {
+	tmp := make(map[string][]string)
+	for k, v := range m {
+		tmp[base64.StdEncoding.EncodeToString(k[:])] = v
+	}
+	return json.Marshal(tmp)
+}
+
+func (m *RequestedCertificateTypeIDAndFieldList) UnmarshalJSON(data []byte) error {
+	tmp := make(map[string][]string)
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	result := make(RequestedCertificateTypeIDAndFieldList)
+	for k, v := range tmp {
+		decoded, err := base64.StdEncoding.DecodeString(k)
+		if err != nil {
+			return fmt.Errorf("invalid base64 key: %w", err)
+		}
+		if len(decoded) != 32 {
+			return fmt.Errorf("expected 32 bytes, got %d", len(decoded))
+		}
+		var key wallet.Base64Bytes32
+		copy(key[:], decoded)
+		result[key] = v
+	}
+	*m = result
+	return nil
+}
 
 // RequestedCertificateSet represents a set of requested certificates
 type RequestedCertificateSet struct {
@@ -93,7 +126,12 @@ func ValidateCertificates(
 
 				// Check type match
 				if cert.Type != "" {
-					requestedFields, typeExists := certificatesRequested.CertificateTypes[string(cert.Type)]
+					certType, err := cert.Type.ToArray()
+					if err != nil {
+						errCh <- fmt.Errorf("failed to convert certificate type to byte array: %v", err)
+						return
+					}
+					requestedFields, typeExists := certificatesRequested.CertificateTypes[certType]
 					if !typeExists {
 						errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
 						return
@@ -147,7 +185,7 @@ func ValidateRequestedCertificateSet(req *RequestedCertificateSet) error {
 	}
 
 	for certType, fields := range req.CertificateTypes {
-		if certType == "" {
+		if certType == [32]byte{} {
 			return errors.New("empty certificate type specified")
 		}
 

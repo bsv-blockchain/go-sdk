@@ -84,7 +84,7 @@ func (c *Client) PubliclyRevealAttributes(
 	certificateByte := []byte(certificate.Signature)
 	// Convert Go certificate to Certificate instance to verify it
 	masterCert := &certificates.Certificate{
-		Type:               wallet.Base64String(certificate.Type),
+		Type:               wallet.Base64StringFromArray(certificate.Type),
 		SerialNumber:       wallet.Base64String(certificate.SerialNumber),
 		Subject:            *certificate.Subject,
 		Certifier:          *certificate.Certifier,
@@ -278,7 +278,7 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 	var name, avatarURL, badgeLabel, badgeIconURL, badgeClickURL string
 
 	// Parse out the name to display based on the specific certificate type which has clearly defined fields
-	switch identity.Type {
+	switch string(wallet.Base64StringFromArray(identity.Type)) {
 	case KnownIdentityTypes.XCert:
 		name = identity.DecryptedFields["userName"]
 		avatarURL = identity.DecryptedFields["profilePhoto"]
@@ -350,9 +350,12 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		badgeClickURL = DefaultIdentity.BadgeClickURL
 	}
 
+	var typeUnknown wallet.Base64Bytes32
+	copy(typeUnknown[:], "unknownType")
+
 	// Create abbreviated key for display
 	abbreviatedKey := ""
-	if identity.Type != "unknownType" {
+	if identity.Type != typeUnknown {
 		if len(identity.Subject.Compressed()) > 0 {
 			subjStr := string(identity.Subject.Compressed())
 			if len(subjStr) > 10 {
@@ -364,7 +367,7 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 	}
 
 	identityKey := ""
-	if identity.Type != "unknownType" {
+	if identity.Type != typeUnknown {
 		identityKey = string(identity.Subject.Compressed())
 	}
 

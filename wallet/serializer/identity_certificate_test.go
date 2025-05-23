@@ -3,6 +3,7 @@ package serializer
 import (
 	"encoding/base64"
 	"encoding/hex"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -15,9 +16,8 @@ func TestIdentityCertificate(t *testing.T) {
 	require.NoError(t, err, "generating private key should not error")
 	cert := &wallet.IdentityCertificate{
 		Certificate: wallet.Certificate{
-			Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-type"), sizeType)),
 			Subject:            pk.PubKey(),
-			SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("test-serial"), sizeSerial)),
+			SerialNumber:       base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("test-serial"), sizeSerial)),
 			Certifier:          pk.PubKey(),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
 			Signature:          hex.EncodeToString(make([]byte, 64)),
@@ -41,6 +41,7 @@ func TestIdentityCertificate(t *testing.T) {
 			"field2": "decrypted2",
 		},
 	}
+	copy(cert.Type[:], []byte("test-type"))
 
 	// Test serialization
 	data, err := SerializeIdentityCertificate(cert)

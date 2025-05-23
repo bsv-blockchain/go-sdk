@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
-	Type               string            `json:"type"`                         // Base64-encoded certificate type ID
+	Type               Base64Bytes32     `json:"type"`                         // Base64-encoded certificate type ID
 	SerialNumber       string            `json:"serialNumber"`                 // Base64-encoded unique serial number
 	Subject            *ec.PublicKey     `json:"subject"`                      // Public key of the certificate subject
 	Certifier          *ec.PublicKey     `json:"certifier"`                    // Public key of the certificate issuer
@@ -33,7 +34,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		certifierHex = &cs
 	}
 
-	return json.Marshal(&struct {
+	res, err := json.Marshal(&struct {
 		Subject   *string `json:"subject"`
 		Certifier *string `json:"certifier"`
 		*Alias
@@ -42,6 +43,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		Certifier: certifierHex,
 		Alias:     (*Alias)(c),
 	})
+	return res, err
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface for Certificate
@@ -56,7 +58,7 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 	}
 
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+		return fmt.Errorf("error unmarshaling certificate: %w", err)
 	}
 
 	// Decode public key hex strings
@@ -517,7 +519,7 @@ type IdentityCertificate struct {
 // It handles the flattening of the embedded Certificate fields.
 func (ic *IdentityCertificate) MarshalJSON() ([]byte, error) {
 	// Start with marshaling the embedded Certificate
-	certData, err := json.Marshal(ic.Certificate)
+	certData, err := json.Marshal(&ic.Certificate)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
 	}
@@ -631,7 +633,7 @@ type CertificateResult struct {
 // It handles the flattening of the embedded Certificate fields.
 func (cr *CertificateResult) MarshalJSON() ([]byte, error) {
 	// Start with marshaling the embedded Certificate
-	certData, err := json.Marshal(cr.Certificate)
+	certData, err := json.Marshal(&cr.Certificate)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
 	}
@@ -791,3 +793,47 @@ type ProveCertificateResult struct {
 type CertificateFieldNameUnder50Bytes string
 
 type Base64String string
+
+func (s Base64String) ToArray() ([32]byte, error) {
+	b, err := base64.StdEncoding.DecodeString(string(s))
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("error decoding base64 string: %w", err)
+	}
+
+	var arr [32]byte
+	if len(b) > 32 {
+		return arr, fmt.Errorf("string too long: %d", len(b))
+	}
+	if len(b) == 0 {
+		return arr, nil
+	}
+	copy(arr[:], b)
+	return arr, nil
+}
+
+func Base64StringFromArray(arr [32]byte) Base64String {
+	return Base64String(base64.StdEncoding.EncodeToString(arr[:]))
+}
+
+type Base64Bytes32 [32]byte
+
+func (b *Base64Bytes32) MarshalJSON() ([]byte, error) {
+	s := base64.StdEncoding.EncodeToString(b[:])
+	return json.Marshal(s)
+}
+
+func (b *Base64Bytes32) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	decoded, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return err
+	}
+	if len(decoded) != 32 {
+		return fmt.Errorf("expected 32 bytes, got %d", len(decoded))
+	}
+	copy(b[:], decoded)
+	return nil
+}

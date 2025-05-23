@@ -22,9 +22,10 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	w.WriteByte(0) // errorByte = 0 (success)
 
 	// Type (base64)
-	if err := w.WriteSizeFromBase64(cert.Type, sizeType); err != nil {
-		return nil, fmt.Errorf("invalid type base64: %w", err)
+	if cert.Type == [32]byte{} {
+		return nil, fmt.Errorf("cert type is empty")
 	}
+	w.WriteBytes(cert.Type[:])
 
 	w.WriteBytes(cert.Subject.Compressed())
 
@@ -75,7 +76,7 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	}
 
 	// Read type (base64)
-	cert.Type = r.ReadBase64(sizeType)
+	copy(cert.Type[:], r.ReadBytes(sizeType))
 
 	// Read subject (hex)
 	subjectBytes := r.ReadBytes(sizeSubject)
