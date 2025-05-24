@@ -54,6 +54,9 @@ func TestVectors(t *testing.T) {
 	ref, err := base64.StdEncoding.DecodeString("dGVzdA==")
 	require.NoError(t, err)
 
+	outpoint, err := wallet.OutpointFromString("aec245f27b7640c8b1865045107731bfb848115c573f7da38166074b1c9e475d.0")
+	require.NoError(t, err)
+
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
 		Filename: "abortAction-simple-args",
@@ -422,7 +425,7 @@ func TestVectors(t *testing.T) {
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
 			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
-			RevocationOutpoint:  "txid123:0",
+			RevocationOutpoint:  *outpoint,
 			Signature:           "sig-hex",
 			CertifierUrl:        "https://certifier.example.com",
 			KeyringRevealer:     "revealer-key-hex", // TODO: change to real hex, e.g. 319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838

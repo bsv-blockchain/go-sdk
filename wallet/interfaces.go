@@ -6,6 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"strconv"
+	"strings"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
@@ -605,7 +608,7 @@ type AcquireCertificateArgs struct {
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
 	SerialNumber        string              `json:"serialNumber"`
-	RevocationOutpoint  string              `json:"revocationOutpoint,omitempty"`
+	RevocationOutpoint  Outpoint            `json:"revocationOutpoint,omitempty"`
 	Signature           string              `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
 	KeyringRevealer     string              `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
@@ -859,4 +862,59 @@ func (b *HexBytes33) UnmarshalJSON(data []byte) error {
 	}
 	copy(b[:], decoded)
 	return nil
+}
+
+type Outpoint struct {
+	Txid  chainhash.Hash
+	Index uint32
+}
+
+func (o *Outpoint) String() string {
+	txidHex := hex.EncodeToString(o.Txid[:])
+	return fmt.Sprintf("%s.%d", txidHex, o.Index)
+}
+
+func (o *Outpoint) MarshalJSON() ([]byte, error) {
+	return json.Marshal(o.String())
+}
+
+func (o *Outpoint) UnmarshalJSON(data []byte) error {
+	var outpointStr string
+	if err := json.Unmarshal(data, &outpointStr); err != nil {
+		return fmt.Errorf("error unmarshaling outpoint string: %w", err)
+	}
+	outpoint, err := OutpointFromString(outpointStr)
+	if err != nil {
+		return fmt.Errorf("error parsing outpoint string: %w", err)
+	}
+	o.Txid = outpoint.Txid
+	o.Index = outpoint.Index
+	return nil
+}
+
+func OutpointFromString(s string) (*Outpoint, error) {
+	var outpoint = new(Outpoint)
+	if len(s) == 0 {
+		return outpoint, nil
+	}
+	parts := strings.Split(s, ".")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid outpoint format: %s", s)
+	}
+
+	txidBytes, err := hex.DecodeString(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid txid hex: %w", err)
+	}
+	if len(txidBytes) != chainhash.HashSize {
+		return nil, fmt.Errorf("invalid txid length: %d", len(txidBytes))
+	}
+	copy(outpoint.Txid[:], txidBytes)
+
+	index, err := strconv.ParseUint(parts[1], 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("invalid output index: %w", err)
+	}
+	outpoint.Index = uint32(index)
+	return outpoint, nil
 }

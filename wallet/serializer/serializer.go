@@ -104,6 +104,19 @@ func decodeOutpoint(data []byte) (string, error) {
 	return fmt.Sprintf("%s.%d", txid, index), nil
 }
 
+// decodeOutpoint converts binary outpoint data to string format "txid.index"
+func decodeOutpointObj(data []byte) (*wallet.Outpoint, error) {
+	outpointString, err := decodeOutpoint(data)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding outpoint: %w", err)
+	}
+	outpoint, err := wallet.OutpointFromString(outpointString)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing outpoint: %w", err)
+	}
+	return outpoint, nil
+}
+
 const (
 	counterPartyTypeUninitializedCode uint8 = 0
 	counterPartyTypeSelfCode          uint8 = 11

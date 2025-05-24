@@ -11,6 +11,8 @@ import (
 )
 
 func TestAcquireCertificateArgs(t *testing.T) {
+	revocationOutpoint, err := wallet.OutpointFromString("0000000000000000000000000000000000000000000000000000000000000000.0")
+	require.NoError(t, err)
 	tests := []struct {
 		name string
 		args *wallet.AcquireCertificateArgs
@@ -25,7 +27,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 				"field2": "value2",
 			},
 			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
+			RevocationOutpoint: *revocationOutpoint,
 			Signature:          hex.EncodeToString(make([]byte, 64)),
 			KeyringRevealer:    wallet.KeyringRevealerCertifier,
 			KeyringForSubject: map[string]string{
@@ -52,7 +54,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			Certifier:           [33]byte{3},
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
-			RevocationOutpoint:  "0000000000000000000000000000000000000000000000000000000000000000.0",
+			RevocationOutpoint:  *revocationOutpoint,
 			Signature:           hex.EncodeToString(make([]byte, 64)),
 			KeyringRevealer:     hex.EncodeToString(make([]byte, sizeRevealer)),
 		},
