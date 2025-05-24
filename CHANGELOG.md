@@ -100,14 +100,12 @@ This is a major release introducing comprehensive new modules for authentication
 - Integration with authentication protocols
 
 #### Message Module Enhancements (`message/`)
-- Updated message signing to use SHA-256 hashing
 - Enhanced verification with tampered message detection
 - Support for specific recipient verification
 
 ### Changed
 
 #### Breaking Changes
-- Message signing now hashes messages with SHA-256 before signing (security improvement)
 - ProtoWallet constructor now requires explicit type specification in ProtoWalletArgs
 - Certificate validation now requires proper field validation
 - Storage operations now require authenticated wallet for certain operations
