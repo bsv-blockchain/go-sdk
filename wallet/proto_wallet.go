@@ -39,7 +39,7 @@ func NewProtoWallet(rootKeyOrKeyDeriver ProtoWalletArgs) (*ProtoWallet, error) {
 	switch rootKeyOrKeyDeriver.Type {
 	case ProtoWalletArgsTypeKeyDeriver:
 		return &ProtoWallet{
-			keyDeriver: NewKeyDeriver(rootKeyOrKeyDeriver.PrivateKey),
+			keyDeriver: rootKeyOrKeyDeriver.KeyDeriver,
 		}, nil
 	case ProtoWalletArgsTypePrivateKey:
 		return &ProtoWallet{

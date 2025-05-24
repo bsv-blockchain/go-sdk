@@ -10,9 +10,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-var (
-	ErrNoKeyRing = errors.New("no-key-ring")
-)
 
 // VerifiableCertificate extends the Certificate struct to include a verifier-specific keyring.
 // This keyring allows selective decryption of certificate fields for authorized verifiers.

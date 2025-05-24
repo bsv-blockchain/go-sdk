@@ -146,7 +146,10 @@ func IssueCertificateForSubject(
 	// Convert plainFields map[string]string to map[wallet.CertificateFieldNameUnder50Bytes]string
 	fieldsForEncryption := make(map[wallet.CertificateFieldNameUnder50Bytes]string)
 	for k, v := range plainFields {
-		// TODO: Add validation if needed that key length is under 50 bytes
+		// Validate that field name is under 50 bytes
+		if len(k) > 50 {
+			return nil, fmt.Errorf("certificate field name '%s' exceeds 50 bytes limit (%d bytes)", k, len(k))
+		}
 		fieldsForEncryption[wallet.CertificateFieldNameUnder50Bytes(k)] = v
 	}
 
