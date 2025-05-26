@@ -9,7 +9,7 @@
     },
     "serialNumber": "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
     "revocationOutpoint": "aec245f27b7640c8b1865045107731bfb848115c573f7da38166074b1c9e475d.0",
-    "signature": "sig-hex",
+    "signature": "7369676e61747572652d686578",
     "certifierUrl": "https://certifier.example.com",
     "keyringRevealer": "revealer-key-hex",
     "keyringForSubject": {

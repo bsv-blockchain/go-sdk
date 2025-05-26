@@ -346,7 +346,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          "invalid",
+			Signature:          []byte{0x01, 0x02, 0x03},
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
 		}
 		copy(certificate.Type[:], "dummyType")
@@ -384,7 +384,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          "valid",
+			Signature:          []byte{0x01, 0x02, 0x03},
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -460,7 +460,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          "valid",
+			Signature:          []byte{0x01, 0x02, 0x03},
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -536,7 +536,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          "valid",
+			Signature:          []byte{0x01, 0x02, 0x03},
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -634,7 +634,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          "valid",
+			Signature:          []byte{0x01, 0x02, 0x03},
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}

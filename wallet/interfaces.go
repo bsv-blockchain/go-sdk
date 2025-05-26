@@ -21,7 +21,7 @@ type Certificate struct {
 	Certifier          *ec.PublicKey     `json:"certifier"`                    // Public key of the certificate issuer
 	RevocationOutpoint string            `json:"revocationOutpoint,omitempty"` // Format: "txid:outputIndex"
 	Fields             map[string]string `json:"fields,omitempty"`             // Field name -> field value (encrypted)
-	Signature          string            `json:"signature,omitempty"`          // Hex-encoded signature
+	Signature          JsonByteHex       `json:"signature,omitempty"`          // Hex-encoded signature
 }
 
 // MarshalJSON implements json.Marshaler interface for Certificate

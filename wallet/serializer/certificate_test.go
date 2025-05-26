@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -17,7 +16,7 @@ func TestCertificate(t *testing.T) {
 			Subject:            pk.PubKey(),
 			Certifier:          pk.PubKey(),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-			Signature:          hex.EncodeToString(make([]byte, 64)),
+			Signature:          make([]byte, 64),
 			Fields: map[string]string{
 				"field1": "value1",
 				"field2": "value2",

@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"testing"
 
@@ -20,7 +19,7 @@ func TestIdentityCertificate(t *testing.T) {
 			SerialNumber:       tu.GetByte32FromString("test-serial"),
 			Certifier:          pk.PubKey(),
 			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-			Signature:          hex.EncodeToString(make([]byte, 64)),
+			Signature:          make([]byte, 64),
 			Fields: map[string]string{
 				"field1": "value1",
 				"field2": "value2",

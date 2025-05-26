@@ -61,6 +61,8 @@ func TestVectors(t *testing.T) {
 	lockScript, err := hex.DecodeString("76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac")
 	require.NoError(t, err)
 
+	signature := []byte("signature-hex") // 7369676e61747572652d686578
+
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
 		Filename: "abortAction-simple-args",
@@ -430,7 +432,7 @@ func TestVectors(t *testing.T) {
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
 			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 			RevocationOutpoint:  *outpoint,
-			Signature:           "sig-hex",
+			Signature:           "7369676e61747572652d686578",
 			CertifierUrl:        "https://certifier.example.com",
 			KeyringRevealer:     "revealer-key-hex", // TODO: change to real hex, e.g. 319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838
 			KeyringForSubject:   map[string]string{"field1": "key1", "field2": "key2"},
@@ -446,7 +448,7 @@ func TestVectors(t *testing.T) {
 			Certifier:          counterparty, // Use key from test setup
 			RevocationOutpoint: "txid123:0",
 			Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-			Signature:          "sig-hex",
+			Signature:          signature,
 		},
 	}, {
 		Filename: "listCertificates-simple-args",
@@ -472,7 +474,7 @@ func TestVectors(t *testing.T) {
 					Certifier:          counterparty,
 					RevocationOutpoint: "txid123:0",
 					Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-					Signature:          "7369676e61747572652d686578", // hex for "signature-hex"
+					Signature:          signature,
 				},
 				Keyring:  map[string]string{"field1": "key1", "field2": "key2"},
 				Verifier: VerifierHex,
@@ -488,7 +490,7 @@ func TestVectors(t *testing.T) {
 				Certifier:          counterparty, // Use key from test setup
 				RevocationOutpoint: "txid123:0",
 				Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-				Signature:          "7369676e61747572652d686578", // hex for "signature-hex"
+				Signature:          signature,
 			},
 			FieldsToReveal:   []string{"name"},
 			Verifier:         VerifierHex,
@@ -536,7 +538,7 @@ func TestVectors(t *testing.T) {
 						Certifier:          counterparty,
 						RevocationOutpoint: "txid123:0",
 						Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-						Signature:          "7369676e61747572652d686578",
+						Signature:          signature,
 					},
 					CertifierInfo: wallet.IdentityCertifier{
 						Name:        "Test Certifier",
@@ -571,7 +573,7 @@ func TestVectors(t *testing.T) {
 						Certifier:          counterparty,
 						RevocationOutpoint: "txid123:0",
 						Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-						Signature:          "7369676e61747572652d686578",
+						Signature:          signature,
 					},
 					CertifierInfo: wallet.IdentityCertifier{
 						Name:        "Test Certifier",

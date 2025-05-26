@@ -41,9 +41,7 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	w.WriteBytes(outpointBytes)
 
 	// Signature (hex)
-	if err := w.WriteIntFromHex(cert.Signature); err != nil {
-		return nil, fmt.Errorf("invalid signature hex: %w", err)
-	}
+	w.WriteIntBytes(cert.Signature)
 
 	// Fields
 	fieldEntries := make([]string, 0, len(cert.Fields))
@@ -96,7 +94,7 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	cert.RevocationOutpoint = outpoint
 
 	// Read signature
-	cert.Signature = r.ReadIntBytesHex()
+	cert.Signature = r.ReadIntBytes()
 
 	// Read fields
 	fieldsLength := r.ReadVarInt()

@@ -159,7 +159,7 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 		Certifier:          &certObj.Certifier,
 		RevocationOutpoint: encodedCert.RevocationOutpoint,
 		Fields:             encodedCert.Fields,
-		Signature:          string(certObj.Signature),
+		Signature:          certObj.Signature,
 	}
 
 	return finalCert, nil

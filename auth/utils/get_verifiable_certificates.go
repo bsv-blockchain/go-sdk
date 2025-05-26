@@ -125,8 +125,8 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		}
 
 		// Handle Signature
-		if certResult.Signature != "" {
-			baseCert.Signature = []byte(certResult.Signature)
+		if len(certResult.Signature) > 0 {
+			baseCert.Signature = certResult.Signature
 		}
 
 		// Handle nil Subject and Certifier safely

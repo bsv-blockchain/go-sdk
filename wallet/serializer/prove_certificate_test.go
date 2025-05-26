@@ -26,7 +26,7 @@ func TestProveCertificateArgs(t *testing.T) {
 				SerialNumber:       [32]byte{0x2},
 				Certifier:          pk.PubKey(),
 				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-				Signature:          hex.EncodeToString(make([]byte, 64)),
+				Signature:          make([]byte, 64),
 				Fields: map[string]string{
 					"field1": "value1",
 					"field2": "value2",
@@ -46,7 +46,7 @@ func TestProveCertificateArgs(t *testing.T) {
 				SerialNumber:       [32]byte{0x2},
 				Certifier:          pk.PubKey(),
 				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-				Signature:          hex.EncodeToString(make([]byte, 64)),
+				Signature:          make([]byte, 64),
 			},
 			FieldsToReveal: []string{},
 			Verifier:       hex.EncodeToString(make([]byte, sizeCertifier)),

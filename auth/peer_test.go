@@ -505,8 +505,8 @@ func TestPeerCertificateExchange(t *testing.T) {
 	}
 
 	// Debug certificate signatures
-	logger.Printf("DEBUG: Alice cert signature: %s", aliceCert.Signature)
-	logger.Printf("DEBUG: Bob cert signature: %s", bobCert.Signature)
+	logger.Printf("DEBUG: Alice cert signature: %x", aliceCert.Signature)
+	logger.Printf("DEBUG: Bob cert signature: %x", bobCert.Signature)
 
 	// Create mock keyring results - also properly encoded
 	fieldValueBase64 := base64.StdEncoding.EncodeToString([]byte("key-for-field"))

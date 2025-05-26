@@ -59,7 +59,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 						Certifier:          certifier,
 						RevocationOutpoint: "abcd1234:0",
 						Fields:             map[string]string{"field1": "encryptedData1", "field2": "encryptedData2"},
-						Signature:          "01020304",
+						Signature:          []byte{0x01, 0x02, 0x03, 0x04},
 					},
 				},
 			},

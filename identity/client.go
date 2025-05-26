@@ -2,6 +2,7 @@ package identity
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -81,7 +82,6 @@ func (c *Client) PubliclyRevealAttributes(
 	for k, v := range certificate.Fields {
 		fields[wallet.CertificateFieldNameUnder50Bytes(k)] = wallet.Base64String(v)
 	}
-	certificateByte := []byte(certificate.Signature)
 	// Convert Go certificate to Certificate instance to verify it
 	masterCert := &certificates.Certificate{
 		Type:               wallet.Base64StringFromArray(certificate.Type),
@@ -90,7 +90,7 @@ func (c *Client) PubliclyRevealAttributes(
 		Certifier:          *certificate.Certifier,
 		RevocationOutpoint: revocationOutpoint,
 		Fields:             fields,
-		Signature:          certificateByte,
+		Signature:          certificate.Signature,
 	}
 
 	// Verify the certificate
@@ -129,7 +129,7 @@ func (c *Client) PubliclyRevealAttributes(
 		"certifier":          certificate.Certifier.Compressed(),
 		"revocationOutpoint": certificate.RevocationOutpoint,
 		"fields":             certificate.Fields,
-		"signature":          certificate.Signature,
+		"signature":          hex.EncodeToString(certificate.Signature),
 		"keyring":            proveResult.KeyringForVerifier,
 	}
 
