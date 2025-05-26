@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/stretchr/testify/require"
@@ -19,6 +20,7 @@ func TestCreateAction(t *testing.T) {
 	mock := wallet.NewMockWallet(t)
 	walletTransceiver := createTestWalletWire(mock)
 	ctx := t.Context()
+	txID := tu.GetByte32FromHexString(t, "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806")
 
 	t.Run("should create an action with valid inputs", func(t *testing.T) {
 		// Expected arguments and return value
@@ -40,7 +42,7 @@ func TestCreateAction(t *testing.T) {
 		mock.ExpectedOriginator = "test originator"
 
 		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
-			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
+			Txid: txID,
 			Tx:   []byte{1, 2, 3, 4},
 		}
 
@@ -64,7 +66,7 @@ func TestCreateAction(t *testing.T) {
 		}
 		mock.ExpectedOriginator = ""
 		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
-			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
+			Txid: txID,
 		}
 
 		// Execute test

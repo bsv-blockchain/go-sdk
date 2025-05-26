@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 		{
 			name: "full result",
 			result: &wallet.CreateActionResult{
-				Txid: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				Txid: tu.GetByte32FromHexString(t, "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"),
 				Tx:   []byte{0x01, 0x02, 0x03},
 				NoSendChange: []string{
 					"abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0",
@@ -24,11 +25,11 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 				},
 				SendWithResults: []wallet.SendWithResult{
 					{
-						Txid:   "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
+						Txid:   tu.GetByte32FromHexString(t, "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72"),
 						Status: wallet.ActionResultStatusUnproven,
 					},
 					{
-						Txid:   "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
+						Txid:   tu.GetByte32FromHexString(t, "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981"),
 						Status: wallet.ActionResultStatusSending,
 					},
 				},

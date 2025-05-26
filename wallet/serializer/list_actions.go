@@ -113,9 +113,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 	w.WriteVarInt(uint64(len(result.Actions)))
 	for _, action := range result.Actions {
 		// Serialize basic action fields
-		if err := w.WriteSizeFromHex(action.Txid, chainhash.HashSize); err != nil {
-			return nil, fmt.Errorf("invalid txid hex: %w", err)
-		}
+		w.WriteBytes(action.Txid[:])
 		w.WriteVarInt(action.Satoshis)
 
 		// Serialize status
@@ -198,7 +196,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		action := wallet.Action{}
 
 		// Deserialize basic action fields
-		action.Txid = r.ReadHex(chainhash.HashSize)
+		copy(action.Txid[:], r.ReadBytes(chainhash.HashSize))
 		action.Satoshis = r.ReadVarInt()
 
 		// Deserialize status

@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -32,11 +31,7 @@ func DeserializeGetHeaderArgs(data []byte) (*wallet.GetHeaderArgs, error) {
 func SerializeGetHeaderResult(result *wallet.GetHeaderResult) ([]byte, error) {
 	w := util.NewWriter()
 	w.WriteByte(0) // errorByte = 0
-	headerBytes, err := hex.DecodeString(result.Header)
-	if err != nil {
-		return nil, fmt.Errorf("invalid header hex: %w", err)
-	}
-	w.WriteBytes(headerBytes)
+	w.WriteBytes(result.Header)
 	return w.Buf, nil
 }
 
@@ -55,6 +50,6 @@ func DeserializeGetHeaderResult(data []byte) (*wallet.GetHeaderResult, error) {
 	}
 
 	return &wallet.GetHeaderResult{
-		Header: hex.EncodeToString(headerBytes),
+		Header: headerBytes,
 	}, nil
 }

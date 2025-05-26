@@ -54,9 +54,7 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	}
 
 	// Encode verifier (hex)
-	if err := w.WriteSizeFromHex(args.Verifier, sizeCertifier); err != nil {
-		return nil, fmt.Errorf("invalid verifier hex: %w", err)
-	}
+	w.WriteBytes(args.Verifier[:])
 
 	// Encode privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -126,7 +124,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read verifier (hex)
-	args.Verifier = r.ReadHex(sizeCertifier)
+	copy(args.Verifier[:], r.ReadBytes(sizeCertifier))
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)

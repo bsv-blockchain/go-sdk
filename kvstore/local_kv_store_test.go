@@ -10,6 +10,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/kvstore"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -49,16 +50,17 @@ func CreateTagForKey(key string) string {
 
 // setupTestKVStore creates a test KV store with a mock wallet
 func setupTestKVStore(t *testing.T) (*kvstore.LocalKVStore, *wallet.MockWallet) {
+	mockTxID := tu.GetByte32FromString("mockTxId")
 	mockWallet := &wallet.MockWallet{
 		T:                  t,
 		ExpectedOriginator: "test",
 		// ExpectedCreateActionArgs: nil, // Will be validated in specific tests
 		CreateActionResultToReturn: &wallet.CreateActionResult{
-			Txid: "mockTxId",
+			Txid: mockTxID,
 		},
 		CreateActionError: nil,
 		SignActionResultToReturn: &wallet.SignActionResult{
-			Txid: "mockTxId",
+			Txid: mockTxID,
 		},
 		SignActionError: nil,
 		ListOutputsResultToReturn: &wallet.ListOutputsResult{
@@ -164,7 +166,7 @@ func TestLocalKVStoreSet_Success(t *testing.T) {
 
 	// Setup the success case
 	mockWallet.CreateActionResultToReturn = &wallet.CreateActionResult{
-		Txid: "txId",
+		Txid: tu.GetByte32FromString("txId"),
 	}
 
 	// Perform the Set operation

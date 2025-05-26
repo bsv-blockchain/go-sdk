@@ -317,10 +317,10 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 	}
 
 	if len(inputs) == 0 {
-		if createResult.Txid == "" {
+		if createResult.Txid == [32]byte{} {
 			return "", errors.New("CreateAction returned no txid and no signable transaction for new key")
 		}
-		return fmt.Sprintf("%s.0", createResult.Txid), nil
+		return fmt.Sprintf("%s.0", createResult.Txid.String()), nil
 	}
 
 	if createResult.SignableTransaction == nil {
@@ -501,7 +501,7 @@ func (kv *LocalKVStore) Remove(ctx context.Context, key string) ([]string, error
 			return removedTxids, fmt.Errorf("SignAction (Remove): %w", err)
 		}
 
-		removedTxids = append(removedTxids, signResult.Txid)
+		removedTxids = append(removedTxids, signResult.Txid.String())
 
 		if len(lookupResult.outpoints) < 100 {
 			break

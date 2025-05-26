@@ -69,9 +69,9 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		}
 
 		// Prepare verifier hex (empty if no key)
-		var verifierHex string
+		var verifierHex [33]byte
 		if options.VerifierIdentityKey != nil {
-			verifierHex = options.VerifierIdentityKey.ToDERHex()
+			copy(verifierHex[:], options.VerifierIdentityKey.ToDER())
 		}
 
 		proveResult, err := options.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{

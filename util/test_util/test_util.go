@@ -23,7 +23,7 @@ func PadOrTrim(bb []byte, size int) []byte {
 	return tmp
 }
 
-// GetByte32FromString returns a [32]byte from a hex string
+// GetByte32FromString returns a [32]byte from a string
 func GetByte32FromString(s string) [32]byte {
 	if len([]byte(s)) > 32 {
 		panic(fmt.Sprintf("string byte length must be less than 32, got %d", len([]byte(s))))
@@ -47,7 +47,19 @@ func GetByte32FromBase64String(t *testing.T, s string) [32]byte {
 	return a
 }
 
-// GetByte33FromString returns a [33]byte from a hex string
+// GetByte32FromHexString returns a [32]byte from a hex string
+func GetByte32FromHexString(t *testing.T, s string) [32]byte {
+	var a [32]byte
+	b, err := hex.DecodeString(s)
+	require.NoError(t, err)
+	if len(b) > 32 {
+		require.NoError(t, fmt.Errorf("byte length must be less than 32"))
+	}
+	copy(a[:], b)
+	return a
+}
+
+// GetByte33FromString returns a [33]byte from a string
 func GetByte33FromString(s string) [33]byte {
 	if len([]byte(s)) > 33 {
 		panic(fmt.Sprintf("string byte length must be less than 33, got %d", len([]byte(s))))
@@ -57,7 +69,7 @@ func GetByte33FromString(s string) [33]byte {
 	return b
 }
 
-// GetByte33FromHexString returns a [32]byte from a base64 string
+// GetByte33FromHexString returns a [33]byte from a hex string
 func GetByte33FromHexString(t *testing.T, s string) [33]byte {
 	var a [33]byte
 	b, err := hex.DecodeString(s)
@@ -67,4 +79,11 @@ func GetByte33FromHexString(t *testing.T, s string) [33]byte {
 	}
 	copy(a[:], b)
 	return a
+}
+
+// GetByteFromHexString returns a []byte from a hex string
+func GetByteFromHexString(t *testing.T, s string) []byte {
+	b, err := hex.DecodeString(s)
+	require.NoError(t, err)
+	return b
 }

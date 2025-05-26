@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -17,11 +16,7 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 	resultWriter.WriteByte(0)
 
 	// Write txid and tx if present
-	txidBytes, err := hex.DecodeString(result.Txid)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding txid: %w", err)
-	}
-	resultWriter.WriteOptionalBytes(txidBytes, util.BytesOptionWithFlag, util.BytesOptionTxIdLen, util.BytesOptionZeroIfEmpty)
+	resultWriter.WriteOptionalBytes(result.Txid[:], util.BytesOptionWithFlag, util.BytesOptionTxIdLen, util.BytesOptionZeroIfEmpty)
 	resultWriter.WriteOptionalBytes(result.Tx, util.BytesOptionWithFlag, util.BytesOptionZeroIfEmpty)
 
 	// Write noSendChange
@@ -66,8 +61,7 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	}
 
 	// Parse txid and tx
-	txIdBytes := resultReader.ReadOptionalBytes(util.BytesOptionWithFlag, util.BytesOptionTxIdLen)
-	result.Txid = hex.EncodeToString(txIdBytes)
+	copy(result.Txid[:], resultReader.ReadOptionalBytes(util.BytesOptionWithFlag, util.BytesOptionTxIdLen))
 	result.Tx = resultReader.ReadOptionalBytes(util.BytesOptionWithFlag)
 	if resultReader.Err != nil {
 		return nil, fmt.Errorf("error reading tx: %w", resultReader.Err)

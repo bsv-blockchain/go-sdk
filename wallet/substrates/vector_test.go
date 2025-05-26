@@ -4,14 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -41,6 +43,7 @@ func TestVectors(t *testing.T) {
 	const VerifierHex = "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee"
 	verifier, err := ec.PublicKeyFromString(VerifierHex)
 	require.NoError(t, err)
+	verifier33 := tu.GetByte33FromHexString(t, VerifierHex)
 	const ProverHex = "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8"
 	prover, err := ec.PublicKeyFromString(ProverHex)
 	require.NoError(t, err)
@@ -61,6 +64,9 @@ func TestVectors(t *testing.T) {
 	require.NoError(t, err, "decoding locking script should not error")
 
 	signature := []byte("signature-hex") // 7369676e61747572652d686578
+
+	txID, err := chainhash.NewHashFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+	require.NoError(t, err, "creating txID from hex should not error")
 
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
@@ -114,7 +120,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.ListActionsResult{
 			TotalActions: 1,
 			Actions: []wallet.Action{{
-				Txid:        "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				Txid:        *txID,
 				Satoshis:    1000,
 				Status:      wallet.ActionStatusCompleted,
 				IsOutgoing:  true,
@@ -186,7 +192,7 @@ func TestVectors(t *testing.T) {
 			Outputs: []wallet.Output{{
 				Satoshis:  1000,
 				Spendable: true,
-				Outpoint:  "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.0",
+				Outpoint:  fmt.Sprintf("%s.0", txID),
 			}, {
 				Satoshis:  5000,
 				Spendable: false,
@@ -492,7 +498,7 @@ func TestVectors(t *testing.T) {
 				Signature:          signature,
 			},
 			FieldsToReveal:   []string{"name"},
-			Verifier:         VerifierHex,
+			Verifier:         verifier33,
 			Privileged:       util.BoolPtr(false),
 			PrivilegedReason: "prove-reason",
 		},
@@ -614,7 +620,7 @@ func TestVectors(t *testing.T) {
 		Filename: "getHeaderForHeight-simple-result",
 		IsResult: true,
 		Object: wallet.GetHeaderResult{
-			Header: "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c", // Example header hex
+			Header: tu.GetByteFromHexString(t, "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"),
 		},
 	}, {
 		Filename: "getNetwork-simple-result",

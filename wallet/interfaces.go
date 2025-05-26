@@ -135,7 +135,7 @@ type CreateActionArgs struct {
 
 // CreateActionResult contains the results of creating a transaction
 type CreateActionResult struct {
-	Txid                string
+	Txid                chainhash.Hash
 	Tx                  []byte
 	NoSendChange        []string
 	SendWithResults     []SendWithResult
@@ -152,7 +152,7 @@ const (
 
 // SendWithResult tracks the status of transactions sent as part of a batch.
 type SendWithResult struct {
-	Txid   string
+	Txid   chainhash.Hash
 	Status ActionResultStatus
 }
 
@@ -185,7 +185,7 @@ type SignActionArgs struct {
 
 // SignActionResult contains the output of a successful signing operation.
 type SignActionResult struct {
-	Txid            string
+	Txid            chainhash.Hash
 	Tx              []byte
 	SendWithResults []SendWithResult
 }
@@ -227,7 +227,7 @@ const (
 
 // Action contains full details about a wallet transaction including inputs, outputs and metadata.
 type Action struct {
-	Txid        string         `json:"txid"`
+	Txid        chainhash.Hash `json:"txid"`
 	Satoshis    uint64         `json:"satoshis"`
 	Status      ActionStatus   `json:"status"`
 	IsOutgoing  bool           `json:"isOutgoing"`
@@ -746,7 +746,7 @@ type GetHeaderArgs struct {
 }
 
 type GetHeaderResult struct {
-	Header string `json:"header"`
+	Header JSONByteHex `json:"header"`
 }
 
 type Network string
@@ -782,9 +782,9 @@ type ProveCertificateArgs struct {
 	FieldsToReveal []string `json:"fieldsToReveal"`
 
 	// The verifier's identity key
-	Verifier         string `json:"verifier"`
-	Privileged       *bool  `json:"privileged,omitempty"`
-	PrivilegedReason string `json:"privilegedReason,omitempty"`
+	Verifier         HexBytes33 `json:"verifier"`
+	Privileged       *bool      `json:"privileged,omitempty"`
+	PrivilegedReason string     `json:"privilegedReason,omitempty"`
 }
 
 // ProveCertificateResult contains the result of creating a verifiable certificate

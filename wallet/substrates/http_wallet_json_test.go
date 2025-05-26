@@ -168,6 +168,7 @@ func writeJSONResponse(t *testing.T, w http.ResponseWriter, data interface{}) {
 }
 
 func TestHTTPWalletJSON_CreateAction(t *testing.T) {
+	txId := tu.GetByte32FromString("test-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/createAction", r.URL.Path)
 
@@ -176,7 +177,7 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "test desc", args.Description)
 
-		writeJSONResponse(t, w, wallet.CreateActionResult{Txid: "test-txid"})
+		writeJSONResponse(t, w, &wallet.CreateActionResult{Txid: txId})
 	}))
 	defer ts.Close()
 
@@ -185,12 +186,13 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 		Description: "test desc",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "test-txid", result.Txid)
+	require.Equal(t, txId, [32]byte(result.Txid))
 }
 
 func TestHTTPWalletJSON_SignAction(t *testing.T) {
 	var testRef = []byte("test-ref")
 	var testScript = []byte("test-script")
+	testTxId := tu.GetByte32FromString("signed-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/signAction", r.URL.Path)
 
@@ -202,7 +204,7 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 		require.Len(t, args.Spends, 1)
 		require.Equal(t, testScript, []byte(args.Spends[0].UnlockingScript))
 
-		writeJSONResponse(t, w, wallet.SignActionResult{Txid: "signed-txid"})
+		writeJSONResponse(t, w, &wallet.SignActionResult{Txid: testTxId})
 	}))
 	defer ts.Close()
 
@@ -214,7 +216,7 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, "signed-txid", result.Txid)
+	require.Equal(t, testTxId, [32]byte(result.Txid))
 }
 
 func TestHTTPWalletJSON_AbortAction(t *testing.T) {
@@ -239,6 +241,7 @@ func TestHTTPWalletJSON_AbortAction(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_ListActions(t *testing.T) {
+	testTxID := tu.GetByte32FromString("test-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/listActions", r.URL.Path)
 
@@ -252,7 +255,7 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 			TotalActions: 1,
 			Actions: []wallet.Action{
 				{
-					Txid:        "test-txid",
+					Txid:        testTxID,
 					Description: "test-action",
 				},
 			},
@@ -268,7 +271,7 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), result.TotalActions)
 	require.Len(t, result.Actions, 1)
-	require.Equal(t, "test-txid", result.Actions[0].Txid)
+	require.Equal(t, testTxID, [32]byte(result.Actions[0].Txid))
 }
 
 func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
@@ -442,6 +445,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 	typeTest := wallet.Base64Bytes32(tu.GetByte32FromString("test-type"))
 	serialNumber := wallet.Base64Bytes32(tu.GetByte32FromString("12345"))
 	certifier := wallet.HexBytes33(tu.GetByte33FromString("test-certifier"))
+	verifier := tu.GetByte33FromString("test-verifier")
 	// Test AcquireCertificate
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/acquireCertificate", r.URL.Path)
@@ -508,7 +512,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.ProveCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-verifier", args.Verifier)
+		require.Equal(t, verifier, [33]byte(args.Verifier))
 
 		result := wallet.ProveCertificateResult{
 			KeyringForVerifier: map[string]string{"field": "key"},
@@ -520,7 +524,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 	client = NewHTTPWalletJSON("", ts.URL, nil)
 	proveResult, err := client.ProveCertificate(t.Context(), &wallet.ProveCertificateArgs{
 		Certificate: wallet.Certificate{Type: typeTest},
-		Verifier:    "test-verifier",
+		Verifier:    verifier,
 	})
 	require.NoError(t, err)
 	require.Equal(t, "key", proveResult.KeyringForVerifier["field"])
@@ -762,7 +766,7 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, uint32(12345), args.Height)
 
-		writeJSONResponse(t, w, wallet.GetHeaderResult{Header: "test-header"})
+		writeJSONResponse(t, w, wallet.GetHeaderResult{Header: []byte("test-header")})
 	}))
 	defer ts.Close()
 
@@ -771,7 +775,7 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 		Height: 12345,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "test-header", headerResult.Header)
+	require.Equal(t, []byte("test-header"), []byte(headerResult.Header))
 
 	// Test GetNetwork
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
