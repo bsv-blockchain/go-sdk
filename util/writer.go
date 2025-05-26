@@ -30,6 +30,14 @@ func (w *Writer) WriteIntBytes(b []byte) {
 	w.WriteBytes(b)
 }
 
+func (w *Writer) WriteIntBytesOptional(b []byte) {
+	if len(b) == 0 {
+		w.WriteNegativeOne()
+	} else {
+		w.WriteIntBytes(b)
+	}
+}
+
 func (w *Writer) WriteVarInt(n uint64) {
 	w.WriteBytes(VarInt(n).Bytes())
 }

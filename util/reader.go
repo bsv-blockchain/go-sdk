@@ -49,7 +49,7 @@ func (r *Reader) ReadIntBytes() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading bytes int length: %w", err)
 	}
-	if linkageLen == 0 {
+	if linkageLen <= 0 {
 		return nil, nil
 	}
 	b, err := r.ReadBytes(int(linkageLen))

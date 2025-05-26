@@ -192,24 +192,24 @@ type SignActionResult struct {
 
 // ActionInput describes a transaction input with full details.
 type ActionInput struct {
-	SourceOutpoint      string `json:"sourceOutpoint"`
-	SourceSatoshis      uint64 `json:"sourceSatoshis"`
-	SourceLockingScript string `json:"sourceLockingScript,omitempty"` // Hex encoded
-	UnlockingScript     string `json:"unlockingScript,omitempty"`     // Hex encoded
-	InputDescription    string `json:"inputDescription"`
-	SequenceNumber      uint32 `json:"sequenceNumber"`
+	SourceOutpoint      string      `json:"sourceOutpoint"`
+	SourceSatoshis      uint64      `json:"sourceSatoshis"`
+	SourceLockingScript JSONByteHex `json:"sourceLockingScript,omitempty"`
+	UnlockingScript     JSONByteHex `json:"unlockingScript,omitempty"`
+	InputDescription    string      `json:"inputDescription"`
+	SequenceNumber      uint32      `json:"sequenceNumber"`
 }
 
 // ActionOutput describes a transaction output with full details.
 type ActionOutput struct {
-	Satoshis           uint64   `json:"satoshis"`
-	LockingScript      string   `json:"lockingScript,omitempty"` // Hex encoded
-	Spendable          bool     `json:"spendable"`
-	CustomInstructions string   `json:"customInstructions,omitempty"`
-	Tags               []string `json:"tags"`
-	OutputIndex        uint32   `json:"outputIndex"`
-	OutputDescription  string   `json:"outputDescription"`
-	Basket             string   `json:"basket"`
+	Satoshis           uint64      `json:"satoshis"`
+	LockingScript      JSONByteHex `json:"lockingScript,omitempty"`
+	Spendable          bool        `json:"spendable"`
+	CustomInstructions string      `json:"customInstructions,omitempty"`
+	Tags               []string    `json:"tags"`
+	OutputIndex        uint32      `json:"outputIndex"`
+	OutputDescription  string      `json:"outputDescription"`
+	Basket             string      `json:"basket"`
 }
 
 // ActionStatus represents the current state of a transaction.

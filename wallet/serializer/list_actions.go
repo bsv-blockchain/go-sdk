@@ -156,14 +156,10 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 			w.WriteVarInt(input.SourceSatoshis)
 
 			// SourceLockingScript
-			if err = w.WriteOptionalFromHex(input.SourceLockingScript); err != nil {
-				return nil, fmt.Errorf("invalid source locking script: %w", err)
-			}
+			w.WriteIntBytesOptional(input.SourceLockingScript)
 
 			// UnlockingScript
-			if err = w.WriteOptionalFromHex(input.UnlockingScript); err != nil {
-				return nil, fmt.Errorf("invalid unlocking script: %w", err)
-			}
+			w.WriteIntBytesOptional(input.UnlockingScript)
 
 			w.WriteString(input.InputDescription)
 			w.WriteVarInt(uint64(input.SequenceNumber))
@@ -174,11 +170,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		for _, output := range action.Outputs {
 			w.WriteVarInt(uint64(output.OutputIndex))
 			w.WriteVarInt(output.Satoshis)
-
-			// LockingScript
-			if err := w.WriteOptionalFromHex(output.LockingScript); err != nil {
-				return nil, fmt.Errorf("invalid locking script: %w", err)
-			}
+			w.WriteIntBytesOptional(output.LockingScript)
 
 			// Serialize Spendable, OutputDescription, Basket, Tags, and CustomInstructions
 			w.WriteOptionalBool(&output.Spendable)
@@ -248,8 +240,8 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 
 			// Serialize source satoshis, locking script, unlocking script, input description, and sequence number
 			input.SourceSatoshis = r.ReadVarInt()
-			input.SourceLockingScript = r.ReadOptionalToHex()
-			input.UnlockingScript = r.ReadOptionalToHex()
+			input.SourceLockingScript = r.ReadIntBytes()
+			input.UnlockingScript = r.ReadIntBytes()
 			input.InputDescription = r.ReadString()
 			input.SequenceNumber = r.ReadVarInt32()
 
@@ -271,7 +263,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 			// and custom instructions
 			output.OutputIndex = r.ReadVarInt32()
 			output.Satoshis = r.ReadVarInt()
-			output.LockingScript = r.ReadOptionalToHex()
+			output.LockingScript = r.ReadIntBytes()
 			output.Spendable = r.ReadByte() == 1
 			output.OutputDescription = r.ReadString()
 			output.Basket = r.ReadString()

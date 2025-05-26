@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
@@ -109,6 +110,10 @@ type ListActionResultSerializeTest struct {
 
 func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 	txid := "b1f4d452814bba0ac422318083850b706d5f23ce232c789eefe5cbdcf2cc47de"
+	lockingScript, err := hex.DecodeString("76a914abcdef88ac")
+	require.NoError(t, err, "decoding locking script should not error")
+	unlockingScript, err := hex.DecodeString("483045022100abcdef")
+	require.NoError(t, err, "decoding unlocking script should not error")
 
 	tests := []ListActionResultSerializeTest{
 		{
@@ -129,8 +134,8 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 							{
 								SourceOutpoint:      txid + ".0",
 								SourceSatoshis:      500,
-								SourceLockingScript: "76a914abcdef88ac",
-								UnlockingScript:     "483045022100abcdef",
+								SourceLockingScript: lockingScript,
+								UnlockingScript:     unlockingScript,
 								InputDescription:    "input 1",
 								SequenceNumber:      0xffffffff,
 							},
@@ -139,7 +144,7 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 							{
 								OutputIndex:        0,
 								Satoshis:           1000,
-								LockingScript:      "76a914abcdef88ac",
+								LockingScript:      lockingScript,
 								Spendable:          true,
 								OutputDescription:  "output 1",
 								Basket:             "basket1",

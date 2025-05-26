@@ -131,7 +131,7 @@ func TestVectors(t *testing.T) {
 					Spendable:         true,
 					Tags:              []string{"tag1", "tag2"},
 					Satoshis:          1000,
-					LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+					LockingScript:     lockingScript,
 				}},
 			}},
 		},
