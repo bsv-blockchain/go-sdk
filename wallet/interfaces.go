@@ -629,7 +629,7 @@ type ListCertificatesArgs struct {
 type CertificateResult struct {
 	Certificate                   // Embed certificate fields directly. They already have tags.
 	Keyring     map[string]string `json:"keyring"`
-	Verifier    string            `json:"verifier"`
+	Verifier    JSONByteHex       `json:"verifier"`
 }
 
 // MarshalJSON implements the json.Marshaler interface for CertificateResult
@@ -651,7 +651,7 @@ func (cr *CertificateResult) MarshalJSON() ([]byte, error) {
 	if cr.Keyring != nil {
 		certMap["keyring"] = cr.Keyring
 	}
-	if cr.Verifier != "" {
+	if len(cr.Verifier) > 0 {
 		certMap["verifier"] = cr.Verifier
 	}
 
@@ -715,10 +715,10 @@ type RelinquishCertificateResult struct {
 }
 
 type DiscoverByIdentityKeyArgs struct {
-	IdentityKey    string `json:"identityKey"`
-	Limit          uint32 `json:"limit"`
-	Offset         uint32 `json:"offset"`
-	SeekPermission *bool  `json:"seekPermission,omitempty"`
+	IdentityKey    HexBytes33 `json:"identityKey"`
+	Limit          uint32     `json:"limit"`
+	Offset         uint32     `json:"offset"`
+	SeekPermission *bool      `json:"seekPermission,omitempty"`
 }
 
 type DiscoverByAttributesArgs struct {

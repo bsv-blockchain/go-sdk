@@ -85,7 +85,7 @@ func TestListCertificatesResult(t *testing.T) {
 					Keyring: map[string]string{
 						"key1": "value1",
 					},
-					Verifier: "verifier1",
+					Verifier: []byte("verifier1"),
 				},
 				{
 					Certificate: wallet.Certificate{

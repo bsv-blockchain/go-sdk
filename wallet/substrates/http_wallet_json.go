@@ -289,7 +289,7 @@ func (h *HTTPWalletJSON) RelinquishCertificate(ctx context.Context, args *wallet
 }
 
 // DiscoverByIdentityKey discovers certificates by identity key
-func (h *HTTPWalletJSON) DiscoverByIdentityKey(ctx context.Context, args wallet.DiscoverByIdentityKeyArgs) (*wallet.DiscoverCertificatesResult, error) {
+func (h *HTTPWalletJSON) DiscoverByIdentityKey(ctx context.Context, args *wallet.DiscoverByIdentityKeyArgs) (*wallet.DiscoverCertificatesResult, error) {
 	data, err := h.api(ctx, "discoverByIdentityKey", args)
 	if err != nil {
 		return nil, err

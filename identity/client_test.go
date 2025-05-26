@@ -738,7 +738,7 @@ func TestResolveByIdentityKey(t *testing.T) {
 
 		// Call ResolveByIdentityKey
 		identities, err := client.ResolveByIdentityKey(context.Background(), wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey: "dummyKey",
+			IdentityKey: [33]byte{0x02, 0x01, 0x02},
 		})
 
 		// Verify results

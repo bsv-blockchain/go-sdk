@@ -549,6 +549,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 	var typeDiscovered wallet.Base64Bytes32
 	copy(typeDiscovered[:], "discovered-type")
+	testKey := tu.GetByte33FromString("test-key")
 	// Test DiscoverByIdentityKey
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/discoverByIdentityKey", r.URL.Path)
@@ -556,7 +557,7 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 		var args wallet.DiscoverByIdentityKeyArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-key", args.IdentityKey)
+		require.Equal(t, testKey, [33]byte(args.IdentityKey))
 
 		result := wallet.DiscoverCertificatesResult{
 			TotalCertificates: 1,
@@ -571,8 +572,8 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	discoverResult, err := client.DiscoverByIdentityKey(t.Context(), wallet.DiscoverByIdentityKeyArgs{
-		IdentityKey: "test-key",
+	discoverResult, err := client.DiscoverByIdentityKey(t.Context(), &wallet.DiscoverByIdentityKeyArgs{
+		IdentityKey: testKey,
 	})
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), discoverResult.TotalCertificates)

@@ -45,12 +45,9 @@ func TestVectors(t *testing.T) {
 	prover, err := ec.PublicKeyFromString(ProverHex)
 	require.NoError(t, err)
 
-	typeArray, err := tu.GetByte32FromBase64String("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
-	require.NoError(t, err)
-	serialArray, err := tu.GetByte32FromBase64String("AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
-	require.NoError(t, err)
-	certifier, err := tu.GetByte33FromHexString("0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1") // Use hex string from TS
-	require.NoError(t, err)
+	typeArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
+	serialArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
+	certifier := tu.GetByte33FromHexString(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1") // Use hex string from TS
 
 	ref, err := base64.StdEncoding.DecodeString("dGVzdA==")
 	require.NoError(t, err)
@@ -479,7 +476,7 @@ func TestVectors(t *testing.T) {
 					Signature:          signature,
 				},
 				Keyring:  map[string]string{"field1": "key1", "field2": "key2"},
-				Verifier: VerifierHex,
+				Verifier: verifier.ToDER(),
 			}},
 		},
 	}, {
@@ -521,7 +518,7 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "discoverByIdentityKey-simple-args",
 		Object: wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey:    CounterpartyHex,
+			IdentityKey:    tu.GetByte33FromHexString(t, CounterpartyHex),
 			Limit:          10,
 			Offset:         0,
 			SeekPermission: util.BoolPtr(true),

@@ -105,9 +105,9 @@ func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]b
 		}
 
 		// Write verifier if present
-		if cert.Verifier != "" {
+		if len(cert.Verifier) > 0 {
 			w.WriteByte(1) // present
-			w.WriteString(cert.Verifier)
+			w.WriteIntBytes(cert.Verifier)
 		} else {
 			w.WriteByte(0) // not present
 		}
@@ -157,7 +157,7 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 
 		// Read verifier if present
 		if r.ReadByte() == 1 {
-			certResult.Verifier = r.ReadString()
+			certResult.Verifier = r.ReadIntBytes()
 		}
 
 		result.Certificates = append(result.Certificates, certResult)

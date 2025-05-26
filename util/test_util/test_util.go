@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 // PadOrTrim returns (size) bytes from input (bb)
@@ -32,17 +34,17 @@ func GetByte32FromString(s string) [32]byte {
 }
 
 // GetByte32FromBase64String returns a [32]byte from a base64 string
-func GetByte32FromBase64String(s string) ([32]byte, error) {
+func GetByte32FromBase64String(t *testing.T, s string) [32]byte {
 	var a [32]byte
 	b, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		return a, err
+		require.NoError(t, fmt.Errorf("error decoding base64 string: %w", err))
 	}
 	if len(b) > 32 {
-		return a, fmt.Errorf("byte length must be less than 32")
+		require.NoError(t, fmt.Errorf("byte length must be less than 32"))
 	}
 	copy(a[:], b)
-	return a, nil
+	return a
 }
 
 // GetByte33FromString returns a [33]byte from a hex string
@@ -56,15 +58,13 @@ func GetByte33FromString(s string) [33]byte {
 }
 
 // GetByte33FromHexString returns a [32]byte from a base64 string
-func GetByte33FromHexString(s string) ([33]byte, error) {
+func GetByte33FromHexString(t *testing.T, s string) [33]byte {
 	var a [33]byte
 	b, err := hex.DecodeString(s)
-	if err != nil {
-		return a, err
-	}
+	require.NoError(t, err)
 	if len(b) > 33 {
-		return a, fmt.Errorf("byte length must be less than 33")
+		require.NoError(t, fmt.Errorf("byte length must be less than 33"))
 	}
 	copy(a[:], b)
-	return a, nil
+	return a
 }

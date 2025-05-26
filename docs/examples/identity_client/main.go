@@ -79,7 +79,7 @@ func main() {
 	identities, err := client.ResolveByIdentityKey(
 		context.Background(),
 		wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey: "exampleIdentityKey123",
+			IdentityKey: [33]byte{0x01, 0x02, 0x03},
 		},
 	)
 	if err != nil {
