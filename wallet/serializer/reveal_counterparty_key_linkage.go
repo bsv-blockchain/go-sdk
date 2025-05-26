@@ -47,13 +47,13 @@ func SerializeRevealCounterpartyKeyLinkageResult(result *wallet.RevealCounterpar
 	w := util.NewWriter()
 
 	// Write prover public key
-	w.WriteString(result.Prover)
+	w.WriteIntBytes(result.Prover)
 
 	// Write verifier public key
-	w.WriteString(result.Verifier)
+	w.WriteIntBytes(result.Verifier)
 
 	// Write counterparty public key
-	w.WriteString(result.Counterparty)
+	w.WriteIntBytes(result.Counterparty)
 
 	// Write revelation time
 	w.WriteString(result.RevelationTime)
@@ -74,13 +74,13 @@ func DeserializeRevealCounterpartyKeyLinkageResult(data []byte) (*wallet.RevealC
 	result := &wallet.RevealCounterpartyKeyLinkageResult{}
 
 	// Read prover public key
-	result.Prover = r.ReadString()
+	result.Prover = r.ReadIntBytes()
 
 	// Read verifier public key
-	result.Verifier = r.ReadString()
+	result.Verifier = r.ReadIntBytes()
 
 	// Read counterparty public key
-	result.Counterparty = r.ReadString()
+	result.Counterparty = r.ReadIntBytes()
 
 	// Read revelation time
 	result.RevelationTime = r.ReadString()

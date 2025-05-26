@@ -246,9 +246,9 @@ func TestVectors(t *testing.T) {
 		Filename: "revealCounterpartyKeyLinkage-simple-result",
 		IsResult: true,
 		Object: wallet.RevealCounterpartyKeyLinkageResult{
-			Prover:                ProverHex,
-			Counterparty:          CounterpartyHex,
-			Verifier:              VerifierHex,
+			Prover:                prover.ToDER(),
+			Counterparty:          counterparty.ToDER(),
+			Verifier:              verifier.ToDER(),
 			RevelationTime:        "2023-01-01T00:00:00Z",
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},

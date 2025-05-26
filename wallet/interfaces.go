@@ -476,9 +476,9 @@ type RevealCounterpartyKeyLinkageArgs struct {
 }
 
 type RevealCounterpartyKeyLinkageResult struct {
-	Prover                string           `json:"prover"`
-	Counterparty          string           `json:"counterparty"`
-	Verifier              string           `json:"verifier"`
+	Prover                JSONByteHex      `json:"prover"`
+	Counterparty          JSONByteHex      `json:"counterparty"`
+	Verifier              JSONByteHex      `json:"verifier"`
 	RevelationTime        string           `json:"revelationTime"`
 	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
 	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
