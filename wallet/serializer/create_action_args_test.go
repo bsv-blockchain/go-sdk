@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -9,6 +10,9 @@ import (
 )
 
 func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
+	lockingScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
+	require.NoError(t, err, "decoding locking script should not error")
+
 	tests := []struct {
 		name string
 		args *wallet.CreateActionArgs
@@ -29,7 +33,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				},
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript:      lockingScript,
 						Satoshis:           1000,
 						OutputDescription:  "output 1",
 						Basket:             "basket1",
@@ -76,7 +80,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript: lockingScript,
 						Satoshis:      1000,
 					},
 				},
@@ -115,12 +119,12 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript:     lockingScript,
 						Satoshis:          1000,
 						OutputDescription: "output 1",
 					},
 					{
-						LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript:     lockingScript,
 						Satoshis:          2000,
 						OutputDescription: "output 2",
 						Tags:              []string{"tag1", "tag2"},

@@ -85,21 +85,21 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 
 // CreateActionInput represents an input to be spent in a transaction
 type CreateActionInput struct {
-	Outpoint              string // Format: "txid:outputIndex"
-	InputDescription      string
-	UnlockingScript       JSONByteHex
-	UnlockingScriptLength uint32
-	SequenceNumber        uint32
+	Outpoint              string      `json:"outpoint"` // Format: "txid:outputIndex"
+	InputDescription      string      `json:"inputDescription"`
+	UnlockingScript       JSONByteHex `json:"unlockingScript,omitempty"`
+	UnlockingScriptLength uint32      `json:"unlockingScriptLength,omitempty"`
+	SequenceNumber        uint32      `json:"sequenceNumber,omitempty"`
 }
 
 // CreateActionOutput represents an output to be created in a transaction
 type CreateActionOutput struct {
-	LockingScript      string   `json:"lockingScript,omitempty"` // Hex encoded
-	Satoshis           uint64   `json:"satoshis,omitempty"`
-	OutputDescription  string   `json:"outputDescription,omitempty"`
-	Basket             string   `json:"basket,omitempty"`
-	CustomInstructions string   `json:"customInstructions,omitempty"`
-	Tags               []string `json:"tags,omitempty"`
+	LockingScript      JSONByteHex `json:"lockingScript,omitempty"`
+	Satoshis           uint64      `json:"satoshis,omitempty"`
+	OutputDescription  string      `json:"outputDescription,omitempty"`
+	Basket             string      `json:"basket,omitempty"`
+	CustomInstructions string      `json:"customInstructions,omitempty"`
+	Tags               []string    `json:"tags,omitempty"`
 }
 
 type TrustSelf string

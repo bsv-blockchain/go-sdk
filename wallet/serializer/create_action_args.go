@@ -77,12 +77,8 @@ func serializeCreateActionOutputs(paramWriter *util.Writer, outputs []wallet.Cre
 	}
 	paramWriter.WriteVarInt(uint64(len(outputs)))
 	for _, output := range outputs {
-		// Serialize locking script
-		if err := paramWriter.WriteIntFromHex(output.LockingScript); err != nil {
-			return fmt.Errorf("error writing locking script: %w", err)
-		}
-
-		// Serialize satoshis, output description, basket, custom instructions, and tags
+		// Serialize locking script, satoshis, output description, basket, custom instructions, and tags
+		paramWriter.WriteIntBytes(output.LockingScript)
 		paramWriter.WriteVarInt(output.Satoshis)
 		paramWriter.WriteString(output.OutputDescription)
 		paramWriter.WriteOptionalString(output.Basket)

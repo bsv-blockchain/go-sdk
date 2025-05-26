@@ -22,10 +22,13 @@ func TestCreateAction(t *testing.T) {
 
 	t.Run("should create an action with valid inputs", func(t *testing.T) {
 		// Expected arguments and return value
+		lockScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
+		require.NoError(t, err, "decoding locking script should not error")
+
 		mock.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
-				LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+				LockingScript:      lockScript,
 				Satoshis:           1000,
 				OutputDescription:  "Test output",
 				Basket:             "test-basket",
@@ -90,7 +93,7 @@ func TestTsCompatibility(t *testing.T) {
 	require.Equal(t, wallet.CreateActionArgs{
 		Description: "Test action description",
 		Outputs: []wallet.CreateActionOutput{{
-			LockingScript:     "00",
+			LockingScript:     []byte{0x00},
 			Satoshis:          1000,
 			OutputDescription: "Test output description",
 		}},

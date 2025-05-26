@@ -150,7 +150,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 		Outputs: []wallet.CreateActionOutput{
 			{
 				Satoshis:          c.options.TokenAmount,
-				LockingScript:     lockingScript.String(),
+				LockingScript:     lockingScript.Bytes(),
 				OutputDescription: "Identity Token",
 			},
 		},

@@ -67,7 +67,7 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 		Outputs: []wallet.CreateActionOutput{
 			{
 				Satoshis:          RegistrantTokenAmount,
-				LockingScript:     lockingScript.String(),
+				LockingScript:     lockingScript.Bytes(),
 				OutputDescription: fmt.Sprintf("New %s registration token", data.GetDefinitionType()),
 				Basket:            mapDefinitionTypeToBasketName(data.GetDefinitionType()),
 			},

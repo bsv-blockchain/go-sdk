@@ -60,6 +60,8 @@ func TestVectors(t *testing.T) {
 
 	lockScript, err := hex.DecodeString("76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac")
 	require.NoError(t, err)
+	lockingScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
+	require.NoError(t, err, "decoding locking script should not error")
 
 	signature := []byte("signature-hex") // 7369676e61747572652d686578
 
@@ -92,7 +94,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
-				LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+				LockingScript:      lockingScript,
 				Satoshis:           999,
 				OutputDescription:  "Test output",
 				Basket:             "test-basket",

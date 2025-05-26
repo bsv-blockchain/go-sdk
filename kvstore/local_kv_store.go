@@ -298,7 +298,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 		Inputs:      inputs,
 		Outputs: []wallet.CreateActionOutput{
 			{
-				LockingScript:     lockingScript.String(),
+				LockingScript:     lockingScript.Bytes(),
 				Satoshis:          1,
 				OutputDescription: "Key-value token",
 				Basket:            kv.context,
