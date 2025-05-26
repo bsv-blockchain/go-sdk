@@ -21,7 +21,7 @@ type Certificate struct {
 	Certifier          *ec.PublicKey     `json:"certifier"`                    // Public key of the certificate issuer
 	RevocationOutpoint string            `json:"revocationOutpoint,omitempty"` // Format: "txid:outputIndex"
 	Fields             map[string]string `json:"fields,omitempty"`             // Field name -> field value (encrypted)
-	Signature          JsonByteHex       `json:"signature,omitempty"`          // Hex-encoded signature
+	Signature          JSONByteHex       `json:"signature,omitempty"`          // Hex-encoded signature
 }
 
 // MarshalJSON implements json.Marshaler interface for Certificate
@@ -164,7 +164,7 @@ type SignableTransaction struct {
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
 type SignActionSpend struct {
-	UnlockingScript JsonByteHex `json:"unlockingScript"`
+	UnlockingScript JSONByteHex `json:"unlockingScript"`
 	SequenceNumber  uint32      `json:"sequenceNumber,omitempty"`
 }
 
@@ -432,16 +432,16 @@ func (s *JsonByteNoBase64) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// JsonByteHex is a helper type for marshaling byte slices as hex strings.
-type JsonByteHex []byte
+// JSONByteHex is a helper type for marshaling byte slices as hex strings.
+type JSONByteHex []byte
 
 // MarshalJSON implements the json.Marshaler interface.
-func (s JsonByteHex) MarshalJSON() ([]byte, error) {
+func (s JSONByteHex) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hex.EncodeToString(s))
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (s *JsonByteHex) UnmarshalJSON(data []byte) error {
+func (s *JSONByteHex) UnmarshalJSON(data []byte) error {
 	var str string
 	if err := json.Unmarshal(data, &str); err != nil {
 		return err
@@ -496,8 +496,8 @@ type RevealSpecificKeyLinkageArgs struct {
 type RevealSpecificKeyLinkageResult struct {
 	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
 	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
-	Prover                JsonByteHex      `json:"prover"`   // Hex encoded DER public key
-	Verifier              JsonByteHex      `json:"verifier"` // Hex encoded DER public key
+	Prover                JSONByteHex      `json:"prover"`   // Hex encoded DER public key
+	Verifier              JSONByteHex      `json:"verifier"` // Hex encoded DER public key
 	Counterparty          Counterparty     `json:"counterparty"`
 	ProtocolID            Protocol         `json:"protocolID"`
 	KeyID                 string           `json:"keyID"`
