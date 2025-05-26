@@ -14,14 +14,10 @@ func SerializeRevealCounterpartyKeyLinkageArgs(args *wallet.RevealCounterpartyKe
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
 
 	// Write counterparty public key
-	if err := w.WriteOptionalFromHex(args.Counterparty); err != nil {
-		return nil, fmt.Errorf("invalid counterparty hex: %w", err)
-	}
+	w.WriteIntBytesOptional(args.Counterparty)
 
 	// Write verifier public key
-	if err := w.WriteOptionalFromHex(args.Verifier); err != nil {
-		return nil, fmt.Errorf("invalid verifier hex: %w", err)
-	}
+	w.WriteIntBytesOptional(args.Verifier)
 
 	return w.Buf, nil
 }
@@ -34,10 +30,10 @@ func DeserializeRevealCounterpartyKeyLinkageArgs(data []byte) (*wallet.RevealCou
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
 
 	// Read counterparty public key
-	args.Counterparty = r.ReadOptionalToHex()
+	args.Counterparty = r.ReadIntBytes()
 
 	// Read verifier public key
-	args.Verifier = r.ReadOptionalToHex()
+	args.Verifier = r.ReadIntBytes()
 
 	r.CheckComplete()
 	if r.Err != nil {

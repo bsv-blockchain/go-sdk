@@ -28,7 +28,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			},
 			SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			RevocationOutpoint: *revocationOutpoint,
-			Signature:          hex.EncodeToString(make([]byte, 64)),
+			Signature:          make([]byte, 64),
 			KeyringRevealer:    wallet.KeyringRevealerCertifier,
 			KeyringForSubject: map[string]string{
 				"field1": base64.StdEncoding.EncodeToString([]byte("keyring1")),
@@ -55,7 +55,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			SerialNumber:        base64.StdEncoding.EncodeToString(make([]byte, sizeSerial)),
 			RevocationOutpoint:  *revocationOutpoint,
-			Signature:           hex.EncodeToString(make([]byte, 64)),
+			Signature:           make([]byte, 64),
 			KeyringRevealer:     hex.EncodeToString(make([]byte, sizeRevealer)),
 		},
 	}}

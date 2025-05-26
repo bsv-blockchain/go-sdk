@@ -658,6 +658,8 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
+	counterParty := []byte("test-counterparty")
+	verifier := []byte("test-verifier")
 	// Test RevealCounterpartyKeyLinkage
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/revealCounterpartyKeyLinkage", r.URL.Path)
@@ -665,8 +667,8 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		var args wallet.RevealCounterpartyKeyLinkageArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-counterparty", args.Counterparty)
-		require.Equal(t, "test-verifier", args.Verifier)
+		require.Equal(t, counterParty, []byte(args.Counterparty))
+		require.Equal(t, verifier, []byte(args.Verifier))
 
 		result := wallet.RevealCounterpartyKeyLinkageResult{
 			EncryptedLinkage: []byte("encrypted-data"),
@@ -677,8 +679,8 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
 	linkageResult, err := client.RevealCounterpartyKeyLinkage(t.Context(), wallet.RevealCounterpartyKeyLinkageArgs{
-		Counterparty: "test-counterparty",
-		Verifier:     "test-verifier",
+		Counterparty: counterParty,
+		Verifier:     verifier,
 	})
 	require.NoError(t, err)
 	require.Equal(t, []byte("encrypted-data"), []byte(linkageResult.EncryptedLinkage))

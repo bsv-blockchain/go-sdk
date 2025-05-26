@@ -237,8 +237,8 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "revealCounterpartyKeyLinkage-simple-args",
 		Object: wallet.RevealCounterpartyKeyLinkageArgs{
-			Counterparty:     CounterpartyHex,
-			Verifier:         VerifierHex,
+			Counterparty:     counterparty.ToDER(),
+			Verifier:         verifier.ToDER(),
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
@@ -260,7 +260,7 @@ func TestVectors(t *testing.T) {
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: counterparty,
 			},
-			Verifier: VerifierHex,
+			Verifier: verifier.ToDER(),
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "tests",
@@ -434,7 +434,7 @@ func TestVectors(t *testing.T) {
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
 			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
 			RevocationOutpoint:  *outpoint,
-			Signature:           "7369676e61747572652d686578",
+			Signature:           signature,
 			CertifierUrl:        "https://certifier.example.com",
 			KeyringRevealer:     "revealer-key-hex", // TODO: change to real hex, e.g. 319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838
 			KeyringForSubject:   map[string]string{"field1": "key1", "field2": "key2"},

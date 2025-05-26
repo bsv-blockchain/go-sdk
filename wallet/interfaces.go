@@ -469,10 +469,10 @@ type InternalizeActionResult struct {
 }
 
 type RevealCounterpartyKeyLinkageArgs struct {
-	Counterparty     string `json:"counterparty"`
-	Verifier         string `json:"verifier"`
-	Privileged       *bool  `json:"privileged,omitempty"`
-	PrivilegedReason string `json:"privilegedReason,omitempty"`
+	Counterparty     JSONByteHex `json:"counterparty"`
+	Verifier         JSONByteHex `json:"verifier"`
+	Privileged       *bool       `json:"privileged,omitempty"`
+	PrivilegedReason string      `json:"privilegedReason,omitempty"`
 }
 
 type RevealCounterpartyKeyLinkageResult struct {
@@ -486,7 +486,7 @@ type RevealCounterpartyKeyLinkageResult struct {
 
 type RevealSpecificKeyLinkageArgs struct {
 	Counterparty     Counterparty `json:"counterparty"`
-	Verifier         string       `json:"verifier"`
+	Verifier         JSONByteHex  `json:"verifier"`
 	ProtocolID       Protocol     `json:"protocolID"`
 	KeyID            string       `json:"keyID"`
 	Privileged       *bool        `json:"privileged,omitempty"`
@@ -496,8 +496,8 @@ type RevealSpecificKeyLinkageArgs struct {
 type RevealSpecificKeyLinkageResult struct {
 	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
 	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
-	Prover                JSONByteHex      `json:"prover"`   // Hex encoded DER public key
-	Verifier              JSONByteHex      `json:"verifier"` // Hex encoded DER public key
+	Prover                JSONByteHex      `json:"prover"`
+	Verifier              JSONByteHex      `json:"verifier"`
 	Counterparty          Counterparty     `json:"counterparty"`
 	ProtocolID            Protocol         `json:"protocolID"`
 	KeyID                 string           `json:"keyID"`
@@ -609,7 +609,7 @@ type AcquireCertificateArgs struct {
 	Fields              map[string]string   `json:"fields,omitempty"`
 	SerialNumber        string              `json:"serialNumber"`
 	RevocationOutpoint  Outpoint            `json:"revocationOutpoint,omitempty"`
-	Signature           string              `json:"signature,omitempty"`
+	Signature           JSONByteHex         `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
 	KeyringRevealer     string              `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`

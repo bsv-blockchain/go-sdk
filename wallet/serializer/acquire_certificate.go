@@ -65,9 +65,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		w.WriteBytes(outpointBytes)
 
 		// Signature (hex)
-		if err := w.WriteIntFromHex(args.Signature); err != nil {
-			return nil, fmt.Errorf("invalid signature hex: %w", err)
-		}
+		w.WriteIntBytes(args.Signature)
 
 		// Keyring revealer
 		if args.KeyringRevealer == wallet.KeyringRevealerCertifier {
@@ -154,7 +152,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		args.RevocationOutpoint = *revocationOutpoint
 
 		// Read signature
-		args.Signature = r.ReadIntBytesHex()
+		args.Signature = r.ReadIntBytes()
 
 		// Read keyring revealer
 		keyringRevealerIdentifier := r.ReadByte()
