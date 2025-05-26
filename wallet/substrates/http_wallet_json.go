@@ -80,7 +80,7 @@ func (h *HTTPWalletJSON) CreateAction(ctx context.Context, args wallet.CreateAct
 }
 
 // SignAction signs a previously created transaction
-func (h *HTTPWalletJSON) SignAction(ctx context.Context, args wallet.SignActionArgs) (*wallet.SignActionResult, error) {
+func (h *HTTPWalletJSON) SignAction(ctx context.Context, args *wallet.SignActionArgs) (*wallet.SignActionResult, error) {
 	data, err := h.api(ctx, "signAction", args)
 	if err != nil {
 		return nil, err

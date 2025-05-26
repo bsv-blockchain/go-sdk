@@ -16,9 +16,7 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 		w.WriteVarInt(uint64(index))
 
 		// Unlocking script
-		if err := w.WriteIntFromHex(spend.UnlockingScript); err != nil {
-			return nil, fmt.Errorf("invalid unlocking script hex: %w", err)
-		}
+		w.WriteIntBytes(spend.UnlockingScript)
 
 		// Sequence number
 		w.WriteVarInt(uint64(spend.SequenceNumber))
@@ -59,7 +57,7 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 		spend := wallet.SignActionSpend{}
 
 		// Unlocking script, sequence number
-		spend.UnlockingScript = r.ReadIntBytesHex()
+		spend.UnlockingScript = r.ReadIntBytes()
 		spend.SequenceNumber = r.ReadVarInt32()
 
 		args.Spends[inputIndex] = spend

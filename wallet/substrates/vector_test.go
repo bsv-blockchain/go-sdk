@@ -2,6 +2,7 @@ package substrates_test
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"os"
@@ -57,6 +58,9 @@ func TestVectors(t *testing.T) {
 	outpoint, err := wallet.OutpointFromString("aec245f27b7640c8b1865045107731bfb848115c573f7da38166074b1c9e475d.0")
 	require.NoError(t, err)
 
+	lockScript, err := hex.DecodeString("76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac")
+	require.NoError(t, err)
+
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
 		Filename: "abortAction-simple-args",
@@ -76,7 +80,7 @@ func TestVectors(t *testing.T) {
 			Reference: ref,
 			Spends: map[uint32]wallet.SignActionSpend{
 				0: {
-					UnlockingScript: "76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac",
+					UnlockingScript: lockScript,
 				},
 			},
 		},

@@ -410,7 +410,7 @@ func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []
 			return nil, fmt.Errorf("failed to sign input %d: %w", i, err) // Consider wrapping as ErrTransactionSign?
 		}
 		spends[uint32(i)] = wallet.SignActionSpend{
-			UnlockingScript: unlockingScript.String(),
+			UnlockingScript: unlockingScript.Bytes(),
 		}
 	}
 	return spends, nil

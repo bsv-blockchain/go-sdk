@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"strconv"
 	"strings"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
@@ -164,8 +164,8 @@ type SignableTransaction struct {
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
 type SignActionSpend struct {
-	UnlockingScript string `json:"unlockingScript"` // Hex encoded
-	SequenceNumber  uint32 `json:"sequenceNumber,omitempty"`
+	UnlockingScript JsonByteHex `json:"unlockingScript"`
+	SequenceNumber  uint32      `json:"sequenceNumber,omitempty"`
 }
 
 // SignActionOptions controls signing and broadcasting behavior.
@@ -436,8 +436,8 @@ func (s *JsonByteNoBase64) UnmarshalJSON(data []byte) error {
 type JsonByteHex []byte
 
 // MarshalJSON implements the json.Marshaler interface.
-func (s *JsonByteHex) MarshalJSON() ([]byte, error) {
-	return json.Marshal(hex.EncodeToString(*s))
+func (s JsonByteHex) MarshalJSON() ([]byte, error) {
+	return json.Marshal(hex.EncodeToString(s))
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.

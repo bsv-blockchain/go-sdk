@@ -2,7 +2,6 @@ package substrates
 
 import (
 	"encoding/json"
-	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"io"
 	"math/big"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -190,25 +190,27 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 
 func TestHTTPWalletJSON_SignAction(t *testing.T) {
 	var testRef = []byte("test-ref")
+	var testScript = []byte("test-script")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/signAction", r.URL.Path)
 
 		var args wallet.SignActionArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
+		require.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body))
 		require.Equal(t, testRef, args.Reference)
 		require.Len(t, args.Spends, 1)
-		require.Equal(t, "test-script", args.Spends[0].UnlockingScript)
+		require.Equal(t, testScript, []byte(args.Spends[0].UnlockingScript))
 
 		writeJSONResponse(t, w, wallet.SignActionResult{Txid: "signed-txid"})
 	}))
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.SignAction(t.Context(), wallet.SignActionArgs{
+	result, err := client.SignAction(t.Context(), &wallet.SignActionArgs{
 		Reference: testRef,
 		Spends: map[uint32]wallet.SignActionSpend{
-			0: {UnlockingScript: "test-script"},
+			0: {UnlockingScript: testScript},
 		},
 	})
 	require.NoError(t, err)

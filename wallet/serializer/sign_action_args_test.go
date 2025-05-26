@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -11,20 +10,19 @@ import (
 
 func TestSerializeSignActionArgs(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    wallet.SignActionArgs
-		wantErr bool
+		name string
+		args wallet.SignActionArgs
 	}{
 		{
 			name: "basic args",
 			args: wallet.SignActionArgs{
 				Spends: map[uint32]wallet.SignActionSpend{
 					0: {
-						UnlockingScript: "abcdef",
+						UnlockingScript: []byte{0xab, 0xcd, 0xef},
 						SequenceNumber:  123,
 					},
 					1: {
-						UnlockingScript: "deadbeef",
+						UnlockingScript: []byte{0xde, 0xad, 0xbe, 0xef},
 						SequenceNumber:  456,
 					},
 				},
@@ -39,41 +37,24 @@ func TestSerializeSignActionArgs(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "minimal args",
 			args: wallet.SignActionArgs{
 				Spends: map[uint32]wallet.SignActionSpend{
 					0: {
-						UnlockingScript: "00",
+						UnlockingScript: []byte{0x00},
 						SequenceNumber:  0,
 					},
 				},
 			},
-			wantErr: false,
-		},
-		{
-			name: "invalid hex script",
-			args: wallet.SignActionArgs{
-				Spends: map[uint32]wallet.SignActionSpend{
-					0: {
-						UnlockingScript: "invalid",
-					},
-				},
-			},
-			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := SerializeSignActionArgs(&tt.args)
-			if tt.wantErr {
-				require.Error(t, err, "expected error but got nil")
-			} else {
-				require.NoError(t, err, "expected no error but got %v", err)
-			}
+			require.NoError(t, err, "expected no error but got %v", err)
 		})
 	}
 }
@@ -125,11 +106,11 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 			want: &wallet.SignActionArgs{
 				Spends: map[uint32]wallet.SignActionSpend{
 					0: {
-						UnlockingScript: hex.EncodeToString(script),
+						UnlockingScript: script,
 						SequenceNumber:  123,
 					},
 					1: {
-						UnlockingScript: hex.EncodeToString(script),
+						UnlockingScript: script,
 						SequenceNumber:  456,
 					},
 				},

@@ -467,7 +467,7 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 		Reference: createResult.SignableTransaction.Reference,
 		Spends: map[uint32]wallet.SignActionSpend{
 			record.OutputIndex: {
-				UnlockingScript: finalUnlockScript.String(),
+				UnlockingScript: finalUnlockScript.Bytes(),
 			},
 		},
 		Options: &wallet.SignActionOptions{
