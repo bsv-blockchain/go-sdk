@@ -53,9 +53,10 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	case wallet.AcquisitionProtocolDirect:
 		w.WriteByte(acquisitionProtocolDirect)
 		// Serial number (base64)
-		if err := w.WriteSizeFromBase64(args.SerialNumber, sizeSerial); err != nil {
-			return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
+		if args.SerialNumber == [32]byte{} {
+			return nil, fmt.Errorf("serialNumber is empty")
 		}
+		w.WriteBytes(args.SerialNumber[:])
 
 		// Revocation outpoint
 		outpointBytes, err := encodeOutpoint(args.RevocationOutpoint.String())
@@ -141,7 +142,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	if args.AcquisitionProtocol == wallet.AcquisitionProtocolDirect {
 		// Read serial number
-		args.SerialNumber = r.ReadBase64(sizeSerial)
+		copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 		// Read revocation outpoint
 		outpointBytes := r.ReadBytes(outpointSize)

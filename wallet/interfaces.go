@@ -607,7 +607,7 @@ type AcquireCertificateArgs struct {
 	Certifier           HexBytes33          `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
-	SerialNumber        string              `json:"serialNumber"`
+	SerialNumber        Base64Bytes32       `json:"serialNumber"`
 	RevocationOutpoint  Outpoint            `json:"revocationOutpoint,omitempty"`
 	Signature           JSONByteHex         `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`

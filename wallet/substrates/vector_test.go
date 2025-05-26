@@ -435,7 +435,7 @@ func TestVectors(t *testing.T) {
 			Certifier:           certifier,
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
-			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+			SerialNumber:        serialArray,
 			RevocationOutpoint:  *outpoint,
 			Signature:           signature,
 			CertifierUrl:        "https://certifier.example.com",
