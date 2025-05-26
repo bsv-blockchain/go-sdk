@@ -22,7 +22,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 					{
 						Outpoint:              "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0",
 						InputDescription:      "input 1",
-						UnlockingScript:       "abcd",
+						UnlockingScript:       []byte{0xab, 0xcd},
 						UnlockingScriptLength: 2, // Length is in bytes, "abcd" is 2 bytes when decoded from hex
 						SequenceNumber:        1,
 					},
@@ -97,13 +97,13 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 					{
 						Outpoint:              "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0",
 						InputDescription:      "input 1",
-						UnlockingScript:       "abcd",
+						UnlockingScript:       []byte{0xab, 0xcd},
 						UnlockingScriptLength: 2, // "abcd" is 2 bytes when decoded from hex
 					},
 					{
 						Outpoint:              "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981.1",
 						InputDescription:      "input 2",
-						UnlockingScript:       "efef",
+						UnlockingScript:       []byte{0xef, 0xef},
 						UnlockingScriptLength: 2, // "efef" is 2 bytes when decoded from hex
 						SequenceNumber:        2,
 					},

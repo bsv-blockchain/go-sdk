@@ -77,7 +77,7 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 		// Read unlocking script
 		scriptBytes := messageReader.ReadOptionalBytes()
 		if scriptBytes != nil {
-			input.UnlockingScript = hex.EncodeToString(scriptBytes)
+			input.UnlockingScript = scriptBytes
 			input.UnlockingScriptLength = uint32(len(scriptBytes))
 		} else {
 			// Read unlocking script length value

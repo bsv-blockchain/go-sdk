@@ -87,7 +87,7 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 type CreateActionInput struct {
 	Outpoint              string // Format: "txid:outputIndex"
 	InputDescription      string
-	UnlockingScript       string // Hex encoded
+	UnlockingScript       JSONByteHex
 	UnlockingScriptLength uint32
 	SequenceNumber        uint32
 }

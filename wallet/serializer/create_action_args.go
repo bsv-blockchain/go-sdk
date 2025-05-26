@@ -56,10 +56,10 @@ func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.Creat
 		paramWriter.WriteBytes(outpoint)
 
 		// Serialize unlocking script
-		if err = paramWriter.WriteOptionalFromHex(input.UnlockingScript); err != nil {
-			return fmt.Errorf("invalid unlocking script: %w", err)
-		}
-		if input.UnlockingScript == "" {
+		if len(input.UnlockingScript) > 0 {
+			paramWriter.WriteIntBytes(input.UnlockingScript)
+		} else {
+			paramWriter.WriteNegativeOne()
 			paramWriter.WriteVarInt(uint64(input.UnlockingScriptLength))
 		}
 
