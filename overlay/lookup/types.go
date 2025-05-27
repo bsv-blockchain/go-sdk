@@ -26,7 +26,7 @@ type LookupQuestion struct {
 
 type LookupFormula struct {
 	Outpoint *overlay.Outpoint
-	Histoy   func(beef []byte, outputIndex uint32, currentDepth uint32) bool
+	History  func(beef []byte, outputIndex uint32, currentDepth uint32) bool
 	// HistoryDepth uint32
 }
 
