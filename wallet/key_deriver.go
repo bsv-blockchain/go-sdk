@@ -25,6 +25,14 @@ type KeyDeriver struct {
 	rootKey *ec.PrivateKey
 }
 
+func (kd *KeyDeriver) IdentityKey() *ec.PublicKey {
+	return kd.rootKey.PubKey()
+}
+
+func (kd *KeyDeriver) IdentityKeyHex() string {
+	return kd.IdentityKey().ToDERHex()
+}
+
 // NewKeyDeriver creates a new KeyDeriver instance with a root private key.
 // The root key can be either a specific private key or the special 'anyone' key.
 func NewKeyDeriver(privateKey *ec.PrivateKey) *KeyDeriver {

@@ -27,6 +27,16 @@ func TestKeyDeriver(t *testing.T) {
 
 	keyDeriver := NewKeyDeriver(rootPrivateKey)
 
+	t.Run("should return public key for root key as identity key", func(t *testing.T) {
+		identityKey := keyDeriver.IdentityKey()
+		assert.Equalf(t, rootPublicKey, identityKey, "identity key should match root public key")
+	})
+
+	t.Run("should return DER HEX from public key for root key as identity key hex", func(t *testing.T) {
+		identityKey := keyDeriver.IdentityKeyHex()
+		assert.Equalf(t, rootPublicKey.ToDERHex(), identityKey, "identity key hex should match root public key hex")
+	})
+
 	t.Run("should compute the correct invoice number", func(t *testing.T) {
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
 		assert.NoError(t, err, "computing invoice number should not error")
