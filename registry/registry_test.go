@@ -609,6 +609,7 @@ func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 	ctx := context.Background()
 	mockRegistry := NewMockRegistry(t)
 	mockTxid, err := chainhash.NewHashFromHex("f1e1fd3c6504b94e9cb0ecfb7db1167655e3d5f98afd977a18fc01e1a6e59504")
+	require.NoError(t, err, "Failed to create mock txid from hex")
 
 	// Build a valid compressed public key (0x02 + 32 bytes of 0x01)
 	pubKeyBytes := []byte{

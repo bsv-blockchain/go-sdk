@@ -111,7 +111,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	}
 
 	// Check if vout is valid for the transaction
-	if vout < 0 || int(vout) >= len(tx.Outputs) {
+	if int(vout) >= len(tx.Outputs) {
 		return nil, fmt.Errorf("error Transaction vout %d out of range for tx %s with %d outputs", vout, txidStr, len(tx.Outputs))
 	}
 	txOutput := tx.Outputs[vout]

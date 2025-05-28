@@ -3,12 +3,12 @@ package utils
 import (
 	"context"
 	"errors"
-	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )

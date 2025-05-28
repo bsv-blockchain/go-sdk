@@ -3,12 +3,8 @@ package utils
 import (
 	"context"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
-	"strings"
-
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -60,42 +56,6 @@ func GetEncodedCertificateForDebug(cert wallet.Certificate) wallet.Certificate {
 	}
 
 	return result
-}
-
-// createRevocationOutpoint creates a valid overlay.Outpoint from a string in format "txid:index"
-func createRevocationOutpoint(outpointStr string) (*overlay.Outpoint, error) {
-	parts := strings.Split(outpointStr, ":")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid outpoint format, expected 'txid:index', got '%s'", outpointStr)
-	}
-
-	// Pad the txid to 64 characters if needed
-	txidHex := parts[0]
-	for len(txidHex) < 64 {
-		txidHex = "0" + txidHex
-	}
-
-	// Parse the txid
-	txidBytes, err := hex.DecodeString(txidHex)
-	if err != nil {
-		return nil, fmt.Errorf("invalid txid hex: %w", err)
-	}
-
-	// Create a chainhash.Hash
-	var txid chainhash.Hash
-	copy(txid[:], txidBytes)
-
-	// Parse the output index
-	var outputIndex uint32
-	_, err = fmt.Sscanf(parts[1], "%d", &outputIndex)
-	if err != nil {
-		return nil, fmt.Errorf("invalid output index: %w", err)
-	}
-
-	return &overlay.Outpoint{
-		Txid:        txid,
-		OutputIndex: outputIndex,
-	}, nil
 }
 
 // SignCertificateForTest properly signs a certificate for test purposes
