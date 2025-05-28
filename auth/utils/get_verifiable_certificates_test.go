@@ -36,7 +36,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
 		mockWallet := wallet.NewMockWallet(t)
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []string{"certifier1", "certifier2"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1"), tu.GetByte33FromString("certifier2")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1", "field2"},
 				certType2: {"field3"},
@@ -104,7 +104,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
 		mockWallet := wallet.NewMockWallet(t)
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []string{"certifier1"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1"},
 			},
@@ -133,7 +133,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
 		mockWallet := wallet.NewMockWallet(t)
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []string{"certifier1"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1"},
 			},

@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -12,17 +13,13 @@ func SerializeListCertificatesArgs(args *wallet.ListCertificatesArgs) ([]byte, e
 	// Write certifiers
 	w.WriteVarInt(uint64(len(args.Certifiers)))
 	for _, certifier := range args.Certifiers {
-		if err := w.WriteSizeFromHex(certifier, sizeCertifier); err != nil {
-			return nil, fmt.Errorf("invalid certifier hex: %w", err)
-		}
+		w.WriteBytes(certifier[:])
 	}
 
 	// Write types
 	w.WriteVarInt(uint64(len(args.Types)))
 	for _, typ := range args.Types {
-		if err := w.WriteSizeFromBase64(typ, sizeType); err != nil {
-			return nil, fmt.Errorf("invalid type base64: %w", err)
-		}
+		w.WriteBytes(typ[:])
 	}
 
 	// Write limit and offset
@@ -41,9 +38,10 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 
 	// Read certifiers
 	certifiersLength := r.ReadVarInt()
-	args.Certifiers = make([]string, 0, certifiersLength)
+	args.Certifiers = make([]wallet.HexBytes33, 0, certifiersLength)
 	for i := uint64(0); i < certifiersLength; i++ {
-		certifier := r.ReadHex(sizeCertifier)
+		var certifier wallet.HexBytes33
+		copy(certifier[:], r.ReadBytes(33))
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing certifier: %w", r.Err)
 		}
@@ -52,13 +50,14 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 
 	// Read types
 	typesLength := r.ReadVarInt()
-	args.Types = make([]string, 0, typesLength)
+	args.Types = make([]wallet.Base64Bytes32, 0, typesLength)
 	for i := uint64(0); i < typesLength; i++ {
-		typeString := r.ReadBase64(sizeType)
+		var typeArray wallet.Base64Bytes32
+		copy(typeArray[:], r.ReadBytes(32))
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing type: %w", r.Err)
 		}
-		args.Types = append(args.Types, typeString)
+		args.Types = append(args.Types, typeArray)
 	}
 
 	// Read limit and offset

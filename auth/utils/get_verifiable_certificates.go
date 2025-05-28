@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -35,9 +36,9 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	var result []*certificates.VerifiableCertificate
 
 	// Get all certificate types
-	var certificateTypes []string
+	var certificateTypes []wallet.Base64Bytes32
 	for certType := range options.RequestedCertificates.CertificateTypes {
-		certificateTypes = append(certificateTypes, base64.StdEncoding.EncodeToString(certType[:]))
+		certificateTypes = append(certificateTypes, certType)
 	}
 
 	// Single query for all certificates

@@ -463,8 +463,8 @@ func TestVectors(t *testing.T) {
 		Filename: "listCertificates-simple-args",
 		IsResult: true,
 		Object: wallet.ListCertificatesArgs{
-			Certifiers:       []string{CounterpartyHex, VerifierHex},
-			Types:            []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGUx", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGUy"},
+			Certifiers:       []wallet.HexBytes33{tu.GetByte33FromHexString(t, CounterpartyHex), tu.GetByte33FromHexString(t, VerifierHex)},
+			Types:            []wallet.Base64Bytes32{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
 			Limit:            5,
 			Offset:           0,
 			Privileged:       util.BoolPtr(true),

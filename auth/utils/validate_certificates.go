@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"slices"
-
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -57,7 +55,7 @@ func (m *RequestedCertificateTypeIDAndFieldList) UnmarshalJSON(data []byte) erro
 // RequestedCertificateSet represents a set of requested certificates
 type RequestedCertificateSet struct {
 	// Array of public keys that must have signed the certificates
-	Certifiers []string
+	Certifiers []wallet.HexBytes33
 
 	// Map of certificate type IDs to field names that must be included
 	CertificateTypes RequestedCertificateTypeIDAndFieldList
@@ -115,10 +113,9 @@ func ValidateCertificates(
 			if certificatesRequested != nil {
 				// Check certifier matches
 				if !isEmptyPublicKey(cert.Certifier) {
-					certifierKey := cert.Certifier.ToDERHex()
-					if !slices.Contains(certificatesRequested.Certifiers, certifierKey) &&
-						!slices.Contains(certificatesRequested.Certifiers, "any") {
-						errCh <- fmt.Errorf("certificate with serial number %s has an unrequested certifier: %s",
+					certifierKey := cert.Certifier.ToDER()
+					if !wallet.BytesInHex33Slice(certificatesRequested.Certifiers, certifierKey) {
+						errCh <- fmt.Errorf("certificate with serial number %s has an unrequested certifier: %x",
 							cert.SerialNumber, certifierKey)
 						return
 					}

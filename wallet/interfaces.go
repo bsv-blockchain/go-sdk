@@ -632,12 +632,12 @@ func (a *AcquireCertificateArgs) RevocationOutpointString() string {
 }
 
 type ListCertificatesArgs struct {
-	Certifiers       []string `json:"certifiers"`
-	Types            []string `json:"types"`
-	Limit            uint32   `json:"limit"`
-	Offset           uint32   `json:"offset"`
-	Privileged       *bool    `json:"privileged,omitempty"`
-	PrivilegedReason string   `json:"privilegedReason,omitempty"`
+	Certifiers       []HexBytes33    `json:"certifiers"`
+	Types            []Base64Bytes32 `json:"types"`
+	Limit            uint32          `json:"limit"`
+	Offset           uint32          `json:"offset"`
+	Privileged       *bool           `json:"privileged,omitempty"`
+	PrivilegedReason string          `json:"privilegedReason,omitempty"`
 }
 
 type CertificateResult struct {
@@ -876,6 +876,20 @@ func (b *HexBytes33) UnmarshalJSON(data []byte) error {
 	}
 	copy(b[:], decoded)
 	return nil
+}
+
+func BytesInHex33Slice(slice []HexBytes33, item []byte) bool {
+	if len(item) > 33 {
+		return false
+	}
+	var item33 HexBytes33
+	copy(item33[:], item)
+	for _, v := range slice {
+		if v == item33 {
+			return true
+		}
+	}
+	return false
 }
 
 type Outpoint struct {

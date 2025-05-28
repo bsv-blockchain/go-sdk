@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +28,7 @@ func TestValidateCertificates(t *testing.T) {
 		copy(certType[:], "requested_type")
 		// Test validate certificate requirements struct
 		reqs := &utils.RequestedCertificateSet{
-			Certifiers: []string{"valid_certifier"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("valid_certifier")},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType: {"field1"},
 			},

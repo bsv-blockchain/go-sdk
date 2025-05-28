@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/base64"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -18,13 +17,13 @@ func TestListCertificatesArgs(t *testing.T) {
 	}{{
 		name: "full args",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []string{
-				"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
-				"02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+			Certifiers: []wallet.HexBytes33{
+				tu.GetByte33FromHexString(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
+				tu.GetByte33FromHexString(t, "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"),
 			},
-			Types: []string{
-				base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("type1"), sizeType)),
-				base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("type2"), sizeType)),
+			Types: []wallet.Base64Bytes32{
+				tu.GetByte32FromString("type1"),
+				tu.GetByte32FromString("type2"),
 			},
 			Limit:            10,
 			Offset:           5,
@@ -34,14 +33,14 @@ func TestListCertificatesArgs(t *testing.T) {
 	}, {
 		name: "minimal args",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []string{"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"},
-			Types:      []string{base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("minimal"), sizeType))},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromHexString(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")},
+			Types:      []wallet.Base64Bytes32{tu.GetByte32FromString("minimal")},
 		},
 	}, {
 		name: "empty certifiers and types",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []string{},
-			Types:      []string{},
+			Certifiers: []wallet.HexBytes33{},
+			Types:      []wallet.Base64Bytes32{},
 		},
 	}}
 

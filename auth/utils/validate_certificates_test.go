@@ -2,11 +2,11 @@ package utils
 
 import (
 	"context"
-	"slices"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,39 +90,36 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 	})
 
 	t.Run("throws an error for unrequested certifier", func(t *testing.T) {
-		// Create certifier key hex
-		certifierHex := validCertifierKey.ToDERHex()
-
 		// Create certificate request with different certifier
 		certificatesRequested := &RequestedCertificateSet{
-			Certifiers: []string{"another_certifier"}, // Different from certifierHex
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("another_certifier")}, // Different from certifierHex
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				requestedType: []string{"field1"},
 			},
 		}
 
 		// Check certifier match logic
-		assert.False(t, slices.Contains(certificatesRequested.Certifiers, certifierHex) || slices.Contains(certificatesRequested.Certifiers, "any"))
+		assert.False(t, wallet.BytesInHex33Slice(certificatesRequested.Certifiers, validCertifierKey.ToDER()))
 		// The logic in ValidateCertificates would have raised an error here
 	})
 
 	t.Run("accepts 'any' as a certifier match", func(t *testing.T) {
 		// Create certificate request with "any" certifier
 		certificatesRequested := &RequestedCertificateSet{
-			Certifiers: []string{"any"}, // Special value that matches any certifier
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				requestedType: []string{"field1"},
 			},
 		}
 
 		// "any" should match any certifier value
-		assert.True(t, slices.Contains(certificatesRequested.Certifiers, "any"))
+		assert.True(t, wallet.BytesInHex33Slice(certificatesRequested.Certifiers, []byte("any")))
 	})
 
 	t.Run("throws an error for unrequested certificate type", func(t *testing.T) {
 		// Create certificate request with different type
 		certificatesRequested := &RequestedCertificateSet{
-			Certifiers: []string{"any"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				anotherType: []string{"field1"}, // Different from "requested_type"
 			},
@@ -136,7 +133,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 	t.Run("validate certificates request set validation", func(t *testing.T) {
 		// Test empty certifiers
 		req := &RequestedCertificateSet{
-			Certifiers: []string{},
+			Certifiers: []wallet.HexBytes33{},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				type1: []string{"field1"},
 			},
@@ -147,7 +144,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 
 		// Test empty types
 		req = &RequestedCertificateSet{
-			Certifiers:       []string{"certifier1"},
+			Certifiers:       []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{},
 		}
 		err = ValidateRequestedCertificateSet(req)
@@ -156,7 +153,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 
 		// Test empty type name
 		req = &RequestedCertificateSet{
-			Certifiers: []string{"certifier1"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				[32]byte{}: []string{"field1"},
 			},
@@ -167,7 +164,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 
 		// Test empty fields
 		req = &RequestedCertificateSet{
-			Certifiers: []string{"certifier1"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				type1: []string{},
 			},
@@ -178,7 +175,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 
 		// Test valid request
 		req = &RequestedCertificateSet{
-			Certifiers: []string{"certifier1"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				type1: []string{"field1"},
 			},
