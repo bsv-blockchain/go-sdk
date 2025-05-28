@@ -199,7 +199,7 @@ type SignActionResult struct {
 
 // ActionInput describes a transaction input with full details.
 type ActionInput struct {
-	SourceOutpoint      string      `json:"sourceOutpoint"`
+	SourceOutpoint      Outpoint    `json:"sourceOutpoint"`
 	SourceSatoshis      uint64      `json:"sourceSatoshis"`
 	SourceLockingScript JSONByteHex `json:"sourceLockingScript,omitempty"`
 	UnlockingScript     JSONByteHex `json:"unlockingScript,omitempty"`

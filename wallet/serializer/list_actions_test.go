@@ -135,7 +135,7 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 						LockTime:    0,
 						Inputs: []wallet.ActionInput{
 							{
-								SourceOutpoint:      txid.String() + ".0",
+								SourceOutpoint:      wallet.Outpoint{Txid: *txid},
 								SourceSatoshis:      500,
 								SourceLockingScript: lockingScript,
 								UnlockingScript:     unlockingScript,

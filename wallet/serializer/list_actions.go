@@ -146,7 +146,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		// Serialize inputs
 		w.WriteVarInt(uint64(len(action.Inputs)))
 		for _, input := range action.Inputs {
-			opBytes, err := encodeOutpoint(input.SourceOutpoint)
+			opBytes, err := encodeOutpoint(input.SourceOutpoint.String())
 			if err != nil {
 				return nil, fmt.Errorf("invalid source outpoint: %w", err)
 			}
@@ -234,7 +234,11 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 			input := wallet.ActionInput{}
 
 			opBytes := r.ReadBytes(outpointSize)
-			input.SourceOutpoint, _ = decodeOutpoint(opBytes)
+			outpoint, err := decodeOutpointObj(opBytes)
+			if err != nil {
+				return nil, fmt.Errorf("error decoding source outpoint for input %d: %w", j, err)
+			}
+			input.SourceOutpoint = *outpoint
 
 			// Serialize source satoshis, locking script, unlocking script, input description, and sequence number
 			input.SourceSatoshis = r.ReadVarInt()
