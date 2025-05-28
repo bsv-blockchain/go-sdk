@@ -267,7 +267,7 @@ func TestDecodeOutpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := decodeOutpointObj(tt.input)
+			got, err := decodeOutpoint(tt.input)
 
 			if tt.expectErr {
 				require.Error(t, err, "expected an error but got none")
@@ -321,7 +321,7 @@ func TestEncodeOutpoint(t *testing.T) {
 			require.Equal(t, tt.expectedOutput, gotBytes, "encoded bytes do not match expected")
 
 			// Round trip test
-			decodedObj, decodeErr := decodeOutpointObj(gotBytes)
+			decodedObj, decodeErr := decodeOutpoint(gotBytes)
 			require.NoError(t, decodeErr, "decoding the encoded bytes failed")
 			require.Equal(t, tt.input, decodedObj, "round trip failed: decoded string does not match original input")
 		})

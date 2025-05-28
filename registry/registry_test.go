@@ -456,7 +456,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 	// Setup ListOutputs mock to recognize the registry token as belonging to the wallet
 	// This is necessary to pass the ownership check in RevokeOwnRegistryEntry
-	outpoint := tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
+	outpoint := tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
 
 	mockRegistry.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
@@ -578,7 +578,7 @@ func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 				Satoshis:      1000,
 				LockingScript: lockingScript.String(),
 				Spendable:     true,
-				Outpoint:      *tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
+				Outpoint:      *tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 				Tags:          []string{"registry", "basket"},
 			},
 		},

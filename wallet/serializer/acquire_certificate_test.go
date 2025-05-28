@@ -11,7 +11,7 @@ import (
 )
 
 func TestAcquireCertificateArgs(t *testing.T) {
-	revocationOutpoint := tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
+	revocationOutpoint := tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
 	tests := []struct {
 		name string
 		args *wallet.AcquireCertificateArgs

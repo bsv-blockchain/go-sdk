@@ -67,7 +67,7 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 
 		// Read outpoint
 		outpointBytes := messageReader.ReadBytes(outpointSize)
-		outpoint, err := decodeOutpointObj(outpointBytes)
+		outpoint, err := decodeOutpoint(outpointBytes)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}

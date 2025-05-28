@@ -61,7 +61,7 @@ func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
 		if err != nil {
 			return nil, err
 		}
-		op, err := decodeOutpointObj(opBytes)
+		op, err := decodeOutpoint(opBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -70,8 +70,8 @@ func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
 	return outpoints, nil
 }
 
-// decodeOutpointObj converts binary outpoint data to Outpoint object
-func decodeOutpointObj(data []byte) (*wallet.Outpoint, error) {
+// decodeOutpoint converts binary outpoint data to Outpoint object
+func decodeOutpoint(data []byte) (*wallet.Outpoint, error) {
 	if len(data) != outpointSize {
 		return nil, errors.New("invalid outpoint data length")
 	}

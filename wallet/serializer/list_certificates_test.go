@@ -75,7 +75,7 @@ func TestListCertificatesResult(t *testing.T) {
 						Subject:            pk.PubKey(),
 						SerialNumber:       tu.GetByte32FromString("serial1"),
 						Certifier:          pk.PubKey(),
-						RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
+						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 						Signature:          make([]byte, 64),
 						Fields: map[string]string{
 							"field1": "value1",
@@ -92,7 +92,7 @@ func TestListCertificatesResult(t *testing.T) {
 						Subject:            pk.PubKey(),
 						SerialNumber:       tu.GetByte32FromString("serial2"),
 						Certifier:          pk.PubKey(),
-						RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
+						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 					},
 				},
 			},

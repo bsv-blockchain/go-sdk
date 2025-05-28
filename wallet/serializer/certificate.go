@@ -80,7 +80,7 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	}
 
 	// Read revocation outpoint
-	cert.RevocationOutpoint, err = decodeOutpointObj(r.ReadBytes(outpointSize))
+	cert.RevocationOutpoint, err = decodeOutpoint(r.ReadBytes(outpointSize))
 	if err != nil {
 		return nil, fmt.Errorf("error decoding revocation outpoint: %w", err)
 	}

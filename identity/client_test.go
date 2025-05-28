@@ -315,7 +315,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		t.Fatalf("failed to create identity client: %v", err)
 	}
 
-	revocationOutpoint := tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1")
+	revocationOutpoint := tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1")
 
 	t.Run("should throw an error if certificate has no fields", func(t *testing.T) {
 		certificate := &wallet.Certificate{

@@ -90,7 +90,7 @@ func GetByteFromHexString(t *testing.T, s string) []byte {
 	return b
 }
 
-func WalletOutpointFromString(t *testing.T, s string) *wallet.Outpoint {
+func OutpointFromString(t *testing.T, s string) *wallet.Outpoint {
 	outpoint, err := wallet.OutpointFromString(s)
 	require.NoError(t, err, fmt.Sprintf("error creating wallet.Outpoint from string '%s': %v", s, err))
 	return outpoint

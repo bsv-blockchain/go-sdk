@@ -65,14 +65,14 @@ func TestListOutputsResult(t *testing.T) {
 					Spendable:          true,
 					CustomInstructions: "instructions",
 					Tags:               []string{"tag1"},
-					Outpoint:           *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
+					Outpoint:           *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 					Labels:             []string{"label1"},
 				},
 				{
 					Satoshis:      2000,
 					LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ad",
 					Spendable:     false,
-					Outpoint:      *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
+					Outpoint:      *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
 				},
 			},
 		}

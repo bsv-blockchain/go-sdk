@@ -20,8 +20,8 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 				Txid: tu.GetByte32FromHexString(t, "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"),
 				Tx:   []byte{0x01, 0x02, 0x03},
 				NoSendChange: []wallet.Outpoint{
-					*tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
-					*tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
+					*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
+					*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
 				},
 				SendWithResults: []wallet.SendWithResult{
 					{
@@ -53,7 +53,7 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 			name: "with noSendChange only",
 			result: &wallet.CreateActionResult{
 				NoSendChange: []wallet.Outpoint{
-					*tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
+					*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 				},
 			},
 		},

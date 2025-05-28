@@ -607,7 +607,7 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 
 func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 	// Test ListOutputs
-	outpoint := *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0")
+	outpoint := *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/listOutputs", r.URL.Path)
 
