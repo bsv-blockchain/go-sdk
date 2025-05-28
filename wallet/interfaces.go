@@ -15,13 +15,13 @@ import (
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
-	Type               Base64Bytes32     `json:"type"`                         // Base64-encoded certificate type ID
-	SerialNumber       Base64Bytes32     `json:"serialNumber"`                 // Base64-encoded unique serial number
-	Subject            *ec.PublicKey     `json:"subject"`                      // Public key of the certificate subject
-	Certifier          *ec.PublicKey     `json:"certifier"`                    // Public key of the certificate issuer
-	RevocationOutpoint *Outpoint         `json:"revocationOutpoint,omitempty"` // Format: "txid:outputIndex"
-	Fields             map[string]string `json:"fields,omitempty"`             // Field name -> field value (encrypted)
-	Signature          JSONByteHex       `json:"signature,omitempty"`          // Hex-encoded signature
+	Type               Base64Bytes32     `json:"type"`
+	SerialNumber       Base64Bytes32     `json:"serialNumber"`
+	Subject            *ec.PublicKey     `json:"subject"`
+	Certifier          *ec.PublicKey     `json:"certifier"`
+	RevocationOutpoint *Outpoint         `json:"revocationOutpoint,omitempty"`
+	Fields             map[string]string `json:"fields,omitempty"` // Field name -> field value (encrypted)
+	Signature          JSONByteHex       `json:"signature,omitempty"`
 }
 
 // MarshalJSON implements json.Marshaler interface for Certificate
@@ -37,7 +37,7 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		certifierHex = &cs
 	}
 
-	res, err := json.Marshal(&struct {
+	return json.Marshal(&struct {
 		Subject   *string `json:"subject"`
 		Certifier *string `json:"certifier"`
 		*Alias
@@ -46,7 +46,6 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 		Certifier: certifierHex,
 		Alias:     (*Alias)(c),
 	})
-	return res, err
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface for Certificate
@@ -185,8 +184,8 @@ type SignActionOptions struct {
 
 // SignActionArgs contains data needed to sign a previously created transaction.
 type SignActionArgs struct {
-	Reference []byte                     `json:"reference"` // Base64 encoded
-	Spends    map[uint32]SignActionSpend `json:"spends"`    // Key is input index
+	Reference []byte                     `json:"reference"`
+	Spends    map[uint32]SignActionSpend `json:"spends"` // Key is input index
 	Options   *SignActionOptions         `json:"options,omitempty"`
 }
 
@@ -372,7 +371,7 @@ type Interface interface {
 
 // AbortActionArgs identifies a transaction to abort using its reference string.
 type AbortActionArgs struct {
-	Reference []byte `json:"reference"` // Base64 encoded reference
+	Reference []byte `json:"reference"`
 }
 
 // AbortActionResult confirms whether a transaction was successfully aborted.
@@ -622,13 +621,6 @@ type AcquireCertificateArgs struct {
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
 	Privileged          *bool               `json:"privileged,omitempty"`
 	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
-}
-
-func (a *AcquireCertificateArgs) RevocationOutpointString() string {
-	if a.RevocationOutpoint == nil {
-		return ""
-	}
-	return a.RevocationOutpoint.String()
 }
 
 type ListCertificatesArgs struct {
