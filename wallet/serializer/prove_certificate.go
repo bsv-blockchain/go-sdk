@@ -21,7 +21,7 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	w.WriteBytes(args.Certificate.Certifier.Compressed())
 
 	// Encode revocationOutpoint
-	outpointBytes, err := encodeOutpoint(args.Certificate.RevocationOutpoint)
+	outpointBytes, err := encodeOutpoint(args.Certificate.RevocationOutpointString())
 	if err != nil {
 		return nil, fmt.Errorf("invalid revocationOutpoint: %w", err)
 	}
@@ -86,7 +86,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 
 	// Read revocationOutpoint
 	outpointBytes := r.ReadBytes(outpointSize)
-	args.Certificate.RevocationOutpoint, err = decodeOutpoint(outpointBytes)
+	args.Certificate.RevocationOutpoint, err = decodeOutpointObj(outpointBytes)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding outpoint: %w", err)
 	}

@@ -315,6 +315,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		t.Fatalf("failed to create identity client: %v", err)
 	}
 
+	revocationOutpoint := tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1")
+
 	t.Run("should throw an error if certificate has no fields", func(t *testing.T) {
 		certificate := &wallet.Certificate{
 			Fields: make(map[string]string),
@@ -347,7 +349,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
 			Signature:          []byte{0x01, 0x02, 0x03},
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
+			RevocationOutpoint: revocationOutpoint,
 		}
 		copy(certificate.Type[:], "dummyType")
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -385,7 +387,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
 			Signature:          []byte{0x01, 0x02, 0x03},
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
+			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
@@ -461,7 +463,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
 			Signature:          []byte{0x01, 0x02, 0x03},
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
+			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
@@ -537,7 +539,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
 			Signature:          []byte{0x01, 0x02, 0x03},
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
+			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
@@ -635,7 +637,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
 			Signature:          []byte{0x01, 0x02, 0x03},
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000:0",
+			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 

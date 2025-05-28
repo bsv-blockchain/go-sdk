@@ -456,7 +456,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 		Subject:            aliceSubject,
 		Certifier:          bobSubject,
 		Fields:             map[string]string{requiredField: "fieldValue"},
-		RevocationOutpoint: "abcd1234:0",
+		RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 	}
 
 	bobCertRaw := wallet.Certificate{
@@ -465,7 +465,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 		Subject:            bobSubject,
 		Certifier:          aliceSubject,
 		Fields:             map[string]string{requiredField: "fieldValue"},
-		RevocationOutpoint: "abcd1234:1",
+		RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
 	}
 
 	// Sign the certificates properly
@@ -947,7 +947,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		Subject:            aliceKey.PubKey(),
 		Certifier:          bobKey.PubKey(),
 		Fields:             map[string]string{"name": "Alice"},
-		RevocationOutpoint: "abcd1234:0",
+		RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 	}
 
 	bobCertRaw := wallet.Certificate{
@@ -956,7 +956,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		Subject:            bobKey.PubKey(),
 		Certifier:          aliceKey.PubKey(),
 		Fields:             map[string]string{"name": "Bob"},
-		RevocationOutpoint: "abcd1234:1",
+		RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
 	}
 
 	// Sign the certificates properly
@@ -1262,7 +1262,7 @@ func TestLibraryCardVerification(t *testing.T) {
 		Subject:            bobKey.PubKey(),
 		Certifier:          aliceKey.PubKey(),
 		Fields:             map[string]string{"name": "Bob", "cardNumber": "123456"},
-		RevocationOutpoint: "abcd1234:1",
+		RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
 	}
 
 	// Sign the certificate properly
@@ -1591,7 +1591,7 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 		Subject:            aliceKey.PubKey(),
 		Certifier:          bobKey.PubKey(),
 		Fields:             map[string]string{"name": "Alice"},
-		RevocationOutpoint: "abcd1234:0",
+		RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 	}
 
 	bobCertRaw := wallet.Certificate{
@@ -1600,7 +1600,7 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 		Subject:            bobKey.PubKey(),
 		Certifier:          aliceKey.PubKey(),
 		Fields:             map[string]string{"name": "Bob"},
-		RevocationOutpoint: "abcd1234:1",
+		RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
 	}
 
 	// Sign certificates properly

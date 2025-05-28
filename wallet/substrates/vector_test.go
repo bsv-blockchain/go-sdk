@@ -63,7 +63,11 @@ func TestVectors(t *testing.T) {
 	lockingScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
 	require.NoError(t, err, "decoding locking script should not error")
 
-	signature := []byte("signature-hex") // 7369676e61747572652d686578
+	// pk = 95c5931552e547d72a292e9d6f59eef2b9f7e1576d8c7b49731b505117c0cdfa
+	// msg = test message
+	const sigHex = "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a"
+	signature, err := hex.DecodeString(sigHex)
+	require.NoError(t, err, "decoding signature hex should not error")
 
 	txID, err := chainhash.NewHashFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 	require.NoError(t, err, "creating txID from hex should not error")
@@ -436,7 +440,7 @@ func TestVectors(t *testing.T) {
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
 			SerialNumber:        serialArray,
-			RevocationOutpoint:  *outpoint,
+			RevocationOutpoint:  outpoint,
 			Signature:           signature,
 			CertifierUrl:        "https://certifier.example.com",
 			KeyringRevealer:     "revealer-key-hex", // TODO: change to real hex, e.g. 319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838
@@ -451,7 +455,7 @@ func TestVectors(t *testing.T) {
 			SerialNumber:       serialArray,
 			Subject:            pubKey,       // Use key from test setup
 			Certifier:          counterparty, // Use key from test setup
-			RevocationOutpoint: "txid123:0",
+			RevocationOutpoint: outpoint,
 			Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
 			Signature:          signature,
 		},
@@ -477,7 +481,7 @@ func TestVectors(t *testing.T) {
 					SerialNumber:       serialArray,
 					Subject:            pubKey,
 					Certifier:          counterparty,
-					RevocationOutpoint: "txid123:0",
+					RevocationOutpoint: outpoint,
 					Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
 					Signature:          signature,
 				},
@@ -493,7 +497,7 @@ func TestVectors(t *testing.T) {
 				SerialNumber:       serialArray,
 				Subject:            pubKey,       // Use key from test setup
 				Certifier:          counterparty, // Use key from test setup
-				RevocationOutpoint: "txid123:0",
+				RevocationOutpoint: outpoint,
 				Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
 				Signature:          signature,
 			},
@@ -541,7 +545,7 @@ func TestVectors(t *testing.T) {
 						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,
-						RevocationOutpoint: "txid123:0",
+						RevocationOutpoint: outpoint,
 						Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
 						Signature:          signature,
 					},
@@ -576,7 +580,7 @@ func TestVectors(t *testing.T) {
 						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,
-						RevocationOutpoint: "txid123:0",
+						RevocationOutpoint: outpoint,
 						Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
 						Signature:          signature,
 					},

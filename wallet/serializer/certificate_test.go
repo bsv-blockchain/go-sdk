@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,7 @@ func TestCertificate(t *testing.T) {
 		cert := &wallet.Certificate{
 			Subject:            pk.PubKey(),
 			Certifier:          pk.PubKey(),
-			RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
+			RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 			Signature:          make([]byte, 64),
 			Fields: map[string]string{
 				"field1": "value1",

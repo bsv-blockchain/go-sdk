@@ -59,7 +59,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		w.WriteBytes(args.SerialNumber[:])
 
 		// Revocation outpoint
-		outpointBytes, err := encodeOutpoint(args.RevocationOutpoint.String())
+		outpointBytes, err := encodeOutpoint(args.RevocationOutpointString())
 		if err != nil {
 			return nil, fmt.Errorf("invalid revocationOutpoint: %w", err)
 		}
@@ -150,7 +150,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}
-		args.RevocationOutpoint = *revocationOutpoint
+		args.RevocationOutpoint = revocationOutpoint
 
 		// Read signature
 		args.Signature = r.ReadIntBytes()

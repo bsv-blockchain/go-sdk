@@ -73,10 +73,7 @@ func (c *Client) PubliclyRevealAttributes(
 		return nil, nil, errors.New("you must reveal at least one field")
 	}
 
-	revocationOutpoint, err := overlay.NewOutpointFromString(certificate.RevocationOutpoint)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create outpoint from string: %w", err)
-	}
+	revocationOutpoint := overlay.NewOutpoint(certificate.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Index)
 
 	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
 	for k, v := range certificate.Fields {
@@ -128,7 +125,7 @@ func (c *Client) PubliclyRevealAttributes(
 		"serialNumber":       certificate.SerialNumber,
 		"subject":            certificate.Subject.Compressed(),
 		"certifier":          certificate.Certifier.Compressed(),
-		"revocationOutpoint": certificate.RevocationOutpoint,
+		"revocationOutpoint": certificate.RevocationOutpointString(),
 		"fields":             certificate.Fields,
 		"signature":          hex.EncodeToString(certificate.Signature),
 		"keyring":            proveResult.KeyringForVerifier,

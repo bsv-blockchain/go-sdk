@@ -108,10 +108,7 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 	encodedCert.Certifier = signerPrivateKey.PubKey()
 
 	// Parse the revocation outpoint
-	outpoint, err := createRevocationOutpoint(encodedCert.RevocationOutpoint)
-	if err != nil {
-		return encodedCert, fmt.Errorf("failed to parse revocation outpoint: %w", err)
-	}
+	outpoint := overlay.NewOutpoint(encodedCert.RevocationOutpoint.Txid, encodedCert.RevocationOutpoint.Index)
 
 	// Convert wallet.Certificate to certificates.Certificate for signing
 	certObj := &certificates.Certificate{

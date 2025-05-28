@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strings"
-
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -89,27 +87,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		}
 
 		// Handle short txids in revocation outpoints by padding them
-		var revocationOutpoint *overlay.Outpoint
-		if certResult.RevocationOutpoint != "" {
-			// NewOutpointFromString requires at least 66 characters (64 hex chars + separator + output index)
-			parts := strings.Split(certResult.RevocationOutpoint, ":")
-			if len(parts) == 2 {
-				txid := parts[0]
-				// Pad txid to 64 characters if needed
-				if len(txid) < 64 {
-					padding := strings.Repeat("0", 64-len(txid))
-					txid = txid + padding // Pad with zeros
-				}
-				outpointStr := txid + "." + parts[1]
-				var parseErr error
-				revocationOutpoint, parseErr = overlay.NewOutpointFromString(outpointStr)
-				if parseErr != nil {
-					// Just log the error and continue without revocation outpoint
-					fmt.Printf("Warning: could not parse revocation outpoint '%s': %v\n",
-						certResult.RevocationOutpoint, parseErr)
-				}
-			}
-		}
+		revocationOutpoint := overlay.NewOutpoint(certResult.RevocationOutpoint.Txid, certResult.RevocationOutpoint.Index)
 
 		// Ensure Type and SerialNumber are properly formatted as base64 strings
 		// If not, continue with next certificate but don't fail

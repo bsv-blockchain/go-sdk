@@ -16,6 +16,13 @@ type Outpoint struct {
 	OutputIndex uint32         `json:"outputIndex"`
 }
 
+func NewOutpoint(txid chainhash.Hash, outputIndex uint32) *Outpoint {
+	return &Outpoint{
+		Txid:        txid,
+		OutputIndex: outputIndex,
+	}
+}
+
 func NewOutpointFromTxBytes(b [36]byte) (o *Outpoint) {
 	o = &Outpoint{
 		OutputIndex: binary.LittleEndian.Uint32(b[32:]),

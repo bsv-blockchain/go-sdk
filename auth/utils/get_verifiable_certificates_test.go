@@ -57,7 +57,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 						SerialNumber:       serial1,
 						Subject:            subject,
 						Certifier:          certifier,
-						RevocationOutpoint: "abcd1234:0",
+						RevocationOutpoint: tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 						Fields:             map[string]string{"field1": "encryptedData1", "field2": "encryptedData2"},
 						Signature:          []byte{0x01, 0x02, 0x03, 0x04},
 					},

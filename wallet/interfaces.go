@@ -19,7 +19,7 @@ type Certificate struct {
 	SerialNumber       Base64Bytes32     `json:"serialNumber"`                 // Base64-encoded unique serial number
 	Subject            *ec.PublicKey     `json:"subject"`                      // Public key of the certificate subject
 	Certifier          *ec.PublicKey     `json:"certifier"`                    // Public key of the certificate issuer
-	RevocationOutpoint string            `json:"revocationOutpoint,omitempty"` // Format: "txid:outputIndex"
+	RevocationOutpoint *Outpoint         `json:"revocationOutpoint,omitempty"` // Format: "txid:outputIndex"
 	Fields             map[string]string `json:"fields,omitempty"`             // Field name -> field value (encrypted)
 	Signature          JSONByteHex       `json:"signature,omitempty"`          // Hex-encoded signature
 }
@@ -81,6 +81,13 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+func (c *Certificate) RevocationOutpointString() string {
+	if c.RevocationOutpoint == nil {
+		return ""
+	}
+	return c.RevocationOutpoint.String()
 }
 
 // CreateActionInput represents an input to be spent in a transaction
@@ -608,13 +615,20 @@ type AcquireCertificateArgs struct {
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
 	SerialNumber        Base64Bytes32       `json:"serialNumber"`
-	RevocationOutpoint  Outpoint            `json:"revocationOutpoint,omitempty"`
+	RevocationOutpoint  *Outpoint           `json:"revocationOutpoint,omitempty"`
 	Signature           JSONByteHex         `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
 	KeyringRevealer     string              `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
 	Privileged          *bool               `json:"privileged,omitempty"`
 	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
+}
+
+func (a *AcquireCertificateArgs) RevocationOutpointString() string {
+	if a.RevocationOutpoint == nil {
+		return ""
+	}
+	return a.RevocationOutpoint.String()
 }
 
 type ListCertificatesArgs struct {
@@ -867,6 +881,10 @@ func (b *HexBytes33) UnmarshalJSON(data []byte) error {
 type Outpoint struct {
 	Txid  chainhash.Hash
 	Index uint32
+}
+
+func (o *Outpoint) NotEmpty() bool {
+	return o != nil && o.Txid != chainhash.Hash{}
 }
 
 func (o *Outpoint) String() string {
