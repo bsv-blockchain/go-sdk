@@ -92,7 +92,7 @@ func (c *Certificate) RevocationOutpointString() string {
 
 // CreateActionInput represents an input to be spent in a transaction
 type CreateActionInput struct {
-	Outpoint              string      `json:"outpoint"` // Format: "txid:outputIndex"
+	Outpoint              Outpoint    `json:"outpoint"` // Format: "txid:outputIndex"
 	InputDescription      string      `json:"inputDescription"`
 	UnlockingScript       JSONByteHex `json:"unlockingScript,omitempty"`
 	UnlockingScriptLength uint32      `json:"unlockingScriptLength,omitempty"`
@@ -322,7 +322,7 @@ type Output struct {
 	Spendable          bool     `json:"spendable"`
 	CustomInstructions string   `json:"customInstructions,omitempty"`
 	Tags               []string `json:"tags,omitempty"`
-	Outpoint           string   `json:"outpoint"` // Format: "txid.index"
+	Outpoint           Outpoint `json:"outpoint"` // Format: "txid.index"
 	Labels             []string `json:"labels,omitempty"`
 }
 
@@ -716,8 +716,8 @@ type RelinquishCertificateArgs struct {
 }
 
 type RelinquishOutputArgs struct {
-	Basket string `json:"basket"`
-	Output string `json:"output"`
+	Basket string   `json:"basket"`
+	Output Outpoint `json:"output"`
 }
 
 type RelinquishOutputResult struct {
@@ -887,7 +887,7 @@ func (o *Outpoint) NotEmpty() bool {
 	return o != nil && o.Txid != chainhash.Hash{}
 }
 
-func (o *Outpoint) String() string {
+func (o Outpoint) String() string {
 	txidHex := hex.EncodeToString(o.Txid[:])
 	return fmt.Sprintf("%s.%d", txidHex, o.Index)
 }

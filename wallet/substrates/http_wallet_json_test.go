@@ -607,6 +607,7 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 
 func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 	// Test ListOutputs
+	outpoint := *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/listOutputs", r.URL.Path)
 
@@ -620,7 +621,7 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 			TotalOutputs: 1,
 			Outputs: []wallet.Output{
 				{
-					Outpoint: "txid:0",
+					Outpoint: outpoint,
 					Satoshis: 1000,
 				},
 			},
@@ -637,7 +638,7 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), listResult.TotalOutputs)
 	require.Len(t, listResult.Outputs, 1)
-	require.Equal(t, "txid:0", listResult.Outputs[0].Outpoint)
+	require.Equal(t, outpoint, listResult.Outputs[0].Outpoint)
 
 	// Test RelinquishOutput
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -647,16 +648,16 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
 		require.Equal(t, "test-basket", args.Basket)
-		require.Equal(t, "txid:0", args.Output)
+		require.Equal(t, outpoint, args.Output)
 
 		writeJSONResponse(t, w, wallet.RelinquishOutputResult{Relinquished: true})
 	}))
 	defer ts.Close()
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
-	relinquishResult, err := client.RelinquishOutput(t.Context(), wallet.RelinquishOutputArgs{
+	relinquishResult, err := client.RelinquishOutput(t.Context(), &wallet.RelinquishOutputArgs{
 		Basket: "test-basket",
-		Output: "txid:0",
+		Output: outpoint,
 	})
 	require.NoError(t, err)
 	require.True(t, relinquishResult.Relinquished)

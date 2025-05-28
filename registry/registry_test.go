@@ -3,7 +3,6 @@ package registry
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -341,7 +341,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 				Satoshis:      1000,
 				LockingScript: lockingScript.String(),
 				Spendable:     true,
-				Outpoint:      tx.TxID().String() + ".0",
+				Outpoint:      wallet.Outpoint{Txid: *tx.TxID()},
 				Tags:          []string{"registry", "basket"},
 			},
 		},
@@ -456,9 +456,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 	// Setup ListOutputs mock to recognize the registry token as belonging to the wallet
 	// This is necessary to pass the ownership check in RevokeOwnRegistryEntry
-	txID := "abcd1234"
-	outputIndex := uint32(0)
-	outpointStr := fmt.Sprintf("%s.%d", txID, outputIndex)
+	outpoint := tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
 
 	mockRegistry.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
@@ -467,7 +465,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 				Satoshis:      1000,
 				LockingScript: "OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex,
 				Spendable:     true,
-				Outpoint:      outpointStr,
+				Outpoint:      *outpoint,
 				Tags:          []string{"registry", "basket"},
 			},
 		},
@@ -486,8 +484,8 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 			RegistryOperator: operatorPubKeyHex,
 		},
 		TokenData: TokenData{
-			TxID:          txID,
-			OutputIndex:   outputIndex,
+			TxID:          outpoint.Txid.String(),
+			OutputIndex:   outpoint.Index,
 			Satoshis:      1000,
 			LockingScript: "OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex,
 			BEEF:          beef,
@@ -580,7 +578,7 @@ func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 				Satoshis:      1000,
 				LockingScript: lockingScript.String(),
 				Spendable:     true,
-				Outpoint:      tx.TxID().String() + ".0",
+				Outpoint:      *tu.WalletOutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 				Tags:          []string{"registry", "basket"},
 			},
 		},

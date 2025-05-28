@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -64,14 +65,14 @@ func TestListOutputsResult(t *testing.T) {
 					Spendable:          true,
 					CustomInstructions: "instructions",
 					Tags:               []string{"tag1"},
-					Outpoint:           "txid.0",
+					Outpoint:           *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 					Labels:             []string{"label1"},
 				},
 				{
 					Satoshis:      2000,
 					LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ad",
 					Spendable:     false,
-					Outpoint:      "txid.1",
+					Outpoint:      *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
 				},
 			},
 		}

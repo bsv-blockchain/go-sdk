@@ -135,7 +135,7 @@ func (h *HTTPWalletJSON) ListOutputs(ctx context.Context, args wallet.ListOutput
 }
 
 // RelinquishOutput removes an output from basket tracking
-func (h *HTTPWalletJSON) RelinquishOutput(ctx context.Context, args wallet.RelinquishOutputArgs) (*wallet.RelinquishOutputResult, error) {
+func (h *HTTPWalletJSON) RelinquishOutput(ctx context.Context, args *wallet.RelinquishOutputArgs) (*wallet.RelinquishOutputResult, error) {
 	data, err := h.api(ctx, "relinquishOutput", args)
 	if err != nil {
 		return nil, err

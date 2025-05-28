@@ -196,11 +196,11 @@ func TestVectors(t *testing.T) {
 			Outputs: []wallet.Output{{
 				Satoshis:  1000,
 				Spendable: true,
-				Outpoint:  fmt.Sprintf("%s.0", txID),
+				Outpoint:  *tu.WalletOutpointFromString(t, fmt.Sprintf("%s.0", txID)),
 			}, {
 				Satoshis:  5000,
 				Spendable: false,
-				Outpoint:  "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
+				Outpoint:  *tu.WalletOutpointFromString(t, "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"),
 			}},
 		},
 	}, {
@@ -208,7 +208,7 @@ func TestVectors(t *testing.T) {
 		IsResult: true,
 		Object: wallet.RelinquishOutputArgs{
 			Basket: "test-basket",
-			Output: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
+			Output: *tu.WalletOutpointFromString(t, "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"),
 		},
 	}, {
 		Filename: "relinquishOutput-simple-result",

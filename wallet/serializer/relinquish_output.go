@@ -14,7 +14,7 @@ func SerializeRelinquishOutputArgs(args *wallet.RelinquishOutputArgs) ([]byte, e
 	w.WriteString(args.Basket)
 
 	// Write outpoint string with length prefix
-	outpoint, err := encodeOutpoint(args.Output)
+	outpoint, err := encodeOutpoint(args.Output.String())
 	if err != nil {
 		return nil, fmt.Errorf("error relinquish output encode output: %v", err)
 	}
@@ -28,14 +28,14 @@ func DeserializeRelinquishOutputArgs(data []byte) (*wallet.RelinquishOutputArgs,
 	args := &wallet.RelinquishOutputArgs{
 		Basket: r.ReadString(),
 	}
-	outpoint, err := decodeOutpoint(r.ReadBytes(outpointSize))
+	outpoint, err := decodeOutpointObj(r.ReadBytes(outpointSize))
 	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading relinquish output: %w", r.Err)
 	} else if err != nil {
 		return nil, fmt.Errorf("error decoding relinqush outpoint: %w", r.Err)
 	}
-	args.Output = outpoint
+	args.Output = *outpoint
 	return args, nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +25,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				InputBEEF:   []byte{0x01, 0x02, 0x03},
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:              "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0",
+						Outpoint:              *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 						InputDescription:      "input 1",
 						UnlockingScript:       []byte{0xab, 0xcd},
 						UnlockingScriptLength: 2, // Length is in bytes, "abcd" is 2 bytes when decoded from hex
@@ -69,7 +70,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:         "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0",
+						Outpoint:         *tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 						InputDescription: "input 1",
 					},
 				},
@@ -99,13 +100,13 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:              "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0",
+						Outpoint:              *tu.WalletOutpointFromString(t, "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0"),
 						InputDescription:      "input 1",
 						UnlockingScript:       []byte{0xab, 0xcd},
 						UnlockingScriptLength: 2, // "abcd" is 2 bytes when decoded from hex
 					},
 					{
-						Outpoint:              "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981.1",
+						Outpoint:              *tu.WalletOutpointFromString(t, "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981.1"),
 						InputDescription:      "input 2",
 						UnlockingScript:       []byte{0xef, 0xef},
 						UnlockingScriptLength: 2, // "efef" is 2 bytes when decoded from hex

@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	pushdroptpl "github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -50,7 +47,7 @@ func (kv *LocalKVStore) getProtocol(key string) wallet.Protocol {
 // lookupValueResult holds the result of a key lookup operation
 type lookupValueResult struct {
 	value       string
-	outpoints   []string
+	outpoints   []wallet.Outpoint
 	inputBeef   []byte // The raw BEEF data containing all inputs for spending
 	lor         *wallet.ListOutputsResult
 	valueExists bool
@@ -67,7 +64,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	if len(outputsResult.Outputs) == 0 {
 		return &lookupValueResult{
 			value:       defaultValue,
-			outpoints:   []string{},
+			outpoints:   []wallet.Outpoint{},
 			lor:         outputsResult,
 			valueExists: false,
 		}, nil
@@ -98,16 +95,8 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	}
 
 	// Extract txid and vout from outpoint string of the *most recent output*
-	outpointParts := strings.Split(mostRecentOutput.Outpoint, ".")
-	if len(outpointParts) != 2 {
-		return nil, fmt.Errorf("outpoint invalid format: %s", mostRecentOutput.Outpoint)
-	}
-	txidStr := outpointParts[0]
-	voutStr := outpointParts[1]
-	vout, err := strconv.Atoi(voutStr)
-	if err != nil {
-		return nil, fmt.Errorf("outpoint vout invalid vout in outpoint %s: %w", mostRecentOutput.Outpoint, err)
-	}
+	txidStr := mostRecentOutput.Outpoint.Txid.String()
+	vout := mostRecentOutput.Outpoint.Index
 
 	// Find the transaction corresponding to the most recent output's txid within the BEEF data
 	tx := beefData.FindTransaction(txidStr)
@@ -122,7 +111,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	}
 
 	// Check if vout is valid for the transaction
-	if vout < 0 || vout >= len(tx.Outputs) {
+	if vout < 0 || int(vout) >= len(tx.Outputs) {
 		return nil, fmt.Errorf("error Transaction vout %d out of range for tx %s with %d outputs", vout, txidStr, len(tx.Outputs))
 	}
 	txOutput := tx.Outputs[vout]
@@ -159,7 +148,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	}
 
 	// Collect all outpoints for the key
-	outpoints := make([]string, len(outputsResult.Outputs))
+	outpoints := make([]wallet.Outpoint, len(outputsResult.Outputs))
 	for i, output := range outputsResult.Outputs {
 		outpoints[i] = output.Outpoint
 	}
@@ -232,13 +221,13 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 		}
 		// Log other lookup errors but attempt to proceed with Set (overwrite)
 		fmt.Printf("Warning: lookupValue failed during Set for key %s: %v\n", key, err)
-		lookupResult = &lookupValueResult{valueExists: false, outpoints: []string{}, lor: &wallet.ListOutputsResult{}}
+		lookupResult = &lookupValueResult{valueExists: false, outpoints: []wallet.Outpoint{}, lor: &wallet.ListOutputsResult{}}
 	} else if err == nil && !lookupResult.valueExists { // Handle case where getOutputs was empty
-		lookupResult = &lookupValueResult{valueExists: false, outpoints: []string{}, lor: &wallet.ListOutputsResult{}}
+		lookupResult = &lookupValueResult{valueExists: false, outpoints: []wallet.Outpoint{}, lor: &wallet.ListOutputsResult{}}
 	}
 
 	if lookupResult.valueExists && lookupResult.value == value && len(lookupResult.outpoints) > 0 {
-		return lookupResult.outpoints[0], nil
+		return lookupResult.outpoints[0].String(), nil
 	}
 
 	valueBytes := []byte(value)
