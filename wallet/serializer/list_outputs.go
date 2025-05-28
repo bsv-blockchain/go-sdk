@@ -91,11 +91,7 @@ func SerializeListOutputsResult(result *wallet.ListOutputsResult) ([]byte, error
 		w.WriteOptionalBool(&output.Spendable)
 		w.WriteOptionalString(output.CustomInstructions)
 		w.WriteStringSlice(output.Tags)
-		outpoint, err := encodeOutpoint(output.Outpoint.String())
-		if err != nil {
-			return nil, fmt.Errorf("error encoding outpoint: %w", err)
-		}
-		w.WriteBytes(outpoint)
+		w.WriteBytes(encodeOutpoint(&output.Outpoint))
 		w.WriteStringSlice(output.Labels)
 	}
 

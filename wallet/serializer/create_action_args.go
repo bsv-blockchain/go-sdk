@@ -49,11 +49,7 @@ func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.Creat
 	paramWriter.WriteVarInt(uint64(len(inputs)))
 	for _, input := range inputs {
 		// Serialize outpoint
-		outpoint, err := encodeOutpoint(input.Outpoint.String())
-		if err != nil {
-			return fmt.Errorf("error encode outpoint for input: %w", err)
-		}
-		paramWriter.WriteBytes(outpoint)
+		paramWriter.WriteBytes(encodeOutpoint(&input.Outpoint))
 
 		// Serialize unlocking script
 		if len(input.UnlockingScript) > 0 {

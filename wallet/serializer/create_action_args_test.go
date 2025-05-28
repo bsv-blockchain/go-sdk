@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -49,14 +50,14 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 					SignAndProcess:         util.BoolPtr(true),
 					AcceptDelayedBroadcast: util.BoolPtr(false),
 					TrustSelf:              wallet.TrustSelfKnown,
-					KnownTxids: []string{
-						"8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
-						"490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
+					KnownTxids: []chainhash.Hash{
+						tu.HashFromString(t, "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72"),
+						tu.HashFromString(t, "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981"),
 					},
 					ReturnTXIDOnly:   util.BoolPtr(true),
 					NoSend:           util.BoolPtr(false),
-					NoSendChange:     []string{"abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"},
-					SendWith:         []string{"b95bbe3c3f3bd420048cbf57201fc6dd4e730b2e046bf170ac0b1f78de069e8e"},
+					NoSendChange:     []wallet.Outpoint{*tu.WalletOutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1")},
+					SendWith:         []chainhash.Hash{tu.HashFromString(t, "b95bbe3c3f3bd420048cbf57201fc6dd4e730b2e046bf170ac0b1f78de069e8e")},
 					RandomizeOutputs: util.BoolPtr(true),
 				},
 			},

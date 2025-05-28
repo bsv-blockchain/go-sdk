@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
 )
 
@@ -213,15 +214,11 @@ func (w *Writer) WriteOptionalBool(b *bool) {
 	}
 }
 
-func (w *Writer) WriteTxidSlice(txids []string) error {
-	if txids != nil {
-		w.WriteVarInt(uint64(len(txids)))
-		for _, txid := range txids {
-			txidBytes, err := hex.DecodeString(txid)
-			if err != nil {
-				return fmt.Errorf("error decoding txid: %w", err)
-			}
-			w.WriteBytes(txidBytes)
+func (w *Writer) WriteTxidSlice(txIDs []chainhash.Hash) error {
+	if txIDs != nil {
+		w.WriteVarInt(uint64(len(txIDs)))
+		for _, txID := range txIDs {
+			w.WriteBytes(txID[:])
 		}
 	} else {
 		w.WriteVarInt(math.MaxUint64) // -1

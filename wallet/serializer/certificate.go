@@ -31,14 +31,7 @@ func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
 	w.WriteBytes(cert.Certifier.Compressed())
 
 	// Revocation outpoint
-	outpointBytes, err := encodeOutpoint(cert.RevocationOutpointString())
-	if err != nil {
-		return nil, fmt.Errorf("invalid revocationOutpoint: %w", err)
-	}
-	if len(outpointBytes) != outpointSize {
-		return nil, fmt.Errorf("revocationOutpoint must be %d bytes long", outpointSize)
-	}
-	w.WriteBytes(outpointBytes)
+	w.WriteBytes(encodeOutpoint(cert.RevocationOutpoint))
 
 	// Signature (hex)
 	w.WriteIntBytes(cert.Signature)

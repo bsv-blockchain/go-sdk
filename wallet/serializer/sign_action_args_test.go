@@ -3,7 +3,9 @@ package serializer
 import (
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -31,9 +33,9 @@ func TestSerializeSignActionArgs(t *testing.T) {
 					AcceptDelayedBroadcast: util.BoolPtr(true),
 					ReturnTXIDOnly:         util.BoolPtr(false),
 					NoSend:                 util.BoolPtr(true),
-					SendWith: []string{
-						"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-						"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+					SendWith: []chainhash.Hash{
+						tu.HashFromString(t, "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"),
+						tu.HashFromString(t, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 					},
 				},
 			},
@@ -60,8 +62,8 @@ func TestSerializeSignActionArgs(t *testing.T) {
 }
 
 func TestDeserializeSignActionArgs(t *testing.T) {
-	txid := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-	txidBytes := fromHex(t, txid)
+	txid, err := chainhash.NewHashFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+	require.NoError(t, err, "failed to create txid from hex: %v", err)
 	script := []byte{0xab, 0xcd, 0xef}
 	ref := []byte("reference123")
 
@@ -99,8 +101,8 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 				w.WriteByte(0)   // returnTXIDOnly = false
 				w.WriteByte(1)   // noSend = true
 				w.WriteVarInt(2) // 2 sendWith
-				w.WriteBytes(txidBytes)
-				w.WriteBytes(txidBytes)
+				w.WriteBytes(txid[:])
+				w.WriteBytes(txid[:])
 				return w.Buf
 			}(),
 			want: &wallet.SignActionArgs{
@@ -119,7 +121,7 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 					AcceptDelayedBroadcast: util.BoolPtr(true),
 					ReturnTXIDOnly:         util.BoolPtr(false),
 					NoSend:                 util.BoolPtr(true),
-					SendWith:               []string{txid, txid},
+					SendWith:               []chainhash.Hash{*txid, *txid},
 				},
 			},
 			wantErr: false,

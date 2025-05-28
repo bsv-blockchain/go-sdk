@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -93,4 +94,10 @@ func WalletOutpointFromString(t *testing.T, s string) *wallet.Outpoint {
 	outpoint, err := wallet.OutpointFromString(s)
 	require.NoError(t, err, fmt.Sprintf("error creating wallet.Outpoint from string '%s': %v", s, err))
 	return outpoint
+}
+
+func HashFromString(t *testing.T, s string) chainhash.Hash {
+	hash, err := chainhash.NewHashFromHex(s)
+	require.NoError(t, err, fmt.Sprintf("error creating wallet.Outpoint from string '%s': %v", s, err))
+	return *hash
 }

@@ -146,11 +146,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		// Serialize inputs
 		w.WriteVarInt(uint64(len(action.Inputs)))
 		for _, input := range action.Inputs {
-			opBytes, err := encodeOutpoint(input.SourceOutpoint.String())
-			if err != nil {
-				return nil, fmt.Errorf("invalid source outpoint: %w", err)
-			}
-			w.WriteBytes(opBytes)
+			w.WriteBytes(encodeOutpoint(&input.SourceOutpoint))
 			w.WriteVarInt(input.SourceSatoshis)
 
 			// SourceLockingScript

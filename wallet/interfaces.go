@@ -120,11 +120,11 @@ type CreateActionOptions struct {
 	SignAndProcess         *bool
 	AcceptDelayedBroadcast *bool
 	TrustSelf              TrustSelf // "known" or ""
-	KnownTxids             []string
+	KnownTxids             []chainhash.Hash
 	ReturnTXIDOnly         *bool
 	NoSend                 *bool
-	NoSendChange           []string
-	SendWith               []string
+	NoSendChange           []Outpoint
+	SendWith               []chainhash.Hash
 	RandomizeOutputs       *bool
 }
 
@@ -144,7 +144,7 @@ type CreateActionArgs struct {
 type CreateActionResult struct {
 	Txid                chainhash.Hash
 	Tx                  []byte
-	NoSendChange        []string
+	NoSendChange        []Outpoint
 	SendWithResults     []SendWithResult
 	SignableTransaction *SignableTransaction
 }
@@ -180,7 +180,7 @@ type SignActionOptions struct {
 	AcceptDelayedBroadcast *bool
 	ReturnTXIDOnly         *bool
 	NoSend                 *bool
-	SendWith               []string
+	SendWith               []chainhash.Hash
 }
 
 // SignActionArgs contains data needed to sign a previously created transaction.
