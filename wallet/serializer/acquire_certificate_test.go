@@ -18,7 +18,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}{{
 		name: "direct acquisition",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("test-type"), sizeType)),
+			Type:                tu.GetByte32FromString("test-type"),
 			Certifier:           [33]byte{1},
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			Fields: map[string]string{
@@ -38,7 +38,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}, {
 		name: "issuance acquisition",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("issuance-type"), sizeType)),
+			Type:                tu.GetByte32FromString("issuance-type"),
 			Certifier:           [33]byte{2},
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields: map[string]string{
@@ -49,7 +49,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 	}, {
 		name: "minimal args",
 		args: &wallet.AcquireCertificateArgs{
-			Type:                base64.StdEncoding.EncodeToString(tu.PadOrTrim([]byte("minimal"), sizeType)),
+			Type:                tu.GetByte32FromString("minimal"),
 			Certifier:           [33]byte{3},
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			SerialNumber:        [32]byte{3},

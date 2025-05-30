@@ -453,7 +453,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.AcquireCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-type", args.Type)
+		require.Equal(t, typeTest, args.Type)
 		require.Equal(t, certifier, args.Certifier)
 
 		cert := wallet.Certificate{
@@ -466,7 +466,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
 	cert, err := client.AcquireCertificate(t.Context(), &wallet.AcquireCertificateArgs{
-		Type:      "test-type",
+		Type:      typeTest,
 		Certifier: certifier,
 	})
 	require.NoError(t, err)

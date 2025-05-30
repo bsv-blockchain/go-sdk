@@ -435,7 +435,7 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "acquireCertificate-simple-args",
 		Object: wallet.AcquireCertificateArgs{
-			Type:                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+			Type:                typeArray,
 			Certifier:           certifier,
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},

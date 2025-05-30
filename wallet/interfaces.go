@@ -316,13 +316,13 @@ type ListOutputsArgs struct {
 
 // Output represents a wallet UTXO with its metadata
 type Output struct {
-	Satoshis           uint64   `json:"satoshis"`
-	LockingScript      string   `json:"lockingScript,omitempty"` // Hex encoded
-	Spendable          bool     `json:"spendable"`
-	CustomInstructions string   `json:"customInstructions,omitempty"`
-	Tags               []string `json:"tags,omitempty"`
-	Outpoint           Outpoint `json:"outpoint"` // Format: "txid.index"
-	Labels             []string `json:"labels,omitempty"`
+	Satoshis           uint64      `json:"satoshis"`
+	LockingScript      JSONByteHex `json:"lockingScript,omitempty"` // Hex encoded
+	Spendable          bool        `json:"spendable"`
+	CustomInstructions string      `json:"customInstructions,omitempty"`
+	Tags               []string    `json:"tags,omitempty"`
+	Outpoint           Outpoint    `json:"outpoint"` // Format: "txid.index"
+	Labels             []string    `json:"labels,omitempty"`
 }
 
 // ListOutputsResult contains a paginated list of wallet outputs matching the query.
@@ -609,7 +609,7 @@ func AcquisitionProtocolFromString(s string) (AcquisitionProtocol, error) {
 const KeyringRevealerCertifier = "certifier"
 
 type AcquireCertificateArgs struct {
-	Type                string              `json:"type"`
+	Type                Base64Bytes32       `json:"type"`
 	Certifier           HexBytes33          `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`

@@ -339,7 +339,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 		Outputs: []wallet.Output{
 			{
 				Satoshis:      1000,
-				LockingScript: lockingScript.String(),
+				LockingScript: lockingScript.Bytes(),
 				Spendable:     true,
 				Outpoint:      wallet.Outpoint{Txid: *tx.TxID()},
 				Tags:          []string{"registry", "basket"},
@@ -458,12 +458,14 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 	// This is necessary to pass the ownership check in RevokeOwnRegistryEntry
 	outpoint := tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
 
+	lockScript, err := script.NewFromASM("OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex)
+	require.NoError(t, err, "Failed to create locking script from ASM")
 	mockRegistry.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
 		Outputs: []wallet.Output{
 			{
 				Satoshis:      1000,
-				LockingScript: "OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex,
+				LockingScript: lockScript.Bytes(),
 				Spendable:     true,
 				Outpoint:      *outpoint,
 				Tags:          []string{"registry", "basket"},
@@ -576,7 +578,7 @@ func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 		Outputs: []wallet.Output{
 			{
 				Satoshis:      1000,
-				LockingScript: lockingScript.String(),
+				LockingScript: lockingScript.Bytes(),
 				Spendable:     true,
 				Outpoint:      *tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 				Tags:          []string{"registry", "basket"},

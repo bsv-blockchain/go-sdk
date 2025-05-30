@@ -19,9 +19,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w := util.NewWriter()
 
 	// Encode type (base64)
-	if err := w.WriteSizeFromBase64(args.Type, sizeType); err != nil {
-		return nil, fmt.Errorf("invalid type base64: %w", err)
-	}
+	w.WriteBytes(args.Type[:])
 
 	// Encode certifier (hex)
 	if args.Certifier == [33]byte{} {
@@ -103,7 +101,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 	args := &wallet.AcquireCertificateArgs{}
 
 	// Read type (base64) and certifier (hex)
-	args.Type = r.ReadBase64(sizeType)
+	copy(args.Type[:], r.ReadBytes(sizeType))
 	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
 
 	// Read fields
