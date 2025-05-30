@@ -2,7 +2,6 @@ package serializer
 
 import (
 	"encoding/base64"
-	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -28,7 +27,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			SerialNumber:       [32]byte{1},
 			RevocationOutpoint: revocationOutpoint,
 			Signature:          make([]byte, 64),
-			KeyringRevealer:    wallet.KeyringRevealerCertifier,
+			KeyringRevealer:    wallet.KeyringRevealer{Certifier: true},
 			KeyringForSubject: map[string]string{
 				"field1": base64.StdEncoding.EncodeToString([]byte("keyring1")),
 			},
@@ -54,8 +53,6 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			SerialNumber:        [32]byte{3},
 			RevocationOutpoint:  revocationOutpoint,
-			Signature:           make([]byte, 64),
-			KeyringRevealer:     hex.EncodeToString(make([]byte, sizeRevealer)),
 		},
 	}}
 

@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -63,10 +62,10 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		w.WriteIntBytes(args.Signature)
 
 		// Keyring revealer
-		if args.KeyringRevealer == wallet.KeyringRevealerCertifier {
+		if args.KeyringRevealer.Certifier {
 			w.WriteByte(keyRingRevealerCertifier)
-		} else if err := w.WriteSizeFromHex(args.KeyringRevealer, sizeRevealer); err != nil {
-			return nil, fmt.Errorf("invalid keyringRevealer hex: %w", err)
+		} else {
+			w.WriteBytes(args.KeyringRevealer.PubKey[:])
 		}
 
 		// Keyring for subject
@@ -152,10 +151,12 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		// Read keyring revealer
 		keyringRevealerIdentifier := r.ReadByte()
 		if keyringRevealerIdentifier == keyRingRevealerCertifier {
-			args.KeyringRevealer = wallet.KeyringRevealerCertifier
+			args.KeyringRevealer = wallet.KeyringRevealer{
+				Certifier: true,
+			}
 		} else {
 			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizeRevealer-1)...)
-			args.KeyringRevealer = hex.EncodeToString(keyringRevealerBytes)
+			copy(args.KeyringRevealer.PubKey[:], keyringRevealerBytes)
 		}
 
 		// Read keyring for subject

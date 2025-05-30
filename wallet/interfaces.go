@@ -608,6 +608,41 @@ func AcquisitionProtocolFromString(s string) (AcquisitionProtocol, error) {
 
 const KeyringRevealerCertifier = "certifier"
 
+// KeyringRevealer is a special JSON type used for identifying the revealer of a keyring.
+// It can either point to the certifier or be a public key.
+type KeyringRevealer struct {
+	Certifier bool
+	PubKey    HexBytes33
+}
+
+func (r KeyringRevealer) MarshalJSON() ([]byte, error) {
+	if r.Certifier {
+		return json.Marshal(KeyringRevealerCertifier)
+	}
+	return json.Marshal(hex.EncodeToString(r.PubKey[:]))
+}
+
+func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return fmt.Errorf("error unmarshaling revealer: %w", err)
+	}
+
+	if str == KeyringRevealerCertifier {
+		r.Certifier = true
+		return nil
+	}
+	data, err := hex.DecodeString(str)
+	if err != nil {
+		return fmt.Errorf("error decoding revealer hex: %w", err)
+	}
+	if len(data) != 33 {
+		return fmt.Errorf("revealer hex must be 33 bytes, got %d", len(data))
+	}
+	copy(r.PubKey[:], data)
+	return nil
+}
+
 type AcquireCertificateArgs struct {
 	Type                Base64Bytes32       `json:"type"`
 	Certifier           HexBytes33          `json:"certifier"`
@@ -617,7 +652,7 @@ type AcquireCertificateArgs struct {
 	RevocationOutpoint  *Outpoint           `json:"revocationOutpoint,omitempty"`
 	Signature           JSONByteHex         `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
-	KeyringRevealer     string              `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
+	KeyringRevealer     KeyringRevealer     `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
 	Privileged          *bool               `json:"privileged,omitempty"`
 	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
