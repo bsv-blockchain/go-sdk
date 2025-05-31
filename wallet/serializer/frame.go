@@ -7,6 +7,9 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+// RequestFrame represents a wallet wire protocol request message.
+// It contains the command type, originator information, and serialized arguments
+// for the wallet operation being requested.
 type RequestFrame struct {
 	Call       byte
 	Originator string
