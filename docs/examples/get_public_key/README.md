@@ -1,26 +1,37 @@
 # Get Public Key Example
 
-This example demonstrates how to retrieve a public key from a wallet. It covers scenarios for retrieving the user's own public key and a counterparty's public key.
+This example demonstrates how to use the `wallet` package to retrieve various types of public keys associated with a wallet.
 
-## Running the Example
+## Overview
 
-To run this example, navigate to the `go-sdk/docs/examples/get_public_key` directory and execute the following command:
+The `wallet.Wallet` can manage multiple cryptographic keys. The `GetPublicKey` method allows you to retrieve:
+1.  **Identity Public Key**: The root public key of the wallet itself.
+2.  **Derived Public Key (Self)**: A public key derived for a specific protocol and key ID, intended for the wallet's own use (e.g., for self-encryption or signing).
+3.  **Derived Public Key (for Counterparty)**: A public key derived by the user's wallet that is specifically for interacting with a known counterparty. This is often used in shared secret generation schemes like ECIES.
 
-```bash
-go run get_public_key.go
-```
+## Example Overview
 
-## Code
+This example demonstrates:
+
+1.  Creating a user's wallet.
+2.  Retrieving the user's identity public key.
+3.  Retrieving a public key derived by the user's wallet for its own use under a specific protocol and key ID.
+4.  Simulating a counterparty and retrieving a public key derived by the user's wallet for interacting with that counterparty under a specific protocol and key ID.
+
+## Code Walkthrough
+
+### 1. Setup User Wallet
 
 ```go
 package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"log"
 
-	"github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -32,7 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to generate user private key: %v", err)
 	}
-	log.Printf("User private key: %s", userKey.SerialiseWIF())
+	log.Printf("User private key: %s", userKey.Wif())
 
 	// Create a new wallet for the user
 	userWallet, err := wallet.NewWallet(userKey)
@@ -40,7 +51,12 @@ func main() {
 		log.Fatalf("Failed to create user wallet: %v", err)
 	}
 	log.Println("User wallet created successfully.")
+```
+First, we initialize a new wallet for the user.
 
+### 2. Get User's Identity Public Key
+
+```go
 	// --- Get User's Own Public Key (Identity Key) ---
 	identityPubKeyArgs := wallet.GetPublicKeyArgs{
 		IdentityKey: true, // Indicates we want the root identity public key of the wallet
@@ -49,8 +65,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get user's identity public key: %v", err)
 	}
-	fmt.Printf("User's Identity Public Key: %s\n", identityPubKeyResult.PublicKey.SerialiseCompressed())
+	fmt.Printf("User's Identity Public Key: %s\n", hex.EncodeToString(identityPubKeyResult.PublicKey.Compressed()))
+```
+To get the wallet's own root identity public key, we set `IdentityKey: true` in `GetPublicKeyArgs`.
 
+### 3. Get User's Derived Public Key for Self
+
+```go
 	// --- Get User's Derived Public Key for a Protocol/KeyID (Self) ---
 	// Define a protocol and key ID for deriving a key
 	selfProtocol := wallet.Protocol{
@@ -73,22 +94,20 @@ func main() {
 		log.Fatalf("Failed to get user's derived public key (self): %v", err)
 	}
 	fmt.Printf("User's Derived Public Key (Self - Protocol: %s, KeyID: %s): %s\n",
-		selfProtocol.Protocol, selfKeyID, selfPubKeyResult.PublicKey.SerialiseCompressed())
+		selfProtocol.Protocol, selfKeyID, hex.EncodeToString(selfPubKeyResult.PublicKey.Compressed()))
+```
+To derive a public key for the wallet's own use under a specific protocol and key ID, we set `Counterparty.Type` to `wallet.CounterpartyTypeSelf`.
 
+### 4. Get Derived Public Key for a Counterparty
+
+```go
 	// --- Get Counterparty's Public Key ---
 	// Generate a new private key for the counterparty
 	counterpartyKey, err := ec.NewPrivateKey()
 	if err != nil {
 		log.Fatalf("Failed to generate counterparty private key: %v", err)
 	}
-	log.Printf("Counterparty private key: %s", counterpartyKey.SerialiseWIF())
-
-	// (Optional) Create a wallet for the counterparty - not strictly needed for this example part,
-	// but useful if the counterparty wallet needs to perform actions.
-	// counterpartyWallet, err := wallet.NewWallet(counterpartyKey)
-	// if err != nil {
-	//  log.Fatalf("Failed to create counterparty wallet: %v", err)
-	// }
+	log.Printf("Counterparty private key: %s", counterpartyKey.Wif())
 
 	// Define a protocol and key ID for deriving a key with a counterparty
 	counterpartyProtocol := wallet.Protocol{
@@ -115,32 +134,32 @@ func main() {
 		log.Fatalf("Failed to get derived public key for counterparty: %v", err)
 	}
 	fmt.Printf("User's Derived Public Key (for Counterparty - Protocol: %s, KeyID: %s): %s\n",
-		counterpartyProtocol.Protocol, counterpartyKeyID, derivedForCounterpartyPubKeyResult.PublicKey.SerialiseCompressed())
+		counterpartyProtocol.Protocol, counterpartyKeyID, hex.EncodeToString(derivedForCounterpartyPubKeyResult.PublicKey.Compressed()))
 
 	log.Println("Successfully retrieved public keys.")
 }
+```
+To get a public key derived by the user's wallet for interaction with a specific counterparty, we set `Counterparty.Type` to `wallet.CounterpartyTypeOther` and provide the `Counterparty.Counterparty` public key. The `ForSelf` field in `GetPublicKeyArgs` defaults to `false`, indicating the derived key is for the counterparty.
 
+## Running the Example
+
+To run this example:
+
+```bash
+cd go-sdk/docs/examples/get_public_key
+go mod tidy
+go run get_public_key.go
 ```
 
-### Explanation
+## Key Concepts
 
-1.  **Setup**:
-    *   We import necessary packages: `context`, `fmt` for printing, `log` for error handling, `ec` for elliptic curve cryptography (key generation), and `wallet` for wallet operations.
-    *   A `context.Background()` is created.
+- **`wallet.GetPublicKeyArgs`**: Struct used to specify parameters for retrieving public keys.
+- **`IdentityKey`**: Boolean flag in `GetPublicKeyArgs`. If true, retrieves the wallet's root identity public key.
+- **`EncryptionArgs`**: Embedded in `GetPublicKeyArgs`, used for deriving keys based on protocol, key ID, and counterparty.
+- **`CounterpartyTypeSelf`**: Used in `EncryptionArgs.Counterparty.Type` to derive a key for the wallet's own use.
+- **`CounterpartyTypeOther`**: Used in `EncryptionArgs.Counterparty.Type` along with the counterparty's public key to derive a key for interacting with that counterparty.
+- **`ForSelf`**: Field in `GetPublicKeyArgs` (defaults to `false`). When `false` and `CounterpartyTypeOther` is used, it means the public key derived is the one the user's wallet would use for the specified counterparty (e.g., as a component in an ECIES shared secret calculation).
 
-2.  **User Wallet and Identity Key**:
-    *   A new private key (`userKey`) is generated using `ec.NewPrivateKey()`.
-    *   A `wallet.NewWallet` is initialized using this `userKey`.
-    *   To get the user's own root identity public key, `userWallet.GetPublicKey` is called with `wallet.GetPublicKeyArgs{IdentityKey: true}`. The `PublicKey` field in the result contains the public key.
+## Additional Resources
 
-3.  **User's Derived Public Key (Self)**:
-    *   We define a `wallet.Protocol` and a `keyID`. These are used to derive specific keys for different applications or purposes.
-    *   `userWallet.GetPublicKey` is called with `EncryptionArgs` specifying the `ProtocolID`, `KeyID`, and `Counterparty` set to `wallet.CounterpartyTypeSelf`. This tells the wallet to derive a public key for the user themselves under that protocol and key ID.
-
-4.  **Counterparty Public Key**:
-    *   A new private key (`counterpartyKey`) is generated for a simulated counterparty. In a real application, you would typically receive the counterparty's public key through other means.
-    *   We define another `wallet.Protocol` and `keyID` that might be used for shared interactions.
-    *   `userWallet.GetPublicKey` is called again. This time, `EncryptionArgs.Counterparty` is set to `wallet.CounterpartyTypeOther` and `Counterparty: counterpartyKey.PubKey()`.
-    *   The `ForSelf` field in `GetPublicKeyArgs` is `false` by default. This means the call retrieves the public key that `userWallet` would use when interacting *with* the specified counterparty under the given protocol and key ID. This is typically part of an ECDH key agreement process.
-
-The example prints the WIF private keys (for demonstration; handle private keys securely in real applications) and the compressed public keys obtained in each scenario.
+- [go-sdk `wallet` package documentation](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk/wallet)
