@@ -1,3 +1,8 @@
+// Package identity provides client functionality for identity resolution services in the
+// BSV blockchain ecosystem. It enables lookup of identity keys, discovery of certificates
+// associated with identities, and integration with authentication protocols. The package
+// supports resolution of @handle style identities and provides a testable client interface
+// for easy integration testing.
 package identity
 
 import (

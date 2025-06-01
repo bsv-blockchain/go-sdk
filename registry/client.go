@@ -1,3 +1,8 @@
+// Package registry implements an on-chain definition management system for protocols, baskets,
+// and certificate types. It provides registration and revocation of registry entries, query
+// interfaces for resolving definitions by various criteria, and integration with overlay lookup
+// services. The registry enables standardized discovery and interoperability across applications
+// using the BSV blockchain.
 package registry
 
 import (

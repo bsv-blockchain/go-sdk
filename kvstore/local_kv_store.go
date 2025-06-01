@@ -1,3 +1,8 @@
+// Package kvstore provides a key-value storage system backed by Bitcoin SV transactions.
+// It enables persistent storage of data on-chain using transaction outputs, with support
+// for encryption, basket-based organization, and configurable retention periods.
+// The storage is wallet-integrated, allowing for authenticated operations and automatic
+// management of transaction fees.
 package kvstore
 
 import (

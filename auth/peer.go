@@ -1,3 +1,8 @@
+// Package auth provides a comprehensive authentication framework for secure peer-to-peer
+// communication. It implements certificate-based authentication with support for master
+// and verifiable certificates, session management, and authenticated message exchange.
+// The package supports multiple transport layers including HTTP and WebSocket, enabling
+// flexible integration patterns for distributed applications.
 package auth
 
 import (

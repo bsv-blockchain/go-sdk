@@ -1,3 +1,8 @@
+// Package message provides secure messaging capabilities for the BSV blockchain ecosystem.
+// It implements BRC-77 (BSV Request/Response Protocol) for authenticated message exchange
+// between peers. The package supports message signing, verification, encryption, and
+// recipient-specific messaging. Messages include version tracking, key identifiers, and
+// tamper detection to ensure secure peer-to-peer communication.
 package message
 
 import (
