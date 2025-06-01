@@ -12,30 +12,19 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	w := util.NewWriter()
 
 	// Encode certificate type (base64)
-	if err := w.WriteSizeFromBase64(args.Certificate.Type, sizeType); err != nil {
-		return nil, fmt.Errorf("invalid type base64: %w", err)
+	if args.Certificate.Type == [32]byte{} {
+		return nil, fmt.Errorf("certificate type is empty")
 	}
-
+	w.WriteBytes(args.Certificate.Type[:])
 	w.WriteBytes(args.Certificate.Subject.Compressed())
-
-	// Encode serialNumber (base64)
-	if err := w.WriteSizeFromBase64(args.Certificate.SerialNumber, sizeSerial); err != nil {
-		return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
-	}
-
+	w.WriteBytes(args.Certificate.SerialNumber[:])
 	w.WriteBytes(args.Certificate.Certifier.Compressed())
 
 	// Encode revocationOutpoint
-	outpointBytes, err := encodeOutpoint(args.Certificate.RevocationOutpoint)
-	if err != nil {
-		return nil, fmt.Errorf("invalid revocationOutpoint: %w", err)
-	}
-	w.WriteBytes(outpointBytes)
+	w.WriteBytes(encodeOutpoint(args.Certificate.RevocationOutpoint))
 
 	// Encode signature (hex)
-	if err := w.WriteIntFromHex(args.Certificate.Signature); err != nil {
-		return nil, fmt.Errorf("invalid signature hex: %w", err)
-	}
+	w.WriteIntBytes(args.Certificate.Signature)
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Certificate.Fields))
@@ -61,9 +50,7 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	}
 
 	// Encode verifier (hex)
-	if err := w.WriteSizeFromHex(args.Verifier, sizeCertifier); err != nil {
-		return nil, fmt.Errorf("invalid verifier hex: %w", err)
-	}
+	w.WriteBytes(args.Verifier[:])
 
 	// Encode privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -76,7 +63,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	args = &wallet.ProveCertificateArgs{}
 
 	// Read certificate type (base64)
-	args.Certificate.Type = r.ReadBase64(sizeType)
+	copy(args.Certificate.Type[:], r.ReadBytes(sizeType))
 
 	// Read subject (hex)
 	subjectBytes := r.ReadBytes(sizeCertifier)
@@ -85,7 +72,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read serialNumber (base64)
-	args.Certificate.SerialNumber = r.ReadBase64(sizeSerial)
+	copy(args.Certificate.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 	// Read certifier (hex)
 	certifierBytes := r.ReadBytes(sizeCertifier)
@@ -101,7 +88,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read signature (hex)
-	args.Certificate.Signature = r.ReadIntBytesHex()
+	args.Certificate.Signature = r.ReadIntBytes()
 
 	// Read fields
 	fieldsLen := r.ReadVarInt()
@@ -133,7 +120,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read verifier (hex)
-	args.Verifier = r.ReadHex(sizeCertifier)
+	copy(args.Verifier[:], r.ReadBytes(sizeCertifier))
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)

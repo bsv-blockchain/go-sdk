@@ -17,6 +17,14 @@ type Outpoint struct {
 	OutputIndex uint32         `json:"outputIndex"`
 }
 
+// NewOutpoint creates a new Outpoint with the given transaction ID and output index
+func NewOutpoint(txid chainhash.Hash, outputIndex uint32) *Outpoint {
+	return &Outpoint{
+		Txid:        txid,
+		OutputIndex: outputIndex,
+	}
+}
+
 // NewOutpointFromTxBytes creates a new Outpoint from a 36-byte array in transaction byte format (little-endian)
 func NewOutpointFromTxBytes(b [36]byte) (o *Outpoint) {
 	o = &Outpoint{

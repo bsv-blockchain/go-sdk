@@ -2,11 +2,11 @@ package serializer
 
 import (
 	"encoding/base64"
-	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -21,19 +21,18 @@ func TestProveCertificateArgs(t *testing.T) {
 		name: "full args",
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+				Type:               [32]byte{0x1},
 				Subject:            pk.PubKey(),
-				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+				SerialNumber:       [32]byte{0x2},
 				Certifier:          pk.PubKey(),
-				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-				Signature:          hex.EncodeToString(make([]byte, 64)),
+				RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
+				Signature:          make([]byte, 64),
 				Fields: map[string]string{
 					"field1": "value1",
 					"field2": "value2",
 				},
 			},
 			FieldsToReveal:   []string{"field1"},
-			Verifier:         hex.EncodeToString(make([]byte, sizeCertifier)),
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
@@ -41,15 +40,14 @@ func TestProveCertificateArgs(t *testing.T) {
 		name: "minimal args",
 		args: &wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+				Type:               [32]byte{0x1},
 				Subject:            pk.PubKey(),
-				SerialNumber:       base64.StdEncoding.EncodeToString(make([]byte, sizeType)),
+				SerialNumber:       [32]byte{0x2},
 				Certifier:          pk.PubKey(),
-				RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-				Signature:          hex.EncodeToString(make([]byte, 64)),
+				RevocationOutpoint: tu.OutpointFromString(t, "0000000000000000000000000000000000000000000000000000000000000000.0"),
+				Signature:          make([]byte, 64),
 			},
 			FieldsToReveal: []string{},
-			Verifier:       hex.EncodeToString(make([]byte, sizeCertifier)),
 		},
 	}}
 

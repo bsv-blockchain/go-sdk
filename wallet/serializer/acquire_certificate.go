@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -19,14 +18,13 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w := util.NewWriter()
 
 	// Encode type (base64)
-	if err := w.WriteSizeFromBase64(args.Type, sizeType); err != nil {
-		return nil, fmt.Errorf("invalid type base64: %w", err)
-	}
+	w.WriteBytes(args.Type[:])
 
 	// Encode certifier (hex)
-	if err := w.WriteSizeFromHex(args.Certifier, sizeCertifier); err != nil {
-		return nil, fmt.Errorf("invalid certifier hex: %w", err)
+	if args.Certifier == [33]byte{} {
+		return nil, fmt.Errorf("certifier is empty")
 	}
+	w.WriteBytes(args.Certifier[:])
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Fields))
@@ -52,27 +50,22 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	case wallet.AcquisitionProtocolDirect:
 		w.WriteByte(acquisitionProtocolDirect)
 		// Serial number (base64)
-		if err := w.WriteSizeFromBase64(args.SerialNumber, sizeSerial); err != nil {
-			return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
+		if args.SerialNumber == [32]byte{} {
+			return nil, fmt.Errorf("serialNumber is empty")
 		}
+		w.WriteBytes(args.SerialNumber[:])
 
 		// Revocation outpoint
-		outpointBytes, err := encodeOutpoint(args.RevocationOutpoint)
-		if err != nil {
-			return nil, fmt.Errorf("invalid revocationOutpoint: %w", err)
-		}
-		w.WriteBytes(outpointBytes)
+		w.WriteBytes(encodeOutpoint(args.RevocationOutpoint))
 
 		// Signature (hex)
-		if err := w.WriteIntFromHex(args.Signature); err != nil {
-			return nil, fmt.Errorf("invalid signature hex: %w", err)
-		}
+		w.WriteIntBytes(args.Signature)
 
 		// Keyring revealer
-		if args.KeyringRevealer == wallet.KeyringRevealerCertifier {
+		if args.KeyringRevealer.Certifier {
 			w.WriteByte(keyRingRevealerCertifier)
-		} else if err := w.WriteSizeFromHex(args.KeyringRevealer, sizeRevealer); err != nil {
-			return nil, fmt.Errorf("invalid keyringRevealer hex: %w", err)
+		} else {
+			w.WriteBytes(args.KeyringRevealer.PubKey[:])
 		}
 
 		// Keyring for subject
@@ -107,8 +100,8 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 	args := &wallet.AcquireCertificateArgs{}
 
 	// Read type (base64) and certifier (hex)
-	args.Type = r.ReadBase64(sizeType)
-	args.Certifier = r.ReadHex(sizeCertifier)
+	copy(args.Type[:], r.ReadBytes(sizeType))
+	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
 
 	// Read fields
 	fieldsLength := r.ReadVarInt()
@@ -142,25 +135,28 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	if args.AcquisitionProtocol == wallet.AcquisitionProtocolDirect {
 		// Read serial number
-		args.SerialNumber = r.ReadBase64(sizeSerial)
+		copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 		// Read revocation outpoint
 		outpointBytes := r.ReadBytes(outpointSize)
-		args.RevocationOutpoint, r.Err = decodeOutpoint(outpointBytes)
-		if r.Err != nil {
-			return nil, fmt.Errorf("error decoding outpoint: %w", r.Err)
+		revocationOutpoint, err := decodeOutpoint(outpointBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}
+		args.RevocationOutpoint = revocationOutpoint
 
 		// Read signature
-		args.Signature = r.ReadIntBytesHex()
+		args.Signature = r.ReadIntBytes()
 
 		// Read keyring revealer
 		keyringRevealerIdentifier := r.ReadByte()
 		if keyringRevealerIdentifier == keyRingRevealerCertifier {
-			args.KeyringRevealer = wallet.KeyringRevealerCertifier
+			args.KeyringRevealer = wallet.KeyringRevealer{
+				Certifier: true,
+			}
 		} else {
 			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizeRevealer-1)...)
-			args.KeyringRevealer = hex.EncodeToString(keyringRevealerBytes)
+			copy(args.KeyringRevealer.PubKey[:], keyringRevealerBytes)
 		}
 
 		// Read keyring for subject

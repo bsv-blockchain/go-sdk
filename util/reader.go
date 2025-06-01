@@ -49,7 +49,7 @@ func (r *Reader) ReadIntBytes() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading bytes int length: %w", err)
 	}
-	if linkageLen == 0 {
+	if linkageLen <= 0 {
 		return nil, nil
 	}
 	b, err := r.ReadBytes(int(linkageLen))
@@ -164,7 +164,7 @@ func (r *Reader) ReadOptionalBool() (*bool, error) {
 	return &val, nil
 }
 
-func (r *Reader) ReadTxidSlice() ([]string, error) {
+func (r *Reader) ReadTxidSlice() ([]chainhash.Hash, error) {
 	count, err := r.ReadVarInt()
 	if err != nil {
 		return nil, fmt.Errorf("error reading slice txid count: %w", err)
@@ -173,15 +173,20 @@ func (r *Reader) ReadTxidSlice() ([]string, error) {
 		return nil, nil
 	}
 
-	txids := make([]string, 0, count)
+	txIDs := make([]chainhash.Hash, 0, count)
 	for i := uint64(0); i < count; i++ {
-		txid, err := r.ReadBytes(32)
+		txIDBytes, err := r.ReadBytes(32)
 		if err != nil {
-			return nil, fmt.Errorf("error reading txid bytes for slice: %w", err)
+			return nil, fmt.Errorf("error reading txIDBytes bytes for slice: %w", err)
 		}
-		txids = append(txids, hex.EncodeToString(txid))
+		txID, err := chainhash.NewHash(txIDBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error creating chainhash from bytes for slice: %w", err)
+		}
+
+		txIDs = append(txIDs, *txID)
 	}
-	return txids, nil
+	return txIDs, nil
 }
 
 func (r *Reader) ReadStringSlice() ([]string, error) {
@@ -336,7 +341,7 @@ func BoolPtr(b bool) *bool {
 	return &b
 }
 
-func (r *ReaderHoldError) ReadTxidSlice() []string {
+func (r *ReaderHoldError) ReadTxidSlice() []chainhash.Hash {
 	if r.Err != nil {
 		return nil
 	}

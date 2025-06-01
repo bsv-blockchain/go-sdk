@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strings"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/overlay"
@@ -40,7 +39,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	var result []*certificates.VerifiableCertificate
 
 	// Get all certificate types
-	var certificateTypes []string
+	var certificateTypes []wallet.Base64Bytes32
 	for certType := range options.RequestedCertificates.CertificateTypes {
 		certificateTypes = append(certificateTypes, certType)
 	}
@@ -61,7 +60,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	// Process each certificate
 	for _, certResult := range listResult.Certificates {
 		// Skip if certificate is nil or has empty type
-		if certResult.Type == "" {
+		if certResult.Type == [32]byte{} {
 			continue
 		}
 
@@ -72,9 +71,9 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		}
 
 		// Prepare verifier hex (empty if no key)
-		var verifierHex string
+		var verifierHex [33]byte
 		if options.VerifierIdentityKey != nil {
-			verifierHex = options.VerifierIdentityKey.ToDERHex()
+			copy(verifierHex[:], options.VerifierIdentityKey.ToDER())
 		}
 
 		proveResult, err := options.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
@@ -92,56 +91,24 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		}
 
 		// Handle short txids in revocation outpoints by padding them
-		var revocationOutpoint *overlay.Outpoint
-		if certResult.RevocationOutpoint != "" {
-			// NewOutpointFromString requires at least 66 characters (64 hex chars + separator + output index)
-			parts := strings.Split(certResult.RevocationOutpoint, ":")
-			if len(parts) == 2 {
-				txid := parts[0]
-				// Pad txid to 64 characters if needed
-				if len(txid) < 64 {
-					padding := strings.Repeat("0", 64-len(txid))
-					txid = txid + padding // Pad with zeros
-				}
-				outpointStr := txid + "." + parts[1]
-				var parseErr error
-				revocationOutpoint, parseErr = overlay.NewOutpointFromString(outpointStr)
-				if parseErr != nil {
-					// Just log the error and continue without revocation outpoint
-					fmt.Printf("Warning: could not parse revocation outpoint '%s': %v\n",
-						certResult.RevocationOutpoint, parseErr)
-				}
-			}
-		}
+		revocationOutpoint := overlay.NewOutpoint(certResult.RevocationOutpoint.Txid, certResult.RevocationOutpoint.Index)
 
 		// Ensure Type and SerialNumber are properly formatted as base64 strings
 		// If not, continue with next certificate but don't fail
 		certType := certResult.Type
 		certSerialNum := certResult.SerialNumber
 
-		// Verify if Type is valid base64 - if not, try to encode it
-		if _, err := base64.StdEncoding.DecodeString(certType); err != nil {
-			// It's not valid base64, try to encode it directly
-			certType = base64.StdEncoding.EncodeToString([]byte(certType))
-		}
-
-		// Verify if SerialNumber is valid base64 - if not, try to encode it
-		if _, err := base64.StdEncoding.DecodeString(certSerialNum); err != nil {
-			// It's not valid base64, try to encode it directly
-			certSerialNum = base64.StdEncoding.EncodeToString([]byte(certSerialNum))
-		}
-
 		// Create the base certificate
 		baseCert := &certificates.Certificate{
-			Type:               wallet.Base64String(certType),
-			SerialNumber:       wallet.Base64String(certSerialNum),
+			Type:               wallet.Base64String(base64.StdEncoding.EncodeToString(certType[:])),
+			SerialNumber:       wallet.Base64String(base64.StdEncoding.EncodeToString(certSerialNum[:])),
 			RevocationOutpoint: revocationOutpoint,
 			Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
 		}
 
 		// Handle Signature
-		if certResult.Signature != "" {
-			baseCert.Signature = []byte(certResult.Signature)
+		if len(certResult.Signature) > 0 {
+			baseCert.Signature = certResult.Signature
 		}
 
 		// Handle nil Subject and Certifier safely
