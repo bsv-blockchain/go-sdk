@@ -65,6 +65,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 		}
 
 		// Get requested fields for this certificate type
+		// The certificate type should match exactly with the requested types
 		requestedFields, ok := options.RequestedCertificates.CertificateTypes[certResult.Type]
 		if !ok || len(requestedFields) == 0 {
 			continue // Skip if no fields requested for this type
@@ -126,29 +127,27 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 			baseCert.Certifier = ec.PublicKey{}
 		}
 
-		// Add certificate fields
+		// Add certificate fields - these should also be base64-encoded
 		if certResult.Fields != nil {
 			for _, fieldName := range requestedFields {
 				if value, ok := certResult.Fields[fieldName]; ok {
-					// Check if the field value is valid base64
+					// Validate that field value is base64-encoded
 					if _, err := base64.StdEncoding.DecodeString(value); err != nil {
-						// If not, encode it
-						value = base64.StdEncoding.EncodeToString([]byte(value))
+						return nil, fmt.Errorf("certificate field '%s' value '%s' is not valid base64: %w", fieldName, value, err)
 					}
 					baseCert.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.StringBase64(value)
 				}
 			}
 		}
 
-		// Create keyring
+		// Create keyring - these should also be base64-encoded
 		keyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		// Only add keyring entries if KeyringForVerifier is not nil
 		if proveResult.KeyringForVerifier != nil {
 			for fieldName, value := range proveResult.KeyringForVerifier {
-				// Check if the keyring value is valid base64
+				// Validate that keyring value is base64-encoded
 				if _, err := base64.StdEncoding.DecodeString(value); err != nil {
-					// If not, encode it
-					value = base64.StdEncoding.EncodeToString([]byte(value))
+					return nil, fmt.Errorf("keyring field '%s' value '%s' is not valid base64: %w", fieldName, value, err)
 				}
 				keyring[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.StringBase64(value)
 			}

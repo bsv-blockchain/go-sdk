@@ -1,3 +1,8 @@
+// Package certificates implements a certificate-based authentication system for the BSV blockchain.
+// It provides structures and methods for creating, validating, and managing both master certificates
+// (which establish identity) and verifiable certificates (which grant specific permissions).
+// Certificates support field encryption/decryption, signature verification, and integration with
+// the wallet system for cryptographic operations.
 package certificates
 
 import (

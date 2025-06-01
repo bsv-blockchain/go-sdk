@@ -3,6 +3,7 @@
 *.dll
 *.so
 *.dylib
+*.test
 
 # Ignore dependencies
 /node_modules

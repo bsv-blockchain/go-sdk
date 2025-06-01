@@ -1,9 +1,16 @@
+// Package kvstore provides a key-value storage system backed by Bitcoin SV transactions.
+// It enables persistent storage of data on-chain using transaction outputs, with support
+// for encryption, basket-based organization, and configurable retention periods.
+// The storage is wallet-integrated, allowing for authenticated operations and automatic
+// management of transaction fees.
 package kvstore
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	pushdroptpl "github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -16,6 +23,7 @@ type LocalKVStore struct {
 	context    string
 	encrypt    bool
 	originator string
+	mu         sync.Mutex
 }
 
 // NewLocalKVStore creates a new LocalKVStore instance with the provided configuration.
@@ -212,6 +220,10 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 	if value == "" {
 		return "", ErrInvalidValue
 	}
+
+	// Lock to prevent concurrent access
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
 	lookupResult, err := kv.lookupValue(ctx, key, "", 10)
 	// Handle specific errors from lookup
 	if err != nil && !errors.Is(err, ErrKeyNotFound) { // Proceed if key simply not found, otherwise log/handle error

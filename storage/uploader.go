@@ -1,3 +1,7 @@
+// Package storage provides decentralized file storage capabilities with UHRP (Universal Hash Resolution Protocol)
+// URL support. It enables uploading files to distributed storage networks, downloading from multiple hosts,
+// managing file metadata, and handling retention periods. The package integrates with wallet authentication
+// for secure operations and supports various MIME types and file formats.
 package storage
 
 import (
