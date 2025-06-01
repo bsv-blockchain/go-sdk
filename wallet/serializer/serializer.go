@@ -1,3 +1,8 @@
+// Package serializer implements the wallet wire protocol for communication between wallet
+// implementations and client applications. It provides serialization and deserialization
+// for all wallet operations including certificate management, action creation and signing,
+// encryption/decryption, HMAC operations, and blockchain interaction. The serializer
+// supports both JSON and binary wire formats for efficient data transmission.
 package serializer
 
 import (

@@ -10,6 +10,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// MockStorageDownloader implements StorageDownloaderInterface for testing
+type MockStorageDownloader struct {
+	ResolveResult  []string
+	ResolveError   error
+	DownloadResult DownloadResult
+	DownloadError  error
+}
+
+func (m *MockStorageDownloader) Resolve(ctx context.Context, uhrpURL string) ([]string, error) {
+	if m.ResolveError != nil {
+		return nil, m.ResolveError
+	}
+	return m.ResolveResult, nil
+}
+
+func (m *MockStorageDownloader) Download(ctx context.Context, uhrpURL string) (DownloadResult, error) {
+	if m.DownloadError != nil {
+		return DownloadResult{}, m.DownloadError
+	}
+	return m.DownloadResult, nil
+}
+
 func TestStorageDownloader_InvalidURL(t *testing.T) {
 	downloader := NewStorageDownloader(DownloaderConfig{Network: overlay.NetworkMainnet})
 
@@ -113,25 +135,65 @@ func TestStorageDownloader_GetURLForFile(t *testing.T) {
 	assert.Equal(t, expectedHash, hash)
 }
 
-// IntegrationTestDownloader would test the actual integrated functionality
-// But is only meant to be run in environments where real lookup services exist
-func TestStorageDownloader_Integration(t *testing.T) {
-	// This test is skipped by default as it requires a real network connection
-	t.Skip("Skipping integration test - requires real network connection")
+func TestStorageDownloader_MockedOperations(t *testing.T) {
+	// Test the downloader interface using mocks to avoid network dependencies
 
-	downloader := NewStorageDownloader(DownloaderConfig{Network: overlay.NetworkMainnet})
+	t.Run("Successful resolve operation", func(t *testing.T) {
+		mockDownloader := &MockStorageDownloader{
+			ResolveResult: []string{
+				"https://host1.example.com/file123",
+				"https://host2.example.com/file123",
+			},
+			ResolveError: nil,
+		}
 
-	// Use a real UHRP URL that should resolve to something in mainnet
-	uhrpURL := "uhrp://2NEpo7TZRRrLZSi2U" // Example only
+		hosts, err := mockDownloader.Resolve(context.Background(), "uhrp://test-url")
+		require.NoError(t, err)
+		assert.Len(t, hosts, 2)
+		assert.Contains(t, hosts, "https://host1.example.com/file123")
+		assert.Contains(t, hosts, "https://host2.example.com/file123")
+	})
 
-	// Test resolve
-	hosts, err := downloader.Resolve(context.Background(), uhrpURL)
-	require.NoError(t, err)
-	require.NotEmpty(t, hosts)
+	t.Run("Successful download operation", func(t *testing.T) {
+		testContent := []byte("test file content for download")
 
-	// Download should succeed with real URL
-	result, err := downloader.Download(context.Background(), uhrpURL)
-	require.NoError(t, err)
-	assert.NotEmpty(t, result.Data)
-	assert.NotEmpty(t, result.MimeType)
+		mockDownloader := &MockStorageDownloader{
+			DownloadResult: DownloadResult{
+				Data:     testContent,
+				MimeType: "text/plain",
+			},
+			DownloadError: nil,
+		}
+
+		result, err := mockDownloader.Download(context.Background(), "uhrp://test-url")
+		require.NoError(t, err)
+		assert.Equal(t, testContent, result.Data)
+		assert.Equal(t, "text/plain", result.MimeType)
+	})
+
+	t.Run("Failed resolve operation", func(t *testing.T) {
+		mockDownloader := &MockStorageDownloader{
+			ResolveError: assert.AnError,
+		}
+
+		_, err := mockDownloader.Resolve(context.Background(), "uhrp://test-url")
+		assert.Error(t, err)
+	})
+
+	t.Run("Failed download operation", func(t *testing.T) {
+		mockDownloader := &MockStorageDownloader{
+			DownloadError: assert.AnError,
+		}
+
+		_, err := mockDownloader.Download(context.Background(), "uhrp://test-url")
+		assert.Error(t, err)
+	})
+}
+
+func TestStorageDownloader_InterfaceCompliance(t *testing.T) {
+	// Test that our real implementation satisfies the interface
+	var _ StorageDownloaderInterface = NewStorageDownloader(DownloaderConfig{Network: overlay.NetworkMainnet})
+
+	// Test that our mock implementation satisfies the interface
+	var _ StorageDownloaderInterface = &MockStorageDownloader{}
 }

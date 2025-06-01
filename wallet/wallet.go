@@ -1,3 +1,9 @@
+// Package wallet provides a comprehensive interface for wallet operations in the BSV blockchain.
+// It defines the core Interface with 29 methods covering transaction management, certificate
+// operations, cryptographic functions, and blockchain queries. The package includes ProtoWallet
+// for basic operations, key derivation utilities, and a complete serializer framework for the
+// wallet wire protocol. This design maintains compatibility with the TypeScript SDK while
+// following Go idioms and best practices.
 package wallet
 
 import (

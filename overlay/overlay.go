@@ -1,3 +1,9 @@
+// Package overlay implements the SHIP (Simplified Hosted Infrastructure Protocol) and SLAP
+// (Simplified Lookup And Payment) protocols for topic-based message broadcasting and discovery.
+// It provides network-aware configurations for Mainnet, Testnet, and local development, supports
+// tagged BEEF and STEAK transaction handling, and includes admin token management for service
+// operations. The overlay system enables efficient routing and discovery of services across
+// the BSV blockchain network.
 package overlay
 
 import (
