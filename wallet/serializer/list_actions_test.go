@@ -1,7 +1,10 @@
 package serializer
 
 import (
+	"encoding/hex"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,7 +111,12 @@ type ListActionResultSerializeTest struct {
 }
 
 func TestListActionResultSerializeAndDeserialize(t *testing.T) {
-	txid := "b1f4d452814bba0ac422318083850b706d5f23ce232c789eefe5cbdcf2cc47de"
+	txid, err := chainhash.NewHashFromHex("b1f4d452814bba0ac422318083850b706d5f23ce232c789eefe5cbdcf2cc47de")
+	require.NoError(t, err, "creating txid from hex should not error")
+	lockingScript, err := hex.DecodeString("76a914abcdef88ac")
+	require.NoError(t, err, "decoding locking script should not error")
+	unlockingScript, err := hex.DecodeString("483045022100abcdef")
+	require.NoError(t, err, "decoding unlocking script should not error")
 
 	tests := []ListActionResultSerializeTest{
 		{
@@ -117,7 +125,7 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 				TotalActions: 2,
 				Actions: []wallet.Action{
 					{
-						Txid:        txid,
+						Txid:        *txid,
 						Satoshis:    1000,
 						Status:      "completed",
 						IsOutgoing:  true,
@@ -127,10 +135,10 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 						LockTime:    0,
 						Inputs: []wallet.ActionInput{
 							{
-								SourceOutpoint:      txid + ".0",
+								SourceOutpoint:      wallet.Outpoint{Txid: *txid},
 								SourceSatoshis:      500,
-								SourceLockingScript: "76a914abcdef88ac",
-								UnlockingScript:     "483045022100abcdef",
+								SourceLockingScript: lockingScript,
+								UnlockingScript:     unlockingScript,
 								InputDescription:    "input 1",
 								SequenceNumber:      0xffffffff,
 							},
@@ -139,7 +147,7 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 							{
 								OutputIndex:        0,
 								Satoshis:           1000,
-								LockingScript:      "76a914abcdef88ac",
+								LockingScript:      lockingScript,
 								Spendable:          true,
 								OutputDescription:  "output 1",
 								Basket:             "basket1",
@@ -149,7 +157,7 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 						},
 					},
 					{
-						Txid:        txid,
+						Txid:        *txid,
 						Satoshis:    2000,
 						Status:      "sending",
 						IsOutgoing:  false,
@@ -189,19 +197,8 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 }
 
 func TestListActionResultSerializeAndDeserializeError(t *testing.T) {
-	txid := "912e0a97a189347a94f634a6eb4d67e13df9afc8fea670287b31d277e8d658d8"
+	txid := tu.GetByte32FromHexString(t, "912e0a97a189347a94f634a6eb4d67e13df9afc8fea670287b31d277e8d658d8")
 	tests := []ListActionResultSerializeTest{
-		{
-			name: "invalid txid",
-			result: wallet.ListActionsResult{
-				TotalActions: 1,
-				Actions: []wallet.Action{
-					{
-						Txid: "invalid",
-					},
-				},
-			},
-		},
 		{
 			name: "invalid status",
 			result: wallet.ListActionsResult{

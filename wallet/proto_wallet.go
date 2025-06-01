@@ -20,6 +20,8 @@ type ProtoWallet struct {
 	// The underlying key deriver
 	keyDeriver *KeyDeriver
 }
+
+// ProtoWalletArgsType specifies the type of argument used to create a ProtoWallet.
 type ProtoWalletArgsType string
 
 const (
@@ -28,6 +30,8 @@ const (
 	ProtoWalletArgsTypeAnyone     ProtoWalletArgsType = "anyone"
 )
 
+// ProtoWalletArgs contains the arguments needed to create a ProtoWallet.
+// The Type field determines which of the other fields should be used.
 type ProtoWalletArgs struct {
 	Type       ProtoWalletArgsType
 	PrivateKey *ec.PrivateKey

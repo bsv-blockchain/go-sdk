@@ -11,19 +11,22 @@ func SerializeRelinquishCertificateArgs(args *wallet.RelinquishCertificateArgs) 
 	w := util.NewWriter()
 
 	// Encode type (base64)
-	if err := w.WriteSizeFromBase64(args.Type, sizeType); err != nil {
-		return nil, fmt.Errorf("invalid type base64: %w", err)
+	if args.Type == [32]byte{} {
+		return nil, fmt.Errorf("type is empty")
 	}
+	w.WriteBytes(args.Type[:])
 
 	// Encode serialNumber (base64)
-	if err := w.WriteSizeFromBase64(args.SerialNumber, sizeSerial); err != nil {
-		return nil, fmt.Errorf("invalid serialNumber base64: %w", err)
+	if args.SerialNumber == [32]byte{} {
+		return nil, fmt.Errorf("serialNumber is empty")
 	}
+	w.WriteBytes(args.SerialNumber[:])
 
 	// Encode certifier (hex)
-	if err := w.WriteSizeFromHex(args.Certifier, sizeCertifier); err != nil {
-		return nil, fmt.Errorf("invalid certifier hex: %w", err)
+	if args.Certifier == [33]byte{} {
+		return nil, fmt.Errorf("certifier is empty")
 	}
+	w.WriteBytes(args.Certifier[:])
 
 	return w.Buf, nil
 }
@@ -33,9 +36,9 @@ func DeserializeRelinquishCertificateArgs(data []byte) (*wallet.RelinquishCertif
 	args := &wallet.RelinquishCertificateArgs{}
 
 	// Read type (base64), serialNumber (base64), certifier (hex)
-	args.Type = r.ReadBase64(sizeType)
-	args.SerialNumber = r.ReadBase64(sizeSerial)
-	args.Certifier = r.ReadHex(sizeCertifier)
+	copy(args.Type[:], r.ReadBytes(sizeType))
+	copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
+	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
 
 	r.CheckComplete()
 	if r.Err != nil {

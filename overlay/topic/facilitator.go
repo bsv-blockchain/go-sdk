@@ -14,14 +14,17 @@ import (
 
 const MAX_SHIP_QUERY_TIMEOUT = time.Second
 
+// Facilitator defines the interface for overlay broadcast facilitators that can send tagged BEEF to overlay services
 type Facilitator interface {
 	Send(url string, taggedBEEF *overlay.TaggedBEEF) (*overlay.Steak, error)
 }
 
+// HTTPSOverlayBroadcastFacilitator implements the Facilitator interface using HTTPS requests for broadcasting transactions
 type HTTPSOverlayBroadcastFacilitator struct {
 	Client util.HTTPClient
 }
 
+// Send broadcasts a tagged BEEF transaction to the specified overlay service URL and returns the STEAK response
 func (f *HTTPSOverlayBroadcastFacilitator) Send(url string, taggedBEEF *overlay.TaggedBEEF) (*overlay.Steak, error) {
 	timeoutContext, cancel := context.WithTimeout(context.Background(), MAX_SHIP_QUERY_TIMEOUT)
 	defer cancel()

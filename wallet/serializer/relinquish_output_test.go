@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -15,14 +16,14 @@ func TestRelinquishOutputArgs(t *testing.T) {
 			name: "basic args",
 			args: &wallet.RelinquishOutputArgs{
 				Basket: "test-basket",
-				Output: "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0",
+				Output: *tu.OutpointFromString(t, "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0"),
 			},
 		},
 		{
 			name: "empty basket",
 			args: &wallet.RelinquishOutputArgs{
 				Basket: "",
-				Output: "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.1",
+				Output: *tu.OutpointFromString(t, "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.1"),
 			},
 		},
 	}

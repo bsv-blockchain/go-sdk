@@ -759,7 +759,7 @@ func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, co
 		Outputs: []wallet.CreateActionOutput{
 			{
 				Satoshis:      satoshisRequired,
-				LockingScript: fmt.Sprintf("P2PKH:%s", derivedKey.PublicKey.ToDERHex()),
+				LockingScript: derivedKey.PublicKey.ToDER(),
 				CustomInstructions: fmt.Sprintf(`{"derivationPrefix":"%s","derivationSuffix":"%s","payee":"%s"}`,
 					derivationPrefix, derivationSuffix, serverIdentityKey),
 				OutputDescription: "HTTP request payment",

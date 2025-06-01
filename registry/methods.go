@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
 	"github.com/bsv-blockchain/go-sdk/overlay/topic"
@@ -67,7 +64,7 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 		Outputs: []wallet.CreateActionOutput{
 			{
 				Satoshis:          RegistrantTokenAmount,
-				LockingScript:     lockingScript.String(),
+				LockingScript:     lockingScript.Bytes(),
 				OutputDescription: fmt.Sprintf("New %s registration token", data.GetDefinitionType()),
 				Basket:            mapDefinitionTypeToBasketName(data.GetDefinitionType()),
 			},
@@ -320,17 +317,6 @@ func (c *RegistryClient) ListOwnRegistryEntries(ctx context.Context, definitionT
 			continue
 		}
 
-		outpointParts := strings.Split(output.Outpoint, ".")
-		if len(outpointParts) != 2 {
-			continue // Skip invalid outpoint format
-		}
-
-		txID := outpointParts[0]
-		outputIndex, err := strconv.ParseUint(outpointParts[1], 10, 32)
-		if err != nil {
-			continue // Skip invalid output index
-		}
-
 		tx, err := transaction.NewTransactionFromBEEF(listResult.BEEF)
 		if err != nil {
 			continue // Skip invalid transaction
@@ -339,14 +325,14 @@ func (c *RegistryClient) ListOwnRegistryEntries(ctx context.Context, definitionT
 		// Add this for debugging tests
 		if testLogger, ok := ctx.Value("testLogger").(interface{ Logf(string, ...interface{}) }); ok {
 			testLogger.Logf("Processing outpoint %s", output.Outpoint)
-			testLogger.Logf("Transaction has %d outputs, output index: %d", len(tx.Outputs), outputIndex)
-			if int(outputIndex) >= len(tx.Outputs) {
-				testLogger.Logf("Output index %d is out of bounds", outputIndex)
+			testLogger.Logf("Transaction has %d outputs, output index: %d", len(tx.Outputs), output.Outpoint.Index)
+			if int(output.Outpoint.Index) >= len(tx.Outputs) {
+				testLogger.Logf("Output index %d is out of bounds", output.Outpoint.Index)
 				continue
 			}
 		}
 
-		lockingScript := tx.Outputs[uint32(outputIndex)].LockingScript
+		lockingScript := tx.Outputs[output.Outpoint.Index].LockingScript
 		recordData, err := parseLockingScript(definitionType, lockingScript)
 		if err != nil {
 			// Add this for debugging tests
@@ -360,8 +346,8 @@ func (c *RegistryClient) ListOwnRegistryEntries(ctx context.Context, definitionT
 		record := &RegistryRecord{
 			DefinitionData: recordData,
 			TokenData: TokenData{
-				TxID:          txID,
-				OutputIndex:   uint32(outputIndex),
+				TxID:          output.Outpoint.Txid.String(),
+				OutputIndex:   output.Outpoint.Index,
 				Satoshis:      output.Satoshis,
 				LockingScript: lockingScript.String(),
 				BEEF:          listResult.BEEF,
@@ -411,7 +397,10 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 	}
 
 	unlockScriptLength := uint32(73) // Estimated size for signature
-	outpoint := fmt.Sprintf("%s:%d", record.TxID, record.OutputIndex)
+	outpoint, err := wallet.OutpointFromString(fmt.Sprintf("%s.%d", record.TxID, record.OutputIndex))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse outpoint: %w", err)
+	}
 
 	// Create partial transaction that spends the registry UTXO
 	createResult, err := c.wallet.CreateAction(ctx, wallet.CreateActionArgs{
@@ -419,7 +408,7 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 		InputBEEF:   record.BEEF,
 		Inputs: []wallet.CreateActionInput{
 			{
-				Outpoint:              outpoint,
+				Outpoint:              *outpoint,
 				UnlockingScriptLength: unlockScriptLength,
 				InputDescription:      fmt.Sprintf("Revoking %s token", record.GetDefinitionType()),
 			},
@@ -467,7 +456,7 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 		Reference: createResult.SignableTransaction.Reference,
 		Spends: map[uint32]wallet.SignActionSpend{
 			record.OutputIndex: {
-				UnlockingScript: finalUnlockScript.String(),
+				UnlockingScript: finalUnlockScript.Bytes(),
 			},
 		},
 		Options: &wallet.SignActionOptions{

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/stretchr/testify/require"
@@ -19,13 +20,17 @@ func TestCreateAction(t *testing.T) {
 	mock := wallet.NewMockWallet(t)
 	walletTransceiver := createTestWalletWire(mock)
 	ctx := t.Context()
+	txID := tu.GetByte32FromHexString(t, "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806")
 
 	t.Run("should create an action with valid inputs", func(t *testing.T) {
 		// Expected arguments and return value
+		lockScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
+		require.NoError(t, err, "decoding locking script should not error")
+
 		mock.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
-				LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+				LockingScript:      lockScript,
 				Satoshis:           1000,
 				OutputDescription:  "Test output",
 				Basket:             "test-basket",
@@ -37,7 +42,7 @@ func TestCreateAction(t *testing.T) {
 		mock.ExpectedOriginator = "test originator"
 
 		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
-			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
+			Txid: txID,
 			Tx:   []byte{1, 2, 3, 4},
 		}
 
@@ -61,7 +66,7 @@ func TestCreateAction(t *testing.T) {
 		}
 		mock.ExpectedOriginator = ""
 		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
-			Txid: "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806",
+			Txid: txID,
 		}
 
 		// Execute test
@@ -90,7 +95,7 @@ func TestTsCompatibility(t *testing.T) {
 	require.Equal(t, wallet.CreateActionArgs{
 		Description: "Test action description",
 		Outputs: []wallet.CreateActionOutput{{
-			LockingScript:     "00",
+			LockingScript:     []byte{0x00},
 			Satoshis:          1000,
 			OutputDescription: "Test output description",
 		}},

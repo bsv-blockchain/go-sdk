@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
@@ -109,18 +108,24 @@ func ValidateCertificates(
 				types := certificatesRequested.CertificateTypes
 
 				// Check certifier matches
-				certifierKey := cert.Certifier.ToDERHex()
-				if !slices.Contains(certifiers, certifierKey) {
+				certifierKey := cert.Certifier.ToDER()
+				if !wallet.BytesInHex33Slice(certifiers, certifierKey) {
 					errCh <- fmt.Errorf(
-						"certificate with serial number %s has an unrequested certifier: %s",
+						"certificate with serial number %s has an unrequested certifier: %x",
 						cert.SerialNumber,
 						certifierKey,
 					)
 					return
 				}
 
+				certType, err := cert.Type.ToArray()
+				if err != nil {
+					errCh <- fmt.Errorf("failed to convert certificate type to byte array: %v", err)
+					return
+				}
+
 				// Check type match
-				_, typeExists := types[string(cert.Type)]
+				_, typeExists := types[certType]
 				if !typeExists {
 					errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
 					return
@@ -191,6 +196,8 @@ type CertificateQuery struct {
 	Subject string
 }
 
+// MarshalJSON customizes the JSON marshaling for AuthMessage to ensure proper formatting
+// of identity keys, payload, and signature fields as base64-encoded strings.
 func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 	type Alias AuthMessage
 
@@ -232,6 +239,8 @@ func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON customizes the JSON unmarshaling for AuthMessage to properly decode
+// base64-encoded fields and reconstruct the public key from the hex-encoded identity key.
 func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 	type Alias AuthMessage
 

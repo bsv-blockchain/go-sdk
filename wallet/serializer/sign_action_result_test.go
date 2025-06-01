@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -11,6 +12,7 @@ import (
 func TestSerializeSignActionResult(t *testing.T) {
 	txid := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 	tx := []byte{1, 2, 3, 4, 5}
+	txidHash := tu.GetByte32FromHexString(t, txid)
 
 	tests := []struct {
 		name    string
@@ -20,11 +22,11 @@ func TestSerializeSignActionResult(t *testing.T) {
 		{
 			name: "full result",
 			input: &wallet.SignActionResult{
-				Txid: txid,
+				Txid: txidHash,
 				Tx:   tx,
 				SendWithResults: []wallet.SendWithResult{
-					{Txid: txid, Status: wallet.ActionResultStatusSending},
-					{Txid: txid, Status: wallet.ActionResultStatusFailed},
+					{Txid: txidHash, Status: wallet.ActionResultStatusSending},
+					{Txid: txidHash, Status: wallet.ActionResultStatusFailed},
 				},
 			},
 			wantErr: false,
@@ -32,7 +34,7 @@ func TestSerializeSignActionResult(t *testing.T) {
 		{
 			name: "only txid",
 			input: &wallet.SignActionResult{
-				Txid: txid,
+				Txid: txidHash,
 			},
 			wantErr: false,
 		},
@@ -42,13 +44,6 @@ func TestSerializeSignActionResult(t *testing.T) {
 				Tx: tx,
 			},
 			wantErr: false,
-		},
-		{
-			name: "invalid txid hex",
-			input: &wallet.SignActionResult{
-				Txid: "invalid",
-			},
-			wantErr: true,
 		},
 		{
 			name: "invalid status",
@@ -76,6 +71,7 @@ func TestSerializeSignActionResult(t *testing.T) {
 func TestDeserializeSignActionResult(t *testing.T) {
 	txid := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 	txidBytes := fromHex(t, txid)
+	txidHash := tu.GetByte32FromHexString(t, txid)
 	tx := []byte{1, 2, 3, 4, 5}
 
 	tests := []struct {
@@ -101,11 +97,11 @@ func TestDeserializeSignActionResult(t *testing.T) {
 				return w.Buf
 			}(),
 			want: &wallet.SignActionResult{
-				Txid: txid,
+				Txid: txidHash,
 				Tx:   tx,
 				SendWithResults: []wallet.SendWithResult{
-					{Txid: txid, Status: wallet.ActionResultStatusSending},
-					{Txid: txid, Status: wallet.ActionResultStatusFailed},
+					{Txid: txidHash, Status: wallet.ActionResultStatusSending},
+					{Txid: txidHash, Status: wallet.ActionResultStatusFailed},
 				},
 			},
 			wantErr: false,
@@ -121,7 +117,7 @@ func TestDeserializeSignActionResult(t *testing.T) {
 				return w.Buf
 			}(),
 			want: &wallet.SignActionResult{
-				Txid: txid,
+				Txid: txidHash,
 			},
 			wantErr: false,
 		},

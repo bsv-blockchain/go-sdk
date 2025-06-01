@@ -2,14 +2,18 @@ package substrates_test
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -39,9 +43,34 @@ func TestVectors(t *testing.T) {
 	const VerifierHex = "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee"
 	verifier, err := ec.PublicKeyFromString(VerifierHex)
 	require.NoError(t, err)
+	verifier33 := tu.GetByte33FromHexString(t, VerifierHex)
 	const ProverHex = "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8"
 	prover, err := ec.PublicKeyFromString(ProverHex)
 	require.NoError(t, err)
+
+	typeArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
+	serialArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
+	certifier := tu.GetByte33FromHexString(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1") // Use hex string from TS
+
+	ref, err := base64.StdEncoding.DecodeString("dGVzdA==")
+	require.NoError(t, err)
+
+	outpoint, err := wallet.OutpointFromString("aec245f27b7640c8b1865045107731bfb848115c573f7da38166074b1c9e475d.0")
+	require.NoError(t, err)
+
+	lockScript, err := hex.DecodeString("76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac")
+	require.NoError(t, err)
+	lockingScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
+	require.NoError(t, err, "decoding locking script should not error")
+
+	// pk = 95c5931552e547d72a292e9d6f59eef2b9f7e1576d8c7b49731b505117c0cdfa
+	// msg = test message
+	const sigHex = "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a"
+	signature, err := hex.DecodeString(sigHex)
+	require.NoError(t, err, "decoding signature hex should not error")
+
+	txID, err := chainhash.NewHashFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+	require.NoError(t, err, "creating txID from hex should not error")
 
 	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
@@ -59,10 +88,10 @@ func TestVectors(t *testing.T) {
 		// TODO: This wire test is failing, I think also because of how ts-sdk handles -1
 		Filename: "signAction-simple-args",
 		Object: wallet.SignActionArgs{
-			Reference: "dGVzdA==",
+			Reference: ref,
 			Spends: map[uint32]wallet.SignActionSpend{
 				0: {
-					UnlockingScript: "76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac",
+					UnlockingScript: lockScript,
 				},
 			},
 		},
@@ -72,7 +101,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
-				LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+				LockingScript:      lockingScript,
 				Satoshis:           999,
 				OutputDescription:  "Test output",
 				Basket:             "test-basket",
@@ -95,7 +124,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.ListActionsResult{
 			TotalActions: 1,
 			Actions: []wallet.Action{{
-				Txid:        "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				Txid:        *txID,
 				Satoshis:    1000,
 				Status:      wallet.ActionStatusCompleted,
 				IsOutgoing:  true,
@@ -109,7 +138,7 @@ func TestVectors(t *testing.T) {
 					Spendable:         true,
 					Tags:              []string{"tag1", "tag2"},
 					Satoshis:          1000,
-					LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+					LockingScript:     lockingScript,
 				}},
 			}},
 		},
@@ -167,11 +196,11 @@ func TestVectors(t *testing.T) {
 			Outputs: []wallet.Output{{
 				Satoshis:  1000,
 				Spendable: true,
-				Outpoint:  "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.0",
+				Outpoint:  *tu.OutpointFromString(t, fmt.Sprintf("%s.0", txID)),
 			}, {
 				Satoshis:  5000,
 				Spendable: false,
-				Outpoint:  "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
+				Outpoint:  *tu.OutpointFromString(t, "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"),
 			}},
 		},
 	}, {
@@ -179,7 +208,7 @@ func TestVectors(t *testing.T) {
 		IsResult: true,
 		Object: wallet.RelinquishOutputArgs{
 			Basket: "test-basket",
-			Output: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
+			Output: *tu.OutpointFromString(t, "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"),
 		},
 	}, {
 		Filename: "relinquishOutput-simple-result",
@@ -215,8 +244,8 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "revealCounterpartyKeyLinkage-simple-args",
 		Object: wallet.RevealCounterpartyKeyLinkageArgs{
-			Counterparty:     CounterpartyHex,
-			Verifier:         VerifierHex,
+			Counterparty:     counterparty.ToDER(),
+			Verifier:         verifier.ToDER(),
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
@@ -224,9 +253,9 @@ func TestVectors(t *testing.T) {
 		Filename: "revealCounterpartyKeyLinkage-simple-result",
 		IsResult: true,
 		Object: wallet.RevealCounterpartyKeyLinkageResult{
-			Prover:                ProverHex,
-			Counterparty:          CounterpartyHex,
-			Verifier:              VerifierHex,
+			Prover:                prover.ToDER(),
+			Counterparty:          counterparty.ToDER(),
+			Verifier:              verifier.ToDER(),
 			RevelationTime:        "2023-01-01T00:00:00Z",
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},
@@ -238,7 +267,7 @@ func TestVectors(t *testing.T) {
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: counterparty,
 			},
-			Verifier: VerifierHex,
+			Verifier: verifier.ToDER(),
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "tests",
@@ -406,15 +435,15 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "acquireCertificate-simple-args",
 		Object: wallet.AcquireCertificateArgs{
-			Type:                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-			Certifier:           "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1", // Use hex string from TS
+			Type:                typeArray,
+			Certifier:           certifier,
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
-			SerialNumber:        "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
-			RevocationOutpoint:  "txid123:0",
-			Signature:           "sig-hex",
+			SerialNumber:        serialArray,
+			RevocationOutpoint:  outpoint,
+			Signature:           signature,
 			CertifierUrl:        "https://certifier.example.com",
-			KeyringRevealer:     "revealer-key-hex", // TODO: change to real hex, e.g. 319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838
+			KeyringRevealer:     wallet.KeyringRevealer{PubKey: tu.GetByte33FromHexString(t, "319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838")},
 			KeyringForSubject:   map[string]string{"field1": "key1", "field2": "key2"},
 			Privileged:          util.BoolPtr(false),
 		},
@@ -422,20 +451,20 @@ func TestVectors(t *testing.T) {
 		Filename: "acquireCertificate-simple-result",
 		IsResult: true,
 		Object: wallet.Certificate{
-			Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-			SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+			Type:               typeArray,
+			SerialNumber:       serialArray,
 			Subject:            pubKey,       // Use key from test setup
 			Certifier:          counterparty, // Use key from test setup
-			RevocationOutpoint: "txid123:0",
+			RevocationOutpoint: outpoint,
 			Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-			Signature:          "sig-hex",
+			Signature:          signature,
 		},
 	}, {
 		Filename: "listCertificates-simple-args",
 		IsResult: true,
 		Object: wallet.ListCertificatesArgs{
-			Certifiers:       []string{CounterpartyHex, VerifierHex},
-			Types:            []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGUx", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGUy"},
+			Certifiers:       []wallet.HexBytes33{tu.GetByte33FromHexString(t, CounterpartyHex), tu.GetByte33FromHexString(t, VerifierHex)},
+			Types:            []wallet.Base64Bytes32{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
 			Limit:            5,
 			Offset:           0,
 			Privileged:       util.BoolPtr(true),
@@ -448,32 +477,32 @@ func TestVectors(t *testing.T) {
 			TotalCertificates: 1,
 			Certificates: []wallet.CertificateResult{{
 				Certificate: wallet.Certificate{
-					Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-					SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+					Type:               typeArray,
+					SerialNumber:       serialArray,
 					Subject:            pubKey,
 					Certifier:          counterparty,
-					RevocationOutpoint: "txid123:0",
+					RevocationOutpoint: outpoint,
 					Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-					Signature:          "7369676e61747572652d686578", // hex for "signature-hex"
+					Signature:          signature,
 				},
 				Keyring:  map[string]string{"field1": "key1", "field2": "key2"},
-				Verifier: VerifierHex,
+				Verifier: verifier.ToDER(),
 			}},
 		},
 	}, {
 		Filename: "proveCertificate-simple-args",
 		Object: wallet.ProveCertificateArgs{
 			Certificate: wallet.Certificate{
-				Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-				SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+				Type:               typeArray,
+				SerialNumber:       serialArray,
 				Subject:            pubKey,       // Use key from test setup
 				Certifier:          counterparty, // Use key from test setup
-				RevocationOutpoint: "txid123:0",
+				RevocationOutpoint: outpoint,
 				Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-				Signature:          "7369676e61747572652d686578", // hex for "signature-hex"
+				Signature:          signature,
 			},
 			FieldsToReveal:   []string{"name"},
-			Verifier:         VerifierHex,
+			Verifier:         verifier33,
 			Privileged:       util.BoolPtr(false),
 			PrivilegedReason: "prove-reason",
 		},
@@ -486,9 +515,9 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "relinquishCertificate-simple-args",
 		Object: wallet.RelinquishCertificateArgs{
-			Type:         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-			SerialNumber: "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
-			Certifier:    CounterpartyHex,
+			Type:         typeArray,
+			SerialNumber: serialArray,
+			Certifier:    certifier,
 		},
 	}, {
 		Filename: "relinquishCertificate-simple-result",
@@ -499,7 +528,7 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "discoverByIdentityKey-simple-args",
 		Object: wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey:    CounterpartyHex,
+			IdentityKey:    tu.GetByte33FromHexString(t, CounterpartyHex),
 			Limit:          10,
 			Offset:         0,
 			SeekPermission: util.BoolPtr(true),
@@ -512,19 +541,19 @@ func TestVectors(t *testing.T) {
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-						SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+						Type:               wallet.Base64Bytes32(typeArray),
+						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,
-						RevocationOutpoint: "txid123:0",
+						RevocationOutpoint: outpoint,
 						Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-						Signature:          "7369676e61747572652d686578",
+						Signature:          signature,
 					},
 					CertifierInfo: wallet.IdentityCertifier{
 						Name:        "Test Certifier",
 						IconUrl:     "https://example.com/icon.png",
 						Description: "Certifier description",
-						Trust:       5, // Example trust level
+						Trust:       5,
 					},
 					PubliclyRevealedKeyring: map[string]string{"pubField": "pubKey"},
 					DecryptedFields:         map[string]string{"name": "Alice"},
@@ -547,13 +576,13 @@ func TestVectors(t *testing.T) {
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
-						SerialNumber:       "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=",
+						Type:               typeArray,
+						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,
-						RevocationOutpoint: "txid123:0",
+						RevocationOutpoint: outpoint,
 						Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
-						Signature:          "7369676e61747572652d686578",
+						Signature:          signature,
 					},
 					CertifierInfo: wallet.IdentityCertifier{
 						Name:        "Test Certifier",
@@ -595,7 +624,7 @@ func TestVectors(t *testing.T) {
 		Filename: "getHeaderForHeight-simple-result",
 		IsResult: true,
 		Object: wallet.GetHeaderResult{
-			Header: "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c", // Example header hex
+			Header: tu.GetByteFromHexString(t, "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"),
 		},
 	}, {
 		Filename: "getNetwork-simple-result",
