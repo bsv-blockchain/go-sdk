@@ -196,6 +196,8 @@ type CertificateQuery struct {
 	Subject string
 }
 
+// MarshalJSON customizes the JSON marshaling for AuthMessage to ensure proper formatting
+// of identity keys, payload, and signature fields as base64-encoded strings.
 func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 	type Alias AuthMessage
 
@@ -237,6 +239,8 @@ func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON customizes the JSON unmarshaling for AuthMessage to properly decode
+// base64-encoded fields and reconstruct the public key from the hex-encoded identity key.
 func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 	type Alias AuthMessage
 

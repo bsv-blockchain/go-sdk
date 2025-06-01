@@ -25,11 +25,15 @@ type WebSocketTransport struct {
 	readDeadline time.Duration
 }
 
+// WebSocketTransportOptions contains configuration options for the WebSocketTransport.
 type WebSocketTransportOptions struct {
 	BaseURL      string
 	ReadDeadline int // seconds, default 30
 }
 
+// NewWebSocketTransport creates a new WebSocket transport instance with the given options.
+// The BaseURL is required and must be a valid WebSocket URL.
+// If ReadDeadline is not specified or is zero, it defaults to 30 seconds.
 func NewWebSocketTransport(options *WebSocketTransportOptions) (*WebSocketTransport, error) {
 	if options.BaseURL == "" {
 		return nil, errors.New("BaseURL is required for WebSocket transport")

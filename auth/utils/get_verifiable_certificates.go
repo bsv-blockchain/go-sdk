@@ -20,6 +20,9 @@ type GetVerifiableCertificatesOptions struct {
 	PrivilegedReason      string
 }
 
+// GetVerifiableCertificates retrieves and prepares verifiable certificates based on the provided options.
+// It queries the wallet for certificates matching the requested types and certifiers,
+// then creates verifiable certificates with the appropriate fields revealed for the specified verifier.
 func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertificatesOptions) ([]*certificates.VerifiableCertificate, error) {
 	if options == nil {
 		return nil, fmt.Errorf("GetVerifiableCertificatesOptions cannot be nil")

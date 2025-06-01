@@ -10,6 +10,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+// OverlayAdminTokenData represents the data contained within a SHIP or SLAP administration token
 type OverlayAdminTokenData struct {
 	Protocol       overlay.Protocol
 	IdentityKey    string
@@ -17,10 +18,12 @@ type OverlayAdminTokenData struct {
 	TopicOrService string
 }
 
+// OverlayAdminTokenTemplate is a script template for creating, unlocking, and decoding SHIP and SLAP advertisements
 type OverlayAdminTokenTemplate struct {
 	PushDrop pushdrop.PushDropTemplate
 }
 
+// Decode extracts overlay admin token data from a locking script
 func Decode(s *script.Script) *OverlayAdminTokenData {
 	if result := pushdrop.Decode(s); result != nil {
 		return &OverlayAdminTokenData{
@@ -33,6 +36,7 @@ func Decode(s *script.Script) *OverlayAdminTokenData {
 	return nil
 }
 
+// Lock creates a new overlay admin token locking script for the specified protocol, domain, and topic/service
 func (o *OverlayAdminTokenTemplate) Lock(
 	ctx context.Context,
 	protocol overlay.Protocol,
@@ -74,6 +78,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 	)
 }
 
+// Unlock creates an unlocker for overlay admin tokens of the specified protocol
 func (o *OverlayAdminTokenTemplate) Unlock(
 	ctx context.Context,
 	protocol overlay.Protocol,

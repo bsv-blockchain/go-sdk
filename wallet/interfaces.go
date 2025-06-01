@@ -108,9 +108,11 @@ type CreateActionOutput struct {
 	Tags               []string    `json:"tags,omitempty"`
 }
 
+// TrustSelf represents a trust level for self-referential operations.
 type TrustSelf string
 
 const (
+	// TrustSelfKnown indicates that the wallet should trust itself for known operations.
 	TrustSelfKnown TrustSelf = "known"
 )
 
@@ -148,6 +150,7 @@ type CreateActionResult struct {
 	SignableTransaction *SignableTransaction
 }
 
+// ActionResultStatus represents the current state of a transaction action.
 type ActionResultStatus string
 
 const (
@@ -245,6 +248,7 @@ type Action struct {
 	Outputs     []ActionOutput `json:"outputs,omitempty"`
 }
 
+// QueryMode specifies how multiple criteria should be combined in queries.
 type QueryMode string
 
 const (
@@ -252,6 +256,8 @@ const (
 	QueryModeAll QueryMode = "all"
 )
 
+// QueryModeFromString converts a string to a QueryMode with validation.
+// Valid values are "any" and "all".
 func QueryModeFromString(s string) (QueryMode, error) {
 	qms := QueryMode(s)
 	switch qms {
@@ -284,6 +290,7 @@ type ListActionsResult struct {
 	Actions      []Action `json:"actions"`
 }
 
+// OutputInclude specifies what additional data to include with output listings.
 type OutputInclude string
 
 const (
@@ -291,6 +298,8 @@ const (
 	OutputIncludeEntireTransactions OutputInclude = "entire transactions"
 )
 
+// OutputIncludeFromString converts a string to an OutputInclude with validation.
+// Valid values are "locking scripts" and "entire transactions".
 func OutputIncludeFromString(s string) (OutputInclude, error) {
 	oi := OutputInclude(s)
 	switch oi {
@@ -393,6 +402,7 @@ type BasketInsertion struct {
 	Tags               []string `json:"tags"`
 }
 
+// InternalizeProtocol specifies the protocol used for internalizing transaction outputs.
 type InternalizeProtocol string
 
 const (
@@ -400,6 +410,8 @@ const (
 	InternalizeProtocolBasketInsertion InternalizeProtocol = "basket insertion"
 )
 
+// InternalizeProtocolFromString converts a string to an InternalizeProtocol with validation.
+// Valid values are "wallet payment" and "basket insertion".
 func InternalizeProtocolFromString(s string) (InternalizeProtocol, error) {
 	op := InternalizeProtocol(s)
 	switch op {
@@ -474,6 +486,8 @@ type InternalizeActionResult struct {
 	Accepted bool `json:"accepted"`
 }
 
+// RevealCounterpartyKeyLinkageArgs contains parameters for revealing key linkage between counterparties.
+// This operation exposes the cryptographic relationship between the wallet and a specific counterparty.
 type RevealCounterpartyKeyLinkageArgs struct {
 	Counterparty     JSONByteHex `json:"counterparty"`
 	Verifier         JSONByteHex `json:"verifier"`
@@ -481,6 +495,8 @@ type RevealCounterpartyKeyLinkageArgs struct {
 	PrivilegedReason string      `json:"privilegedReason,omitempty"`
 }
 
+// RevealCounterpartyKeyLinkageResult contains the encrypted linkage data and proof
+// that demonstrates the relationship between the prover and counterparty.
 type RevealCounterpartyKeyLinkageResult struct {
 	Prover                JSONByteHex      `json:"prover"`
 	Counterparty          JSONByteHex      `json:"counterparty"`
@@ -490,6 +506,8 @@ type RevealCounterpartyKeyLinkageResult struct {
 	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
 }
 
+// RevealSpecificKeyLinkageArgs contains parameters for revealing specific key linkage information.
+// This operation exposes the relationship for a specific protocol and key combination.
 type RevealSpecificKeyLinkageArgs struct {
 	Counterparty     Counterparty `json:"counterparty"`
 	Verifier         JSONByteHex  `json:"verifier"`
@@ -499,6 +517,8 @@ type RevealSpecificKeyLinkageArgs struct {
 	PrivilegedReason string       `json:"privilegedReason,omitempty"`
 }
 
+// RevealSpecificKeyLinkageResult contains the specific encrypted linkage data and proof
+// for a particular protocol and key combination.
 type RevealSpecificKeyLinkageResult struct {
 	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
 	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
@@ -510,6 +530,8 @@ type RevealSpecificKeyLinkageResult struct {
 	ProofType             byte             `json:"proofType"`
 }
 
+// IdentityCertifier represents information about an entity that issues identity certificates.
+// It contains metadata about the certifier including trust level and display information.
 type IdentityCertifier struct {
 	Name        string `json:"name"`
 	IconUrl     string `json:"iconUrl"`
@@ -590,6 +612,7 @@ func (ic *IdentityCertificate) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// AcquisitionProtocol specifies the method used to acquire a certificate.
 type AcquisitionProtocol string
 
 const (
@@ -597,6 +620,8 @@ const (
 	AcquisitionProtocolIssuance AcquisitionProtocol = "issuance"
 )
 
+// AcquisitionProtocolFromString converts a string to an AcquisitionProtocol with validation.
+// Valid values are "direct" and "issuance".
 func AcquisitionProtocolFromString(s string) (AcquisitionProtocol, error) {
 	ap := AcquisitionProtocol(s)
 	switch ap {
@@ -643,6 +668,8 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// AcquireCertificateArgs contains parameters for acquiring a new certificate.
+// This includes the certificate type, certifier information, and acquisition method.
 type AcquireCertificateArgs struct {
 	Type                Base64Bytes32       `json:"type"`
 	Certifier           HexBytes33          `json:"certifier"`
@@ -658,6 +685,7 @@ type AcquireCertificateArgs struct {
 	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
 }
 
+// ListCertificatesArgs contains parameters for listing certificates with filtering and pagination.
 type ListCertificatesArgs struct {
 	Certifiers       []HexBytes33    `json:"certifiers"`
 	Types            []Base64Bytes32 `json:"types"`
@@ -667,6 +695,7 @@ type ListCertificatesArgs struct {
 	PrivilegedReason string          `json:"privilegedReason,omitempty"`
 }
 
+// CertificateResult represents a certificate with its associated keyring and verifier information.
 type CertificateResult struct {
 	Certificate                   // Embed certificate fields directly. They already have tags.
 	Keyring     map[string]string `json:"keyring"`
@@ -731,30 +760,37 @@ func (cr *CertificateResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ListCertificatesResult contains a paginated list of certificates matching the query criteria.
 type ListCertificatesResult struct {
 	TotalCertificates uint32              `json:"totalCertificates"`
 	Certificates      []CertificateResult `json:"certificates"`
 }
 
+// RelinquishCertificateArgs contains parameters for relinquishing ownership of a certificate.
 type RelinquishCertificateArgs struct {
 	Type         Base64Bytes32 `json:"type"`
 	SerialNumber Base64Bytes32 `json:"serialNumber"`
 	Certifier    HexBytes33    `json:"certifier"`
 }
 
+// RelinquishOutputArgs contains parameters for relinquishing ownership of an output.
 type RelinquishOutputArgs struct {
 	Basket string   `json:"basket"`
 	Output Outpoint `json:"output"`
 }
 
+// RelinquishOutputResult indicates whether an output was successfully relinquished.
 type RelinquishOutputResult struct {
 	Relinquished bool `json:"relinquished"`
 }
 
+// RelinquishCertificateResult indicates whether a certificate was successfully relinquished.
 type RelinquishCertificateResult struct {
 	Relinquished bool `json:"relinquished"`
 }
 
+// DiscoverByIdentityKeyArgs contains parameters for discovering certificates by identity key.
+// This allows finding certificates associated with a specific public key identity.
 type DiscoverByIdentityKeyArgs struct {
 	IdentityKey    HexBytes33 `json:"identityKey"`
 	Limit          uint32     `json:"limit"`
@@ -762,6 +798,8 @@ type DiscoverByIdentityKeyArgs struct {
 	SeekPermission *bool      `json:"seekPermission,omitempty"`
 }
 
+// DiscoverByAttributesArgs contains parameters for discovering certificates by their attributes.
+// This allows finding certificates that contain specific field values.
 type DiscoverByAttributesArgs struct {
 	Attributes     map[string]string `json:"attributes"`
 	Limit          uint32            `json:"limit"`
@@ -769,27 +807,33 @@ type DiscoverByAttributesArgs struct {
 	SeekPermission *bool             `json:"seekPermission,omitempty"`
 }
 
+// DiscoverCertificatesResult contains a paginated list of identity certificates found during discovery.
 type DiscoverCertificatesResult struct {
 	TotalCertificates uint32                `json:"totalCertificates"`
 	Certificates      []IdentityCertificate `json:"certificates"`
 }
 
+// AuthenticatedResult indicates whether the current session is authenticated.
 type AuthenticatedResult struct {
 	Authenticated bool `json:"authenticated"`
 }
 
+// GetHeightResult contains the current blockchain height information.
 type GetHeightResult struct {
 	Height uint32 `json:"height"`
 }
 
+// GetHeaderArgs contains parameters for retrieving a blockchain header at a specific height.
 type GetHeaderArgs struct {
 	Height uint32 `json:"height"`
 }
 
+// GetHeaderResult contains the blockchain header data for the requested height.
 type GetHeaderResult struct {
 	Header JSONByteHex `json:"header"`
 }
 
+// Network represents the blockchain network type.
 type Network string
 
 const (
@@ -797,6 +841,8 @@ const (
 	NetworkTestnet Network = "testnet"
 )
 
+// NetworkFromString converts a string to a Network with validation.
+// Valid values are "mainnet" and "testnet".
 func NetworkFromString(s string) (Network, error) {
 	n := Network(s)
 	switch n {
@@ -806,10 +852,12 @@ func NetworkFromString(s string) (Network, error) {
 	return "", fmt.Errorf("invalid network: %s", s)
 }
 
+// GetNetworkResult contains information about the current blockchain network.
 type GetNetworkResult struct {
 	Network Network `json:"network"` // "mainnet" | "testnet"
 }
 
+// GetVersionResult contains version information about the wallet implementation.
 type GetVersionResult struct {
 	Version string `json:"version"`
 }
@@ -834,8 +882,11 @@ type ProveCertificateResult struct {
 	KeyringForVerifier map[string]string `json:"keyringForVerifier"`
 }
 
+// CertificateFieldNameUnder50Bytes represents a certificate field name with length restrictions.
+// Field names must be under 50 bytes to ensure efficient storage and processing.
 type CertificateFieldNameUnder50Bytes string
 
+// Base64String represents a string that should be base64 encoded in certain contexts.
 type Base64String string
 
 func (s Base64String) ToArray() ([32]byte, error) {
