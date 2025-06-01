@@ -42,5 +42,12 @@ Here, you will find a number of common usage examples for the go-sdk.
 ## Cryptography
 - [AES](./aes/) - Advanced Encryption Standard (AES) examples.
 
+## Wallet
+- [Create Wallet](./create_wallet/) - Create a new wallet instance.
+- [Encrypt Data](./encrypt_data/) - Encrypt data using the wallet.
+- [Create Signature](./create_signature/) - Create a digital signature.
+- [Create HMAC](./create_hmac/) - Create an HMAC.
+- [Get Public Key](./get_public_key/) - Retrieve a public key from the wallet.
+
 ## Additional Example Documents
 - [Converting Transactions from go-bt](./GO_BT.md)
