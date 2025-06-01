@@ -20,6 +20,7 @@ const MAX_TRACKER_WAIT_TIME = time.Second
 var DEFAULT_SLAP_TRACKERS = []string{"https://users.bapp.dev"}
 var DEFAULT_TESTNET_SLAP_TRACKERS = []string{"https://testnet-users.bapp.dev"}
 
+// LookupResolver resolves overlay service hosts and executes lookup queries with resiliency across multiple services
 type LookupResolver struct {
 	Facilitator     Facilitator
 	SLAPTrackers    []string
@@ -28,6 +29,7 @@ type LookupResolver struct {
 	NetworkPreset   overlay.Network
 }
 
+// NewLookupResolver creates a new LookupResolver with the provided configuration
 func NewLookupResolver(cfg *LookupResolver) *LookupResolver {
 	resolver := &LookupResolver{
 		Facilitator:     cfg.Facilitator,
@@ -57,6 +59,7 @@ func NewLookupResolver(cfg *LookupResolver) *LookupResolver {
 	return resolver
 }
 
+// Query executes a lookup question and aggregates responses from multiple overlay service hosts
 func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*LookupAnswer, error) {
 	var competentHosts []string
 	if l.NetworkPreset == overlay.NetworkLocal {
@@ -131,6 +134,7 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 	return answer, nil
 }
 
+// FindCompetentHosts discovers overlay service hosts that can handle the specified service using SLAP trackers
 func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string) (competentHosts []string, err error) {
 	query := &LookupQuestion{
 		Service: "ls_slap",

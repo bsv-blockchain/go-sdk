@@ -10,14 +10,17 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
+// Facilitator defines the interface for overlay lookup facilitators that can execute lookup queries
 type Facilitator interface {
 	Lookup(ctx context.Context, url string, question *LookupQuestion) (*LookupAnswer, error)
 }
 
+// HTTPSOverlayLookupFacilitator implements the Facilitator interface using HTTPS requests
 type HTTPSOverlayLookupFacilitator struct {
 	Client util.HTTPClient
 }
 
+// Lookup executes a lookup question against the specified URL and returns the answer
 func (f *HTTPSOverlayLookupFacilitator) Lookup(ctx context.Context, url string, question *LookupQuestion) (*LookupAnswer, error) {
 	if q, err := json.Marshal(question); err != nil {
 		return nil, err
