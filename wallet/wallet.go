@@ -25,10 +25,14 @@ type Protocol struct {
 	Protocol      string
 }
 
+// MarshalJSON implements the json.Marshaler interface for Protocol.
+// It serializes the Protocol as a JSON array containing [SecurityLevel, Protocol].
 func (p *Protocol) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]interface{}{p.SecurityLevel, p.Protocol})
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Protocol.
+// It deserializes a JSON array [SecurityLevel, Protocol] into the Protocol struct.
 func (p *Protocol) UnmarshalJSON(data []byte) error {
 	var temp []interface{}
 	if err := json.Unmarshal(data, &temp); err != nil {
@@ -53,6 +57,7 @@ func (p *Protocol) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// CounterpartyType represents the type of counterparty in a cryptographic operation.
 type CounterpartyType int
 
 const (
@@ -69,6 +74,9 @@ type Counterparty struct {
 	Counterparty *ec.PublicKey
 }
 
+// MarshalJSON implements the json.Marshaler interface for Counterparty.
+// It serializes special counterparty types as strings ("anyone", "self") and
+// specific counterparties as their DER-encoded hex public key.
 func (c *Counterparty) MarshalJSON() ([]byte, error) {
 	switch c.Type {
 	case CounterpartyTypeAnyone:
@@ -85,6 +93,9 @@ func (c *Counterparty) MarshalJSON() ([]byte, error) {
 	}
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Counterparty.
+// It deserializes "anyone", "self", or a DER-encoded hex public key string
+// into the appropriate Counterparty struct.
 func (c *Counterparty) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
@@ -130,6 +141,8 @@ func NewWallet(privateKey *ec.PrivateKey) (*Wallet, error) {
 	}, nil
 }
 
+// EncryptionArgs contains common parameters for cryptographic operations.
+// These parameters specify the protocol, key identity, counterparty, and access control settings.
 type EncryptionArgs struct {
 	ProtocolID       Protocol     `json:"protocolID,omitempty"`
 	KeyID            string       `json:"keyID,omitempty"`
@@ -139,40 +152,52 @@ type EncryptionArgs struct {
 	SeekPermission   bool         `json:"seekPermission,omitempty"`
 }
 
+// EncryptArgs contains parameters for encrypting data.
+// It extends EncryptionArgs with the plaintext data to be encrypted.
 type EncryptArgs struct {
 	EncryptionArgs
 	Plaintext JsonByteNoBase64 `json:"plaintext"`
 }
 
+// DecryptArgs contains parameters for decrypting data.
+// It extends EncryptionArgs with the ciphertext data to be decrypted.
 type DecryptArgs struct {
 	EncryptionArgs
 	Ciphertext JsonByteNoBase64 `json:"ciphertext"`
 }
 
+// EncryptResult contains the result of an encryption operation.
 type EncryptResult struct {
 	Ciphertext JsonByteNoBase64 `json:"ciphertext"`
 }
 
+// DecryptResult contains the result of a decryption operation.
 type DecryptResult struct {
 	Plaintext JsonByteNoBase64 `json:"plaintext"`
 }
 
+// GetPublicKeyArgs contains parameters for retrieving a public key.
+// It extends EncryptionArgs with flags to specify identity key or derived key behavior.
 type GetPublicKeyArgs struct {
 	EncryptionArgs
 	IdentityKey bool `json:"identityKey"`
 	ForSelf     bool `json:"forSelf,omitempty"`
 }
 
+// GetPublicKeyResult contains the result of a public key retrieval operation.
 type GetPublicKeyResult struct {
 	PublicKey *ec.PublicKey `json:"publicKey"`
 }
 
+// CreateSignatureArgs contains parameters for creating a digital signature.
+// It can sign either raw data (which will be hashed) or a pre-computed hash.
 type CreateSignatureArgs struct {
 	EncryptionArgs
 	Data               JsonByteNoBase64 `json:"data,omitempty"`
 	HashToDirectlySign JsonByteNoBase64 `json:"hashToDirectlySign,omitempty"`
 }
 
+// CreateSignatureResult contains the result of a signature creation operation.
 type CreateSignatureResult struct {
 	Signature ec.Signature `json:"-"` // Ignore original field for JSON
 }
@@ -210,6 +235,8 @@ func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// SignOutputs defines which transaction outputs should be signed using SIGHASH flags.
+// It wraps the sighash.Flag type to provide specific signing behavior.
 type SignOutputs sighash.Flag
 
 var (
@@ -218,10 +245,14 @@ var (
 	SignOutputsSingle SignOutputs = SignOutputs(sighash.Single)
 )
 
+// JsonSignature is a wrapper around ec.Signature that provides custom JSON marshaling.
+// It serializes signatures as arrays of byte values rather than base64 strings.
 type JsonSignature struct {
 	ec.Signature
 }
 
+// MarshalJSON implements the json.Marshaler interface for JsonSignature.
+// It serializes the signature as an array of byte values.
 func (s *JsonSignature) MarshalJSON() ([]byte, error) {
 	sig := s.Serialize()
 	sigInts := make([]uint16, len(sig))
@@ -231,6 +262,8 @@ func (s *JsonSignature) MarshalJSON() ([]byte, error) {
 	return json.Marshal(sigInts)
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for JsonSignature.
+// It deserializes an array of byte values back into a signature.
 func (s *JsonSignature) UnmarshalJSON(data []byte) error {
 	var sigBytes []byte
 	// Unmarshal directly from JSON array of numbers into byte slice
@@ -246,6 +279,8 @@ func (s *JsonSignature) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// VerifySignatureArgs contains parameters for verifying a digital signature.
+// It can verify against either raw data (which will be hashed) or a pre-computed hash.
 type VerifySignatureArgs struct {
 	EncryptionArgs
 	Data                 JsonByteNoBase64 `json:"data,omitempty"`
@@ -287,29 +322,42 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type CreateHmacArgs struct {
+
+// CreateHMACArgs contains parameters for creating an HMAC.
+// It extends EncryptionArgs with the data to be authenticated.
+type CreateHMACArgs struct {
 	EncryptionArgs
 	Data JsonByteNoBase64 `json:"data"`
 }
 
-type CreateHmacResult struct {
-	Hmac JsonByteNoBase64 `json:"hmac"`
+// CreateHMACResult contains the result of an HMAC creation operation.
+type CreateHMACResult struct {
+	HMAC JsonByteNoBase64 `json:"hmac"`
 }
 
-type VerifyHmacArgs struct {
+
+// VerifyHMACArgs contains parameters for verifying an HMAC.
+// It extends EncryptionArgs with the data and HMAC to be verified.
+
+type VerifyHMACArgs struct {
 	EncryptionArgs
 	Data JsonByteNoBase64 `json:"data"`
-	Hmac JsonByteNoBase64 `json:"hmac"`
+	HMAC JsonByteNoBase64 `json:"hmac"`
 }
 
-type VerifyHmacResult struct {
+// VerifyHMACResult contains the result of an HMAC verification operation.
+type VerifyHMACResult struct {
 	Valid bool `json:"valid"`
 }
 
+// VerifySignatureResult contains the result of a signature verification operation.
 type VerifySignatureResult struct {
 	Valid bool `json:"valid"`
 }
 
+// AnyoneKey returns the special "anyone" private and public key pair.
+// This key pair is used when no specific counterparty is specified,
+// effectively making operations available to anyone.
 func AnyoneKey() (*ec.PrivateKey, *ec.PublicKey) {
 	return ec.PrivateKeyFromBytes([]byte{1})
 }

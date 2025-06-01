@@ -6,13 +6,13 @@ import (
 	"testing"
 )
 
-func TestCreateHmacArgs(t *testing.T) {
+func TestCreateHMACArgs(t *testing.T) {
 	tests := []struct {
 		name string
-		args *wallet.CreateHmacArgs
+		args *wallet.CreateHMACArgs
 	}{{
 		name: "full args",
-		args: &wallet.CreateHmacArgs{
+		args: &wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -28,7 +28,7 @@ func TestCreateHmacArgs(t *testing.T) {
 		},
 	}, {
 		name: "minimal args",
-		args: &wallet.CreateHmacArgs{
+		args: &wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelSilent,
@@ -40,7 +40,7 @@ func TestCreateHmacArgs(t *testing.T) {
 		},
 	}, {
 		name: "empty data",
-		args: &wallet.CreateHmacArgs{
+		args: &wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelSilent,
@@ -55,11 +55,11 @@ func TestCreateHmacArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
-			data, err := SerializeCreateHmacArgs(tt.args)
+			data, err := SerializeCreateHMACArgs(tt.args)
 			require.NoError(t, err)
 
 			// Test deserialization
-			got, err := DeserializeCreateHmacArgs(data)
+			got, err := DeserializeCreateHMACArgs(data)
 			require.NoError(t, err)
 
 			// Compare results
@@ -68,13 +68,13 @@ func TestCreateHmacArgs(t *testing.T) {
 	}
 }
 
-func TestCreateHmacResult(t *testing.T) {
+func TestCreateHMACResult(t *testing.T) {
 	t.Run("serialize/deserialize", func(t *testing.T) {
-		result := &wallet.CreateHmacResult{Hmac: []byte{1, 2, 3, 4}}
-		data, err := SerializeCreateHmacResult(result)
+		result := &wallet.CreateHMACResult{HMAC: []byte{1, 2, 3, 4}}
+		data, err := SerializeCreateHMACResult(result)
 		require.NoError(t, err)
 
-		got, err := DeserializeCreateHmacResult(data)
+		got, err := DeserializeCreateHMACResult(data)
 		require.NoError(t, err)
 		require.Equal(t, result, got)
 	})

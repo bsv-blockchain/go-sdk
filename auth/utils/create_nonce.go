@@ -19,8 +19,8 @@ func CreateNonce(ctx context.Context, w wallet.KeyOperations, counterparty walle
 		return "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}
 
-	// Create encryption arguments for the wallet's CreateHmac function
-	args := wallet.CreateHmacArgs{
+	// Create encryption arguments for the wallet's CreateHMAC function
+	args := wallet.CreateHMACArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -33,13 +33,13 @@ func CreateNonce(ctx context.Context, w wallet.KeyOperations, counterparty walle
 	}
 
 	// Create an HMAC for the random data using the wallet's key
-	hmac, err := w.CreateHmac(ctx, args, "")
+	hmac, err := w.CreateHMAC(ctx, args, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to create HMAC: %w", err)
 	}
 
 	// Combine the random data and the HMAC
-	combined := append(randomBytes, hmac.Hmac...)
+	combined := append(randomBytes, hmac.HMAC...)
 
 	// Encode as base64
 	nonce := base64.StdEncoding.EncodeToString(combined)

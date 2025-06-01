@@ -7,7 +7,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-func SerializeCreateHmacArgs(args *wallet.CreateHmacArgs) ([]byte, error) {
+func SerializeCreateHMACArgs(args *wallet.CreateHMACArgs) ([]byte, error) {
 	w := util.NewWriter()
 
 	// Encode key related params (protocol, key, counterparty, privileged)
@@ -34,9 +34,9 @@ func SerializeCreateHmacArgs(args *wallet.CreateHmacArgs) ([]byte, error) {
 	return w.Buf, nil
 }
 
-func DeserializeCreateHmacArgs(data []byte) (*wallet.CreateHmacArgs, error) {
+func DeserializeCreateHMACArgs(data []byte) (*wallet.CreateHMACArgs, error) {
 	r := util.NewReaderHoldError(data)
-	args := &wallet.CreateHmacArgs{}
+	args := &wallet.CreateHMACArgs{}
 
 	// Decode key related params
 	params, err := decodeKeyRelatedParams(r)
@@ -58,34 +58,34 @@ func DeserializeCreateHmacArgs(data []byte) (*wallet.CreateHmacArgs, error) {
 
 	r.CheckComplete()
 	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing CreateHmac args: %w", r.Err)
+		return nil, fmt.Errorf("error deserializing CreateHMAC args: %w", r.Err)
 	}
 
 	return args, nil
 }
 
-func SerializeCreateHmacResult(result *wallet.CreateHmacResult) ([]byte, error) {
+func SerializeCreateHMACResult(result *wallet.CreateHMACResult) ([]byte, error) {
 	w := util.NewWriter()
 	w.WriteByte(0) // errorByte = 0 (success)
-	w.WriteBytes(result.Hmac)
+	w.WriteBytes(result.HMAC)
 	return w.Buf, nil
 }
 
-func DeserializeCreateHmacResult(data []byte) (*wallet.CreateHmacResult, error) {
+func DeserializeCreateHMACResult(data []byte) (*wallet.CreateHMACResult, error) {
 	r := util.NewReaderHoldError(data)
-	result := &wallet.CreateHmacResult{}
+	result := &wallet.CreateHMACResult{}
 
 	// Read error byte (0 = success)
 	errorByte := r.ReadByte()
 	if errorByte != 0 {
-		return nil, fmt.Errorf("createHmac failed with error byte %d", errorByte)
+		return nil, fmt.Errorf("createHMAC failed with error byte %d", errorByte)
 	}
 
 	// Read hmac (remaining bytes)
-	result.Hmac = r.ReadRemaining()
+	result.HMAC = r.ReadRemaining()
 
 	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing CreateHmac result: %w", r.Err)
+		return nil, fmt.Errorf("error deserializing CreateHMAC result: %w", r.Err)
 	}
 
 	return result, nil

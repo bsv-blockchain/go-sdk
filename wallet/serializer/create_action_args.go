@@ -49,17 +49,13 @@ func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.Creat
 	paramWriter.WriteVarInt(uint64(len(inputs)))
 	for _, input := range inputs {
 		// Serialize outpoint
-		outpoint, err := encodeOutpoint(input.Outpoint)
-		if err != nil {
-			return fmt.Errorf("error encode outpoint for input: %w", err)
-		}
-		paramWriter.WriteBytes(outpoint)
+		paramWriter.WriteBytes(encodeOutpoint(&input.Outpoint))
 
 		// Serialize unlocking script
-		if err = paramWriter.WriteOptionalFromHex(input.UnlockingScript); err != nil {
-			return fmt.Errorf("invalid unlocking script: %w", err)
-		}
-		if input.UnlockingScript == "" {
+		if len(input.UnlockingScript) > 0 {
+			paramWriter.WriteIntBytes(input.UnlockingScript)
+		} else {
+			paramWriter.WriteNegativeOne()
 			paramWriter.WriteVarInt(uint64(input.UnlockingScriptLength))
 		}
 
@@ -77,12 +73,8 @@ func serializeCreateActionOutputs(paramWriter *util.Writer, outputs []wallet.Cre
 	}
 	paramWriter.WriteVarInt(uint64(len(outputs)))
 	for _, output := range outputs {
-		// Serialize locking script
-		if err := paramWriter.WriteIntFromHex(output.LockingScript); err != nil {
-			return fmt.Errorf("error writing locking script: %w", err)
-		}
-
-		// Serialize satoshis, output description, basket, custom instructions, and tags
+		// Serialize locking script, satoshis, output description, basket, custom instructions, and tags
+		paramWriter.WriteIntBytes(output.LockingScript)
 		paramWriter.WriteVarInt(output.Satoshis)
 		paramWriter.WriteString(output.OutputDescription)
 		paramWriter.WriteOptionalString(output.Basket)

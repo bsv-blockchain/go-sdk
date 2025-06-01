@@ -2,10 +2,10 @@ package utils
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
-
-	"slices"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -19,12 +19,43 @@ var (
 )
 
 // RequestedCertificateTypeIDAndFieldList maps certificate type IDs to required fields
-type RequestedCertificateTypeIDAndFieldList map[string][]string
+type RequestedCertificateTypeIDAndFieldList map[wallet.Base64Bytes32][]string
+
+func (m RequestedCertificateTypeIDAndFieldList) MarshalJSON() ([]byte, error) {
+	tmp := make(map[string][]string)
+	for k, v := range m {
+		tmp[base64.StdEncoding.EncodeToString(k[:])] = v
+	}
+	return json.Marshal(tmp)
+}
+
+func (m *RequestedCertificateTypeIDAndFieldList) UnmarshalJSON(data []byte) error {
+	tmp := make(map[string][]string)
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	result := make(RequestedCertificateTypeIDAndFieldList)
+	for k, v := range tmp {
+		decoded, err := base64.StdEncoding.DecodeString(k)
+		if err != nil {
+			return fmt.Errorf("invalid base64 key: %w", err)
+		}
+		if len(decoded) != 32 {
+			return fmt.Errorf("expected 32 bytes, got %d", len(decoded))
+		}
+		var key wallet.Base64Bytes32
+		copy(key[:], decoded)
+		result[key] = v
+	}
+	*m = result
+	return nil
+}
 
 // RequestedCertificateSet represents a set of requested certificates
 type RequestedCertificateSet struct {
 	// Array of public keys that must have signed the certificates
-	Certifiers []string
+	Certifiers []wallet.HexBytes33
 
 	// Map of certificate type IDs to field names that must be included
 	CertificateTypes RequestedCertificateTypeIDAndFieldList
@@ -82,10 +113,9 @@ func ValidateCertificates(
 			if certificatesRequested != nil {
 				// Check certifier matches
 				if !isEmptyPublicKey(cert.Certifier) {
-					certifierKey := cert.Certifier.ToDERHex()
-					if !slices.Contains(certificatesRequested.Certifiers, certifierKey) &&
-						!slices.Contains(certificatesRequested.Certifiers, "any") {
-						errCh <- fmt.Errorf("certificate with serial number %s has an unrequested certifier: %s",
+					certifierKey := cert.Certifier.ToDER()
+					if !wallet.BytesInHex33Slice(certificatesRequested.Certifiers, certifierKey) {
+						errCh <- fmt.Errorf("certificate with serial number %s has an unrequested certifier: %x",
 							cert.SerialNumber, certifierKey)
 						return
 					}
@@ -93,7 +123,12 @@ func ValidateCertificates(
 
 				// Check type match
 				if cert.Type != "" {
-					requestedFields, typeExists := certificatesRequested.CertificateTypes[string(cert.Type)]
+					certType, err := cert.Type.ToArray()
+					if err != nil {
+						errCh <- fmt.Errorf("failed to convert certificate type to byte array: %v", err)
+						return
+					}
+					requestedFields, typeExists := certificatesRequested.CertificateTypes[certType]
 					if !typeExists {
 						errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
 						return
@@ -147,7 +182,7 @@ func ValidateRequestedCertificateSet(req *RequestedCertificateSet) error {
 	}
 
 	for certType, fields := range req.CertificateTypes {
-		if certType == "" {
+		if certType == [32]byte{} {
 			return errors.New("empty certificate type specified")
 		}
 

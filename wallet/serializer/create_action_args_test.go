@@ -1,14 +1,20 @@
 package serializer
 
 import (
+	"encoding/hex"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
+	lockingScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
+	require.NoError(t, err, "decoding locking script should not error")
+
 	tests := []struct {
 		name string
 		args *wallet.CreateActionArgs
@@ -20,16 +26,16 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				InputBEEF:   []byte{0x01, 0x02, 0x03},
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:              "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0",
+						Outpoint:              *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 						InputDescription:      "input 1",
-						UnlockingScript:       "abcd",
+						UnlockingScript:       []byte{0xab, 0xcd},
 						UnlockingScriptLength: 2, // Length is in bytes, "abcd" is 2 bytes when decoded from hex
 						SequenceNumber:        1,
 					},
 				},
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript:      lockingScript,
 						Satoshis:           1000,
 						OutputDescription:  "output 1",
 						Basket:             "basket1",
@@ -44,14 +50,14 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 					SignAndProcess:         util.BoolPtr(true),
 					AcceptDelayedBroadcast: util.BoolPtr(false),
 					TrustSelf:              wallet.TrustSelfKnown,
-					KnownTxids: []string{
-						"8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72",
-						"490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981",
+					KnownTxids: []chainhash.Hash{
+						tu.HashFromString(t, "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72"),
+						tu.HashFromString(t, "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981"),
 					},
 					ReturnTXIDOnly:   util.BoolPtr(true),
 					NoSend:           util.BoolPtr(false),
-					NoSendChange:     []string{"abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"},
-					SendWith:         []string{"b95bbe3c3f3bd420048cbf57201fc6dd4e730b2e046bf170ac0b1f78de069e8e"},
+					NoSendChange:     []wallet.Outpoint{*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1")},
+					SendWith:         []chainhash.Hash{tu.HashFromString(t, "b95bbe3c3f3bd420048cbf57201fc6dd4e730b2e046bf170ac0b1f78de069e8e")},
 					RandomizeOutputs: util.BoolPtr(true),
 				},
 			},
@@ -65,7 +71,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:         "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0",
+						Outpoint:         *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 						InputDescription: "input 1",
 					},
 				},
@@ -76,7 +82,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript: lockingScript,
 						Satoshis:      1000,
 					},
 				},
@@ -95,15 +101,15 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:              "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0",
+						Outpoint:              *tu.OutpointFromString(t, "8a552c995db3602e85bb9df911803897d1ea17ba5cdd198605d014be49db9f72.0"),
 						InputDescription:      "input 1",
-						UnlockingScript:       "abcd",
+						UnlockingScript:       []byte{0xab, 0xcd},
 						UnlockingScriptLength: 2, // "abcd" is 2 bytes when decoded from hex
 					},
 					{
-						Outpoint:              "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981.1",
+						Outpoint:              *tu.OutpointFromString(t, "490c292a700c55d5e62379828d60bf6c61850fbb4d13382f52021d3796221981.1"),
 						InputDescription:      "input 2",
-						UnlockingScript:       "efef",
+						UnlockingScript:       []byte{0xef, 0xef},
 						UnlockingScriptLength: 2, // "efef" is 2 bytes when decoded from hex
 						SequenceNumber:        2,
 					},
@@ -115,12 +121,12 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Outputs: []wallet.CreateActionOutput{
 					{
-						LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript:     lockingScript,
 						Satoshis:          1000,
 						OutputDescription: "output 1",
 					},
 					{
-						LockingScript:     "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+						LockingScript:     lockingScript,
 						Satoshis:          2000,
 						OutputDescription: "output 2",
 						Tags:              []string{"tag1", "tag2"},

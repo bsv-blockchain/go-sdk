@@ -1,8 +1,7 @@
 package serializer
 
 import (
-	"encoding/base64"
-	"encoding/hex"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -16,17 +15,19 @@ func TestDiscoverCertificatesResult(t *testing.T) {
 	t.Run("success with certificates", func(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
 		require.NoError(t, err, "generating private key should not error")
+		var certType [32]byte
+		copy(certType[:], "dGVzdC10eXBl") // "test-type" in base64
 		result := &wallet.DiscoverCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("dGVzdC10eXBl"), sizeType)),
+						Type:               certType,
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("c2VyaWFs"), sizeType)),
+						SerialNumber:       tu.GetByte32FromString("c2VyaWFs"),
 						Certifier:          pk.PubKey(),
-						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-						Signature:          hex.EncodeToString(make([]byte, 64)),
+						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
+						Signature:          make([]byte, 64),
 						Fields: map[string]string{
 							"field1": "value1",
 						},

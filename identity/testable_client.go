@@ -112,12 +112,13 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create dummy key: %w", err)
 	}
-	verifierPubKey := dummyPk.PubKey().Compressed()
+	var verifierPubKey [33]byte
+	copy(verifierPubKey[:], dummyPk.PubKey().Compressed())
 
 	_, err = c.wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 		Certificate:    *certificate,
 		FieldsToReveal: fieldNamesAsStrings,
-		Verifier:       string(verifierPubKey),
+		Verifier:       verifierPubKey,
 	}, string(c.originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)
@@ -150,7 +151,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 		Outputs: []wallet.CreateActionOutput{
 			{
 				Satoshis:          c.options.TokenAmount,
-				LockingScript:     lockingScript.String(),
+				LockingScript:     lockingScript.Bytes(),
 				OutputDescription: "Identity Token",
 			},
 		},

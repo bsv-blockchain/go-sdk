@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -63,21 +62,21 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 		return nil, nil
 	}
 	var inputs []wallet.CreateActionInput
-	var err error
 	for i := uint64(0); i < inputsLen; i++ {
 		input := wallet.CreateActionInput{}
 
 		// Read outpoint
 		outpointBytes := messageReader.ReadBytes(outpointSize)
-		input.Outpoint, err = decodeOutpoint(outpointBytes)
+		outpoint, err := decodeOutpoint(outpointBytes)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}
+		input.Outpoint = *outpoint
 
 		// Read unlocking script
 		scriptBytes := messageReader.ReadOptionalBytes()
 		if scriptBytes != nil {
-			input.UnlockingScript = hex.EncodeToString(scriptBytes)
+			input.UnlockingScript = scriptBytes
 			input.UnlockingScriptLength = uint32(len(scriptBytes))
 		} else {
 			// Read unlocking script length value
@@ -118,7 +117,7 @@ func deserializeCreateActionOutputs(messageReader *util.ReaderHoldError) ([]wall
 
 		// Read satoshis, output description, basket, custom instructions, and tags
 		output := wallet.CreateActionOutput{
-			LockingScript:      hex.EncodeToString(lockingScriptBytes),
+			LockingScript:      lockingScriptBytes,
 			Satoshis:           messageReader.ReadVarInt(),
 			OutputDescription:  messageReader.ReadString(),
 			Basket:             messageReader.ReadString(),

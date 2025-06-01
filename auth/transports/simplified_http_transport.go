@@ -142,6 +142,8 @@ func (t *SimplifiedHTTPTransport) Send(ctx context.Context, message *auth.AuthMe
 	return nil
 }
 
+// GetRegisteredOnData returns the first registered callback function for handling incoming AuthMessages.
+// Returns an error if no handlers are registered.
 func (t *SimplifiedHTTPTransport) GetRegisteredOnData() (func(context.Context, *auth.AuthMessage) error, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()

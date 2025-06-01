@@ -23,7 +23,7 @@ type MinimalWalletImpl struct {
 
 // Required methods to satisfy wallet.Interface
 func (w *MinimalWalletImpl) CreateAction(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-	return &wallet.CreateActionResult{Txid: "mock_tx", Tx: []byte{}}, nil
+	return &wallet.CreateActionResult{Txid: [32]byte{0x01, 0x02}, Tx: []byte{}}, nil
 }
 
 func (w *MinimalWalletImpl) ListCertificates(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
