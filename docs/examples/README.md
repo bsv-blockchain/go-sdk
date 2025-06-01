@@ -48,6 +48,7 @@ Here, you will find a number of common usage examples for the go-sdk.
 - [Create Signature](./create_signature/) - Create a digital signature.
 - [Create HMAC](./create_hmac/) - Create an HMAC.
 - [Get Public Key](./get_public_key/) - Retrieve a public key from the wallet.
+- [HTTP Wallet](./http_wallet/) - Interact with a wallet using JSON over HTTP.
 
 ## Additional Example Documents
 - [Converting Transactions from go-bt](./GO_BT.md)
