@@ -19,7 +19,7 @@ var (
 )
 
 // RequestedCertificateTypeIDAndFieldList maps certificate type IDs to required fields
-type RequestedCertificateTypeIDAndFieldList map[wallet.Base64Bytes32][]string
+type RequestedCertificateTypeIDAndFieldList map[wallet.Bytes32Base64][]string
 
 func (m RequestedCertificateTypeIDAndFieldList) MarshalJSON() ([]byte, error) {
 	tmp := make(map[string][]string)
@@ -44,7 +44,7 @@ func (m *RequestedCertificateTypeIDAndFieldList) UnmarshalJSON(data []byte) erro
 		if len(decoded) != 32 {
 			return fmt.Errorf("expected 32 bytes, got %d", len(decoded))
 		}
-		var key wallet.Base64Bytes32
+		var key wallet.Bytes32Base64
 		copy(key[:], decoded)
 		result[key] = v
 	}
@@ -55,7 +55,7 @@ func (m *RequestedCertificateTypeIDAndFieldList) UnmarshalJSON(data []byte) erro
 // RequestedCertificateSet represents a set of requested certificates
 type RequestedCertificateSet struct {
 	// Array of public keys that must have signed the certificates
-	Certifiers []wallet.HexBytes33
+	Certifiers []wallet.Bytes33Hex
 
 	// Map of certificate type IDs to field names that must be included
 	CertificateTypes RequestedCertificateTypeIDAndFieldList

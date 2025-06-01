@@ -24,11 +24,11 @@ func TestValidateCertificates(t *testing.T) {
 	})
 
 	t.Run("Validates certificate requirements structure", func(t *testing.T) {
-		var certType wallet.Base64Bytes32
+		var certType wallet.Bytes32Base64
 		copy(certType[:], "requested_type")
 		// Test validate certificate requirements struct
 		reqs := &utils.RequestedCertificateSet{
-			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("valid_certifier")},
+			Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("valid_certifier")},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType: {"field1"},
 			},

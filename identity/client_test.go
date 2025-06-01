@@ -372,7 +372,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		require.Contains(t, err.Error(), "certificate verification failed")
 	})
 
-	typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+	typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
 	require.NoError(t, err)
 
 	t.Run("should throw if createAction returns no tx", func(t *testing.T) {
@@ -713,7 +713,7 @@ func TestResolveByIdentityKey(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := privateKeyFromInt(123)
 
-		typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
 		require.NoError(t, err)
 
 		// Setup mock DiscoverByIdentityKey
@@ -771,7 +771,7 @@ func TestResolveByAttributes(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := privateKeyFromInt(123)
 
-		typeEmailCert, err := wallet.Base64String(KnownIdentityTypes.EmailCert).ToArray()
+		typeEmailCert, err := wallet.StringBase64(KnownIdentityTypes.EmailCert).ToArray()
 		require.NoError(t, err)
 
 		// Setup mock DiscoverByAttributes
@@ -819,7 +819,7 @@ func TestParseIdentity(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
-		typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
 		require.NoError(t, err)
 
 		// Setup certificate

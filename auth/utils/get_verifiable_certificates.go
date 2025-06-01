@@ -39,7 +39,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	var result []*certificates.VerifiableCertificate
 
 	// Get all certificate types
-	var certificateTypes []wallet.Base64Bytes32
+	var certificateTypes []wallet.Bytes32Base64
 	for certType := range options.RequestedCertificates.CertificateTypes {
 		certificateTypes = append(certificateTypes, certType)
 	}
@@ -100,10 +100,10 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 
 		// Create the base certificate
 		baseCert := &certificates.Certificate{
-			Type:               wallet.Base64String(base64.StdEncoding.EncodeToString(certType[:])),
-			SerialNumber:       wallet.Base64String(base64.StdEncoding.EncodeToString(certSerialNum[:])),
+			Type:               wallet.StringBase64(base64.StdEncoding.EncodeToString(certType[:])),
+			SerialNumber:       wallet.StringBase64(base64.StdEncoding.EncodeToString(certSerialNum[:])),
 			RevocationOutpoint: revocationOutpoint,
-			Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
+			Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64),
 		}
 
 		// Handle Signature
@@ -135,13 +135,13 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 						// If not, encode it
 						value = base64.StdEncoding.EncodeToString([]byte(value))
 					}
-					baseCert.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.Base64String(value)
+					baseCert.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.StringBase64(value)
 				}
 			}
 		}
 
 		// Create keyring
-		keyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+		keyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		// Only add keyring entries if KeyringForVerifier is not nil
 		if proveResult.KeyringForVerifier != nil {
 			for fieldName, value := range proveResult.KeyringForVerifier {
@@ -150,7 +150,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 					// If not, encode it
 					value = base64.StdEncoding.EncodeToString([]byte(value))
 				}
-				keyring[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.Base64String(value)
+				keyring[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.StringBase64(value)
 			}
 		}
 

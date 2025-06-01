@@ -29,14 +29,14 @@ type MasterCertificate struct {
 	Certificate
 	// MasterKeyring contains encrypted symmetric keys (Base64 encoded) for each field.
 	// The key is the field name, and the value is the encrypted key.
-	MasterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String `json:"masterKeyring,omitempty"`
+	MasterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64 `json:"masterKeyring,omitempty"`
 }
 
 // NewMasterCertificate creates a new MasterCertificate instance.
 // It validates that the masterKeyring contains an entry for every field in the base certificate.
 func NewMasterCertificate(
 	cert *Certificate,
-	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
 ) (*MasterCertificate, error) {
 	if len(masterKeyring) == 0 {
 		return nil, ErrMissingMasterKeyring
@@ -59,8 +59,8 @@ func NewMasterCertificate(
 
 // CertificateFieldsResult holds the results from creating encrypted certificate fields.
 type CertificateFieldsResult struct {
-	CertificateFields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String
-	MasterKeyring     map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String
+	CertificateFields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64
+	MasterKeyring     map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64
 }
 
 // CreateCertificateFields encrypts certificate fields for a subject and generates a master keyring.
@@ -73,8 +73,8 @@ func CreateCertificateFields(
 	privileged bool,
 	privilegedReason string,
 ) (*CertificateFieldsResult, error) {
-	certificateFields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
-	masterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+	certificateFields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
+	masterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 
 	for fieldName, fieldValue := range fields {
 		// 1. Generate a random symmetric key (32 bytes)
@@ -89,7 +89,7 @@ func CreateCertificateFields(
 		if err != nil {
 			return nil, fmt.Errorf("failed to encrypt field value for %s: %w", fieldName, err)
 		}
-		certificateFields[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedFieldValue))
+		certificateFields[fieldName] = wallet.StringBase64(base64.StdEncoding.EncodeToString(encryptedFieldValue))
 
 		// 3. Encrypt the symmetric key for the certifier/subject
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), "") // No serial number for master keyring creation
@@ -106,7 +106,7 @@ func CreateCertificateFields(
 		if err != nil {
 			return nil, fmt.Errorf("failed to encrypt field revelation key for %s: %w", fieldName, err)
 		}
-		masterKeyring[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKey.Ciphertext))
+		masterKeyring[fieldName] = wallet.StringBase64(base64.StdEncoding.EncodeToString(encryptedKey.Ciphertext))
 	}
 
 	return &CertificateFieldsResult{
@@ -128,19 +128,19 @@ func IssueCertificateForSubject(
 	plainFields map[string]string, // Plaintext fields
 	certificateType string,
 	getRevocationOutpoint func(string) (*overlay.Outpoint, error), // Optional func
-	serialNumberStr string, // Optional serial number as Base64String
+	serialNumberStr string, // Optional serial number as StringBase64
 ) (*MasterCertificate, error) {
 
 	// 1. Generate a random serialNumber if not provided
-	var serialNumber wallet.Base64String
+	var serialNumber wallet.StringBase64
 	if serialNumberStr != "" {
-		serialNumber = wallet.Base64String(serialNumberStr)
+		serialNumber = wallet.StringBase64(serialNumberStr)
 	} else {
 		serialBytes := make([]byte, 32)
 		if _, err := rand.Read(serialBytes); err != nil {
 			return nil, fmt.Errorf("failed to generate random serial number: %w", err)
 		}
-		serialNumber = wallet.Base64String(base64.StdEncoding.EncodeToString(serialBytes))
+		serialNumber = wallet.StringBase64(base64.StdEncoding.EncodeToString(serialBytes))
 	}
 
 	// Convert plainFields map[string]string to map[wallet.CertificateFieldNameUnder50Bytes]string
@@ -183,7 +183,7 @@ func IssueCertificateForSubject(
 
 	// 5. Create the base Certificate struct
 	baseCert := &Certificate{
-		Type:               wallet.Base64String(certificateType),
+		Type:               wallet.StringBase64(certificateType),
 		SerialNumber:       serialNumber,
 		Certifier:          *certifierPubKey.PublicKey,
 		RevocationOutpoint: revocationOutpoint,
@@ -234,9 +234,9 @@ type DecryptFieldResult struct {
 func DecryptField(
 	ctx context.Context,
 	subjectOrCertifierWallet *wallet.ProtoWallet,
-	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
 	fieldName wallet.CertificateFieldNameUnder50Bytes,
-	encryptedFieldValue wallet.Base64String, // Base64 encoded encrypted value
+	encryptedFieldValue wallet.StringBase64, // Base64 encoded encrypted value
 	counterparty wallet.Counterparty,
 	privileged bool,
 	privilegedReason string,
@@ -296,8 +296,8 @@ func DecryptField(
 func DecryptFields(
 	ctx context.Context,
 	subjectOrCertifierWallet *wallet.ProtoWallet,
-	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
-	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // Encrypted fields
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
+	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64, // Encrypted fields
 	counterparty wallet.Counterparty,
 	privileged bool,
 	privilegedReason string,
@@ -341,19 +341,19 @@ func CreateKeyringForVerifier(
 	subjectWallet *wallet.ProtoWallet,
 	certifier wallet.Counterparty, // Counterparty used when decrypting master key
 	verifier wallet.Counterparty, // Counterparty to encrypt for
-	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // All encrypted fields from cert
+	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64, // All encrypted fields from cert
 	fieldsToReveal []wallet.CertificateFieldNameUnder50Bytes, // Which fields to include in the new keyring
-	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // The original master keyring
-	serialNumber wallet.Base64String, // Serial number needed for encryption protocol/key ID
+	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64, // The original master keyring
+	serialNumber wallet.StringBase64, // Serial number needed for encryption protocol/key ID
 	privileged bool,
 	privilegedReason string,
-) (map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, error) { // Returns the verifier-specific keyring
+) (map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64, error) { // Returns the verifier-specific keyring
 	if len(masterKeyring) == 0 {
 		return nil, ErrMissingMasterKeyring
 	}
 
 	// Create a new verifier-specific keyring
-	keyringForVerifier := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+	keyringForVerifier := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 
 	// For each field to reveal:
 	for _, fieldName := range fieldsToReveal {
@@ -397,7 +397,7 @@ func CreateKeyringForVerifier(
 		}
 
 		// 3. Store in verifier keyring
-		keyringForVerifier[fieldName] = wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedKeyForVerifier.Ciphertext))
+		keyringForVerifier[fieldName] = wallet.StringBase64(base64.StdEncoding.EncodeToString(encryptedKeyForVerifier.Ciphertext))
 	}
 
 	return keyringForVerifier, nil

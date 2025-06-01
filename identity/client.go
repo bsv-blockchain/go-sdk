@@ -75,9 +75,9 @@ func (c *Client) PubliclyRevealAttributes(
 
 	revocationOutpoint := overlay.NewOutpoint(certificate.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Index)
 
-	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 	for k, v := range certificate.Fields {
-		fields[wallet.CertificateFieldNameUnder50Bytes(k)] = wallet.Base64String(v)
+		fields[wallet.CertificateFieldNameUnder50Bytes(k)] = wallet.StringBase64(v)
 	}
 	// Convert Go certificate to Certificate instance to verify it
 	masterCert := &certificates.Certificate{
@@ -348,7 +348,7 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		badgeClickURL = DefaultIdentity.BadgeClickURL
 	}
 
-	var typeUnknown wallet.Base64Bytes32
+	var typeUnknown wallet.Bytes32Base64
 	copy(typeUnknown[:], "unknownType")
 
 	// Create abbreviated key for display

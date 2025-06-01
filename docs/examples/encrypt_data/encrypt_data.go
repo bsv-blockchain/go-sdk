@@ -70,7 +70,7 @@ func main() {
 			},
 			KeyID: "AliceToBobECIES_Key1",
 		},
-		Plaintext: wallet.JsonByteNoBase64(plaintextForBob),
+		Plaintext: wallet.BytesList(plaintextForBob),
 	}
 
 	encryptedResultAliceToBob, err := aliceWallet.Encrypt(ctx, encryptArgsAliceToBob, "alice_encrypt_for_bob")
@@ -127,7 +127,7 @@ func main() {
 			},
 			KeyID: "AliceSelfECIES_Key1",
 		},
-		Plaintext: wallet.JsonByteNoBase64(plaintextForSelf),
+		Plaintext: wallet.BytesList(plaintextForSelf),
 	}
 	selfEncryptedResult, err := aliceWallet.Encrypt(ctx, selfEncryptArgs, "alice_encrypt_for_self")
 	if err != nil {

@@ -27,8 +27,8 @@ func TestVerifiableCertificate(t *testing.T) {
 	verifierWallet, _ := NewCompletedProtoWallet(verifierPrivateKey)
 
 	// Sample data
-	sampleType := wallet.Base64String(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32)))
-	sampleSerialNumber := wallet.Base64String(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{2}, 32)))
+	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32)))
+	sampleSerialNumber := wallet.StringBase64(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{2}, 32)))
 	sampleRevocationOutpoint := &overlay.Outpoint{
 		Txid:        chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
 		OutputIndex: 1,
@@ -98,9 +98,9 @@ func TestVerifiableCertificate(t *testing.T) {
 			}
 
 			// Convert keyring to expected format
-			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k, v := range keyringForVerifier {
-				keyringMap[k] = wallet.Base64String(v)
+				keyringMap[k] = wallet.StringBase64(v)
 			}
 
 			// Create VerifiableCertificate
@@ -195,9 +195,9 @@ func TestVerifiableCertificate(t *testing.T) {
 			}
 
 			// Convert keyring to expected format
-			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k, v := range keyringForVerifier {
-				keyringMap[k] = wallet.Base64String(v)
+				keyringMap[k] = wallet.StringBase64(v)
 			}
 
 			// Create VerifiableCertificate
@@ -298,11 +298,11 @@ func TestVerifiableCertificate(t *testing.T) {
 			setupVerifiableCert(t)
 
 			// Tamper the keyring by changing a key
-			tamperedKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+			tamperedKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k := range verifiableCert.Keyring {
 				// Modify the "name" key to be invalid
 				if k == "name" {
-					tamperedKeyring[k] = wallet.Base64String(base64.StdEncoding.EncodeToString([]byte{9, 9, 9, 9}))
+					tamperedKeyring[k] = wallet.StringBase64(base64.StdEncoding.EncodeToString([]byte{9, 9, 9, 9}))
 				} else {
 					tamperedKeyring[k] = verifiableCert.Keyring[k]
 				}
@@ -376,9 +376,9 @@ func TestVerifiableCertificate(t *testing.T) {
 			}
 
 			// Convert keyring to expected format
-			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k, v := range keyringForVerifier {
-				keyringMap[k] = wallet.Base64String(v)
+				keyringMap[k] = wallet.StringBase64(v)
 			}
 
 			// Create certificate with "anyone" certifier

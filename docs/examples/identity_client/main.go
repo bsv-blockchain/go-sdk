@@ -21,7 +21,7 @@ func main() {
 	// -------------------------------------------------------------------------
 	// In a real application, you would obtain a certificate through wallet.acquireCertificate
 	// or another mechanism. This is a simplified example.
-	typeXCert, err := wallet.Base64String(identity.KnownIdentityTypes.XCert).ToArray()
+	typeXCert, err := wallet.StringBase64(identity.KnownIdentityTypes.XCert).ToArray()
 	if err != nil {
 		log.Fatalf("Failed to get known identity type: %v", err)
 	}
@@ -117,7 +117,7 @@ func main() {
 		}
 	}
 
-	typeEmailCert, err := wallet.Base64String(identity.KnownIdentityTypes.EmailCert).ToArray()
+	typeEmailCert, err := wallet.StringBase64(identity.KnownIdentityTypes.EmailCert).ToArray()
 	if err != nil {
 		log.Fatalf("Failed to get known identity type: %v", err)
 	}

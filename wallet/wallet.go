@@ -156,24 +156,24 @@ type EncryptionArgs struct {
 // It extends EncryptionArgs with the plaintext data to be encrypted.
 type EncryptArgs struct {
 	EncryptionArgs
-	Plaintext JsonByteNoBase64 `json:"plaintext"`
+	Plaintext BytesList `json:"plaintext"`
 }
 
 // DecryptArgs contains parameters for decrypting data.
 // It extends EncryptionArgs with the ciphertext data to be decrypted.
 type DecryptArgs struct {
 	EncryptionArgs
-	Ciphertext JsonByteNoBase64 `json:"ciphertext"`
+	Ciphertext BytesList `json:"ciphertext"`
 }
 
 // EncryptResult contains the result of an encryption operation.
 type EncryptResult struct {
-	Ciphertext JsonByteNoBase64 `json:"ciphertext"`
+	Ciphertext BytesList `json:"ciphertext"`
 }
 
 // DecryptResult contains the result of a decryption operation.
 type DecryptResult struct {
-	Plaintext JsonByteNoBase64 `json:"plaintext"`
+	Plaintext BytesList `json:"plaintext"`
 }
 
 // GetPublicKeyArgs contains parameters for retrieving a public key.
@@ -193,8 +193,8 @@ type GetPublicKeyResult struct {
 // It can sign either raw data (which will be hashed) or a pre-computed hash.
 type CreateSignatureArgs struct {
 	EncryptionArgs
-	Data               JsonByteNoBase64 `json:"data,omitempty"`
-	HashToDirectlySign JsonByteNoBase64 `json:"hashToDirectlySign,omitempty"`
+	Data               BytesList `json:"data,omitempty"`
+	HashToDirectlySign BytesList `json:"hashToDirectlySign,omitempty"`
 }
 
 // CreateSignatureResult contains the result of a signature creation operation.
@@ -283,10 +283,10 @@ func (s *JsonSignature) UnmarshalJSON(data []byte) error {
 // It can verify against either raw data (which will be hashed) or a pre-computed hash.
 type VerifySignatureArgs struct {
 	EncryptionArgs
-	Data                 JsonByteNoBase64 `json:"data,omitempty"`
-	HashToDirectlyVerify JsonByteNoBase64 `json:"hashToDirectlyVerify,omitempty"`
-	Signature            ec.Signature     `json:"-"` // Ignore original field for JSON
-	ForSelf              bool             `json:"forSelf,omitempty"`
+	Data                 BytesList    `json:"data,omitempty"`
+	HashToDirectlyVerify BytesList    `json:"hashToDirectlyVerify,omitempty"`
+	Signature            ec.Signature `json:"-"` // Ignore original field for JSON
+	ForSelf              bool         `json:"forSelf,omitempty"`
 }
 
 // MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
@@ -322,27 +322,25 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 // CreateHMACArgs contains parameters for creating an HMAC.
 // It extends EncryptionArgs with the data to be authenticated.
 type CreateHMACArgs struct {
 	EncryptionArgs
-	Data JsonByteNoBase64 `json:"data"`
+	Data BytesList `json:"data"`
 }
 
 // CreateHMACResult contains the result of an HMAC creation operation.
 type CreateHMACResult struct {
-	HMAC JsonByteNoBase64 `json:"hmac"`
+	HMAC BytesList `json:"hmac"`
 }
-
 
 // VerifyHMACArgs contains parameters for verifying an HMAC.
 // It extends EncryptionArgs with the data and HMAC to be verified.
 
 type VerifyHMACArgs struct {
 	EncryptionArgs
-	Data JsonByteNoBase64 `json:"data"`
-	HMAC JsonByteNoBase64 `json:"hmac"`
+	Data BytesList `json:"data"`
+	HMAC BytesList `json:"hmac"`
 }
 
 // VerifyHMACResult contains the result of an HMAC verification operation.

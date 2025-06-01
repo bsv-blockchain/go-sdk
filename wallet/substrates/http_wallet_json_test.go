@@ -442,9 +442,9 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
-	typeTest := wallet.Base64Bytes32(tu.GetByte32FromString("test-type"))
-	serialNumber := wallet.Base64Bytes32(tu.GetByte32FromString("12345"))
-	certifier := wallet.HexBytes33(tu.GetByte33FromString("test-certifier"))
+	typeTest := wallet.Bytes32Base64(tu.GetByte32FromString("test-type"))
+	serialNumber := wallet.Bytes32Base64(tu.GetByte32FromString("12345"))
+	certifier := wallet.Bytes33Hex(tu.GetByte33FromString("test-certifier"))
 	verifier := tu.GetByte33FromString("test-verifier")
 	// Test AcquireCertificate
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -480,7 +480,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.ListCertificatesArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, []wallet.HexBytes33{certifier}, args.Certifiers)
+		require.Equal(t, []wallet.Bytes33Hex{certifier}, args.Certifiers)
 
 		result := wallet.ListCertificatesResult{
 			TotalCertificates: 1,
@@ -498,7 +498,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
 	listResult, err := client.ListCertificates(t.Context(), wallet.ListCertificatesArgs{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("test-certifier")},
+		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("test-certifier")},
 	})
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), listResult.TotalCertificates)
@@ -551,7 +551,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
-	var typeDiscovered wallet.Base64Bytes32
+	var typeDiscovered wallet.Bytes32Base64
 	copy(typeDiscovered[:], "discovered-type")
 	testKey := tu.GetByte33FromString("test-key")
 	// Test DiscoverByIdentityKey

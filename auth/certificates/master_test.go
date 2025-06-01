@@ -47,27 +47,27 @@ func TestMasterCertificate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to encrypt field value: %v", err)
 			}
-			encryptedFieldValue := wallet.Base64String(base64.StdEncoding.EncodeToString(encryptedFieldValueBytes))
+			encryptedFieldValue := wallet.StringBase64(base64.StdEncoding.EncodeToString(encryptedFieldValueBytes))
 
-			encryptedKeyForSubject := wallet.Base64String(base64.StdEncoding.EncodeToString([]byte{0, 1, 2, 3}))
+			encryptedKeyForSubject := wallet.StringBase64(base64.StdEncoding.EncodeToString([]byte{0, 1, 2, 3}))
 
 			// We assume we have the same fieldName in both `fields` and `masterKeyring`.
-			fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
+			fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{
 				"name": encryptedFieldValue,
 			}
 
-			masterKeyring := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
+			masterKeyring := map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{
 				"name": encryptedKeyForSubject,
 			}
 
 			// certificate type is 16 random bytes base64 encoded
 			certTypeBytes := make([]byte, 16)
 			_, _ = rand.Read(certTypeBytes)
-			certType := wallet.Base64String(base64.StdEncoding.EncodeToString(certTypeBytes))
+			certType := wallet.StringBase64(base64.StdEncoding.EncodeToString(certTypeBytes))
 
 			serialNumberBytes := make([]byte, 16)
 			_, _ = rand.Read(serialNumberBytes)
-			serialNumber := wallet.Base64String(base64.StdEncoding.EncodeToString(serialNumberBytes))
+			serialNumber := wallet.StringBase64(base64.StdEncoding.EncodeToString(serialNumberBytes))
 
 			baseCert := &certificates.Certificate{
 				Type:               certType,
@@ -102,8 +102,8 @@ func TestMasterCertificate(t *testing.T) {
 		})
 
 		t.Run("should return error if masterKeyring is missing a key for any field", func(t *testing.T) {
-			fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{"name": utils.RandomBase64(16)}
-			masterKeyring := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{} // Intentionally empty
+			fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{"name": utils.RandomBase64(16)}
+			masterKeyring := map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{} // Intentionally empty
 
 			baseCert := &certificates.Certificate{
 				Type:               utils.RandomBase64(16),
@@ -192,7 +192,7 @@ func TestMasterCertificate(t *testing.T) {
 			_, err = certificates.DecryptFields(
 				t.Context(),
 				subjectWallet.ProtoWallet,
-				map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{}, // Test empty keyring
+				map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{}, // Test empty keyring
 				issueCert.Fields, // Uses issuedCert from outer scope
 				certifierCounterparty,
 				false,
@@ -209,7 +209,7 @@ func TestMasterCertificate(t *testing.T) {
 
 		t.Run("should return error if decryption fails for any field", func(t *testing.T) {
 			// Create a bad keyring manually
-			badMasterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+			badMasterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k := range issueCert.Fields { // Uses issuedCert from outer scope
 				badMasterKeyring[k] = utils.RandomBase64(64) // Provide structurally valid (>48 bytes) but incorrect key data
 			}
@@ -316,7 +316,7 @@ func TestMasterCertificate(t *testing.T) {
 
 		t.Run("should return error if the master key fails to decrypt", func(t *testing.T) {
 			// Tamper with the master keyring
-			tamperedMasterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+			tamperedMasterKeyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k, v := range issueCert.MasterKeyring { // Uses issuedCert from outer scope
 				if k == "name" {
 					tamperedMasterKeyring[k] = utils.RandomBase64(64) // Provide structurally valid (>48 bytes) but incorrect key data

@@ -74,7 +74,7 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 	certObj := &certificates.Certificate{
 		Type:               wallet.Base64StringFromArray(encodedCert.Type),
 		SerialNumber:       wallet.Base64StringFromArray(encodedCert.SerialNumber),
-		Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
+		Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64),
 		RevocationOutpoint: outpoint,
 	}
 
@@ -90,7 +90,7 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 
 	// Convert fields
 	for name, value := range encodedCert.Fields {
-		certObj.Fields[wallet.CertificateFieldNameUnder50Bytes(name)] = wallet.Base64String(value)
+		certObj.Fields[wallet.CertificateFieldNameUnder50Bytes(name)] = wallet.StringBase64(value)
 	}
 
 	// Get binary representation without signature

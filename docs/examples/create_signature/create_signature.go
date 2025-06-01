@@ -43,7 +43,7 @@ func main() {
 				Type: wallet.CounterpartyTypeSelf,
 			},
 		},
-		Data: wallet.JsonByteNoBase64(message),
+		Data: wallet.BytesList(message),
 	}
 	sigResult, err := signerWallet.CreateSignature(ctx, createSigArgs, "signer_createsig_self_originator")
 	if err != nil {
@@ -61,7 +61,7 @@ func main() {
 				Type: wallet.CounterpartyTypeSelf,
 			},
 		},
-		Data:      wallet.JsonByteNoBase64(message), // Original message
+		Data:      wallet.BytesList(message), // Original message
 		Signature: sigResult.Signature,
 		// ForSelf:   true, // DO NOT SET ForSelf for this type of self-verification, rely on Counterparty in EncryptionArgs
 	}
@@ -80,7 +80,7 @@ func main() {
 	fmt.Println("\n--- 4. Verifying with tampered message (by self, expected failure) ---")
 	tamperedMessage := []byte("This is NOT the message that was signed.")
 	verifyArgsTampered := verifyArgs // Copy previous args, EncryptionArgs.Counterparty is already CounterpartyTypeSelf
-	verifyArgsTampered.Data = wallet.JsonByteNoBase64(tamperedMessage)
+	verifyArgsTampered.Data = wallet.BytesList(tamperedMessage)
 
 	tamperedVerifyResult, err := signerWallet.VerifySignature(ctx, verifyArgsTampered, "verifier_tampered_self_originator")
 	if err != nil {
@@ -118,7 +118,7 @@ func main() {
 				Type: wallet.CounterpartyTypeSelf,
 			},
 		},
-		HashToDirectlySign: wallet.JsonByteNoBase64(messageHash),
+		HashToDirectlySign: wallet.BytesList(messageHash),
 	}
 	sigFromHashResult, err := signerWallet.CreateSignature(ctx, createSigForHashArgs, "signer_createsig_hash_self_originator")
 	if err != nil {
@@ -136,7 +136,7 @@ func main() {
 				Type: wallet.CounterpartyTypeSelf,
 			},
 		},
-		HashToDirectlyVerify: wallet.JsonByteNoBase64(messageHash),
+		HashToDirectlyVerify: wallet.BytesList(messageHash),
 		Signature:            sigFromHashResult.Signature,
 		// ForSelf:              true, // DO NOT SET ForSelf for this type of self-verification
 	}

@@ -13,8 +13,8 @@ import (
 
 func TestCertificate(t *testing.T) {
 	// Sample data for testing - use consistent data like in TS
-	sampleType := wallet.Base64String(base64.StdEncoding.EncodeToString(make([]byte, 32)))
-	sampleSerialNumber := wallet.Base64String(base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	sampleSerialNumber := wallet.StringBase64(base64.StdEncoding.EncodeToString(make([]byte, 32)))
 
 	// Create private keys
 	sampleSubjectPrivateKey, err := ec.NewPrivateKey()
@@ -33,12 +33,12 @@ func TestCertificate(t *testing.T) {
 	sampleRevocationOutpoint := &outpoint
 
 	// Convert string maps to the proper types
-	sampleFields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
-		wallet.CertificateFieldNameUnder50Bytes("name"):         wallet.Base64String("Alice"),
-		wallet.CertificateFieldNameUnder50Bytes("email"):        wallet.Base64String("alice@example.com"),
-		wallet.CertificateFieldNameUnder50Bytes("organization"): wallet.Base64String("Example Corp"),
+	sampleFields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{
+		wallet.CertificateFieldNameUnder50Bytes("name"):         wallet.StringBase64("Alice"),
+		wallet.CertificateFieldNameUnder50Bytes("email"):        wallet.StringBase64("alice@example.com"),
+		wallet.CertificateFieldNameUnder50Bytes("organization"): wallet.StringBase64("Example Corp"),
 	}
-	sampleFieldsEmpty := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{}
+	sampleFieldsEmpty := map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{}
 
 	// Helper function to create a ProtoWallet for testing
 	createProtoWallet := func(privateKey *ec.PrivateKey) *wallet.ProtoWallet {
@@ -166,7 +166,7 @@ func TestCertificate(t *testing.T) {
 		require.NoError(t, err)
 
 		// Tamper with the certificate (modify a field)
-		certificate.Fields[wallet.CertificateFieldNameUnder50Bytes("email")] = wallet.Base64String("attacker@example.com")
+		certificate.Fields[wallet.CertificateFieldNameUnder50Bytes("email")] = wallet.StringBase64("attacker@example.com")
 
 		// Verify the signature
 		err = certificate.Verify(t.Context())
@@ -275,8 +275,8 @@ func TestCertificate(t *testing.T) {
 			longFieldValue += "longFieldValue_"
 		}
 
-		fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String{
-			wallet.CertificateFieldNameUnder50Bytes(longFieldName): wallet.Base64String(longFieldValue),
+		fields := map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64{
+			wallet.CertificateFieldNameUnder50Bytes(longFieldName): wallet.StringBase64(longFieldValue),
 		}
 
 		certificate := &Certificate{

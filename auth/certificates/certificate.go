@@ -24,10 +24,10 @@ var (
 // It provides methods for serialization, deserialization, signing, and verifying certificates.
 type Certificate struct {
 	// Type identifier for the certificate, base64 encoded string, 32 bytes
-	Type wallet.Base64String `json:"type"`
+	Type wallet.StringBase64 `json:"type"`
 
 	// Unique serial number of the certificate, base64 encoded string, 32 bytes
-	SerialNumber wallet.Base64String `json:"serialNumber"`
+	SerialNumber wallet.StringBase64 `json:"serialNumber"`
 
 	// The public key belonging to the certificate's subject
 	Subject ec.PublicKey `json:"subject"`
@@ -39,7 +39,7 @@ type Certificate struct {
 	RevocationOutpoint *overlay.Outpoint `json:"revocationOutpoint"`
 
 	// All the fields present in the certificate, with field names as keys and encrypted field values as strings
-	Fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String `json:"fields"`
+	Fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64 `json:"fields"`
 
 	// Certificate signature by the certifier's private key
 	Signature []byte `json:"signature,omitempty"`
@@ -47,12 +47,12 @@ type Certificate struct {
 
 // NewCertificate creates a new certificate with the given fields
 func NewCertificate(
-	certType wallet.Base64String,
-	serialNumber wallet.Base64String,
+	certType wallet.StringBase64,
+	serialNumber wallet.StringBase64,
 	subject ec.PublicKey,
 	certifier ec.PublicKey,
 	revocationOutpoint *overlay.Outpoint,
-	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String,
+	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
 	signature []byte,
 ) *Certificate {
 	return &Certificate{
@@ -75,14 +75,14 @@ func (c *Certificate) ToBinary(includeSignature bool) ([]byte, error) {
 
 	writer := util.NewWriter()
 
-	// Write type (Base64String, 32 bytes)
+	// Write type (StringBase64, 32 bytes)
 	typeBytes, err := base64.StdEncoding.DecodeString(string(c.Type))
 	if err != nil {
 		return nil, fmt.Errorf("invalid type encoding: %w", err)
 	}
 	writer.WriteBytes(typeBytes)
 
-	// Write serialNumber (Base64String, 32 bytes)
+	// Write serialNumber (StringBase64, 32 bytes)
 	serialNumberBytes, err := base64.StdEncoding.DecodeString(string(c.SerialNumber))
 	if err != nil {
 		return nil, fmt.Errorf("invalid serial number encoding: %w", err)
@@ -197,7 +197,7 @@ func CertificateFromBinary(data []byte) (*Certificate, error) {
 	}
 
 	// Read fields
-	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 	for i := uint64(0); i < fieldCount; i++ {
 		// Field name length (varint)
 		fieldNameLength, err := reader.ReadVarInt()
@@ -223,7 +223,7 @@ func CertificateFromBinary(data []byte) (*Certificate, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read field value: %w", err)
 		}
-		fieldValue := wallet.Base64String(string(fieldValueBytes))
+		fieldValue := wallet.StringBase64(string(fieldValueBytes))
 
 		fields[fieldName] = fieldValue
 	}
@@ -235,8 +235,8 @@ func CertificateFromBinary(data []byte) (*Certificate, error) {
 	}
 
 	return &Certificate{
-		Type:               wallet.Base64String(typeStr),
-		SerialNumber:       wallet.Base64String(serialNumber),
+		Type:               wallet.StringBase64(typeStr),
+		SerialNumber:       wallet.StringBase64(serialNumber),
 		Subject:            *subject,
 		Certifier:          *certifier,
 		RevocationOutpoint: revocationOutpoint,
