@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -429,49 +428,6 @@ type InternalizeOutput struct {
 	InsertionRemittance *BasketInsertion    `json:"insertionRemittance,omitempty"`
 }
 
-// BytesList is a custom type for JSON serialization of byte arrays that don't use base64 encoding.
-type BytesList []byte
-
-func (s *BytesList) MarshalJSON() ([]byte, error) {
-	// Marshal as a plain number array, not base64
-	arr := make([]uint16, len(*s))
-	for i, b := range *s {
-		arr[i] = uint16(b)
-	}
-	return json.Marshal(arr)
-}
-
-func (s *BytesList) UnmarshalJSON(data []byte) error {
-	var temp []uint8
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return err
-	}
-	*s = temp
-	return nil
-}
-
-// BytesHex is a helper type for marshaling byte slices as hex strings.
-type BytesHex []byte
-
-// MarshalJSON implements the json.Marshaler interface.
-func (s BytesHex) MarshalJSON() ([]byte, error) {
-	return json.Marshal(hex.EncodeToString(s))
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (s *BytesHex) UnmarshalJSON(data []byte) error {
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return err
-	}
-	bytes, err := hex.DecodeString(str)
-	if err != nil {
-		return err
-	}
-	*s = bytes
-	return nil
-}
-
 // InternalizeActionArgs contains data needed to import an external transaction into the wallet.
 type InternalizeActionArgs struct {
 	Tx             BytesList           `json:"tx"` // BEEF encoded transaction, uint8 makes json.Marshall use numbers
@@ -885,90 +841,6 @@ type ProveCertificateResult struct {
 // CertificateFieldNameUnder50Bytes represents a certificate field name with length restrictions.
 // Field names must be under 50 bytes to ensure efficient storage and processing.
 type CertificateFieldNameUnder50Bytes string
-
-// StringBase64 represents a string that should be base64 encoded in certain contexts.
-type StringBase64 string
-
-func (s StringBase64) ToArray() ([32]byte, error) {
-	b, err := base64.StdEncoding.DecodeString(string(s))
-	if err != nil {
-		return [32]byte{}, fmt.Errorf("error decoding base64 string: %w", err)
-	}
-
-	var arr [32]byte
-	if len(b) > 32 {
-		return arr, fmt.Errorf("string too long: %d", len(b))
-	}
-	if len(b) == 0 {
-		return arr, nil
-	}
-	copy(arr[:], b)
-	return arr, nil
-}
-
-func Base64StringFromArray(arr [32]byte) StringBase64 {
-	return StringBase64(base64.StdEncoding.EncodeToString(arr[:]))
-}
-
-type Bytes32Base64 [32]byte
-
-func (b *Bytes32Base64) MarshalJSON() ([]byte, error) {
-	s := base64.StdEncoding.EncodeToString(b[:])
-	return json.Marshal(s)
-}
-
-func (b *Bytes32Base64) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	decoded, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return err
-	}
-	if len(decoded) != 32 {
-		return fmt.Errorf("expected 32 bytes, got %d", len(decoded))
-	}
-	copy(b[:], decoded)
-	return nil
-}
-
-type Bytes33Hex [33]byte
-
-func (b *Bytes33Hex) MarshalJSON() ([]byte, error) {
-	s := hex.EncodeToString(b[:])
-	return json.Marshal(s)
-}
-
-func (b *Bytes33Hex) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	decoded, err := hex.DecodeString(s)
-	if err != nil {
-		return err
-	}
-	if len(decoded) != 33 {
-		return fmt.Errorf("expected 33 bytes, got %d", len(decoded))
-	}
-	copy(b[:], decoded)
-	return nil
-}
-
-func BytesInHex33Slice(slice []Bytes33Hex, item []byte) bool {
-	if len(item) > 33 {
-		return false
-	}
-	var item33 Bytes33Hex
-	copy(item33[:], item)
-	for _, v := range slice {
-		if v == item33 {
-			return true
-		}
-	}
-	return false
-}
 
 type Outpoint struct {
 	Txid  chainhash.Hash

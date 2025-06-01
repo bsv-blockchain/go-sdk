@@ -204,24 +204,24 @@ type CreateSignatureResult struct {
 
 // MarshalJSON implements the json.Marshaler interface for CreateSignatureResult.
 func (c CreateSignatureResult) MarshalJSON() ([]byte, error) {
-	// Use an alias struct with JsonSignature for marshaling
+	// Use an alias struct with Signature for marshaling
 	type Alias CreateSignatureResult
 	return json.Marshal(&struct {
 		*Alias
-		Signature JsonSignature `json:"signature"` // Override Signature field
+		Signature Signature `json:"signature"` // Override Signature field
 	}{
 		Alias:     (*Alias)(&c),
-		Signature: JsonSignature{Signature: c.Signature},
+		Signature: Signature{Signature: c.Signature},
 	})
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for CreateSignatureResult.
 func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
-	// Use an alias struct with JsonSignature for unmarshaling
+	// Use an alias struct with Signature for unmarshaling
 	type Alias CreateSignatureResult
 	aux := &struct {
 		*Alias
-		Signature JsonSignature `json:"signature"` // Override Signature field
+		Signature Signature `json:"signature"` // Override Signature field
 	}{
 		Alias: (*Alias)(c),
 	}
@@ -245,40 +245,6 @@ var (
 	SignOutputsSingle SignOutputs = SignOutputs(sighash.Single)
 )
 
-// JsonSignature is a wrapper around ec.Signature that provides custom JSON marshaling.
-// It serializes signatures as arrays of byte values rather than base64 strings.
-type JsonSignature struct {
-	ec.Signature
-}
-
-// MarshalJSON implements the json.Marshaler interface for JsonSignature.
-// It serializes the signature as an array of byte values.
-func (s *JsonSignature) MarshalJSON() ([]byte, error) {
-	sig := s.Serialize()
-	sigInts := make([]uint16, len(sig))
-	for i, b := range sig {
-		sigInts[i] = uint16(b)
-	}
-	return json.Marshal(sigInts)
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for JsonSignature.
-// It deserializes an array of byte values back into a signature.
-func (s *JsonSignature) UnmarshalJSON(data []byte) error {
-	var sigBytes []byte
-	// Unmarshal directly from JSON array of numbers into byte slice
-	if err := json.Unmarshal(data, &sigBytes); err != nil {
-		return fmt.Errorf("could not unmarshal signature byte array: %w", err)
-	}
-	// Parse the raw bytes as DER.
-	sig, err := ec.FromDER(sigBytes)
-	if err != nil {
-		return fmt.Errorf("could not parse signature from DER: %w", err)
-	}
-	s.Signature = *sig
-	return nil
-}
-
 // VerifySignatureArgs contains parameters for verifying a digital signature.
 // It can verify against either raw data (which will be hashed) or a pre-computed hash.
 type VerifySignatureArgs struct {
@@ -291,24 +257,24 @@ type VerifySignatureArgs struct {
 
 // MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
 func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
-	// Use an alias struct with JsonSignature for marshaling
+	// Use an alias struct with Signature for marshaling
 	type Alias VerifySignatureArgs
 	return json.Marshal(&struct {
 		*Alias
-		Signature JsonSignature `json:"signature"` // Override Signature field
+		Signature Signature `json:"signature"` // Override Signature field
 	}{
 		Alias:     (*Alias)(&v),
-		Signature: JsonSignature{Signature: v.Signature},
+		Signature: Signature{Signature: v.Signature},
 	})
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for VerifySignatureArgs.
 func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
-	// Use an alias struct with JsonSignature for unmarshaling
+	// Use an alias struct with Signature for unmarshaling
 	type Alias VerifySignatureArgs
 	aux := &struct {
 		*Alias
-		Signature JsonSignature `json:"signature"` // Override Signature field
+		Signature Signature `json:"signature"` // Override Signature field
 	}{
 		Alias: (*Alias)(v),
 	}

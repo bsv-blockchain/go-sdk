@@ -81,8 +81,8 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 	// Convert Go certificate to Certificate instance to verify it
 	masterCert := &certificates.Certificate{
-		Type:               wallet.Base64StringFromArray(certificate.Type),
-		SerialNumber:       wallet.Base64StringFromArray(certificate.SerialNumber),
+		Type:               wallet.StringBase64FromArray(certificate.Type),
+		SerialNumber:       wallet.StringBase64FromArray(certificate.SerialNumber),
 		Subject:            *certificate.Subject,
 		Certifier:          *certificate.Certifier,
 		RevocationOutpoint: revocationOutpoint,
@@ -276,7 +276,7 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 	var name, avatarURL, badgeLabel, badgeIconURL, badgeClickURL string
 
 	// Parse out the name to display based on the specific certificate type which has clearly defined fields
-	switch string(wallet.Base64StringFromArray(identity.Type)) {
+	switch string(wallet.StringBase64FromArray(identity.Type)) {
 	case KnownIdentityTypes.XCert:
 		name = identity.DecryptedFields["userName"]
 		avatarURL = identity.DecryptedFields["profilePhoto"]

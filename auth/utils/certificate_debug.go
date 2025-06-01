@@ -72,8 +72,8 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 
 	// Convert wallet.Certificate to certificates.Certificate for signing
 	certObj := &certificates.Certificate{
-		Type:               wallet.Base64StringFromArray(encodedCert.Type),
-		SerialNumber:       wallet.Base64StringFromArray(encodedCert.SerialNumber),
+		Type:               wallet.StringBase64FromArray(encodedCert.Type),
+		SerialNumber:       wallet.StringBase64FromArray(encodedCert.SerialNumber),
 		Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64),
 		RevocationOutpoint: outpoint,
 	}

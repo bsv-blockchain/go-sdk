@@ -88,8 +88,8 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		if len(certs) > 0 {
 			cert := certs[0]
 			// Compare against base64 encoded values
-			expectedTypeBase64 := wallet.Base64StringFromArray(certType1)
-			expectedSerialBase64 := wallet.Base64StringFromArray(serial1)
+			expectedTypeBase64 := wallet.StringBase64FromArray(certType1)
+			expectedSerialBase64 := wallet.StringBase64FromArray(serial1)
 			require.Equal(t, expectedTypeBase64, cert.Type)
 			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
 			require.NotNil(t, cert.RevocationOutpoint)
