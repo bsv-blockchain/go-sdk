@@ -107,13 +107,13 @@ func (m *MockRegistry) Decrypt(ctx context.Context, args wallet.DecryptArgs, ori
 	return nil, nil
 }
 
-func (m *MockRegistry) CreateHmac(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-	require.Fail(m.T, "CreateHmac mock not implemented")
+func (m *MockRegistry) CreateHMAC(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+	require.Fail(m.T, "CreateHMAC mock not implemented")
 	return nil, nil
 }
 
-func (m *MockRegistry) VerifyHmac(ctx context.Context, args wallet.VerifyHmacArgs, originator string) (*wallet.VerifyHmacResult, error) {
-	require.Fail(m.T, "VerifyHmac mock not implemented")
+func (m *MockRegistry) VerifyHMAC(ctx context.Context, args wallet.VerifyHMACArgs, originator string) (*wallet.VerifyHMACResult, error) {
+	require.Fail(m.T, "VerifyHMAC mock not implemented")
 	return nil, nil
 }
 

@@ -322,28 +322,31 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// CreateHmacArgs contains parameters for creating an HMAC.
+
+// CreateHMACArgs contains parameters for creating an HMAC.
 // It extends EncryptionArgs with the data to be authenticated.
-type CreateHmacArgs struct {
+type CreateHMACArgs struct {
 	EncryptionArgs
 	Data JsonByteNoBase64 `json:"data"`
 }
 
-// CreateHmacResult contains the result of an HMAC creation operation.
-type CreateHmacResult struct {
-	Hmac JsonByteNoBase64 `json:"hmac"`
+// CreateHMACResult contains the result of an HMAC creation operation.
+type CreateHMACResult struct {
+	HMAC JsonByteNoBase64 `json:"hmac"`
 }
 
-// VerifyHmacArgs contains parameters for verifying an HMAC.
+
+// VerifyHMACArgs contains parameters for verifying an HMAC.
 // It extends EncryptionArgs with the data and HMAC to be verified.
-type VerifyHmacArgs struct {
+
+type VerifyHMACArgs struct {
 	EncryptionArgs
 	Data JsonByteNoBase64 `json:"data"`
-	Hmac JsonByteNoBase64 `json:"hmac"`
+	HMAC JsonByteNoBase64 `json:"hmac"`
 }
 
-// VerifyHmacResult contains the result of an HMAC verification operation.
-type VerifyHmacResult struct {
+// VerifyHMACResult contains the result of an HMAC verification operation.
+type VerifyHMACResult struct {
 	Valid bool `json:"valid"`
 }
 

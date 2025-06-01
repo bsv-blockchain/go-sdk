@@ -55,7 +55,7 @@ func (h *HTTPWalletJSON) api(ctx context.Context, call string, args any) ([]byte
 	// Send request
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -200,24 +200,24 @@ func (h *HTTPWalletJSON) Decrypt(ctx context.Context, args wallet.DecryptArgs) (
 	return &result, err
 }
 
-// CreateHmac creates an HMAC for data
-func (h *HTTPWalletJSON) CreateHmac(ctx context.Context, args wallet.CreateHmacArgs) (*wallet.CreateHmacResult, error) {
+// CreateHMAC creates an HMAC for data
+func (h *HTTPWalletJSON) CreateHMAC(ctx context.Context, args wallet.CreateHMACArgs) (*wallet.CreateHMACResult, error) {
 	data, err := h.api(ctx, "createHmac", &args)
 	if err != nil {
 		return nil, err
 	}
-	var result wallet.CreateHmacResult
+	var result wallet.CreateHMACResult
 	err = json.Unmarshal(data, &result)
 	return &result, err
 }
 
-// VerifyHmac verifies an HMAC for data
-func (h *HTTPWalletJSON) VerifyHmac(ctx context.Context, args wallet.VerifyHmacArgs) (*wallet.VerifyHmacResult, error) {
+// VerifyHMAC verifies an HMAC for data
+func (h *HTTPWalletJSON) VerifyHMAC(ctx context.Context, args wallet.VerifyHMACArgs) (*wallet.VerifyHMACResult, error) {
 	data, err := h.api(ctx, "verifyHmac", &args)
 	if err != nil {
 		return nil, err
 	}
-	var result wallet.VerifyHmacResult
+	var result wallet.VerifyHMACResult
 	err = json.Unmarshal(data, &result)
 	return &result, err
 }

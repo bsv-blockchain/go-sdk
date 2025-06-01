@@ -32,8 +32,8 @@ func VerifyNonce(
 	data := nonceBytes[:16]
 	hmac := nonceBytes[16:]
 
-	// Create args for wallet VerifyHmac
-	args := wallet.VerifyHmacArgs{
+	// Create args for wallet VerifyHMAC
+	args := wallet.VerifyHMACArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryApp,
@@ -43,11 +43,11 @@ func VerifyNonce(
 			Counterparty: counterparty,
 		},
 		Data: data,
-		Hmac: hmac,
+		HMAC: hmac,
 	}
 
 	// Verify the hmac
-	result, err := w.VerifyHmac(ctx, args, "")
+	result, err := w.VerifyHMAC(ctx, args, "")
 	if err != nil {
 		return false, fmt.Errorf("failed to verify HMAC: %w", err)
 	}
