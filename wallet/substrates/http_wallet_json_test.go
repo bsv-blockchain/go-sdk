@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -167,6 +168,7 @@ func writeJSONResponse(t *testing.T, w http.ResponseWriter, data interface{}) {
 }
 
 func TestHTTPWalletJSON_CreateAction(t *testing.T) {
+	txId := tu.GetByte32FromString("test-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/createAction", r.URL.Path)
 
@@ -175,7 +177,7 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "test desc", args.Description)
 
-		writeJSONResponse(t, w, wallet.CreateActionResult{Txid: "test-txid"})
+		writeJSONResponse(t, w, &wallet.CreateActionResult{Txid: txId})
 	}))
 	defer ts.Close()
 
@@ -184,33 +186,37 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 		Description: "test desc",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "test-txid", result.Txid)
+	require.Equal(t, txId, [32]byte(result.Txid))
 }
 
 func TestHTTPWalletJSON_SignAction(t *testing.T) {
+	var testRef = []byte("test-ref")
+	var testScript = []byte("test-script")
+	testTxId := tu.GetByte32FromString("signed-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/signAction", r.URL.Path)
 
 		var args wallet.SignActionArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		require.Equal(t, "test-ref", args.Reference)
+		require.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body))
+		require.Equal(t, testRef, args.Reference)
 		require.Len(t, args.Spends, 1)
-		require.Equal(t, "test-script", args.Spends[0].UnlockingScript)
+		require.Equal(t, testScript, []byte(args.Spends[0].UnlockingScript))
 
-		writeJSONResponse(t, w, wallet.SignActionResult{Txid: "signed-txid"})
+		writeJSONResponse(t, w, &wallet.SignActionResult{Txid: testTxId})
 	}))
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	result, err := client.SignAction(t.Context(), wallet.SignActionArgs{
-		Reference: "test-ref",
+	result, err := client.SignAction(t.Context(), &wallet.SignActionArgs{
+		Reference: testRef,
 		Spends: map[uint32]wallet.SignActionSpend{
-			0: {UnlockingScript: "test-script"},
+			0: {UnlockingScript: testScript},
 		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, "signed-txid", result.Txid)
+	require.Equal(t, testTxId, [32]byte(result.Txid))
 }
 
 func TestHTTPWalletJSON_AbortAction(t *testing.T) {
@@ -235,6 +241,7 @@ func TestHTTPWalletJSON_AbortAction(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_ListActions(t *testing.T) {
+	testTxID := tu.GetByte32FromString("test-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/listActions", r.URL.Path)
 
@@ -248,7 +255,7 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 			TotalActions: 1,
 			Actions: []wallet.Action{
 				{
-					Txid:        "test-txid",
+					Txid:        testTxID,
 					Description: "test-action",
 				},
 			},
@@ -264,7 +271,7 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), result.TotalActions)
 	require.Len(t, result.Actions, 1)
-	require.Equal(t, "test-txid", result.Actions[0].Txid)
+	require.Equal(t, testTxID, [32]byte(result.Actions[0].Txid))
 }
 
 func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
@@ -435,6 +442,10 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
+	typeTest := wallet.Base64Bytes32(tu.GetByte32FromString("test-type"))
+	serialNumber := wallet.Base64Bytes32(tu.GetByte32FromString("12345"))
+	certifier := wallet.HexBytes33(tu.GetByte33FromString("test-certifier"))
+	verifier := tu.GetByte33FromString("test-verifier")
 	// Test AcquireCertificate
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/acquireCertificate", r.URL.Path)
@@ -442,25 +453,25 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.AcquireCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-type", args.Type)
-		require.Equal(t, "test-certifier", args.Certifier)
+		require.Equal(t, typeTest, args.Type)
+		require.Equal(t, certifier, args.Certifier)
 
 		cert := wallet.Certificate{
-			Type:         "test-type",
-			SerialNumber: "12345",
+			SerialNumber: serialNumber,
+			Type:         typeTest,
 		}
-		writeJSONResponse(t, w, cert)
+		writeJSONResponse(t, w, &cert)
 	}))
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	cert, err := client.AcquireCertificate(t.Context(), wallet.AcquireCertificateArgs{
-		Type:      "test-type",
-		Certifier: "test-certifier",
+	cert, err := client.AcquireCertificate(t.Context(), &wallet.AcquireCertificateArgs{
+		Type:      typeTest,
+		Certifier: certifier,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "test-type", cert.Type)
-	require.Equal(t, "12345", cert.SerialNumber)
+	require.Equal(t, typeTest, cert.Type)
+	require.Equal(t, serialNumber, cert.SerialNumber)
 
 	// Test ListCertificates
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -469,14 +480,14 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.ListCertificatesArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, []string{"test-certifier"}, args.Certifiers)
+		require.Equal(t, []wallet.HexBytes33{certifier}, args.Certifiers)
 
 		result := wallet.ListCertificatesResult{
 			TotalCertificates: 1,
 			Certificates: []wallet.CertificateResult{
 				{
 					Certificate: wallet.Certificate{
-						Type: "test-type",
+						Type: typeTest,
 					},
 				},
 			},
@@ -487,12 +498,12 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
 	listResult, err := client.ListCertificates(t.Context(), wallet.ListCertificatesArgs{
-		Certifiers: []string{"test-certifier"},
+		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("test-certifier")},
 	})
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), listResult.TotalCertificates)
 	require.Len(t, listResult.Certificates, 1)
-	require.Equal(t, "test-type", listResult.Certificates[0].Type)
+	require.Equal(t, typeTest, listResult.Certificates[0].Type)
 
 	// Test ProveCertificate
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -501,7 +512,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.ProveCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-verifier", args.Verifier)
+		require.Equal(t, verifier, [33]byte(args.Verifier))
 
 		result := wallet.ProveCertificateResult{
 			KeyringForVerifier: map[string]string{"field": "key"},
@@ -511,9 +522,9 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 	defer ts.Close()
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
-	proveResult, err := client.ProveCertificate(t.Context(), wallet.ProveCertificateArgs{
-		Certificate: wallet.Certificate{Type: "test-type"},
-		Verifier:    "test-verifier",
+	proveResult, err := client.ProveCertificate(t.Context(), &wallet.ProveCertificateArgs{
+		Certificate: wallet.Certificate{Type: typeTest},
+		Verifier:    verifier,
 	})
 	require.NoError(t, err)
 	require.Equal(t, "key", proveResult.KeyringForVerifier["field"])
@@ -525,21 +536,24 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.RelinquishCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-type", args.Type)
+		require.Equal(t, typeTest, args.Type)
 
 		writeJSONResponse(t, w, wallet.RelinquishCertificateResult{Relinquished: true})
 	}))
 	defer ts.Close()
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
-	relinquishResult, err := client.RelinquishCertificate(t.Context(), wallet.RelinquishCertificateArgs{
-		Type: "test-type",
+	relinquishResult, err := client.RelinquishCertificate(t.Context(), &wallet.RelinquishCertificateArgs{
+		Type: typeTest,
 	})
 	require.NoError(t, err)
 	require.True(t, relinquishResult.Relinquished)
 }
 
 func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
+	var typeDiscovered wallet.Base64Bytes32
+	copy(typeDiscovered[:], "discovered-type")
+	testKey := tu.GetByte33FromString("test-key")
 	// Test DiscoverByIdentityKey
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/discoverByIdentityKey", r.URL.Path)
@@ -547,16 +561,14 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 		var args wallet.DiscoverByIdentityKeyArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-key", args.IdentityKey)
+		require.Equal(t, testKey, [33]byte(args.IdentityKey))
 
 		result := wallet.DiscoverCertificatesResult{
 			TotalCertificates: 1,
-			Certificates: []wallet.IdentityCertificate{
-				{
-					Certificate: wallet.Certificate{
-						Type: "discovered-type",
-					},
-				},
+			Certificates: []wallet.IdentityCertificate{{
+				Certificate: wallet.Certificate{
+					Type: typeDiscovered,
+				}},
 			},
 		}
 		writeJSONResponse(t, w, result)
@@ -564,12 +576,12 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 	defer ts.Close()
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
-	discoverResult, err := client.DiscoverByIdentityKey(t.Context(), wallet.DiscoverByIdentityKeyArgs{
-		IdentityKey: "test-key",
+	discoverResult, err := client.DiscoverByIdentityKey(t.Context(), &wallet.DiscoverByIdentityKeyArgs{
+		IdentityKey: testKey,
 	})
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), discoverResult.TotalCertificates)
-	require.Equal(t, "discovered-type", discoverResult.Certificates[0].Type)
+	require.Equal(t, typeDiscovered, discoverResult.Certificates[0].Type)
 
 	// Test DiscoverByAttributes
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -595,6 +607,7 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 
 func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 	// Test ListOutputs
+	outpoint := *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/listOutputs", r.URL.Path)
 
@@ -608,7 +621,7 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 			TotalOutputs: 1,
 			Outputs: []wallet.Output{
 				{
-					Outpoint: "txid:0",
+					Outpoint: outpoint,
 					Satoshis: 1000,
 				},
 			},
@@ -625,7 +638,7 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), listResult.TotalOutputs)
 	require.Len(t, listResult.Outputs, 1)
-	require.Equal(t, "txid:0", listResult.Outputs[0].Outpoint)
+	require.Equal(t, outpoint, listResult.Outputs[0].Outpoint)
 
 	// Test RelinquishOutput
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -635,22 +648,24 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
 		require.Equal(t, "test-basket", args.Basket)
-		require.Equal(t, "txid:0", args.Output)
+		require.Equal(t, outpoint, args.Output)
 
 		writeJSONResponse(t, w, wallet.RelinquishOutputResult{Relinquished: true})
 	}))
 	defer ts.Close()
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
-	relinquishResult, err := client.RelinquishOutput(t.Context(), wallet.RelinquishOutputArgs{
+	relinquishResult, err := client.RelinquishOutput(t.Context(), &wallet.RelinquishOutputArgs{
 		Basket: "test-basket",
-		Output: "txid:0",
+		Output: outpoint,
 	})
 	require.NoError(t, err)
 	require.True(t, relinquishResult.Relinquished)
 }
 
 func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
+	counterParty := []byte("test-counterparty")
+	verifier := []byte("test-verifier")
 	// Test RevealCounterpartyKeyLinkage
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/revealCounterpartyKeyLinkage", r.URL.Path)
@@ -658,8 +673,8 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		var args wallet.RevealCounterpartyKeyLinkageArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, "test-counterparty", args.Counterparty)
-		require.Equal(t, "test-verifier", args.Verifier)
+		require.Equal(t, counterParty, []byte(args.Counterparty))
+		require.Equal(t, verifier, []byte(args.Verifier))
 
 		result := wallet.RevealCounterpartyKeyLinkageResult{
 			EncryptedLinkage: []byte("encrypted-data"),
@@ -670,8 +685,8 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 
 	client := NewHTTPWalletJSON("", ts.URL, nil)
 	linkageResult, err := client.RevealCounterpartyKeyLinkage(t.Context(), wallet.RevealCounterpartyKeyLinkageArgs{
-		Counterparty: "test-counterparty",
-		Verifier:     "test-verifier",
+		Counterparty: counterParty,
+		Verifier:     verifier,
 	})
 	require.NoError(t, err)
 	require.Equal(t, []byte("encrypted-data"), []byte(linkageResult.EncryptedLinkage))
@@ -752,7 +767,7 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, uint32(12345), args.Height)
 
-		writeJSONResponse(t, w, wallet.GetHeaderResult{Header: "test-header"})
+		writeJSONResponse(t, w, wallet.GetHeaderResult{Header: []byte("test-header")})
 	}))
 	defer ts.Close()
 
@@ -761,7 +776,7 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 		Height: 12345,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "test-header", headerResult.Header)
+	require.Equal(t, []byte("test-header"), []byte(headerResult.Header))
 
 	// Test GetNetwork
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

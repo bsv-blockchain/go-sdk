@@ -1,5 +1,7 @@
 package substrates
 
+// Call represents the different types of wallet wire protocol operations.
+// Each call type corresponds to a specific wallet function that can be invoked remotely.
 type Call byte
 
 const (

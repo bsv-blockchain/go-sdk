@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -12,11 +11,7 @@ func SerializeSignActionResult(result *wallet.SignActionResult) ([]byte, error) 
 	w := util.NewWriter()
 
 	// Txid and tx
-	txidBytes, err := hex.DecodeString(result.Txid)
-	if err != nil {
-		return nil, fmt.Errorf("invalid txid hex: %w", err)
-	}
-	w.WriteOptionalBytes(txidBytes, util.BytesOptionWithFlag, util.BytesOptionTxIdLen)
+	w.WriteOptionalBytes(result.Txid[:], util.BytesOptionWithFlag, util.BytesOptionTxIdLen)
 	w.WriteOptionalBytes(result.Tx, util.BytesOptionWithFlag)
 
 	// SendWithResults
@@ -33,7 +28,7 @@ func DeserializeSignActionResult(data []byte) (*wallet.SignActionResult, error) 
 
 	// Txid and tx
 	txidBytes := r.ReadOptionalBytes(util.BytesOptionWithFlag, util.BytesOptionTxIdLen)
-	result.Txid = hex.EncodeToString(txidBytes)
+	copy(result.Txid[:], txidBytes)
 	result.Tx = r.ReadOptionalBytes(util.BytesOptionWithFlag)
 
 	// SendWithResults

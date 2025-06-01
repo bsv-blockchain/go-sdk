@@ -1,7 +1,9 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -53,6 +55,10 @@ func TestListOutputsArgs(t *testing.T) {
 }
 
 func TestListOutputsResult(t *testing.T) {
+	script1, err := script.NewFromHex("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
+	require.NoError(t, err)
+	script2, err := script.NewFromHex("76a9143cf53c49c322d9d811728182939aee2dca087f9888ad")
+	require.NoError(t, err)
 	t.Run("with BEEF and outputs", func(t *testing.T) {
 		result := &wallet.ListOutputsResult{
 			TotalOutputs: 2,
@@ -60,18 +66,18 @@ func TestListOutputsResult(t *testing.T) {
 			Outputs: []wallet.Output{
 				{
 					Satoshis:           1000,
-					LockingScript:      "76a9143cf53c49c322d9d811728182939aee2dca087f9888ac",
+					LockingScript:      script1.Bytes(),
 					Spendable:          true,
 					CustomInstructions: "instructions",
 					Tags:               []string{"tag1"},
-					Outpoint:           "txid.0",
+					Outpoint:           *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 					Labels:             []string{"label1"},
 				},
 				{
 					Satoshis:      2000,
-					LockingScript: "76a9143cf53c49c322d9d811728182939aee2dca087f9888ad",
+					LockingScript: script2.Bytes(),
 					Spendable:     false,
-					Outpoint:      "txid.1",
+					Outpoint:      *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
 				},
 			},
 		}

@@ -3,9 +3,9 @@ package serializer
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -222,50 +222,45 @@ func TestPrivilegedParams(t *testing.T) {
 }
 
 func TestDecodeOutpoint(t *testing.T) {
-	validTxid := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	validTxIDHash, err := chainhash.NewHashFromHex("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	require.NoError(t, err, "creating valid txid hash should not error")
 	validIndex := uint32(42)
 
 	// Create valid outpoint bytes
-	txidBytes, err := hex.DecodeString(validTxid)
-	require.NoError(t, err, "decoding valid txid hex should not error")
 	validData := make([]byte, outpointSize)
-	copy(validData[:32], txidBytes)
+	copy(validData[:32], validTxIDHash[:])
 	binary.BigEndian.PutUint32(validData[32:36], validIndex)
 
 	tests := []struct {
 		name      string
 		input     []byte
-		want      string
+		want      *wallet.Outpoint
 		expectErr bool
 	}{
 		{
 			name:      "valid outpoint",
 			input:     validData,
-			want:      fmt.Sprintf("%s.%d", validTxid, validIndex),
+			want:      &wallet.Outpoint{Txid: *validTxIDHash, Index: validIndex},
 			expectErr: false,
 		},
 		{
 			name:      "invalid length - too short",
 			input:     validData[:outpointSize-1],
-			want:      "",
 			expectErr: true,
 		},
 		{
 			name:      "invalid length - too long",
 			input:     append(validData, 0x00), // Add an extra byte
-			want:      "",
 			expectErr: true,
 		},
 		{
 			name:      "nil input",
 			input:     nil,
-			want:      "",
 			expectErr: true,
 		},
 		{
 			name:      "empty input",
 			input:     []byte{},
-			want:      "",
 			expectErr: true,
 		},
 	}
@@ -288,86 +283,47 @@ func TestDecodeOutpoint(t *testing.T) {
 func TestEncodeOutpoint(t *testing.T) {
 	validTxid := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 	validIndex := uint32(42)
-	validOutpointStr := fmt.Sprintf("%s.%d", validTxid, validIndex)
+
+	validTxIDHash, err := chainhash.NewHashFromHex(validTxid)
+	require.NoError(t, err, "creating valid txid hash should not error")
+
+	validOutpoint := &wallet.Outpoint{
+		Txid:  *validTxIDHash,
+		Index: validIndex,
+	}
 
 	// Expected valid binary output
 	expectedBytes := make([]byte, outpointSize)
-	txidBytes, _ := hex.DecodeString(validTxid)
-	copy(expectedBytes[:32], txidBytes)
+	copy(expectedBytes[:32], validTxIDHash[:])
 	binary.BigEndian.PutUint32(expectedBytes[32:36], validIndex)
 
 	tests := []struct {
 		name           string
-		input          string
-		expectErr      bool
+		input          *wallet.Outpoint
 		expectedOutput []byte
 	}{
 		{
 			name:           "valid outpoint",
-			input:          validOutpointStr,
-			expectErr:      false,
+			input:          validOutpoint,
 			expectedOutput: expectedBytes,
 		},
 		{
-			name:           "invalid format - no dot",
-			input:          "nodothere",
-			expectErr:      true,
-			expectedOutput: nil,
-		},
-		{
-			name:           "invalid format - multiple dots",
-			input:          "too.many.dots",
-			expectErr:      true,
-			expectedOutput: nil,
-		},
-		{
-			name:           "invalid txid - non-hex",
-			input:          "nothex.123",
-			expectErr:      true,
-			expectedOutput: nil,
-		},
-		{
-			name:           "invalid txid - wrong length",
-			input:          "0123456789abcdef.123", // Too short
-			expectErr:      true,
-			expectedOutput: nil,
-		},
-		{
-			name:           "invalid index - non-numeric",
-			input:          fmt.Sprintf("%s.abc", validTxid),
-			expectErr:      true,
-			expectedOutput: nil,
-		},
-		{
-			name:           "invalid index - negative",
-			input:          fmt.Sprintf("%s.-1", validTxid),
-			expectErr:      true,
-			expectedOutput: nil,
-		},
-		{
-			name:           "empty input",
-			input:          "",
-			expectErr:      true,
-			expectedOutput: nil,
+			name:           "empty outpoint",
+			input:          &wallet.Outpoint{},
+			expectedOutput: make([]byte, 36),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotBytes, err := encodeOutpoint(tt.input)
+			gotBytes := encodeOutpoint(tt.input)
 
-			if tt.expectErr {
-				require.Error(t, err, "expected an error but got none")
-				require.Nil(t, gotBytes, "expected nil bytes on error")
-			} else {
-				require.NoError(t, err, "did not expect an error but got one: %v", err)
-				require.Equal(t, tt.expectedOutput, gotBytes, "encoded bytes do not match expected")
+			require.Equal(t, tt.expectedOutput, gotBytes, "encoded bytes do not match expected")
 
-				// Round trip test
-				decodedStr, decodeErr := decodeOutpoint(gotBytes)
-				require.NoError(t, decodeErr, "decoding the encoded bytes failed")
-				require.Equal(t, tt.input, decodedStr, "round trip failed: decoded string does not match original input")
-			}
+			// Round trip test
+			decodedObj, decodeErr := decodeOutpoint(gotBytes)
+			require.NoError(t, decodeErr, "decoding the encoded bytes failed")
+			require.Equal(t, tt.input, decodedObj, "round trip failed: decoded string does not match original input")
 		})
 	}
 }
@@ -403,19 +359,4 @@ func newTestSignature(t *testing.T) *ec.Signature {
 		0x24, 0xc6, 0xc6, 0x15, 0x48, 0xab, 0x5f, 0xb8, 0xcd,
 		0x41, 0x02, 0x01, 0x00,
 	})
-}
-
-// padOrTrim returns (size) bytes from input (bb)
-// Short bb gets zeros prefixed, Long bb gets left/MSB bits trimmed
-func padOrTrim(bb []byte, size int) []byte {
-	l := len(bb)
-	if l == size {
-		return bb
-	}
-	if l > size {
-		return bb[l-size:]
-	}
-	tmp := make([]byte, size)
-	copy(tmp[size-l:], bb)
-	return tmp
 }

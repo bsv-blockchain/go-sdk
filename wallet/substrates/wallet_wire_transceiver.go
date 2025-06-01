@@ -14,6 +14,8 @@ type WalletWireTransceiver struct {
 	Wire WalletWire
 }
 
+// NewWalletWireTransceiver creates a new WalletWireTransceiver with the given processor.
+// The transceiver will use the processor to handle wire protocol commands and responses.
 func NewWalletWireTransceiver(processor *WalletWireProcessor) *WalletWireTransceiver {
 	return &WalletWireTransceiver{Wire: processor}
 }

@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -8,6 +9,11 @@ import (
 )
 
 func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
+	counterparty, err := hex.DecodeString("02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
+	require.NoError(t, err, "decoding counterparty hex should not error")
+	verifier, err := hex.DecodeString("03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
+	require.NoError(t, err, "decoding verifier hex should not error")
+
 	tests := []struct {
 		name string
 		args *wallet.RevealCounterpartyKeyLinkageArgs
@@ -15,8 +21,8 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 		{
 			name: "full args",
 			args: &wallet.RevealCounterpartyKeyLinkageArgs{
-				Counterparty:     "02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-				Verifier:         "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+				Counterparty:     counterparty,
+				Verifier:         verifier,
 				Privileged:       util.BoolPtr(true),
 				PrivilegedReason: "test-reason",
 			},
@@ -24,8 +30,8 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 		{
 			name: "minimal args",
 			args: &wallet.RevealCounterpartyKeyLinkageArgs{
-				Counterparty: "02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-				Verifier:     "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+				Counterparty: counterparty,
+				Verifier:     verifier,
 			},
 		},
 	}
@@ -47,11 +53,16 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 }
 
 func TestRevealCounterpartyKeyLinkageResult(t *testing.T) {
+	counterparty, err := hex.DecodeString("02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
+	require.NoError(t, err, "decoding counterparty hex should not error")
+	verifier, err := hex.DecodeString("03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
+	require.NoError(t, err, "decoding verifier hex should not error")
+
 	t.Run("serialize/deserialize", func(t *testing.T) {
 		result := &wallet.RevealCounterpartyKeyLinkageResult{
-			Prover:                "02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-			Verifier:              "03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-			Counterparty:          "02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+			Prover:                counterparty,
+			Verifier:              verifier,
+			Counterparty:          counterparty,
 			RevelationTime:        "2023-01-01T00:00:00Z",
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},

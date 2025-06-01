@@ -1,13 +1,11 @@
 package serializer
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/util"
-
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -19,13 +17,13 @@ func TestListCertificatesArgs(t *testing.T) {
 	}{{
 		name: "full args",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []string{
-				"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
-				"02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+			Certifiers: []wallet.HexBytes33{
+				tu.GetByte33FromHexString(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
+				tu.GetByte33FromHexString(t, "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"),
 			},
-			Types: []string{
-				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type1"), sizeType)),
-				base64.StdEncoding.EncodeToString(padOrTrim([]byte("type2"), sizeType)),
+			Types: []wallet.Base64Bytes32{
+				tu.GetByte32FromString("type1"),
+				tu.GetByte32FromString("type2"),
 			},
 			Limit:            10,
 			Offset:           5,
@@ -35,14 +33,14 @@ func TestListCertificatesArgs(t *testing.T) {
 	}, {
 		name: "minimal args",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []string{"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"},
-			Types:      []string{base64.StdEncoding.EncodeToString(padOrTrim([]byte("minimal"), sizeType))},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromHexString(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")},
+			Types:      []wallet.Base64Bytes32{tu.GetByte32FromString("minimal")},
 		},
 	}, {
 		name: "empty certifiers and types",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []string{},
-			Types:      []string{},
+			Certifiers: []wallet.HexBytes33{},
+			Types:      []wallet.Base64Bytes32{},
 		},
 	}}
 
@@ -66,17 +64,18 @@ func TestListCertificatesResult(t *testing.T) {
 	t.Run("full result", func(t *testing.T) {
 		pk, err := ec.NewPrivateKey()
 		require.NoError(t, err)
+
 		result := &wallet.ListCertificatesResult{
 			TotalCertificates: 2,
 			Certificates: []wallet.CertificateResult{
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert1"), sizeType)),
+						Type:               tu.GetByte32FromString("cert1"),
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial1"), sizeSerial)),
+						SerialNumber:       tu.GetByte32FromString("serial1"),
 						Certifier:          pk.PubKey(),
-						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
-						Signature:          hex.EncodeToString(make([]byte, 64)),
+						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
+						Signature:          make([]byte, 64),
 						Fields: map[string]string{
 							"field1": "value1",
 						},
@@ -84,15 +83,15 @@ func TestListCertificatesResult(t *testing.T) {
 					Keyring: map[string]string{
 						"key1": "value1",
 					},
-					Verifier: "verifier1",
+					Verifier: []byte("verifier1"),
 				},
 				{
 					Certificate: wallet.Certificate{
-						Type:               base64.StdEncoding.EncodeToString(padOrTrim([]byte("cert2"), sizeType)),
+						Type:               tu.GetByte32FromString("cert2"),
 						Subject:            pk.PubKey(),
-						SerialNumber:       base64.StdEncoding.EncodeToString(padOrTrim([]byte("serial2"), sizeSerial)),
+						SerialNumber:       tu.GetByte32FromString("serial2"),
 						Certifier:          pk.PubKey(),
-						RevocationOutpoint: "0000000000000000000000000000000000000000000000000000000000000000.0",
+						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 					},
 				},
 			},

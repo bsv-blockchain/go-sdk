@@ -3,7 +3,6 @@ package registry
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -65,7 +65,8 @@ func (m *MockBroadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Tran
 func TestRegistryClient_RegisterDefinition(t *testing.T) {
 	ctx := context.Background()
 	mockRegistry := NewMockRegistry(t)
-	mockTxid := "f1e1fd3c6504b94e9cb0ecfb7db1167655e3d5f98afd977a18fc01e1a6e59504"
+	mockTxid, err := chainhash.NewHashFromHex("f1e1fd3c6504b94e9cb0ecfb7db1167655e3d5f98afd977a18fc01e1a6e59504")
+	require.NoError(t, err, "Failed to create mock txid from hex")
 
 	// Create a test public key
 	pubKeyBytes := []byte{
@@ -97,14 +98,14 @@ func TestRegistryClient_RegisterDefinition(t *testing.T) {
 		Tx: beef,
 		SignableTransaction: &wallet.SignableTransaction{
 			Tx:        beef,
-			Reference: "mock-reference",
+			Reference: []byte("mock-reference"),
 		},
 	}
 
 	// Also add a SignAction mock result
 	mockRegistry.SignActionResultToReturn = &wallet.SignActionResult{
 		Tx:   beef,
-		Txid: mockTxid,
+		Txid: *mockTxid,
 	}
 
 	// Setup mock CreateSignature response
@@ -123,7 +124,7 @@ func TestRegistryClient_RegisterDefinition(t *testing.T) {
 
 	// Create a mock broadcaster that returns success
 	mockBroadcastSuccess := &transaction.BroadcastSuccess{
-		Txid:    mockTxid,
+		Txid:    mockTxid.String(),
 		Message: "Mock broadcast success",
 	}
 	mockBroadcaster := &MockBroadcaster{
@@ -154,7 +155,7 @@ func TestRegistryClient_RegisterDefinition(t *testing.T) {
 	result, err := client.RegisterDefinition(ctx, basketDef)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Equal(t, mockTxid, result.Success.Txid)
+	require.Equal(t, mockTxid.String(), result.Success.Txid)
 }
 
 func TestRegistryClient_ResolveBasket(t *testing.T) {
@@ -338,9 +339,9 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 		Outputs: []wallet.Output{
 			{
 				Satoshis:      1000,
-				LockingScript: lockingScript.String(),
+				LockingScript: lockingScript.Bytes(),
 				Spendable:     true,
-				Outpoint:      tx.TxID().String() + ".0",
+				Outpoint:      wallet.Outpoint{Txid: *tx.TxID()},
 				Tags:          []string{"registry", "basket"},
 			},
 		},
@@ -409,19 +410,20 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 	beef, err := hex.DecodeString(beefHex)
 	require.NoError(t, err, "Failed to decode BEEF hex data")
 
-	mockTxid := "f1e1fd3c6504b94e9cb0ecfb7db1167655e3d5f98afd977a18fc01e1a6e59504"
+	mockTxid, err := chainhash.NewHashFromHex("f1e1fd3c6504b94e9cb0ecfb7db1167655e3d5f98afd977a18fc01e1a6e59504")
+	require.NoError(t, err, "Failed to create mock txid from hex")
 	mockRegistry.CreateActionResultToReturn = &wallet.CreateActionResult{
 		Tx: beef,
 		SignableTransaction: &wallet.SignableTransaction{
 			Tx:        beef,
-			Reference: "mock-reference",
+			Reference: []byte("mock-reference"),
 		},
 	}
 
 	// Add a SignAction mock result
 	mockRegistry.SignActionResultToReturn = &wallet.SignActionResult{
 		Tx:   beef,
-		Txid: mockTxid,
+		Txid: *mockTxid,
 	}
 
 	// Setup mock CreateSignature response
@@ -440,7 +442,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 	// Create a mock broadcaster that returns success
 	mockBroadcastSuccess := &transaction.BroadcastSuccess{
-		Txid:    mockTxid,
+		Txid:    mockTxid.String(),
 		Message: "Mock broadcast success",
 	}
 	mockBroadcaster := &MockBroadcaster{
@@ -454,18 +456,18 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 	// Setup ListOutputs mock to recognize the registry token as belonging to the wallet
 	// This is necessary to pass the ownership check in RevokeOwnRegistryEntry
-	txID := "abcd1234"
-	outputIndex := uint32(0)
-	outpointStr := fmt.Sprintf("%s.%d", txID, outputIndex)
+	outpoint := tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
 
+	lockScript, err := script.NewFromASM("OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex)
+	require.NoError(t, err, "Failed to create locking script from ASM")
 	mockRegistry.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
 		Outputs: []wallet.Output{
 			{
 				Satoshis:      1000,
-				LockingScript: "OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex,
+				LockingScript: lockScript.Bytes(),
 				Spendable:     true,
-				Outpoint:      outpointStr,
+				Outpoint:      *outpoint,
 				Tags:          []string{"registry", "basket"},
 			},
 		},
@@ -484,8 +486,8 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 			RegistryOperator: operatorPubKeyHex,
 		},
 		TokenData: TokenData{
-			TxID:          txID,
-			OutputIndex:   outputIndex,
+			TxID:          outpoint.Txid.String(),
+			OutputIndex:   outpoint.Index,
 			Satoshis:      1000,
 			LockingScript: "OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex,
 			BEEF:          beef,
@@ -496,7 +498,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 	result, err := client.RevokeOwnRegistryEntry(ctx, record)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Equal(t, mockTxid, result.Success.Txid)
+	require.Equal(t, mockTxid.String(), result.Success.Txid)
 }
 
 func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
@@ -576,9 +578,9 @@ func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 		Outputs: []wallet.Output{
 			{
 				Satoshis:      1000,
-				LockingScript: lockingScript.String(),
+				LockingScript: lockingScript.Bytes(),
 				Spendable:     true,
-				Outpoint:      tx.TxID().String() + ".0",
+				Outpoint:      *tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 				Tags:          []string{"registry", "basket"},
 			},
 		},
@@ -608,7 +610,8 @@ func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 	ctx := context.Background()
 	mockRegistry := NewMockRegistry(t)
-	mockTxid := "f1e1fd3c6504b94e9cb0ecfb7db1167655e3d5f98afd977a18fc01e1a6e59504"
+	mockTxid, err := chainhash.NewHashFromHex("f1e1fd3c6504b94e9cb0ecfb7db1167655e3d5f98afd977a18fc01e1a6e59504")
+	require.NoError(t, err, "Failed to create mock txid from hex")
 
 	// Build a valid compressed public key (0x02 + 32 bytes of 0x01)
 	pubKeyBytes := []byte{
@@ -640,14 +643,14 @@ func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 		Tx: beef,
 		SignableTransaction: &wallet.SignableTransaction{
 			Tx:        beef,
-			Reference: "mock-reference",
+			Reference: []byte("mock-reference"),
 		},
 	}
 
 	// Also add a SignAction mock result
 	mockRegistry.SignActionResultToReturn = &wallet.SignActionResult{
 		Tx:   beef,
-		Txid: mockTxid,
+		Txid: *mockTxid,
 	}
 
 	// Setup mock CreateSignature response
@@ -666,7 +669,7 @@ func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 
 	// Create a mock broadcaster that returns success
 	mockBroadcastSuccess := &transaction.BroadcastSuccess{
-		Txid:    mockTxid,
+		Txid:    mockTxid.String(),
 		Message: "Mock broadcast success",
 	}
 	mockBroadcaster := &MockBroadcaster{
@@ -697,5 +700,5 @@ func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 	result, err := client.RegisterDefinition(ctx, basketDef)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Equal(t, mockTxid, result.Success.Txid)
+	require.Equal(t, mockTxid.String(), result.Success.Txid)
 }

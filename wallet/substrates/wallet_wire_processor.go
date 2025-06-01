@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
@@ -13,10 +14,13 @@ type WalletWireProcessor struct {
 	Wallet wallet.Interface
 }
 
+// NewWalletWireProcessor creates a new WalletWireProcessor with the given wallet interface.
+// The processor will route wire protocol commands to the provided wallet implementation.
 func NewWalletWireProcessor(wallet wallet.Interface) *WalletWireProcessor {
 	return &WalletWireProcessor{Wallet: wallet}
 }
 
+// TransmitToWallet processes a wire protocol message and routes it to the appropriate wallet method.
 func (w *WalletWireProcessor) TransmitToWallet(ctx context.Context, message []byte) ([]byte, error) {
 	if len(message) == 0 {
 		return nil, errors.New("empty message")

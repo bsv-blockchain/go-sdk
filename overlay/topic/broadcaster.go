@@ -16,6 +16,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
+// RequireAck specifies acknowledgment requirements for topic broadcasts
 type RequireAck int
 
 const (
@@ -25,11 +26,13 @@ const (
 	RequireAckAll  RequireAck = 3
 )
 
+// AckFrom specifies acknowledgment requirements and associated topics
 type AckFrom struct {
 	RequireAck RequireAck
 	Topics     []string
 }
 
+// Response represents the result of broadcasting to a specific overlay service host
 type Response struct {
 	Host    string
 	Success bool
@@ -37,6 +40,7 @@ type Response struct {
 	Error   error
 }
 
+// BroadcasterConfig contains configuration options for creating a new Broadcaster
 type BroadcasterConfig struct {
 	NetworkPreset overlay.Network
 	Facilitator   Facilitator
@@ -45,6 +49,8 @@ type BroadcasterConfig struct {
 	AckFromAny    *AckFrom
 	AckFromHost   map[string]AckFrom
 }
+
+// Broadcaster broadcasts transactions to overlay topics via SHIP (Service Host Interconnect Protocol)
 type Broadcaster struct {
 	Topics        []string
 	Facilitator   Facilitator
@@ -55,6 +61,7 @@ type Broadcaster struct {
 	NetworkPreset overlay.Network
 }
 
+// NewBroadcaster creates a new Broadcaster for the specified topics with the given configuration
 func NewBroadcaster(topics []string, cfg *BroadcasterConfig) (*Broadcaster, error) {
 	if topics == nil {
 		return nil, fmt.Errorf("at least 1 topic required")
@@ -97,10 +104,12 @@ func NewBroadcaster(topics []string, cfg *BroadcasterConfig) (*Broadcaster, erro
 	return broadcaster, nil
 }
 
+// Broadcast broadcasts a transaction to the configured overlay topics using the default context
 func (b *Broadcaster) Broadcast(tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
 	return b.BroadcastCtx(context.Background(), tx)
 }
 
+// BroadcastCtx broadcasts a transaction to the configured overlay topics using the provided context
 func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
 	taggedBeef := &overlay.TaggedBEEF{
 		Topics: b.Topics,
@@ -229,6 +238,7 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 	}, nil
 }
 
+// FindInterestedHosts discovers overlay service hosts that are interested in the broadcaster's topics
 func (b *Broadcaster) FindInterestedHosts(ctx context.Context) ([]string, error) {
 	results := make(map[string]map[string]struct{})
 	query, err := json.Marshal(map[string][]string{

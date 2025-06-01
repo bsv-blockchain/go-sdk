@@ -14,14 +14,10 @@ func SerializeRevealCounterpartyKeyLinkageArgs(args *wallet.RevealCounterpartyKe
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
 
 	// Write counterparty public key
-	if err := w.WriteOptionalFromHex(args.Counterparty); err != nil {
-		return nil, fmt.Errorf("invalid counterparty hex: %w", err)
-	}
+	w.WriteIntBytesOptional(args.Counterparty)
 
 	// Write verifier public key
-	if err := w.WriteOptionalFromHex(args.Verifier); err != nil {
-		return nil, fmt.Errorf("invalid verifier hex: %w", err)
-	}
+	w.WriteIntBytesOptional(args.Verifier)
 
 	return w.Buf, nil
 }
@@ -34,10 +30,10 @@ func DeserializeRevealCounterpartyKeyLinkageArgs(data []byte) (*wallet.RevealCou
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
 
 	// Read counterparty public key
-	args.Counterparty = r.ReadOptionalToHex()
+	args.Counterparty = r.ReadIntBytes()
 
 	// Read verifier public key
-	args.Verifier = r.ReadOptionalToHex()
+	args.Verifier = r.ReadIntBytes()
 
 	r.CheckComplete()
 	if r.Err != nil {
@@ -51,13 +47,13 @@ func SerializeRevealCounterpartyKeyLinkageResult(result *wallet.RevealCounterpar
 	w := util.NewWriter()
 
 	// Write prover public key
-	w.WriteString(result.Prover)
+	w.WriteIntBytes(result.Prover)
 
 	// Write verifier public key
-	w.WriteString(result.Verifier)
+	w.WriteIntBytes(result.Verifier)
 
 	// Write counterparty public key
-	w.WriteString(result.Counterparty)
+	w.WriteIntBytes(result.Counterparty)
 
 	// Write revelation time
 	w.WriteString(result.RevelationTime)
@@ -78,13 +74,13 @@ func DeserializeRevealCounterpartyKeyLinkageResult(data []byte) (*wallet.RevealC
 	result := &wallet.RevealCounterpartyKeyLinkageResult{}
 
 	// Read prover public key
-	result.Prover = r.ReadString()
+	result.Prover = r.ReadIntBytes()
 
 	// Read verifier public key
-	result.Verifier = r.ReadString()
+	result.Verifier = r.ReadIntBytes()
 
 	// Read counterparty public key
-	result.Counterparty = r.ReadString()
+	result.Counterparty = r.ReadIntBytes()
 
 	// Read revelation time
 	result.RevelationTime = r.ReadString()
