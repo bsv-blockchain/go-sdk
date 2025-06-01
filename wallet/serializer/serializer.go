@@ -7,12 +7,10 @@ package serializer
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"strings"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -21,55 +19,35 @@ import (
 const outpointSize = 36 // 32 txid + 4 index
 
 // encodeOutpoint converts outpoint string "txid.index" to binary format
-func encodeOutpoint(outpoint string) ([]byte, error) {
-	parts := strings.Split(outpoint, ".")
-	if len(parts) != 2 {
-		return nil, errors.New("invalid outpoint format")
-	}
-
-	txid, err := hex.DecodeString(parts[0])
-	if err != nil {
-		return nil, fmt.Errorf("invalid txid: %w", err)
-	}
-	if len(txid) != chainhash.HashSize { // TXID must be 32 bytes long
-		return nil, fmt.Errorf("invalid txid length: expected 32 bytes, got %d", len(txid))
-	}
-
-	var index uint32
-	if _, err = fmt.Sscanf(parts[1], "%d", &index); err != nil {
-		return nil, fmt.Errorf("invalid index: %w", err)
-	}
-
+func encodeOutpoint(outpoint *wallet.Outpoint) []byte {
 	buf := make([]byte, outpointSize)
-	copy(buf[:32], txid)
-	binary.BigEndian.PutUint32(buf[32:36], index)
-
-	return buf, nil
+	if outpoint == nil {
+		return buf
+	}
+	copy(buf[:32], outpoint.Txid[:])
+	binary.BigEndian.PutUint32(buf[32:36], outpoint.Index)
+	return buf
 }
 
 // Outpoint represents a transaction output reference (txid + output index)
 type Outpoint string
 
 // encodeOutpoints serializes a slice of outpoints
-func encodeOutpoints(outpoints []string) ([]byte, error) {
+func encodeOutpoints(outpoints []wallet.Outpoint) ([]byte, error) {
 	if outpoints == nil {
 		return nil, nil
 	}
 
 	w := util.NewWriter()
 	w.WriteVarInt(uint64(len(outpoints)))
-	for _, op := range outpoints {
-		opBytes, err := encodeOutpoint(op)
-		if err != nil {
-			return nil, err
-		}
-		w.WriteBytes(opBytes)
+	for _, outpoint := range outpoints {
+		w.WriteBytes(encodeOutpoint(&outpoint))
 	}
 	return w.Buf, nil
 }
 
 // decodeOutpoints deserializes a slice of outpoints
-func decodeOutpoints(data []byte) ([]string, error) {
+func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
 	if len(data) == 0 {
 		return nil, nil
 	}
@@ -83,7 +61,7 @@ func decodeOutpoints(data []byte) ([]string, error) {
 		return nil, nil
 	}
 
-	outpoints := make([]string, 0, count)
+	outpoints := make([]wallet.Outpoint, 0, count)
 	for i := uint64(0); i < count; i++ {
 		opBytes, err := r.ReadBytes(outpointSize)
 		if err != nil {
@@ -93,20 +71,24 @@ func decodeOutpoints(data []byte) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		outpoints = append(outpoints, op)
+		outpoints = append(outpoints, *op)
 	}
 	return outpoints, nil
 }
 
-// decodeOutpoint converts binary outpoint data to string format "txid.index"
-func decodeOutpoint(data []byte) (string, error) {
+// decodeOutpoint converts binary outpoint data to Outpoint object
+func decodeOutpoint(data []byte) (*wallet.Outpoint, error) {
 	if len(data) != outpointSize {
-		return "", errors.New("invalid outpoint data length")
+		return nil, errors.New("invalid outpoint data length")
 	}
-
-	txid := hex.EncodeToString(data[:32])
-	index := binary.BigEndian.Uint32(data[32:36])
-	return fmt.Sprintf("%s.%d", txid, index), nil
+	hash, err := chainhash.NewHash(data[:32])
+	if err != nil {
+		return nil, fmt.Errorf("error creating chainhash from bytes: %w", err)
+	}
+	return &wallet.Outpoint{
+		Txid:  *hash,
+		Index: binary.BigEndian.Uint32(data[32:36]),
+	}, nil
 }
 
 const (

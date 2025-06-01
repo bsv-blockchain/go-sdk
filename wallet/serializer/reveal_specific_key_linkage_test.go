@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -8,6 +9,9 @@ import (
 )
 
 func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
+	verifier, err := hex.DecodeString("02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1")
+	require.NoError(t, err)
+
 	tests := []struct {
 		name string
 		args *wallet.RevealSpecificKeyLinkageArgs
@@ -16,7 +20,7 @@ func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
 			name: "full args",
 			args: &wallet.RevealSpecificKeyLinkageArgs{
 				Counterparty: newCounterparty(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
-				Verifier:     "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1",
+				Verifier:     verifier,
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevel(1),
 					Protocol:      "test-protocol",
@@ -30,7 +34,7 @@ func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
 			name: "minimal args",
 			args: &wallet.RevealSpecificKeyLinkageArgs{
 				Counterparty: newCounterparty(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
-				Verifier:     "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1",
+				Verifier:     verifier,
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevel(0),
 					Protocol:      "minimal",

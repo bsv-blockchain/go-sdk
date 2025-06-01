@@ -87,11 +87,11 @@ func SerializeListOutputsResult(result *wallet.ListOutputsResult) ([]byte, error
 	for _, output := range result.Outputs {
 		// Serialize each output
 		w.WriteVarInt(output.Satoshis)
-		w.WriteOptionalString(output.LockingScript)
+		w.WriteIntBytes(output.LockingScript)
 		w.WriteOptionalBool(&output.Spendable)
 		w.WriteOptionalString(output.CustomInstructions)
 		w.WriteStringSlice(output.Tags)
-		w.WriteString(output.Outpoint)
+		w.WriteBytes(encodeOutpoint(&output.Outpoint))
 		w.WriteStringSlice(output.Labels)
 	}
 
@@ -116,13 +116,17 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 	for i := uint64(0); i < outputCount; i++ {
 		output := wallet.Output{
 			Satoshis:           r.ReadVarInt(),
-			LockingScript:      r.ReadString(),
+			LockingScript:      r.ReadIntBytes(),
 			Spendable:          *r.ReadOptionalBool(),
 			CustomInstructions: r.ReadString(),
 			Tags:               r.ReadStringSlice(),
-			Outpoint:           r.ReadString(),
-			Labels:             r.ReadStringSlice(),
 		}
+		outpoint, err := decodeOutpoint(r.ReadBytes(outpointSize))
+		if err != nil {
+			return nil, fmt.Errorf("error decoding outpoint: %w", err)
+		}
+		output.Outpoint = *outpoint
+		output.Labels = r.ReadStringSlice()
 		// Check error each loop
 		if r.Err != nil {
 			return nil, fmt.Errorf("error reading output: %w", r.Err)

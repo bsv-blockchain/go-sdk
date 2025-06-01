@@ -113,9 +113,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 	w.WriteVarInt(uint64(len(result.Actions)))
 	for _, action := range result.Actions {
 		// Serialize basic action fields
-		if err := w.WriteSizeFromHex(action.Txid, chainhash.HashSize); err != nil {
-			return nil, fmt.Errorf("invalid txid hex: %w", err)
-		}
+		w.WriteBytes(action.Txid[:])
 		w.WriteVarInt(action.Satoshis)
 
 		// Serialize status
@@ -148,22 +146,14 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		// Serialize inputs
 		w.WriteVarInt(uint64(len(action.Inputs)))
 		for _, input := range action.Inputs {
-			opBytes, err := encodeOutpoint(input.SourceOutpoint)
-			if err != nil {
-				return nil, fmt.Errorf("invalid source outpoint: %w", err)
-			}
-			w.WriteBytes(opBytes)
+			w.WriteBytes(encodeOutpoint(&input.SourceOutpoint))
 			w.WriteVarInt(input.SourceSatoshis)
 
 			// SourceLockingScript
-			if err = w.WriteOptionalFromHex(input.SourceLockingScript); err != nil {
-				return nil, fmt.Errorf("invalid source locking script: %w", err)
-			}
+			w.WriteIntBytesOptional(input.SourceLockingScript)
 
 			// UnlockingScript
-			if err = w.WriteOptionalFromHex(input.UnlockingScript); err != nil {
-				return nil, fmt.Errorf("invalid unlocking script: %w", err)
-			}
+			w.WriteIntBytesOptional(input.UnlockingScript)
 
 			w.WriteString(input.InputDescription)
 			w.WriteVarInt(uint64(input.SequenceNumber))
@@ -174,11 +164,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		for _, output := range action.Outputs {
 			w.WriteVarInt(uint64(output.OutputIndex))
 			w.WriteVarInt(output.Satoshis)
-
-			// LockingScript
-			if err := w.WriteOptionalFromHex(output.LockingScript); err != nil {
-				return nil, fmt.Errorf("invalid locking script: %w", err)
-			}
+			w.WriteIntBytesOptional(output.LockingScript)
 
 			// Serialize Spendable, OutputDescription, Basket, Tags, and CustomInstructions
 			w.WriteOptionalBool(&output.Spendable)
@@ -206,7 +192,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		action := wallet.Action{}
 
 		// Deserialize basic action fields
-		action.Txid = r.ReadHex(chainhash.HashSize)
+		copy(action.Txid[:], r.ReadBytes(chainhash.HashSize))
 		action.Satoshis = r.ReadVarInt()
 
 		// Deserialize status
@@ -244,12 +230,16 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 			input := wallet.ActionInput{}
 
 			opBytes := r.ReadBytes(outpointSize)
-			input.SourceOutpoint, _ = decodeOutpoint(opBytes)
+			outpoint, err := decodeOutpoint(opBytes)
+			if err != nil {
+				return nil, fmt.Errorf("error decoding source outpoint for input %d: %w", j, err)
+			}
+			input.SourceOutpoint = *outpoint
 
 			// Serialize source satoshis, locking script, unlocking script, input description, and sequence number
 			input.SourceSatoshis = r.ReadVarInt()
-			input.SourceLockingScript = r.ReadOptionalToHex()
-			input.UnlockingScript = r.ReadOptionalToHex()
+			input.SourceLockingScript = r.ReadIntBytes()
+			input.UnlockingScript = r.ReadIntBytes()
 			input.InputDescription = r.ReadString()
 			input.SequenceNumber = r.ReadVarInt32()
 
@@ -271,7 +261,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 			// and custom instructions
 			output.OutputIndex = r.ReadVarInt32()
 			output.Satoshis = r.ReadVarInt()
-			output.LockingScript = r.ReadOptionalToHex()
+			output.LockingScript = r.ReadIntBytes()
 			output.Spendable = r.ReadByte() == 1
 			output.OutputDescription = r.ReadString()
 			output.Basket = r.ReadString()

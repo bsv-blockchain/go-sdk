@@ -43,10 +43,10 @@ func setupMockWalletForAuth(t *testing.T) *wallet.MockWallet {
 		}, nil
 	}
 
-	// Set up CreateHmac response for nonce generation
-	mockWallet.MockCreateHmac = func(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-		return &wallet.CreateHmacResult{
-			Hmac: wallet.JsonByteNoBase64([]byte("test-hmac-value")),
+	// Set up CreateHMAC response for nonce generation
+	mockWallet.MockCreateHMAC = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+		return &wallet.CreateHMACResult{
+			HMAC: wallet.JsonByteNoBase64([]byte("test-hmac-value")),
 		}, nil
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
+// Protocol represents the overlay protocol type (SHIP or SLAP)
 type Protocol string
 
 const (
@@ -17,29 +18,36 @@ const (
 	ProtocolSLAP Protocol = "SLAP"
 )
 
+// TaggedBEEF represents a BEEF (Background Evaluation Extended Format) transaction with associated overlay topics
 type TaggedBEEF struct {
 	Beef   []byte
 	Topics []string
 }
 
+// AppliedTransaction represents a transaction that has been applied to a specific overlay topic
 type AppliedTransaction struct {
 	Txid  *chainhash.Hash
 	Topic string
 }
 
+// TopicData represents data associated with an overlay topic including dependencies
 type TopicData struct {
 	Data any
 	Deps []*Outpoint
 }
 
+// AdmittanceInstructions specify which outputs to admit and which coins to retain when submitting to overlay topics
 type AdmittanceInstructions struct {
 	OutputsToAdmit []uint32
 	CoinsToRetain  []uint32
 	CoinsRemoved   []uint32
 	AncillaryTxids []*chainhash.Hash
 }
+
+// Steak represents a Submitted Transaction Execution AcKnowledgment mapping topics to their admittance instructions
 type Steak map[string]*AdmittanceInstructions
 
+// Network represents the BSV network type
 type Network int
 
 var (
@@ -54,6 +62,7 @@ var NetworkNames = map[Network]string{
 	NetworkLocal:   "local",
 }
 
+// MetaData contains overlay service metadata information
 type MetaData struct {
 	Name        string `json:"name"`
 	Description string `json:"shortDescription"`

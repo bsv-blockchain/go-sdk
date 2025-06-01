@@ -2,13 +2,14 @@ package utils
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 
+	"encoding/base64"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -27,24 +28,26 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, verifierKey)
 
+	certType1 := tu.GetByte32FromString("certType1")
+	certType2 := tu.GetByte32FromString("certType2")
+	serial1 := tu.GetByte32FromString("serial1")
+
 	// Test case 1: Retrieves matching certificates based on requested set
 	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
 		mockWallet := wallet.NewMockWallet(t)
 
-		// Create base64-encoded certificate types and fields as required by the standard
-		certType1Base64 := base64.StdEncoding.EncodeToString([]byte("certType1"))
-		serialBase64 := base64.StdEncoding.EncodeToString([]byte("serial1"))
+		// Create base64-encoded field values as required by the standard
 		field1ValueBase64 := base64.StdEncoding.EncodeToString([]byte("encryptedData1"))
 		field2ValueBase64 := base64.StdEncoding.EncodeToString([]byte("encryptedData2"))
 		keyring1Base64 := base64.StdEncoding.EncodeToString([]byte("key1"))
 		keyring2Base64 := base64.StdEncoding.EncodeToString([]byte("key2"))
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []string{"certifier1", "certifier2"},
-			CertificateTypes: map[string][]string{
-				certType1Base64: {"field1", "field2"}, // Use base64-encoded type
-				"certType2":     {"field3"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1"), tu.GetByte33FromString("certifier2")},
+			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+				certType1: {"field1", "field2"},
+				certType2: {"field3"},
 			},
 		}
 
@@ -58,13 +61,13 @@ func TestGetVerifiableCertificates(t *testing.T) {
 			Certificates: []wallet.CertificateResult{
 				{
 					Certificate: wallet.Certificate{
-						Type:               certType1Base64, // Use base64-encoded type
-						SerialNumber:       serialBase64,    // Use base64-encoded serial
+						Type:               certType1,
+						SerialNumber:       serial1,
 						Subject:            subject,
 						Certifier:          certifier,
-						RevocationOutpoint: "abcd1234:0",
+						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 						Fields:             map[string]string{"field1": field1ValueBase64, "field2": field2ValueBase64}, // Use base64-encoded field values
-						Signature:          "01020304",
+						Signature:          []byte{0x01, 0x02, 0x03, 0x04},
 					},
 				},
 			},
@@ -92,9 +95,11 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		require.Len(t, certs, 1)
 		if len(certs) > 0 {
 			cert := certs[0]
-			// The values should already be base64-encoded in the certificate
-			require.Equal(t, wallet.Base64String(certType1Base64), cert.Type)
-			require.Equal(t, wallet.Base64String(serialBase64), cert.SerialNumber)
+			// Compare against base64 encoded values
+			expectedTypeBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString(certType1[:]))
+			expectedSerialBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString(serial1[:]))
+			require.Equal(t, expectedTypeBase64, cert.Type)
+			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
 			require.NotNil(t, cert.RevocationOutpoint)
 			if cert.RevocationOutpoint != nil && revocationOutpoint != nil {
 				require.Equal(t, revocationOutpoint.OutputIndex, cert.RevocationOutpoint.OutputIndex)
@@ -106,12 +111,11 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	t.Run("returns an empty array when no matching certificates are found", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
 		mockWallet := wallet.NewMockWallet(t)
-		certType1Base64 := base64.StdEncoding.EncodeToString([]byte("certType1"))
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []string{"certifier1"},
-			CertificateTypes: map[string][]string{
-				certType1Base64: {"field1"}, // Use base64-encoded type
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
+			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+				certType1: {"field1"},
 			},
 		}
 
@@ -137,12 +141,11 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	t.Run("propagates errors from ListCertificates", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
 		mockWallet := wallet.NewMockWallet(t)
-		certType1Base64 := base64.StdEncoding.EncodeToString([]byte("certType1"))
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []string{"certifier1"},
-			CertificateTypes: map[string][]string{
-				certType1Base64: {"field1"}, // Use base64-encoded type
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
+			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+				certType1: {"field1"},
 			},
 		}
 

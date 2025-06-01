@@ -40,3 +40,5 @@ golangci-lint-report.xml
 
 # Ignore any other files or directories specific to your project
 
+# Ignore files related to AI tools
+CLAUDE.md

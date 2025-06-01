@@ -20,6 +20,8 @@ type ProtoWallet struct {
 	// The underlying key deriver
 	keyDeriver *KeyDeriver
 }
+
+// ProtoWalletArgsType specifies the type of argument used to create a ProtoWallet.
 type ProtoWalletArgsType string
 
 const (
@@ -28,6 +30,8 @@ const (
 	ProtoWalletArgsTypeAnyone     ProtoWalletArgsType = "anyone"
 )
 
+// ProtoWalletArgs contains the arguments needed to create a ProtoWallet.
+// The Type field determines which of the other fields should be used.
 type ProtoWalletArgs struct {
 	Type       ProtoWalletArgsType
 	PrivateKey *ec.PrivateKey
@@ -273,13 +277,13 @@ func (p *ProtoWallet) VerifySignature(
 	}, nil
 }
 
-// CreateHmac generates an HMAC (Hash-based Message Authentication Code) for the provided data
+// CreateHMAC generates an HMAC (Hash-based Message Authentication Code) for the provided data
 // using a symmetric key derived from the protocol, key ID, and counterparty.
-func (p *ProtoWallet) CreateHmac(
+func (p *ProtoWallet) CreateHMAC(
 	ctx context.Context,
-	args CreateHmacArgs,
+	args CreateHMACArgs,
 	originator string,
-) (*CreateHmacResult, error) {
+) (*CreateHMACResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -307,16 +311,16 @@ func (p *ProtoWallet) CreateHmac(
 	mac.Write(args.Data)
 	hmacValue := mac.Sum(nil)
 
-	return &CreateHmacResult{Hmac: hmacValue}, nil
+	return &CreateHMACResult{HMAC: hmacValue}, nil
 }
 
-// VerifyHmac verifies that the provided HMAC matches the expected value for the given data.
+// VerifyHMAC verifies that the provided HMAC matches the expected value for the given data.
 // The verification uses the same protocol, key ID, and counterparty that were used to create the HMAC.
-func (p *ProtoWallet) VerifyHmac(
+func (p *ProtoWallet) VerifyHMAC(
 	ctx context.Context,
-	args VerifyHmacArgs,
+	args VerifyHMACArgs,
 	originator string,
-) (*VerifyHmacResult, error) {
+) (*VerifyHMACResult, error) {
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -342,12 +346,12 @@ func (p *ProtoWallet) VerifyHmac(
 	// Create expected HMAC
 	mac := hmac.New(sha256.New, key.ToBytes())
 	mac.Write(args.Data)
-	expectedHmac := mac.Sum(nil)
+	expectedHMAC := mac.Sum(nil)
 
 	// Verify HMAC
-	if !hmac.Equal(expectedHmac, args.Hmac) {
-		return &VerifyHmacResult{Valid: false}, nil
+	if !hmac.Equal(expectedHMAC, args.HMAC) {
+		return &VerifyHMACResult{Valid: false}, nil
 	}
 
-	return &VerifyHmacResult{Valid: true}, nil
+	return &VerifyHMACResult{Valid: true}, nil
 }

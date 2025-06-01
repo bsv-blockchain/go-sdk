@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 
@@ -25,9 +24,7 @@ func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) e
 	}
 	w.WriteVarInt(uint64(len(results)))
 	for _, res := range results {
-		if err := w.WriteSizeFromHex(res.Txid, chainhash.HashSize); err != nil {
-			return fmt.Errorf("invalid txid hex: %w", err)
-		}
+		w.WriteBytes(res.Txid[:])
 
 		var statusByte actionResultStatusCode
 		switch res.Status {
@@ -56,9 +53,13 @@ func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
 
 	results := make([]wallet.SendWithResult, 0, count)
 	for i := uint64(0); i < count; i++ {
-		txid, err := r.ReadBytes(chainhash.HashSize)
+		txidBytes, err := r.ReadBytes(chainhash.HashSize)
 		if err != nil {
 			return nil, err
+		}
+		txid, err := chainhash.NewHash(txidBytes)
+		if err != nil {
+			return nil, fmt.Errorf("invalid txid: %w", err)
 		}
 
 		statusCode, err := r.ReadByte()
@@ -79,7 +80,7 @@ func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
 		}
 
 		results = append(results, wallet.SendWithResult{
-			Txid:   hex.EncodeToString(txid),
+			Txid:   *txid,
 			Status: status,
 		})
 	}

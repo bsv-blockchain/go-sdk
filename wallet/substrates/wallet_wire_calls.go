@@ -1,5 +1,7 @@
 package substrates
 
+// Call represents the different types of wallet wire protocol operations.
+// Each call type corresponds to a specific wallet function that can be invoked remotely.
 type Call byte
 
 const (
@@ -15,8 +17,8 @@ const (
 	CallRevealSpecificKeyLinkage     Call = 0x10
 	CallEncrypt                      Call = 0x11
 	CallDecrypt                      Call = 0x12
-	CallCreateHmac                   Call = 0x13
-	CallVerifyHmac                   Call = 0x14
+	CallCreateHMAC                   Call = 0x13
+	CallVerifyHMAC                   Call = 0x14
 	CallCreateSignature              Call = 0x15
 	CallVerifySignature              Call = 0x16
 	CallAcquireCertificate           Call = 0x17

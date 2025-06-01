@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
@@ -9,6 +9,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,19 +30,21 @@ func TestValidateCertificates(t *testing.T) {
 	})
 
 	t.Run("Validates certificate requirements structure", func(t *testing.T) {
+		var certType wallet.Base64Bytes32
+		copy(certType[:], "requested_type")
 		// Test validate certificate requirements struct
 		reqs := &utils.RequestedCertificateSet{
-			Certifiers: []string{"valid_certifier"},
+			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("valid_certifier")},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
-				"requested_type": []string{"field1"},
+				certType: {"field1"},
 			},
 		}
 
 		assert.NotNil(t, reqs)
 		assert.Len(t, reqs.Certifiers, 1)
 		assert.Len(t, reqs.CertificateTypes, 1)
-		assert.Contains(t, reqs.CertificateTypes, "requested_type")
-		assert.Contains(t, reqs.CertificateTypes["requested_type"], "field1")
+		assert.Contains(t, reqs.CertificateTypes, certType)
+		assert.Contains(t, reqs.CertificateTypes[certType], "field1")
 	})
 
 	// Example: Create a valid certificate using CompletedProtoWallet
@@ -135,10 +138,18 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Create certificate requirements
+		var certifierHex [33]byte
+		copy(certifierHex[:], certifierIdentityKey.PublicKey.Compressed())
+		
+		// Convert masterCert.Type from Base64String to Base64Bytes32
+		var certType32 wallet.Base64Bytes32
+		typeBytes, _ := base64.StdEncoding.DecodeString(string(masterCert.Type))
+		copy(certType32[:], typeBytes)
+		
 		certReqs := &utils.RequestedCertificateSet{
-			Certifiers: []string{hex.EncodeToString(certifierIdentityKey.PublicKey.Compressed())},
+			Certifiers: []wallet.HexBytes33{certifierHex},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
-				string(masterCert.Type): []string{"name", "email"},
+				certType32: []string{"name", "email"},
 			},
 		}
 
@@ -221,10 +232,18 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Create requirements
+		var subjectHex [33]byte
+		copy(subjectHex[:], subjectIdentityKey.PublicKey.Compressed())
+		
+		// Convert certTypeBase64 from string to Base64Bytes32
+		var certType32 wallet.Base64Bytes32
+		typeBytes, _ := base64.StdEncoding.DecodeString(certTypeBase64)
+		copy(certType32[:], typeBytes)
+		
 		certReqs := &utils.RequestedCertificateSet{
-			Certifiers: []string{hex.EncodeToString(subjectIdentityKey.PublicKey.Compressed())},
+			Certifiers: []wallet.HexBytes33{subjectHex},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
-				certTypeBase64: []string{"owner"},
+				certType32: []string{"owner"},
 			},
 		}
 

@@ -14,6 +14,8 @@ type WalletWireTransceiver struct {
 	Wire WalletWire
 }
 
+// NewWalletWireTransceiver creates a new WalletWireTransceiver with the given processor.
+// The transceiver will use the processor to handle wire protocol commands and responses.
 func NewWalletWireTransceiver(processor *WalletWireProcessor) *WalletWireTransceiver {
 	return &WalletWireTransceiver{Wire: processor}
 }
@@ -189,28 +191,28 @@ func (t *WalletWireTransceiver) Decrypt(ctx context.Context, args wallet.Decrypt
 	return serializer.DeserializeDecryptResult(resp)
 }
 
-func (t *WalletWireTransceiver) CreateHmac(ctx context.Context, args wallet.CreateHmacArgs, originator string) (*wallet.CreateHmacResult, error) {
-	data, err := serializer.SerializeCreateHmacArgs(&args)
+func (t *WalletWireTransceiver) CreateHMAC(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
+	data, err := serializer.SerializeCreateHMACArgs(&args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize create hmac arguments: %w", err)
 	}
-	resp, err := t.transmit(ctx, CallCreateHmac, originator, data)
+	resp, err := t.transmit(ctx, CallCreateHMAC, originator, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit create hmac call: %w", err)
 	}
-	return serializer.DeserializeCreateHmacResult(resp)
+	return serializer.DeserializeCreateHMACResult(resp)
 }
 
-func (t *WalletWireTransceiver) VerifyHmac(ctx context.Context, args wallet.VerifyHmacArgs, originator string) (*wallet.VerifyHmacResult, error) {
-	data, err := serializer.SerializeVerifyHmacArgs(&args)
+func (t *WalletWireTransceiver) VerifyHMAC(ctx context.Context, args wallet.VerifyHMACArgs, originator string) (*wallet.VerifyHMACResult, error) {
+	data, err := serializer.SerializeVerifyHMACArgs(&args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize verify hmac arguments: %w", err)
 	}
-	resp, err := t.transmit(ctx, CallVerifyHmac, originator, data)
+	resp, err := t.transmit(ctx, CallVerifyHMAC, originator, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit verify hmac call: %w", err)
 	}
-	return serializer.DeserializeVerifyHmacResult(resp)
+	return serializer.DeserializeVerifyHMACResult(resp)
 }
 
 func (t *WalletWireTransceiver) CreateSignature(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {

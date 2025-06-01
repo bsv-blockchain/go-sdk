@@ -26,10 +26,22 @@ const AUTH_PROTOCOL_ID = "authrite message signature"
 // AUTH_VERSION is the version of the auth protocol
 const AUTH_VERSION = "0.1"
 
+// OnGeneralMessageReceivedCallback is called when a general message is received from a peer.
+// The callback receives the sender's public key and the message payload.
 type OnGeneralMessageReceivedCallback func(senderPublicKey *ec.PublicKey, payload []byte) error
+
+// OnCertificateReceivedCallback is called when certificates are received from a peer.
+// The callback receives the sender's public key and the list of certificates.
 type OnCertificateReceivedCallback func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error
+
+// OnCertificateRequestReceivedCallback is called when a certificate request is received from a peer.
+// The callback receives the sender's public key and the requested certificate set.
 type OnCertificateRequestReceivedCallback func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error
 
+// Peer represents a peer capable of performing mutual authentication.
+// It manages sessions, handles authentication handshakes, certificate requests and responses,
+// and sending and receiving general messages over a transport layer.
+// This implementation supports multiple concurrent sessions per peer identity key.
 type Peer struct {
 	sessionManager                        SessionManager
 	transport                             Transport
@@ -48,6 +60,7 @@ type Peer struct {
 	logger                 *log.Logger // Logger for debug messages
 }
 
+// PeerOptions contains configuration options for creating a new Peer instance.
 type PeerOptions struct {
 	Wallet                 wallet.Interface
 	Transport              Transport
@@ -90,7 +103,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 		peer.CertificatesToRequest = cfg.CertificatesToRequest
 	} else {
 		peer.CertificatesToRequest = &utils.RequestedCertificateSet{
-			Certifiers:       []string{},
+			Certifiers:       []wallet.HexBytes33{},
 			CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 		}
 	}

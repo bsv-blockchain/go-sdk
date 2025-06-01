@@ -25,9 +25,7 @@ func SerializeRevealSpecificKeyLinkageArgs(args *wallet.RevealSpecificKeyLinkage
 	w.WriteBytes(keyParams)
 
 	// Write verifier public key
-	if err := w.WriteRemainingFromHex(args.Verifier); err != nil {
-		return nil, fmt.Errorf("invalid verifier hex: %w", err)
-	}
+	w.WriteBytes(args.Verifier)
 
 	return w.Buf, nil
 }
@@ -48,7 +46,7 @@ func DeserializeRevealSpecificKeyLinkageArgs(data []byte) (*wallet.RevealSpecifi
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read verifier public key
-	args.Verifier = r.ReadRemainingHex()
+	args.Verifier = r.ReadRemaining()
 
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decoding args: %w", r.Err)

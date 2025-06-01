@@ -21,10 +21,14 @@ func main() {
 	// -------------------------------------------------------------------------
 	// In a real application, you would obtain a certificate through wallet.acquireCertificate
 	// or another mechanism. This is a simplified example.
+	typeXCert, err := wallet.Base64String(identity.KnownIdentityTypes.XCert).ToArray()
+	if err != nil {
+		log.Fatalf("Failed to get known identity type: %v", err)
+	}
 	certificate := &wallet.Certificate{
 		// Certificate fields would be populated here
-		Type:         identity.KnownIdentityTypes.XCert,
-		SerialNumber: "12345",
+		Type:         typeXCert,
+		SerialNumber: [32]byte{0x01, 0x02, 0x03},
 		// Other fields...
 		Fields: map[string]string{
 			"userName":     "Alice",
@@ -75,7 +79,7 @@ func main() {
 	identities, err := client.ResolveByIdentityKey(
 		context.Background(),
 		wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey: "exampleIdentityKey123",
+			IdentityKey: [33]byte{0x01, 0x02, 0x03},
 		},
 	)
 	if err != nil {
@@ -113,6 +117,11 @@ func main() {
 		}
 	}
 
+	typeEmailCert, err := wallet.Base64String(identity.KnownIdentityTypes.EmailCert).ToArray()
+	if err != nil {
+		log.Fatalf("Failed to get known identity type: %v", err)
+	}
+
 	// -------------------------------------------------------------------------
 	// EXAMPLE 5: Parse an identity certificate directly
 	// -------------------------------------------------------------------------
@@ -120,7 +129,7 @@ func main() {
 	// convert it to a DisplayableIdentity
 	certFromElsewhere := &wallet.IdentityCertificate{
 		Certificate: wallet.Certificate{
-			Type: identity.KnownIdentityTypes.EmailCert,
+			Type: typeEmailCert,
 		},
 		DecryptedFields: map[string]string{
 			"email": "bob@example.com",
