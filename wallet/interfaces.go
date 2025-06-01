@@ -14,7 +14,7 @@ import (
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
-	Type               Bytes32Base64     `json:"type"`
+	Type               [32]byte          `json:"type"`
 	SerialNumber       Bytes32Base64     `json:"serialNumber"`
 	Subject            *ec.PublicKey     `json:"subject"`
 	Certifier          *ec.PublicKey     `json:"certifier"`
@@ -37,10 +37,12 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(&struct {
-		Subject   *string `json:"subject"`
-		Certifier *string `json:"certifier"`
+		Type      Bytes32Base64 `json:"type"`
+		Subject   *string       `json:"subject"`
+		Certifier *string       `json:"certifier"`
 		*Alias
 	}{
+		Type:      c.Type,
 		Subject:   subjectHex,
 		Certifier: certifierHex,
 		Alias:     (*Alias)(c),
@@ -51,8 +53,9 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 func (c *Certificate) UnmarshalJSON(data []byte) error {
 	type Alias Certificate // Use alias to avoid recursion
 	aux := &struct {
-		Subject   *string `json:"subject"`
-		Certifier *string `json:"certifier"`
+		Type      Bytes32Base64 `json:"type"`
+		Subject   *string       `json:"subject"`
+		Certifier *string       `json:"certifier"`
 		*Alias
 	}{
 		Alias: (*Alias)(c),
@@ -77,6 +80,7 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 		}
 		c.Certifier = cert
 	}
+	c.Type = aux.Type
 
 	return nil
 }
@@ -627,7 +631,7 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 // AcquireCertificateArgs contains parameters for acquiring a new certificate.
 // This includes the certificate type, certifier information, and acquisition method.
 type AcquireCertificateArgs struct {
-	Type                Bytes32Base64       `json:"type"`
+	Type                [32]byte            `json:"type"`
 	Certifier           Bytes33Hex          `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
@@ -639,6 +643,35 @@ type AcquireCertificateArgs struct {
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
 	Privileged          *bool               `json:"privileged,omitempty"`
 	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
+}
+
+func (a *AcquireCertificateArgs) UnmarshalJSON(data []byte) error {
+	type Alias AcquireCertificateArgs
+	aux := &struct {
+		Type Bytes32Base64 `json:"type"`
+		*Alias
+	}{
+		Alias: (*Alias)(a),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling AcquireCertificateArgs: %w", err)
+	}
+
+	a.Type = aux.Type
+
+	return nil
+}
+
+func (a *AcquireCertificateArgs) MarshalJSON() ([]byte, error) {
+	type Alias AcquireCertificateArgs
+	return json.Marshal(&struct {
+		Type Bytes32Base64 `json:"type"`
+		*Alias
+	}{
+		Type:  Bytes32Base64(a.Type[:]),
+		Alias: (*Alias)(a),
+	})
 }
 
 // ListCertificatesArgs contains parameters for listing certificates with filtering and pagination.
@@ -724,9 +757,40 @@ type ListCertificatesResult struct {
 
 // RelinquishCertificateArgs contains parameters for relinquishing ownership of a certificate.
 type RelinquishCertificateArgs struct {
-	Type         Bytes32Base64 `json:"type"`
+	Type         [32]byte      `json:"type"`
 	SerialNumber Bytes32Base64 `json:"serialNumber"`
 	Certifier    Bytes33Hex    `json:"certifier"`
+}
+
+func (r *RelinquishCertificateArgs) UnmarshalJSON(data []byte) error {
+	// Unmarshal into a temporary struct to handle the Bytes32Base64 type
+	type Alias RelinquishCertificateArgs
+	aux := &struct {
+		Type Bytes32Base64 `json:"type"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling RelinquishCertificateArgs: %w", err)
+	}
+
+	r.Type = aux.Type
+
+	return nil
+}
+
+func (r *RelinquishCertificateArgs) MarshalJSON() ([]byte, error) {
+	// Marshal the Type as Bytes32Base64
+	type Alias RelinquishCertificateArgs
+	return json.Marshal(&struct {
+		Type Bytes32Base64 `json:"type"`
+		*Alias
+	}{
+		Type:  Bytes32Base64(r.Type[:]),
+		Alias: (*Alias)(r),
+	})
 }
 
 // RelinquishOutputArgs contains parameters for relinquishing ownership of an output.

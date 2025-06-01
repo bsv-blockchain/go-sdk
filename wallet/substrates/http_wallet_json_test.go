@@ -442,7 +442,7 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
-	typeTest := wallet.Bytes32Base64(tu.GetByte32FromString("test-type"))
+	typeTest := tu.GetByte32FromString("test-type")
 	serialNumber := wallet.Bytes32Base64(tu.GetByte32FromString("12345"))
 	certifier := wallet.Bytes33Hex(tu.GetByte33FromString("test-certifier"))
 	verifier := tu.GetByte33FromString("test-verifier")
@@ -551,8 +551,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
-	var typeDiscovered wallet.Bytes32Base64
-	copy(typeDiscovered[:], "discovered-type")
+	typeDiscovered := tu.GetByte32FromString("discovered-type")
 	testKey := tu.GetByte33FromString("test-key")
 	// Test DiscoverByIdentityKey
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
