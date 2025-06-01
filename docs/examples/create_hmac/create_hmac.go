@@ -35,7 +35,7 @@ func main() {
 
 	// --- 2. Create HMAC (for Self) ---
 	fmt.Println("\n--- 2. Creating HMAC for the message (for self) ---")
-	createHmacArgs := wallet.CreateHmacArgs{
+	createHmacArgs := wallet.CreateHMACArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: hmacProtocolID,
 			KeyID:      hmacKeyID,
@@ -45,16 +45,16 @@ func main() {
 		},
 		Data: wallet.JsonByteNoBase64(message),
 	}
-	createHmacResult, err := myWallet.CreateHmac(ctx, createHmacArgs, "creator_originator")
+	createHmacResult, err := myWallet.CreateHMAC(ctx, createHmacArgs, "creator_originator")
 	if err != nil {
 		log.Fatalf("Failed to create HMAC: %v", err)
 	}
-	hmacBytes := createHmacResult.Hmac
+	hmacBytes := createHmacResult.HMAC
 	fmt.Printf("HMAC created: %x\n", hmacBytes)
 
 	// --- 3. Verify HMAC (by Self) ---
 	fmt.Println("\n--- 3. Verifying the HMAC (by self) ---")
-	verifyHmacArgs := wallet.VerifyHmacArgs{
+	verifyHmacArgs := wallet.VerifyHMACArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: hmacProtocolID, // Must match creation
 			KeyID:      hmacKeyID,      // Must match creation
@@ -63,9 +63,9 @@ func main() {
 			},
 		},
 		Data: wallet.JsonByteNoBase64(message), // Original data
-		Hmac: hmacBytes,                        // HMAC from step 2
+		HMAC: hmacBytes,                        // HMAC from step 2
 	}
-	verifyHmacResult, err := myWallet.VerifyHmac(ctx, verifyHmacArgs, "verifier_originator")
+	verifyHmacResult, err := myWallet.VerifyHMAC(ctx, verifyHmacArgs, "verifier_originator")
 	if err != nil {
 		// This path should ideally not be hit if args are correct and HMAC was just created
 		log.Fatalf("Error during HMAC verification call: %v", err)
@@ -81,7 +81,7 @@ func main() {
 	fmt.Println("\n--- 4. Verifying with tampered data (expected failure) ---")
 	tamperedDataArgs := verifyHmacArgs // Copy previous args
 	tamperedDataArgs.Data = wallet.JsonByteNoBase64([]byte("This is tampered data!"))
-	tamperedDataVerifyResult, err := myWallet.VerifyHmac(ctx, tamperedDataArgs, "verifier_tampered_data")
+	tamperedDataVerifyResult, err := myWallet.VerifyHMAC(ctx, tamperedDataArgs, "verifier_tampered_data")
 	if err != nil {
 		log.Fatalf("Error during tampered data HMAC verification call: %v", err)
 	}
@@ -102,8 +102,8 @@ func main() {
 	} else {
 		corruptedHmac = append(corruptedHmac, 0x00) // Or handle if HMAC was empty (should not be)
 	}
-	tamperedHmacArgs.Hmac = wallet.JsonByteNoBase64(corruptedHmac)
-	tamperedHmacVerifyResult, err := myWallet.VerifyHmac(ctx, tamperedHmacArgs, "verifier_tampered_hmac")
+	tamperedHmacArgs.HMAC = wallet.JsonByteNoBase64(corruptedHmac)
+	tamperedHmacVerifyResult, err := myWallet.VerifyHMAC(ctx, tamperedHmacArgs, "verifier_tampered_hmac")
 	if err != nil {
 		log.Fatalf("Error during tampered HMAC verification call: %v", err)
 	}
