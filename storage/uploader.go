@@ -17,6 +17,28 @@ import (
 	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
 )
 
+// API response status constants
+const (
+	StatusSuccess = "success"
+	StatusError   = "error"
+)
+
+// checkAPIError is a common function to handle API error responses
+func checkAPIError(status, code, description, operation string) error {
+	if status == StatusError {
+		errCode := code
+		if errCode == "" {
+			errCode = "unknown-code"
+		}
+		errDesc := description
+		if errDesc == "" {
+			errDesc = "no-description"
+		}
+		return fmt.Errorf("%s returned an error: %s - %s", operation, errCode, errDesc)
+	}
+	return nil
+}
+
 // Uploader implements the StorageUploaderInterface
 type Uploader struct {
 	baseURL   string              // Base URL of the storage service
@@ -85,8 +107,7 @@ func (u *Uploader) getUploadInfo(ctx context.Context, fileSize int, retentionPer
 		return nil, fmt.Errorf("failed to decode upload info response: %w", err)
 	}
 
-	// TODO: Figure out possible values and use a constant
-	if info.Status == "error" {
+	if info.Status == StatusError {
 		return nil, errors.New("upload route returned an error")
 	}
 
@@ -191,17 +212,8 @@ func (u *Uploader) FindFile(ctx context.Context, uhrpURL string) (FindFileData, 
 	}
 
 	// Check for errors in the response
-	// TODO: Maybe abstract this to a common function
-	if response.Status == "error" {
-		errCode := response.Code
-		if errCode == "" {
-			errCode = "unknown-code"
-		}
-		errDesc := response.Description
-		if errDesc == "" {
-			errDesc = "no-description"
-		}
-		return FindFileData{}, fmt.Errorf("findFile returned an error: %s - %s", errCode, errDesc)
+	if err := checkAPIError(response.Status, response.Code, response.Description, "findFile"); err != nil {
+		return FindFileData{}, err
 	}
 
 	return response.Data, nil
@@ -239,16 +251,8 @@ func (u *Uploader) ListUploads(ctx context.Context) (interface{}, error) {
 	}
 
 	// Check for errors in the response
-	if response.Status == "error" {
-		errCode := response.Code
-		if errCode == "" {
-			errCode = "unknown-code"
-		}
-		errDesc := response.Description
-		if errDesc == "" {
-			errDesc = "no-description"
-		}
-		return nil, fmt.Errorf("listUploads returned an error: %s - %s", errCode, errDesc)
+	if err := checkAPIError(response.Status, response.Code, response.Description, "listUploads"); err != nil {
+		return nil, err
 	}
 
 	return response.Uploads, nil
@@ -300,16 +304,8 @@ func (u *Uploader) RenewFile(ctx context.Context, uhrpURL string, additionalMinu
 	}
 
 	// Check for errors in the response
-	if response.Status == "error" {
-		errCode := response.Code
-		if errCode == "" {
-			errCode = "unknown-code"
-		}
-		errDesc := response.Description
-		if errDesc == "" {
-			errDesc = "no-description"
-		}
-		return RenewFileResult{}, fmt.Errorf("renewFile returned an error: %s - %s", errCode, errDesc)
+	if err := checkAPIError(response.Status, response.Code, response.Description, "renewFile"); err != nil {
+		return RenewFileResult{}, err
 	}
 
 	// Convert pointer fields to required types for the result structure

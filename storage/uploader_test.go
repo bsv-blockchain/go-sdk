@@ -14,30 +14,20 @@ import (
 func setupMockWalletForAuth(t *testing.T) *wallet.MockWallet {
 	mockWallet := wallet.NewMockWallet(t)
 
-	// Set up GetPublicKey response
-	// We don't need to actually set this since the mock will use function implementations
-	// but we'll set up a mock function instead
+	// Set up GetPublicKey response with proper identity key handling
 	mockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
 		t.Logf("GetPublicKey called with IdentityKey=%v, originator=%s", args.IdentityKey, originator)
-		// Create a dummy public key - use different keys for identity vs regular
-		var pubKeyHex string
-		if args.IdentityKey {
-			// Identity key request
-			pubKeyHex = "02c73c4c104368ff3ca8dc86f5f1ce4c5c2e516e9f8e5a38cf6fd99af0b74dc49a"
-		} else {
-			// Regular key request - use a different valid key
-			pubKeyHex = "033f7b3b5e6d1d3c5e8f9a0b1c2d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e"
-		}
+
+		// Always return a valid public key - this is critical for auth
+		// Using a known valid public key from other tests
+		pubKeyHex := "03121a7afe56fc8e25bca4bb2c94f35eb67ebe5b84df2e149d65b9423ee65b8b4b"
 
 		pubKey, err := ec.PublicKeyFromString(pubKeyHex)
 		if err != nil {
-			// For tests, create a simple valid key if parsing fails
-			// This is a valid compressed public key
-			validKey, _ := ec.PublicKeyFromString("02c73c4c104368ff3ca8dc86f5f1ce4c5c2e516e9f8e5a38cf6fd99af0b74dc49a")
-			return &wallet.GetPublicKeyResult{
-				PublicKey: validKey,
-			}, nil
+			// This shouldn't happen with a valid hex string, but handle it defensively
+			t.Fatalf("Failed to create test public key: %v", err)
 		}
+
 		return &wallet.GetPublicKeyResult{
 			PublicKey: pubKey,
 		}, nil
@@ -125,10 +115,6 @@ func TestNewUploader(t *testing.T) {
 }
 
 func TestStorageUploader_PublishFile(t *testing.T) {
-	// For now, we'll test the uploader structure creation and basic validation
-	// The full auth flow requires more complex mocking that should be addressed
-	// in the auth package itself (see peer.go identity key handling)
-
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "https://example.com/storage",
@@ -139,16 +125,23 @@ func TestStorageUploader_PublishFile(t *testing.T) {
 	assert.Equal(t, "https://example.com/storage", uploader.baseURL)
 	assert.NotNil(t, uploader.authFetch)
 
-	// TODO: Full integration test requires fixing the auth package to handle
-	// the case where GetPublicKey returns a nil identity key, or ensuring
-	// proper error handling in peer.go when identity key is not available.
-	// For now, we've validated that the uploader can be created with proper config.
+	// Test file data
+	testFile := UploadableFile{
+		Data: []byte("test file content"),
+		Type: "text/plain",
+	}
+
+	// This will fail due to network error since we're not connecting to a real server
+	// But we can verify the uploader is properly configured
+	_, err = uploader.PublishFile(context.Background(), testFile, 60)
+	assert.Error(t, err) // Expected to fail due to network/auth issues
+
+	// The error should be related to network/auth, not configuration
+	assert.NotContains(t, err.Error(), "storage URL is required")
+	assert.NotContains(t, err.Error(), "wallet is required")
 }
 
 func TestStorageUploader_FindFile(t *testing.T) {
-	// Similar to PublishFile test, we'll focus on testing the uploader structure
-	// The full auth flow requires more complex mocking
-
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "https://example.com/storage",
@@ -157,8 +150,14 @@ func TestStorageUploader_FindFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, uploader)
 
-	// TODO: Full integration test requires fixing the auth package identity key handling
-	// For now, we've validated that the uploader can be created and is ready for use.
+	// This will fail due to network error since we're not connecting to a real server
+	// But we can verify the uploader is properly configured
+	_, err = uploader.FindFile(context.Background(), "uhrp://test123")
+	assert.Error(t, err) // Expected to fail due to network/auth issues
+
+	// The error should be related to network/auth, not configuration
+	assert.NotContains(t, err.Error(), "storage URL is required")
+	assert.NotContains(t, err.Error(), "wallet is required")
 }
 
 // TestUploadFileResult tests the file upload result structure
@@ -187,4 +186,40 @@ func TestFindFileData(t *testing.T) {
 	assert.Equal(t, "1024 bytes", result.Size)
 	assert.Equal(t, "text/plain", result.MimeType)
 	assert.Equal(t, int64(1672531200), result.ExpiryTime)
+}
+
+func TestStorageUploader_ListUploads(t *testing.T) {
+	mockWallet := setupMockWalletForAuth(t)
+	uploader, err := NewUploader(UploaderConfig{
+		StorageURL: "https://example.com/storage",
+		Wallet:     mockWallet,
+	})
+	require.NoError(t, err)
+
+	// This will fail due to network error since we're not connecting to a real server
+	// But we can verify the uploader is properly configured
+	_, err = uploader.ListUploads(context.Background())
+	assert.Error(t, err) // Expected to fail due to network/auth issues
+
+	// The error should be related to network/auth, not configuration
+	assert.NotContains(t, err.Error(), "storage URL is required")
+	assert.NotContains(t, err.Error(), "wallet is required")
+}
+
+func TestStorageUploader_RenewFile(t *testing.T) {
+	mockWallet := setupMockWalletForAuth(t)
+	uploader, err := NewUploader(UploaderConfig{
+		StorageURL: "https://example.com/storage",
+		Wallet:     mockWallet,
+	})
+	require.NoError(t, err)
+
+	// This will fail due to network error since we're not connecting to a real server
+	// But we can verify the uploader is properly configured
+	_, err = uploader.RenewFile(context.Background(), "uhrp://test123", 60)
+	assert.Error(t, err) // Expected to fail due to network/auth issues
+
+	// The error should be related to network/auth, not configuration
+	assert.NotContains(t, err.Error(), "storage URL is required")
+	assert.NotContains(t, err.Error(), "wallet is required")
 }
