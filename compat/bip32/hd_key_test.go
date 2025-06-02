@@ -327,31 +327,6 @@ func TestGetHDKeyChild(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, validKey)
 
-	// Max depth key
-	/*
-		var maxKey *ExtendedKey
-		maxKey, err = GetHDKeyByPath(validKey, 1<<9, 1<<9)
-		if err != nil {
-			t.Fatalf("error occurred: %s", err.Error())
-		}
-	*/
-
-	// Test depth limit
-	// todo: make a better test (after 126 maxKey is now nil)
-	/*
-		for i := 0; i < 1<<8-1; i++ {
-			maxKey, err = GetHDKeyChild(maxKey, uint32(i))
-			if i < 126 && err != nil {
-				t.Fatalf("error occurred: %s", err.Error())
-			}
-			// TODO: make this better rather than grabbing the child twice. This is
-			// basically a copy of the GetHDKeyByPath test
-			maxKey, err = GetHDKeyChild(maxKey, uint32(i))
-			if i >= 126 && err == nil {
-				t.Fatalf("expected to hit depth limit on HD key index: %d", i)
-			}
-		}
-	*/
 
 	var tests = []struct {
 		inputHDKey    *compat.ExtendedKey

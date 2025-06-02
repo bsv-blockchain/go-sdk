@@ -14,7 +14,6 @@ import (
 
 // ScriptKey types.
 const (
-	// TODO: change to p2pk/p2pkh
 	ScriptTypePubKey                = "pubkey"
 	ScriptTypePubKeyHash            = "pubkeyhash"
 	ScriptTypeNonStandard           = "nonstandard"
@@ -199,7 +198,6 @@ func (s *Script) IsP2PK() bool {
 }
 
 // IsP2SH returns true if this is a p2sh output script.
-// TODO: remove all p2sh stuff from repo
 func (s *Script) IsP2SH() bool {
 	b := []byte(*s)
 
