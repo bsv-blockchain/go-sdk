@@ -15,74 +15,12 @@ import (
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
 	Type               [32]byte          `json:"type"`
-	SerialNumber       Bytes32Base64     `json:"serialNumber"`
+	SerialNumber       [32]byte          `json:"serialNumber"`
 	Subject            *ec.PublicKey     `json:"subject"`
 	Certifier          *ec.PublicKey     `json:"certifier"`
 	RevocationOutpoint *Outpoint         `json:"revocationOutpoint,omitempty"`
 	Fields             map[string]string `json:"fields,omitempty"` // Field name -> field value (encrypted)
-	Signature          BytesHex          `json:"signature,omitempty"`
-}
-
-// MarshalJSON implements json.Marshaler interface for Certificate
-func (c *Certificate) MarshalJSON() ([]byte, error) {
-	type Alias Certificate // Use alias to avoid recursion
-	var subjectHex, certifierHex *string
-	if c.Subject != nil {
-		s := c.Subject.ToDERHex()
-		subjectHex = &s
-	}
-	if c.Certifier != nil {
-		cs := c.Certifier.ToDERHex()
-		certifierHex = &cs
-	}
-
-	return json.Marshal(&struct {
-		Type      Bytes32Base64 `json:"type"`
-		Subject   *string       `json:"subject"`
-		Certifier *string       `json:"certifier"`
-		*Alias
-	}{
-		Type:      c.Type,
-		Subject:   subjectHex,
-		Certifier: certifierHex,
-		Alias:     (*Alias)(c),
-	})
-}
-
-// UnmarshalJSON implements json.Unmarshaler interface for Certificate
-func (c *Certificate) UnmarshalJSON(data []byte) error {
-	type Alias Certificate // Use alias to avoid recursion
-	aux := &struct {
-		Type      Bytes32Base64 `json:"type"`
-		Subject   *string       `json:"subject"`
-		Certifier *string       `json:"certifier"`
-		*Alias
-	}{
-		Alias: (*Alias)(c),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return fmt.Errorf("error unmarshaling certificate: %w", err)
-	}
-
-	// Decode public key hex strings
-	if aux.Subject != nil {
-		sub, err := ec.PublicKeyFromString(*aux.Subject)
-		if err != nil {
-			return fmt.Errorf("error decoding subject public key hex: %w", err)
-		}
-		c.Subject = sub
-	}
-	if aux.Certifier != nil {
-		cert, err := ec.PublicKeyFromString(*aux.Certifier)
-		if err != nil {
-			return fmt.Errorf("error decoding certifier public key hex: %w", err)
-		}
-		c.Certifier = cert
-	}
-	c.Type = aux.Type
-
-	return nil
+	Signature          []byte            `json:"signature,omitempty"`
 }
 
 func (c *Certificate) RevocationOutpointString() string {
@@ -632,10 +570,10 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 // This includes the certificate type, certifier information, and acquisition method.
 type AcquireCertificateArgs struct {
 	Type                [32]byte            `json:"type"`
-	Certifier           Bytes33Hex          `json:"certifier"`
+	Certifier           [33]byte            `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
-	SerialNumber        Bytes32Base64       `json:"serialNumber"`
+	SerialNumber        [32]byte            `json:"serialNumber"`
 	RevocationOutpoint  *Outpoint           `json:"revocationOutpoint,omitempty"`
 	Signature           BytesHex            `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
@@ -643,35 +581,6 @@ type AcquireCertificateArgs struct {
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
 	Privileged          *bool               `json:"privileged,omitempty"`
 	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
-}
-
-func (a *AcquireCertificateArgs) UnmarshalJSON(data []byte) error {
-	type Alias AcquireCertificateArgs
-	aux := &struct {
-		Type Bytes32Base64 `json:"type"`
-		*Alias
-	}{
-		Alias: (*Alias)(a),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return fmt.Errorf("error unmarshaling AcquireCertificateArgs: %w", err)
-	}
-
-	a.Type = aux.Type
-
-	return nil
-}
-
-func (a *AcquireCertificateArgs) MarshalJSON() ([]byte, error) {
-	type Alias AcquireCertificateArgs
-	return json.Marshal(&struct {
-		Type Bytes32Base64 `json:"type"`
-		*Alias
-	}{
-		Type:  Bytes32Base64(a.Type[:]),
-		Alias: (*Alias)(a),
-	})
 }
 
 // ListCertificatesArgs contains parameters for listing certificates with filtering and pagination.
