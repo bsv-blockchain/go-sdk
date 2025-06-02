@@ -202,9 +202,6 @@ func TestTx_CalcInputPreimageLegacy(t *testing.T) {
 			sighash.All,
 			"01000000027e2705da59f7112c7337d79840b56fff582b8f3a0e9df8eb19e282377bebb1bc0100000000ffffffffdebe6fe5ad8e9220a10fcf6340f7fca660d87aeedf0f74a142fba6de1f68d849000000001976a914eb0bd5edba389198e73f8efabddfc61666969ff788acffffffff0300e1f505000000001976a9142987362cf0d21193ce7e7055824baac1ee245d0d88ac00e1f505000000001976a9143ca26faa390248b7a7ac45be53b0e4004ad7952688ac34657fe2000000001976a914eb0bd5edba389198e73f8efabddfc61666969ff788ac0000000001000000",
 		},
-		// TODO: add different SIGHASH flags
-		// note: checking bsv.js - using different sighash flags gives same
-		// sighash for some reason.. check later..
 	}
 
 	for _, test := range testVector {

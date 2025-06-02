@@ -287,42 +287,42 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		avatarURL = identity.DecryptedFields["profilePhoto"]
 		badgeLabel = fmt.Sprintf("X account certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.DiscordCert:
 		name = identity.DecryptedFields["userName"]
 		avatarURL = identity.DecryptedFields["profilePhoto"]
 		badgeLabel = fmt.Sprintf("Discord account certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.EmailCert:
 		name = identity.DecryptedFields["email"]
 		avatarURL = "XUTZxep7BBghAJbSBwTjNfmcsDdRFs5EaGEgkESGSgjJVYgMEizu"
 		badgeLabel = fmt.Sprintf("Email certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.PhoneCert:
 		name = identity.DecryptedFields["phoneNumber"]
 		avatarURL = "XUTLxtX3ELNUwRhLwL7kWNGbdnFM8WG2eSLv84J7654oH8HaJWrU"
 		badgeLabel = fmt.Sprintf("Phone certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.IdentiCert:
 		name = fmt.Sprintf("%s %s", identity.DecryptedFields["firstName"], identity.DecryptedFields["lastName"])
 		avatarURL = identity.DecryptedFields["profilePhoto"]
 		badgeLabel = fmt.Sprintf("Government ID certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://identicert.me" // TODO Make a specific page for this.
+		badgeClickURL = "https://identicert.me"
 
 	case KnownIdentityTypes.Registrant:
 		name = identity.DecryptedFields["name"]
 		avatarURL = identity.DecryptedFields["icon"]
 		badgeLabel = fmt.Sprintf("Entity certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://projectbabbage.com/docs/registrant" // TODO: Make this doc page exist
+		badgeClickURL = "https://projectbabbage.com/docs/registrant"
 
 	case KnownIdentityTypes.CoolCert:
 		if identity.DecryptedFields["cool"] == "true" {
@@ -336,14 +336,14 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		avatarURL = "XUT4bpQ6cpBaXi1oMzZsXfpkWGbtp2JTUYAoN7PzhStFJ6wLfoeR"
 		badgeLabel = "Represents the ability for anyone to access this information."
 		badgeIconURL = "XUUV39HVPkpmMzYNTx7rpKzJvXfeiVyQWg2vfSpjBAuhunTCA9uG"
-		badgeClickURL = "https://projectbabbage.com/docs/anyone-identity" // TODO: Make this doc page exist
+		badgeClickURL = "https://projectbabbage.com/docs/anyone-identity"
 
 	case KnownIdentityTypes.Self:
 		name = "You"
 		avatarURL = "XUT9jHGk2qace148jeCX5rDsMftkSGYKmigLwU2PLLBc7Hm63VYR"
 		badgeLabel = "Represents your ability to access this information."
 		badgeIconURL = "XUUV39HVPkpmMzYNTx7rpKzJvXfeiVyQWg2vfSpjBAuhunTCA9uG"
-		badgeClickURL = "https://projectbabbage.com/docs/self-identity" // TODO: Make this doc page exist
+		badgeClickURL = "https://projectbabbage.com/docs/self-identity"
 
 	default:
 		name = DefaultIdentity.Name
