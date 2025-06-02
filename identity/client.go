@@ -25,9 +25,9 @@ import (
 
 // Client lets you discover who others are, and let the world know who you are.
 type Client struct {
-	wallet     wallet.Interface
-	options    IdentityClientOptions
-	originator OriginatorDomainNameStringUnder250Bytes
+	Wallet     wallet.Interface
+	Options    IdentityClientOptions
+	Originator OriginatorDomainNameStringUnder250Bytes
 }
 
 // NewClient creates a new IdentityClient with the provided wallet and options
@@ -57,9 +57,9 @@ func NewClient(w wallet.Interface, options *IdentityClientOptions, originator Or
 	}
 
 	return &Client{
-		wallet:     w,
-		options:    *options,
-		originator: originator,
+		Wallet:     w,
+		Options:    *options,
+		Originator: originator,
 	}, nil
 }
 
@@ -115,11 +115,11 @@ func (c *Client) PubliclyRevealAttributes(
 	copy(verifierPubKey[:], dummyPk.PubKey().Compressed())
 
 	// Get keyring for verifier through certificate proving
-	proveResult, err := c.wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
+	proveResult, err := c.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 		Certificate:    *certificate,
 		FieldsToReveal: fieldNamesAsStrings,
 		Verifier:       verifierPubKey,
-	}, string(c.originator))
+	}, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)
 	}
@@ -144,16 +144,16 @@ func (c *Client) PubliclyRevealAttributes(
 
 	// Create PushDrop with the certificate data
 	pushDropTemplate := &pushdrop.PushDropTemplate{
-		Wallet:     c.wallet,
-		Originator: string(c.originator),
+		Wallet:     c.Wallet,
+		Originator: string(c.Originator),
 	}
 
 	// Create locking script using PushDrop with the certificate JSON
 	lockingScript, err := pushDropTemplate.Lock(
 		ctx,
 		[][]byte{certJSON},
-		c.options.ProtocolID,
-		c.options.KeyID,
+		c.Options.ProtocolID,
+		c.Options.KeyID,
 		wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone},
 		true,
 		true,
@@ -164,11 +164,11 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Create a transaction with the certificate as an output
-	createResult, err := c.wallet.CreateAction(ctx, wallet.CreateActionArgs{
+	createResult, err := c.Wallet.CreateAction(ctx, wallet.CreateActionArgs{
 		Description: "Create a new Identity Token",
 		Outputs: []wallet.CreateActionOutput{
 			{
-				Satoshis:          c.options.TokenAmount,
+				Satoshis:          c.Options.TokenAmount,
 				LockingScript:     lockingScript.Bytes(),
 				OutputDescription: "Identity Token",
 			},
@@ -176,7 +176,7 @@ func (c *Client) PubliclyRevealAttributes(
 		Options: &wallet.CreateActionOptions{
 			RandomizeOutputs: util.BoolPtr(false),
 		},
-	}, string(c.originator))
+	}, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create action: %w", err)
 	}
@@ -192,7 +192,7 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Submit the transaction to an overlay
-	networkResult, err := c.wallet.GetNetwork(ctx, nil, string(c.originator))
+	networkResult, err := c.Wallet.GetNetwork(ctx, nil, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get network: %w", err)
 	}
@@ -245,7 +245,7 @@ func (c *Client) ResolveByIdentityKey(
 	ctx context.Context,
 	args wallet.DiscoverByIdentityKeyArgs,
 ) ([]DisplayableIdentity, error) {
-	result, err := c.wallet.DiscoverByIdentityKey(ctx, args, string(c.originator))
+	result, err := c.Wallet.DiscoverByIdentityKey(ctx, args, string(c.Originator))
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func (c *Client) ResolveByAttributes(
 	ctx context.Context,
 	args wallet.DiscoverByAttributesArgs,
 ) ([]DisplayableIdentity, error) {
-	result, err := c.wallet.DiscoverByAttributes(ctx, args, string(c.originator))
+	result, err := c.Wallet.DiscoverByAttributes(ctx, args, string(c.Originator))
 	if err != nil {
 		return nil, err
 	}

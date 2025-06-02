@@ -72,7 +72,6 @@ func TestVectors(t *testing.T) {
 	txID, err := chainhash.NewHashFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 	require.NoError(t, err, "creating txID from hex should not error")
 
-	// TODO: Add the rest of the test vector files
 	tests := []VectorTest{{
 		Filename: "abortAction-simple-args",
 		Object: wallet.AbortActionArgs{
@@ -85,7 +84,6 @@ func TestVectors(t *testing.T) {
 			Aborted: true,
 		},
 	}, {
-		// TODO: This wire test is failing, I think also because of how ts-sdk handles -1
 		Filename: "signAction-simple-args",
 		Object: wallet.SignActionArgs{
 			Reference: ref,
@@ -96,7 +94,6 @@ func TestVectors(t *testing.T) {
 			},
 		},
 	}, {
-		// TODO: This wire test is failing because of issues with how ts-sdk encodes/decodes -1
 		Filename: "createAction-1-out-args",
 		Object: wallet.CreateActionArgs{
 			Description: "Test action description",
