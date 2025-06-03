@@ -108,7 +108,6 @@ func (i CreateActionInput) MarshalJSON() ([]byte, error) {
 }
 
 func (i *CreateActionInput) UnmarshalJSON(data []byte) error {
-	type Alias CreateActionInput
 	aux := &jsonCreateActionInput{
 		aliasCreateActionInput: (*aliasCreateActionInput)(i),
 	}
@@ -136,7 +135,6 @@ func (o CreateActionOutput) MarshalJSON() ([]byte, error) {
 }
 
 func (o *CreateActionOutput) UnmarshalJSON(data []byte) error {
-	type Alias CreateActionOutput
 	aux := &jsonCreateActionOutput{
 		aliasCreateActionOutput: (*aliasCreateActionOutput)(o),
 	}
@@ -164,7 +162,6 @@ func (s SignActionSpend) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SignActionSpend) UnmarshalJSON(data []byte) error {
-	type Alias SignActionSpend
 	aux := &jsonSignActionSpend{
 		aliasSignActionSpend: (*aliasSignActionSpend)(s),
 	}
@@ -194,7 +191,6 @@ func (a ActionInput) MarshalJSON() ([]byte, error) {
 }
 
 func (a *ActionInput) UnmarshalJSON(data []byte) error {
-	type Alias ActionInput
 	aux := &jsonActionInput{
 		aliasActionInput: (*aliasActionInput)(a),
 	}
@@ -223,7 +219,6 @@ func (o ActionOutput) MarshalJSON() ([]byte, error) {
 }
 
 func (o *ActionOutput) UnmarshalJSON(data []byte) error {
-	type Alias ActionOutput
 	aux := &jsonActionOutput{
 		aliasActionOutput: (*aliasActionOutput)(o),
 	}
@@ -251,7 +246,6 @@ func (i InternalizeActionArgs) MarshalJSON() ([]byte, error) {
 }
 
 func (i *InternalizeActionArgs) UnmarshalJSON(data []byte) error {
-	type Alias InternalizeActionArgs
 	aux := &jsonInternalizeActionArgs{
 		aliasInternalizeActionArgs: (*aliasInternalizeActionArgs)(i),
 	}
