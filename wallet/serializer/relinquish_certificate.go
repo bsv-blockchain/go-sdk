@@ -38,7 +38,7 @@ func DeserializeRelinquishCertificateArgs(data []byte) (*wallet.RelinquishCertif
 	// Read type (base64), serialNumber (base64), certifier (hex)
 	copy(args.Type[:], r.ReadBytes(sizeType))
 	copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
-	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
+	copy(args.Certifier[:], r.ReadBytes(sizePubKey))
 
 	r.CheckComplete()
 	if r.Err != nil {

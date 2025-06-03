@@ -70,7 +70,8 @@ func TestSerializeSignActionResult(t *testing.T) {
 
 func TestDeserializeSignActionResult(t *testing.T) {
 	txid := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-	txidBytes := fromHex(t, txid)
+	txidBytes32 := tu.GetByte32FromHexString(t, txid)
+	txidBytes := txidBytes32[:]
 	txidHash := tu.GetByte32FromHexString(t, txid)
 	tx := []byte{1, 2, 3, 4, 5}
 

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
@@ -108,8 +109,9 @@ func ValidateCertificates(
 				types := certificatesRequested.CertificateTypes
 
 				// Check certifier matches
-				certifierKey := cert.Certifier.ToDER()
-				if !wallet.BytesInHex33Slice(certifiers, certifierKey) {
+				var certifierKey wallet.PubKey
+				copy(certifierKey[:], cert.Certifier.ToDER())
+				if !slices.Contains(certifiers, certifierKey) {
 					errCh <- fmt.Errorf(
 						"certificate with serial number %s has an unrequested certifier: %x",
 						cert.SerialNumber,

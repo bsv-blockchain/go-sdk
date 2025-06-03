@@ -72,6 +72,16 @@ func GetByte33FromString(s string) [33]byte {
 	return b
 }
 
+// GetByte33FromBytes returns a [33]byte from a byte slice
+func GetByte33FromBytes(t *testing.T, b []byte) [33]byte {
+	if len(b) > 33 {
+		require.NoError(t, fmt.Errorf("byte length must be less than 33"))
+	}
+	var a [33]byte
+	copy(a[:], b)
+	return a
+}
+
 // GetByte33FromHexString returns a [33]byte from a hex string
 func GetByte33FromHexString(t *testing.T, s string) [33]byte {
 	var a [33]byte

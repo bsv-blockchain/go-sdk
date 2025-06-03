@@ -25,7 +25,7 @@ func SerializeRevealSpecificKeyLinkageArgs(args *wallet.RevealSpecificKeyLinkage
 	w.WriteBytes(keyParams)
 
 	// Write verifier public key
-	w.WriteBytes(args.Verifier)
+	w.WriteBytes(args.Verifier[:])
 
 	return w.Buf, nil
 }
@@ -46,7 +46,7 @@ func DeserializeRevealSpecificKeyLinkageArgs(data []byte) (*wallet.RevealSpecifi
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read verifier public key
-	args.Verifier = r.ReadRemaining()
+	copy(args.Verifier[:], r.ReadBytes(sizePubKey))
 
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decoding args: %w", r.Err)
@@ -59,8 +59,8 @@ func SerializeRevealSpecificKeyLinkageResult(result *wallet.RevealSpecificKeyLin
 	w := util.NewWriter()
 
 	// Write prover, verifier, counterparty public keys
-	w.WriteIntBytes(result.Prover)
-	w.WriteIntBytes(result.Verifier)
+	w.WriteBytes(result.Prover[:])
+	w.WriteBytes(result.Verifier[:])
 	if err := encodeCounterparty(w, result.Counterparty); err != nil {
 		return nil, fmt.Errorf("error encoding counterparty: %w", err)
 	}
@@ -84,8 +84,8 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 	result := &wallet.RevealSpecificKeyLinkageResult{}
 
 	// Read prover, verifier, counterparty public keys
-	result.Prover = r.ReadIntBytes()
-	result.Verifier = r.ReadIntBytes()
+	copy(result.Prover[:], r.ReadBytes(sizePubKey))
+	copy(result.Verifier[:], r.ReadBytes(sizePubKey))
 	counterparty, err := decodeCounterparty(r)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding counterparty: %w", err)

@@ -66,7 +66,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	copy(args.Certificate.Type[:], r.ReadBytes(sizeType))
 
 	// Read subject (hex)
-	subjectBytes := r.ReadBytes(sizeCertifier)
+	subjectBytes := r.ReadBytes(sizePubKey)
 	if args.Certificate.Subject, err = ec.PublicKeyFromBytes(subjectBytes); err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	copy(args.Certificate.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 	// Read certifier (hex)
-	certifierBytes := r.ReadBytes(sizeCertifier)
+	certifierBytes := r.ReadBytes(sizePubKey)
 	if args.Certificate.Certifier, err = ec.PublicKeyFromBytes(certifierBytes); err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read verifier (hex)
-	copy(args.Verifier[:], r.ReadBytes(sizeCertifier))
+	copy(args.Verifier[:], r.ReadBytes(sizePubKey))
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)

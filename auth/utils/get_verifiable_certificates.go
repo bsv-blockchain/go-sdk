@@ -39,7 +39,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	var result []*certificates.VerifiableCertificate
 
 	// Get all certificate types
-	var certificateTypes []wallet.Bytes32Base64
+	var certificateTypes []wallet.CertificateType
 	for certType := range options.RequestedCertificates.CertificateTypes {
 		certificateTypes = append(certificateTypes, certType)
 	}

@@ -124,13 +124,18 @@ func (c *Client) PubliclyRevealAttributes(
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)
 	}
 
+	var revocationOutpointString string
+	if certificate.RevocationOutpoint != nil {
+		revocationOutpointString = certificate.RevocationOutpoint.String()
+	}
+
 	// Create a JSON object with certificate and keyring
 	certWithKeyring := map[string]interface{}{
 		"type":               certificate.Type,
 		"serialNumber":       certificate.SerialNumber,
 		"subject":            certificate.Subject.Compressed(),
 		"certifier":          certificate.Certifier.Compressed(),
-		"revocationOutpoint": certificate.RevocationOutpointString(),
+		"revocationOutpoint": revocationOutpointString,
 		"fields":             certificate.Fields,
 		"signature":          hex.EncodeToString(certificate.Signature),
 		"keyring":            proveResult.KeyringForVerifier,
@@ -353,7 +358,7 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		badgeClickURL = DefaultIdentity.BadgeClickURL
 	}
 
-	var typeUnknown wallet.Bytes32Base64
+	var typeUnknown wallet.CertificateType
 	copy(typeUnknown[:], "unknownType")
 
 	// Create abbreviated key for display

@@ -9,12 +9,10 @@ import (
 )
 
 const (
-	sizeType      = 32
-	sizeSubject   = 33
-	sizeCertifier = 33
-	sizeRevealer  = 33
-	sizeSerial    = 32
-	sizeIdentity  = 33
+	sizeType    = 32
+	sizeSubject = 33
+	sizeSerial  = 32
+	sizePubKey  = 33
 )
 
 func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
@@ -74,7 +72,7 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	copy(cert.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 	// Read certifier (hex)
-	cert.Certifier, err = ec.PublicKeyFromBytes(r.ReadBytes(sizeCertifier))
+	cert.Certifier, err = ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing certifier key: %w", err)
 	}

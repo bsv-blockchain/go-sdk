@@ -2,7 +2,6 @@ package serializer
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -326,13 +325,6 @@ func TestEncodeOutpoint(t *testing.T) {
 			require.Equal(t, tt.input, decodedObj, "round trip failed: decoded string does not match original input")
 		})
 	}
-}
-
-// fromHex is a helper function to create a public key from a hex string
-func fromHex(t *testing.T, s string) []byte {
-	data, err := hex.DecodeString(s)
-	require.NoError(t, err, "decoding hex string should not error")
-	return data
 }
 
 // newCounterparty is a helper function to create a new counterparty

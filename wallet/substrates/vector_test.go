@@ -47,6 +47,7 @@ func TestVectors(t *testing.T) {
 	const ProverHex = "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8"
 	prover, err := ec.PublicKeyFromString(ProverHex)
 	require.NoError(t, err)
+	prover33 := tu.GetByte33FromHexString(t, ProverHex)
 
 	typeArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
 	serialArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
@@ -244,8 +245,8 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "revealCounterpartyKeyLinkage-simple-args",
 		Object: wallet.RevealCounterpartyKeyLinkageArgs{
-			Counterparty:     counterparty.ToDER(),
-			Verifier:         verifier.ToDER(),
+			Counterparty:     tu.GetByte33FromBytes(t, counterparty.ToDER()),
+			Verifier:         tu.GetByte33FromBytes(t, verifier.ToDER()),
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
@@ -253,9 +254,9 @@ func TestVectors(t *testing.T) {
 		Filename: "revealCounterpartyKeyLinkage-simple-result",
 		IsResult: true,
 		Object: wallet.RevealCounterpartyKeyLinkageResult{
-			Prover:                prover.ToDER(),
-			Counterparty:          counterparty.ToDER(),
-			Verifier:              verifier.ToDER(),
+			Prover:                tu.GetByte33FromBytes(t, prover.ToDER()),
+			Counterparty:          tu.GetByte33FromBytes(t, counterparty.ToDER()),
+			Verifier:              tu.GetByte33FromBytes(t, verifier.ToDER()),
 			RevelationTime:        "2023-01-01T00:00:00Z",
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},
@@ -267,7 +268,7 @@ func TestVectors(t *testing.T) {
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: counterparty,
 			},
-			Verifier: verifier.ToDER(),
+			Verifier: verifier33,
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "tests",
@@ -282,8 +283,8 @@ func TestVectors(t *testing.T) {
 		Object: wallet.RevealSpecificKeyLinkageResult{
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},
-			Prover:                prover.ToDER(),
-			Verifier:              verifier.ToDER(),
+			Prover:                prover33,
+			Verifier:              verifier33,
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: counterparty,
@@ -463,8 +464,8 @@ func TestVectors(t *testing.T) {
 		Filename: "listCertificates-simple-args",
 		IsResult: true,
 		Object: wallet.ListCertificatesArgs{
-			Certifiers:       []wallet.Bytes33Hex{tu.GetByte33FromHexString(t, CounterpartyHex), tu.GetByte33FromHexString(t, VerifierHex)},
-			Types:            []wallet.Bytes32Base64{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
+			Certifiers:       []wallet.PubKey{tu.GetByte33FromHexString(t, CounterpartyHex), tu.GetByte33FromHexString(t, VerifierHex)},
+			Types:            []wallet.CertificateType{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
 			Limit:            5,
 			Offset:           0,
 			Privileged:       util.BoolPtr(true),
@@ -541,7 +542,7 @@ func TestVectors(t *testing.T) {
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               wallet.Bytes32Base64(typeArray),
+						Type:               typeArray,
 						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,

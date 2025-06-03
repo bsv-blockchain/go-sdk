@@ -14,10 +14,10 @@ func SerializeRevealCounterpartyKeyLinkageArgs(args *wallet.RevealCounterpartyKe
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
 
 	// Write counterparty public key
-	w.WriteIntBytesOptional(args.Counterparty)
+	w.WriteBytes(args.Counterparty[:])
 
 	// Write verifier public key
-	w.WriteIntBytesOptional(args.Verifier)
+	w.WriteBytes(args.Verifier[:])
 
 	return w.Buf, nil
 }
@@ -30,10 +30,10 @@ func DeserializeRevealCounterpartyKeyLinkageArgs(data []byte) (*wallet.RevealCou
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
 
 	// Read counterparty public key
-	args.Counterparty = r.ReadIntBytes()
+	copy(args.Counterparty[:], r.ReadBytes(sizePubKey))
 
 	// Read verifier public key
-	args.Verifier = r.ReadIntBytes()
+	copy(args.Verifier[:], r.ReadBytes(sizePubKey))
 
 	r.CheckComplete()
 	if r.Err != nil {
@@ -47,13 +47,13 @@ func SerializeRevealCounterpartyKeyLinkageResult(result *wallet.RevealCounterpar
 	w := util.NewWriter()
 
 	// Write prover public key
-	w.WriteIntBytes(result.Prover)
+	w.WriteBytes(result.Prover[:])
 
 	// Write verifier public key
-	w.WriteIntBytes(result.Verifier)
+	w.WriteBytes(result.Verifier[:])
 
 	// Write counterparty public key
-	w.WriteIntBytes(result.Counterparty)
+	w.WriteBytes(result.Counterparty[:])
 
 	// Write revelation time
 	w.WriteString(result.RevelationTime)
@@ -74,13 +74,13 @@ func DeserializeRevealCounterpartyKeyLinkageResult(data []byte) (*wallet.RevealC
 	result := &wallet.RevealCounterpartyKeyLinkageResult{}
 
 	// Read prover public key
-	result.Prover = r.ReadIntBytes()
+	copy(result.Prover[:], r.ReadBytes(sizePubKey))
 
 	// Read verifier public key
-	result.Verifier = r.ReadIntBytes()
+	copy(result.Verifier[:], r.ReadBytes(sizePubKey))
 
 	// Read counterparty public key
-	result.Counterparty = r.ReadIntBytes()
+	copy(result.Counterparty[:], r.ReadBytes(sizePubKey))
 
 	// Read revelation time
 	result.RevelationTime = r.ReadString()

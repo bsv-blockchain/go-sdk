@@ -38,9 +38,9 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 
 	// Read certifiers
 	certifiersLength := r.ReadVarInt()
-	args.Certifiers = make([]wallet.Bytes33Hex, 0, certifiersLength)
+	args.Certifiers = make([]wallet.PubKey, 0, certifiersLength)
 	for i := uint64(0); i < certifiersLength; i++ {
-		var certifier wallet.Bytes33Hex
+		var certifier wallet.PubKey
 		copy(certifier[:], r.ReadBytes(33))
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing certifier: %w", r.Err)
@@ -50,9 +50,9 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 
 	// Read types
 	typesLength := r.ReadVarInt()
-	args.Types = make([]wallet.Bytes32Base64, 0, typesLength)
+	args.Types = make([]wallet.CertificateType, 0, typesLength)
 	for i := uint64(0); i < typesLength; i++ {
-		var typeArray wallet.Bytes32Base64
+		var typeArray wallet.CertificateType
 		copy(typeArray[:], r.ReadBytes(32))
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing type: %w", r.Err)

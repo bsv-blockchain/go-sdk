@@ -29,7 +29,7 @@ func DeserializeDiscoverByIdentityKeyArgs(data []byte) (*wallet.DiscoverByIdenti
 	args := &wallet.DiscoverByIdentityKeyArgs{}
 
 	// Read identity key (33 bytes)
-	copy(args.IdentityKey[:], r.ReadBytes(sizeIdentity))
+	copy(args.IdentityKey[:], r.ReadBytes(sizePubKey))
 
 	// Read limit
 	args.Limit = r.ReadOptionalUint32()

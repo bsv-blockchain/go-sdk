@@ -101,7 +101,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	// Read type (base64) and certifier (hex)
 	copy(args.Type[:], r.ReadBytes(sizeType))
-	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
+	copy(args.Certifier[:], r.ReadBytes(sizePubKey))
 
 	// Read fields
 	fieldsLength := r.ReadVarInt()
@@ -155,7 +155,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 				Certifier: true,
 			}
 		} else {
-			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizeRevealer-1)...)
+			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizePubKey-1)...)
 			copy(args.KeyringRevealer.PubKey[:], keyringRevealerBytes)
 		}
 

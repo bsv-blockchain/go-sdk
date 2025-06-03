@@ -53,7 +53,7 @@ func TestNew(t *testing.T) {
 	mockWallet := wallet.NewMockWallet(t)
 	mockSessionManager := NewMockSessionManager()
 	requestedCerts := &utils.RequestedCertificateSet{
-		Certifiers:       []wallet.Bytes33Hex{},
+		Certifiers:       []wallet.PubKey{},
 		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 
@@ -74,7 +74,7 @@ func TestNewWithNilSessionManager(t *testing.T) {
 	// Set up dependencies
 	mockWallet := wallet.NewMockWallet(t)
 	requestedCerts := &utils.RequestedCertificateSet{
-		Certifiers:       []wallet.Bytes33Hex{},
+		Certifiers:       []wallet.PubKey{},
 		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 

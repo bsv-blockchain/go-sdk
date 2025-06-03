@@ -44,7 +44,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		keyring2Base64 := base64.StdEncoding.EncodeToString([]byte("key2"))
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("certifier1"), tu.GetByte33FromString("certifier2")},
+			Certifiers: []wallet.PubKey{tu.GetByte33FromString("certifier1"), tu.GetByte33FromString("certifier2")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1", "field2"},
 				certType2: {"field3"},
@@ -113,7 +113,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		mockWallet := wallet.NewMockWallet(t)
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("certifier1")},
+			Certifiers: []wallet.PubKey{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1"},
 			},
@@ -143,7 +143,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		mockWallet := wallet.NewMockWallet(t)
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("certifier1")},
+			Certifiers: []wallet.PubKey{tu.GetByte33FromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1"},
 			},

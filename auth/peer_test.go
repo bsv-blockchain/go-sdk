@@ -621,14 +621,14 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	// Set certificate requirements - We need to use the RAW type string here, not base64 encoded
 	aliceCertReqs := &utils.RequestedCertificateSet{
-		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("any")}, // "any" is special value that accepts any certifier
+		Certifiers: []wallet.PubKey{tu.GetByte33FromString("any")}, // "any" is special value that accepts any certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
 		},
 	}
 
 	bobCertReqs := &utils.RequestedCertificateSet{
-		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("any")}, // "any" is special value that accepts any certifier
+		Certifiers: []wallet.PubKey{tu.GetByte33FromString("any")}, // "any" is special value that accepts any certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
 		},
@@ -1152,7 +1152,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 
 	// Setup certificate requirements - requesting two fields but accepting partial matches
 	requestedCertificates := &utils.RequestedCertificateSet{
-		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("any")},
+		Certifiers: []wallet.PubKey{tu.GetByte33FromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"name", "email"},
 		},
@@ -1420,7 +1420,7 @@ func TestLibraryCardVerification(t *testing.T) {
 
 	// Setup certificate requirements - Alice requires Bob's library card number
 	alice.CertificatesToRequest = &utils.RequestedCertificateSet{
-		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("any")},
+		Certifiers: []wallet.PubKey{tu.GetByte33FromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"cardNumber"},
 		},
@@ -1441,7 +1441,7 @@ func TestLibraryCardVerification(t *testing.T) {
 
 	// Alice explicitly requests Bob's certificate
 	err = alice.RequestCertificates(ctx, bobPubKey.PublicKey, utils.RequestedCertificateSet{
-		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("any")},
+		Certifiers: []wallet.PubKey{tu.GetByte33FromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"cardNumber"},
 		},
@@ -1714,14 +1714,14 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 
 	// Create peers with different certificate requirements
 	aliceRequiredCerts := utils.RequestedCertificateSet{
-		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("any")},
+		Certifiers: []wallet.PubKey{tu.GetByte33FromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certTypeA: []string{"name"}, // Alice only accepts partnerA certs
 		},
 	}
 
 	bobRequiredCerts := utils.RequestedCertificateSet{
-		Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromString("any")},
+		Certifiers: []wallet.PubKey{tu.GetByte33FromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certTypeB: []string{"name"}, // Bob only accepts partnerB certs
 		},

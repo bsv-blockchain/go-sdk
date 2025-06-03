@@ -103,7 +103,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 		peer.CertificatesToRequest = cfg.CertificatesToRequest
 	} else {
 		peer.CertificatesToRequest = &utils.RequestedCertificateSet{
-			Certifiers:       []wallet.Bytes33Hex{},
+			Certifiers:       []wallet.PubKey{},
 			CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 		}
 	}

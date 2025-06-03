@@ -17,11 +17,11 @@ func TestListCertificatesArgs(t *testing.T) {
 	}{{
 		name: "full args",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []wallet.Bytes33Hex{
+			Certifiers: []wallet.PubKey{
 				tu.GetByte33FromHexString(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
 				tu.GetByte33FromHexString(t, "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"),
 			},
-			Types: []wallet.Bytes32Base64{
+			Types: []wallet.CertificateType{
 				tu.GetByte32FromString("type1"),
 				tu.GetByte32FromString("type2"),
 			},
@@ -33,14 +33,14 @@ func TestListCertificatesArgs(t *testing.T) {
 	}, {
 		name: "minimal args",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []wallet.Bytes33Hex{tu.GetByte33FromHexString(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")},
-			Types:      []wallet.Bytes32Base64{tu.GetByte32FromString("minimal")},
+			Certifiers: []wallet.PubKey{tu.GetByte33FromHexString(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")},
+			Types:      []wallet.CertificateType{tu.GetByte32FromString("minimal")},
 		},
 	}, {
 		name: "empty certifiers and types",
 		args: &wallet.ListCertificatesArgs{
-			Certifiers: []wallet.Bytes33Hex{},
-			Types:      []wallet.Bytes32Base64{},
+			Certifiers: []wallet.PubKey{},
+			Types:      []wallet.CertificateType{},
 		},
 	}}
 

@@ -53,7 +53,7 @@ func (s *BytesHex) UnmarshalJSON(data []byte) error {
 
 type Bytes32Base64 [32]byte
 
-func (b *Bytes32Base64) MarshalJSON() ([]byte, error) {
+func (b Bytes32Base64) MarshalJSON() ([]byte, error) {
 	s := base64.StdEncoding.EncodeToString(b[:])
 	return json.Marshal(s)
 }
@@ -76,7 +76,7 @@ func (b *Bytes32Base64) UnmarshalJSON(data []byte) error {
 
 type Bytes33Hex [33]byte
 
-func (b *Bytes33Hex) MarshalJSON() ([]byte, error) {
+func (b Bytes33Hex) MarshalJSON() ([]byte, error) {
 	s := hex.EncodeToString(b[:])
 	return json.Marshal(s)
 }
@@ -95,20 +95,6 @@ func (b *Bytes33Hex) UnmarshalJSON(data []byte) error {
 	}
 	copy(b[:], decoded)
 	return nil
-}
-
-func BytesInHex33Slice(slice []Bytes33Hex, item []byte) bool {
-	if len(item) > 33 {
-		return false
-	}
-	var item33 Bytes33Hex
-	copy(item33[:], item)
-	for _, v := range slice {
-		if v == item33 {
-			return true
-		}
-	}
-	return false
 }
 
 // StringBase64 represents a string that should be base64 encoded in certain contexts.

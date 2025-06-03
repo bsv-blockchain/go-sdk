@@ -1,18 +1,16 @@
 package serializer
 
 import (
-	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
-	counterparty, err := hex.DecodeString("02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
-	require.NoError(t, err, "decoding counterparty hex should not error")
-	verifier, err := hex.DecodeString("03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
-	require.NoError(t, err, "decoding verifier hex should not error")
+	counterparty := tu.GetByte33FromHexString(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+	verifier := tu.GetByte33FromHexString(t, "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee")
 
 	tests := []struct {
 		name string
@@ -53,10 +51,8 @@ func TestRevealCounterpartyKeyLinkageArgs(t *testing.T) {
 }
 
 func TestRevealCounterpartyKeyLinkageResult(t *testing.T) {
-	counterparty, err := hex.DecodeString("02c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
-	require.NoError(t, err, "decoding counterparty hex should not error")
-	verifier, err := hex.DecodeString("03c96db2304d2b73e8f79a9479d1e9e0e1e8b0f3a9a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
-	require.NoError(t, err, "decoding verifier hex should not error")
+	counterparty := tu.GetByte33FromHexString(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+	verifier := tu.GetByte33FromHexString(t, "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee")
 
 	t.Run("serialize/deserialize", func(t *testing.T) {
 		result := &wallet.RevealCounterpartyKeyLinkageResult{
