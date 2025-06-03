@@ -7,9 +7,6 @@
 package wallet
 
 import (
-	"encoding/json"
-	"fmt"
-
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
@@ -31,38 +28,6 @@ type Protocol struct {
 	Protocol      string
 }
 
-// MarshalJSON implements the json.Marshaler interface for Protocol.
-// It serializes the Protocol as a JSON array containing [SecurityLevel, Protocol].
-func (p *Protocol) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]interface{}{p.SecurityLevel, p.Protocol})
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for Protocol.
-// It deserializes a JSON array [SecurityLevel, Protocol] into the Protocol struct.
-func (p *Protocol) UnmarshalJSON(data []byte) error {
-	var temp []interface{}
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return err
-	}
-	if len(temp) != 2 {
-		return fmt.Errorf("expected array of length 2, but got %d", len(temp))
-	}
-
-	securityLevel, ok := temp[0].(float64)
-	if !ok {
-		return fmt.Errorf("expected SecurityLevel to be a number, but got %T", temp[0])
-	}
-	p.SecurityLevel = SecurityLevel(securityLevel)
-
-	protocol, ok := temp[1].(string)
-	if !ok {
-		return fmt.Errorf("expected Protocol to be a string, but got %T", temp[1])
-	}
-	p.Protocol = protocol
-
-	return nil
-}
-
 // CounterpartyType represents the type of counterparty in a cryptographic operation.
 type CounterpartyType int
 
@@ -78,52 +43,6 @@ const (
 type Counterparty struct {
 	Type         CounterpartyType
 	Counterparty *ec.PublicKey
-}
-
-// MarshalJSON implements the json.Marshaler interface for Counterparty.
-// It serializes special counterparty types as strings ("anyone", "self") and
-// specific counterparties as their DER-encoded hex public key.
-func (c *Counterparty) MarshalJSON() ([]byte, error) {
-	switch c.Type {
-	case CounterpartyTypeAnyone:
-		return json.Marshal("anyone")
-	case CounterpartyTypeSelf:
-		return json.Marshal("self")
-	case CounterpartyTypeOther:
-		if c.Counterparty == nil {
-			return json.Marshal(nil) // Or handle this as an error if it should never happen
-		}
-		return json.Marshal(c.Counterparty.ToDERHex())
-	default:
-		return json.Marshal(nil) // Or handle this as an error if it should never happen
-	}
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for Counterparty.
-// It deserializes "anyone", "self", or a DER-encoded hex public key string
-// into the appropriate Counterparty struct.
-func (c *Counterparty) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return fmt.Errorf("could not unmarshal Counterparty from JSON: %s", string(data))
-	}
-	switch s {
-	case "anyone":
-		c.Type = CounterpartyTypeAnyone
-	case "self":
-		c.Type = CounterpartyTypeSelf
-	case "":
-		c.Type = CounterpartyUninitialized
-	default:
-		// Attempt to parse as a public key string
-		pubKey, err := ec.PublicKeyFromString(s)
-		if err != nil {
-			return fmt.Errorf("error unmarshaling counterparty: %w", err)
-		}
-		c.Type = CounterpartyTypeOther
-		c.Counterparty = pubKey
-	}
-	return nil
 }
 
 // Wallet provides cryptographic operations for a specific identity.
@@ -208,39 +127,6 @@ type CreateSignatureResult struct {
 	Signature ec.Signature `json:"-"` // Ignore original field for JSON
 }
 
-// MarshalJSON implements the json.Marshaler interface for CreateSignatureResult.
-func (c CreateSignatureResult) MarshalJSON() ([]byte, error) {
-	// Use an alias struct with Signature for marshaling
-	type Alias CreateSignatureResult
-	return json.Marshal(&struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias:     (*Alias)(&c),
-		Signature: Signature{Signature: c.Signature},
-	})
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for CreateSignatureResult.
-func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
-	// Use an alias struct with Signature for unmarshaling
-	type Alias CreateSignatureResult
-	aux := &struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias: (*Alias)(c),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	// Assign the unmarshaled signature back
-	c.Signature = aux.Signature.Signature
-	return nil
-}
-
 // SignOutputs defines which transaction outputs should be signed using SIGHASH flags.
 // It wraps the sighash.Flag type to provide specific signing behavior.
 type SignOutputs sighash.Flag
@@ -261,39 +147,6 @@ type VerifySignatureArgs struct {
 	ForSelf              bool         `json:"forSelf,omitempty"`
 }
 
-// MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
-func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
-	// Use an alias struct with Signature for marshaling
-	type Alias VerifySignatureArgs
-	return json.Marshal(&struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias:     (*Alias)(&v),
-		Signature: Signature{Signature: v.Signature},
-	})
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for VerifySignatureArgs.
-func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
-	// Use an alias struct with Signature for unmarshaling
-	type Alias VerifySignatureArgs
-	aux := &struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias: (*Alias)(v),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	// Assign the unmarshaled signature back
-	v.Signature = aux.Signature.Signature
-	return nil
-}
-
 // CreateHMACArgs contains parameters for creating an HMAC.
 // It extends EncryptionArgs with the data to be authenticated.
 type CreateHMACArgs struct {
@@ -308,7 +161,6 @@ type CreateHMACResult struct {
 
 // VerifyHMACArgs contains parameters for verifying an HMAC.
 // It extends EncryptionArgs with the data and HMAC to be verified.
-
 type VerifyHMACArgs struct {
 	EncryptionArgs
 	Data BytesList `json:"data"`

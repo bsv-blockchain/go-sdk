@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -30,6 +31,150 @@ func (s PubKey) MarshalJSON() ([]byte, error) {
 
 func (s *PubKey) UnmarshalJSON(data []byte) error {
 	return (*Bytes33Hex)(s).UnmarshalJSON(data)
+}
+
+// MarshalJSON implements the json.Marshaler interface for Protocol.
+// It serializes the Protocol as a JSON array containing [SecurityLevel, Protocol].
+func (p *Protocol) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]interface{}{p.SecurityLevel, p.Protocol})
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for Protocol.
+// It deserializes a JSON array [SecurityLevel, Protocol] into the Protocol struct.
+func (p *Protocol) UnmarshalJSON(data []byte) error {
+	var temp []interface{}
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+	if len(temp) != 2 {
+		return fmt.Errorf("expected array of length 2, but got %d", len(temp))
+	}
+
+	securityLevel, ok := temp[0].(float64)
+	if !ok {
+		return fmt.Errorf("expected SecurityLevel to be a number, but got %T", temp[0])
+	}
+	p.SecurityLevel = SecurityLevel(securityLevel)
+
+	protocol, ok := temp[1].(string)
+	if !ok {
+		return fmt.Errorf("expected Protocol to be a string, but got %T", temp[1])
+	}
+	p.Protocol = protocol
+
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface for Counterparty.
+// It serializes special counterparty types as strings ("anyone", "self") and
+// specific counterparties as their DER-encoded hex public key.
+func (c *Counterparty) MarshalJSON() ([]byte, error) {
+	switch c.Type {
+	case CounterpartyTypeAnyone:
+		return json.Marshal("anyone")
+	case CounterpartyTypeSelf:
+		return json.Marshal("self")
+	case CounterpartyTypeOther:
+		if c.Counterparty == nil {
+			return json.Marshal(nil) // Or handle this as an error if it should never happen
+		}
+		return json.Marshal(c.Counterparty.ToDERHex())
+	default:
+		return json.Marshal(nil) // Or handle this as an error if it should never happen
+	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for Counterparty.
+// It deserializes "anyone", "self", or a DER-encoded hex public key string
+// into the appropriate Counterparty struct.
+func (c *Counterparty) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return fmt.Errorf("could not unmarshal Counterparty from JSON: %s", string(data))
+	}
+	switch s {
+	case "anyone":
+		c.Type = CounterpartyTypeAnyone
+	case "self":
+		c.Type = CounterpartyTypeSelf
+	case "":
+		c.Type = CounterpartyUninitialized
+	default:
+		// Attempt to parse as a public key string
+		pubKey, err := ec.PublicKeyFromString(s)
+		if err != nil {
+			return fmt.Errorf("error unmarshaling counterparty: %w", err)
+		}
+		c.Type = CounterpartyTypeOther
+		c.Counterparty = pubKey
+	}
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface for CreateSignatureResult.
+func (c CreateSignatureResult) MarshalJSON() ([]byte, error) {
+	// Use an alias struct with Signature for marshaling
+	type Alias CreateSignatureResult
+	return json.Marshal(&struct {
+		*Alias
+		Signature Signature `json:"signature"` // Override Signature field
+	}{
+		Alias:     (*Alias)(&c),
+		Signature: Signature{Signature: c.Signature},
+	})
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for CreateSignatureResult.
+func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
+	// Use an alias struct with Signature for unmarshaling
+	type Alias CreateSignatureResult
+	aux := &struct {
+		*Alias
+		Signature Signature `json:"signature"` // Override Signature field
+	}{
+		Alias: (*Alias)(c),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Assign the unmarshaled signature back
+	c.Signature = aux.Signature.Signature
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
+func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
+	// Use an alias struct with Signature for marshaling
+	type Alias VerifySignatureArgs
+	return json.Marshal(&struct {
+		*Alias
+		Signature Signature `json:"signature"` // Override Signature field
+	}{
+		Alias:     (*Alias)(&v),
+		Signature: Signature{Signature: v.Signature},
+	})
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for VerifySignatureArgs.
+func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
+	// Use an alias struct with Signature for unmarshaling
+	type Alias VerifySignatureArgs
+	aux := &struct {
+		*Alias
+		Signature Signature `json:"signature"` // Override Signature field
+	}{
+		Alias: (*Alias)(v),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Assign the unmarshaled signature back
+	v.Signature = aux.Signature.Signature
+	return nil
 }
 
 // aliasCertificate uses an alias to avoid recursion
@@ -448,6 +593,100 @@ func (r *RevealSpecificKeyLinkageResult) UnmarshalJSON(data []byte) error {
 	}
 	r.EncryptedLinkage = aux.EncryptedLinkage
 	r.EncryptedLinkageProof = aux.EncryptedLinkageProof
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface for IdentityCertificate.
+// It handles the flattening of the embedded Certificate fields.
+func (ic *IdentityCertificate) MarshalJSON() ([]byte, error) {
+	// Start with marshaling the embedded Certificate
+	certData, err := json.Marshal(&ic.Certificate)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
+	}
+
+	// Unmarshal certData into a map
+	var certMap map[string]interface{}
+	if err := json.Unmarshal(certData, &certMap); err != nil {
+		return nil, fmt.Errorf("error unmarshaling cert data into map: %w", err)
+	}
+
+	// Add IdentityCertificate specific fields to the map
+	certMap["certifierInfo"] = ic.CertifierInfo
+	if ic.PubliclyRevealedKeyring != nil {
+		certMap["publiclyRevealedKeyring"] = ic.PubliclyRevealedKeyring
+	}
+	if ic.DecryptedFields != nil {
+		certMap["decryptedFields"] = ic.DecryptedFields
+	}
+
+	// Marshal the final map
+	return json.Marshal(certMap)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for IdentityCertificate.
+// It handles the flattening of the embedded Certificate fields.
+func (ic *IdentityCertificate) UnmarshalJSON(data []byte) error {
+	// Unmarshal into the embedded Certificate first
+	if err := json.Unmarshal(data, &ic.Certificate); err != nil {
+		return fmt.Errorf("error unmarshaling embedded Certificate: %w", err)
+	}
+
+	// Unmarshal into a temporary map to get the other fields
+	var temp map[string]json.RawMessage
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return fmt.Errorf("error unmarshaling into temp map: %w", err)
+	}
+
+	// Unmarshal CertifierInfo
+	if certInfoData, ok := temp["certifierInfo"]; ok {
+		if err := json.Unmarshal(certInfoData, &ic.CertifierInfo); err != nil {
+			return fmt.Errorf("error unmarshaling certifierInfo: %w", err)
+		}
+	}
+
+	// Unmarshal PubliclyRevealedKeyring
+	if pubKeyringData, ok := temp["publiclyRevealedKeyring"]; ok {
+		if err := json.Unmarshal(pubKeyringData, &ic.PubliclyRevealedKeyring); err != nil {
+			return fmt.Errorf("error unmarshaling publiclyRevealedKeyring: %w", err)
+		}
+	}
+
+	// Unmarshal DecryptedFields
+	if decryptedData, ok := temp["decryptedFields"]; ok {
+		if err := json.Unmarshal(decryptedData, &ic.DecryptedFields); err != nil {
+			return fmt.Errorf("error unmarshaling decryptedFields: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r KeyringRevealer) MarshalJSON() ([]byte, error) {
+	if r.Certifier {
+		return json.Marshal(KeyringRevealerCertifier)
+	}
+	return json.Marshal(hex.EncodeToString(r.PubKey[:]))
+}
+
+func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return fmt.Errorf("error unmarshaling revealer: %w", err)
+	}
+
+	if str == KeyringRevealerCertifier {
+		r.Certifier = true
+		return nil
+	}
+	data, err := hex.DecodeString(str)
+	if err != nil {
+		return fmt.Errorf("error decoding revealer hex: %w", err)
+	}
+	if len(data) != 33 {
+		return fmt.Errorf("revealer hex must be 33 bytes, got %d", len(data))
+	}
+	copy(r.PubKey[:], data)
 	return nil
 }
 

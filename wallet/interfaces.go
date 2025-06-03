@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +10,43 @@ import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
+
+// KeyOperations defines the interface for cryptographic operations.
+type KeyOperations interface {
+	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
+	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
+	CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
+	VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error)
+	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
+	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+}
+
+// Interface defines the core wallet operations for transaction creation, signing and querying.
+type Interface interface {
+	KeyOperations
+	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
+	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
+	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
+	ListActions(ctx context.Context, args ListActionsArgs, originator string) (*ListActionsResult, error)
+	InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
+	ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error)
+	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
+	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
+	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
+	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
+	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
+	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
+	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
+	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
+	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
+	IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
+	WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
+	GetHeight(ctx context.Context, args any, originator string) (*GetHeightResult, error)
+	GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error)
+	GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error)
+	GetVersion(ctx context.Context, args any, originator string) (*GetVersionResult, error)
+}
 
 type (
 	CertificateType [32]byte
@@ -285,43 +321,6 @@ type ListOutputsResult struct {
 	Outputs      []Output `json:"outputs"`
 }
 
-// KeyOperations defines the interface for cryptographic operations.
-type KeyOperations interface {
-	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
-	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
-	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
-	CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
-	VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error)
-	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
-	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
-}
-
-// Interface defines the core wallet operations for transaction creation, signing and querying.
-type Interface interface {
-	KeyOperations
-	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
-	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
-	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
-	ListActions(ctx context.Context, args ListActionsArgs, originator string) (*ListActionsResult, error)
-	InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
-	ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error)
-	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
-	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
-	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
-	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
-	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
-	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
-	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
-	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
-	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
-	IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
-	WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
-	GetHeight(ctx context.Context, args any, originator string) (*GetHeightResult, error)
-	GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error)
-	GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error)
-	GetVersion(ctx context.Context, args any, originator string) (*GetVersionResult, error)
-}
-
 // AbortActionArgs identifies a transaction to abort using its reference string.
 type AbortActionArgs struct {
 	Reference []byte `json:"reference"`
@@ -447,72 +446,6 @@ type IdentityCertificate struct {
 	DecryptedFields         map[string]string `json:"decryptedFields"`
 }
 
-// MarshalJSON implements the json.Marshaler interface for IdentityCertificate.
-// It handles the flattening of the embedded Certificate fields.
-func (ic *IdentityCertificate) MarshalJSON() ([]byte, error) {
-	// Start with marshaling the embedded Certificate
-	certData, err := json.Marshal(&ic.Certificate)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
-	}
-
-	// Unmarshal certData into a map
-	var certMap map[string]interface{}
-	if err := json.Unmarshal(certData, &certMap); err != nil {
-		return nil, fmt.Errorf("error unmarshaling cert data into map: %w", err)
-	}
-
-	// Add IdentityCertificate specific fields to the map
-	certMap["certifierInfo"] = ic.CertifierInfo
-	if ic.PubliclyRevealedKeyring != nil {
-		certMap["publiclyRevealedKeyring"] = ic.PubliclyRevealedKeyring
-	}
-	if ic.DecryptedFields != nil {
-		certMap["decryptedFields"] = ic.DecryptedFields
-	}
-
-	// Marshal the final map
-	return json.Marshal(certMap)
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for IdentityCertificate.
-// It handles the flattening of the embedded Certificate fields.
-func (ic *IdentityCertificate) UnmarshalJSON(data []byte) error {
-	// Unmarshal into the embedded Certificate first
-	if err := json.Unmarshal(data, &ic.Certificate); err != nil {
-		return fmt.Errorf("error unmarshaling embedded Certificate: %w", err)
-	}
-
-	// Unmarshal into a temporary map to get the other fields
-	var temp map[string]json.RawMessage
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return fmt.Errorf("error unmarshaling into temp map: %w", err)
-	}
-
-	// Unmarshal CertifierInfo
-	if certInfoData, ok := temp["certifierInfo"]; ok {
-		if err := json.Unmarshal(certInfoData, &ic.CertifierInfo); err != nil {
-			return fmt.Errorf("error unmarshaling certifierInfo: %w", err)
-		}
-	}
-
-	// Unmarshal PubliclyRevealedKeyring
-	if pubKeyringData, ok := temp["publiclyRevealedKeyring"]; ok {
-		if err := json.Unmarshal(pubKeyringData, &ic.PubliclyRevealedKeyring); err != nil {
-			return fmt.Errorf("error unmarshaling publiclyRevealedKeyring: %w", err)
-		}
-	}
-
-	// Unmarshal DecryptedFields
-	if decryptedData, ok := temp["decryptedFields"]; ok {
-		if err := json.Unmarshal(decryptedData, &ic.DecryptedFields); err != nil {
-			return fmt.Errorf("error unmarshaling decryptedFields: %w", err)
-		}
-	}
-
-	return nil
-}
-
 // AcquisitionProtocol specifies the method used to acquire a certificate.
 type AcquisitionProtocol string
 
@@ -539,34 +472,6 @@ const KeyringRevealerCertifier = "certifier"
 type KeyringRevealer struct {
 	Certifier bool
 	PubKey    PubKey
-}
-
-func (r KeyringRevealer) MarshalJSON() ([]byte, error) {
-	if r.Certifier {
-		return json.Marshal(KeyringRevealerCertifier)
-	}
-	return json.Marshal(hex.EncodeToString(r.PubKey[:]))
-}
-
-func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return fmt.Errorf("error unmarshaling revealer: %w", err)
-	}
-
-	if str == KeyringRevealerCertifier {
-		r.Certifier = true
-		return nil
-	}
-	data, err := hex.DecodeString(str)
-	if err != nil {
-		return fmt.Errorf("error decoding revealer hex: %w", err)
-	}
-	if len(data) != 33 {
-		return fmt.Errorf("revealer hex must be 33 bytes, got %d", len(data))
-	}
-	copy(r.PubKey[:], data)
-	return nil
 }
 
 // AcquireCertificateArgs contains parameters for acquiring a new certificate.
