@@ -3,7 +3,6 @@ package serializer
 import (
 	"fmt"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -84,7 +83,7 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 func SerializeCreateSignatureResult(result *wallet.CreateSignatureResult) ([]byte, error) {
 	w := util.NewWriter()
 	w.WriteByte(0) // errorByte = 0 (success)
-	w.WriteBytes(result.Signature.Serialize())
+	w.WriteBytes(result.Signature)
 	return w.Buf, nil
 }
 
@@ -99,11 +98,7 @@ func DeserializeCreateSignatureResult(data []byte) (*wallet.CreateSignatureResul
 	}
 
 	// Read signature (remaining bytes)
-	sig, err := ec.FromDER(r.ReadRemaining())
-	if err != nil {
-		return nil, fmt.Errorf("error deserializing signature: %w", err)
-	}
-	result.Signature = *sig
+	result.Signature = r.ReadRemaining()
 
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing CreateSignature result: %w", r.Err)

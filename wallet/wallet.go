@@ -124,7 +124,7 @@ type CreateSignatureArgs struct {
 
 // CreateSignatureResult contains the result of a signature creation operation.
 type CreateSignatureResult struct {
-	Signature ec.Signature `json:"-"` // Ignore original field for JSON
+	Signature Signature `json:"-"` // Ignore original field for JSON
 }
 
 // SignOutputs defines which transaction outputs should be signed using SIGHASH flags.
@@ -141,10 +141,10 @@ var (
 // It can verify against either raw data (which will be hashed) or a pre-computed hash.
 type VerifySignatureArgs struct {
 	EncryptionArgs
-	Data                 BytesList    `json:"data,omitempty"`
-	HashToDirectlyVerify BytesList    `json:"hashToDirectlyVerify,omitempty"`
-	Signature            ec.Signature `json:"-"` // Ignore original field for JSON
-	ForSelf              bool         `json:"forSelf,omitempty"`
+	Data                 BytesList `json:"data,omitempty"`
+	HashToDirectlyVerify BytesList `json:"hashToDirectlyVerify,omitempty"`
+	Signature            []byte    `json:"-"` // Ignore original field for JSON
+	ForSelf              bool      `json:"forSelf,omitempty"`
 }
 
 // CreateHMACArgs contains parameters for creating an HMAC.

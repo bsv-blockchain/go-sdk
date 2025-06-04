@@ -110,10 +110,10 @@ func TestRegistryClient_RegisterDefinition(t *testing.T) {
 
 	// Setup mock CreateSignature response
 	mockRegistry.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: ec.Signature{
+		Signature: (&ec.Signature{
 			R: big.NewInt(1),
 			S: big.NewInt(1),
-		},
+		}).Serialize(),
 	}
 
 	// Create registry client with mock wallet
@@ -428,10 +428,10 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 	// Setup mock CreateSignature response
 	mockRegistry.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: ec.Signature{
+		Signature: (&ec.Signature{
 			R: big.NewInt(1),
 			S: big.NewInt(1),
-		},
+		}).Serialize(),
 	}
 
 	// Create registry client with mock wallet
@@ -655,10 +655,10 @@ func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 
 	// Setup mock CreateSignature response
 	mockRegistry.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: ec.Signature{
+		Signature: (&ec.Signature{
 			R: big.NewInt(1),
 			S: big.NewInt(1),
-		},
+		}).Serialize(),
 	}
 
 	// Create registry client with mock wallet

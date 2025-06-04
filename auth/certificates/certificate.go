@@ -270,12 +270,6 @@ func (c *Certificate) Verify(ctx context.Context) error {
 		return fmt.Errorf("failed to serialize certificate: %w", err)
 	}
 
-	// Parse the signature
-	sig, err := ec.ParseSignature(c.Signature)
-	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
-	}
-
 	// Verify the signature using the certifier's public key
 	verifyArgs := wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -290,7 +284,7 @@ func (c *Certificate) Verify(ctx context.Context) error {
 			},
 		},
 		Data:      data,
-		Signature: *sig,
+		Signature: c.Signature,
 	}
 
 	verifyResult, err := verifier.VerifySignature(ctx, verifyArgs, "")
@@ -349,7 +343,7 @@ func (c *Certificate) Sign(ctx context.Context, certifierWallet *wallet.ProtoWal
 	}
 
 	// Store the signature
-	c.Signature = signResult.Signature.Serialize()
+	c.Signature = signResult.Signature
 
 	return nil
 }

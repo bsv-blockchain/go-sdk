@@ -7,6 +7,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -337,18 +338,6 @@ func newCounterparty(t *testing.T, pubKeyHex string) wallet.Counterparty {
 	}
 }
 
-// newSignature is a helper function to create a new signature from a byte slice
-func newSignature(t *testing.T, data []byte) *ec.Signature {
-	sig, err := ec.FromDER(data)
-	require.NoError(t, err, "creating signature from DER bytes should not error")
-	return sig
-}
-
-func newTestSignature(t *testing.T) *ec.Signature {
-	return newSignature(t, []byte{0x30, 0x25, 0x02, 0x20, 0x4e, 0x45, 0xe1, 0x69,
-		0x32, 0xb8, 0xaf, 0x51, 0x49, 0x61, 0xa1, 0xd3, 0xa1,
-		0xa2, 0x5f, 0xdf, 0x3f, 0x4f, 0x77, 0x32, 0xe9, 0xd6,
-		0x24, 0xc6, 0xc6, 0x15, 0x48, 0xab, 0x5f, 0xb8, 0xcd,
-		0x41, 0x02, 0x01, 0x00,
-	})
+func newTestSignature(t *testing.T) []byte {
+	return tu.GetByteFromHexString(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020100")
 }

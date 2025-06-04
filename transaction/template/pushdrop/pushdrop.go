@@ -96,7 +96,7 @@ func (p *PushDropTemplate) Lock(
 		if err != nil {
 			return nil, fmt.Errorf("error creating wallet signature for lock: %w", err)
 		}
-		fields = append(fields, sig.Signature.Serialize())
+		fields = append(fields, sig.Signature)
 	}
 	pushDropChunks := make([]*script.ScriptChunk, 0)
 	for _, field := range fields {
@@ -184,7 +184,7 @@ func (p *PushDropUnlocker) Sign(
 		}
 		s := (&script.Script{})
 		// Error throws if data is too big which wont happen here
-		_ = s.AppendPushData(sig.Signature.Serialize())
+		_ = s.AppendPushData(sig.Signature)
 		return s, nil
 	}
 

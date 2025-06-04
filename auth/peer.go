@@ -235,7 +235,7 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 		return fmt.Errorf("failed to sign message: %w", err)
 	}
 
-	generalMessage.Signature = sigResult.Signature.Serialize()
+	generalMessage.Signature = sigResult.Signature
 
 	// Update session timestamp
 	now := time.Now().UnixNano() / int64(time.Millisecond)
@@ -595,12 +595,6 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
 
-	// Try to parse the signature
-	sig, err := ec.ParseSignature(message.Signature)
-	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
-	}
-
 	// Verify signature
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -616,7 +610,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 			},
 		},
 		Data:      certRequestData,
-		Signature: *sig,
+		Signature: message.Signature,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -677,12 +671,6 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 		return fmt.Errorf("failed to serialize certificate data: %w", err)
 	}
 
-	// Try to parse the signature
-	sig, err := ec.ParseSignature(message.Signature)
-	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
-	}
-
 	// Verify signature
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -698,7 +686,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 			},
 		},
 		Data:      certData,
-		Signature: *sig,
+		Signature: message.Signature,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -774,12 +762,6 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	session.LastUpdate = time.Now().UnixMilli()
 	p.sessionManager.UpdateSession(session)
 
-	// Try to parse the signature
-	sig, err := ec.ParseSignature(message.Signature)
-	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
-	}
-
 	// Verify signature
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -795,7 +777,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 			},
 		},
 		Data:      message.Payload,
-		Signature: *sig,
+		Signature: message.Signature,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -880,7 +862,7 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 		return fmt.Errorf("failed to sign certificate request: %w", err)
 	}
 
-	certRequest.Signature = sigResult.Signature.Serialize()
+	certRequest.Signature = sigResult.Signature
 
 	// Send the request
 	err = p.transport.Send(ctx, certRequest)
@@ -962,7 +944,7 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 		return fmt.Errorf("failed to sign certificate response: %w", err)
 	}
 
-	certResponse.Signature = sigResult.Signature.Serialize()
+	certResponse.Signature = sigResult.Signature
 
 	// Send the response
 	err = p.transport.Send(ctx, certResponse)

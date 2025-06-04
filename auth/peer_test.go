@@ -109,12 +109,13 @@ func CreatePeerPair(t *testing.T) (*Peer, *Peer, *wallet.MockWallet, *wallet.Moc
 	// Setup basic crypto operations
 	dummySig, err := alicePk.Sign([]byte("test"))
 	require.NoError(t, err)
+	dummySigBytes := dummySig.Serialize()
 
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 
 	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -440,6 +441,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 	require.NoError(t, err)
 	dummySig, err := dummyKey.Sign([]byte("test"))
 	require.NoError(t, err)
+	dummySigBytes := dummySig.Serialize()
 
 	// Mock the certificate verification to always succeed
 	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -535,10 +537,10 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	// Setup crypto operations
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 
 	// Force all signature verifications to succeed
@@ -744,12 +746,13 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 	// Setup crypto operations for both Alice wallets
 	dummyAliceSig, err := alicePk.Sign([]byte("test"))
 	require.NoError(t, err)
+	dummyAliceSigBytes := dummyAliceSig.Serialize()
 
 	aliceWallet1.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyAliceSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyAliceSigBytes}, nil
 	}
 	aliceWallet2.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyAliceSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyAliceSigBytes}, nil
 	}
 
 	aliceWallet1.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -797,16 +800,17 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 	// Setup Bob's crypto operations
 	dummyBobSig, err := bobPk.Sign([]byte("test"))
 	require.NoError(t, err)
+	dummyBobSigBytes := dummyBobSig.Serialize()
 
 	bobWallet1.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyBobSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyBobSigBytes}, nil
 	}
 	bobWallet1.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
 	bobWallet2.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyBobSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyBobSigBytes}, nil
 	}
 	bobWallet2.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
@@ -969,6 +973,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 	require.NoError(t, err)
 	dummySig, err := dummyKey.Sign([]byte("test"))
 	require.NoError(t, err)
+	dummySigBytes := dummySig.Serialize()
 
 	// Mock the certificate verification to always succeed
 	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -1060,10 +1065,10 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 
 	// Setup crypto operations
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 
 	// Force all signature verifications to succeed
@@ -1281,6 +1286,7 @@ func TestLibraryCardVerification(t *testing.T) {
 	require.NoError(t, err)
 	dummySig, err := dummyKey.Sign([]byte("test"))
 	require.NoError(t, err)
+	dummySigBytes := dummySig.Serialize()
 
 	// Mock the certificate verification to always succeed
 	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -1336,10 +1342,10 @@ func TestLibraryCardVerification(t *testing.T) {
 
 	// Setup crypto operations
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 
 	// Force all signature verifications to succeed
@@ -1616,12 +1622,13 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 	// Set up crypto functions
 	dummySig, err := aliceKey.Sign([]byte("test"))
 	require.NoError(t, err)
+	dummySigBytes := dummySig.Serialize()
 
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySigBytes}, nil
 	}
 
 	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {

@@ -405,10 +405,10 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			// Create a simple signature with R=1, S=1
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: (&ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
-				},
+				}).Serialize(),
 			}, nil
 		}
 
@@ -481,10 +481,10 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			// Create a simple signature with R=1, S=1
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: (&ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
-				},
+				}).Serialize(),
 			}, nil
 		}
 
@@ -560,10 +560,10 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		// Mock CreateSignature to succeed
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: (&ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
-				},
+				}).Serialize(),
 			}, nil
 		}
 
@@ -653,10 +653,10 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: (&ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
-				},
+				}).Serialize(),
 			}, nil
 		}
 

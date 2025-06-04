@@ -202,7 +202,7 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 		require.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body))
 		require.Equal(t, testRef, args.Reference)
 		require.Len(t, args.Spends, 1)
-		require.Equal(t, testScript, []byte(args.Spends[0].UnlockingScript))
+		require.Equal(t, testScript, args.Spends[0].UnlockingScript)
 
 		writeJSONResponse(t, w, &wallet.SignActionResult{Txid: testTxId})
 	}))
@@ -396,10 +396,10 @@ func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 
 func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 	testData := []byte("test data")
-	testSig := ec.Signature{
+	testSig := (&ec.Signature{
 		R: big.NewInt(1),
 		S: big.NewInt(2),
-	} // Sample signature
+	}).Serialize() // Sample signature
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/createSignature" {
@@ -430,7 +430,7 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 		Data: testData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, testSig, sigResult.Signature)
+	require.Equal(t, testSig, []byte(sigResult.Signature))
 
 	// Test verify signature
 	verifyResult, err := client.VerifySignature(t.Context(), wallet.VerifySignatureArgs{

@@ -111,69 +111,53 @@ func (c *Counterparty) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type aliasCreateSignatureResult CreateSignatureResult
+type jsonCreateSignatureResult struct {
+	Signature Signature `json:"signature"`
+	*aliasCreateSignatureResult
+}
+
 // MarshalJSON implements the json.Marshaler interface for CreateSignatureResult.
 func (c CreateSignatureResult) MarshalJSON() ([]byte, error) {
-	// Use an alias struct with Signature for marshaling
-	type Alias CreateSignatureResult
-	return json.Marshal(&struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias:     (*Alias)(&c),
-		Signature: Signature{Signature: c.Signature},
+	return json.Marshal(&jsonCreateSignatureResult{
+		aliasCreateSignatureResult: (*aliasCreateSignatureResult)(&c),
+		Signature:                  c.Signature,
 	})
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for CreateSignatureResult.
 func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
-	// Use an alias struct with Signature for unmarshaling
-	type Alias CreateSignatureResult
-	aux := &struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias: (*Alias)(c),
-	}
-
+	aux := &jsonCreateSignatureResult{aliasCreateSignatureResult: (*aliasCreateSignatureResult)(c)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	// Assign the unmarshaled signature back
-	c.Signature = aux.Signature.Signature
+	c.Signature = aux.Signature
 	return nil
+}
+
+type aliasVerifySignatureArgs VerifySignatureArgs
+type jsonVerifySignatureArgs struct {
+	Signature Signature `json:"signature"`
+	*aliasVerifySignatureArgs
 }
 
 // MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
 func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
-	// Use an alias struct with Signature for marshaling
-	type Alias VerifySignatureArgs
-	return json.Marshal(&struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias:     (*Alias)(&v),
-		Signature: Signature{Signature: v.Signature},
+	return json.Marshal(&jsonVerifySignatureArgs{
+		aliasVerifySignatureArgs: (*aliasVerifySignatureArgs)(&v),
+		Signature:                v.Signature,
 	})
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for VerifySignatureArgs.
 func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
-	// Use an alias struct with Signature for unmarshaling
-	type Alias VerifySignatureArgs
-	aux := &struct {
-		*Alias
-		Signature Signature `json:"signature"` // Override Signature field
-	}{
-		Alias: (*Alias)(v),
-	}
-
+	aux := &jsonVerifySignatureArgs{aliasVerifySignatureArgs: (*aliasVerifySignatureArgs)(v)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	// Assign the unmarshaled signature back
-	v.Signature = aux.Signature.Signature
+	v.Signature = aux.Signature
 	return nil
 }
 

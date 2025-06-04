@@ -49,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create signature for self: %v", err)
 	}
-	fmt.Printf("Signature created (R: %x, S: %x)\n", sigResult.Signature.R.Bytes(), sigResult.Signature.S.Bytes())
+	fmt.Printf("Signature created (%x)\n", sigResult.Signature)
 
 	// --- 3. Verify Signature (by self) ---
 	fmt.Println("\n--- 3. Verifying the signature (by self) ---")
@@ -124,7 +124,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create signature for hash (for self): %v", err)
 	}
-	fmt.Printf("Signature for hash created (R: %x, S: %x)\n", sigFromHashResult.Signature.R.Bytes(), sigFromHashResult.Signature.S.Bytes())
+	fmt.Printf("Signature for hash created (%x)\n", sigFromHashResult.Signature)
 
 	// --- 6. Verify Signature of Pre-computed Hash (by self) ---
 	fmt.Println("\n--- 6. Verifying signature of pre-computed hash (by self) ---")

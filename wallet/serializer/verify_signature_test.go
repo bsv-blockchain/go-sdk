@@ -25,7 +25,7 @@ func TestVerifySignatureArgs(t *testing.T) {
 				SeekPermission:   true,
 			},
 			ForSelf:              true,
-			Signature:            *newTestSignature(t),
+			Signature:            newTestSignature(t),
 			Data:                 []byte{5, 6, 7, 8},
 			HashToDirectlyVerify: nil,
 		},
@@ -39,7 +39,7 @@ func TestVerifySignatureArgs(t *testing.T) {
 				},
 				KeyID: "hash-key",
 			},
-			Signature:            *newTestSignature(t),
+			Signature:            newTestSignature(t),
 			HashToDirectlyVerify: make([]byte, 32),
 		},
 	}, {
@@ -52,7 +52,7 @@ func TestVerifySignatureArgs(t *testing.T) {
 				},
 				KeyID: "min-key",
 			},
-			Signature: *newTestSignature(t),
+			Signature: newTestSignature(t),
 			Data:      []byte{1},
 		},
 	}}
