@@ -3,6 +3,7 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -23,10 +24,10 @@ func SerializeRelinquishCertificateArgs(args *wallet.RelinquishCertificateArgs) 
 	w.WriteBytes(args.SerialNumber[:])
 
 	// Encode certifier (hex)
-	if args.Certifier == [33]byte{} {
+	if args.Certifier == nil {
 		return nil, fmt.Errorf("certifier is empty")
 	}
-	w.WriteBytes(args.Certifier[:])
+	w.WriteBytes(args.Certifier.Compressed())
 
 	return w.Buf, nil
 }
@@ -38,7 +39,12 @@ func DeserializeRelinquishCertificateArgs(data []byte) (*wallet.RelinquishCertif
 	// Read type (base64), serialNumber (base64), certifier (hex)
 	copy(args.Type[:], r.ReadBytes(sizeType))
 	copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
-	copy(args.Certifier[:], r.ReadBytes(sizePubKey))
+
+	parsedCertifier, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing certifier public key: %w", err)
+	}
+	args.Certifier = parsedCertifier
 
 	r.CheckComplete()
 	if r.Err != nil {

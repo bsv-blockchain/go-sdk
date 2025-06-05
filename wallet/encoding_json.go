@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -23,14 +22,6 @@ func (s SerialNumber) MarshalJSON() ([]byte, error) {
 
 func (s *SerialNumber) UnmarshalJSON(data []byte) error {
 	return (*Bytes32Base64)(s).UnmarshalJSON(data)
-}
-
-func (s PubKey) MarshalJSON() ([]byte, error) {
-	return Bytes33Hex(s).MarshalJSON()
-}
-
-func (s *PubKey) UnmarshalJSON(data []byte) error {
-	return (*Bytes33Hex)(s).UnmarshalJSON(data)
 }
 
 // MarshalJSON implements the json.Marshaler interface for Protocol.
@@ -164,28 +155,14 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 // aliasCertificate uses an alias to avoid recursion
 type aliasCertificate Certificate
 type jsonCertificate struct {
-	Subject   *string  `json:"subject"`
-	Certifier *string  `json:"certifier"`
 	Signature BytesHex `json:"signature"`
 	*aliasCertificate
 }
 
 // MarshalJSON implements json.Marshaler interface for Certificate
 func (c Certificate) MarshalJSON() ([]byte, error) {
-	var subjectHex, certifierHex *string
-	if c.Subject != nil {
-		s := c.Subject.ToDERHex()
-		subjectHex = &s
-	}
-	if c.Certifier != nil {
-		cs := c.Certifier.ToDERHex()
-		certifierHex = &cs
-	}
-
 	return json.Marshal(&jsonCertificate{
 		Signature:        c.Signature,
-		Subject:          subjectHex,
-		Certifier:        certifierHex,
 		aliasCertificate: (*aliasCertificate)(&c),
 	})
 }
@@ -200,24 +177,6 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("error unmarshaling certificate: %w", err)
 	}
 
-	// Decode public key hex strings
-	if aux.Subject != nil {
-		sub, err := ec.PublicKeyFromString(*aux.Subject)
-		if err != nil {
-			return fmt.Errorf("error decoding subject public key hex: %w", err)
-		}
-		c.Subject = sub
-	}
-	if aux.Certifier != nil {
-		cert, err := ec.PublicKeyFromString(*aux.Certifier)
-		if err != nil {
-			return fmt.Errorf("error decoding certifier public key hex: %w", err)
-		}
-		c.Certifier = cert
-	}
-
-	c.Type = aux.Type
-	c.SerialNumber = aux.SerialNumber
 	c.Signature = aux.Signature
 
 	return nil
@@ -534,8 +493,8 @@ type jsonRevealCounterpartyKeyLinkageResult struct {
 
 func (r RevealCounterpartyKeyLinkageResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonRevealCounterpartyKeyLinkageResult{
-		EncryptedLinkage:                        BytesList(r.EncryptedLinkage),
-		EncryptedLinkageProof:                   BytesList(r.EncryptedLinkageProof),
+		EncryptedLinkage:                        r.EncryptedLinkage,
+		EncryptedLinkageProof:                   r.EncryptedLinkageProof,
 		aliasRevealCounterpartyKeyLinkageResult: (*aliasRevealCounterpartyKeyLinkageResult)(&r),
 	})
 }
@@ -547,8 +506,8 @@ func (r *RevealCounterpartyKeyLinkageResult) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return fmt.Errorf("error unmarshaling RevealCounterpartyKeyLinkageResult: %w", err)
 	}
-	r.EncryptedLinkage = []byte(aux.EncryptedLinkage)
-	r.EncryptedLinkageProof = []byte(aux.EncryptedLinkageProof)
+	r.EncryptedLinkage = aux.EncryptedLinkage
+	r.EncryptedLinkageProof = aux.EncryptedLinkageProof
 	return nil
 }
 
@@ -650,7 +609,7 @@ func (r KeyringRevealer) MarshalJSON() ([]byte, error) {
 	if r.Certifier {
 		return json.Marshal(KeyringRevealerCertifier)
 	}
-	return json.Marshal(hex.EncodeToString(r.PubKey[:]))
+	return json.Marshal(r.PubKey)
 }
 
 func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
@@ -659,18 +618,18 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("error unmarshaling revealer: %w", err)
 	}
 
+	if str == "" {
+		return nil
+	}
 	if str == KeyringRevealerCertifier {
 		r.Certifier = true
 		return nil
 	}
-	data, err := hex.DecodeString(str)
+	pk, err := ec.PublicKeyFromString(str)
 	if err != nil {
-		return fmt.Errorf("error decoding revealer hex: %w", err)
+		return fmt.Errorf("error parsing revealer public key from bytes: %w", err)
 	}
-	if len(data) != 33 {
-		return fmt.Errorf("revealer hex must be 33 bytes, got %d", len(data))
-	}
-	copy(r.PubKey[:], data)
+	r.PubKey = pk
 	return nil
 }
 
@@ -683,7 +642,7 @@ type jsonAcquireCertificateArgs struct {
 
 func (a AcquireCertificateArgs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonAcquireCertificateArgs{
-		Signature:                   BytesHex(a.Signature),
+		Signature:                   a.Signature,
 		aliasAcquireCertificateArgs: (*aliasAcquireCertificateArgs)(&a),
 	})
 }
@@ -695,8 +654,7 @@ func (a *AcquireCertificateArgs) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return fmt.Errorf("error unmarshaling AcquireCertificateArgs: %w", err)
 	}
-	a.Signature = []byte(aux.Signature)
-	// Other fields are handled by alias or have their own marshallers
+	a.Signature = aux.Signature
 	return nil
 }
 

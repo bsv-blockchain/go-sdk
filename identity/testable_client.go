@@ -112,13 +112,11 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create dummy key: %w", err)
 	}
-	var verifierPubKey [33]byte
-	copy(verifierPubKey[:], dummyPk.PubKey().Compressed())
 
 	_, err = c.wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 		Certificate:    *certificate,
 		FieldsToReveal: fieldNamesAsStrings,
-		Verifier:       verifierPubKey,
+		Verifier:       dummyPk.PubKey(),
 	}, string(c.originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)

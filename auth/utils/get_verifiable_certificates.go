@@ -71,16 +71,10 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 			continue // Skip if no fields requested for this type
 		}
 
-		// Prepare verifier hex (empty if no key)
-		var verifierHex [33]byte
-		if options.VerifierIdentityKey != nil {
-			copy(verifierHex[:], options.VerifierIdentityKey.ToDER())
-		}
-
 		proveResult, err := options.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 			Certificate:      certResult.Certificate,
 			FieldsToReveal:   requestedFields,
-			Verifier:         verifierHex,
+			Verifier:         options.VerifierIdentityKey,
 			Privileged:       &options.Privileged,
 			PrivilegedReason: options.PrivilegedReason,
 		}, "")

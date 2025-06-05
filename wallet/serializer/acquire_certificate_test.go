@@ -2,11 +2,12 @@ package serializer
 
 import (
 	"encoding/base64"
+	"testing"
+
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/bsv-blockchain/go-sdk/util/test_util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestAcquireCertificateArgs(t *testing.T) {
@@ -18,7 +19,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 		name: "direct acquisition",
 		args: &wallet.AcquireCertificateArgs{
 			Type:                tu.GetByte32FromString("test-type"),
-			Certifier:           [33]byte{1},
+			Certifier:           tu.GetPKFromBytes([]byte{1}),
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			Fields: map[string]string{
 				"field1": "value1",
@@ -38,7 +39,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 		name: "issuance acquisition",
 		args: &wallet.AcquireCertificateArgs{
 			Type:                tu.GetByte32FromString("issuance-type"),
-			Certifier:           [33]byte{2},
+			Certifier:           tu.GetPKFromBytes([]byte{2}),
 			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 			Fields: map[string]string{
 				"field1": "value1",
@@ -49,10 +50,11 @@ func TestAcquireCertificateArgs(t *testing.T) {
 		name: "minimal args",
 		args: &wallet.AcquireCertificateArgs{
 			Type:                tu.GetByte32FromString("minimal"),
-			Certifier:           [33]byte{3},
+			Certifier:           tu.GetPKFromBytes([]byte{3}),
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			SerialNumber:        [32]byte{3},
 			RevocationOutpoint:  revocationOutpoint,
+			KeyringRevealer:     wallet.KeyringRevealer{Certifier: true},
 		},
 	}}
 

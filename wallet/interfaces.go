@@ -51,12 +51,7 @@ type Interface interface {
 type (
 	CertificateType [32]byte
 	SerialNumber    [32]byte
-	PubKey          [33]byte
 )
-
-func (p PubKey) IsEmpty() bool {
-	return p == [33]byte{}
-}
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
@@ -389,45 +384,45 @@ type InternalizeActionResult struct {
 // RevealCounterpartyKeyLinkageArgs contains parameters for revealing key linkage between counterparties.
 // This operation exposes the cryptographic relationship between the wallet and a specific counterparty.
 type RevealCounterpartyKeyLinkageArgs struct {
-	Counterparty     PubKey `json:"counterparty"`
-	Verifier         PubKey `json:"verifier"`
-	Privileged       *bool  `json:"privileged,omitempty"`
-	PrivilegedReason string `json:"privilegedReason,omitempty"`
+	Counterparty     *ec.PublicKey `json:"counterparty"`
+	Verifier         *ec.PublicKey `json:"verifier"`
+	Privileged       *bool         `json:"privileged,omitempty"`
+	PrivilegedReason string        `json:"privilegedReason,omitempty"`
 }
 
 // RevealCounterpartyKeyLinkageResult contains the encrypted linkage data and proof
 // that demonstrates the relationship between the prover and counterparty.
 type RevealCounterpartyKeyLinkageResult struct {
-	Prover                PubKey `json:"prover"`
-	Counterparty          PubKey `json:"counterparty"`
-	Verifier              PubKey `json:"verifier"`
-	RevelationTime        string `json:"revelationTime"`
-	EncryptedLinkage      []byte `json:"encryptedLinkage"`
-	EncryptedLinkageProof []byte `json:"encryptedLinkageProof"`
+	Prover                *ec.PublicKey `json:"prover"`
+	Counterparty          *ec.PublicKey `json:"counterparty"`
+	Verifier              *ec.PublicKey `json:"verifier"`
+	RevelationTime        string        `json:"revelationTime"`
+	EncryptedLinkage      []byte        `json:"encryptedLinkage"`
+	EncryptedLinkageProof []byte        `json:"encryptedLinkageProof"`
 }
 
 // RevealSpecificKeyLinkageArgs contains parameters for revealing specific key linkage information.
 // This operation exposes the relationship for a specific protocol and key combination.
 type RevealSpecificKeyLinkageArgs struct {
-	Counterparty     Counterparty `json:"counterparty"`
-	Verifier         PubKey       `json:"verifier"`
-	ProtocolID       Protocol     `json:"protocolID"`
-	KeyID            string       `json:"keyID"`
-	Privileged       *bool        `json:"privileged,omitempty"`
-	PrivilegedReason string       `json:"privilegedReason,omitempty"`
+	Counterparty     Counterparty  `json:"counterparty"`
+	Verifier         *ec.PublicKey `json:"verifier"`
+	ProtocolID       Protocol      `json:"protocolID"`
+	KeyID            string        `json:"keyID"`
+	Privileged       *bool         `json:"privileged,omitempty"`
+	PrivilegedReason string        `json:"privilegedReason,omitempty"`
 }
 
 // RevealSpecificKeyLinkageResult contains the specific encrypted linkage data and proof
 // for a particular protocol and key combination.
 type RevealSpecificKeyLinkageResult struct {
-	EncryptedLinkage      []byte       `json:"encryptedLinkage"`
-	EncryptedLinkageProof []byte       `json:"encryptedLinkageProof"`
-	Prover                PubKey       `json:"prover"`
-	Verifier              PubKey       `json:"verifier"`
-	Counterparty          Counterparty `json:"counterparty"`
-	ProtocolID            Protocol     `json:"protocolID"`
-	KeyID                 string       `json:"keyID"`
-	ProofType             byte         `json:"proofType"`
+	EncryptedLinkage      []byte        `json:"encryptedLinkage"`
+	EncryptedLinkageProof []byte        `json:"encryptedLinkageProof"`
+	Prover                *ec.PublicKey `json:"prover"`
+	Verifier              *ec.PublicKey `json:"verifier"`
+	Counterparty          Counterparty  `json:"counterparty"`
+	ProtocolID            Protocol      `json:"protocolID"`
+	KeyID                 string        `json:"keyID"`
+	ProofType             byte          `json:"proofType"`
 }
 
 // IdentityCertifier represents information about an entity that issues identity certificates.
@@ -471,14 +466,14 @@ const KeyringRevealerCertifier = "certifier"
 // It can either point to the certifier or be a public key.
 type KeyringRevealer struct {
 	Certifier bool
-	PubKey    PubKey
+	PubKey    *ec.PublicKey
 }
 
 // AcquireCertificateArgs contains parameters for acquiring a new certificate.
 // This includes the certificate type, certifier information, and acquisition method.
 type AcquireCertificateArgs struct {
 	Type                CertificateType     `json:"type"`
-	Certifier           PubKey              `json:"certifier"`
+	Certifier           *ec.PublicKey       `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
 	SerialNumber        SerialNumber        `json:"serialNumber"`
@@ -493,7 +488,7 @@ type AcquireCertificateArgs struct {
 
 // ListCertificatesArgs contains parameters for listing certificates with filtering and pagination.
 type ListCertificatesArgs struct {
-	Certifiers       []PubKey          `json:"certifiers"`
+	Certifiers       []*ec.PublicKey   `json:"certifiers"`
 	Types            []CertificateType `json:"types"`
 	Limit            uint32            `json:"limit"`
 	Offset           uint32            `json:"offset"`
@@ -518,7 +513,7 @@ type ListCertificatesResult struct {
 type RelinquishCertificateArgs struct {
 	Type         CertificateType `json:"type"`
 	SerialNumber SerialNumber    `json:"serialNumber"`
-	Certifier    PubKey          `json:"certifier"`
+	Certifier    *ec.PublicKey   `json:"certifier"`
 }
 
 // RelinquishOutputArgs contains parameters for relinquishing ownership of an output.
@@ -540,10 +535,10 @@ type RelinquishCertificateResult struct {
 // DiscoverByIdentityKeyArgs contains parameters for discovering certificates by identity key.
 // This allows finding certificates associated with a specific public key identity.
 type DiscoverByIdentityKeyArgs struct {
-	IdentityKey    PubKey `json:"identityKey"`
-	Limit          uint32 `json:"limit"`
-	Offset         uint32 `json:"offset"`
-	SeekPermission *bool  `json:"seekPermission,omitempty"`
+	IdentityKey    *ec.PublicKey `json:"identityKey"`
+	Limit          uint32        `json:"limit"`
+	Offset         uint32        `json:"offset"`
+	SeekPermission *bool         `json:"seekPermission,omitempty"`
 }
 
 // DiscoverByAttributesArgs contains parameters for discovering certificates by their attributes.
@@ -619,9 +614,9 @@ type ProveCertificateArgs struct {
 	FieldsToReveal []string `json:"fieldsToReveal"`
 
 	// The verifier's identity key
-	Verifier         PubKey `json:"verifier"`
-	Privileged       *bool  `json:"privileged,omitempty"`
-	PrivilegedReason string `json:"privilegedReason,omitempty"`
+	Verifier         *ec.PublicKey `json:"verifier"`
+	Privileged       *bool         `json:"privileged,omitempty"`
+	PrivilegedReason string        `json:"privilegedReason,omitempty"`
 }
 
 // ProveCertificateResult contains the result of creating a verifiable certificate

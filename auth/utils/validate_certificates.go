@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
-
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -56,10 +54,22 @@ func (m *RequestedCertificateTypeIDAndFieldList) UnmarshalJSON(data []byte) erro
 // RequestedCertificateSet represents a set of requested certificates
 type RequestedCertificateSet struct {
 	// Array of public keys that must have signed the certificates
-	Certifiers []wallet.PubKey
+	Certifiers []*ec.PublicKey
 
 	// Map of certificate type IDs to field names that must be included
 	CertificateTypes RequestedCertificateTypeIDAndFieldList
+}
+
+func CertifierInSlice(certifiers []*ec.PublicKey, certifier *ec.PublicKey) bool {
+	if certifier == nil {
+		return false
+	}
+	for _, c := range certifiers {
+		if c.IsEqual(certifier) {
+			return true
+		}
+	}
+	return false
 }
 
 // isEmptyPublicKey checks if a public key is empty/uninitialized
@@ -114,9 +124,8 @@ func ValidateCertificates(
 			if certificatesRequested != nil {
 				// Check certifier matches
 				if !isEmptyPublicKey(cert.Certifier) {
-					var certifierKey wallet.PubKey
-					copy(certifierKey[:], cert.Certifier.ToDER())
-					if !slices.Contains(certificatesRequested.Certifiers, certifierKey) {
+					certifierKey := &cert.Certifier
+					if !CertifierInSlice(certificatesRequested.Certifiers, certifierKey) {
 						errCh <- fmt.Errorf("certificate with serial number %s has an unrequested certifier: %x",
 							cert.SerialNumber, certifierKey)
 						return

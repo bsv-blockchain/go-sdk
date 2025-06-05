@@ -3,6 +3,7 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -21,10 +22,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w.WriteBytes(args.Type[:])
 
 	// Encode certifier (hex)
-	if args.Certifier == [33]byte{} {
-		return nil, fmt.Errorf("certifier is empty")
-	}
-	w.WriteBytes(args.Certifier[:])
+	w.WriteBytes(args.Certifier.Compressed())
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Fields))
@@ -65,7 +63,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		if args.KeyringRevealer.Certifier {
 			w.WriteByte(keyRingRevealerCertifier)
 		} else {
-			w.WriteBytes(args.KeyringRevealer.PubKey[:])
+			w.WriteBytes(args.KeyringRevealer.PubKey.Compressed())
 		}
 
 		// Keyring for subject
@@ -101,7 +99,11 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	// Read type (base64) and certifier (hex)
 	copy(args.Type[:], r.ReadBytes(sizeType))
-	copy(args.Certifier[:], r.ReadBytes(sizePubKey))
+	parsedCertifier, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing certifier public key: %w", err)
+	}
+	args.Certifier = parsedCertifier
 
 	// Read fields
 	fieldsLength := r.ReadVarInt()
@@ -155,8 +157,13 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 				Certifier: true,
 			}
 		} else {
-			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizePubKey-1)...)
-			copy(args.KeyringRevealer.PubKey[:], keyringRevealerBytes)
+			// The keyringRevealerIdentifier is the first byte of the PubKey
+			keyringRevealerFullBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizePubKey-1)...)
+			parsedKeyringPubKey, err := ec.PublicKeyFromBytes(keyringRevealerFullBytes)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing keyring revealer public key: %w", err)
+			}
+			args.KeyringRevealer.PubKey = parsedKeyringPubKey
 		}
 
 		// Read keyring for subject

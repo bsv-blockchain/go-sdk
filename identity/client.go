@@ -77,6 +77,12 @@ func (c *Client) PubliclyRevealAttributes(
 	if len(fieldsToReveal) == 0 {
 		return nil, nil, errors.New("you must reveal at least one field")
 	}
+	if certificate.RevocationOutpoint == nil {
+		return nil, nil, errors.New("certificate must have a revocation outpoint")
+	}
+	if certificate.Subject == nil || certificate.Certifier == nil {
+		return nil, nil, errors.New("certificate must have a subject and certifier")
+	}
 
 	revocationOutpoint := overlay.NewOutpoint(certificate.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Index)
 
@@ -111,14 +117,12 @@ func (c *Client) PubliclyRevealAttributes(
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create dummy key: %w", err)
 	}
-	var verifierPubKey [33]byte
-	copy(verifierPubKey[:], dummyPk.PubKey().Compressed())
 
 	// Get keyring for verifier through certificate proving
 	proveResult, err := c.wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 		Certificate:    *certificate,
 		FieldsToReveal: fieldNamesAsStrings,
-		Verifier:       verifierPubKey,
+		Verifier:       dummyPk.PubKey(),
 	}, string(c.originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)

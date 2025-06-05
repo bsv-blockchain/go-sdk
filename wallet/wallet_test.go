@@ -486,7 +486,7 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 	}
 	identityPubKeyResult, err := userWallet.GetPublicKey(ctx, getIdentityPubKeyArgs, "example")
 	assert.NoError(t, err)
-	assert.Equal(t, identityPubKeyResult.PublicKey, userKey.PubKey())
+	assert.True(t, identityPubKeyResult.PublicKey.IsEqual(userKey.PubKey()))
 
 	// Test get public key for counterparty
 	getForCounterpartyPubKeyArgs := wallet.GetPublicKeyArgs{

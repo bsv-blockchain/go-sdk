@@ -3,6 +3,7 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -11,10 +12,10 @@ func SerializeDiscoverByIdentityKeyArgs(args *wallet.DiscoverByIdentityKeyArgs) 
 	w := util.NewWriter()
 
 	// Write identity key (33 bytes)
-	if args.IdentityKey == [33]byte{} {
+	if args.IdentityKey == nil {
 		return nil, fmt.Errorf("identityKey cannot be empty")
 	}
-	w.WriteBytes(args.IdentityKey[:])
+	w.WriteBytes(args.IdentityKey.Compressed())
 
 	// Write limit, offset, seek permission
 	w.WriteOptionalUint32(args.Limit)
@@ -29,7 +30,11 @@ func DeserializeDiscoverByIdentityKeyArgs(data []byte) (*wallet.DiscoverByIdenti
 	args := &wallet.DiscoverByIdentityKeyArgs{}
 
 	// Read identity key (33 bytes)
-	copy(args.IdentityKey[:], r.ReadBytes(sizePubKey))
+	parsedIdentityKey, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing identityKey: %w", err)
+	}
+	args.IdentityKey = parsedIdentityKey
 
 	// Read limit
 	args.Limit = r.ReadOptionalUint32()

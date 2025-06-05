@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/bsv-blockchain/go-sdk/identity"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -76,10 +77,16 @@ func main() {
 	// -------------------------------------------------------------------------
 	// EXAMPLE 3: Resolve identity by identity key
 	// -------------------------------------------------------------------------
+	// Create a valid identity key for the example
+	identityPubKey, err := ec.NewPrivateKey()
+	if err != nil {
+		log.Fatalf("Failed to create identity key: %v", err)
+	}
+
 	identities, err := client.ResolveByIdentityKey(
 		context.Background(),
 		wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey: [33]byte{0x01, 0x02, 0x03},
+			IdentityKey: identityPubKey.PubKey(),
 		},
 	)
 	if err != nil {

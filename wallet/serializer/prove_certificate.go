@@ -50,7 +50,7 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	}
 
 	// Encode verifier (hex)
-	w.WriteBytes(args.Verifier[:])
+	w.WriteBytes(args.Verifier.Compressed())
 
 	// Encode privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -119,8 +119,16 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 		args.FieldsToReveal = append(args.FieldsToReveal, string(fieldBytes))
 	}
 
-	// Read verifier (hex)
-	copy(args.Verifier[:], r.ReadBytes(sizePubKey))
+	// Read verifier
+	verifierBytes := r.ReadBytes(sizePubKey)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading verifier: %w", r.Err)
+	}
+	parsedVerifier, err := ec.PublicKeyFromBytes(verifierBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing verifier public key: %w", err)
+	}
+	args.Verifier = parsedVerifier
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)

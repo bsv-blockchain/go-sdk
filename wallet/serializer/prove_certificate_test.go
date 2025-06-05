@@ -2,10 +2,10 @@ package serializer
 
 import (
 	"encoding/base64"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -33,6 +33,7 @@ func TestProveCertificateArgs(t *testing.T) {
 				},
 			},
 			FieldsToReveal:   []string{"field1"},
+			Verifier:         pk.PubKey(),
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
@@ -48,6 +49,7 @@ func TestProveCertificateArgs(t *testing.T) {
 				Signature:          make([]byte, 64),
 			},
 			FieldsToReveal: []string{},
+			Verifier:       pk.PubKey(),
 		},
 	}}
 

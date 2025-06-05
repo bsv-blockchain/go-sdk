@@ -34,7 +34,7 @@ func TestValidateCertificates(t *testing.T) {
 		copy(certType[:], "requested_type")
 		// Test validate certificate requirements struct
 		reqs := &utils.RequestedCertificateSet{
-			Certifiers: []wallet.PubKey{tu.GetByte33FromString("valid_certifier")},
+			Certifiers: []*ec.PublicKey{tu.GetPKFromString("valid_certifier")},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType: {"field1"},
 			},
@@ -137,17 +137,13 @@ func TestValidateCertificates(t *testing.T) {
 			IdentityKey:  subjectIdentityKey.PublicKey, // Fixed: use subject's key
 		}
 
-		// Create certificate requirements
-		var certifierHex [33]byte
-		copy(certifierHex[:], certifierIdentityKey.PublicKey.Compressed())
-
 		// Convert masterCert.Type from StringBase64 to Base64Bytes32
 		var certType32 wallet.CertificateType
 		typeBytes, _ := base64.StdEncoding.DecodeString(string(masterCert.Type))
 		copy(certType32[:], typeBytes)
 
 		certReqs := &utils.RequestedCertificateSet{
-			Certifiers: []wallet.PubKey{certifierHex},
+			Certifiers: []*ec.PublicKey{certifierIdentityKey.PublicKey},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType32: []string{"name", "email"},
 			},
@@ -231,17 +227,13 @@ func TestValidateCertificates(t *testing.T) {
 			IdentityKey:  subjectIdentityKey.PublicKey,
 		}
 
-		// Create requirements
-		var subjectHex [33]byte
-		copy(subjectHex[:], subjectIdentityKey.PublicKey.Compressed())
-
 		// Convert certTypeBase64 from string to Base64Bytes32
 		var certType32 wallet.CertificateType
 		typeBytes, _ := base64.StdEncoding.DecodeString(certTypeBase64)
 		copy(certType32[:], typeBytes)
 
 		certReqs := &utils.RequestedCertificateSet{
-			Certifiers: []wallet.PubKey{subjectHex},
+			Certifiers: []*ec.PublicKey{subjectIdentityKey.PublicKey},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType32: []string{"owner"},
 			},

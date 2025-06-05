@@ -7,6 +7,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -53,7 +54,7 @@ func TestNew(t *testing.T) {
 	mockWallet := wallet.NewMockWallet(t)
 	mockSessionManager := NewMockSessionManager()
 	requestedCerts := &utils.RequestedCertificateSet{
-		Certifiers:       []wallet.PubKey{},
+		Certifiers:       []*ec.PublicKey{},
 		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 
@@ -74,7 +75,7 @@ func TestNewWithNilSessionManager(t *testing.T) {
 	// Set up dependencies
 	mockWallet := wallet.NewMockWallet(t)
 	requestedCerts := &utils.RequestedCertificateSet{
-		Certifiers:       []wallet.PubKey{},
+		Certifiers:       []*ec.PublicKey{},
 		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 
