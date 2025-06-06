@@ -221,7 +221,7 @@ func (p *ProtoWallet) CreateSignature(
 	}
 
 	return &CreateSignatureResult{
-		Signature: signature.Serialize(),
+		Signature: signature,
 	}, nil
 }
 
@@ -267,11 +267,10 @@ func (p *ProtoWallet) VerifySignature(
 	}
 
 	// Verify signature
-	sig, err := ec.FromDER(args.Signature)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse signature: %v", err)
+	if args.Signature == nil {
+		return nil, fmt.Errorf("signature is nil")
 	}
-	valid := sig.Verify(dataHash, pubKey)
+	valid := args.Signature.Verify(dataHash, pubKey)
 	if !valid {
 		return nil, fmt.Errorf("signature is not valid")
 	}

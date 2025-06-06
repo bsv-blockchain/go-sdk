@@ -61,7 +61,7 @@ type Certificate struct {
 	Certifier          *ec.PublicKey     `json:"certifier"`
 	RevocationOutpoint *Outpoint         `json:"revocationOutpoint,omitempty"`
 	Fields             map[string]string `json:"fields,omitempty"` // Field name -> field value (encrypted)
-	Signature          []byte            `json:"signature,omitempty"`
+	Signature          *ec.Signature     `json:"signature,omitempty"`
 }
 
 // CreateActionInput represents an input to be spent in a transaction
@@ -478,7 +478,7 @@ type AcquireCertificateArgs struct {
 	Fields              map[string]string   `json:"fields,omitempty"`
 	SerialNumber        SerialNumber        `json:"serialNumber"`
 	RevocationOutpoint  *Outpoint           `json:"revocationOutpoint,omitempty"`
-	Signature           []byte              `json:"signature,omitempty"`
+	Signature           *ec.Signature       `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
 	KeyringRevealer     KeyringRevealer     `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`

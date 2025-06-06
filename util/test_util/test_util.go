@@ -64,6 +64,15 @@ func GetPKFromHex(t *testing.T, s string) *ec.PublicKey {
 	return pk
 }
 
+// GetSigFromHex returns a Signature from a hex string
+func GetSigFromHex(t *testing.T, s string) *ec.Signature {
+	d, err := hex.DecodeString(s)
+	require.NoError(t, err, fmt.Sprintf("error decoding hex string '%s': %v", s, err))
+	sig, err := ec.ParseSignature(d)
+	require.NoError(t, err)
+	return sig
+}
+
 // GetByteFromHexString returns a []byte from a hex string
 func GetByteFromHexString(t *testing.T, s string) []byte {
 	b, err := hex.DecodeString(s)

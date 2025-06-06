@@ -105,9 +105,6 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 		return encodedCert, fmt.Errorf("failed to sign certificate: %w", err)
 	}
 
-	// Update the certificate object with the new signature
-	certObj.Signature = signature.Serialize()
-
 	// Convert back to wallet.Certificate format
 	finalCert := wallet.Certificate{
 		Type:               encodedCert.Type,
@@ -116,7 +113,7 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 		Certifier:          &certObj.Certifier,
 		RevocationOutpoint: encodedCert.RevocationOutpoint,
 		Fields:             encodedCert.Fields,
-		Signature:          certObj.Signature,
+		Signature:          signature,
 	}
 
 	return finalCert, nil

@@ -110,20 +110,23 @@ type jsonCreateSignatureResult struct {
 
 // MarshalJSON implements the json.Marshaler interface for CreateSignatureResult.
 func (c CreateSignatureResult) MarshalJSON() ([]byte, error) {
+	if c.Signature == nil {
+		return nil, fmt.Errorf("CreateSignatureResult has nil Signature")
+	}
 	return json.Marshal(&jsonCreateSignatureResult{
 		aliasCreateSignatureResult: (*aliasCreateSignatureResult)(&c),
-		Signature:                  c.Signature,
+		Signature:                  Signature(*c.Signature),
 	})
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for CreateSignatureResult.
 func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
-	aux := &jsonCreateSignatureResult{aliasCreateSignatureResult: (*aliasCreateSignatureResult)(c)}
+	aux := jsonCreateSignatureResult{aliasCreateSignatureResult: (*aliasCreateSignatureResult)(c)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	c.Signature = aux.Signature
+	c.Signature = (*ec.Signature)(&aux.Signature)
 	return nil
 }
 
@@ -137,7 +140,7 @@ type jsonVerifySignatureArgs struct {
 func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonVerifySignatureArgs{
 		aliasVerifySignatureArgs: (*aliasVerifySignatureArgs)(&v),
-		Signature:                v.Signature,
+		Signature:                Signature(*v.Signature),
 	})
 }
 
@@ -148,7 +151,7 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	v.Signature = aux.Signature
+	v.Signature = (*ec.Signature)(&aux.Signature)
 	return nil
 }
 
@@ -161,8 +164,12 @@ type jsonCertificate struct {
 
 // MarshalJSON implements json.Marshaler interface for Certificate
 func (c Certificate) MarshalJSON() ([]byte, error) {
+	var sig BytesHex
+	if c.Signature != nil {
+		sig = c.Signature.Serialize()
+	}
 	return json.Marshal(&jsonCertificate{
-		Signature:        c.Signature,
+		Signature:        sig,
 		aliasCertificate: (*aliasCertificate)(&c),
 	})
 }
@@ -177,7 +184,13 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("error unmarshaling certificate: %w", err)
 	}
 
-	c.Signature = aux.Signature
+	if len(aux.Signature) > 0 {
+		sig, err := ec.ParseSignature(aux.Signature)
+		if err != nil {
+			return fmt.Errorf("error parsing signature from bytes: %w", err)
+		}
+		c.Signature = sig
+	}
 
 	return nil
 }
@@ -641,8 +654,12 @@ type jsonAcquireCertificateArgs struct {
 }
 
 func (a AcquireCertificateArgs) MarshalJSON() ([]byte, error) {
+	var sigBytes BytesHex
+	if a.Signature != nil {
+		sigBytes = a.Signature.Serialize()
+	}
 	return json.Marshal(&jsonAcquireCertificateArgs{
-		Signature:                   a.Signature,
+		Signature:                   sigBytes,
 		aliasAcquireCertificateArgs: (*aliasAcquireCertificateArgs)(&a),
 	})
 }
@@ -654,7 +671,13 @@ func (a *AcquireCertificateArgs) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return fmt.Errorf("error unmarshaling AcquireCertificateArgs: %w", err)
 	}
-	a.Signature = aux.Signature
+	if len(aux.Signature) > 0 {
+		sig, err := ec.ParseSignature(aux.Signature)
+		if err != nil {
+			return fmt.Errorf("error parsing signature from bytes: %w", err)
+		}
+		a.Signature = sig
+	}
 	return nil
 }
 

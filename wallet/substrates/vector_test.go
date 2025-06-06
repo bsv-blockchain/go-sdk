@@ -60,8 +60,7 @@ func TestVectors(t *testing.T) {
 	// pk = 95c5931552e547d72a292e9d6f59eef2b9f7e1576d8c7b49731b505117c0cdfa
 	// msg = test message
 	const sigHex = "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a"
-	signature, err := hex.DecodeString(sigHex)
-	require.NoError(t, err, "decoding signature hex should not error")
+	signature := tu.GetSigFromHex(t, sigHex)
 
 	txID, err := chainhash.NewHashFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 	require.NoError(t, err, "creating txID from hex should not error")
@@ -399,7 +398,7 @@ func TestVectors(t *testing.T) {
 		Filename: "createSignature-simple-result",
 		IsResult: true,
 		Object: wallet.CreateSignatureResult{
-			Signature: tu.GetByteFromHexString(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020100"),
+			Signature: tu.GetSigFromHex(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020101"),
 		},
 	}, {
 		Filename: "verifySignature-simple-args",
@@ -414,7 +413,7 @@ func TestVectors(t *testing.T) {
 				"privilegedReason": "test reason",
 				"seekPermission": true,
 				"data": [11, 22, 33, 44],
-				"signature": [48,37,2,32,78,69,225,105,50,184,175,81,73,97,161,211,161,162,95,223,63,79,119,50,233,214,36,198,198,21,72,171,95,184,205,65,2,1,0]
+				"signature": [48,37,2,32,78,69,225,105,50,184,175,81,73,97,161,211,161,162,95,223,63,79,119,50,233,214,36,198,198,21,72,171,95,184,205,65,2,1,1]
 			}`
 			err := json.Unmarshal([]byte(argsJSON), &args)
 			require.NoError(t, err)

@@ -31,6 +31,8 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	certType1 := tu.GetByte32FromString("certType1")
 	certType2 := tu.GetByte32FromString("certType2")
 	serial1 := tu.GetByte32FromString("serial1")
+	const TestSigHex = "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a"
+	testSig := tu.GetSigFromHex(t, TestSigHex)
 
 	// Test case 1: Retrieves matching certificates based on requested set
 	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
@@ -67,7 +69,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 						Certifier:          certifier,
 						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 						Fields:             map[string]string{"field1": field1ValueBase64, "field2": field2ValueBase64}, // Use base64-encoded field values
-						Signature:          []byte{0x01, 0x02, 0x03, 0x04},
+						Signature:          testSig,
 					},
 				},
 			},

@@ -5,15 +5,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // BytesList is a custom type for JSON serialization of byte arrays that don't use base64 encoding.
 type BytesList []byte
 
-func (s *BytesList) MarshalJSON() ([]byte, error) {
+func (s BytesList) MarshalJSON() ([]byte, error) {
 	// Marshal as a plain number array, not base64
-	arr := make([]uint16, len(*s))
-	for i, b := range *s {
+	arr := make([]uint16, len(s))
+	for i, b := range s {
 		arr[i] = uint16(b)
 	}
 	return json.Marshal(arr)
@@ -122,26 +123,29 @@ func StringBase64FromArray(arr [32]byte) StringBase64 {
 
 // Signature is a wrapper around ec.Signature that provides custom JSON marshaling.
 // It serializes signatures as arrays of byte values rather than base64 strings.
-type Signature []byte
+type Signature ec.Signature
 
 // MarshalJSON implements the json.Marshaler interface for Signature.
 // It serializes the signature as an array of byte values.
 func (s Signature) MarshalJSON() ([]byte, error) {
-	sigInts := make([]uint16, len(s))
-	for i, b := range s {
-		sigInts[i] = uint16(b)
+	if (*ec.Signature)(&s).R == nil || (*ec.Signature)(&s).S == nil {
+		return json.Marshal(nil)
 	}
-	return json.Marshal(sigInts)
+	sig := (*ec.Signature)(&s).Serialize()
+	return json.Marshal(BytesList(sig))
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Signature.
 // It deserializes an array of byte values back into a signature.
 func (s *Signature) UnmarshalJSON(data []byte) error {
-	var sigBytes []byte
-	// Unmarshal directly from JSON array of numbers into byte slice
+	var sigBytes BytesList
 	if err := json.Unmarshal(data, &sigBytes); err != nil {
 		return fmt.Errorf("could not unmarshal signature byte array: %w", err)
 	}
-	*s = sigBytes
+	sig, err := ec.ParseSignature(sigBytes)
+	if err != nil {
+		return fmt.Errorf("could not parse signature from byte array: %w", err)
+	}
+	*s = Signature(*sig)
 	return nil
 }

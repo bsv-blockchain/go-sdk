@@ -24,7 +24,11 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	w.WriteBytes(encodeOutpoint(args.Certificate.RevocationOutpoint))
 
 	// Encode signature (hex)
-	w.WriteIntBytes(args.Certificate.Signature)
+	if args.Certificate.Signature != nil {
+		w.WriteIntBytes(args.Certificate.Signature.Serialize())
+	} else {
+		w.WriteIntBytes(nil)
+	}
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Certificate.Fields))
@@ -88,7 +92,13 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read signature (hex)
-	args.Certificate.Signature = r.ReadIntBytes()
+	sigBytes := r.ReadIntBytes()
+	if len(sigBytes) > 0 {
+		args.Certificate.Signature, err = ec.ParseSignature(sigBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing signature: %w", err)
+		}
+	}
 
 	// Read fields
 	fieldsLen := r.ReadVarInt()

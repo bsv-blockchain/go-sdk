@@ -12,6 +12,7 @@ import (
 
 func TestAcquireCertificateArgs(t *testing.T) {
 	revocationOutpoint := tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
+	sig := tu.GetSigFromHex(t, "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a")
 	tests := []struct {
 		name string
 		args *wallet.AcquireCertificateArgs
@@ -27,7 +28,7 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			},
 			SerialNumber:       [32]byte{1},
 			RevocationOutpoint: revocationOutpoint,
-			Signature:          make([]byte, 64),
+			Signature:          sig,
 			KeyringRevealer:    wallet.KeyringRevealer{Certifier: true},
 			KeyringForSubject: map[string]string{
 				"field1": base64.StdEncoding.EncodeToString([]byte("keyring1")),

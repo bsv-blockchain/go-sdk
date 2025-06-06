@@ -345,7 +345,7 @@ func TestCreateVerifySignature(t *testing.T) {
 					Counterparty: counterparty,
 				},
 			},
-			Signature: signature.Serialize(),
+			Signature: signature,
 			Data:      []byte("BRC-3 Compliance Validated!"),
 		}, "example")
 		assert.NoError(t, err, "verifying BRC-2 signature should not error")

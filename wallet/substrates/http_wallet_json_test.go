@@ -3,7 +3,6 @@ package substrates
 import (
 	"encoding/json"
 	"io"
-	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -396,10 +395,8 @@ func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 
 func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 	testData := []byte("test data")
-	testSig := (&ec.Signature{
-		R: big.NewInt(1),
-		S: big.NewInt(2),
-	}).Serialize() // Sample signature
+	// Use a valid DER-encoded signature
+	testSig := tu.GetSigFromHex(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020101")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/createSignature" {
@@ -415,7 +412,7 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
 			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testSig, args.Signature)
+			require.Equal(t, testSig.Serialize(), args.Signature.Serialize())
 
 			resp := wallet.VerifySignatureResult{Valid: true}
 			writeJSONResponse(t, w, &resp)
@@ -430,7 +427,7 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 		Data: testData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, testSig, []byte(sigResult.Signature))
+	require.Equal(t, testSig.Serialize(), sigResult.Signature.Serialize())
 
 	// Test verify signature
 	verifyResult, err := client.VerifySignature(t.Context(), wallet.VerifySignatureArgs{

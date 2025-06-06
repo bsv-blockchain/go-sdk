@@ -98,7 +98,7 @@ func (c *Client) PubliclyRevealAttributes(
 		Certifier:          *certificate.Certifier,
 		RevocationOutpoint: revocationOutpoint,
 		Fields:             fields,
-		Signature:          certificate.Signature,
+		Signature:          certificate.Signature.Serialize(),
 	}
 
 	// Verify the certificate
@@ -141,7 +141,7 @@ func (c *Client) PubliclyRevealAttributes(
 		"certifier":          certificate.Certifier.Compressed(),
 		"revocationOutpoint": revocationOutpointString,
 		"fields":             certificate.Fields,
-		"signature":          hex.EncodeToString(certificate.Signature),
+		"signature":          hex.EncodeToString(certificate.Signature.Serialize()),
 		"keyring":            proveResult.KeyringForVerifier,
 	}
 

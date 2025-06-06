@@ -264,6 +264,11 @@ func (c *Certificate) Verify(ctx context.Context) error {
 		return fmt.Errorf("failed to create verifier wallet: %w", err)
 	}
 
+	signature, err := ec.ParseSignature(c.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to parse signature: %w", err)
+	}
+
 	// Get the binary representation without the signature
 	data, err := c.ToBinary(false)
 	if err != nil {
@@ -284,7 +289,7 @@ func (c *Certificate) Verify(ctx context.Context) error {
 			},
 		},
 		Data:      data,
-		Signature: c.Signature,
+		Signature: signature,
 	}
 
 	verifyResult, err := verifier.VerifySignature(ctx, verifyArgs, "")
@@ -343,7 +348,7 @@ func (c *Certificate) Sign(ctx context.Context, certifierWallet *wallet.ProtoWal
 	}
 
 	// Store the signature
-	c.Signature = signResult.Signature
+	c.Signature = signResult.Signature.Serialize()
 
 	return nil
 }

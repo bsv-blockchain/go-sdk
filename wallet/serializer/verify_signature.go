@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -29,7 +30,10 @@ func SerializeVerifySignatureArgs(args *wallet.VerifySignatureArgs) ([]byte, err
 	w.WriteOptionalBool(&args.ForSelf)
 
 	// Write signature length + bytes
-	w.WriteIntBytes(args.Signature)
+	if args.Signature == nil {
+		return nil, fmt.Errorf("signature cannot be nil")
+	}
+	w.WriteIntBytes(args.Signature.Serialize())
 
 	// Write data or hash flag and content
 	if len(args.Data) > 0 {
@@ -67,7 +71,11 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	args.ForSelf = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
 	// Read signature
-	args.Signature = r.ReadIntBytes()
+	sig, err := ec.ParseSignature(r.ReadIntBytes())
+	if err != nil {
+		return nil, fmt.Errorf("error parsing signature: %w", err)
+	}
+	args.Signature = sig
 
 	// Read data type flag
 	dataTypeFlag := r.ReadByte()
