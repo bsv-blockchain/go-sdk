@@ -277,10 +277,7 @@ func TestVectors(t *testing.T) {
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},
 			Prover:                prover,
 			Verifier:              verifier,
-			Counterparty: wallet.Counterparty{
-				Type:         wallet.CounterpartyTypeOther,
-				Counterparty: counterparty,
-			},
+			Counterparty:          counterparty,
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "tests",

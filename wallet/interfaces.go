@@ -419,7 +419,7 @@ type RevealSpecificKeyLinkageResult struct {
 	EncryptedLinkageProof []byte        `json:"encryptedLinkageProof"`
 	Prover                *ec.PublicKey `json:"prover"`
 	Verifier              *ec.PublicKey `json:"verifier"`
-	Counterparty          Counterparty  `json:"counterparty"`
+	Counterparty          *ec.PublicKey `json:"counterparty"`
 	ProtocolID            Protocol      `json:"protocolID"`
 	KeyID                 string        `json:"keyID"`
 	ProofType             byte          `json:"proofType"`

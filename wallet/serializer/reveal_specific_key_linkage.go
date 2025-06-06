@@ -75,9 +75,10 @@ func SerializeRevealSpecificKeyLinkageResult(result *wallet.RevealSpecificKeyLin
 		return nil, fmt.Errorf("verifier public key is required")
 	}
 	w.WriteBytes(result.Verifier.Compressed())
-	if err := encodeCounterparty(w, result.Counterparty); err != nil {
-		return nil, fmt.Errorf("error encoding counterparty: %w", err)
+	if result.Counterparty == nil {
+		return nil, fmt.Errorf("counterparty public key is required")
 	}
+	w.WriteBytes(result.Counterparty.Compressed())
 
 	// Write protocol ID (security level + protocol string)
 	w.WriteBytes(encodeProtocol(result.ProtocolID))
@@ -110,9 +111,9 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 	}
 	result.Verifier = verifier
 
-	counterparty, err := decodeCounterparty(r)
+	counterparty, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
 	if err != nil {
-		return nil, fmt.Errorf("error decoding counterparty: %w", err)
+		return nil, fmt.Errorf("error parsing counterparty public key: %w", err)
 	}
 	result.Counterparty = counterparty
 

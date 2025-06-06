@@ -70,7 +70,7 @@ func TestRevealSpecificKeyLinkageResult(t *testing.T) {
 			result: &wallet.RevealSpecificKeyLinkageResult{
 				Prover:       tu.GetPKFromHex(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
 				Verifier:     tu.GetPKFromHex(t, "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2"),
-				Counterparty: newCounterparty(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
+				Counterparty: tu.GetPKFromHex(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevel(1),
 					Protocol:      "test-protocol",
@@ -86,7 +86,7 @@ func TestRevealSpecificKeyLinkageResult(t *testing.T) {
 			result: &wallet.RevealSpecificKeyLinkageResult{
 				Prover:       tu.GetPKFromHex(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
 				Verifier:     tu.GetPKFromHex(t, "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2"),
-				Counterparty: newCounterparty(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
+				Counterparty: tu.GetPKFromHex(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevel(0),
 					Protocol:      "minimal",
