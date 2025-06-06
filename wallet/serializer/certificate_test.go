@@ -33,11 +33,4 @@ func TestCertificate(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, cert, got)
 	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeCertificate(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "certificate deserialization failed with error byte 1")
-	})
 }

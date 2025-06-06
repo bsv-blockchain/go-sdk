@@ -6,27 +6,20 @@
 package serializer
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
-
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-const outpointSize = 36 // 32 txid + 4 index
-
 // encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint *wallet.Outpoint) []byte {
-	buf := make([]byte, outpointSize)
-	if outpoint == nil {
-		return buf
-	}
-	copy(buf[:32], outpoint.Txid[:])
-	binary.BigEndian.PutUint32(buf[32:36], outpoint.Index)
-	return buf
+	writer := util.NewWriter()
+	writer.WriteBytes(outpoint.Txid[:])
+	writer.WriteVarInt(uint64(outpoint.Index))
+	return writer.Buf
 }
 
 // Outpoint represents a transaction output reference (txid + output index)
@@ -63,31 +56,41 @@ func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
 
 	outpoints := make([]wallet.Outpoint, 0, count)
 	for i := uint64(0); i < count; i++ {
-		opBytes, err := r.ReadBytes(outpointSize)
+		txBytes, err := r.ReadBytes(chainhash.HashSize)
 		if err != nil {
 			return nil, err
 		}
-		op, err := decodeOutpoint(opBytes)
+		tx, err := chainhash.NewHash(txBytes)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid txid bytes: %w", err)
 		}
-		outpoints = append(outpoints, *op)
+		outputIndex, err := r.ReadVarInt()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read output index: %w", err)
+		}
+		outpoints = append(outpoints, wallet.Outpoint{
+			Txid:  *tx,
+			Index: uint32(outputIndex),
+		})
 	}
 	return outpoints, nil
 }
 
 // decodeOutpoint converts binary outpoint data to Outpoint object
-func decodeOutpoint(data []byte) (*wallet.Outpoint, error) {
-	if len(data) != outpointSize {
-		return nil, errors.New("invalid outpoint data length")
-	}
-	hash, err := chainhash.NewHash(data[:32])
+func decodeOutpoint(reader *util.Reader) (*wallet.Outpoint, error) {
+	txidBytes, err := reader.ReadBytes(32)
 	if err != nil {
-		return nil, fmt.Errorf("error creating chainhash from bytes: %w", err)
+		return nil, fmt.Errorf("failed to read txid: %w", err)
 	}
+	outputIndex, err := reader.ReadVarInt()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read output index: %w", err)
+	}
+
+	// Create revocation outpoint
 	return &wallet.Outpoint{
-		Txid:  *hash,
-		Index: binary.BigEndian.Uint32(data[32:36]),
+		Txid:  chainhash.Hash(txidBytes),
+		Index: uint32(outputIndex),
 	}, nil
 }
 

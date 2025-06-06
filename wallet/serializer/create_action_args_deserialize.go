@@ -66,8 +66,7 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 		input := wallet.CreateActionInput{}
 
 		// Read outpoint
-		outpointBytes := messageReader.ReadBytes(outpointSize)
-		outpoint, err := decodeOutpoint(outpointBytes)
+		outpoint, err := decodeOutpoint(&messageReader.Reader)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}

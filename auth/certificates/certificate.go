@@ -7,16 +7,12 @@ package certificates
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"sort"
-
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
 
 var (
@@ -73,181 +69,37 @@ func NewCertificate(
 
 // ToBinary serializes the certificate into binary format
 func (c *Certificate) ToBinary(includeSignature bool) ([]byte, error) {
-	// ensure parameters are valid
-	if c.Type == "" || c.SerialNumber == "" || c.RevocationOutpoint == nil || c.Fields == nil {
-		return nil, ErrInvalidCertificate
-	}
-
-	writer := util.NewWriter()
-
-	// Write type (StringBase64, 32 bytes)
-	typeBytes, err := base64.StdEncoding.DecodeString(string(c.Type))
+	walletCert, err := c.ToWalletCertificate()
 	if err != nil {
-		return nil, fmt.Errorf("invalid type encoding: %w", err)
+		return nil, fmt.Errorf("failed to convert certificate to wallet format: %w", err)
 	}
-	writer.WriteBytes(typeBytes)
 
-	// Write serialNumber (StringBase64, 32 bytes)
-	serialNumberBytes, err := base64.StdEncoding.DecodeString(string(c.SerialNumber))
+	var data []byte
+	if includeSignature {
+		data, err = serializer.SerializeCertificate(walletCert)
+	} else {
+		data, err = serializer.SerializeCertificateNoSignature(walletCert)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("invalid serial number encoding: %w", err)
-	}
-	writer.WriteBytes(serialNumberBytes)
-
-	// Write subject (33 bytes compressed public key)
-	subjectBytes := c.Subject.Compressed()
-	writer.WriteBytes(subjectBytes)
-
-	// Write certifier (33 bytes compressed public key)
-	certifierBytes := c.Certifier.Compressed()
-	writer.WriteBytes(certifierBytes)
-
-	// Write revocationOutpoint (TXID + OutputIndex)
-	writer.WriteBytes(c.RevocationOutpoint.Txid[:])
-	writer.WriteVarInt(uint64(c.RevocationOutpoint.OutputIndex))
-
-	// Write fields
-	// Sort field names lexicographically
-	fieldNames := make([]wallet.CertificateFieldNameUnder50Bytes, 0, len(c.Fields))
-	for fieldName := range c.Fields {
-		fieldNames = append(fieldNames, fieldName)
-	}
-	sort.Slice(fieldNames, func(i, j int) bool {
-		return fieldNames[i] < fieldNames[j]
-	})
-
-	// Write field count as varint
-	writer.WriteVarInt(uint64(len(fieldNames)))
-
-	for _, fieldName := range fieldNames {
-		fieldValue := c.Fields[fieldName]
-
-		// Field name length + name
-		fieldNameBytes := []byte(fieldName)
-		writer.WriteVarInt(uint64(len(fieldNameBytes)))
-		writer.WriteBytes(fieldNameBytes)
-
-		// Field value length + value
-		fieldValueBytes := []byte(fieldValue)
-		writer.WriteVarInt(uint64(len(fieldValueBytes)))
-		writer.WriteBytes(fieldValueBytes)
+		return nil, fmt.Errorf("failed to serialize certificate: %w", err)
 	}
 
-	// Write signature if included
-	if includeSignature && len(c.Signature) > 0 {
-		writer.WriteBytes(c.Signature)
-	}
-
-	return writer.Buf, nil
+	return data, nil
 }
 
 // CertificateFromBinary deserializes a certificate from binary format
 func CertificateFromBinary(data []byte) (*Certificate, error) {
-	reader := util.NewReader(data)
-
-	// Read type (32 bytes)
-	typeBytes, err := reader.ReadBytes(32)
+	walletCert, err := serializer.DeserializeCertificate(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read type: %w", err)
+		return nil, fmt.Errorf("failed to deserialize certificate: %w", err)
 	}
-	typeStr := base64.StdEncoding.EncodeToString(typeBytes)
 
-	// Read serialNumber (32 bytes)
-	serialNumberBytes, err := reader.ReadBytes(32)
+	cert, err := FromWalletCertificate(walletCert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read serial number: %w", err)
-	}
-	serialNumber := base64.StdEncoding.EncodeToString(serialNumberBytes)
-
-	// Read subject (33 bytes)
-	subjectBytes, err := reader.ReadBytes(33)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read subject: %w", err)
-	}
-	subject, err := ec.ParsePubKey(subjectBytes)
-	if err != nil {
-		return nil, fmt.Errorf("invalid subject public key: %w", err)
+		return nil, fmt.Errorf("failed to convert wallet certificate to Certificate: %w", err)
 	}
 
-	// Read certifier (33 bytes)
-	certifierBytes, err := reader.ReadBytes(33)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read certifier: %w", err)
-	}
-	certifier, err := ec.ParsePubKey(certifierBytes)
-	if err != nil {
-		return nil, fmt.Errorf("invalid certifier public key: %w", err)
-	}
-
-	// Read revocationOutpoint
-	txidBytes, err := reader.ReadBytes(32)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read txid: %w", err)
-	}
-	outputIndex, err := reader.ReadVarInt()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read output index: %w", err)
-	}
-
-	// Create revocation outpoint
-	revocationOutpoint := &overlay.Outpoint{
-		Txid:        chainhash.Hash(txidBytes),
-		OutputIndex: uint32(outputIndex),
-	}
-
-	// Read field count (varint)
-	fieldCount, err := reader.ReadVarInt()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read field count: %w", err)
-	}
-
-	// Read fields
-	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
-	for i := uint64(0); i < fieldCount; i++ {
-		// Field name length (varint)
-		fieldNameLength, err := reader.ReadVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read field name length: %w", err)
-		}
-
-		// Field name
-		fieldNameBytes, err := reader.ReadBytes(int(fieldNameLength))
-		if err != nil {
-			return nil, fmt.Errorf("failed to read field name: %w", err)
-		}
-		fieldName := wallet.CertificateFieldNameUnder50Bytes(string(fieldNameBytes))
-
-		// Field value length (varint)
-		fieldValueLength, err := reader.ReadVarInt()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read field value length: %w", err)
-		}
-
-		// Field value
-		fieldValueBytes, err := reader.ReadBytes(int(fieldValueLength))
-		if err != nil {
-			return nil, fmt.Errorf("failed to read field value: %w", err)
-		}
-		fieldValue := wallet.StringBase64(string(fieldValueBytes))
-
-		fields[fieldName] = fieldValue
-	}
-
-	// Read signature if present
-	var signature []byte
-	if reader.Pos < len(data) {
-		signature = reader.ReadRemaining()
-	}
-
-	return &Certificate{
-		Type:               wallet.StringBase64(typeStr),
-		SerialNumber:       wallet.StringBase64(serialNumber),
-		Subject:            *subject,
-		Certifier:          *certifier,
-		RevocationOutpoint: revocationOutpoint,
-		Fields:             fields,
-		Signature:          signature,
-	}, nil
+	return cert, nil
 }
 
 // Verify checks the certificate's validity including signature verification
@@ -352,6 +204,104 @@ func (c *Certificate) Sign(ctx context.Context, certifierWallet *wallet.ProtoWal
 	c.Signature = signResult.Signature.Serialize()
 
 	return nil
+}
+
+func (c *Certificate) ToWalletCertificate() (*wallet.Certificate, error) {
+	// Convert StringBase64 type to CertificateType [32]byte
+	certType, err := c.Type.ToArray()
+	if err != nil {
+		return nil, fmt.Errorf("invalid certificate type: %w", err)
+	}
+
+	// Convert StringBase64 serial number to SerialNumber [32]byte
+	serialNumber, err := c.SerialNumber.ToArray()
+	if err != nil {
+		return nil, fmt.Errorf("invalid serial number: %w", err)
+	}
+
+	// Convert overlay.Outpoint to wallet.Outpoint
+	var revocationOutpoint *wallet.Outpoint
+	if c.RevocationOutpoint != nil {
+		revocationOutpoint = &wallet.Outpoint{
+			Txid:  c.RevocationOutpoint.Txid,
+			Index: c.RevocationOutpoint.OutputIndex,
+		}
+	}
+
+	// Convert Fields map from map[CertificateFieldNameUnder50Bytes]StringBase64 to map[string]string
+	fields := make(map[string]string)
+	for fieldName, fieldValue := range c.Fields {
+		fields[string(fieldName)] = string(fieldValue)
+	}
+
+	// Convert []byte signature to *ec.Signature
+	var signature *ec.Signature
+	if len(c.Signature) > 0 {
+		if sig, err := ec.ParseSignature(c.Signature); err == nil {
+			signature = sig
+		}
+	}
+
+	return &wallet.Certificate{
+		Type:               certType,
+		SerialNumber:       serialNumber,
+		Subject:            &c.Subject,   // Convert value type to pointer
+		Certifier:          &c.Certifier, // Convert value type to pointer
+		RevocationOutpoint: revocationOutpoint,
+		Fields:             fields,
+		Signature:          signature,
+	}, nil
+}
+
+func FromWalletCertificate(walletCert *wallet.Certificate) (*Certificate, error) {
+	if walletCert == nil {
+		return nil, fmt.Errorf("wallet certificate cannot be nil")
+	}
+
+	// Convert CertificateType [32]byte to StringBase64
+	certType := wallet.StringBase64FromArray(walletCert.Type)
+
+	// Convert SerialNumber [32]byte to StringBase64
+	serialNumber := wallet.StringBase64FromArray(walletCert.SerialNumber)
+
+	// Convert ec.PublicKey to ec.PublicKey
+	var subject, certifier ec.PublicKey
+	if walletCert.Subject != nil {
+		subject = *walletCert.Subject
+	}
+	if walletCert.Certifier != nil {
+		certifier = *walletCert.Certifier
+	}
+
+	// Convert wallet.Outpoint to overlay.Outpoint
+	var revocationOutpoint *overlay.Outpoint
+	if walletCert.RevocationOutpoint != nil {
+		revocationOutpoint = &overlay.Outpoint{
+			Txid:        walletCert.RevocationOutpoint.Txid,
+			OutputIndex: walletCert.RevocationOutpoint.Index,
+		}
+	}
+
+	// Convert fields map from map[string]string to map[CertificateFieldNameUnder50Bytes]StringBase64
+	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
+	for fieldName, fieldValue := range walletCert.Fields {
+		fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.StringBase64(fieldValue)
+	}
+
+	var signature []byte
+	if walletCert.Signature != nil {
+		signature = walletCert.Signature.Serialize()
+	}
+
+	return &Certificate{
+		Type:               certType,
+		SerialNumber:       serialNumber,
+		Subject:            subject,
+		Certifier:          certifier,
+		RevocationOutpoint: revocationOutpoint,
+		Fields:             fields,
+		Signature:          signature,
+	}, nil
 }
 
 // GetCertificateEncryptionDetails returns protocol ID and key ID for certificate field encryption

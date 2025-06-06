@@ -84,21 +84,9 @@ func (c *Client) PubliclyRevealAttributes(
 		return nil, nil, errors.New("certificate must have a subject and certifier")
 	}
 
-	revocationOutpoint := overlay.NewOutpoint(certificate.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Index)
-
-	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
-	for k, v := range certificate.Fields {
-		fields[wallet.CertificateFieldNameUnder50Bytes(k)] = wallet.StringBase64(v)
-	}
-	// Convert Go certificate to Certificate instance to verify it
-	masterCert := &certificates.Certificate{
-		Type:               wallet.StringBase64FromArray(certificate.Type),
-		SerialNumber:       wallet.StringBase64FromArray(certificate.SerialNumber),
-		Subject:            *certificate.Subject,
-		Certifier:          *certificate.Certifier,
-		RevocationOutpoint: revocationOutpoint,
-		Fields:             fields,
-		Signature:          certificate.Signature.Serialize(),
+	masterCert, err := certificates.FromWalletCertificate(certificate)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to convert wallet certificate: %w", err)
 	}
 
 	// Verify the certificate

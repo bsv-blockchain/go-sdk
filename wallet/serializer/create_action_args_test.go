@@ -178,7 +178,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.WriteBytes([]byte{0x01, 0x02})
 				return w.Buf
 			}(),
-			err: "error decoding outpoint: invalid outpoint data length",
+			err: "error decoding outpoint: failed to read txid: read past end of data",
 		},
 		{
 			name: "invalid unlocking script",
@@ -191,7 +191,8 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				// inputs (1 item)
 				w.WriteVarInt(1)
 				// valid outpoint
-				w.WriteBytes(make([]byte, outpointSize))
+				w.WriteBytes(make([]byte, chainhash.HashSize))
+				w.WriteVarInt(1)
 				// unlocking script length (invalid hex)
 				w.WriteVarInt(2)
 				w.WriteBytes([]byte{0x01, 0x02})

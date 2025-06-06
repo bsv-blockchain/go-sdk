@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"encoding/binary"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -227,9 +226,9 @@ func TestDecodeOutpoint(t *testing.T) {
 	validIndex := uint32(42)
 
 	// Create valid outpoint bytes
-	validData := make([]byte, outpointSize)
-	copy(validData[:32], validTxIDHash[:])
-	binary.BigEndian.PutUint32(validData[32:36], validIndex)
+	var validData []byte
+	validData = append(validData, validTxIDHash[:]...)
+	validData = append(validData, util.VarInt(validIndex).Bytes()...)
 
 	tests := []struct {
 		name      string
@@ -245,7 +244,7 @@ func TestDecodeOutpoint(t *testing.T) {
 		},
 		{
 			name:      "invalid length - too short",
-			input:     validData[:outpointSize-1],
+			input:     validData[:len(validData)-1],
 			expectErr: true,
 		},
 		{
@@ -267,11 +266,18 @@ func TestDecodeOutpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := decodeOutpoint(tt.input)
+			r := util.NewReaderHoldError(tt.input)
+			got, err := decodeOutpoint(&r.Reader)
+			r.CheckComplete()
+
+			if err == nil && r.Err != nil {
+				err = r.Err
+				got = nil
+			}
 
 			if tt.expectErr {
 				require.Error(t, err, "expected an error but got none")
-				require.Empty(t, got, "expected empty string on error")
+				require.Empty(t, got, "expected nil on error")
 			} else {
 				require.NoError(t, err, "did not expect an error but got one")
 				require.Equal(t, tt.want, got, "decoded outpoint string does not match expected")
@@ -293,9 +299,9 @@ func TestEncodeOutpoint(t *testing.T) {
 	}
 
 	// Expected valid binary output
-	expectedBytes := make([]byte, outpointSize)
-	copy(expectedBytes[:32], validTxIDHash[:])
-	binary.BigEndian.PutUint32(expectedBytes[32:36], validIndex)
+	var expectedBytes []byte
+	expectedBytes = append(expectedBytes, validTxIDHash[:]...)
+	expectedBytes = append(expectedBytes, util.VarInt(validIndex).Bytes()...)
 
 	tests := []struct {
 		name           string
@@ -310,7 +316,7 @@ func TestEncodeOutpoint(t *testing.T) {
 		{
 			name:           "empty outpoint",
 			input:          &wallet.Outpoint{},
-			expectedOutput: make([]byte, 36),
+			expectedOutput: make([]byte, 33),
 		},
 	}
 
@@ -321,7 +327,7 @@ func TestEncodeOutpoint(t *testing.T) {
 			require.Equal(t, tt.expectedOutput, gotBytes, "encoded bytes do not match expected")
 
 			// Round trip test
-			decodedObj, decodeErr := decodeOutpoint(gotBytes)
+			decodedObj, decodeErr := decodeOutpoint(util.NewReader(gotBytes))
 			require.NoError(t, decodeErr, "decoding the encoded bytes failed")
 			require.Equal(t, tt.input, decodedObj, "round trip failed: decoded string does not match original input")
 		})
