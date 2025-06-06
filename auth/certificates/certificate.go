@@ -264,15 +264,16 @@ func (c *Certificate) Verify(ctx context.Context) error {
 		return fmt.Errorf("failed to create verifier wallet: %w", err)
 	}
 
-	signature, err := ec.ParseSignature(c.Signature)
-	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
-	}
-
 	// Get the binary representation without the signature
 	data, err := c.ToBinary(false)
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate: %w", err)
+	}
+
+	// Parse the signature
+	signature, err := ec.ParseSignature(c.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to parse signature: %w", err)
 	}
 
 	// Verify the signature using the certifier's public key

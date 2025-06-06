@@ -308,7 +308,7 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 
 	// Get our identity key to include in the initial request
 	pubKey, err := p.wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
-		IdentityKey:    true,
+		IdentityKey: true,
 		EncryptionArgs: wallet.EncryptionArgs{
 			// No specific protocol or key ID needed for identity key
 		},
@@ -595,6 +595,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
 
+	// Try to parse the signature
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
 		return fmt.Errorf("failed to parse signature: %w", err)
@@ -676,9 +677,10 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 		return fmt.Errorf("failed to serialize certificate data: %w", err)
 	}
 
+	// Try to parse the signature
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
-		return nil
+		return fmt.Errorf("failed to parse signature: %w", err)
 	}
 
 	// Verify signature
@@ -772,9 +774,10 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	session.LastUpdate = time.Now().UnixMilli()
 	p.sessionManager.UpdateSession(session)
 
+	// Try to parse the signature
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
-		return nil
+		return fmt.Errorf("failed to parse signature: %w", err)
 	}
 
 	// Verify signature
