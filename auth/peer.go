@@ -308,7 +308,7 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 
 	// Get our identity key to include in the initial request
 	pubKey, err := p.wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
-		IdentityKey: true,
+		IdentityKey:    true,
 		EncryptionArgs: wallet.EncryptionArgs{
 			// No specific protocol or key ID needed for identity key
 		},

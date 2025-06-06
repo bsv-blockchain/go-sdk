@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -29,9 +28,9 @@ func TestVerifiableCertificate(t *testing.T) {
 	// Sample data
 	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32)))
 	sampleSerialNumber := wallet.StringBase64(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{2}, 32)))
-	sampleRevocationOutpoint := &overlay.Outpoint{
-		Txid:        chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
-		OutputIndex: 1,
+	sampleRevocationOutpoint := &wallet.Outpoint{
+		Txid:  chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
+		Index: 1,
 	}
 
 	// Plaintext fields to encrypt

@@ -144,8 +144,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 		// Read revocation outpoint
-		outpointBytes := r.ReadBytes(outpointSize)
-		revocationOutpoint, err := decodeOutpoint(outpointBytes)
+		revocationOutpoint, err := decodeOutpoint(&r.Reader)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}

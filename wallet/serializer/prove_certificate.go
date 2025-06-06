@@ -85,8 +85,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read revocationOutpoint
-	outpointBytes := r.ReadBytes(outpointSize)
-	args.Certificate.RevocationOutpoint, err = decodeOutpoint(outpointBytes)
+	args.Certificate.RevocationOutpoint, err = decodeOutpoint(&r.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding outpoint: %w", err)
 	}

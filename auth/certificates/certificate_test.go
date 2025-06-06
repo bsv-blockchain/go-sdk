@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,8 +13,11 @@ import (
 
 func TestCertificate(t *testing.T) {
 	// Sample data for testing - use consistent data like in TS
-	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(make([]byte, 32)))
-	sampleSerialNumber := wallet.StringBase64(base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	typeBytes := tu.GetByte32FromString("test-certificate-type")
+	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(typeBytes[:]))
+
+	serialBytes := tu.GetByte32FromString("test-serial-number")
+	sampleSerialNumber := wallet.StringBase64(base64.StdEncoding.EncodeToString(serialBytes[:]))
 
 	// Create private keys
 	sampleSubjectPrivateKey, err := ec.NewPrivateKey()
@@ -27,9 +30,9 @@ func TestCertificate(t *testing.T) {
 
 	// Create a revocation outpoint
 	txid := make([]byte, 32)
-	var outpoint overlay.Outpoint
+	var outpoint wallet.Outpoint
 	copy(outpoint.Txid[:], txid)
-	outpoint.OutputIndex = 1
+	outpoint.Index = 1
 	sampleRevocationOutpoint := &outpoint
 
 	// Convert string maps to the proper types
@@ -377,5 +380,188 @@ func TestCertificate(t *testing.T) {
 		assert.True(t, certificateWithMismatch.Certifier.IsEqual(pubKey.PublicKey))
 		err = certificateWithMismatch.Verify(t.Context())
 		assert.NoError(t, err)
+	})
+
+	t.Run("ToWalletCertificate should convert Certificate to wallet.Certificate correctly", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil,
+		}
+
+		walletCert, err := certificate.ToWalletCertificate()
+		require.NoError(t, err)
+
+		// Verify the conversion
+		assert.NotNil(t, walletCert)
+		assert.Equal(t, &certificate.Subject, walletCert.Subject)
+		assert.Equal(t, &certificate.Certifier, walletCert.Certifier)
+		assert.Nil(t, walletCert.Signature)
+
+		// Convert type and serial back to verify
+		convertedType := wallet.StringBase64FromArray(walletCert.Type)
+		convertedSerial := wallet.StringBase64FromArray(walletCert.SerialNumber)
+		assert.Equal(t, sampleType, convertedType)
+		assert.Equal(t, sampleSerialNumber, convertedSerial)
+
+		// Check fields conversion
+		assert.Equal(t, len(sampleFields), len(walletCert.Fields))
+		for fieldName, fieldValue := range sampleFields {
+			assert.Equal(t, string(fieldValue), walletCert.Fields[string(fieldName)])
+		}
+
+		// Check revocation outpoint conversion
+		assert.NotNil(t, walletCert.RevocationOutpoint)
+		assert.Equal(t, certificate.RevocationOutpoint.Txid, walletCert.RevocationOutpoint.Txid)
+		assert.Equal(t, certificate.RevocationOutpoint.Index, walletCert.RevocationOutpoint.Index)
+	})
+
+	t.Run("ToWalletCertificate should handle certificate with signature", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil,
+		}
+
+		// Sign the certificate first
+		certifierProtoWallet := createProtoWallet(sampleCertifierPrivateKey)
+		err = certificate.Sign(t.Context(), certifierProtoWallet)
+		require.NoError(t, err)
+
+		walletCert, err := certificate.ToWalletCertificate()
+		require.NoError(t, err)
+
+		// Verify signature was converted
+		assert.NotNil(t, walletCert.Signature)
+
+		// Verify signature can be serialized back to same bytes
+		serializedSig := walletCert.Signature.Serialize()
+		assert.Equal(t, certificate.Signature, serializedSig)
+	})
+
+	t.Run("FromWalletCertificate should convert wallet.Certificate to Certificate correctly", func(t *testing.T) {
+		// Create a wallet certificate
+		typeBytes := tu.GetByte32FromString("test-wallet-cert-type")
+		serialBytes := tu.GetByte32FromString("test-wallet-serial")
+
+		walletCert := &wallet.Certificate{
+			Type:         typeBytes,
+			SerialNumber: serialBytes,
+			Subject:      sampleSubjectPubKey,
+			Certifier:    sampleCertifierPubKey,
+			RevocationOutpoint: &wallet.Outpoint{
+				Txid:  sampleRevocationOutpoint.Txid,
+				Index: sampleRevocationOutpoint.Index,
+			},
+			Fields: map[string]string{
+				"name":  "Alice",
+				"email": "alice@example.com",
+			},
+			Signature: nil,
+		}
+
+		certificate, err := FromWalletCertificate(walletCert)
+		require.NoError(t, err)
+
+		// Verify the conversion
+		assert.NotNil(t, certificate)
+		assert.True(t, certificate.Subject.IsEqual(sampleSubjectPubKey))
+		assert.True(t, certificate.Certifier.IsEqual(sampleCertifierPubKey))
+		assert.Nil(t, certificate.Signature)
+
+		// Verify type and serial conversion
+		expectedType := wallet.StringBase64FromArray(typeBytes)
+		expectedSerial := wallet.StringBase64FromArray(serialBytes)
+		assert.Equal(t, expectedType, certificate.Type)
+		assert.Equal(t, expectedSerial, certificate.SerialNumber)
+
+		// Check fields conversion
+		assert.Equal(t, len(walletCert.Fields), len(certificate.Fields))
+		for fieldName, fieldValue := range walletCert.Fields {
+			certFieldValue := certificate.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)]
+			assert.Equal(t, fieldValue, string(certFieldValue))
+		}
+
+		// Check revocation outpoint conversion
+		assert.NotNil(t, certificate.RevocationOutpoint)
+		assert.Equal(t, walletCert.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Txid)
+		assert.Equal(t, walletCert.RevocationOutpoint.Index, certificate.RevocationOutpoint.Index)
+	})
+
+	t.Run("ToWalletCertificate and FromWalletCertificate should be round-trip compatible", func(t *testing.T) {
+		originalCert := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil,
+		}
+
+		// Convert to wallet certificate and back
+		walletCert, err := originalCert.ToWalletCertificate()
+		require.NoError(t, err)
+
+		convertedCert, err := FromWalletCertificate(walletCert)
+		require.NoError(t, err)
+
+		// Verify they are equivalent
+		assert.Equal(t, originalCert.Type, convertedCert.Type)
+		assert.Equal(t, originalCert.SerialNumber, convertedCert.SerialNumber)
+		assert.True(t, originalCert.Subject.IsEqual(&convertedCert.Subject))
+		assert.True(t, originalCert.Certifier.IsEqual(&convertedCert.Certifier))
+		assert.Equal(t, originalCert.RevocationOutpoint, convertedCert.RevocationOutpoint)
+		assert.Equal(t, originalCert.Fields, convertedCert.Fields)
+		assert.Equal(t, originalCert.Signature, convertedCert.Signature)
+	})
+
+	t.Run("FromWalletCertificate should handle nil input", func(t *testing.T) {
+		certificate, err := FromWalletCertificate(nil)
+		assert.Error(t, err)
+		assert.Nil(t, certificate)
+		assert.Contains(t, err.Error(), "wallet certificate cannot be nil")
+	})
+
+	t.Run("ToWalletCertificate should handle invalid base64 in Type", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               wallet.StringBase64("invalid-base64!!!"),
+			SerialNumber:       sampleSerialNumber,
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil,
+		}
+
+		walletCert, err := certificate.ToWalletCertificate()
+		assert.Error(t, err)
+		assert.Nil(t, walletCert)
+		assert.Contains(t, err.Error(), "invalid certificate type")
+	})
+
+	t.Run("ToWalletCertificate should handle invalid base64 in SerialNumber", func(t *testing.T) {
+		certificate := &Certificate{
+			Type:               sampleType,
+			SerialNumber:       wallet.StringBase64("invalid-base64!!!"),
+			Subject:            *sampleSubjectPubKey,
+			Certifier:          *sampleCertifierPubKey,
+			RevocationOutpoint: sampleRevocationOutpoint,
+			Fields:             sampleFields,
+			Signature:          nil,
+		}
+
+		walletCert, err := certificate.ToWalletCertificate()
+		assert.Error(t, err)
+		assert.Nil(t, walletCert)
+		assert.Contains(t, err.Error(), "invalid serial number")
 	})
 }

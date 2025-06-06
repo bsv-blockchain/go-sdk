@@ -229,8 +229,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		for j := uint64(0); j < inputCount; j++ {
 			input := wallet.ActionInput{}
 
-			opBytes := r.ReadBytes(outpointSize)
-			outpoint, err := decodeOutpoint(opBytes)
+			outpoint, err := decodeOutpoint(&r.Reader)
 			if err != nil {
 				return nil, fmt.Errorf("error decoding source outpoint for input %d: %w", j, err)
 			}

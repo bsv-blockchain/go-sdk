@@ -2,8 +2,7 @@ package lookup
 
 import (
 	"encoding/json"
-
-	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // AnswerType represents the type of answer returned by a lookup service
@@ -29,7 +28,7 @@ type LookupQuestion struct {
 
 // LookupFormula represents a formula for computing lookup results
 type LookupFormula struct {
-	Outpoint *overlay.Outpoint
+	Outpoint *wallet.Outpoint
 	History  func(beef []byte, outputIndex uint32, currentDepth uint32) bool
 	// HistoryDepth uint32
 }

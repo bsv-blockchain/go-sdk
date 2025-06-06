@@ -2,11 +2,7 @@ package wallet
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
@@ -628,44 +624,3 @@ type ProveCertificateResult struct {
 // CertificateFieldNameUnder50Bytes represents a certificate field name with length restrictions.
 // Field names must be under 50 bytes to ensure efficient storage and processing.
 type CertificateFieldNameUnder50Bytes string
-
-type Outpoint struct {
-	Txid  chainhash.Hash
-	Index uint32
-}
-
-func (o *Outpoint) NotEmpty() bool {
-	return o != nil && o.Txid != chainhash.Hash{}
-}
-
-func (o Outpoint) String() string {
-	txidHex := hex.EncodeToString(o.Txid[:])
-	return fmt.Sprintf("%s.%d", txidHex, o.Index)
-}
-
-func OutpointFromString(s string) (*Outpoint, error) {
-	var outpoint = new(Outpoint)
-	if len(s) == 0 {
-		return outpoint, nil
-	}
-	parts := strings.Split(s, ".")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid outpoint format: %s", s)
-	}
-
-	txidBytes, err := hex.DecodeString(parts[0])
-	if err != nil {
-		return nil, fmt.Errorf("invalid txid hex: %w", err)
-	}
-	if len(txidBytes) != chainhash.HashSize {
-		return nil, fmt.Errorf("invalid txid length: %d", len(txidBytes))
-	}
-	copy(outpoint.Txid[:], txidBytes)
-
-	index, err := strconv.ParseUint(parts[1], 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid output index: %w", err)
-	}
-	outpoint.Index = uint32(index)
-	return outpoint, nil
-}
