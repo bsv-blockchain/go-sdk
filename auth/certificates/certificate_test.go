@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -31,9 +30,9 @@ func TestCertificate(t *testing.T) {
 
 	// Create a revocation outpoint
 	txid := make([]byte, 32)
-	var outpoint overlay.Outpoint
+	var outpoint wallet.Outpoint
 	copy(outpoint.Txid[:], txid)
-	outpoint.OutputIndex = 1
+	outpoint.Index = 1
 	sampleRevocationOutpoint := &outpoint
 
 	// Convert string maps to the proper types
@@ -418,7 +417,7 @@ func TestCertificate(t *testing.T) {
 		// Check revocation outpoint conversion
 		assert.NotNil(t, walletCert.RevocationOutpoint)
 		assert.Equal(t, certificate.RevocationOutpoint.Txid, walletCert.RevocationOutpoint.Txid)
-		assert.Equal(t, certificate.RevocationOutpoint.OutputIndex, walletCert.RevocationOutpoint.Index)
+		assert.Equal(t, certificate.RevocationOutpoint.Index, walletCert.RevocationOutpoint.Index)
 	})
 
 	t.Run("ToWalletCertificate should handle certificate with signature", func(t *testing.T) {
@@ -460,7 +459,7 @@ func TestCertificate(t *testing.T) {
 			Certifier:    sampleCertifierPubKey,
 			RevocationOutpoint: &wallet.Outpoint{
 				Txid:  sampleRevocationOutpoint.Txid,
-				Index: sampleRevocationOutpoint.OutputIndex,
+				Index: sampleRevocationOutpoint.Index,
 			},
 			Fields: map[string]string{
 				"name":  "Alice",
@@ -494,7 +493,7 @@ func TestCertificate(t *testing.T) {
 		// Check revocation outpoint conversion
 		assert.NotNil(t, certificate.RevocationOutpoint)
 		assert.Equal(t, walletCert.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Txid)
-		assert.Equal(t, walletCert.RevocationOutpoint.Index, certificate.RevocationOutpoint.OutputIndex)
+		assert.Equal(t, walletCert.RevocationOutpoint.Index, certificate.RevocationOutpoint.Index)
 	})
 
 	t.Run("ToWalletCertificate and FromWalletCertificate should be round-trip compatible", func(t *testing.T) {

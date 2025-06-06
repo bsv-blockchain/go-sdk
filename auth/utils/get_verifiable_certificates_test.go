@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -58,7 +57,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		certifier, _ := ec.PublicKeyFromBytes([]byte{0x07, 0x08, 0x09})
 
 		// Mock wallet.ListCertificates response with base64-encoded values
-		revocationOutpoint, _ := overlay.NewOutpointFromString("abcd1234:0")
+		revocationOutpoint, _ := wallet.OutpointFromString("abcd1234:0")
 		mockListResult := &wallet.ListCertificatesResult{
 			Certificates: []wallet.CertificateResult{
 				{
@@ -104,7 +103,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
 			require.NotNil(t, cert.RevocationOutpoint)
 			if cert.RevocationOutpoint != nil && revocationOutpoint != nil {
-				require.Equal(t, revocationOutpoint.OutputIndex, cert.RevocationOutpoint.OutputIndex)
+				require.Equal(t, revocationOutpoint.Index, cert.RevocationOutpoint.Index)
 			}
 		}
 	})

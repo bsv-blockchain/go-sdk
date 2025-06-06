@@ -7,7 +7,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -79,9 +78,9 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Create revocation outpoint
-		revocationOutpoint := &overlay.Outpoint{
-			Txid:        chainhash.HashH([]byte("test_txid_000000000000000000000000000000000000000000000000000000000000")),
-			OutputIndex: 0,
+		revocationOutpoint := &wallet.Outpoint{
+			Txid:  chainhash.HashH([]byte("test_txid_000000000000000000000000000000000000000000000000000000000000")),
+			Index: 0,
 		}
 
 		// Issue certificate
@@ -91,7 +90,7 @@ func TestValidateCertificates(t *testing.T) {
 			subjectCounterparty,
 			plaintextFields,
 			string(utils.RandomBase64(32)), // certificate type
-			func(serial string) (*overlay.Outpoint, error) {
+			func(serial string) (*wallet.Outpoint, error) {
 				return revocationOutpoint, nil
 			},
 			"", // auto-generate serial number

@@ -478,24 +478,6 @@ func (cr *CertificateResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (o *Outpoint) MarshalJSON() ([]byte, error) {
-	return json.Marshal(o.String())
-}
-
-func (o *Outpoint) UnmarshalJSON(data []byte) error {
-	var outpointStr string
-	if err := json.Unmarshal(data, &outpointStr); err != nil {
-		return fmt.Errorf("error unmarshaling outpoint string: %w", err)
-	}
-	outpoint, err := OutpointFromString(outpointStr)
-	if err != nil {
-		return fmt.Errorf("error parsing outpoint string: %w", err)
-	}
-	o.Txid = outpoint.Txid
-	o.Index = outpoint.Index
-	return nil
-}
-
 // Custom marshalling for RevealCounterpartyKeyLinkageResult
 type aliasRevealCounterpartyKeyLinkageResult RevealCounterpartyKeyLinkageResult
 type jsonRevealCounterpartyKeyLinkageResult struct {

@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
@@ -37,7 +36,7 @@ type Certificate struct {
 	Certifier ec.PublicKey `json:"certifier"`
 
 	// The outpoint used to confirm that the certificate has not been revoked
-	RevocationOutpoint *overlay.Outpoint `json:"revocationOutpoint"`
+	RevocationOutpoint *wallet.Outpoint `json:"revocationOutpoint"`
 
 	// All the fields present in the certificate, with field names as keys and encrypted field values as strings
 	Fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64 `json:"fields"`
@@ -52,7 +51,7 @@ func NewCertificate(
 	serialNumber wallet.StringBase64,
 	subject ec.PublicKey,
 	certifier ec.PublicKey,
-	revocationOutpoint *overlay.Outpoint,
+	revocationOutpoint *wallet.Outpoint,
 	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
 	signature []byte,
 ) *Certificate {
@@ -219,15 +218,6 @@ func (c *Certificate) ToWalletCertificate() (*wallet.Certificate, error) {
 		return nil, fmt.Errorf("invalid serial number: %w", err)
 	}
 
-	// Convert overlay.Outpoint to wallet.Outpoint
-	var revocationOutpoint *wallet.Outpoint
-	if c.RevocationOutpoint != nil {
-		revocationOutpoint = &wallet.Outpoint{
-			Txid:  c.RevocationOutpoint.Txid,
-			Index: c.RevocationOutpoint.OutputIndex,
-		}
-	}
-
 	// Convert Fields map from map[CertificateFieldNameUnder50Bytes]StringBase64 to map[string]string
 	fields := make(map[string]string)
 	for fieldName, fieldValue := range c.Fields {
@@ -247,7 +237,7 @@ func (c *Certificate) ToWalletCertificate() (*wallet.Certificate, error) {
 		SerialNumber:       serialNumber,
 		Subject:            &c.Subject,   // Convert value type to pointer
 		Certifier:          &c.Certifier, // Convert value type to pointer
-		RevocationOutpoint: revocationOutpoint,
+		RevocationOutpoint: c.RevocationOutpoint,
 		Fields:             fields,
 		Signature:          signature,
 	}, nil
@@ -273,15 +263,6 @@ func FromWalletCertificate(walletCert *wallet.Certificate) (*Certificate, error)
 		certifier = *walletCert.Certifier
 	}
 
-	// Convert wallet.Outpoint to overlay.Outpoint
-	var revocationOutpoint *overlay.Outpoint
-	if walletCert.RevocationOutpoint != nil {
-		revocationOutpoint = &overlay.Outpoint{
-			Txid:        walletCert.RevocationOutpoint.Txid,
-			OutputIndex: walletCert.RevocationOutpoint.Index,
-		}
-	}
-
 	// Convert fields map from map[string]string to map[CertificateFieldNameUnder50Bytes]StringBase64
 	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 	for fieldName, fieldValue := range walletCert.Fields {
@@ -298,7 +279,7 @@ func FromWalletCertificate(walletCert *wallet.Certificate) (*Certificate, error)
 		SerialNumber:       serialNumber,
 		Subject:            subject,
 		Certifier:          certifier,
-		RevocationOutpoint: revocationOutpoint,
+		RevocationOutpoint: walletCert.RevocationOutpoint,
 		Fields:             fields,
 		Signature:          signature,
 	}, nil
