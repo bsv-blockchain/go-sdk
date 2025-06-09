@@ -69,7 +69,7 @@ func TestECDSA(t *testing.T) {
 					Y:     nil,
 				},
 			}
-			privateKey.PublicKey.X, privateKey.PublicKey.Y = privateKey.PublicKey.Curve.ScalarBaseMult(privateKey.D.Bytes())
+			privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes())
 
 			signature, err := Sign(msgBytes, privateKey, tc.forceLowS, tc.customK)
 			if err != nil {
@@ -99,7 +99,7 @@ func TestECDSA(t *testing.T) {
 				Curve: elliptic.P256(),
 			},
 		}
-		privateKey.PublicKey.X, privateKey.PublicKey.Y = privateKey.PublicKey.Curve.ScalarBaseMult(privateKey.D.Bytes())
+		privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes())
 
 		signature, err := Sign(msgBytes, privateKey, false, nil)
 		if err != nil {

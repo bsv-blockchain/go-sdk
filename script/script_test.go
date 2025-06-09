@@ -118,7 +118,7 @@ func TestScript_IsData(t *testing.T) {
 	require.True(t, scriptPub.IsData())
 }
 
-func TestScript_IsMultisigOut(t *testing.T) { // TODO: check this
+func TestScript_IsMultisigOut(t *testing.T) {
 	t.Parallel()
 
 	t.Run("is multisig", func(t *testing.T) {

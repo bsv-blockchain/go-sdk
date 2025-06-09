@@ -7,6 +7,7 @@ import (
 
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	script "github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // newOutputFromBytes returns a transaction Output from the bytes provided
@@ -16,7 +17,7 @@ func newOutputFromBytes(bytes []byte) (*TransactionOutput, int, error) {
 	}
 
 	offset := 8
-	l, size := NewVarIntFromBytes(bytes[offset:])
+	l, size := util.NewVarIntFromBytes(bytes[offset:])
 	offset += size
 
 	totalLength := offset + int(l)

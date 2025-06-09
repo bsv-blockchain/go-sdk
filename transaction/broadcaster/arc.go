@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type ArcStatus string
@@ -41,7 +42,7 @@ type Arc struct {
 	CumulativeFeeValidation bool
 	WaitForStatus           string
 	WaitFor                 ArcStatus
-	Client                  HTTPClient // Added for testing
+	Client                  util.HTTPClient // Added for testing
 	Verbose                 bool
 }
 
@@ -60,6 +61,10 @@ type ArcResponse struct {
 }
 
 func (a *Arc) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+	return a.BroadcastCtx(context.Background(), t)
+}
+
+func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
 	var buf *bytes.Buffer
 	for _, input := range t.Inputs {
 		if input.SourceTxOutput() == nil {
@@ -78,7 +83,6 @@ func (a *Arc) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSucce
 		}
 	}
 
-	ctx := context.Background()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
@@ -141,13 +145,7 @@ func (a *Arc) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSucce
 			Description: err.Error(),
 		}
 	}
-	defer func() {
-		if cerr := resp.Body.Close(); cerr != nil {
-			// Handle or log the error if needed
-			// For example:
-			fmt.Println(cerr)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, &transaction.BroadcastFailure{
@@ -210,13 +208,7 @@ func (a *Arc) Status(txid string) (*ArcResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if cerr := resp.Body.Close(); cerr != nil {
-			// Handle or log the error if needed
-			// For example:
-			fmt.Println(cerr)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

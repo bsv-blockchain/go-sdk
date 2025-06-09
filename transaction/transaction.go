@@ -89,7 +89,7 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 
 	extended := false
 
-	var inputCount VarInt
+	var inputCount util.VarInt
 
 	n64, err = inputCount.ReadFrom(r)
 	bytesRead += n64
@@ -97,7 +97,7 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 		return bytesRead, err
 	}
 
-	var outputCount VarInt
+	var outputCount util.VarInt
 	locktime := make([]byte, 4)
 
 	// ----------------------------------------------------------------------------------
@@ -185,7 +185,7 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 func (tt *Transactions) ReadFrom(r io.Reader) (int64, error) {
 	var bytesRead int64
 
-	var txCount VarInt
+	var txCount util.VarInt
 	n, err := txCount.ReadFrom(r)
 	bytesRead += n
 	if err != nil {
@@ -390,12 +390,12 @@ func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended b
 		h = append(h, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0xEF}...)
 	}
 
-	h = append(h, VarInt(uint64(len(tx.Inputs))).Bytes()...)
+	h = append(h, util.VarInt(uint64(len(tx.Inputs))).Bytes()...)
 
 	for i, in := range tx.Inputs {
 		s := in.Bytes(lockingScript != nil)
 		if i == index && lockingScript != nil {
-			h = append(h, VarInt(uint64(len(lockingScript))).Bytes()...)
+			h = append(h, util.VarInt(uint64(len(lockingScript))).Bytes()...)
 			h = append(h, lockingScript...)
 		} else {
 			h = append(h, s...)
@@ -408,7 +408,7 @@ func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended b
 				binary.LittleEndian.PutUint64(b, sourceTxOut.Satoshis)
 				h = append(h, b...)
 				l := uint64(len(*sourceTxOut.LockingScript))
-				h = append(h, VarInt(l).Bytes()...)
+				h = append(h, util.VarInt(l).Bytes()...)
 				h = append(h, *sourceTxOut.LockingScript...)
 			} else {
 				binary.LittleEndian.PutUint64(b, 0)
@@ -418,7 +418,7 @@ func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended b
 		}
 	}
 
-	h = append(h, VarInt(uint64(len(tx.Outputs))).Bytes()...)
+	h = append(h, util.VarInt(uint64(len(tx.Outputs))).Bytes()...)
 	for _, out := range tx.Outputs {
 		h = append(h, out.Bytes()...)
 	}
@@ -540,16 +540,16 @@ func (t *Transaction) AtomicBEEF(allowPartial bool) ([]byte, error) {
 		}
 	}
 
-	writer.Write(VarInt(len(bumps)).Bytes())
+	writer.Write(util.VarInt(len(bumps)).Bytes())
 	for _, bump := range bumps {
 		writer.Write(bump.Bytes())
 	}
-	writer.Write(VarInt(len(txns)).Bytes())
+	writer.Write(util.VarInt(len(txns)).Bytes())
 	for _, txid := range ancestors {
 		tx := txns[txid]
 		if tx.MerklePath != nil {
 			writer.Write([]byte{byte(RawTxAndBumpIndex)})
-			writer.Write(VarInt(bumpMap[tx.MerklePath.BlockHeight]).Bytes())
+			writer.Write(util.VarInt(bumpMap[tx.MerklePath.BlockHeight]).Bytes())
 		} else {
 			writer.Write([]byte{byte(RawTx)})
 		}
@@ -567,7 +567,8 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 		return nil, err
 	}
 
-	if version == ATOMIC_BEEF {
+	switch version {
+	case ATOMIC_BEEF:
 		hash := make([]byte, 32)
 		if _, err := io.ReadFull(reader, hash); err != nil {
 			return nil, err
@@ -578,7 +579,7 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 		} else {
 			return b.FindAtomicTransaction(txid.String()), nil
 		}
-	} else if version == BEEF_V1 {
+	case BEEF_V1:
 		BUMPs, err := readBUMPs(reader)
 		if err != nil {
 			return nil, err
@@ -590,7 +591,7 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 		}
 
 		return transaction, nil
-	} else {
+	default:
 		return nil, fmt.Errorf("use NewBeefFromBytes to parse anything which isn't V1 BEEF or AtomicBEEF")
 	}
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/pkg/errors"
 )
 
@@ -81,7 +82,7 @@ func NewMerklePathFromBinary(b []byte) (*MerklePath, error) {
 func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 	bump := &MerklePath{}
 
-	var index VarInt
+	var index util.VarInt
 	_, err := index.ReadFrom(reader)
 	if err != nil {
 		return nil, err
@@ -100,19 +101,16 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 	bump.Path = make([][]*PathElement, treeHeight)
 
 	for lv := uint8(0); lv < treeHeight; lv++ {
-		var nLeavesAtThisHeight VarInt
+		var nLeavesAtThisHeight util.VarInt
 		_, err = nLeavesAtThisHeight.ReadFrom(reader)
 		if err != nil {
 			return nil, err
 		}
 
-		if nLeavesAtThisHeight == 0 {
-			return nil, errors.New("There are no leaves at height: " + fmt.Sprint(lv) + " which makes this invalid")
-		}
 		bump.Path[lv] = make([]*PathElement, nLeavesAtThisHeight)
 		for lf := uint64(0); lf < uint64(nLeavesAtThisHeight); lf++ {
 			// For each leaf we parse the offset, hash, txid and duplicate.
-			var offset VarInt
+			var offset util.VarInt
 			_, err = offset.ReadFrom(reader)
 			if err != nil {
 				return nil, err
@@ -158,14 +156,14 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 
 // Bytes encodes a BUMP as a slice of bytes. BUMP Binary Format according to BRC-74 https://brc.dev/74
 func (mp *MerklePath) Bytes() []byte {
-	bytes := VarInt(mp.BlockHeight).Bytes()
+	bytes := util.VarInt(mp.BlockHeight).Bytes()
 	treeHeight := len(mp.Path)
 	bytes = append(bytes, byte(treeHeight))
 	for level := 0; level < treeHeight; level++ {
 		nLeaves := len(mp.Path[level])
-		bytes = append(bytes, VarInt(nLeaves).Bytes()...)
+		bytes = append(bytes, util.VarInt(nLeaves).Bytes()...)
 		for _, leaf := range mp.Path[level] {
-			bytes = append(bytes, VarInt(leaf.Offset).Bytes()...)
+			bytes = append(bytes, util.VarInt(leaf.Offset).Bytes()...)
 			flags := byte(0)
 			if leaf.Duplicate != nil && *leaf.Duplicate {
 				flags |= 1
@@ -236,7 +234,7 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 		}
 	}
 	if txLeaf == nil {
-		return nil, fmt.Errorf("the BUMP does not contain the txid: %x", *txid)
+		return nil, fmt.Errorf("the BUMP does not contain the txid: %s", *txid)
 	}
 
 	// Calculate the root using the index as a way to determine which direction to concatenate.
