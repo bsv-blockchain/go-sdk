@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
-- [2.0.0 - 2025-05-23](#200---2025-05-23)
+- [2.0.0 - 2025-06-08](#200---2025-06-08)
 - [1.1.27 - 2025-05-15](#1127---2025-05-15)
 - [1.1.26 - 2025-05-14](#1126---2025-05-14)
 - [1.1.25 - 2025-05-09](#1125---2025-05-09)
@@ -35,7 +35,7 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
 
-## [2.0.0] - 2025-05-23
+## [2.0.0] - 2025-06-08
 
 This is a major release introducing comprehensive new modules for authentication, key-value storage, overlay services, registry management, decentralized storage, and advanced wallet functionality. This release represents a significant architectural evolution of the SDK, aligning with the TypeScript SDK's capabilities.
 
