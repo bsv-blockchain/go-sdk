@@ -77,22 +77,16 @@ func (c *Client) PubliclyRevealAttributes(
 	if len(fieldsToReveal) == 0 {
 		return nil, nil, errors.New("you must reveal at least one field")
 	}
-
-	revocationOutpoint := overlay.NewOutpoint(certificate.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Index)
-
-	fields := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
-	for k, v := range certificate.Fields {
-		fields[wallet.CertificateFieldNameUnder50Bytes(k)] = wallet.Base64String(v)
+	if certificate.RevocationOutpoint == nil {
+		return nil, nil, errors.New("certificate must have a revocation outpoint")
 	}
-	// Convert Go certificate to Certificate instance to verify it
-	masterCert := &certificates.Certificate{
-		Type:               wallet.Base64StringFromArray(certificate.Type),
-		SerialNumber:       wallet.Base64StringFromArray(certificate.SerialNumber),
-		Subject:            *certificate.Subject,
-		Certifier:          *certificate.Certifier,
-		RevocationOutpoint: revocationOutpoint,
-		Fields:             fields,
-		Signature:          certificate.Signature,
+	if certificate.Subject == nil || certificate.Certifier == nil {
+		return nil, nil, errors.New("certificate must have a subject and certifier")
+	}
+
+	masterCert, err := certificates.FromWalletCertificate(certificate)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to convert wallet certificate: %w", err)
 	}
 
 	// Verify the certificate
@@ -111,17 +105,20 @@ func (c *Client) PubliclyRevealAttributes(
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create dummy key: %w", err)
 	}
-	var verifierPubKey [33]byte
-	copy(verifierPubKey[:], dummyPk.PubKey().Compressed())
 
 	// Get keyring for verifier through certificate proving
 	proveResult, err := c.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 		Certificate:    *certificate,
 		FieldsToReveal: fieldNamesAsStrings,
-		Verifier:       verifierPubKey,
+		Verifier:       dummyPk.PubKey(),
 	}, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)
+	}
+
+	var revocationOutpointString string
+	if certificate.RevocationOutpoint != nil {
+		revocationOutpointString = certificate.RevocationOutpoint.String()
 	}
 
 	// Create a JSON object with certificate and keyring
@@ -130,9 +127,9 @@ func (c *Client) PubliclyRevealAttributes(
 		"serialNumber":       certificate.SerialNumber,
 		"subject":            certificate.Subject.Compressed(),
 		"certifier":          certificate.Certifier.Compressed(),
-		"revocationOutpoint": certificate.RevocationOutpointString(),
+		"revocationOutpoint": revocationOutpointString,
 		"fields":             certificate.Fields,
-		"signature":          hex.EncodeToString(certificate.Signature),
+		"signature":          hex.EncodeToString(certificate.Signature.Serialize()),
 		"keyring":            proveResult.KeyringForVerifier,
 	}
 
@@ -281,7 +278,7 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 	var name, avatarURL, badgeLabel, badgeIconURL, badgeClickURL string
 
 	// Parse out the name to display based on the specific certificate type which has clearly defined fields
-	switch string(wallet.Base64StringFromArray(identity.Type)) {
+	switch string(wallet.StringBase64FromArray(identity.Type)) {
 	case KnownIdentityTypes.XCert:
 		name = identity.DecryptedFields["userName"]
 		avatarURL = identity.DecryptedFields["profilePhoto"]
@@ -353,7 +350,7 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		badgeClickURL = DefaultIdentity.BadgeClickURL
 	}
 
-	var typeUnknown wallet.Base64Bytes32
+	var typeUnknown wallet.CertificateType
 	copy(typeUnknown[:], "unknownType")
 
 	// Create abbreviated key for display

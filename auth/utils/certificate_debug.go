@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -67,30 +66,9 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 	// Make sure the certifier is set to the signer's public key
 	encodedCert.Certifier = signerPrivateKey.PubKey()
 
-	// Parse the revocation outpoint
-	outpoint := overlay.NewOutpoint(encodedCert.RevocationOutpoint.Txid, encodedCert.RevocationOutpoint.Index)
-
-	// Convert wallet.Certificate to certificates.Certificate for signing
-	certObj := &certificates.Certificate{
-		Type:               wallet.Base64StringFromArray(encodedCert.Type),
-		SerialNumber:       wallet.Base64StringFromArray(encodedCert.SerialNumber),
-		Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
-		RevocationOutpoint: outpoint,
-	}
-
-	// Copy subject and certifier
-	if encodedCert.Subject != nil {
-		subjectCopy := *encodedCert.Subject
-		certObj.Subject = subjectCopy
-	}
-
-	// Use the signerPrivateKey's public key as certifier
-	certifierPubKey := *signerPrivateKey.PubKey()
-	certObj.Certifier = certifierPubKey
-
-	// Convert fields
-	for name, value := range encodedCert.Fields {
-		certObj.Fields[wallet.CertificateFieldNameUnder50Bytes(name)] = wallet.Base64String(value)
+	certObj, err := certificates.FromWalletCertificate(&encodedCert)
+	if err != nil {
+		return encodedCert, fmt.Errorf("failed to convert wallet certificate to base certificate: %w", err)
 	}
 
 	// Get binary representation without signature
@@ -105,9 +83,6 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 		return encodedCert, fmt.Errorf("failed to sign certificate: %w", err)
 	}
 
-	// Update the certificate object with the new signature
-	certObj.Signature = signature.Serialize()
-
 	// Convert back to wallet.Certificate format
 	finalCert := wallet.Certificate{
 		Type:               encodedCert.Type,
@@ -116,7 +91,7 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 		Certifier:          &certObj.Certifier,
 		RevocationOutpoint: encodedCert.RevocationOutpoint,
 		Fields:             encodedCert.Fields,
-		Signature:          certObj.Signature,
+		Signature:          signature,
 	}
 
 	return finalCert, nil

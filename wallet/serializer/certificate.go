@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+	"sort"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -9,42 +10,59 @@ import (
 )
 
 const (
-	sizeType      = 32
-	sizeSubject   = 33
-	sizeCertifier = 33
-	sizeRevealer  = 33
-	sizeSerial    = 32
-	sizeIdentity  = 33
+	sizeType    = 32
+	sizeSubject = 33
+	sizeSerial  = 32
+	sizePubKey  = 33
 )
 
+func SerializeCertificateNoSignature(cert *wallet.Certificate) ([]byte, error) {
+	return serializeCertificate(cert, false)
+}
+
 func SerializeCertificate(cert *wallet.Certificate) ([]byte, error) {
+	return serializeCertificate(cert, true)
+}
+
+func serializeCertificate(cert *wallet.Certificate, includeSignature bool) ([]byte, error) {
 	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
 
 	// Type (base64)
 	if cert.Type == [32]byte{} {
 		return nil, fmt.Errorf("cert type is empty")
 	}
 	w.WriteBytes(cert.Type[:])
-	w.WriteBytes(cert.Subject.Compressed())
 	w.WriteBytes(cert.SerialNumber[:])
+	w.WriteBytes(cert.Subject.Compressed())
 	w.WriteBytes(cert.Certifier.Compressed())
 
 	// Revocation outpoint
 	w.WriteBytes(encodeOutpoint(cert.RevocationOutpoint))
 
-	// Signature (hex)
-	w.WriteIntBytes(cert.Signature)
-
-	// Fields
-	fieldEntries := make([]string, 0, len(cert.Fields))
-	for k := range cert.Fields {
-		fieldEntries = append(fieldEntries, k)
+	// Fields (sorted lexicographically with specific encoding) - matches original format
+	fieldNames := make([]string, 0, len(cert.Fields))
+	for fieldName := range cert.Fields {
+		fieldNames = append(fieldNames, fieldName)
 	}
-	w.WriteVarInt(uint64(len(fieldEntries)))
-	for _, key := range fieldEntries {
-		w.WriteIntBytes([]byte(key))
-		w.WriteIntBytes([]byte(cert.Fields[key]))
+	// Sort field names lexicographically to match original implementation
+	sort.Strings(fieldNames)
+
+	w.WriteVarInt(uint64(len(fieldNames)))
+	for _, fieldName := range fieldNames {
+		fieldValue := cert.Fields[fieldName]
+		// Field name length + name
+		fieldNameBytes := []byte(fieldName)
+		w.WriteVarInt(uint64(len(fieldNameBytes)))
+		w.WriteBytes(fieldNameBytes)
+		// Field value length + value
+		fieldValueBytes := []byte(fieldValue)
+		w.WriteVarInt(uint64(len(fieldValueBytes)))
+		w.WriteBytes(fieldValueBytes)
+	}
+
+	// Signature if included - matches original format
+	if includeSignature && cert.Signature != nil {
+		w.WriteBytes(cert.Signature.Serialize())
 	}
 
 	return w.Buf, nil
@@ -54,39 +72,29 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	r := util.NewReaderHoldError(data)
 	cert = &wallet.Certificate{}
 
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("certificate deserialization failed with error byte %d", errorByte)
-	}
-
 	// Read type (base64)
 	copy(cert.Type[:], r.ReadBytes(sizeType))
-
-	// Read subject (hex)
-	subjectBytes := r.ReadBytes(sizeSubject)
-	cert.Subject, err = ec.PublicKeyFromBytes(subjectBytes)
-	if err != nil {
-		return nil, fmt.Errorf("error reading subject public key: %w", err)
-	}
 
 	// Read serial number (base64)
 	copy(cert.SerialNumber[:], r.ReadBytes(sizeSerial))
 
+	// Read subject (hex)
+	cert.Subject, err = ec.PublicKeyFromBytes(r.ReadBytes(sizeSubject))
+	if err != nil {
+		return nil, fmt.Errorf("error reading subject public key: %w", err)
+	}
+
 	// Read certifier (hex)
-	cert.Certifier, err = ec.PublicKeyFromBytes(r.ReadBytes(sizeCertifier))
+	cert.Certifier, err = ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing certifier key: %w", err)
 	}
 
 	// Read revocation outpoint
-	cert.RevocationOutpoint, err = decodeOutpoint(r.ReadBytes(outpointSize))
+	cert.RevocationOutpoint, err = decodeOutpoint(&r.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding revocation outpoint: %w", err)
 	}
-
-	// Read signature
-	cert.Signature = r.ReadIntBytes()
 
 	// Read fields
 	fieldsLength := r.ReadVarInt()
@@ -102,6 +110,15 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 		}
 
 		cert.Fields[fieldName] = fieldValue
+	}
+
+	// Read signature
+	sigBytes := r.ReadRemaining()
+	if len(sigBytes) > 0 {
+		cert.Signature, err = ec.ParseSignature(sigBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing signature: %w", err)
+		}
 	}
 
 	r.CheckComplete()

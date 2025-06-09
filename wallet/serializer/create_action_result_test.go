@@ -3,6 +3,7 @@ package serializer
 import (
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -19,7 +20,7 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 			result: &wallet.CreateActionResult{
 				Txid: tu.GetByte32FromHexString(t, "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"),
 				Tx:   []byte{0x01, 0x02, 0x03},
-				NoSendChange: []wallet.Outpoint{
+				NoSendChange: []transaction.Outpoint{
 					*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 					*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
 				},
@@ -52,7 +53,7 @@ func TestCreateActionResultSerializeAndDeserialize(t *testing.T) {
 		{
 			name: "with noSendChange only",
 			result: &wallet.CreateActionResult{
-				NoSendChange: []wallet.Outpoint{
+				NoSendChange: []transaction.Outpoint{
 					*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
 				},
 			},

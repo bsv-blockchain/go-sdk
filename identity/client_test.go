@@ -316,6 +316,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 	}
 
 	revocationOutpoint := tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1")
+	const SigHex = "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a"
+	testSig := tu.GetSigFromHex(t, SigHex)
 
 	t.Run("should throw an error if certificate has no fields", func(t *testing.T) {
 		certificate := &wallet.Certificate{
@@ -348,7 +350,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          []byte{0x01, 0x02, 0x03},
+			Signature:          testSig,
 			RevocationOutpoint: revocationOutpoint,
 		}
 		copy(certificate.Type[:], "dummyType")
@@ -372,7 +374,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		require.Contains(t, err.Error(), "certificate verification failed")
 	})
 
-	typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+	typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
 	require.NoError(t, err)
 
 	t.Run("should throw if createAction returns no tx", func(t *testing.T) {
@@ -386,7 +388,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          []byte{0x01, 0x02, 0x03},
+			Signature:          testSig,
 			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -405,7 +407,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			// Create a simple signature with R=1, S=1
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: &ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
 				},
@@ -462,7 +464,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          []byte{0x01, 0x02, 0x03},
+			Signature:          testSig,
 			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -481,7 +483,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			// Create a simple signature with R=1, S=1
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: &ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
 				},
@@ -538,7 +540,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          []byte{0x01, 0x02, 0x03},
+			Signature:          testSig,
 			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -560,7 +562,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		// Mock CreateSignature to succeed
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: &ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
 				},
@@ -636,7 +638,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			Subject:            pubKey,
 			Certifier:          pubKey,
 			Fields:             map[string]string{"name": "Alice"},
-			Signature:          []byte{0x01, 0x02, 0x03},
+			Signature:          testSig,
 			RevocationOutpoint: revocationOutpoint,
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
@@ -653,7 +655,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
 			return &wallet.CreateSignatureResult{
-				Signature: ec.Signature{
+				Signature: &ec.Signature{
 					R: big.NewInt(1),
 					S: big.NewInt(1),
 				},
@@ -713,7 +715,7 @@ func TestResolveByIdentityKey(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := privateKeyFromInt(123)
 
-		typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
 		require.NoError(t, err)
 
 		// Setup mock DiscoverByIdentityKey
@@ -740,7 +742,7 @@ func TestResolveByIdentityKey(t *testing.T) {
 
 		// Call ResolveByIdentityKey
 		identities, err := client.ResolveByIdentityKey(context.Background(), wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey: [33]byte{0x02, 0x01, 0x02},
+			IdentityKey: tu.GetPKFromBytes([]byte{0x02, 0x01, 0x02}),
 		})
 
 		// Verify results
@@ -771,7 +773,7 @@ func TestResolveByAttributes(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := privateKeyFromInt(123)
 
-		typeEmailCert, err := wallet.Base64String(KnownIdentityTypes.EmailCert).ToArray()
+		typeEmailCert, err := wallet.StringBase64(KnownIdentityTypes.EmailCert).ToArray()
 		require.NoError(t, err)
 
 		// Setup mock DiscoverByAttributes
@@ -819,7 +821,7 @@ func TestParseIdentity(t *testing.T) {
 		// Create a public key for subject
 		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
-		typeXCert, err := wallet.Base64String(KnownIdentityTypes.XCert).ToArray()
+		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
 		require.NoError(t, err)
 
 		// Setup certificate

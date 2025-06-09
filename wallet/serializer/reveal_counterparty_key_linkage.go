@@ -3,6 +3,7 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -14,10 +15,16 @@ func SerializeRevealCounterpartyKeyLinkageArgs(args *wallet.RevealCounterpartyKe
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
 
 	// Write counterparty public key
-	w.WriteIntBytesOptional(args.Counterparty)
+	if args.Counterparty == nil {
+		return nil, fmt.Errorf("counterparty public key is required")
+	}
+	w.WriteBytes(args.Counterparty.Compressed())
 
 	// Write verifier public key
-	w.WriteIntBytesOptional(args.Verifier)
+	if args.Verifier == nil {
+		return nil, fmt.Errorf("verifier public key is required")
+	}
+	w.WriteBytes(args.Verifier.Compressed())
 
 	return w.Buf, nil
 }
@@ -30,10 +37,18 @@ func DeserializeRevealCounterpartyKeyLinkageArgs(data []byte) (*wallet.RevealCou
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)
 
 	// Read counterparty public key
-	args.Counterparty = r.ReadIntBytes()
+	parsedCounterparty, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing counterparty public key: %w", err)
+	}
+	args.Counterparty = parsedCounterparty
 
 	// Read verifier public key
-	args.Verifier = r.ReadIntBytes()
+	parsedVerifier, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing verifier public key: %w", err)
+	}
+	args.Verifier = parsedVerifier
 
 	r.CheckComplete()
 	if r.Err != nil {
@@ -47,24 +62,31 @@ func SerializeRevealCounterpartyKeyLinkageResult(result *wallet.RevealCounterpar
 	w := util.NewWriter()
 
 	// Write prover public key
-	w.WriteIntBytes(result.Prover)
+	if result.Prover == nil {
+		return nil, fmt.Errorf("prover public key is required")
+	}
+	w.WriteBytes(result.Prover.Compressed())
 
 	// Write verifier public key
-	w.WriteIntBytes(result.Verifier)
+	if result.Verifier == nil {
+		return nil, fmt.Errorf("verifier public key is required")
+	}
+	w.WriteBytes(result.Verifier.Compressed())
 
 	// Write counterparty public key
-	w.WriteIntBytes(result.Counterparty)
+	if result.Counterparty == nil {
+		return nil, fmt.Errorf("counterparty public key is required")
+	}
+	w.WriteBytes(result.Counterparty.Compressed())
 
 	// Write revelation time
 	w.WriteString(result.RevelationTime)
 
 	// Write encrypted linkage
-	w.WriteVarInt(uint64(len(result.EncryptedLinkage)))
-	w.WriteBytes(result.EncryptedLinkage)
+	w.WriteIntBytes(result.EncryptedLinkage)
 
 	// Write encrypted linkage proof
-	w.WriteVarInt(uint64(len(result.EncryptedLinkageProof)))
-	w.WriteBytes(result.EncryptedLinkageProof)
+	w.WriteIntBytes(result.EncryptedLinkageProof)
 
 	return w.Buf, nil
 }
@@ -74,24 +96,34 @@ func DeserializeRevealCounterpartyKeyLinkageResult(data []byte) (*wallet.RevealC
 	result := &wallet.RevealCounterpartyKeyLinkageResult{}
 
 	// Read prover public key
-	result.Prover = r.ReadIntBytes()
+	parsedProver, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing prover public key: %w", err)
+	}
+	result.Prover = parsedProver
 
 	// Read verifier public key
-	result.Verifier = r.ReadIntBytes()
+	parsedVerifier, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing verifier public key: %w", err)
+	}
+	result.Verifier = parsedVerifier
 
 	// Read counterparty public key
-	result.Counterparty = r.ReadIntBytes()
+	parsedCounterparty, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing counterparty public key: %w", err)
+	}
+	result.Counterparty = parsedCounterparty
 
 	// Read revelation time
 	result.RevelationTime = r.ReadString()
 
 	// Read encrypted linkage
-	linkageLen := r.ReadVarInt()
-	result.EncryptedLinkage = r.ReadBytes(int(linkageLen))
+	result.EncryptedLinkage = r.ReadIntBytes()
 
 	// Read encrypted linkage proof
-	proofLen := r.ReadVarInt()
-	result.EncryptedLinkageProof = r.ReadBytes(int(proofLen))
+	result.EncryptedLinkageProof = r.ReadIntBytes()
 
 	r.CheckComplete()
 	if r.Err != nil {

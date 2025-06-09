@@ -3,6 +3,7 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -21,10 +22,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w.WriteBytes(args.Type[:])
 
 	// Encode certifier (hex)
-	if args.Certifier == [33]byte{} {
-		return nil, fmt.Errorf("certifier is empty")
-	}
-	w.WriteBytes(args.Certifier[:])
+	w.WriteBytes(args.Certifier.Compressed())
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Fields))
@@ -59,13 +57,17 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		w.WriteBytes(encodeOutpoint(args.RevocationOutpoint))
 
 		// Signature (hex)
-		w.WriteIntBytes(args.Signature)
+		var sigBytes []byte
+		if args.Signature != nil {
+			sigBytes = args.Signature.Serialize()
+		}
+		w.WriteIntBytes(sigBytes)
 
 		// Keyring revealer
 		if args.KeyringRevealer.Certifier {
 			w.WriteByte(keyRingRevealerCertifier)
 		} else {
-			w.WriteBytes(args.KeyringRevealer.PubKey[:])
+			w.WriteBytes(args.KeyringRevealer.PubKey.Compressed())
 		}
 
 		// Keyring for subject
@@ -101,7 +103,11 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	// Read type (base64) and certifier (hex)
 	copy(args.Type[:], r.ReadBytes(sizeType))
-	copy(args.Certifier[:], r.ReadBytes(sizeCertifier))
+	parsedCertifier, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing certifier public key: %w", err)
+	}
+	args.Certifier = parsedCertifier
 
 	// Read fields
 	fieldsLength := r.ReadVarInt()
@@ -138,15 +144,21 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 		// Read revocation outpoint
-		outpointBytes := r.ReadBytes(outpointSize)
-		revocationOutpoint, err := decodeOutpoint(outpointBytes)
+		revocationOutpoint, err := decodeOutpoint(&r.Reader)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}
 		args.RevocationOutpoint = revocationOutpoint
 
 		// Read signature
-		args.Signature = r.ReadIntBytes()
+		sigBytes := r.ReadIntBytes()
+		if len(sigBytes) > 0 {
+			sig, err := ec.ParseSignature(sigBytes)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing signature: %w", err)
+			}
+			args.Signature = sig
+		}
 
 		// Read keyring revealer
 		keyringRevealerIdentifier := r.ReadByte()
@@ -155,8 +167,13 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 				Certifier: true,
 			}
 		} else {
-			keyringRevealerBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizeRevealer-1)...)
-			copy(args.KeyringRevealer.PubKey[:], keyringRevealerBytes)
+			// The keyringRevealerIdentifier is the first byte of the PubKey
+			keyringRevealerFullBytes := append([]byte{keyringRevealerIdentifier}, r.ReadBytes(sizePubKey-1)...)
+			parsedKeyringPubKey, err := ec.PublicKeyFromBytes(keyringRevealerFullBytes)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing keyring revealer public key: %w", err)
+			}
+			args.KeyringRevealer.PubKey = parsedKeyringPubKey
 		}
 
 		// Read keyring for subject

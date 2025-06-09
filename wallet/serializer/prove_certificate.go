@@ -24,7 +24,11 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	w.WriteBytes(encodeOutpoint(args.Certificate.RevocationOutpoint))
 
 	// Encode signature (hex)
-	w.WriteIntBytes(args.Certificate.Signature)
+	if args.Certificate.Signature != nil {
+		w.WriteIntBytes(args.Certificate.Signature.Serialize())
+	} else {
+		w.WriteIntBytes(nil)
+	}
 
 	// Encode fields
 	fieldEntries := make([]string, 0, len(args.Certificate.Fields))
@@ -50,7 +54,7 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	}
 
 	// Encode verifier (hex)
-	w.WriteBytes(args.Verifier[:])
+	w.WriteBytes(args.Verifier.Compressed())
 
 	// Encode privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -66,7 +70,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	copy(args.Certificate.Type[:], r.ReadBytes(sizeType))
 
 	// Read subject (hex)
-	subjectBytes := r.ReadBytes(sizeCertifier)
+	subjectBytes := r.ReadBytes(sizePubKey)
 	if args.Certificate.Subject, err = ec.PublicKeyFromBytes(subjectBytes); err != nil {
 		return nil, err
 	}
@@ -75,20 +79,25 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	copy(args.Certificate.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 	// Read certifier (hex)
-	certifierBytes := r.ReadBytes(sizeCertifier)
+	certifierBytes := r.ReadBytes(sizePubKey)
 	if args.Certificate.Certifier, err = ec.PublicKeyFromBytes(certifierBytes); err != nil {
 		return nil, err
 	}
 
 	// Read revocationOutpoint
-	outpointBytes := r.ReadBytes(outpointSize)
-	args.Certificate.RevocationOutpoint, err = decodeOutpoint(outpointBytes)
+	args.Certificate.RevocationOutpoint, err = decodeOutpoint(&r.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding outpoint: %w", err)
 	}
 
 	// Read signature (hex)
-	args.Certificate.Signature = r.ReadIntBytes()
+	sigBytes := r.ReadIntBytes()
+	if len(sigBytes) > 0 {
+		args.Certificate.Signature, err = ec.ParseSignature(sigBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing signature: %w", err)
+		}
+	}
 
 	// Read fields
 	fieldsLen := r.ReadVarInt()
@@ -119,8 +128,16 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 		args.FieldsToReveal = append(args.FieldsToReveal, string(fieldBytes))
 	}
 
-	// Read verifier (hex)
-	copy(args.Verifier[:], r.ReadBytes(sizeCertifier))
+	// Read verifier
+	verifierBytes := r.ReadBytes(sizePubKey)
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading verifier: %w", r.Err)
+	}
+	parsedVerifier, err := ec.PublicKeyFromBytes(verifierBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing verifier public key: %w", err)
+	}
+	args.Verifier = parsedVerifier
 
 	// Read privileged params
 	args.Privileged, args.PrivilegedReason = decodePrivilegedParams(r)

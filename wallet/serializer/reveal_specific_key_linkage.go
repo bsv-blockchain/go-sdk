@@ -3,6 +3,7 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -25,7 +26,10 @@ func SerializeRevealSpecificKeyLinkageArgs(args *wallet.RevealSpecificKeyLinkage
 	w.WriteBytes(keyParams)
 
 	// Write verifier public key
-	w.WriteBytes(args.Verifier)
+	if args.Verifier == nil {
+		return nil, fmt.Errorf("verifier public key is required")
+	}
+	w.WriteBytes(args.Verifier.Compressed())
 
 	return w.Buf, nil
 }
@@ -46,7 +50,11 @@ func DeserializeRevealSpecificKeyLinkageArgs(data []byte) (*wallet.RevealSpecifi
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read verifier public key
-	args.Verifier = r.ReadRemaining()
+	parsedVerifier, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing verifier public key: %w", err)
+	}
+	args.Verifier = parsedVerifier
 
 	if r.Err != nil {
 		return nil, fmt.Errorf("error decoding args: %w", r.Err)
@@ -59,11 +67,18 @@ func SerializeRevealSpecificKeyLinkageResult(result *wallet.RevealSpecificKeyLin
 	w := util.NewWriter()
 
 	// Write prover, verifier, counterparty public keys
-	w.WriteIntBytes(result.Prover)
-	w.WriteIntBytes(result.Verifier)
-	if err := encodeCounterparty(w, result.Counterparty); err != nil {
-		return nil, fmt.Errorf("error encoding counterparty: %w", err)
+	if result.Prover == nil {
+		return nil, fmt.Errorf("prover public key is required")
 	}
+	w.WriteBytes(result.Prover.Compressed())
+	if result.Verifier == nil {
+		return nil, fmt.Errorf("verifier public key is required")
+	}
+	w.WriteBytes(result.Verifier.Compressed())
+	if result.Counterparty == nil {
+		return nil, fmt.Errorf("counterparty public key is required")
+	}
+	w.WriteBytes(result.Counterparty.Compressed())
 
 	// Write protocol ID (security level + protocol string)
 	w.WriteBytes(encodeProtocol(result.ProtocolID))
@@ -84,11 +99,21 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 	result := &wallet.RevealSpecificKeyLinkageResult{}
 
 	// Read prover, verifier, counterparty public keys
-	result.Prover = r.ReadIntBytes()
-	result.Verifier = r.ReadIntBytes()
-	counterparty, err := decodeCounterparty(r)
+	prover, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
 	if err != nil {
-		return nil, fmt.Errorf("error decoding counterparty: %w", err)
+		return nil, fmt.Errorf("error parsing prover public key: %w", err)
+	}
+	result.Prover = prover
+
+	verifier, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing verifier public key: %w", err)
+	}
+	result.Verifier = verifier
+
+	counterparty, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing counterparty public key: %w", err)
 	}
 	result.Counterparty = counterparty
 

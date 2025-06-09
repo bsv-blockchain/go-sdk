@@ -110,7 +110,7 @@ func TestRegistryClient_RegisterDefinition(t *testing.T) {
 
 	// Setup mock CreateSignature response
 	mockRegistry.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: ec.Signature{
+		Signature: &ec.Signature{
 			R: big.NewInt(1),
 			S: big.NewInt(1),
 		},
@@ -341,7 +341,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 				Satoshis:      1000,
 				LockingScript: lockingScript.Bytes(),
 				Spendable:     true,
-				Outpoint:      wallet.Outpoint{Txid: *tx.TxID()},
+				Outpoint:      transaction.Outpoint{Txid: *tx.TxID()},
 				Tags:          []string{"registry", "basket"},
 			},
 		},
@@ -428,7 +428,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 	// Setup mock CreateSignature response
 	mockRegistry.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: ec.Signature{
+		Signature: &ec.Signature{
 			R: big.NewInt(1),
 			S: big.NewInt(1),
 		},
@@ -655,7 +655,7 @@ func TestRegistryClient_RegisterDefinition_PushDrop(t *testing.T) {
 
 	// Setup mock CreateSignature response
 	mockRegistry.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: ec.Signature{
+		Signature: &ec.Signature{
 			R: big.NewInt(1),
 			S: big.NewInt(1),
 		},

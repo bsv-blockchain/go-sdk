@@ -108,12 +108,11 @@ func ValidateCertificates(
 				types := certificatesRequested.CertificateTypes
 
 				// Check certifier matches
-				certifierKey := cert.Certifier.ToDER()
-				if !wallet.BytesInHex33Slice(certifiers, certifierKey) {
+				if !utils.CertifierInSlice(certifiers, &cert.Certifier) {
 					errCh <- fmt.Errorf(
 						"certificate with serial number %s has an unrequested certifier: %x",
 						cert.SerialNumber,
-						certifierKey,
+						cert.Certifier.ToDER(),
 					)
 					return
 				}

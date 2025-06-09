@@ -12,6 +12,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -37,25 +38,19 @@ func TestVectors(t *testing.T) {
 	pubKey, err := ec.PublicKeyFromString("025ad43a22ac38d0bc1f8bacaabb323b5d634703b7a774c4268f6a09e4ddf79097")
 	require.NoError(t, err)
 	require.Equal(t, privKey.PubKey(), pubKey)
-	const CounterpartyHex = "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1"
-	counterparty, err := ec.PublicKeyFromString(CounterpartyHex)
-	require.NoError(t, err)
-	const VerifierHex = "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee"
-	verifier, err := ec.PublicKeyFromString(VerifierHex)
-	require.NoError(t, err)
-	verifier33 := tu.GetByte33FromHexString(t, VerifierHex)
-	const ProverHex = "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8"
-	prover, err := ec.PublicKeyFromString(ProverHex)
-	require.NoError(t, err)
+
+	counterparty := tu.GetPKFromHex(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+	verifier := tu.GetPKFromHex(t, "03b106dae20ae8fca0f4e8983d974c4b583054573eecdcdcfad261c035415ce1ee")
+	prover := tu.GetPKFromHex(t, "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8")
+	certifier := tu.GetPKFromHex(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
 
 	typeArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
 	serialArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
-	certifier := tu.GetByte33FromHexString(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1") // Use hex string from TS
 
 	ref, err := base64.StdEncoding.DecodeString("dGVzdA==")
 	require.NoError(t, err)
 
-	outpoint, err := wallet.OutpointFromString("aec245f27b7640c8b1865045107731bfb848115c573f7da38166074b1c9e475d.0")
+	outpoint, err := transaction.OutpointFromString("aec245f27b7640c8b1865045107731bfb848115c573f7da38166074b1c9e475d.0")
 	require.NoError(t, err)
 
 	lockScript, err := hex.DecodeString("76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac")
@@ -66,8 +61,7 @@ func TestVectors(t *testing.T) {
 	// pk = 95c5931552e547d72a292e9d6f59eef2b9f7e1576d8c7b49731b505117c0cdfa
 	// msg = test message
 	const sigHex = "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a"
-	signature, err := hex.DecodeString(sigHex)
-	require.NoError(t, err, "decoding signature hex should not error")
+	signature := tu.GetSigFromHex(t, sigHex)
 
 	txID, err := chainhash.NewHashFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 	require.NoError(t, err, "creating txID from hex should not error")
@@ -241,8 +235,8 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "revealCounterpartyKeyLinkage-simple-args",
 		Object: wallet.RevealCounterpartyKeyLinkageArgs{
-			Counterparty:     counterparty.ToDER(),
-			Verifier:         verifier.ToDER(),
+			Counterparty:     counterparty,
+			Verifier:         verifier,
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "test-reason",
 		},
@@ -250,9 +244,9 @@ func TestVectors(t *testing.T) {
 		Filename: "revealCounterpartyKeyLinkage-simple-result",
 		IsResult: true,
 		Object: wallet.RevealCounterpartyKeyLinkageResult{
-			Prover:                prover.ToDER(),
-			Counterparty:          counterparty.ToDER(),
-			Verifier:              verifier.ToDER(),
+			Prover:                prover,
+			Counterparty:          counterparty,
+			Verifier:              verifier,
 			RevelationTime:        "2023-01-01T00:00:00Z",
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},
@@ -264,7 +258,7 @@ func TestVectors(t *testing.T) {
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: counterparty,
 			},
-			Verifier: verifier.ToDER(),
+			Verifier: verifier,
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "tests",
@@ -279,12 +273,9 @@ func TestVectors(t *testing.T) {
 		Object: wallet.RevealSpecificKeyLinkageResult{
 			EncryptedLinkage:      []byte{1, 2, 3, 4},
 			EncryptedLinkageProof: []byte{5, 6, 7, 8},
-			Prover:                prover.ToDER(),
-			Verifier:              verifier.ToDER(),
-			Counterparty: wallet.Counterparty{
-				Type:         wallet.CounterpartyTypeOther,
-				Counterparty: counterparty,
-			},
+			Prover:                prover,
+			Verifier:              verifier,
+			Counterparty:          counterparty,
 			ProtocolID: wallet.Protocol{
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      "tests",
@@ -402,7 +393,7 @@ func TestVectors(t *testing.T) {
 		Filename: "createSignature-simple-result",
 		IsResult: true,
 		Object: wallet.CreateSignatureResult{
-			Signature: *newTestSignature(t),
+			Signature: tu.GetSigFromHex(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020101"),
 		},
 	}, {
 		Filename: "verifySignature-simple-args",
@@ -417,7 +408,7 @@ func TestVectors(t *testing.T) {
 				"privilegedReason": "test reason",
 				"seekPermission": true,
 				"data": [11, 22, 33, 44],
-				"signature": [48,37,2,32,78,69,225,105,50,184,175,81,73,97,161,211,161,162,95,223,63,79,119,50,233,214,36,198,198,21,72,171,95,184,205,65,2,1,0]
+				"signature": [48,37,2,32,78,69,225,105,50,184,175,81,73,97,161,211,161,162,95,223,63,79,119,50,233,214,36,198,198,21,72,171,95,184,205,65,2,1,1]
 			}`
 			err := json.Unmarshal([]byte(argsJSON), &args)
 			require.NoError(t, err)
@@ -440,7 +431,7 @@ func TestVectors(t *testing.T) {
 			RevocationOutpoint:  outpoint,
 			Signature:           signature,
 			CertifierUrl:        "https://certifier.example.com",
-			KeyringRevealer:     wallet.KeyringRevealer{PubKey: tu.GetByte33FromHexString(t, "319ee9fb4b2d9d84d2f5046986a12f29f163c5aa2db664a9b758e983837a321838")},
+			KeyringRevealer:     wallet.KeyringRevealer{PubKey: pubKey},
 			KeyringForSubject:   map[string]string{"field1": "key1", "field2": "key2"},
 			Privileged:          util.BoolPtr(false),
 		},
@@ -460,8 +451,8 @@ func TestVectors(t *testing.T) {
 		Filename: "listCertificates-simple-args",
 		IsResult: true,
 		Object: wallet.ListCertificatesArgs{
-			Certifiers:       []wallet.HexBytes33{tu.GetByte33FromHexString(t, CounterpartyHex), tu.GetByte33FromHexString(t, VerifierHex)},
-			Types:            []wallet.Base64Bytes32{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
+			Certifiers:       []*ec.PublicKey{counterparty, verifier},
+			Types:            []wallet.CertificateType{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
 			Limit:            5,
 			Offset:           0,
 			Privileged:       util.BoolPtr(true),
@@ -492,14 +483,14 @@ func TestVectors(t *testing.T) {
 			Certificate: wallet.Certificate{
 				Type:               typeArray,
 				SerialNumber:       serialArray,
-				Subject:            pubKey,       // Use key from test setup
-				Certifier:          counterparty, // Use key from test setup
+				Subject:            pubKey,
+				Certifier:          counterparty,
 				RevocationOutpoint: outpoint,
 				Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
 				Signature:          signature,
 			},
 			FieldsToReveal:   []string{"name"},
-			Verifier:         verifier33,
+			Verifier:         verifier,
 			Privileged:       util.BoolPtr(false),
 			PrivilegedReason: "prove-reason",
 		},
@@ -525,7 +516,7 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "discoverByIdentityKey-simple-args",
 		Object: wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey:    tu.GetByte33FromHexString(t, CounterpartyHex),
+			IdentityKey:    counterparty,
 			Limit:          10,
 			Offset:         0,
 			SeekPermission: util.BoolPtr(true),
@@ -538,7 +529,7 @@ func TestVectors(t *testing.T) {
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
-						Type:               wallet.Base64Bytes32(typeArray),
+						Type:               typeArray,
 						SerialNumber:       serialArray,
 						Subject:            pubKey,
 						Certifier:          counterparty,
@@ -869,20 +860,4 @@ func TestVectors(t *testing.T) {
 			})*/
 		})
 	}
-}
-
-// newSignature is a helper function to create a new signature from a byte slice
-func newSignature(t *testing.T, data []byte) *ec.Signature {
-	sig, err := ec.FromDER(data)
-	require.NoError(t, err)
-	return sig
-}
-
-func newTestSignature(t *testing.T) *ec.Signature {
-	return newSignature(t, []byte{0x30, 0x25, 0x02, 0x20, 0x4e, 0x45, 0xe1, 0x69,
-		0x32, 0xb8, 0xaf, 0x51, 0x49, 0x61, 0xa1, 0xd3, 0xa1,
-		0xa2, 0x5f, 0xdf, 0x3f, 0x4f, 0x77, 0x32, 0xe9, 0xd6,
-		0x24, 0xc6, 0xc6, 0x15, 0x48, 0xab, 0x5f, 0xb8, 0xcd,
-		0x41, 0x02, 0x01, 0x00,
-	})
 }

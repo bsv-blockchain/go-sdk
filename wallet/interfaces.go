@@ -2,110 +2,82 @@ package wallet
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+)
+
+// KeyOperations defines the interface for cryptographic operations.
+type KeyOperations interface {
+	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
+	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
+	CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
+	VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error)
+	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
+	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+}
+
+// Interface defines the core wallet operations for transaction creation, signing and querying.
+type Interface interface {
+	KeyOperations
+	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
+	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
+	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
+	ListActions(ctx context.Context, args ListActionsArgs, originator string) (*ListActionsResult, error)
+	InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
+	ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error)
+	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
+	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
+	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
+	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
+	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
+	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
+	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
+	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
+	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
+	IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
+	WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
+	GetHeight(ctx context.Context, args any, originator string) (*GetHeightResult, error)
+	GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error)
+	GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error)
+	GetVersion(ctx context.Context, args any, originator string) (*GetVersionResult, error)
+}
+
+type (
+	CertificateType [32]byte
+	SerialNumber    [32]byte
 )
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
-	Type               Base64Bytes32     `json:"type"`
-	SerialNumber       Base64Bytes32     `json:"serialNumber"`
+	Type               CertificateType   `json:"type"`
+	SerialNumber       SerialNumber      `json:"serialNumber"`
 	Subject            *ec.PublicKey     `json:"subject"`
 	Certifier          *ec.PublicKey     `json:"certifier"`
-	RevocationOutpoint *Outpoint         `json:"revocationOutpoint,omitempty"`
+	RevocationOutpoint *transaction.Outpoint         `json:"revocationOutpoint,omitempty"`
 	Fields             map[string]string `json:"fields,omitempty"` // Field name -> field value (encrypted)
-	Signature          JSONByteHex       `json:"signature,omitempty"`
-}
-
-// MarshalJSON implements json.Marshaler interface for Certificate
-func (c *Certificate) MarshalJSON() ([]byte, error) {
-	type Alias Certificate // Use alias to avoid recursion
-	var subjectHex, certifierHex *string
-	if c.Subject != nil {
-		s := c.Subject.ToDERHex()
-		subjectHex = &s
-	}
-	if c.Certifier != nil {
-		cs := c.Certifier.ToDERHex()
-		certifierHex = &cs
-	}
-
-	return json.Marshal(&struct {
-		Subject   *string `json:"subject"`
-		Certifier *string `json:"certifier"`
-		*Alias
-	}{
-		Subject:   subjectHex,
-		Certifier: certifierHex,
-		Alias:     (*Alias)(c),
-	})
-}
-
-// UnmarshalJSON implements json.Unmarshaler interface for Certificate
-func (c *Certificate) UnmarshalJSON(data []byte) error {
-	type Alias Certificate // Use alias to avoid recursion
-	aux := &struct {
-		Subject   *string `json:"subject"`
-		Certifier *string `json:"certifier"`
-		*Alias
-	}{
-		Alias: (*Alias)(c),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return fmt.Errorf("error unmarshaling certificate: %w", err)
-	}
-
-	// Decode public key hex strings
-	if aux.Subject != nil {
-		sub, err := ec.PublicKeyFromString(*aux.Subject)
-		if err != nil {
-			return fmt.Errorf("error decoding subject public key hex: %w", err)
-		}
-		c.Subject = sub
-	}
-	if aux.Certifier != nil {
-		cert, err := ec.PublicKeyFromString(*aux.Certifier)
-		if err != nil {
-			return fmt.Errorf("error decoding certifier public key hex: %w", err)
-		}
-		c.Certifier = cert
-	}
-
-	return nil
-}
-
-func (c *Certificate) RevocationOutpointString() string {
-	if c.RevocationOutpoint == nil {
-		return ""
-	}
-	return c.RevocationOutpoint.String()
+	Signature          *ec.Signature     `json:"signature,omitempty"`
 }
 
 // CreateActionInput represents an input to be spent in a transaction
 type CreateActionInput struct {
-	Outpoint              Outpoint    `json:"outpoint"` // Format: "txid:outputIndex"
-	InputDescription      string      `json:"inputDescription"`
-	UnlockingScript       JSONByteHex `json:"unlockingScript,omitempty"`
-	UnlockingScriptLength uint32      `json:"unlockingScriptLength,omitempty"`
-	SequenceNumber        uint32      `json:"sequenceNumber,omitempty"`
+	Outpoint              transaction.Outpoint `json:"outpoint"` // Format: "txid:outputIndex"
+	InputDescription      string   `json:"inputDescription"`
+	UnlockingScript       []byte   `json:"unlockingScript,omitempty"`
+	UnlockingScriptLength uint32   `json:"unlockingScriptLength,omitempty"`
+	SequenceNumber        uint32   `json:"sequenceNumber,omitempty"`
 }
 
 // CreateActionOutput represents an output to be created in a transaction
 type CreateActionOutput struct {
-	LockingScript      JSONByteHex `json:"lockingScript,omitempty"`
-	Satoshis           uint64      `json:"satoshis,omitempty"`
-	OutputDescription  string      `json:"outputDescription,omitempty"`
-	Basket             string      `json:"basket,omitempty"`
-	CustomInstructions string      `json:"customInstructions,omitempty"`
-	Tags               []string    `json:"tags,omitempty"`
+	LockingScript      []byte   `json:"lockingScript,omitempty"`
+	Satoshis           uint64   `json:"satoshis,omitempty"`
+	OutputDescription  string   `json:"outputDescription,omitempty"`
+	Basket             string   `json:"basket,omitempty"`
+	CustomInstructions string   `json:"customInstructions,omitempty"`
+	Tags               []string `json:"tags,omitempty"`
 }
 
 // TrustSelf represents a trust level for self-referential operations.
@@ -124,7 +96,7 @@ type CreateActionOptions struct {
 	KnownTxids             []chainhash.Hash
 	ReturnTXIDOnly         *bool
 	NoSend                 *bool
-	NoSendChange           []Outpoint
+	NoSendChange           []transaction.Outpoint
 	SendWith               []chainhash.Hash
 	RandomizeOutputs       *bool
 }
@@ -145,7 +117,7 @@ type CreateActionArgs struct {
 type CreateActionResult struct {
 	Txid                chainhash.Hash
 	Tx                  []byte
-	NoSendChange        []Outpoint
+	NoSendChange        []transaction.Outpoint
 	SendWithResults     []SendWithResult
 	SignableTransaction *SignableTransaction
 }
@@ -173,8 +145,8 @@ type SignableTransaction struct {
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
 type SignActionSpend struct {
-	UnlockingScript JSONByteHex `json:"unlockingScript"`
-	SequenceNumber  uint32      `json:"sequenceNumber,omitempty"`
+	UnlockingScript []byte `json:"unlockingScript"`
+	SequenceNumber  uint32 `json:"sequenceNumber,omitempty"`
 }
 
 // SignActionOptions controls signing and broadcasting behavior.
@@ -201,24 +173,24 @@ type SignActionResult struct {
 
 // ActionInput describes a transaction input with full details.
 type ActionInput struct {
-	SourceOutpoint      Outpoint    `json:"sourceOutpoint"`
-	SourceSatoshis      uint64      `json:"sourceSatoshis"`
-	SourceLockingScript JSONByteHex `json:"sourceLockingScript,omitempty"`
-	UnlockingScript     JSONByteHex `json:"unlockingScript,omitempty"`
-	InputDescription    string      `json:"inputDescription"`
-	SequenceNumber      uint32      `json:"sequenceNumber"`
+	SourceOutpoint      transaction.Outpoint `json:"sourceOutpoint"`
+	SourceSatoshis      uint64   `json:"sourceSatoshis"`
+	SourceLockingScript []byte   `json:"sourceLockingScript,omitempty"`
+	UnlockingScript     []byte   `json:"unlockingScript,omitempty"`
+	InputDescription    string   `json:"inputDescription"`
+	SequenceNumber      uint32   `json:"sequenceNumber"`
 }
 
 // ActionOutput describes a transaction output with full details.
 type ActionOutput struct {
-	Satoshis           uint64      `json:"satoshis"`
-	LockingScript      JSONByteHex `json:"lockingScript,omitempty"`
-	Spendable          bool        `json:"spendable"`
-	CustomInstructions string      `json:"customInstructions,omitempty"`
-	Tags               []string    `json:"tags"`
-	OutputIndex        uint32      `json:"outputIndex"`
-	OutputDescription  string      `json:"outputDescription"`
-	Basket             string      `json:"basket"`
+	Satoshis           uint64   `json:"satoshis"`
+	LockingScript      []byte   `json:"lockingScript,omitempty"`
+	Spendable          bool     `json:"spendable"`
+	CustomInstructions string   `json:"customInstructions,omitempty"`
+	Tags               []string `json:"tags"`
+	OutputIndex        uint32   `json:"outputIndex"`
+	OutputDescription  string   `json:"outputDescription"`
+	Basket             string   `json:"basket"`
 }
 
 // ActionStatus represents the current state of a transaction.
@@ -325,57 +297,20 @@ type ListOutputsArgs struct {
 
 // Output represents a wallet UTXO with its metadata
 type Output struct {
-	Satoshis           uint64      `json:"satoshis"`
-	LockingScript      JSONByteHex `json:"lockingScript,omitempty"` // Hex encoded
-	Spendable          bool        `json:"spendable"`
-	CustomInstructions string      `json:"customInstructions,omitempty"`
-	Tags               []string    `json:"tags,omitempty"`
-	Outpoint           Outpoint    `json:"outpoint"` // Format: "txid.index"
-	Labels             []string    `json:"labels,omitempty"`
+	Satoshis           uint64   `json:"satoshis"`
+	LockingScript      []byte   `json:"lockingScript,omitempty"` // Hex encoded
+	Spendable          bool     `json:"spendable"`
+	CustomInstructions string   `json:"customInstructions,omitempty"`
+	Tags               []string `json:"tags,omitempty"`
+	Outpoint           transaction.Outpoint `json:"outpoint"` // Format: "txid.index"
+	Labels             []string `json:"labels,omitempty"`
 }
 
 // ListOutputsResult contains a paginated list of wallet outputs matching the query.
 type ListOutputsResult struct {
-	TotalOutputs uint32 `json:"totalOutputs"`
-	BEEF         JsonByteNoBase64
+	TotalOutputs uint32   `json:"totalOutputs"`
+	BEEF         []byte   `json:"BEEF,omitempty"`
 	Outputs      []Output `json:"outputs"`
-}
-
-// KeyOperations defines the interface for cryptographic operations.
-type KeyOperations interface {
-	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
-	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
-	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
-	CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
-	VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error)
-	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
-	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
-}
-
-// Interface defines the core wallet operations for transaction creation, signing and querying.
-type Interface interface {
-	KeyOperations
-	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
-	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
-	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
-	ListActions(ctx context.Context, args ListActionsArgs, originator string) (*ListActionsResult, error)
-	InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error)
-	ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error)
-	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
-	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
-	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
-	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
-	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
-	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
-	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
-	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
-	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
-	IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
-	WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
-	GetHeight(ctx context.Context, args any, originator string) (*GetHeightResult, error)
-	GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error)
-	GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error)
-	GetVersion(ctx context.Context, args any, originator string) (*GetVersionResult, error)
 }
 
 // AbortActionArgs identifies a transaction to abort using its reference string.
@@ -429,52 +364,9 @@ type InternalizeOutput struct {
 	InsertionRemittance *BasketInsertion    `json:"insertionRemittance,omitempty"`
 }
 
-// JsonByteNoBase64 is a custom type for JSON serialization of byte arrays that don't use base64 encoding.
-type JsonByteNoBase64 []byte
-
-func (s *JsonByteNoBase64) MarshalJSON() ([]byte, error) {
-	// Marshal as a plain number array, not base64
-	arr := make([]uint16, len(*s))
-	for i, b := range *s {
-		arr[i] = uint16(b)
-	}
-	return json.Marshal(arr)
-}
-
-func (s *JsonByteNoBase64) UnmarshalJSON(data []byte) error {
-	var temp []uint8
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return err
-	}
-	*s = temp
-	return nil
-}
-
-// JSONByteHex is a helper type for marshaling byte slices as hex strings.
-type JSONByteHex []byte
-
-// MarshalJSON implements the json.Marshaler interface.
-func (s JSONByteHex) MarshalJSON() ([]byte, error) {
-	return json.Marshal(hex.EncodeToString(s))
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (s *JSONByteHex) UnmarshalJSON(data []byte) error {
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return err
-	}
-	bytes, err := hex.DecodeString(str)
-	if err != nil {
-		return err
-	}
-	*s = bytes
-	return nil
-}
-
 // InternalizeActionArgs contains data needed to import an external transaction into the wallet.
 type InternalizeActionArgs struct {
-	Tx             JsonByteNoBase64    `json:"tx"` // BEEF encoded transaction, uint8 makes json.Marshall use numbers
+	Tx             []byte              `json:"tx"` // BEEF encoded transaction
 	Description    string              `json:"description"`
 	Labels         []string            `json:"labels"`
 	SeekPermission *bool               `json:"seekPermission,omitempty"`
@@ -489,45 +381,45 @@ type InternalizeActionResult struct {
 // RevealCounterpartyKeyLinkageArgs contains parameters for revealing key linkage between counterparties.
 // This operation exposes the cryptographic relationship between the wallet and a specific counterparty.
 type RevealCounterpartyKeyLinkageArgs struct {
-	Counterparty     JSONByteHex `json:"counterparty"`
-	Verifier         JSONByteHex `json:"verifier"`
-	Privileged       *bool       `json:"privileged,omitempty"`
-	PrivilegedReason string      `json:"privilegedReason,omitempty"`
+	Counterparty     *ec.PublicKey `json:"counterparty"`
+	Verifier         *ec.PublicKey `json:"verifier"`
+	Privileged       *bool         `json:"privileged,omitempty"`
+	PrivilegedReason string        `json:"privilegedReason,omitempty"`
 }
 
 // RevealCounterpartyKeyLinkageResult contains the encrypted linkage data and proof
 // that demonstrates the relationship between the prover and counterparty.
 type RevealCounterpartyKeyLinkageResult struct {
-	Prover                JSONByteHex      `json:"prover"`
-	Counterparty          JSONByteHex      `json:"counterparty"`
-	Verifier              JSONByteHex      `json:"verifier"`
-	RevelationTime        string           `json:"revelationTime"`
-	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
-	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
+	Prover                *ec.PublicKey `json:"prover"`
+	Counterparty          *ec.PublicKey `json:"counterparty"`
+	Verifier              *ec.PublicKey `json:"verifier"`
+	RevelationTime        string        `json:"revelationTime"`
+	EncryptedLinkage      []byte        `json:"encryptedLinkage"`
+	EncryptedLinkageProof []byte        `json:"encryptedLinkageProof"`
 }
 
 // RevealSpecificKeyLinkageArgs contains parameters for revealing specific key linkage information.
 // This operation exposes the relationship for a specific protocol and key combination.
 type RevealSpecificKeyLinkageArgs struct {
-	Counterparty     Counterparty `json:"counterparty"`
-	Verifier         JSONByteHex  `json:"verifier"`
-	ProtocolID       Protocol     `json:"protocolID"`
-	KeyID            string       `json:"keyID"`
-	Privileged       *bool        `json:"privileged,omitempty"`
-	PrivilegedReason string       `json:"privilegedReason,omitempty"`
+	Counterparty     Counterparty  `json:"counterparty"`
+	Verifier         *ec.PublicKey `json:"verifier"`
+	ProtocolID       Protocol      `json:"protocolID"`
+	KeyID            string        `json:"keyID"`
+	Privileged       *bool         `json:"privileged,omitempty"`
+	PrivilegedReason string        `json:"privilegedReason,omitempty"`
 }
 
 // RevealSpecificKeyLinkageResult contains the specific encrypted linkage data and proof
 // for a particular protocol and key combination.
 type RevealSpecificKeyLinkageResult struct {
-	EncryptedLinkage      JsonByteNoBase64 `json:"encryptedLinkage"`
-	EncryptedLinkageProof JsonByteNoBase64 `json:"encryptedLinkageProof"`
-	Prover                JSONByteHex      `json:"prover"`
-	Verifier              JSONByteHex      `json:"verifier"`
-	Counterparty          Counterparty     `json:"counterparty"`
-	ProtocolID            Protocol         `json:"protocolID"`
-	KeyID                 string           `json:"keyID"`
-	ProofType             byte             `json:"proofType"`
+	EncryptedLinkage      []byte        `json:"encryptedLinkage"`
+	EncryptedLinkageProof []byte        `json:"encryptedLinkageProof"`
+	Prover                *ec.PublicKey `json:"prover"`
+	Verifier              *ec.PublicKey `json:"verifier"`
+	Counterparty          *ec.PublicKey `json:"counterparty"`
+	ProtocolID            Protocol      `json:"protocolID"`
+	KeyID                 string        `json:"keyID"`
+	ProofType             byte          `json:"proofType"`
 }
 
 // IdentityCertifier represents information about an entity that issues identity certificates.
@@ -544,72 +436,6 @@ type IdentityCertificate struct {
 	CertifierInfo           IdentityCertifier `json:"certifierInfo"`
 	PubliclyRevealedKeyring map[string]string `json:"publiclyRevealedKeyring"`
 	DecryptedFields         map[string]string `json:"decryptedFields"`
-}
-
-// MarshalJSON implements the json.Marshaler interface for IdentityCertificate.
-// It handles the flattening of the embedded Certificate fields.
-func (ic *IdentityCertificate) MarshalJSON() ([]byte, error) {
-	// Start with marshaling the embedded Certificate
-	certData, err := json.Marshal(&ic.Certificate)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
-	}
-
-	// Unmarshal certData into a map
-	var certMap map[string]interface{}
-	if err := json.Unmarshal(certData, &certMap); err != nil {
-		return nil, fmt.Errorf("error unmarshaling cert data into map: %w", err)
-	}
-
-	// Add IdentityCertificate specific fields to the map
-	certMap["certifierInfo"] = ic.CertifierInfo
-	if ic.PubliclyRevealedKeyring != nil {
-		certMap["publiclyRevealedKeyring"] = ic.PubliclyRevealedKeyring
-	}
-	if ic.DecryptedFields != nil {
-		certMap["decryptedFields"] = ic.DecryptedFields
-	}
-
-	// Marshal the final map
-	return json.Marshal(certMap)
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for IdentityCertificate.
-// It handles the flattening of the embedded Certificate fields.
-func (ic *IdentityCertificate) UnmarshalJSON(data []byte) error {
-	// Unmarshal into the embedded Certificate first
-	if err := json.Unmarshal(data, &ic.Certificate); err != nil {
-		return fmt.Errorf("error unmarshaling embedded Certificate: %w", err)
-	}
-
-	// Unmarshal into a temporary map to get the other fields
-	var temp map[string]json.RawMessage
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return fmt.Errorf("error unmarshaling into temp map: %w", err)
-	}
-
-	// Unmarshal CertifierInfo
-	if certInfoData, ok := temp["certifierInfo"]; ok {
-		if err := json.Unmarshal(certInfoData, &ic.CertifierInfo); err != nil {
-			return fmt.Errorf("error unmarshaling certifierInfo: %w", err)
-		}
-	}
-
-	// Unmarshal PubliclyRevealedKeyring
-	if pubKeyringData, ok := temp["publiclyRevealedKeyring"]; ok {
-		if err := json.Unmarshal(pubKeyringData, &ic.PubliclyRevealedKeyring); err != nil {
-			return fmt.Errorf("error unmarshaling publiclyRevealedKeyring: %w", err)
-		}
-	}
-
-	// Unmarshal DecryptedFields
-	if decryptedData, ok := temp["decryptedFields"]; ok {
-		if err := json.Unmarshal(decryptedData, &ic.DecryptedFields); err != nil {
-			return fmt.Errorf("error unmarshaling decryptedFields: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // AcquisitionProtocol specifies the method used to acquire a certificate.
@@ -637,47 +463,19 @@ const KeyringRevealerCertifier = "certifier"
 // It can either point to the certifier or be a public key.
 type KeyringRevealer struct {
 	Certifier bool
-	PubKey    HexBytes33
-}
-
-func (r KeyringRevealer) MarshalJSON() ([]byte, error) {
-	if r.Certifier {
-		return json.Marshal(KeyringRevealerCertifier)
-	}
-	return json.Marshal(hex.EncodeToString(r.PubKey[:]))
-}
-
-func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return fmt.Errorf("error unmarshaling revealer: %w", err)
-	}
-
-	if str == KeyringRevealerCertifier {
-		r.Certifier = true
-		return nil
-	}
-	data, err := hex.DecodeString(str)
-	if err != nil {
-		return fmt.Errorf("error decoding revealer hex: %w", err)
-	}
-	if len(data) != 33 {
-		return fmt.Errorf("revealer hex must be 33 bytes, got %d", len(data))
-	}
-	copy(r.PubKey[:], data)
-	return nil
+	PubKey    *ec.PublicKey
 }
 
 // AcquireCertificateArgs contains parameters for acquiring a new certificate.
 // This includes the certificate type, certifier information, and acquisition method.
 type AcquireCertificateArgs struct {
-	Type                Base64Bytes32       `json:"type"`
-	Certifier           HexBytes33          `json:"certifier"`
+	Type                CertificateType     `json:"type"`
+	Certifier           *ec.PublicKey       `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
-	SerialNumber        Base64Bytes32       `json:"serialNumber"`
-	RevocationOutpoint  *Outpoint           `json:"revocationOutpoint,omitempty"`
-	Signature           JSONByteHex         `json:"signature,omitempty"`
+	SerialNumber        SerialNumber        `json:"serialNumber"`
+	RevocationOutpoint  *transaction.Outpoint           `json:"revocationOutpoint,omitempty"`
+	Signature           *ec.Signature       `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
 	KeyringRevealer     KeyringRevealer     `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
 	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
@@ -687,77 +485,19 @@ type AcquireCertificateArgs struct {
 
 // ListCertificatesArgs contains parameters for listing certificates with filtering and pagination.
 type ListCertificatesArgs struct {
-	Certifiers       []HexBytes33    `json:"certifiers"`
-	Types            []Base64Bytes32 `json:"types"`
-	Limit            uint32          `json:"limit"`
-	Offset           uint32          `json:"offset"`
-	Privileged       *bool           `json:"privileged,omitempty"`
-	PrivilegedReason string          `json:"privilegedReason,omitempty"`
+	Certifiers       []*ec.PublicKey   `json:"certifiers"`
+	Types            []CertificateType `json:"types"`
+	Limit            uint32            `json:"limit"`
+	Offset           uint32            `json:"offset"`
+	Privileged       *bool             `json:"privileged,omitempty"`
+	PrivilegedReason string            `json:"privilegedReason,omitempty"`
 }
 
 // CertificateResult represents a certificate with its associated keyring and verifier information.
 type CertificateResult struct {
 	Certificate                   // Embed certificate fields directly. They already have tags.
 	Keyring     map[string]string `json:"keyring"`
-	Verifier    JSONByteHex       `json:"verifier"`
-}
-
-// MarshalJSON implements the json.Marshaler interface for CertificateResult
-// It handles the flattening of the embedded Certificate fields.
-func (cr *CertificateResult) MarshalJSON() ([]byte, error) {
-	// Start with marshaling the embedded Certificate
-	certData, err := json.Marshal(&cr.Certificate)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling embedded Certificate: %w", err)
-	}
-
-	// Unmarshal certData into a map
-	var certMap map[string]interface{}
-	if err := json.Unmarshal(certData, &certMap); err != nil {
-		return nil, fmt.Errorf("error unmarshaling cert data into map: %w", err)
-	}
-
-	// Add Keyring and Verifier to the map
-	if cr.Keyring != nil {
-		certMap["keyring"] = cr.Keyring
-	}
-	if len(cr.Verifier) > 0 {
-		certMap["verifier"] = cr.Verifier
-	}
-
-	// Marshal the final map
-	return json.Marshal(certMap)
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface for CertificateResult
-// It handles the flattening of the embedded Certificate fields.
-func (cr *CertificateResult) UnmarshalJSON(data []byte) error {
-	// Unmarshal into the embedded Certificate first
-	if err := json.Unmarshal(data, &cr.Certificate); err != nil {
-		return fmt.Errorf("error unmarshaling embedded Certificate: %w", err)
-	}
-
-	// Unmarshal into a temporary map to get Keyring and Verifier
-	var temp map[string]json.RawMessage
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return fmt.Errorf("error unmarshaling into temp map: %w", err)
-	}
-
-	// Unmarshal Keyring
-	if keyringData, ok := temp["keyring"]; ok {
-		if err := json.Unmarshal(keyringData, &cr.Keyring); err != nil {
-			return fmt.Errorf("error unmarshaling keyring: %w", err)
-		}
-	}
-
-	// Unmarshal Verifier
-	if verifierData, ok := temp["verifier"]; ok {
-		if err := json.Unmarshal(verifierData, &cr.Verifier); err != nil {
-			return fmt.Errorf("error unmarshaling verifier: %w", err)
-		}
-	}
-
-	return nil
+	Verifier    []byte            `json:"verifier"`
 }
 
 // ListCertificatesResult contains a paginated list of certificates matching the query criteria.
@@ -768,15 +508,15 @@ type ListCertificatesResult struct {
 
 // RelinquishCertificateArgs contains parameters for relinquishing ownership of a certificate.
 type RelinquishCertificateArgs struct {
-	Type         Base64Bytes32 `json:"type"`
-	SerialNumber Base64Bytes32 `json:"serialNumber"`
-	Certifier    HexBytes33    `json:"certifier"`
+	Type         CertificateType `json:"type"`
+	SerialNumber SerialNumber    `json:"serialNumber"`
+	Certifier    *ec.PublicKey   `json:"certifier"`
 }
 
 // RelinquishOutputArgs contains parameters for relinquishing ownership of an output.
 type RelinquishOutputArgs struct {
 	Basket string   `json:"basket"`
-	Output Outpoint `json:"output"`
+	Output transaction.Outpoint `json:"output"`
 }
 
 // RelinquishOutputResult indicates whether an output was successfully relinquished.
@@ -792,10 +532,10 @@ type RelinquishCertificateResult struct {
 // DiscoverByIdentityKeyArgs contains parameters for discovering certificates by identity key.
 // This allows finding certificates associated with a specific public key identity.
 type DiscoverByIdentityKeyArgs struct {
-	IdentityKey    HexBytes33 `json:"identityKey"`
-	Limit          uint32     `json:"limit"`
-	Offset         uint32     `json:"offset"`
-	SeekPermission *bool      `json:"seekPermission,omitempty"`
+	IdentityKey    *ec.PublicKey `json:"identityKey"`
+	Limit          uint32        `json:"limit"`
+	Offset         uint32        `json:"offset"`
+	SeekPermission *bool         `json:"seekPermission,omitempty"`
 }
 
 // DiscoverByAttributesArgs contains parameters for discovering certificates by their attributes.
@@ -830,7 +570,7 @@ type GetHeaderArgs struct {
 
 // GetHeaderResult contains the blockchain header data for the requested height.
 type GetHeaderResult struct {
-	Header JSONByteHex `json:"header"`
+	Header []byte `json:"header"`
 }
 
 // Network represents the blockchain network type.
@@ -871,9 +611,9 @@ type ProveCertificateArgs struct {
 	FieldsToReveal []string `json:"fieldsToReveal"`
 
 	// The verifier's identity key
-	Verifier         HexBytes33 `json:"verifier"`
-	Privileged       *bool      `json:"privileged,omitempty"`
-	PrivilegedReason string     `json:"privilegedReason,omitempty"`
+	Verifier         *ec.PublicKey `json:"verifier"`
+	Privileged       *bool         `json:"privileged,omitempty"`
+	PrivilegedReason string        `json:"privilegedReason,omitempty"`
 }
 
 // ProveCertificateResult contains the result of creating a verifiable certificate
@@ -885,146 +625,3 @@ type ProveCertificateResult struct {
 // CertificateFieldNameUnder50Bytes represents a certificate field name with length restrictions.
 // Field names must be under 50 bytes to ensure efficient storage and processing.
 type CertificateFieldNameUnder50Bytes string
-
-// Base64String represents a string that should be base64 encoded in certain contexts.
-type Base64String string
-
-func (s Base64String) ToArray() ([32]byte, error) {
-	b, err := base64.StdEncoding.DecodeString(string(s))
-	if err != nil {
-		return [32]byte{}, fmt.Errorf("error decoding base64 string: %w", err)
-	}
-
-	var arr [32]byte
-	if len(b) > 32 {
-		return arr, fmt.Errorf("string too long: %d", len(b))
-	}
-	if len(b) == 0 {
-		return arr, nil
-	}
-	copy(arr[:], b)
-	return arr, nil
-}
-
-func Base64StringFromArray(arr [32]byte) Base64String {
-	return Base64String(base64.StdEncoding.EncodeToString(arr[:]))
-}
-
-type Base64Bytes32 [32]byte
-
-func (b *Base64Bytes32) MarshalJSON() ([]byte, error) {
-	s := base64.StdEncoding.EncodeToString(b[:])
-	return json.Marshal(s)
-}
-
-func (b *Base64Bytes32) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	decoded, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return err
-	}
-	if len(decoded) != 32 {
-		return fmt.Errorf("expected 32 bytes, got %d", len(decoded))
-	}
-	copy(b[:], decoded)
-	return nil
-}
-
-type HexBytes33 [33]byte
-
-func (b *HexBytes33) MarshalJSON() ([]byte, error) {
-	s := hex.EncodeToString(b[:])
-	return json.Marshal(s)
-}
-
-func (b *HexBytes33) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	decoded, err := hex.DecodeString(s)
-	if err != nil {
-		return err
-	}
-	if len(decoded) != 33 {
-		return fmt.Errorf("expected 33 bytes, got %d", len(decoded))
-	}
-	copy(b[:], decoded)
-	return nil
-}
-
-func BytesInHex33Slice(slice []HexBytes33, item []byte) bool {
-	if len(item) > 33 {
-		return false
-	}
-	var item33 HexBytes33
-	copy(item33[:], item)
-	for _, v := range slice {
-		if v == item33 {
-			return true
-		}
-	}
-	return false
-}
-
-type Outpoint struct {
-	Txid  chainhash.Hash
-	Index uint32
-}
-
-func (o *Outpoint) NotEmpty() bool {
-	return o != nil && o.Txid != chainhash.Hash{}
-}
-
-func (o Outpoint) String() string {
-	txidHex := hex.EncodeToString(o.Txid[:])
-	return fmt.Sprintf("%s.%d", txidHex, o.Index)
-}
-
-func (o *Outpoint) MarshalJSON() ([]byte, error) {
-	return json.Marshal(o.String())
-}
-
-func (o *Outpoint) UnmarshalJSON(data []byte) error {
-	var outpointStr string
-	if err := json.Unmarshal(data, &outpointStr); err != nil {
-		return fmt.Errorf("error unmarshaling outpoint string: %w", err)
-	}
-	outpoint, err := OutpointFromString(outpointStr)
-	if err != nil {
-		return fmt.Errorf("error parsing outpoint string: %w", err)
-	}
-	o.Txid = outpoint.Txid
-	o.Index = outpoint.Index
-	return nil
-}
-
-func OutpointFromString(s string) (*Outpoint, error) {
-	var outpoint = new(Outpoint)
-	if len(s) == 0 {
-		return outpoint, nil
-	}
-	parts := strings.Split(s, ".")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid outpoint format: %s", s)
-	}
-
-	txidBytes, err := hex.DecodeString(parts[0])
-	if err != nil {
-		return nil, fmt.Errorf("invalid txid hex: %w", err)
-	}
-	if len(txidBytes) != chainhash.HashSize {
-		return nil, fmt.Errorf("invalid txid length: %d", len(txidBytes))
-	}
-	copy(outpoint.Txid[:], txidBytes)
-
-	index, err := strconv.ParseUint(parts[1], 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid output index: %w", err)
-	}
-	outpoint.Index = uint32(index)
-	return outpoint, nil
-}

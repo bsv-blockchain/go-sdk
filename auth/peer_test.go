@@ -111,10 +111,10 @@ func CreatePeerPair(t *testing.T) (*Peer, *Peer, *wallet.MockWallet, *wallet.Moc
 	require.NoError(t, err)
 
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 
 	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -535,10 +535,10 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	// Setup crypto operations
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 
 	// Force all signature verifications to succeed
@@ -621,14 +621,14 @@ func TestPeerCertificateExchange(t *testing.T) {
 
 	// Set certificate requirements - We need to use the RAW type string here, not base64 encoded
 	aliceCertReqs := &utils.RequestedCertificateSet{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")}, // "any" is special value that accepts any certifier
+		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")}, // "any" is special value that accepts any certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
 		},
 	}
 
 	bobCertReqs := &utils.RequestedCertificateSet{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")}, // "any" is special value that accepts any certifier
+		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")}, // "any" is special value that accepts any certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
 		},
@@ -746,10 +746,10 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	aliceWallet1.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyAliceSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyAliceSig}, nil
 	}
 	aliceWallet2.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyAliceSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyAliceSig}, nil
 	}
 
 	aliceWallet1.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -799,14 +799,14 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	bobWallet1.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyBobSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyBobSig}, nil
 	}
 	bobWallet1.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
 	bobWallet2.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummyBobSig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummyBobSig}, nil
 	}
 	bobWallet2.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
@@ -1060,10 +1060,10 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 
 	// Setup crypto operations
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 
 	// Force all signature verifications to succeed
@@ -1152,7 +1152,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 
 	// Setup certificate requirements - requesting two fields but accepting partial matches
 	requestedCertificates := &utils.RequestedCertificateSet{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")},
+		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"name", "email"},
 		},
@@ -1336,10 +1336,10 @@ func TestLibraryCardVerification(t *testing.T) {
 
 	// Setup crypto operations
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 
 	// Force all signature verifications to succeed
@@ -1420,7 +1420,7 @@ func TestLibraryCardVerification(t *testing.T) {
 
 	// Setup certificate requirements - Alice requires Bob's library card number
 	alice.CertificatesToRequest = &utils.RequestedCertificateSet{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")},
+		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"cardNumber"},
 		},
@@ -1441,7 +1441,7 @@ func TestLibraryCardVerification(t *testing.T) {
 
 	// Alice explicitly requests Bob's certificate
 	err = alice.RequestCertificates(ctx, bobPubKey.PublicKey, utils.RequestedCertificateSet{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")},
+		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"cardNumber"},
 		},
@@ -1451,7 +1451,6 @@ func TestLibraryCardVerification(t *testing.T) {
 	} else {
 		t.Logf("Alice explicitly requested Bob's library card")
 	}
-	// }()
 
 	// Wait for certificate exchange
 	select {
@@ -1619,10 +1618,10 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 	require.NoError(t, err)
 
 	aliceWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 	bobWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		return &wallet.CreateSignatureResult{Signature: *dummySig}, nil
+		return &wallet.CreateSignatureResult{Signature: dummySig}, nil
 	}
 
 	aliceWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
@@ -1715,14 +1714,14 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 
 	// Create peers with different certificate requirements
 	aliceRequiredCerts := utils.RequestedCertificateSet{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")},
+		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certTypeA: []string{"name"}, // Alice only accepts partnerA certs
 		},
 	}
 
 	bobRequiredCerts := utils.RequestedCertificateSet{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("any")},
+		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certTypeB: []string{"name"}, // Bob only accepts partnerB certs
 		},

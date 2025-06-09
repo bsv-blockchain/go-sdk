@@ -7,8 +7,8 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -31,6 +31,8 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	certType1 := tu.GetByte32FromString("certType1")
 	certType2 := tu.GetByte32FromString("certType2")
 	serial1 := tu.GetByte32FromString("serial1")
+	const TestSigHex = "3045022100a6f09ee70382ab364f3f6b040aebb8fe7a51dbc3b4c99cfeb2f7756432162833022067349b91a6319345996faddf36d1b2f3a502e4ae002205f9d2db85474f9aed5a"
+	testSig := tu.GetSigFromHex(t, TestSigHex)
 
 	// Test case 1: Retrieves matching certificates based on requested set
 	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
@@ -44,7 +46,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		keyring2Base64 := base64.StdEncoding.EncodeToString([]byte("key2"))
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1"), tu.GetByte33FromString("certifier2")},
+			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1"), tu.GetPKFromString("certifier2")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1", "field2"},
 				certType2: {"field3"},
@@ -56,7 +58,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		certifier, _ := ec.PublicKeyFromBytes([]byte{0x07, 0x08, 0x09})
 
 		// Mock wallet.ListCertificates response with base64-encoded values
-		revocationOutpoint, _ := overlay.NewOutpointFromString("abcd1234:0")
+		revocationOutpoint, _ := transaction.OutpointFromString("abcd1234:0")
 		mockListResult := &wallet.ListCertificatesResult{
 			Certificates: []wallet.CertificateResult{
 				{
@@ -67,7 +69,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 						Certifier:          certifier,
 						RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 						Fields:             map[string]string{"field1": field1ValueBase64, "field2": field2ValueBase64}, // Use base64-encoded field values
-						Signature:          []byte{0x01, 0x02, 0x03, 0x04},
+						Signature:          testSig,
 					},
 				},
 			},
@@ -96,13 +98,13 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		if len(certs) > 0 {
 			cert := certs[0]
 			// Compare against base64 encoded values
-			expectedTypeBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString(certType1[:]))
-			expectedSerialBase64 := wallet.Base64String(base64.StdEncoding.EncodeToString(serial1[:]))
+			expectedTypeBase64 := wallet.StringBase64FromArray(certType1)
+			expectedSerialBase64 := wallet.StringBase64FromArray(serial1)
 			require.Equal(t, expectedTypeBase64, cert.Type)
 			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
 			require.NotNil(t, cert.RevocationOutpoint)
 			if cert.RevocationOutpoint != nil && revocationOutpoint != nil {
-				require.Equal(t, revocationOutpoint.OutputIndex, cert.RevocationOutpoint.OutputIndex)
+				require.Equal(t, revocationOutpoint.Index, cert.RevocationOutpoint.Index)
 			}
 		}
 	})
@@ -113,7 +115,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		mockWallet := wallet.NewMockWallet(t)
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
+			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1"},
 			},
@@ -143,7 +145,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		mockWallet := wallet.NewMockWallet(t)
 
 		requestedCerts := &RequestedCertificateSet{
-			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("certifier1")},
+			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1"},
 			},

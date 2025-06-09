@@ -1,13 +1,13 @@
 package serializer
 
 import (
-	"encoding/binary"
-	"encoding/hex"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -227,25 +227,25 @@ func TestDecodeOutpoint(t *testing.T) {
 	validIndex := uint32(42)
 
 	// Create valid outpoint bytes
-	validData := make([]byte, outpointSize)
-	copy(validData[:32], validTxIDHash[:])
-	binary.BigEndian.PutUint32(validData[32:36], validIndex)
+	var validData []byte
+	validData = append(validData, validTxIDHash[:]...)
+	validData = append(validData, util.VarInt(validIndex).Bytes()...)
 
 	tests := []struct {
 		name      string
 		input     []byte
-		want      *wallet.Outpoint
+		want      *transaction.Outpoint
 		expectErr bool
 	}{
 		{
 			name:      "valid outpoint",
 			input:     validData,
-			want:      &wallet.Outpoint{Txid: *validTxIDHash, Index: validIndex},
+			want:      &transaction.Outpoint{Txid: *validTxIDHash, Index: validIndex},
 			expectErr: false,
 		},
 		{
 			name:      "invalid length - too short",
-			input:     validData[:outpointSize-1],
+			input:     validData[:len(validData)-1],
 			expectErr: true,
 		},
 		{
@@ -267,11 +267,18 @@ func TestDecodeOutpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := decodeOutpoint(tt.input)
+			r := util.NewReaderHoldError(tt.input)
+			got, err := decodeOutpoint(&r.Reader)
+			r.CheckComplete()
+
+			if err == nil && r.Err != nil {
+				err = r.Err
+				got = nil
+			}
 
 			if tt.expectErr {
 				require.Error(t, err, "expected an error but got none")
-				require.Empty(t, got, "expected empty string on error")
+				require.Empty(t, got, "expected nil on error")
 			} else {
 				require.NoError(t, err, "did not expect an error but got one")
 				require.Equal(t, tt.want, got, "decoded outpoint string does not match expected")
@@ -287,19 +294,19 @@ func TestEncodeOutpoint(t *testing.T) {
 	validTxIDHash, err := chainhash.NewHashFromHex(validTxid)
 	require.NoError(t, err, "creating valid txid hash should not error")
 
-	validOutpoint := &wallet.Outpoint{
+	validOutpoint := &transaction.Outpoint{
 		Txid:  *validTxIDHash,
 		Index: validIndex,
 	}
 
 	// Expected valid binary output
-	expectedBytes := make([]byte, outpointSize)
-	copy(expectedBytes[:32], validTxIDHash[:])
-	binary.BigEndian.PutUint32(expectedBytes[32:36], validIndex)
+	var expectedBytes []byte
+	expectedBytes = append(expectedBytes, validTxIDHash[:]...)
+	expectedBytes = append(expectedBytes, util.VarInt(validIndex).Bytes()...)
 
 	tests := []struct {
 		name           string
-		input          *wallet.Outpoint
+		input          *transaction.Outpoint
 		expectedOutput []byte
 	}{
 		{
@@ -309,8 +316,8 @@ func TestEncodeOutpoint(t *testing.T) {
 		},
 		{
 			name:           "empty outpoint",
-			input:          &wallet.Outpoint{},
-			expectedOutput: make([]byte, 36),
+			input:          &transaction.Outpoint{},
+			expectedOutput: make([]byte, 33),
 		},
 	}
 
@@ -321,18 +328,11 @@ func TestEncodeOutpoint(t *testing.T) {
 			require.Equal(t, tt.expectedOutput, gotBytes, "encoded bytes do not match expected")
 
 			// Round trip test
-			decodedObj, decodeErr := decodeOutpoint(gotBytes)
+			decodedObj, decodeErr := decodeOutpoint(util.NewReader(gotBytes))
 			require.NoError(t, decodeErr, "decoding the encoded bytes failed")
 			require.Equal(t, tt.input, decodedObj, "round trip failed: decoded string does not match original input")
 		})
 	}
-}
-
-// fromHex is a helper function to create a public key from a hex string
-func fromHex(t *testing.T, s string) []byte {
-	data, err := hex.DecodeString(s)
-	require.NoError(t, err, "decoding hex string should not error")
-	return data
 }
 
 // newCounterparty is a helper function to create a new counterparty
@@ -345,18 +345,6 @@ func newCounterparty(t *testing.T, pubKeyHex string) wallet.Counterparty {
 	}
 }
 
-// newSignature is a helper function to create a new signature from a byte slice
-func newSignature(t *testing.T, data []byte) *ec.Signature {
-	sig, err := ec.FromDER(data)
-	require.NoError(t, err, "creating signature from DER bytes should not error")
-	return sig
-}
-
 func newTestSignature(t *testing.T) *ec.Signature {
-	return newSignature(t, []byte{0x30, 0x25, 0x02, 0x20, 0x4e, 0x45, 0xe1, 0x69,
-		0x32, 0xb8, 0xaf, 0x51, 0x49, 0x61, 0xa1, 0xd3, 0xa1,
-		0xa2, 0x5f, 0xdf, 0x3f, 0x4f, 0x77, 0x32, 0xe9, 0xd6,
-		0x24, 0xc6, 0xc6, 0x15, 0x48, 0xab, 0x5f, 0xb8, 0xcd,
-		0x41, 0x02, 0x01, 0x00,
-	})
+	return tu.GetSigFromHex(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020101")
 }

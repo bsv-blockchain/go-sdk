@@ -7,8 +7,8 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
@@ -30,11 +30,11 @@ func TestValidateCertificates(t *testing.T) {
 	})
 
 	t.Run("Validates certificate requirements structure", func(t *testing.T) {
-		var certType wallet.Base64Bytes32
+		var certType wallet.CertificateType
 		copy(certType[:], "requested_type")
 		// Test validate certificate requirements struct
 		reqs := &utils.RequestedCertificateSet{
-			Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("valid_certifier")},
+			Certifiers: []*ec.PublicKey{tu.GetPKFromString("valid_certifier")},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType: {"field1"},
 			},
@@ -79,9 +79,9 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Create revocation outpoint
-		revocationOutpoint := &overlay.Outpoint{
-			Txid:        chainhash.HashH([]byte("test_txid_000000000000000000000000000000000000000000000000000000000000")),
-			OutputIndex: 0,
+		revocationOutpoint := &transaction.Outpoint{
+			Txid:  chainhash.HashH([]byte("test_txid_000000000000000000000000000000000000000000000000000000000000")),
+			Index: 0,
 		}
 
 		// Issue certificate
@@ -91,7 +91,7 @@ func TestValidateCertificates(t *testing.T) {
 			subjectCounterparty,
 			plaintextFields,
 			string(utils.RandomBase64(32)), // certificate type
-			func(serial string) (*overlay.Outpoint, error) {
+			func(serial string) (*transaction.Outpoint, error) {
 				return revocationOutpoint, nil
 			},
 			"", // auto-generate serial number
@@ -123,9 +123,9 @@ func TestValidateCertificates(t *testing.T) {
 		require.NoError(t, err)
 
 		// Convert keyring to expected format
-		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		for k, v := range keyringForVerifier {
-			keyringMap[k] = wallet.Base64String(v)
+			keyringMap[k] = wallet.StringBase64(v)
 		}
 
 		// Create VerifiableCertificate
@@ -137,17 +137,13 @@ func TestValidateCertificates(t *testing.T) {
 			IdentityKey:  subjectIdentityKey.PublicKey, // Fixed: use subject's key
 		}
 
-		// Create certificate requirements
-		var certifierHex [33]byte
-		copy(certifierHex[:], certifierIdentityKey.PublicKey.Compressed())
-		
-		// Convert masterCert.Type from Base64String to Base64Bytes32
-		var certType32 wallet.Base64Bytes32
+		// Convert masterCert.Type from StringBase64 to Base64Bytes32
+		var certType32 wallet.CertificateType
 		typeBytes, _ := base64.StdEncoding.DecodeString(string(masterCert.Type))
 		copy(certType32[:], typeBytes)
-		
+
 		certReqs := &utils.RequestedCertificateSet{
-			Certifiers: []wallet.HexBytes33{certifierHex},
+			Certifiers: []*ec.PublicKey{certifierIdentityKey.PublicKey},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType32: []string{"name", "email"},
 			},
@@ -217,9 +213,9 @@ func TestValidateCertificates(t *testing.T) {
 		require.NoError(t, err)
 
 		// Convert keyring
-		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		for k, v := range keyringForSelf {
-			keyringMap[k] = wallet.Base64String(v)
+			keyringMap[k] = v
 		}
 
 		// Create VerifiableCertificate
@@ -231,17 +227,13 @@ func TestValidateCertificates(t *testing.T) {
 			IdentityKey:  subjectIdentityKey.PublicKey,
 		}
 
-		// Create requirements
-		var subjectHex [33]byte
-		copy(subjectHex[:], subjectIdentityKey.PublicKey.Compressed())
-		
 		// Convert certTypeBase64 from string to Base64Bytes32
-		var certType32 wallet.Base64Bytes32
+		var certType32 wallet.CertificateType
 		typeBytes, _ := base64.StdEncoding.DecodeString(certTypeBase64)
 		copy(certType32[:], typeBytes)
-		
+
 		certReqs := &utils.RequestedCertificateSet{
-			Certifiers: []wallet.HexBytes33{subjectHex},
+			Certifiers: []*ec.PublicKey{subjectIdentityKey.PublicKey},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType32: []string{"owner"},
 			},
@@ -304,9 +296,9 @@ func TestValidateCertificates(t *testing.T) {
 			"",
 		)
 
-		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		for k, v := range keyring {
-			keyringMap[k] = wallet.Base64String(v)
+			keyringMap[k] = v
 		}
 
 		verifiableCert := certificates.NewVerifiableCertificate(&masterCert.Certificate, keyringMap)

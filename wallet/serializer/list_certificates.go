@@ -3,6 +3,7 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -13,7 +14,7 @@ func SerializeListCertificatesArgs(args *wallet.ListCertificatesArgs) ([]byte, e
 	// Write certifiers
 	w.WriteVarInt(uint64(len(args.Certifiers)))
 	for _, certifier := range args.Certifiers {
-		w.WriteBytes(certifier[:])
+		w.WriteBytes(certifier.Compressed())
 	}
 
 	// Write types
@@ -38,21 +39,24 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 
 	// Read certifiers
 	certifiersLength := r.ReadVarInt()
-	args.Certifiers = make([]wallet.HexBytes33, 0, certifiersLength)
+	args.Certifiers = make([]*ec.PublicKey, 0, certifiersLength)
 	for i := uint64(0); i < certifiersLength; i++ {
-		var certifier wallet.HexBytes33
-		copy(certifier[:], r.ReadBytes(33))
+		certifierBytes := r.ReadBytes(33)
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing certifier: %w", r.Err)
 		}
-		args.Certifiers = append(args.Certifiers, certifier)
+		parsedCertifier, err := ec.PublicKeyFromBytes(certifierBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing certifier public key: %w", err)
+		}
+		args.Certifiers = append(args.Certifiers, parsedCertifier)
 	}
 
 	// Read types
 	typesLength := r.ReadVarInt()
-	args.Types = make([]wallet.Base64Bytes32, 0, typesLength)
+	args.Types = make([]wallet.CertificateType, 0, typesLength)
 	for i := uint64(0); i < typesLength; i++ {
-		var typeArray wallet.Base64Bytes32
+		var typeArray wallet.CertificateType
 		copy(typeArray[:], r.ReadBytes(32))
 		if r.Err != nil {
 			return nil, fmt.Errorf("error deserializing type: %w", r.Err)

@@ -221,7 +221,7 @@ func (p *ProtoWallet) CreateSignature(
 	}
 
 	return &CreateSignatureResult{
-		Signature: *signature,
+		Signature: signature,
 	}, nil
 }
 
@@ -267,6 +267,9 @@ func (p *ProtoWallet) VerifySignature(
 	}
 
 	// Verify signature
+	if args.Signature == nil {
+		return nil, fmt.Errorf("signature is nil")
+	}
 	valid := args.Signature.Verify(dataHash, pubKey)
 	if !valid {
 		return nil, fmt.Errorf("signature is not valid")

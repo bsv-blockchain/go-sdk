@@ -21,7 +21,7 @@ type VerifiableCertificate struct {
 
 	// KeyRing contains the encrypted field revelation keys, specifically encrypted for the intended verifier.
 	// The map keys are the field names (string), and values are the base64 encoded encrypted keys (string).
-	Keyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String `json:"keyring,omitempty"`
+	Keyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64 `json:"keyring,omitempty"`
 
 	// DecryptedFields stores the successfully decrypted field values after calling DecryptFields.
 	// Populated only upon successful decryption of all fields present in the KeyRing.
@@ -33,7 +33,7 @@ type VerifiableCertificate struct {
 // It takes a pointer to a base Certificate and the verifier-specific KeyRing.
 func NewVerifiableCertificate(
 	cert *Certificate, // Pointer to the base Certificate data
-	keyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String, // Verifier-specific keyring
+	keyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64, // Verifier-specific keyring
 ) *VerifiableCertificate {
 	return &VerifiableCertificate{
 		Certificate: *cert, // Dereference and copy the base certificate data
@@ -53,7 +53,7 @@ func NewVerifiableCertificateFromBinary(data []byte) (*VerifiableCertificate, er
 	// Create a VerifiableCertificate with an empty keyring
 	verifiableCert := &VerifiableCertificate{
 		Certificate:     *cert,
-		Keyring:         make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
+		Keyring:         make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64),
 		DecryptedFields: make(map[string]string),
 	}
 

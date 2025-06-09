@@ -103,7 +103,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 		peer.CertificatesToRequest = cfg.CertificatesToRequest
 	} else {
 		peer.CertificatesToRequest = &utils.RequestedCertificateSet{
-			Certifiers:       []wallet.HexBytes33{},
+			Certifiers:       []*ec.PublicKey{},
 			CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 		}
 	}
@@ -596,7 +596,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	}
 
 	// Try to parse the signature
-	sig, err := ec.ParseSignature(message.Signature)
+	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
 		return fmt.Errorf("failed to parse signature: %w", err)
 	}
@@ -616,7 +616,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 			},
 		},
 		Data:      certRequestData,
-		Signature: *sig,
+		Signature: signature,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -678,7 +678,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 	}
 
 	// Try to parse the signature
-	sig, err := ec.ParseSignature(message.Signature)
+	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
 		return fmt.Errorf("failed to parse signature: %w", err)
 	}
@@ -698,7 +698,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 			},
 		},
 		Data:      certData,
-		Signature: *sig,
+		Signature: signature,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {
@@ -775,7 +775,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	p.sessionManager.UpdateSession(session)
 
 	// Try to parse the signature
-	sig, err := ec.ParseSignature(message.Signature)
+	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
 		return fmt.Errorf("failed to parse signature: %w", err)
 	}
@@ -795,7 +795,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 			},
 		},
 		Data:      message.Payload,
-		Signature: *sig,
+		Signature: signature,
 	}, "")
 
 	if err != nil || !verifyResult.Valid {

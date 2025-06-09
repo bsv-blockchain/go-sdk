@@ -7,24 +7,10 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
 )
-
-// PadOrTrim returns (size) bytes from input (bb)
-// Short bb gets zeros prefixed, Long bb gets left/MSB bits trimmed
-func PadOrTrim(bb []byte, size int) []byte {
-	l := len(bb)
-	if l == size {
-		return bb
-	}
-	if l > size {
-		return bb[l-size:]
-	}
-	tmp := make([]byte, size)
-	copy(tmp[size-l:], bb)
-	return tmp
-}
 
 // GetByte32FromString returns a [32]byte from a string
 func GetByte32FromString(s string) [32]byte {
@@ -62,26 +48,29 @@ func GetByte32FromHexString(t *testing.T, s string) [32]byte {
 	return a
 }
 
-// GetByte33FromString returns a [33]byte from a string
-func GetByte33FromString(s string) [33]byte {
-	if len([]byte(s)) > 33 {
-		panic(fmt.Sprintf("string byte length must be less than 33, got %d", len([]byte(s))))
-	}
-	var b [33]byte
-	copy(b[:], s)
-	return b
+func GetPKFromString(s string) *ec.PublicKey {
+	return GetPKFromBytes([]byte(s))
 }
 
-// GetByte33FromHexString returns a [33]byte from a hex string
-func GetByte33FromHexString(t *testing.T, s string) [33]byte {
-	var a [33]byte
-	b, err := hex.DecodeString(s)
+func GetPKFromBytes(b []byte) *ec.PublicKey {
+	pk, _ := ec.PrivateKeyFromBytes(b)
+	return pk.PubKey()
+}
+
+// GetPKFromHex returns a PublicKey from a hex string
+func GetPKFromHex(t *testing.T, s string) *ec.PublicKey {
+	pk, err := ec.PublicKeyFromString(s)
 	require.NoError(t, err)
-	if len(b) > 33 {
-		require.NoError(t, fmt.Errorf("byte length must be less than 33"))
-	}
-	copy(a[:], b)
-	return a
+	return pk
+}
+
+// GetSigFromHex returns a Signature from a hex string
+func GetSigFromHex(t *testing.T, s string) *ec.Signature {
+	d, err := hex.DecodeString(s)
+	require.NoError(t, err, fmt.Sprintf("error decoding hex string '%s': %v", s, err))
+	sig, err := ec.ParseSignature(d)
+	require.NoError(t, err)
+	return sig
 }
 
 // GetByteFromHexString returns a []byte from a hex string
@@ -91,9 +80,9 @@ func GetByteFromHexString(t *testing.T, s string) []byte {
 	return b
 }
 
-func OutpointFromString(t *testing.T, s string) *wallet.Outpoint {
-	outpoint, err := wallet.OutpointFromString(s)
-	require.NoError(t, err, fmt.Sprintf("error creating wallet.Outpoint from string '%s': %v", s, err))
+func OutpointFromString(t *testing.T, s string) *transaction.Outpoint {
+	outpoint, err := transaction.OutpointFromString(s)
+	require.NoError(t, err, fmt.Sprintf("error creating transaction.Outpoint from string '%s': %v", s, err))
 	return outpoint
 }
 

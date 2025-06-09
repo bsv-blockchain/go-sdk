@@ -8,6 +8,7 @@ package overlay
 
 import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 // Protocol represents the overlay protocol type (SHIP or SLAP)
@@ -33,7 +34,7 @@ type AppliedTransaction struct {
 // TopicData represents data associated with an overlay topic including dependencies
 type TopicData struct {
 	Data any
-	Deps []*Outpoint
+	Deps []*transaction.Outpoint
 }
 
 // AdmittanceInstructions specify which outputs to admit and which coins to retain when submitting to overlay topics

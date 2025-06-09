@@ -55,7 +55,7 @@ func (kv *LocalKVStore) getProtocol(key string) wallet.Protocol {
 // lookupValueResult holds the result of a key lookup operation
 type lookupValueResult struct {
 	value       string
-	outpoints   []wallet.Outpoint
+	outpoints   []transaction.Outpoint
 	inputBeef   []byte // The raw BEEF data containing all inputs for spending
 	lor         *wallet.ListOutputsResult
 	valueExists bool
@@ -72,7 +72,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	if len(outputsResult.Outputs) == 0 {
 		return &lookupValueResult{
 			value:       defaultValue,
-			outpoints:   []wallet.Outpoint{},
+			outpoints:   []transaction.Outpoint{},
 			lor:         outputsResult,
 			valueExists: false,
 		}, nil
@@ -156,7 +156,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	}
 
 	// Collect all outpoints for the key
-	outpoints := make([]wallet.Outpoint, len(outputsResult.Outputs))
+	outpoints := make([]transaction.Outpoint, len(outputsResult.Outputs))
 	for i, output := range outputsResult.Outputs {
 		outpoints[i] = output.Outpoint
 	}
@@ -233,9 +233,9 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 		}
 		// Log other lookup errors but attempt to proceed with Set (overwrite)
 		fmt.Printf("Warning: lookupValue failed during Set for key %s: %v\n", key, err)
-		lookupResult = &lookupValueResult{valueExists: false, outpoints: []wallet.Outpoint{}, lor: &wallet.ListOutputsResult{}}
+		lookupResult = &lookupValueResult{valueExists: false, outpoints: []transaction.Outpoint{}, lor: &wallet.ListOutputsResult{}}
 	} else if err == nil && !lookupResult.valueExists { // Handle case where getOutputs was empty
-		lookupResult = &lookupValueResult{valueExists: false, outpoints: []wallet.Outpoint{}, lor: &wallet.ListOutputsResult{}}
+		lookupResult = &lookupValueResult{valueExists: false, outpoints: []transaction.Outpoint{}, lor: &wallet.ListOutputsResult{}}
 	}
 
 	if lookupResult.valueExists && lookupResult.value == value && len(lookupResult.outpoints) > 0 {

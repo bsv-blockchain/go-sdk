@@ -121,7 +121,7 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 			CustomInstructions: r.ReadString(),
 			Tags:               r.ReadStringSlice(),
 		}
-		outpoint, err := decodeOutpoint(r.ReadBytes(outpointSize))
+		outpoint, err := decodeOutpoint(&r.Reader)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}

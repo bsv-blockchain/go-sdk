@@ -30,6 +30,9 @@ func SerializeVerifySignatureArgs(args *wallet.VerifySignatureArgs) ([]byte, err
 	w.WriteOptionalBool(&args.ForSelf)
 
 	// Write signature length + bytes
+	if args.Signature == nil {
+		return nil, fmt.Errorf("signature cannot be nil")
+	}
 	w.WriteIntBytes(args.Signature.Serialize())
 
 	// Write data or hash flag and content
@@ -68,11 +71,11 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	args.ForSelf = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
 
 	// Read signature
-	sig, err := ec.FromDER(r.ReadIntBytes())
+	sig, err := ec.ParseSignature(r.ReadIntBytes())
 	if err != nil {
-		return nil, fmt.Errorf("error reading signature: %w", err)
+		return nil, fmt.Errorf("error parsing signature: %w", err)
 	}
-	args.Signature = *sig
+	args.Signature = sig
 
 	// Read data type flag
 	dataTypeFlag := r.ReadByte()

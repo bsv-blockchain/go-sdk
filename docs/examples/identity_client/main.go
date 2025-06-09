@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/bsv-blockchain/go-sdk/identity"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -21,7 +22,7 @@ func main() {
 	// -------------------------------------------------------------------------
 	// In a real application, you would obtain a certificate through wallet.acquireCertificate
 	// or another mechanism. This is a simplified example.
-	typeXCert, err := wallet.Base64String(identity.KnownIdentityTypes.XCert).ToArray()
+	typeXCert, err := wallet.StringBase64(identity.KnownIdentityTypes.XCert).ToArray()
 	if err != nil {
 		log.Fatalf("Failed to get known identity type: %v", err)
 	}
@@ -76,10 +77,16 @@ func main() {
 	// -------------------------------------------------------------------------
 	// EXAMPLE 3: Resolve identity by identity key
 	// -------------------------------------------------------------------------
+	// Create a valid identity key for the example
+	identityPubKey, err := ec.NewPrivateKey()
+	if err != nil {
+		log.Fatalf("Failed to create identity key: %v", err)
+	}
+
 	identities, err := client.ResolveByIdentityKey(
 		context.Background(),
 		wallet.DiscoverByIdentityKeyArgs{
-			IdentityKey: [33]byte{0x01, 0x02, 0x03},
+			IdentityKey: identityPubKey.PubKey(),
 		},
 	)
 	if err != nil {
@@ -117,7 +124,7 @@ func main() {
 		}
 	}
 
-	typeEmailCert, err := wallet.Base64String(identity.KnownIdentityTypes.EmailCert).ToArray()
+	typeEmailCert, err := wallet.StringBase64(identity.KnownIdentityTypes.EmailCert).ToArray()
 	if err != nil {
 		log.Fatalf("Failed to get known identity type: %v", err)
 	}

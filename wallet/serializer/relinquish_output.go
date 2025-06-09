@@ -24,7 +24,7 @@ func DeserializeRelinquishOutputArgs(data []byte) (*wallet.RelinquishOutputArgs,
 	args := &wallet.RelinquishOutputArgs{
 		Basket: r.ReadString(),
 	}
-	outpoint, err := decodeOutpoint(r.ReadBytes(outpointSize))
+	outpoint, err := decodeOutpoint(&r.Reader)
 	r.CheckComplete()
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading relinquish output: %w", r.Err)

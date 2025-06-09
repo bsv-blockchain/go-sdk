@@ -1,16 +1,16 @@
 package serializer
 
 import (
-	"encoding/hex"
+	"testing"
+
 	"github.com/bsv-blockchain/go-sdk/util"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestRevealSpecificKeyLinkageArgs(t *testing.T) {
-	verifier, err := hex.DecodeString("02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1")
-	require.NoError(t, err)
+	verifier := tu.GetPKFromHex(t, "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2")
 
 	tests := []struct {
 		name string
@@ -68,9 +68,9 @@ func TestRevealSpecificKeyLinkageResult(t *testing.T) {
 		{
 			name: "full result",
 			result: &wallet.RevealSpecificKeyLinkageResult{
-				Prover:       fromHex(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
-				Verifier:     fromHex(t, "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1"),
-				Counterparty: newCounterparty(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
+				Prover:       tu.GetPKFromHex(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
+				Verifier:     tu.GetPKFromHex(t, "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2"),
+				Counterparty: tu.GetPKFromHex(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevel(1),
 					Protocol:      "test-protocol",
@@ -84,9 +84,9 @@ func TestRevealSpecificKeyLinkageResult(t *testing.T) {
 		{
 			name: "minimal result",
 			result: &wallet.RevealSpecificKeyLinkageResult{
-				Prover:       fromHex(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
-				Verifier:     fromHex(t, "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1"),
-				Counterparty: newCounterparty(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
+				Prover:       tu.GetPKFromHex(t, "03d4f6b2d5e6c8a9b0f7e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
+				Verifier:     tu.GetPKFromHex(t, "02c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2"),
+				Counterparty: tu.GetPKFromHex(t, "03f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687f0e1d2c3b4a59687"),
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevel(0),
 					Protocol:      "minimal",

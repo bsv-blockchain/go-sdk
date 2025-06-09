@@ -70,7 +70,7 @@ func TestCreateSignatureArgs(t *testing.T) {
 
 func TestCreateSignatureResult(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		result := &wallet.CreateSignatureResult{Signature: *newTestSignature(t)}
+		result := &wallet.CreateSignatureResult{Signature: newTestSignature(t)}
 		data, err := SerializeCreateSignatureResult(result)
 		require.NoError(t, err, "serializing CreateSignatureResult should not error")
 

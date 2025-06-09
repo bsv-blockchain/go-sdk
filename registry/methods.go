@@ -397,7 +397,7 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 	}
 
 	unlockScriptLength := uint32(73) // Estimated size for signature
-	outpoint, err := wallet.OutpointFromString(fmt.Sprintf("%s.%d", record.TxID, record.OutputIndex))
+	outpoint, err := transaction.OutpointFromString(fmt.Sprintf("%s.%d", record.TxID, record.OutputIndex))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse outpoint: %w", err)
 	}

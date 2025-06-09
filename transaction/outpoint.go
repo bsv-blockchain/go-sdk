@@ -1,4 +1,4 @@
-package overlay
+package transaction
 
 import (
 	"database/sql/driver"
@@ -13,42 +13,24 @@ import (
 
 // Outpoint represents a transaction output reference consisting of a transaction ID and output index
 type Outpoint struct {
-	Txid        chainhash.Hash `json:"txid"`
-	OutputIndex uint32         `json:"outputIndex"`
-}
-
-// NewOutpoint creates a new Outpoint with the given transaction ID and output index
-func NewOutpoint(txid chainhash.Hash, outputIndex uint32) *Outpoint {
-	return &Outpoint{
-		Txid:        txid,
-		OutputIndex: outputIndex,
-	}
-}
-
-// NewOutpointFromTxBytes creates a new Outpoint from a 36-byte array in transaction byte format (little-endian)
-func NewOutpointFromTxBytes(b [36]byte) (o *Outpoint) {
-	o = &Outpoint{
-		OutputIndex: binary.LittleEndian.Uint32(b[32:]),
-	}
-	txid, _ := chainhash.NewHash(b[:32])
-	o.Txid = *txid
-	return
+	Txid  chainhash.Hash `json:"txid"`
+	Index uint32         `json:"index"`
 }
 
 // Equal returns true if this outpoint is equal to another outpoint
 func (o *Outpoint) Equal(other *Outpoint) bool {
-	return o.Txid.Equal(other.Txid) && o.OutputIndex == other.OutputIndex
+	return o.Txid.Equal(other.Txid) && o.Index == other.Index
 }
 
 // TxBytes returns the outpoint as a byte slice in transaction format (little-endian)
 func (o *Outpoint) TxBytes() []byte {
-	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.OutputIndex)
+	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.Index)
 }
 
 // NewOutpointFromBytes creates a new Outpoint from a 36-byte array in standard byte format (big-endian)
 func NewOutpointFromBytes(b [36]byte) (o *Outpoint) {
 	o = &Outpoint{
-		OutputIndex: binary.BigEndian.Uint32(b[32:]),
+		Index: binary.BigEndian.Uint32(b[32:]),
 	}
 	txid, _ := chainhash.NewHash(util.ReverseBytes(b[:32]))
 	o.Txid = *txid
@@ -57,11 +39,11 @@ func NewOutpointFromBytes(b [36]byte) (o *Outpoint) {
 
 // Bytes returns the outpoint as a byte slice in standard format (big-endian)
 func (o *Outpoint) Bytes() []byte {
-	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.OutputIndex)
+	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.Index)
 }
 
-// NewOutpointFromString creates a new Outpoint from a string in the format "txid.outputIndex"
-func NewOutpointFromString(s string) (*Outpoint, error) {
+// OutpointFromString creates a new Outpoint from a string in the format "txid.outputIndex"
+func OutpointFromString(s string) (*Outpoint, error) {
 	if len(s) < 66 {
 		return nil, fmt.Errorf("invalid-string")
 	}
@@ -74,20 +56,20 @@ func NewOutpointFromString(s string) (*Outpoint, error) {
 		if vout, err := strconv.ParseUint(s[65:], 10, 32); err != nil {
 			return nil, err
 		} else {
-			o.OutputIndex = uint32(vout)
+			o.Index = uint32(vout)
 		}
 	}
 	return o, nil
 }
 
 // String returns the outpoint as a string in the format "txid.outputIndex"
-func (o *Outpoint) String() string {
-	return fmt.Sprintf("%s.%d", o.Txid.String(), o.OutputIndex)
+func (o Outpoint) String() string {
+	return fmt.Sprintf("%s.%d", o.Txid.String(), o.Index)
 }
 
 // OrdinalString returns the outpoint as a string in ordinal format "txid_outputIndex"
 func (o *Outpoint) OrdinalString() string {
-	return fmt.Sprintf("%s_%d", o.Txid.String(), o.OutputIndex)
+	return fmt.Sprintf("%s_%d", o.Txid.String(), o.Index)
 }
 
 // MarshalJSON implements the json.Marshaler interface
@@ -101,7 +83,7 @@ func (o *Outpoint) UnmarshalJSON(data []byte) error {
 	err := json.Unmarshal(data, &x)
 	if err != nil {
 		return err
-	} else if op, err := NewOutpointFromString(x); err != nil {
+	} else if op, err := OutpointFromString(x); err != nil {
 		return err
 	} else {
 		*o = *op

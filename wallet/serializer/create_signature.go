@@ -99,11 +99,11 @@ func DeserializeCreateSignatureResult(data []byte) (*wallet.CreateSignatureResul
 	}
 
 	// Read signature (remaining bytes)
-	sig, err := ec.FromDER(r.ReadRemaining())
+	sig, err := ec.ParseSignature(r.ReadRemaining())
 	if err != nil {
-		return nil, fmt.Errorf("error deserializing signature: %w", err)
+		return nil, fmt.Errorf("error parsing signature: %w", err)
 	}
-	result.Signature = *sig
+	result.Signature = sig
 
 	if r.Err != nil {
 		return nil, fmt.Errorf("error deserializing CreateSignature result: %w", r.Err)

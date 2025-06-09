@@ -3,7 +3,6 @@ package substrates
 import (
 	"encoding/json"
 	"io"
-	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -202,7 +201,7 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 		require.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body))
 		require.Equal(t, testRef, args.Reference)
 		require.Len(t, args.Spends, 1)
-		require.Equal(t, testScript, []byte(args.Spends[0].UnlockingScript))
+		require.Equal(t, testScript, args.Spends[0].UnlockingScript)
 
 		writeJSONResponse(t, w, &wallet.SignActionResult{Txid: testTxId})
 	}))
@@ -396,10 +395,8 @@ func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 
 func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 	testData := []byte("test data")
-	testSig := ec.Signature{
-		R: big.NewInt(1),
-		S: big.NewInt(2),
-	} // Sample signature
+	// Use a valid DER-encoded signature
+	testSig := tu.GetSigFromHex(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020101")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/createSignature" {
@@ -415,7 +412,7 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
 			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testSig, args.Signature)
+			require.Equal(t, testSig.Serialize(), args.Signature.Serialize())
 
 			resp := wallet.VerifySignatureResult{Valid: true}
 			writeJSONResponse(t, w, &resp)
@@ -430,7 +427,7 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 		Data: testData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, testSig, sigResult.Signature)
+	require.Equal(t, testSig.Serialize(), sigResult.Signature.Serialize())
 
 	// Test verify signature
 	verifyResult, err := client.VerifySignature(t.Context(), wallet.VerifySignatureArgs{
@@ -442,10 +439,10 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
-	typeTest := wallet.Base64Bytes32(tu.GetByte32FromString("test-type"))
-	serialNumber := wallet.Base64Bytes32(tu.GetByte32FromString("12345"))
-	certifier := wallet.HexBytes33(tu.GetByte33FromString("test-certifier"))
-	verifier := tu.GetByte33FromString("test-verifier")
+	typeTest := wallet.CertificateType(tu.GetByte32FromString("test-type"))
+	serialNumber := wallet.SerialNumber(tu.GetByte32FromString("12345"))
+	certifier := tu.GetPKFromHex(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+	verifier := tu.GetPKFromHex(t, "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
 	// Test AcquireCertificate
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/acquireCertificate", r.URL.Path)
@@ -480,7 +477,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.ListCertificatesArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, []wallet.HexBytes33{certifier}, args.Certifiers)
+		require.Equal(t, []*ec.PublicKey{certifier}, args.Certifiers)
 
 		result := wallet.ListCertificatesResult{
 			TotalCertificates: 1,
@@ -498,7 +495,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 
 	client = NewHTTPWalletJSON("", ts.URL, nil)
 	listResult, err := client.ListCertificates(t.Context(), wallet.ListCertificatesArgs{
-		Certifiers: []wallet.HexBytes33{tu.GetByte33FromString("test-certifier")},
+		Certifiers: []*ec.PublicKey{tu.GetPKFromHex(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")},
 	})
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), listResult.TotalCertificates)
@@ -512,7 +509,7 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 		var args wallet.ProveCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, verifier, [33]byte(args.Verifier))
+		require.Equal(t, verifier.Compressed(), args.Verifier.Compressed())
 
 		result := wallet.ProveCertificateResult{
 			KeyringForVerifier: map[string]string{"field": "key"},
@@ -551,9 +548,8 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
-	var typeDiscovered wallet.Base64Bytes32
-	copy(typeDiscovered[:], "discovered-type")
-	testKey := tu.GetByte33FromString("test-key")
+	typeDiscovered := wallet.CertificateType(tu.GetByte32FromString("discovered-type"))
+	testKey := tu.GetPKFromHex(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
 	// Test DiscoverByIdentityKey
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/discoverByIdentityKey", r.URL.Path)
@@ -561,7 +557,7 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 		var args wallet.DiscoverByIdentityKeyArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, testKey, [33]byte(args.IdentityKey))
+		require.Equal(t, testKey, args.IdentityKey)
 
 		result := wallet.DiscoverCertificatesResult{
 			TotalCertificates: 1,
@@ -664,8 +660,8 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
-	counterParty := []byte("test-counterparty")
-	verifier := []byte("test-verifier")
+	counterParty := tu.GetPKFromHex(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+	verifier := tu.GetPKFromHex(t, "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
 	// Test RevealCounterpartyKeyLinkage
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/revealCounterpartyKeyLinkage", r.URL.Path)
@@ -673,8 +669,8 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		var args wallet.RevealCounterpartyKeyLinkageArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
-		require.Equal(t, counterParty, []byte(args.Counterparty))
-		require.Equal(t, verifier, []byte(args.Verifier))
+		require.Equal(t, counterParty, args.Counterparty)
+		require.Equal(t, verifier, args.Verifier)
 
 		result := wallet.RevealCounterpartyKeyLinkageResult{
 			EncryptedLinkage: []byte("encrypted-data"),
@@ -689,7 +685,7 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		Verifier:     verifier,
 	})
 	require.NoError(t, err)
-	require.Equal(t, []byte("encrypted-data"), []byte(linkageResult.EncryptedLinkage))
+	require.Equal(t, []byte("encrypted-data"), linkageResult.EncryptedLinkage)
 
 	// Test RevealSpecificKeyLinkage
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -716,7 +712,7 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 		KeyID: "test-key",
 	})
 	require.NoError(t, err)
-	require.Equal(t, []byte("specific-encrypted"), []byte(specificResult.EncryptedLinkage))
+	require.Equal(t, []byte("specific-encrypted"), specificResult.EncryptedLinkage)
 }
 
 func TestHTTPWalletJSON_AuthOperations(t *testing.T) {
@@ -776,7 +772,7 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 		Height: 12345,
 	})
 	require.NoError(t, err)
-	require.Equal(t, []byte("test-header"), []byte(headerResult.Header))
+	require.Equal(t, []byte("test-header"), headerResult.Header)
 
 	// Test GetNetwork
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

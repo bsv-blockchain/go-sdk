@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -39,7 +38,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 	var result []*certificates.VerifiableCertificate
 
 	// Get all certificate types
-	var certificateTypes []wallet.Base64Bytes32
+	var certificateTypes []wallet.CertificateType
 	for certType := range options.RequestedCertificates.CertificateTypes {
 		certificateTypes = append(certificateTypes, certType)
 	}
@@ -71,16 +70,10 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 			continue // Skip if no fields requested for this type
 		}
 
-		// Prepare verifier hex (empty if no key)
-		var verifierHex [33]byte
-		if options.VerifierIdentityKey != nil {
-			copy(verifierHex[:], options.VerifierIdentityKey.ToDER())
-		}
-
 		proveResult, err := options.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 			Certificate:      certResult.Certificate,
 			FieldsToReveal:   requestedFields,
-			Verifier:         verifierHex,
+			Verifier:         options.VerifierIdentityKey,
 			Privileged:       &options.Privileged,
 			PrivilegedReason: options.PrivilegedReason,
 		}, "")
@@ -91,57 +84,13 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 			return nil, fmt.Errorf("nil result from ProveCertificate for certificate type: %s", certResult.Type)
 		}
 
-		// Handle short txids in revocation outpoints by padding them
-		revocationOutpoint := overlay.NewOutpoint(certResult.RevocationOutpoint.Txid, certResult.RevocationOutpoint.Index)
-
-		// Ensure Type and SerialNumber are properly formatted as base64 strings
-		// If not, continue with next certificate but don't fail
-		certType := certResult.Type
-		certSerialNum := certResult.SerialNumber
-
-		// Create the base certificate
-		baseCert := &certificates.Certificate{
-			Type:               wallet.Base64String(base64.StdEncoding.EncodeToString(certType[:])),
-			SerialNumber:       wallet.Base64String(base64.StdEncoding.EncodeToString(certSerialNum[:])),
-			RevocationOutpoint: revocationOutpoint,
-			Fields:             make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String),
-		}
-
-		// Handle Signature
-		if len(certResult.Signature) > 0 {
-			baseCert.Signature = certResult.Signature
-		}
-
-		// Handle nil Subject and Certifier safely
-		if certResult.Subject != nil {
-			baseCert.Subject = *certResult.Subject
-		} else {
-			// Initialize with empty public key to avoid nil pointer dereference
-			baseCert.Subject = ec.PublicKey{}
-		}
-
-		if certResult.Certifier != nil {
-			baseCert.Certifier = *certResult.Certifier
-		} else {
-			// Initialize with empty public key to avoid nil pointer dereference
-			baseCert.Certifier = ec.PublicKey{}
-		}
-
-		// Add certificate fields - these should also be base64-encoded
-		if certResult.Fields != nil {
-			for _, fieldName := range requestedFields {
-				if value, ok := certResult.Fields[fieldName]; ok {
-					// Validate that field value is base64-encoded
-					if _, err := base64.StdEncoding.DecodeString(value); err != nil {
-						return nil, fmt.Errorf("certificate field '%s' value '%s' is not valid base64: %w", fieldName, value, err)
-					}
-					baseCert.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.Base64String(value)
-				}
-			}
+		baseCert, err := certificates.FromWalletCertificate(&certResult.Certificate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert wallet certificate to base certificate: %w", err)
 		}
 
 		// Create keyring - these should also be base64-encoded
-		keyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.Base64String)
+		keyring := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		// Only add keyring entries if KeyringForVerifier is not nil
 		if proveResult.KeyringForVerifier != nil {
 			for fieldName, value := range proveResult.KeyringForVerifier {
@@ -149,7 +98,7 @@ func GetVerifiableCertificates(ctx context.Context, options *GetVerifiableCertif
 				if _, err := base64.StdEncoding.DecodeString(value); err != nil {
 					return nil, fmt.Errorf("keyring field '%s' value '%s' is not valid base64: %w", fieldName, value, err)
 				}
-				keyring[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.Base64String(value)
+				keyring[wallet.CertificateFieldNameUnder50Bytes(fieldName)] = wallet.StringBase64(value)
 			}
 		}
 
