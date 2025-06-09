@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -57,7 +58,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		certifier, _ := ec.PublicKeyFromBytes([]byte{0x07, 0x08, 0x09})
 
 		// Mock wallet.ListCertificates response with base64-encoded values
-		revocationOutpoint, _ := wallet.OutpointFromString("abcd1234:0")
+		revocationOutpoint, _ := transaction.OutpointFromString("abcd1234:0")
 		mockListResult := &wallet.ListCertificatesResult{
 			Certificates: []wallet.CertificateResult{
 				{

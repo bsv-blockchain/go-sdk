@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 // KeyOperations defines the interface for cryptographic operations.
@@ -55,14 +56,14 @@ type Certificate struct {
 	SerialNumber       SerialNumber      `json:"serialNumber"`
 	Subject            *ec.PublicKey     `json:"subject"`
 	Certifier          *ec.PublicKey     `json:"certifier"`
-	RevocationOutpoint *Outpoint         `json:"revocationOutpoint,omitempty"`
+	RevocationOutpoint *transaction.Outpoint         `json:"revocationOutpoint,omitempty"`
 	Fields             map[string]string `json:"fields,omitempty"` // Field name -> field value (encrypted)
 	Signature          *ec.Signature     `json:"signature,omitempty"`
 }
 
 // CreateActionInput represents an input to be spent in a transaction
 type CreateActionInput struct {
-	Outpoint              Outpoint `json:"outpoint"` // Format: "txid:outputIndex"
+	Outpoint              transaction.Outpoint `json:"outpoint"` // Format: "txid:outputIndex"
 	InputDescription      string   `json:"inputDescription"`
 	UnlockingScript       []byte   `json:"unlockingScript,omitempty"`
 	UnlockingScriptLength uint32   `json:"unlockingScriptLength,omitempty"`
@@ -95,7 +96,7 @@ type CreateActionOptions struct {
 	KnownTxids             []chainhash.Hash
 	ReturnTXIDOnly         *bool
 	NoSend                 *bool
-	NoSendChange           []Outpoint
+	NoSendChange           []transaction.Outpoint
 	SendWith               []chainhash.Hash
 	RandomizeOutputs       *bool
 }
@@ -116,7 +117,7 @@ type CreateActionArgs struct {
 type CreateActionResult struct {
 	Txid                chainhash.Hash
 	Tx                  []byte
-	NoSendChange        []Outpoint
+	NoSendChange        []transaction.Outpoint
 	SendWithResults     []SendWithResult
 	SignableTransaction *SignableTransaction
 }
@@ -172,7 +173,7 @@ type SignActionResult struct {
 
 // ActionInput describes a transaction input with full details.
 type ActionInput struct {
-	SourceOutpoint      Outpoint `json:"sourceOutpoint"`
+	SourceOutpoint      transaction.Outpoint `json:"sourceOutpoint"`
 	SourceSatoshis      uint64   `json:"sourceSatoshis"`
 	SourceLockingScript []byte   `json:"sourceLockingScript,omitempty"`
 	UnlockingScript     []byte   `json:"unlockingScript,omitempty"`
@@ -301,7 +302,7 @@ type Output struct {
 	Spendable          bool     `json:"spendable"`
 	CustomInstructions string   `json:"customInstructions,omitempty"`
 	Tags               []string `json:"tags,omitempty"`
-	Outpoint           Outpoint `json:"outpoint"` // Format: "txid.index"
+	Outpoint           transaction.Outpoint `json:"outpoint"` // Format: "txid.index"
 	Labels             []string `json:"labels,omitempty"`
 }
 
@@ -473,7 +474,7 @@ type AcquireCertificateArgs struct {
 	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string   `json:"fields,omitempty"`
 	SerialNumber        SerialNumber        `json:"serialNumber"`
-	RevocationOutpoint  *Outpoint           `json:"revocationOutpoint,omitempty"`
+	RevocationOutpoint  *transaction.Outpoint           `json:"revocationOutpoint,omitempty"`
 	Signature           *ec.Signature       `json:"signature,omitempty"`
 	CertifierUrl        string              `json:"certifierUrl,omitempty"`
 	KeyringRevealer     KeyringRevealer     `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
@@ -515,7 +516,7 @@ type RelinquishCertificateArgs struct {
 // RelinquishOutputArgs contains parameters for relinquishing ownership of an output.
 type RelinquishOutputArgs struct {
 	Basket string   `json:"basket"`
-	Output Outpoint `json:"output"`
+	Output transaction.Outpoint `json:"output"`
 }
 
 // RelinquishOutputResult indicates whether an output was successfully relinquished.

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -126,7 +127,7 @@ func IssueCertificateForSubject(
 	subject wallet.Counterparty,
 	plainFields map[string]string, // Plaintext fields
 	certificateType string,
-	getRevocationOutpoint func(string) (*wallet.Outpoint, error), // Optional func
+	getRevocationOutpoint func(string) (*transaction.Outpoint, error), // Optional func
 	serialNumberStr string, // Optional serial number as StringBase64
 ) (*MasterCertificate, error) {
 
@@ -172,7 +173,7 @@ func IssueCertificateForSubject(
 	}
 
 	// 4. Get revocation outpoint
-	var revocationOutpoint *wallet.Outpoint
+	var revocationOutpoint *transaction.Outpoint
 	if getRevocationOutpoint != nil {
 		revocationOutpoint, err = getRevocationOutpoint(string(serialNumber))
 		if err != nil {
@@ -180,7 +181,7 @@ func IssueCertificateForSubject(
 		}
 	} else {
 		// Default to empty outpoint (matching TS behavior where undefined becomes empty string)
-		revocationOutpoint = &wallet.Outpoint{} // Assuming empty TXID and index 0 is the placeholder
+		revocationOutpoint = &transaction.Outpoint{} // Assuming empty TXID and index 0 is the placeholder
 	}
 
 	// 5. Create the base Certificate struct

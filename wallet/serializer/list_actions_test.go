@@ -3,6 +3,7 @@ package serializer
 import (
 	"encoding/hex"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -135,7 +136,7 @@ func TestListActionResultSerializeAndDeserialize(t *testing.T) {
 						LockTime:    0,
 						Inputs: []wallet.ActionInput{
 							{
-								SourceOutpoint:      wallet.Outpoint{Txid: *txid},
+								SourceOutpoint:      transaction.Outpoint{Txid: *txid},
 								SourceSatoshis:      500,
 								SourceLockingScript: lockingScript,
 								UnlockingScript:     unlockingScript,

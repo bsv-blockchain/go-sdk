@@ -8,7 +8,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
 )
 
@@ -80,9 +80,9 @@ func GetByteFromHexString(t *testing.T, s string) []byte {
 	return b
 }
 
-func OutpointFromString(t *testing.T, s string) *wallet.Outpoint {
-	outpoint, err := wallet.OutpointFromString(s)
-	require.NoError(t, err, fmt.Sprintf("error creating wallet.Outpoint from string '%s': %v", s, err))
+func OutpointFromString(t *testing.T, s string) *transaction.Outpoint {
+	outpoint, err := transaction.OutpointFromString(s)
+	require.NoError(t, err, fmt.Sprintf("error creating transaction.Outpoint from string '%s': %v", s, err))
 	return outpoint
 }
 

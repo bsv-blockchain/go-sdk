@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
@@ -36,7 +37,7 @@ type Certificate struct {
 	Certifier ec.PublicKey `json:"certifier"`
 
 	// The outpoint used to confirm that the certificate has not been revoked
-	RevocationOutpoint *wallet.Outpoint `json:"revocationOutpoint"`
+	RevocationOutpoint *transaction.Outpoint `json:"revocationOutpoint"`
 
 	// All the fields present in the certificate, with field names as keys and encrypted field values as strings
 	Fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64 `json:"fields"`
@@ -51,7 +52,7 @@ func NewCertificate(
 	serialNumber wallet.StringBase64,
 	subject ec.PublicKey,
 	certifier ec.PublicKey,
-	revocationOutpoint *wallet.Outpoint,
+	revocationOutpoint *transaction.Outpoint,
 	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
 	signature []byte,
 ) *Certificate {

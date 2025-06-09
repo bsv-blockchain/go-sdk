@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func TestCertificate(t *testing.T) {
 
 	// Create a revocation outpoint
 	txid := make([]byte, 32)
-	var outpoint wallet.Outpoint
+	var outpoint transaction.Outpoint
 	copy(outpoint.Txid[:], txid)
 	outpoint.Index = 1
 	sampleRevocationOutpoint := &outpoint
@@ -457,10 +458,7 @@ func TestCertificate(t *testing.T) {
 			SerialNumber: serialBytes,
 			Subject:      sampleSubjectPubKey,
 			Certifier:    sampleCertifierPubKey,
-			RevocationOutpoint: &wallet.Outpoint{
-				Txid:  sampleRevocationOutpoint.Txid,
-				Index: sampleRevocationOutpoint.Index,
-			},
+			RevocationOutpoint: sampleRevocationOutpoint,
 			Fields: map[string]string{
 				"name":  "Alice",
 				"email": "alice@example.com",

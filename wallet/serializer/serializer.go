@@ -10,12 +10,13 @@ import (
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // encodeOutpoint converts outpoint string "txid.index" to binary format
-func encodeOutpoint(outpoint *wallet.Outpoint) []byte {
+func encodeOutpoint(outpoint *transaction.Outpoint) []byte {
 	writer := util.NewWriter()
 	writer.WriteBytes(outpoint.Txid[:])
 	writer.WriteVarInt(uint64(outpoint.Index))
@@ -26,7 +27,7 @@ func encodeOutpoint(outpoint *wallet.Outpoint) []byte {
 type Outpoint string
 
 // encodeOutpoints serializes a slice of outpoints
-func encodeOutpoints(outpoints []wallet.Outpoint) ([]byte, error) {
+func encodeOutpoints(outpoints []transaction.Outpoint) ([]byte, error) {
 	if outpoints == nil {
 		return nil, nil
 	}
@@ -40,7 +41,7 @@ func encodeOutpoints(outpoints []wallet.Outpoint) ([]byte, error) {
 }
 
 // decodeOutpoints deserializes a slice of outpoints
-func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
+func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 	if len(data) == 0 {
 		return nil, nil
 	}
@@ -54,7 +55,7 @@ func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
 		return nil, nil
 	}
 
-	outpoints := make([]wallet.Outpoint, 0, count)
+	outpoints := make([]transaction.Outpoint, 0, count)
 	for i := uint64(0); i < count; i++ {
 		txBytes, err := r.ReadBytes(chainhash.HashSize)
 		if err != nil {
@@ -68,7 +69,7 @@ func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read output index: %w", err)
 		}
-		outpoints = append(outpoints, wallet.Outpoint{
+		outpoints = append(outpoints, transaction.Outpoint{
 			Txid:  *tx,
 			Index: uint32(outputIndex),
 		})
@@ -77,7 +78,7 @@ func decodeOutpoints(data []byte) ([]wallet.Outpoint, error) {
 }
 
 // decodeOutpoint converts binary outpoint data to Outpoint object
-func decodeOutpoint(reader *util.Reader) (*wallet.Outpoint, error) {
+func decodeOutpoint(reader *util.Reader) (*transaction.Outpoint, error) {
 	txidBytes, err := reader.ReadBytes(32)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read txid: %w", err)
@@ -88,7 +89,7 @@ func decodeOutpoint(reader *util.Reader) (*wallet.Outpoint, error) {
 	}
 
 	// Create revocation outpoint
-	return &wallet.Outpoint{
+	return &transaction.Outpoint{
 		Txid:  chainhash.Hash(txidBytes),
 		Index: uint32(outputIndex),
 	}, nil

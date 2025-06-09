@@ -8,6 +8,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
@@ -78,7 +79,7 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Create revocation outpoint
-		revocationOutpoint := &wallet.Outpoint{
+		revocationOutpoint := &transaction.Outpoint{
 			Txid:  chainhash.HashH([]byte("test_txid_000000000000000000000000000000000000000000000000000000000000")),
 			Index: 0,
 		}
@@ -90,7 +91,7 @@ func TestValidateCertificates(t *testing.T) {
 			subjectCounterparty,
 			plaintextFields,
 			string(utils.RandomBase64(32)), // certificate type
-			func(serial string) (*wallet.Outpoint, error) {
+			func(serial string) (*transaction.Outpoint, error) {
 				return revocationOutpoint, nil
 			},
 			"", // auto-generate serial number

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -233,13 +234,13 @@ func TestDecodeOutpoint(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     []byte
-		want      *wallet.Outpoint
+		want      *transaction.Outpoint
 		expectErr bool
 	}{
 		{
 			name:      "valid outpoint",
 			input:     validData,
-			want:      &wallet.Outpoint{Txid: *validTxIDHash, Index: validIndex},
+			want:      &transaction.Outpoint{Txid: *validTxIDHash, Index: validIndex},
 			expectErr: false,
 		},
 		{
@@ -293,7 +294,7 @@ func TestEncodeOutpoint(t *testing.T) {
 	validTxIDHash, err := chainhash.NewHashFromHex(validTxid)
 	require.NoError(t, err, "creating valid txid hash should not error")
 
-	validOutpoint := &wallet.Outpoint{
+	validOutpoint := &transaction.Outpoint{
 		Txid:  *validTxIDHash,
 		Index: validIndex,
 	}
@@ -305,7 +306,7 @@ func TestEncodeOutpoint(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		input          *wallet.Outpoint
+		input          *transaction.Outpoint
 		expectedOutput []byte
 	}{
 		{
@@ -315,7 +316,7 @@ func TestEncodeOutpoint(t *testing.T) {
 		},
 		{
 			name:           "empty outpoint",
-			input:          &wallet.Outpoint{},
+			input:          &transaction.Outpoint{},
 			expectedOutput: make([]byte, 33),
 		},
 	}

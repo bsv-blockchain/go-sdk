@@ -1,4 +1,4 @@
-package wallet
+package transaction
 
 import (
 	"database/sql/driver"

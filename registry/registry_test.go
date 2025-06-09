@@ -341,7 +341,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 				Satoshis:      1000,
 				LockingScript: lockingScript.Bytes(),
 				Spendable:     true,
-				Outpoint:      wallet.Outpoint{Txid: *tx.TxID()},
+				Outpoint:      transaction.Outpoint{Txid: *tx.TxID()},
 				Tags:          []string{"registry", "basket"},
 			},
 		},

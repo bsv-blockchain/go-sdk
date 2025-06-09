@@ -14,6 +14,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -22,7 +23,7 @@ func TestMasterCertificate(t *testing.T) {
 	certifierPrivateKey, _ := ec.NewPrivateKey()
 	ctx := t.Context()
 
-	mockRevocationOutpoint := &wallet.Outpoint{
+	mockRevocationOutpoint := &transaction.Outpoint{
 		Txid:  chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
 		Index: 1,
 	}
@@ -404,7 +405,7 @@ func TestMasterCertificate(t *testing.T) {
 			}
 
 			revocationFuncCalled := false
-			mockRevocationFunc := func(serial string) (*wallet.Outpoint, error) {
+			mockRevocationFunc := func(serial string) (*transaction.Outpoint, error) {
 				revocationFuncCalled = true
 				return mockRevocationOutpoint, nil
 			}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -56,7 +57,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 					},
 					ReturnTXIDOnly:   util.BoolPtr(true),
 					NoSend:           util.BoolPtr(false),
-					NoSendChange:     []wallet.Outpoint{*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1")},
+					NoSendChange:     []transaction.Outpoint{*tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1")},
 					SendWith:         []chainhash.Hash{tu.HashFromString(t, "b95bbe3c3f3bd420048cbf57201fc6dd4e730b2e046bf170ac0b1f78de069e8e")},
 					RandomizeOutputs: util.BoolPtr(true),
 				},
