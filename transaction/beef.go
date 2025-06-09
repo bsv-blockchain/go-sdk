@@ -1021,7 +1021,83 @@ func (b *Beef) TrimknownTxIDs(knownTxIDs []string) {
 			}
 		}
 	}
-	// TODO: bumps could be trimmed to eliminate unreferenced proofs.
+
+	// Trim unreferenced BUMP proofs
+	b.trimUnreferencedBumps()
+}
+
+// trimUnreferencedBumps removes BUMP proofs that are no longer referenced by any remaining transactions
+func (b *Beef) trimUnreferencedBumps() {
+	if len(b.BUMPs) == 0 {
+		return
+	}
+
+	// Track which BUMP indices are still referenced by remaining transactions
+	usedBumpIndices := make(map[int]bool)
+	
+	// Build a set of transaction IDs that need BUMPs
+	txidsNeedingBumps := make(map[string]bool)
+	
+	for txid, tx := range b.Transactions {
+		switch tx.DataFormat {
+		case RawTxAndBumpIndex:
+			// Direct BUMP reference
+			usedBumpIndices[tx.BumpIndex] = true
+		case RawTx:
+			// Raw transaction without explicit BUMP - we need to check if any BUMP references this txid
+			txidsNeedingBumps[txid] = true
+		case TxIDOnly:
+			// Known transaction ID - we need to check if any BUMP references this txid
+			if tx.KnownTxID != nil {
+				txidsNeedingBumps[tx.KnownTxID.String()] = true
+			}
+		}
+	}
+
+	// Check each BUMP to see if it's needed for any of the txids
+	for bumpIndex, bump := range b.BUMPs {
+		if bump != nil && len(bump.Path) > 0 && len(bump.Path[0]) > 0 {
+			// Get the transaction ID from the first path element (leaf level)
+			for _, leaf := range bump.Path[0] {
+				if leaf.Hash != nil {
+					txidStr := leaf.Hash.String()
+					if txidsNeedingBumps[txidStr] {
+						usedBumpIndices[bumpIndex] = true
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// If all BUMPs are still in use, no trimming needed
+	if len(usedBumpIndices) == len(b.BUMPs) {
+		return
+	}
+
+	// Build new BUMP slice with only referenced BUMPs
+	newBumps := make([]*MerklePath, 0, len(usedBumpIndices))
+	bumpIndexMapping := make(map[int]int) // old index -> new index
+
+	for oldIndex := 0; oldIndex < len(b.BUMPs); oldIndex++ {
+		if usedBumpIndices[oldIndex] {
+			newIndex := len(newBumps)
+			newBumps = append(newBumps, b.BUMPs[oldIndex])
+			bumpIndexMapping[oldIndex] = newIndex
+		}
+	}
+
+	// Update BUMP indices in remaining transactions
+	for _, tx := range b.Transactions {
+		if tx.DataFormat == RawTxAndBumpIndex {
+			if newIndex, exists := bumpIndexMapping[tx.BumpIndex]; exists {
+				tx.BumpIndex = newIndex
+			}
+		}
+	}
+
+	// Replace the BUMP slice
+	b.BUMPs = newBumps
 }
 
 func (b *Beef) GetValidTxids() []string {

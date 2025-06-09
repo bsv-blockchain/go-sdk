@@ -301,6 +301,7 @@ func (p *PublicKey) ToDERHex() string {
 	return hex.EncodeToString(p.ToDER())
 }
 
+// DeriveChild derives a new public key from this public key and the given private key
 func (p *PublicKey) DeriveChild(privateKey *PrivateKey, invoiceNumber string) (*PublicKey, error) {
 	invoiceNumberBin := []byte(invoiceNumber)
 	sharedSecret, err := p.DeriveSharedSecret(privateKey)
@@ -319,9 +320,7 @@ func (p *PublicKey) DeriveChild(privateKey *PrivateKey, invoiceNumber string) (*
 	}, nil
 }
 
-// TODO: refactor to have 1 function for both private and public key
-// call it multiply point with scalar or something and pass in private key
-// and public key
+// DeriveSharedSecret derives a shared secret from this public key and the given private key.
 func (p *PublicKey) DeriveSharedSecret(priv *PrivateKey) (*PublicKey, error) {
 	if !p.IsOnCurve(p.X, p.Y) {
 		return nil, errors.New("public key not valid for secret derivation")

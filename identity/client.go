@@ -25,9 +25,9 @@ import (
 
 // Client lets you discover who others are, and let the world know who you are.
 type Client struct {
-	wallet     wallet.Interface
-	options    IdentityClientOptions
-	originator OriginatorDomainNameStringUnder250Bytes
+	Wallet     wallet.Interface
+	Options    IdentityClientOptions
+	Originator OriginatorDomainNameStringUnder250Bytes
 }
 
 // NewClient creates a new IdentityClient with the provided wallet and options
@@ -57,9 +57,9 @@ func NewClient(w wallet.Interface, options *IdentityClientOptions, originator Or
 	}
 
 	return &Client{
-		wallet:     w,
-		options:    *options,
-		originator: originator,
+		Wallet:     w,
+		Options:    *options,
+		Originator: originator,
 	}, nil
 }
 
@@ -107,11 +107,11 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Get keyring for verifier through certificate proving
-	proveResult, err := c.wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
+	proveResult, err := c.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 		Certificate:    *certificate,
 		FieldsToReveal: fieldNamesAsStrings,
 		Verifier:       dummyPk.PubKey(),
-	}, string(c.originator))
+	}, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)
 	}
@@ -141,16 +141,16 @@ func (c *Client) PubliclyRevealAttributes(
 
 	// Create PushDrop with the certificate data
 	pushDropTemplate := &pushdrop.PushDropTemplate{
-		Wallet:     c.wallet,
-		Originator: string(c.originator),
+		Wallet:     c.Wallet,
+		Originator: string(c.Originator),
 	}
 
 	// Create locking script using PushDrop with the certificate JSON
 	lockingScript, err := pushDropTemplate.Lock(
 		ctx,
 		[][]byte{certJSON},
-		c.options.ProtocolID,
-		c.options.KeyID,
+		c.Options.ProtocolID,
+		c.Options.KeyID,
 		wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone},
 		true,
 		true,
@@ -161,11 +161,11 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Create a transaction with the certificate as an output
-	createResult, err := c.wallet.CreateAction(ctx, wallet.CreateActionArgs{
+	createResult, err := c.Wallet.CreateAction(ctx, wallet.CreateActionArgs{
 		Description: "Create a new Identity Token",
 		Outputs: []wallet.CreateActionOutput{
 			{
-				Satoshis:          c.options.TokenAmount,
+				Satoshis:          c.Options.TokenAmount,
 				LockingScript:     lockingScript.Bytes(),
 				OutputDescription: "Identity Token",
 			},
@@ -173,7 +173,7 @@ func (c *Client) PubliclyRevealAttributes(
 		Options: &wallet.CreateActionOptions{
 			RandomizeOutputs: util.BoolPtr(false),
 		},
-	}, string(c.originator))
+	}, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create action: %w", err)
 	}
@@ -189,7 +189,7 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Submit the transaction to an overlay
-	networkResult, err := c.wallet.GetNetwork(ctx, nil, string(c.originator))
+	networkResult, err := c.Wallet.GetNetwork(ctx, nil, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get network: %w", err)
 	}
@@ -242,7 +242,7 @@ func (c *Client) ResolveByIdentityKey(
 	ctx context.Context,
 	args wallet.DiscoverByIdentityKeyArgs,
 ) ([]DisplayableIdentity, error) {
-	result, err := c.wallet.DiscoverByIdentityKey(ctx, args, string(c.originator))
+	result, err := c.Wallet.DiscoverByIdentityKey(ctx, args, string(c.Originator))
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (c *Client) ResolveByAttributes(
 	ctx context.Context,
 	args wallet.DiscoverByAttributesArgs,
 ) ([]DisplayableIdentity, error) {
-	result, err := c.wallet.DiscoverByAttributes(ctx, args, string(c.originator))
+	result, err := c.Wallet.DiscoverByAttributes(ctx, args, string(c.Originator))
 	if err != nil {
 		return nil, err
 	}
@@ -284,42 +284,42 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		avatarURL = identity.DecryptedFields["profilePhoto"]
 		badgeLabel = fmt.Sprintf("X account certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.DiscordCert:
 		name = identity.DecryptedFields["userName"]
 		avatarURL = identity.DecryptedFields["profilePhoto"]
 		badgeLabel = fmt.Sprintf("Discord account certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.EmailCert:
 		name = identity.DecryptedFields["email"]
 		avatarURL = "XUTZxep7BBghAJbSBwTjNfmcsDdRFs5EaGEgkESGSgjJVYgMEizu"
 		badgeLabel = fmt.Sprintf("Email certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.PhoneCert:
 		name = identity.DecryptedFields["phoneNumber"]
 		avatarURL = "XUTLxtX3ELNUwRhLwL7kWNGbdnFM8WG2eSLv84J7654oH8HaJWrU"
 		badgeLabel = fmt.Sprintf("Phone certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://socialcert.net" // TODO Make a specific page for this.
+		badgeClickURL = "https://socialcert.net"
 
 	case KnownIdentityTypes.IdentiCert:
 		name = fmt.Sprintf("%s %s", identity.DecryptedFields["firstName"], identity.DecryptedFields["lastName"])
 		avatarURL = identity.DecryptedFields["profilePhoto"]
 		badgeLabel = fmt.Sprintf("Government ID certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://identicert.me" // TODO Make a specific page for this.
+		badgeClickURL = "https://identicert.me"
 
 	case KnownIdentityTypes.Registrant:
 		name = identity.DecryptedFields["name"]
 		avatarURL = identity.DecryptedFields["icon"]
 		badgeLabel = fmt.Sprintf("Entity certified by %s", identity.CertifierInfo.Name)
 		badgeIconURL = identity.CertifierInfo.IconUrl
-		badgeClickURL = "https://projectbabbage.com/docs/registrant" // TODO: Make this doc page exist
+		badgeClickURL = "https://projectbabbage.com/docs/registrant"
 
 	case KnownIdentityTypes.CoolCert:
 		if identity.DecryptedFields["cool"] == "true" {
@@ -333,14 +333,14 @@ func (c *Client) parseIdentity(identity *wallet.IdentityCertificate) Displayable
 		avatarURL = "XUT4bpQ6cpBaXi1oMzZsXfpkWGbtp2JTUYAoN7PzhStFJ6wLfoeR"
 		badgeLabel = "Represents the ability for anyone to access this information."
 		badgeIconURL = "XUUV39HVPkpmMzYNTx7rpKzJvXfeiVyQWg2vfSpjBAuhunTCA9uG"
-		badgeClickURL = "https://projectbabbage.com/docs/anyone-identity" // TODO: Make this doc page exist
+		badgeClickURL = "https://projectbabbage.com/docs/anyone-identity"
 
 	case KnownIdentityTypes.Self:
 		name = "You"
 		avatarURL = "XUT9jHGk2qace148jeCX5rDsMftkSGYKmigLwU2PLLBc7Hm63VYR"
 		badgeLabel = "Represents your ability to access this information."
 		badgeIconURL = "XUUV39HVPkpmMzYNTx7rpKzJvXfeiVyQWg2vfSpjBAuhunTCA9uG"
-		badgeClickURL = "https://projectbabbage.com/docs/self-identity" // TODO: Make this doc page exist
+		badgeClickURL = "https://projectbabbage.com/docs/self-identity"
 
 	default:
 		name = DefaultIdentity.Name

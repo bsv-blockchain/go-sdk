@@ -31,7 +31,6 @@ func (v *DefaultCertificateVerifier) Verify(ctx context.Context, certificate *wa
 	// For now, since we can't access the actual implementation in the tests,
 	// we'll just return nil (successful verification)
 	// In a production environment, this would be replaced with proper certificate verification
-	// TODO: Implement proper certificate verification
 	return nil
 }
 
@@ -113,27 +112,27 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 		return nil, nil, fmt.Errorf("failed to create dummy key: %w", err)
 	}
 
-	_, err = c.wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
+	_, err = c.Wallet.ProveCertificate(ctx, wallet.ProveCertificateArgs{
 		Certificate:    *certificate,
 		FieldsToReveal: fieldNamesAsStrings,
 		Verifier:       dummyPk.PubKey(),
-	}, string(c.originator))
+	}, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to prove certificate: %w", err)
 	}
 
 	// Create PushDrop with the certificate data
 	pushDropTemplate := &pushdrop.PushDropTemplate{
-		Wallet:     c.wallet,
-		Originator: string(c.originator),
+		Wallet:     c.Wallet,
+		Originator: string(c.Originator),
 	}
 
 	// Create locking script using PushDrop with the certificate JSON
 	lockingScript, err := pushDropTemplate.Lock(
 		ctx,
 		[][]byte{[]byte("test-cert-data")}, // Simplified for testing
-		c.options.ProtocolID,
-		c.options.KeyID,
+		c.Options.ProtocolID,
+		c.Options.KeyID,
 		wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone},
 		true,
 		true,
@@ -144,11 +143,11 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	}
 
 	// Create a transaction with the certificate as an output
-	createResult, err := c.wallet.CreateAction(ctx, wallet.CreateActionArgs{
+	createResult, err := c.Wallet.CreateAction(ctx, wallet.CreateActionArgs{
 		Description: "Create a new Identity Token",
 		Outputs: []wallet.CreateActionOutput{
 			{
-				Satoshis:          c.options.TokenAmount,
+				Satoshis:          c.Options.TokenAmount,
 				LockingScript:     lockingScript.Bytes(),
 				OutputDescription: "Identity Token",
 			},
@@ -156,7 +155,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 		Options: &wallet.CreateActionOptions{
 			RandomizeOutputs: util.BoolPtr(false),
 		},
-	}, string(c.originator))
+	}, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create action: %w", err)
 	}
@@ -172,7 +171,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	}
 
 	// Submit the transaction to an overlay
-	networkResult, err := c.wallet.GetNetwork(ctx, nil, string(c.originator))
+	networkResult, err := c.Wallet.GetNetwork(ctx, nil, string(c.Originator))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get network: %w", err)
 	}

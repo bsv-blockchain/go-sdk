@@ -255,9 +255,9 @@ func TestMasterCertificate(t *testing.T) {
 
 		// Define verifier within this scope too
 		verifierPrivateKey, _ := ec.NewPrivateKey()
-		// Use a standard ProtoWallet for the verifier
-		verifierWallet, _ := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypePrivateKey, PrivateKey: verifierPrivateKey})
-		verifierIdentityKey, _ := verifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+		// Use CompletedProtoWallet for the verifier
+		verifierWallet, _ := certificates.NewCompletedProtoWallet(verifierPrivateKey)
+		verifierIdentityKey, _ := verifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
 		verifierCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: verifierIdentityKey.PublicKey}
 
 		t.Run("should create a verifier keyring for specified fields", func(t *testing.T) {
@@ -287,8 +287,37 @@ func TestMasterCertificate(t *testing.T) {
 				t.Error("Expected keyring to contain 'name' key")
 			}
 
-			// TODO: When VerifiableCertificate is implemented, create one and test decryption
-			// by the verifierWallet using the keyringForVerifier.
+			// Test VerifiableCertificate decryption using the verifierWallet and keyringForVerifier
+			verifiableCert := certificates.NewVerifiableCertificate(&issueCert.Certificate, keyringForVerifier)
+			
+			decryptedFields, err := verifiableCert.DecryptFields(
+				t.Context(),
+				verifierWallet,
+				false,
+				"",
+			)
+			if err != nil {
+				t.Fatalf("VerifiableCertificate.DecryptFields failed: %v", err)
+			}
+			
+			// Verify that only the revealed field was decrypted
+			if len(decryptedFields) != 1 {
+				t.Errorf("Expected 1 decrypted field, got %d", len(decryptedFields))
+			}
+			
+			expectedValue := plainFieldsKrStr["name"]
+			if decryptedFields["name"] != expectedValue {
+				t.Errorf("Expected decrypted field 'name' to be '%s', got '%s'", expectedValue, decryptedFields["name"])
+			}
+			
+			// Verify that DecryptedFields was populated on the VerifiableCertificate
+			if verifiableCert.DecryptedFields == nil {
+				t.Error("Expected VerifiableCertificate.DecryptedFields to be populated")
+			} else if len(verifiableCert.DecryptedFields) != 1 {
+				t.Errorf("Expected VerifiableCertificate.DecryptedFields to have 1 field, got %d", len(verifiableCert.DecryptedFields))
+			} else if verifiableCert.DecryptedFields["name"] != expectedValue {
+				t.Errorf("Expected VerifiableCertificate.DecryptedFields['name'] to be '%s', got '%s'", expectedValue, verifiableCert.DecryptedFields["name"])
+			}
 		})
 
 		t.Run("should return error if fields to reveal are not a subset", func(t *testing.T) {
