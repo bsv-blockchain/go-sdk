@@ -3,8 +3,8 @@ package serializer
 import (
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 // DeserializeCreateActionArgs deserializes a byte slice into a wallet.CreateActionArgs object

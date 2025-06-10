@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bsv-blockchain/go-sdk/transaction"
-	pushdroptpl "github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
+	pushdroptpl "github.com/bsv-blockchain/go-sdk/v2/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 // LocalKVStore implements KVStoreInterface for local key-value storage

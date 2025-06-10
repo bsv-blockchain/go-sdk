@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/bsv-blockchain/go-sdk/auth"
-	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/v2/auth"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 )
 
 // SimplifiedHTTPTransport implements the Transport interface for HTTP communication

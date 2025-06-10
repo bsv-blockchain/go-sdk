@@ -1,7 +1,8 @@
 version: "2"
 
-issues:
-  exclude-rules:
-    - linters:
-        - staticcheck
-      text: "SA1019:"
+linters:
+  exclusions:
+    rules:
+      - linters:
+          - staticcheck
+        text: "SA1019:"

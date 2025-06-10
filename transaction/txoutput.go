@@ -5,9 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
-	script "github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/util"
+	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	script "github.com/bsv-blockchain/go-sdk/v2/script"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 )
 
 // newOutputFromBytes returns a transaction Output from the bytes provided

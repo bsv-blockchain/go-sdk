@@ -13,7 +13,7 @@ permissions:
 
 env:
   GO_VERSION: '1.24'
-  GOLANGCI_LINT_VERSION: v2.1.1
+  GOLANGCI_LINT_VERSION: v2.1.6
 
 jobs:
   sonarcloud:
@@ -41,13 +41,13 @@ jobs:
 
       # Re-run golangci separately without exiting on errors and generating a report for use in Sonar
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: --timeout=5m --issues-exit-code=0 --out-format=checkstyle:golangci-lint-report.xml
+          args: --timeout=5m --issues-exit-code=0 --output.checkstyle.path=golangci-lint-report.xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

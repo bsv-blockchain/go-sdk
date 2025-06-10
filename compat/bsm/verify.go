@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
-	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/util"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/v2/script"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 )
 
 // PubKeyFromSignature gets a publickey for a signature and tells you whether is was compressed

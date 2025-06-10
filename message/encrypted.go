@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
 )
 
 // BRC-78: https://github.com/bitcoin-sv/BRCs/blob/master/peer-to-peer/0078.md

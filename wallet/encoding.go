@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
 )
 
 // BytesList is a custom type for JSON serialization of byte arrays that don't use base64 encoding.

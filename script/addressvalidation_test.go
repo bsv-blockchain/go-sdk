@@ -3,7 +3,7 @@ package script_test
 import (
 	"testing"
 
-	script "github.com/bsv-blockchain/go-sdk/script"
+	script "github.com/bsv-blockchain/go-sdk/v2/script"
 	"github.com/stretchr/testify/require"
 )
 

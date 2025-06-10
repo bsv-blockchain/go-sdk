@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet/serializer"
 )
 
 // WalletWireTransceiver implements wallet.Interface

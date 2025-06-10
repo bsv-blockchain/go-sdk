@@ -1,7 +1,7 @@
 package identity
 
 import (
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 // DisplayableIdentity contains formatted identity information for display in UIs

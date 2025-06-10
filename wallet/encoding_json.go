@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
 )
 
 func (c CertificateType) MarshalJSON() ([]byte, error) {

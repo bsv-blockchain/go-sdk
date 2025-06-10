@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
+	"github.com/bsv-blockchain/go-sdk/v2/script/interpreter/errs"
 )
 
 // tstCheckScriptError ensures the type of the two passed errors are of the

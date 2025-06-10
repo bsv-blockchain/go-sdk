@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/v2/script"
 
-	bip32 "github.com/bsv-blockchain/go-sdk/compat/bip32"
-	"github.com/bsv-blockchain/go-sdk/compat/bip39"
-	chaincfg "github.com/bsv-blockchain/go-sdk/transaction/chaincfg"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	bip32 "github.com/bsv-blockchain/go-sdk/v2/compat/bip32"
+	"github.com/bsv-blockchain/go-sdk/v2/compat/bip39"
+	chaincfg "github.com/bsv-blockchain/go-sdk/v2/transaction/chaincfg"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 func main() {

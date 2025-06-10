@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	hash "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	hash "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
 )
 
 func main() {

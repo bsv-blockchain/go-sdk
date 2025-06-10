@@ -5,11 +5,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/transaction"
-	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/v2/script"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
+	sighash "github.com/bsv-blockchain/go-sdk/v2/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 type PushDropData struct {

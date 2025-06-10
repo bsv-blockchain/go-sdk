@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
 	"github.com/stretchr/testify/require"
 )
 

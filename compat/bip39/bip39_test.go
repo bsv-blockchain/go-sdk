@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/compat/bip39/wordlists"
+	"github.com/bsv-blockchain/go-sdk/v2/compat/bip39/wordlists"
 	"github.com/stretchr/testify/require"
 )
 

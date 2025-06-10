@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	primitives "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	primitives "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 

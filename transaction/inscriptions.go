@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	script "github.com/bsv-blockchain/go-sdk/script"
+	script "github.com/bsv-blockchain/go-sdk/v2/script"
 )
 
 // OrdinalsPrefix contains 'ord' the inscription protocol prefix.

@@ -3,8 +3,8 @@ package transaction
 import (
 	"encoding/json"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
-	script "github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	script "github.com/bsv-blockchain/go-sdk/v2/script"
 	"github.com/pkg/errors"
 )
 

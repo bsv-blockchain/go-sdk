@@ -5,8 +5,8 @@ package registry
 import (
 	"context"
 
-	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 // DefinitionType represents the three types of registry entries.

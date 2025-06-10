@@ -12,11 +12,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
-	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
-	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
-	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/v2/overlay/lookup"
+	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 )
 
 // StorageDownloader handles resolving and downloading files via UHRP URLs.

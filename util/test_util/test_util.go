@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
 	"github.com/stretchr/testify/require"
 )
 

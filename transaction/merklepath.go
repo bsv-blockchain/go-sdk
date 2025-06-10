@@ -9,9 +9,9 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
-	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction/chaintracker"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 	"github.com/pkg/errors"
 )
 

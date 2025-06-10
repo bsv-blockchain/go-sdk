@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
 )
 
 type keyDeriverInterface interface {

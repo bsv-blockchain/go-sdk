@@ -8,7 +8,7 @@ package transports
 import (
 	"context"
 
-	"github.com/bsv-blockchain/go-sdk/auth"
+	"github.com/bsv-blockchain/go-sdk/v2/auth"
 )
 
 // Transport defines the interface for communication transports used in authentication
