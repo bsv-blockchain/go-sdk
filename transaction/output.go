@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	script "github.com/bsv-blockchain/go-sdk/v2/script"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	script "github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/pkg/errors"
 )
 

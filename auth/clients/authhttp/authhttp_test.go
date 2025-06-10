@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/v2/auth"
-	"github.com/bsv-blockchain/go-sdk/v2/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/v2/auth/utils"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/auth"
+	"github.com/bsv-blockchain/go-sdk/auth/certificates"
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
 

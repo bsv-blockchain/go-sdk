@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/v2/script"
-	"github.com/bsv-blockchain/go-sdk/v2/script/interpreter"
-	"github.com/bsv-blockchain/go-sdk/v2/script/interpreter/debug"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/debug"
 	"github.com/stretchr/testify/require"
 )
 

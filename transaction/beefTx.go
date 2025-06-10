@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 // DataFormat represents the format of the data in a BeefTx.

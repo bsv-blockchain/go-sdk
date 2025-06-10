@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	tu "github.com/bsv-blockchain/go-sdk/v2/util/test_util"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
 

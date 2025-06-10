@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 type Header struct {

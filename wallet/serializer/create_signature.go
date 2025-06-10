@@ -3,9 +3,9 @@ package serializer
 import (
 	"fmt"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func SerializeCreateSignatureArgs(args *wallet.CreateSignatureArgs) ([]byte, error) {

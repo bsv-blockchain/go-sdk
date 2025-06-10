@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bsv-blockchain/go-sdk/v2/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/v2/auth/utils"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/auth/certificates"
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // MessageType defines the type of message exchanged in auth

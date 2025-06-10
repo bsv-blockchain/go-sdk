@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/v2/overlay"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 const MAX_SHIP_QUERY_TIMEOUT = time.Second

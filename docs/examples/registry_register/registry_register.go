@@ -6,8 +6,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/v2/registry"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/registry"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // This example shows how to use the RegistryClient to register a basket definition

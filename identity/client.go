@@ -12,15 +12,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bsv-blockchain/go-sdk/v2/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/v2/auth/utils"
-	"github.com/bsv-blockchain/go-sdk/v2/overlay"
-	"github.com/bsv-blockchain/go-sdk/v2/overlay/topic"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction/template/pushdrop"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/auth/certificates"
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/overlay/topic"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // Client lets you discover who others are, and let the world know who you are.

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	compat "github.com/bsv-blockchain/go-sdk/v2/compat/bip32"
+	compat "github.com/bsv-blockchain/go-sdk/compat/bip32"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

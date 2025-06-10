@@ -2,10 +2,10 @@ package serializer
 
 import (
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 
-	"github.com/bsv-blockchain/go-sdk/v2/util"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 const (

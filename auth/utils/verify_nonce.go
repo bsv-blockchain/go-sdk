@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // VerifyNonce verifies that a nonce was derived from the given wallet

@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // HTTPWalletJSON implements wallet.Interface for HTTP transport using JSON

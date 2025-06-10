@@ -4,8 +4,8 @@ package storage
 import (
 	"context"
 
-	"github.com/bsv-blockchain/go-sdk/v2/overlay"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // DownloaderConfig defines configuration options for StorageDownloader.

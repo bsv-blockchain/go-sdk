@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 )
 
 // DRBG represents a HMAC-based Deterministic Random Bit Generator

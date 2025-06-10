@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // CachedKeyDeriver is a wrapper around KeyDeriver that caches derived keys

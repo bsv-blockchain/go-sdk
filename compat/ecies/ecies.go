@@ -8,9 +8,9 @@ import (
 
 	"errors"
 
-	ecies "github.com/bsv-blockchain/go-sdk/v2/primitives/aescbc"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	c "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	ecies "github.com/bsv-blockchain/go-sdk/primitives/aescbc"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	c "github.com/bsv-blockchain/go-sdk/primitives/hash"
 )
 
 // EncryptSingle is a helper that uses Electrum ECIES method to encrypt a message

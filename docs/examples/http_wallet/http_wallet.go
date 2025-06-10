@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/bsv-blockchain/go-sdk/v2/transaction/template/p2pkh"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
-	"github.com/bsv-blockchain/go-sdk/v2/script"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet/substrates"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
 )
 
 // Helper to write JSON responses for the mock server
