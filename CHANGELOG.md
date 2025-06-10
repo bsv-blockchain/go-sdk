@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [2.0.1 - 2025-06-10](#201---2025-06-10)
 - [2.0.0 - 2025-06-08](#200---2025-06-08)
 - [1.1.27 - 2025-05-15](#1127---2025-05-15)
 - [1.1.26 - 2025-05-14](#1126---2025-05-14)
@@ -34,6 +35,13 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [2.0.1] - 2025-06-10
+
+### Fixed
+- Go module v2 path compliance - added required `/v2` suffix to module path
+- Updated all import paths to use `github.com/bsv-blockchain/go-sdk/v2/`
+- Updated dependencies and CI/CD tools
 
 ## [2.0.0] - 2025-06-08
 
