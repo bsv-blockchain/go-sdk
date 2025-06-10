@@ -1,4 +1,4 @@
-module github.com/bsv-blockchain/go-sdk
+module github.com/bsv-blockchain/go-sdk/v2
 
 go 1.24.3
 

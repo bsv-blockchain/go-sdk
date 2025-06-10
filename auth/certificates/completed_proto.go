@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 // CompletedProtoWallet embeds the ProtoWallet and implements wallet.Interface

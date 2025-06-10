@@ -9,10 +9,10 @@ import (
 	"log"
 	"slices"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
-	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
-	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/v2/script"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 	"github.com/pkg/errors"
 )
 

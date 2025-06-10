@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
-	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/overlay"
+	"github.com/bsv-blockchain/go-sdk/v2/script"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 // OverlayAdminTokenData represents the data contained within a SHIP or SLAP administration token

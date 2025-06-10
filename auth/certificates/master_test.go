@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/auth/utils"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/auth/certificates"
+	"github.com/bsv-blockchain/go-sdk/v2/auth/utils"
+	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 )
 
 func TestMasterCertificate(t *testing.T) {

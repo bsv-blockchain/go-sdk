@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
-	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/v2/overlay"
+	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	aes "github.com/bsv-blockchain/go-sdk/primitives/aesgcm"
+	aes "github.com/bsv-blockchain/go-sdk/v2/primitives/aesgcm"
 )
 
 // Vanilla AES encryption and decryption

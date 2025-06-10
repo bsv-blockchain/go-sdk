@@ -14,7 +14,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/bsv-blockchain/go-sdk/compat/bip39/wordlists"
+	"github.com/bsv-blockchain/go-sdk/v2/compat/bip39/wordlists"
 	"golang.org/x/crypto/pbkdf2"
 )
 

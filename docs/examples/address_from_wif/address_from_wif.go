@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	script "github.com/bsv-blockchain/go-sdk/script"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	script "github.com/bsv-blockchain/go-sdk/v2/script"
 )
 
 func main() {

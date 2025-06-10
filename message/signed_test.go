@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
 	"github.com/stretchr/testify/require"
 	// Using testify for assertions similar to JavaScript's expect
 )

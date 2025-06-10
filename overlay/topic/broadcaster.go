@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
-	admintoken "github.com/bsv-blockchain/go-sdk/overlay/admin-token"
-	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
-	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/v2/overlay"
+	admintoken "github.com/bsv-blockchain/go-sdk/v2/overlay/admin-token"
+	"github.com/bsv-blockchain/go-sdk/v2/overlay/lookup"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
 )
 
 // RequireAck specifies acknowledgment requirements for topic broadcasts

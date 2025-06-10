@@ -1,8 +1,8 @@
 package serializer
 
 import (
-	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
 )

@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"strings"
 
-	base58 "github.com/bsv-blockchain/go-sdk/compat/base58"
-	"github.com/bsv-blockchain/go-sdk/util"
+	base58 "github.com/bsv-blockchain/go-sdk/v2/compat/base58"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 )
 
 type Polynomial struct {

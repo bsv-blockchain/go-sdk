@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	base58 "github.com/bsv-blockchain/go-sdk/compat/base58"
+	base58 "github.com/bsv-blockchain/go-sdk/v2/compat/base58"
 )
 
 func TestNewKeyshares(t *testing.T) {

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
-	"github.com/bsv-blockchain/go-sdk/registry"
-	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/v2/overlay/lookup"
+	"github.com/bsv-blockchain/go-sdk/v2/registry"
+	"github.com/bsv-blockchain/go-sdk/v2/script"
+	"github.com/bsv-blockchain/go-sdk/v2/transaction"
 )
 
 // This example demonstrates how to use the RegistryClient to resolve a basket definition
