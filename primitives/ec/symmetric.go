@@ -6,7 +6,7 @@ import (
 	"errors"
 	"log"
 
-	aesgcm "github.com/bsv-blockchain/go-sdk/v2/primitives/aesgcm"
+	aesgcm "github.com/bsv-blockchain/go-sdk/primitives/aesgcm"
 )
 
 type SymmetricKey struct {

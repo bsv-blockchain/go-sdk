@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
-	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
-	script "github.com/bsv-blockchain/go-sdk/v2/script"
-	sighash "github.com/bsv-blockchain/go-sdk/v2/transaction/sighash"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	script "github.com/bsv-blockchain/go-sdk/script"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // defaultHex is used to fix a bug in the original client (see if statement in the CalcInputSignatureHash func)

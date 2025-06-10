@@ -3,9 +3,9 @@ package spv
 import (
 	"fmt"
 
-	"github.com/bsv-blockchain/go-sdk/v2/script/interpreter"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction/chaintracker"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
 )
 
 func Verify(t *transaction.Transaction,

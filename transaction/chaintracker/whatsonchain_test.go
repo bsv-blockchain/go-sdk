@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/stretchr/testify/require"
 )
 

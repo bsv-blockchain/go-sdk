@@ -15,11 +15,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
-	"github.com/bsv-blockchain/go-sdk/v2/script"
-	"github.com/bsv-blockchain/go-sdk/v2/script/interpreter/errs"
-	"github.com/bsv-blockchain/go-sdk/v2/script/interpreter/scriptflag"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 var opcodeByName = make(map[string]byte)

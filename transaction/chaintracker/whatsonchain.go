@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 type Network string

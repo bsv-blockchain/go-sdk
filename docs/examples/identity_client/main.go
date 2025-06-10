@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bsv-blockchain/go-sdk/v2/identity"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/identity"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func main() {

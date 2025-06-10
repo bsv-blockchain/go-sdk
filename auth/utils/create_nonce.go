@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // CreateNonce generates a cryptographic nonce derived from the wallet

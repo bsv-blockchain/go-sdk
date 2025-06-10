@@ -4,10 +4,10 @@ import (
 	"encoding/hex"
 	"testing"
 
-	crypto "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 func TestLittleEndianBytes(t *testing.T) {

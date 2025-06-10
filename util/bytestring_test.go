@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 const (

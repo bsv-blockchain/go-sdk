@@ -7,8 +7,8 @@
 package overlay
 
 import (
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 // Protocol represents the overlay protocol type (SHIP or SLAP)

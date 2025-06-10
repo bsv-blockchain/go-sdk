@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"github.com/bsv-blockchain/go-sdk/v2/script"
+	"github.com/bsv-blockchain/go-sdk/script"
 )
 
 type UnlockingScriptTemplate interface {

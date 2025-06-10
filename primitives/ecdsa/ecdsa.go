@@ -7,7 +7,7 @@ import (
 	"errors"
 	"math/big"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // Sign generates an ECDSA signature for a given hashed message using the provided private key.

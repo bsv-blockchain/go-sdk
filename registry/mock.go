@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 )
 

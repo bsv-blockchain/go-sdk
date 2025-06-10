@@ -7,7 +7,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // Facilitator defines the interface for overlay lookup facilitators that can execute lookup queries

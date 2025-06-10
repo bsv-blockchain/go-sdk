@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/v2/overlay"
-	"github.com/bsv-blockchain/go-sdk/v2/overlay/lookup"
-	"github.com/bsv-blockchain/go-sdk/v2/overlay/topic"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction/template/pushdrop"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
+	"github.com/bsv-blockchain/go-sdk/overlay/topic"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // RegisterDefinition publishes a new on-chain definition for baskets, protocols, or certificates.

@@ -1,7 +1,7 @@
 // Package debug comment
 package debug
 
-import "github.com/bsv-blockchain/go-sdk/v2/script/interpreter"
+import "github.com/bsv-blockchain/go-sdk/script/interpreter"
 
 type (
 	// ThreadStateFunc debug handler for a threads state.

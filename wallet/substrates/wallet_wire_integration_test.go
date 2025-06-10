@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	tu "github.com/bsv-blockchain/go-sdk/v2/util/test_util"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet/serializer"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/stretchr/testify/require"
 )
 

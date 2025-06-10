@@ -9,10 +9,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet/serializer"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
 
 var (

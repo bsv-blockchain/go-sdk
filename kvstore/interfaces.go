@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // KVStoreInterface defines the interface for a key-value store
