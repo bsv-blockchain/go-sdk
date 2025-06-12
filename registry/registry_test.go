@@ -487,7 +487,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          outpoint.Txid.String(),
-			OutputIndex:   outpoint.Index,
+			OutputIndex:   outpoint.OutputIndex,
 			Satoshis:      1000,
 			LockingScript: "OP_FALSE OP_RETURN 74657374 626173686b65745f6964 54657374204261736b6574 68747470733a2f2f6578616d706c652e636f6d2f69636f6e2e706e67 54657374206261736b6574206465736372697074696f6e 68747470733a2f2f6578616d706c652e636f6d2f646f6373 " + operatorPubKeyHex,
 			BEEF:          beef,

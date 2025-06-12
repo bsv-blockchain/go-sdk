@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
 	"github.com/bsv-blockchain/go-sdk/overlay/topic"
@@ -325,14 +326,14 @@ func (c *RegistryClient) ListOwnRegistryEntries(ctx context.Context, definitionT
 		// Add this for debugging tests
 		if testLogger, ok := ctx.Value("testLogger").(interface{ Logf(string, ...interface{}) }); ok {
 			testLogger.Logf("Processing outpoint %s", output.Outpoint)
-			testLogger.Logf("Transaction has %d outputs, output index: %d", len(tx.Outputs), output.Outpoint.Index)
-			if int(output.Outpoint.Index) >= len(tx.Outputs) {
-				testLogger.Logf("Output index %d is out of bounds", output.Outpoint.Index)
+			testLogger.Logf("Transaction has %d outputs, output index: %d", len(tx.Outputs), output.Outpoint.OutputIndex)
+			if int(output.Outpoint.OutputIndex) >= len(tx.Outputs) {
+				testLogger.Logf("Output index %d is out of bounds", output.Outpoint.OutputIndex)
 				continue
 			}
 		}
 
-		lockingScript := tx.Outputs[output.Outpoint.Index].LockingScript
+		lockingScript := tx.Outputs[output.Outpoint.OutputIndex].LockingScript
 		recordData, err := parseLockingScript(definitionType, lockingScript)
 		if err != nil {
 			// Add this for debugging tests
@@ -347,7 +348,7 @@ func (c *RegistryClient) ListOwnRegistryEntries(ctx context.Context, definitionT
 			DefinitionData: recordData,
 			TokenData: TokenData{
 				TxID:          output.Outpoint.Txid.String(),
-				OutputIndex:   output.Outpoint.Index,
+				OutputIndex:   output.Outpoint.OutputIndex,
 				Satoshis:      output.Satoshis,
 				LockingScript: lockingScript.String(),
 				BEEF:          listResult.BEEF,

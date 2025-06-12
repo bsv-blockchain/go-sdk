@@ -8,6 +8,7 @@ package serializer
 import (
 	"errors"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -19,7 +20,7 @@ import (
 func encodeOutpoint(outpoint *transaction.Outpoint) []byte {
 	writer := util.NewWriter()
 	writer.WriteBytes(outpoint.Txid[:])
-	writer.WriteVarInt(uint64(outpoint.Index))
+	writer.WriteVarInt(uint64(outpoint.OutputIndex))
 	return writer.Buf
 }
 
@@ -70,8 +71,8 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 			return nil, fmt.Errorf("failed to read output index: %w", err)
 		}
 		outpoints = append(outpoints, transaction.Outpoint{
-			Txid:  *tx,
-			Index: uint32(outputIndex),
+			Txid:        *tx,
+			OutputIndex: uint32(outputIndex),
 		})
 	}
 	return outpoints, nil
@@ -90,8 +91,8 @@ func decodeOutpoint(reader *util.Reader) (*transaction.Outpoint, error) {
 
 	// Create revocation outpoint
 	return &transaction.Outpoint{
-		Txid:  chainhash.Hash(txidBytes),
-		Index: uint32(outputIndex),
+		Txid:        chainhash.Hash(txidBytes),
+		OutputIndex: uint32(outputIndex),
 	}, nil
 }
 

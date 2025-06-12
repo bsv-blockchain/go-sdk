@@ -80,8 +80,8 @@ func TestValidateCertificates(t *testing.T) {
 
 		// Create revocation outpoint
 		revocationOutpoint := &transaction.Outpoint{
-			Txid:  chainhash.HashH([]byte("test_txid_000000000000000000000000000000000000000000000000000000000000")),
-			Index: 0,
+			Txid:        chainhash.HashH([]byte("test_txid_000000000000000000000000000000000000000000000000000000000000")),
+			OutputIndex: 0,
 		}
 
 		// Issue certificate

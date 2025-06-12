@@ -33,7 +33,7 @@ func TestCertificate(t *testing.T) {
 	txid := make([]byte, 32)
 	var outpoint transaction.Outpoint
 	copy(outpoint.Txid[:], txid)
-	outpoint.Index = 1
+	outpoint.OutputIndex = 1
 	sampleRevocationOutpoint := &outpoint
 
 	// Convert string maps to the proper types
@@ -418,7 +418,7 @@ func TestCertificate(t *testing.T) {
 		// Check revocation outpoint conversion
 		assert.NotNil(t, walletCert.RevocationOutpoint)
 		assert.Equal(t, certificate.RevocationOutpoint.Txid, walletCert.RevocationOutpoint.Txid)
-		assert.Equal(t, certificate.RevocationOutpoint.Index, walletCert.RevocationOutpoint.Index)
+		assert.Equal(t, certificate.RevocationOutpoint.OutputIndex, walletCert.RevocationOutpoint.OutputIndex)
 	})
 
 	t.Run("ToWalletCertificate should handle certificate with signature", func(t *testing.T) {
@@ -454,10 +454,10 @@ func TestCertificate(t *testing.T) {
 		serialBytes := tu.GetByte32FromString("test-wallet-serial")
 
 		walletCert := &wallet.Certificate{
-			Type:         typeBytes,
-			SerialNumber: serialBytes,
-			Subject:      sampleSubjectPubKey,
-			Certifier:    sampleCertifierPubKey,
+			Type:               typeBytes,
+			SerialNumber:       serialBytes,
+			Subject:            sampleSubjectPubKey,
+			Certifier:          sampleCertifierPubKey,
 			RevocationOutpoint: sampleRevocationOutpoint,
 			Fields: map[string]string{
 				"name":  "Alice",
@@ -491,7 +491,7 @@ func TestCertificate(t *testing.T) {
 		// Check revocation outpoint conversion
 		assert.NotNil(t, certificate.RevocationOutpoint)
 		assert.Equal(t, walletCert.RevocationOutpoint.Txid, certificate.RevocationOutpoint.Txid)
-		assert.Equal(t, walletCert.RevocationOutpoint.Index, certificate.RevocationOutpoint.Index)
+		assert.Equal(t, walletCert.RevocationOutpoint.OutputIndex, certificate.RevocationOutpoint.OutputIndex)
 	})
 
 	t.Run("ToWalletCertificate and FromWalletCertificate should be round-trip compatible", func(t *testing.T) {

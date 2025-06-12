@@ -24,8 +24,8 @@ func TestMasterCertificate(t *testing.T) {
 	ctx := t.Context()
 
 	mockRevocationOutpoint := &transaction.Outpoint{
-		Txid:  chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
-		Index: 1,
+		Txid:        chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
+		OutputIndex: 1,
 	}
 
 	// Use CompletedProtoWallet for testing
@@ -289,7 +289,7 @@ func TestMasterCertificate(t *testing.T) {
 
 			// Test VerifiableCertificate decryption using the verifierWallet and keyringForVerifier
 			verifiableCert := certificates.NewVerifiableCertificate(&issueCert.Certificate, keyringForVerifier)
-			
+
 			decryptedFields, err := verifiableCert.DecryptFields(
 				t.Context(),
 				verifierWallet,
@@ -299,17 +299,17 @@ func TestMasterCertificate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("VerifiableCertificate.DecryptFields failed: %v", err)
 			}
-			
+
 			// Verify that only the revealed field was decrypted
 			if len(decryptedFields) != 1 {
 				t.Errorf("Expected 1 decrypted field, got %d", len(decryptedFields))
 			}
-			
+
 			expectedValue := plainFieldsKrStr["name"]
 			if decryptedFields["name"] != expectedValue {
 				t.Errorf("Expected decrypted field 'name' to be '%s', got '%s'", expectedValue, decryptedFields["name"])
 			}
-			
+
 			// Verify that DecryptedFields was populated on the VerifiableCertificate
 			if verifiableCert.DecryptedFields == nil {
 				t.Error("Expected VerifiableCertificate.DecryptedFields to be populated")

@@ -104,7 +104,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 			require.Equal(t, expectedSerialBase64, cert.SerialNumber)
 			require.NotNil(t, cert.RevocationOutpoint)
 			if cert.RevocationOutpoint != nil && revocationOutpoint != nil {
-				require.Equal(t, revocationOutpoint.Index, cert.RevocationOutpoint.Index)
+				require.Equal(t, revocationOutpoint.OutputIndex, cert.RevocationOutpoint.OutputIndex)
 			}
 		}
 	})

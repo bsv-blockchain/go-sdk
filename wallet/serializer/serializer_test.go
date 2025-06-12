@@ -240,7 +240,7 @@ func TestDecodeOutpoint(t *testing.T) {
 		{
 			name:      "valid outpoint",
 			input:     validData,
-			want:      &transaction.Outpoint{Txid: *validTxIDHash, Index: validIndex},
+			want:      &transaction.Outpoint{Txid: *validTxIDHash, OutputIndex: validIndex},
 			expectErr: false,
 		},
 		{
@@ -295,8 +295,8 @@ func TestEncodeOutpoint(t *testing.T) {
 	require.NoError(t, err, "creating valid txid hash should not error")
 
 	validOutpoint := &transaction.Outpoint{
-		Txid:  *validTxIDHash,
-		Index: validIndex,
+		Txid:        *validTxIDHash,
+		OutputIndex: validIndex,
 	}
 
 	// Expected valid binary output

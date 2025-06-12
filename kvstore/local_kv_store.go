@@ -104,7 +104,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 
 	// Extract txid and vout from outpoint string of the *most recent output*
 	txidStr := mostRecentOutput.Outpoint.Txid.String()
-	vout := mostRecentOutput.Outpoint.Index
+	vout := mostRecentOutput.Outpoint.OutputIndex
 
 	// Find the transaction corresponding to the most recent output's txid within the BEEF data
 	tx := beefData.FindTransaction(txidStr)

@@ -30,8 +30,8 @@ func TestVerifiableCertificate(t *testing.T) {
 	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32)))
 	sampleSerialNumber := wallet.StringBase64(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{2}, 32)))
 	sampleRevocationOutpoint := &transaction.Outpoint{
-		Txid:  chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
-		Index: 1,
+		Txid:        chainhash.HashH([]byte("deadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000.1")),
+		OutputIndex: 1,
 	}
 
 	// Plaintext fields to encrypt

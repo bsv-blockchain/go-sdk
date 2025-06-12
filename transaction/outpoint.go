@@ -13,24 +13,24 @@ import (
 
 // Outpoint represents a transaction output reference consisting of a transaction ID and output index
 type Outpoint struct {
-	Txid  chainhash.Hash `json:"txid"`
-	Index uint32         `json:"index"`
+	Txid        chainhash.Hash
+	OutputIndex uint32
 }
 
 // Equal returns true if this outpoint is equal to another outpoint
 func (o *Outpoint) Equal(other *Outpoint) bool {
-	return o.Txid.Equal(other.Txid) && o.Index == other.Index
+	return o.Txid.Equal(other.Txid) && o.OutputIndex == other.OutputIndex
 }
 
 // TxBytes returns the outpoint as a byte slice in transaction format (little-endian)
 func (o *Outpoint) TxBytes() []byte {
-	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.Index)
+	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.OutputIndex)
 }
 
 // NewOutpointFromBytes creates a new Outpoint from a 36-byte array in standard byte format (big-endian)
 func NewOutpointFromBytes(b [36]byte) (o *Outpoint) {
 	o = &Outpoint{
-		Index: binary.BigEndian.Uint32(b[32:]),
+		OutputIndex: binary.BigEndian.Uint32(b[32:]),
 	}
 	txid, _ := chainhash.NewHash(util.ReverseBytes(b[:32]))
 	o.Txid = *txid
@@ -39,7 +39,7 @@ func NewOutpointFromBytes(b [36]byte) (o *Outpoint) {
 
 // Bytes returns the outpoint as a byte slice in standard format (big-endian)
 func (o *Outpoint) Bytes() []byte {
-	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.Index)
+	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.OutputIndex)
 }
 
 // OutpointFromString creates a new Outpoint from a string in the format "txid.outputIndex"
@@ -56,7 +56,7 @@ func OutpointFromString(s string) (*Outpoint, error) {
 		if vout, err := strconv.ParseUint(s[65:], 10, 32); err != nil {
 			return nil, err
 		} else {
-			o.Index = uint32(vout)
+			o.OutputIndex = uint32(vout)
 		}
 	}
 	return o, nil
@@ -64,12 +64,12 @@ func OutpointFromString(s string) (*Outpoint, error) {
 
 // String returns the outpoint as a string in the format "txid.outputIndex"
 func (o Outpoint) String() string {
-	return fmt.Sprintf("%s.%d", o.Txid.String(), o.Index)
+	return fmt.Sprintf("%s.%d", o.Txid.String(), o.OutputIndex)
 }
 
 // OrdinalString returns the outpoint as a string in ordinal format "txid_outputIndex"
 func (o *Outpoint) OrdinalString() string {
-	return fmt.Sprintf("%s_%d", o.Txid.String(), o.Index)
+	return fmt.Sprintf("%s_%d", o.Txid.String(), o.OutputIndex)
 }
 
 // MarshalJSON implements the json.Marshaler interface
