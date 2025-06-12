@@ -727,7 +727,6 @@ func (b *Beef) MergeTxidOnly(txid string) *BeefTx {
 			KnownTxID:  knownTxID,
 		}
 		b.Transactions[txid] = tx
-		b.tryToValidateBumpIndex(tx)
 	}
 	return tx
 }
