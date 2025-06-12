@@ -719,7 +719,6 @@ func (b *Beef) MergeTxidOnly(txid string) *BeefTx {
 			KnownTxID:  knownTxID,
 		}
 		b.Transactions[txid] = tx
-		b.tryToValidateBumpIndex(tx)
 	}
 	return tx
 }
@@ -1034,10 +1033,10 @@ func (b *Beef) trimUnreferencedBumps() {
 
 	// Track which BUMP indices are still referenced by remaining transactions
 	usedBumpIndices := make(map[int]bool)
-	
+
 	// Build a set of transaction IDs that need BUMPs
 	txidsNeedingBumps := make(map[string]bool)
-	
+
 	for txid, tx := range b.Transactions {
 		switch tx.DataFormat {
 		case RawTxAndBumpIndex:
