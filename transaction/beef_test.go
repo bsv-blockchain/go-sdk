@@ -1157,6 +1157,7 @@ func TestBeefFromV1(t *testing.T) {
 	beef, err := NewBeefFromBytes(beefData)
 	require.NoError(t, err)
 	require.NotNil(t, beef)
+	require.True(t, beef.IsValid(false), "BEEF should be valid")
 }
 
 func TestBEEFGeneratedFromComplexTransactionTree2(t *testing.T) {

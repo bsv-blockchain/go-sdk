@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.1 - 2025-06-12](#121---2025-06-12)
 - [1.2.0 - 2025-06-10](#120---2025-06-10)
 - [1.1.27 - 2025-05-15](#1127---2025-05-15)
 - [1.1.26 - 2025-05-14](#1126---2025-05-14)
@@ -34,6 +35,15 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.1] - 2025-06-12
+
+### Added
+- New `NewBeefFromHex` convenience function to create BEEF transactions directly from hex strings
+
+### Fixed
+- Fixed BEEF `IsValid` verification to properly handle transactions without MerklePath data
+- Corrected validation logic in `verifyValid` to check for MerklePath existence before validating transaction inputs
 
 ## [1.2.0] - 2025-06-10
 
