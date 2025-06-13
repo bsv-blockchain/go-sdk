@@ -20,5 +20,5 @@
       }
     ]
   },
-  "wire": "000204010203041234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef00fde803ffffffffabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789002fd8813ffffffff"
+  "wire": "000204010203041234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef00fde803ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789002fd8813ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 }

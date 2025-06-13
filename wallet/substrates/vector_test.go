@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet/serializer"
+	"github.com/bsv-blockchain/go-sdk/v2/wallet/substrates"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -673,7 +675,7 @@ func TestVectors(t *testing.T) {
 			// For now serializer tests verify wire objects are consistent between serializing and deserializing
 
 			// Test wire format serialization
-			/*t.Run("Wire", func(t *testing.T) {
+			t.Run("Wire", func(t *testing.T) {
 				var wireString string
 				require.NoError(t, json.Unmarshal(vectorFile["wire"], &wireString))
 				wire, err := hex.DecodeString(wireString)
@@ -857,7 +859,7 @@ func TestVectors(t *testing.T) {
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
 				}
-			})*/
+			})
 		})
 	}
 }
