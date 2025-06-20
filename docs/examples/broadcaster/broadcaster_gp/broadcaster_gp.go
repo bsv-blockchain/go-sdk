@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction/broadcaster"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction/broadcaster"
 )
 
 func main() {

@@ -7,8 +7,8 @@
 package wallet
 
 import (
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	sighash "github.com/bsv-blockchain/go-sdk/v2/transaction/sighash"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 )
 
 // SecurityLevel defines the access control level for wallet operations.

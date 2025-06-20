@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // example using BRC-42 method for deriving a child key

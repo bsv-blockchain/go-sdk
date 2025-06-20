@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"net/url"
 
-	authhttp "github.com/bsv-blockchain/go-sdk/v2/auth/clients/authhttp"
+	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
 )
 
 // API response status constants

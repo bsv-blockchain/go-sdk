@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bsv-blockchain/go-sdk/v2/overlay"
-	"github.com/bsv-blockchain/go-sdk/v2/overlay/topic"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction/template/pushdrop"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/overlay/topic"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // CertificateVerifier is an interface for certificate verification

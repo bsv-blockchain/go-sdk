@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction/chaintracker"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // Beef is a set of Transactions and their MerklePaths.
@@ -121,6 +121,14 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[string]*BeefTx,
 	}
 
 	return &txs, nil
+}
+
+func NewBeefFromHex(beefHex string) (*Beef, error) {
+	beef, err := hex.DecodeString(beefHex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode beef hex: %w", err)
+	}
+	return NewBeefFromBytes(beef)
 }
 
 func NewBeefFromBytes(beef []byte) (*Beef, error) {
@@ -719,7 +727,6 @@ func (b *Beef) MergeTxidOnly(txid string) *BeefTx {
 			KnownTxID:  knownTxID,
 		}
 		b.Transactions[txid] = tx
-		b.tryToValidateBumpIndex(tx)
 	}
 	return tx
 }
@@ -930,7 +937,7 @@ func (b *Beef) verifyValid(allowTxidOnly bool) verifyResult {
 	}
 
 	for txid, beefTx := range b.Transactions {
-		if beefTx.DataFormat != TxIDOnly {
+		if beefTx.DataFormat != TxIDOnly && beefTx.Transaction.MerklePath == nil {
 			for _, in := range beefTx.Transaction.Inputs {
 				if !txids[in.SourceTXID.String()] {
 					return r
@@ -1034,10 +1041,10 @@ func (b *Beef) trimUnreferencedBumps() {
 
 	// Track which BUMP indices are still referenced by remaining transactions
 	usedBumpIndices := make(map[int]bool)
-	
+
 	// Build a set of transaction IDs that need BUMPs
 	txidsNeedingBumps := make(map[string]bool)
-	
+
 	for txid, tx := range b.Transactions {
 		switch tx.DataFormat {
 		case RawTxAndBumpIndex:

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/v2/auth"
+	"github.com/bsv-blockchain/go-sdk/auth"
 	"golang.org/x/net/websocket"
 )
 

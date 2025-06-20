@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/require"
 )
 

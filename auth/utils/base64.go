@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // RandomBase64 generates a random byte sequence of specified length and returns it as base64 encoded string

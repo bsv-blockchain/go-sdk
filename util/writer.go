@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
 )
 

@@ -12,7 +12,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // https://github.com/bitcoin-sv/BRCs/blob/master/peer-to-peer/0077.md

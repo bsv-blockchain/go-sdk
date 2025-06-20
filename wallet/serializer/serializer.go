@@ -8,11 +8,11 @@ package serializer
 import (
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/v2/transaction"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // encodeOutpoint converts outpoint string "txid.index" to binary format

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/v2/auth"
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/auth"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/websocket"
 )

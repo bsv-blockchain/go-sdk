@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/v2/storage"
-	"github.com/bsv-blockchain/go-sdk/v2/wallet"
+	"github.com/bsv-blockchain/go-sdk/storage"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // For demonstration purposes. In a real application, you would use

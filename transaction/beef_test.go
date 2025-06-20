@@ -12,9 +12,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/v2/chainhash"
-	script "github.com/bsv-blockchain/go-sdk/v2/script"
-	"github.com/bsv-blockchain/go-sdk/v2/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	script "github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1157,6 +1157,7 @@ func TestBeefFromV1(t *testing.T) {
 	beef, err := NewBeefFromBytes(beefData)
 	require.NoError(t, err)
 	require.NotNil(t, beef)
+	require.True(t, beef.IsValid(false), "BEEF should be valid")
 }
 
 func TestBEEFGeneratedFromComplexTransactionTree2(t *testing.T) {

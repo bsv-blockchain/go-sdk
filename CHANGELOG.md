@@ -4,8 +4,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
-- [2.0.1 - 2025-06-10](#201---2025-06-10)
-- [2.0.0 - 2025-06-08](#200---2025-06-08)
+- [1.2.1 - 2025-06-12](#121---2025-06-12)
+- [1.2.0 - 2025-06-10](#120---2025-06-10)
 - [1.1.27 - 2025-05-15](#1127---2025-05-15)
 - [1.1.26 - 2025-05-14](#1126---2025-05-14)
 - [1.1.25 - 2025-05-09](#1125---2025-05-09)
@@ -36,16 +36,25 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
 
-## [2.0.1] - 2025-06-10
+## [1.2.1] - 2025-06-12
+
+### Added
+- New `NewBeefFromHex` convenience function to create BEEF transactions directly from hex strings
 
 ### Fixed
-- Go module v2 path compliance - added required `/v2` suffix to module path
-- Updated all import paths to use `github.com/bsv-blockchain/go-sdk/v2/`
-- Updated dependencies and CI/CD tools
+- Fixed BEEF `IsValid` verification to properly handle transactions without MerklePath data
+- Corrected validation logic in `verifyValid` to check for MerklePath existence before validating transaction inputs
 
-## [2.0.0] - 2025-06-08
+## [1.2.0] - 2025-06-10
 
 This is a major release introducing comprehensive new modules for authentication, key-value storage, overlay services, registry management, decentralized storage, and advanced wallet functionality. This release represents a significant architectural evolution of the SDK, aligning with the TypeScript SDK's capabilities.
+
+### Updated
+- golang.org/x/crypto from v0.29.0 to v0.31.0 (security fixes)
+- golang.org/x/sync from v0.9.0 to v0.10.0
+- golangci-lint from v2.1.1 to v2.1.6
+- GitHub Actions: golangci-lint-action from v6 to v8
+- GitHub Actions: sonarcloud-github-action to sonarqube-scan-action v5.0.0
 
 ### Added
 

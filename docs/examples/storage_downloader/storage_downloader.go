@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/bsv-blockchain/go-sdk/v2/overlay"
-	"github.com/bsv-blockchain/go-sdk/v2/storage"
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/storage"
 )
 
 func main() {

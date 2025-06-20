@@ -8,8 +8,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 
-	ec "github.com/bsv-blockchain/go-sdk/v2/primitives/ec"
-	hash "github.com/bsv-blockchain/go-sdk/v2/primitives/hash"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	hash "github.com/bsv-blockchain/go-sdk/primitives/hash"
 )
 
 // ProtoWallet is a precursor to a full wallet, capable of performing foundational cryptographic operations.
