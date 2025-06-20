@@ -105,10 +105,9 @@ func TestVectors(t *testing.T) {
 		},
 	}, {
 		Filename: "listActions-simple-args",
-		IsResult: true,
 		Object: wallet.ListActionsArgs{
 			Labels:         []string{"test-label"},
-			Limit:          10,
+			Limit:          util.Uint32Ptr(10),
 			IncludeOutputs: util.BoolPtr(true),
 		},
 	}, {
@@ -455,8 +454,8 @@ func TestVectors(t *testing.T) {
 		Object: wallet.ListCertificatesArgs{
 			Certifiers:       []*ec.PublicKey{counterparty, verifier},
 			Types:            []wallet.CertificateType{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
-			Limit:            5,
-			Offset:           0,
+			Limit:            util.Uint32Ptr(5),
+			Offset:           nil,
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "list-cert-reason",
 		},
@@ -519,8 +518,8 @@ func TestVectors(t *testing.T) {
 		Filename: "discoverByIdentityKey-simple-args",
 		Object: wallet.DiscoverByIdentityKeyArgs{
 			IdentityKey:    counterparty,
-			Limit:          10,
-			Offset:         0,
+			Limit:          util.Uint32Ptr(10),
+			Offset:         nil,
 			SeekPermission: util.BoolPtr(true),
 		},
 	}, {
@@ -554,8 +553,8 @@ func TestVectors(t *testing.T) {
 		Filename: "discoverByAttributes-simple-args",
 		Object: wallet.DiscoverByAttributesArgs{
 			Attributes:     map[string]string{"email": "alice@example.com", "role": "admin"},
-			Limit:          5,
-			Offset:         0,
+			Limit:          util.Uint32Ptr(5),
+			Offset:         nil,
 			SeekPermission: util.BoolPtr(false),
 		},
 	}, {
@@ -696,9 +695,10 @@ func TestVectors(t *testing.T) {
 				}
 
 				// Define a function to check wire serialization and deserialization
-				checkWireSerialize := func(call substrates.Call, obj any, serialized []byte, err1 error, deserialized any, err2 error) {
-					require.Equal(t, frameCall, call)
-					require.NoError(t, err1)
+				checkWireSerialize := func(call substrates.Call, obj any,
+					serialized []byte, errSerialize error, deserialized any, errDeserialize error) {
+					require.Equal(t, frameCall, call, "Frame call mismatch")
+					require.NoError(t, errSerialize, "Serializing object error")
 					var serializedWithFrame []byte
 					if tt.IsResult {
 						serializedWithFrame = serializer.WriteResultFrame(serialized, nil)
@@ -708,9 +708,9 @@ func TestVectors(t *testing.T) {
 							Params: serialized,
 						})
 					}
-					require.Equal(t, wire, serializedWithFrame)
-					require.NoError(t, err2)
-					require.EqualValues(t, obj, deserialized)
+					require.Equal(t, wire, serializedWithFrame, "Serialized wire mismatch")
+					require.NoError(t, errDeserialize, "Deserializing wire error")
+					require.EqualValues(t, obj, deserialized, "Deserialized object mismatch")
 				}
 
 				// Serialize and deserialize using the wire binary format
@@ -855,6 +855,14 @@ func TestVectors(t *testing.T) {
 				case wallet.GetVersionResult:
 					serialized, err1 := serializer.SerializeGetVersionResult(&obj)
 					deserialized, err2 := serializer.DeserializeGetVersionResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.ListActionsArgs:
+					serialized, err1 := serializer.SerializeListActionsArgs(&obj)
+					deserialized, err2 := serializer.DeserializeListActionsArgs(frameParams)
+					checkWireSerialize(substrates.CallListActions, &obj, serialized, err1, deserialized, err2)
+				case wallet.ListActionsResult:
+					serialized, err1 := serializer.SerializeListActionsResult(&obj)
+					deserialized, err2 := serializer.DeserializeListActionsResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

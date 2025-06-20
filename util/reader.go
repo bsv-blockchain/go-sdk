@@ -44,6 +44,19 @@ func (r *Reader) ReadBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
+func (r *Reader) ReadBytesReverse(n int) ([]byte, error) {
+	b, err := r.ReadBytes(n)
+	if err != nil {
+		return nil, fmt.Errorf("error reading bytes reverse: %w", err)
+	}
+	// Reverse the byte slice
+	var newBytes = make([]byte, len(b))
+	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
+		newBytes[i], newBytes[j] = b[j], b[i]
+	}
+	return newBytes, nil
+}
+
 func (r *Reader) ReadIntBytes() ([]byte, error) {
 	linkageLen, err := r.ReadVarInt()
 	if err != nil {
@@ -65,6 +78,17 @@ func (r *Reader) ReadVarInt() (uint64, error) {
 		return 0, fmt.Errorf("error reading varint: %w", err)
 	}
 	return uint64(varInt), nil
+}
+
+func (r *Reader) ReadVarIntOptional() (*uint64, error) {
+	i, err := r.ReadVarInt()
+	if err != nil {
+		return nil, err
+	}
+	if i == math.MaxUint64 {
+		return nil, nil
+	}
+	return &i, nil
 }
 
 func (r *Reader) ReadVarInt32() (uint32, error) {
@@ -141,15 +165,20 @@ func (r *Reader) ReadOptionalBytes(opts ...BytesOption) ([]byte, error) {
 	return r.ReadBytes(int(length))
 }
 
-func (r *Reader) ReadOptionalUint32() (uint32, error) {
+func (r *Reader) ReadOptionalUint32() (*uint32, error) {
 	val, err := r.ReadVarInt()
 	if err != nil {
-		return 0, fmt.Errorf("error reading val for optional uint32: %w", err)
+		return nil, fmt.Errorf("error reading val for optional uint32: %w", err)
 	}
 	if val == math.MaxUint64 {
-		return 0, nil
+		return nil, nil
 	}
-	return uint32(val), nil
+	var val32 uint32
+	if val > math.MaxUint32 {
+		return nil, fmt.Errorf("value %d exceeds uint32 maximum", val)
+	}
+	val32 = uint32(val)
+	return &val32, nil
 }
 
 func (r *Reader) ReadOptionalBool() (*bool, error) {
@@ -266,9 +295,9 @@ func (r *ReaderHoldError) ReadVarInt32() uint32 {
 	return val
 }
 
-func (r *ReaderHoldError) ReadOptionalUint32() uint32 {
+func (r *ReaderHoldError) ReadOptionalUint32() *uint32 {
 	if r.Err != nil {
-		return 0
+		return nil
 	}
 	val, err := r.Reader.ReadOptionalUint32()
 	r.Err = err
@@ -280,6 +309,15 @@ func (r *ReaderHoldError) ReadBytes(n int) []byte {
 		return nil
 	}
 	val, err := r.Reader.ReadBytes(n)
+	r.Err = err
+	return val
+}
+
+func (r *ReaderHoldError) ReadBytesReverse(n int) []byte {
+	if r.Err != nil {
+		return nil
+	}
+	val, err := r.Reader.ReadBytesReverse(n)
 	r.Err = err
 	return val
 }
@@ -339,6 +377,11 @@ func ReadOptionalBoolAsBool(opt *bool) bool {
 // BoolPtr is a helper function to create a pointer to a boolean value
 func BoolPtr(b bool) *bool {
 	return &b
+}
+
+// Uint32Ptr is a helper function to create a pointer to a uint32 value
+func Uint32Ptr(ui uint32) *uint32 {
+	return &ui
 }
 
 func (r *ReaderHoldError) ReadTxidSlice() []chainhash.Hash {

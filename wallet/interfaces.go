@@ -52,22 +52,22 @@ type (
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
-	Type               CertificateType   `json:"type"`
-	SerialNumber       SerialNumber      `json:"serialNumber"`
-	Subject            *ec.PublicKey     `json:"subject"`
-	Certifier          *ec.PublicKey     `json:"certifier"`
-	RevocationOutpoint *transaction.Outpoint         `json:"revocationOutpoint,omitempty"`
-	Fields             map[string]string `json:"fields,omitempty"` // Field name -> field value (encrypted)
-	Signature          *ec.Signature     `json:"signature,omitempty"`
+	Type               CertificateType       `json:"type"`
+	SerialNumber       SerialNumber          `json:"serialNumber"`
+	Subject            *ec.PublicKey         `json:"subject"`
+	Certifier          *ec.PublicKey         `json:"certifier"`
+	RevocationOutpoint *transaction.Outpoint `json:"revocationOutpoint,omitempty"`
+	Fields             map[string]string     `json:"fields,omitempty"` // Field name -> field value (encrypted)
+	Signature          *ec.Signature         `json:"signature,omitempty"`
 }
 
 // CreateActionInput represents an input to be spent in a transaction
 type CreateActionInput struct {
 	Outpoint              transaction.Outpoint `json:"outpoint"` // Format: "txid:outputIndex"
-	InputDescription      string   `json:"inputDescription"`
-	UnlockingScript       []byte   `json:"unlockingScript,omitempty"`
-	UnlockingScriptLength uint32   `json:"unlockingScriptLength,omitempty"`
-	SequenceNumber        uint32   `json:"sequenceNumber,omitempty"`
+	InputDescription      string               `json:"inputDescription"`
+	UnlockingScript       []byte               `json:"unlockingScript,omitempty"`
+	UnlockingScriptLength uint32               `json:"unlockingScriptLength,omitempty"`
+	SequenceNumber        *uint32              `json:"sequenceNumber,omitempty"`
 }
 
 // CreateActionOutput represents an output to be created in a transaction
@@ -107,8 +107,8 @@ type CreateActionArgs struct {
 	InputBEEF   []byte               `json:"inputBEEF,omitempty"`
 	Inputs      []CreateActionInput  `json:"inputs,omitempty"`
 	Outputs     []CreateActionOutput `json:"outputs,omitempty"`
-	LockTime    uint32               `json:"lockTime,omitempty"`
-	Version     uint32               `json:"version,omitempty"`
+	LockTime    *uint32              `json:"lockTime,omitempty"`
+	Version     *uint32              `json:"version,omitempty"`
 	Labels      []string             `json:"labels,omitempty"`
 	Options     *CreateActionOptions `json:"options,omitempty"`
 }
@@ -145,8 +145,8 @@ type SignableTransaction struct {
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
 type SignActionSpend struct {
-	UnlockingScript []byte `json:"unlockingScript"`
-	SequenceNumber  uint32 `json:"sequenceNumber,omitempty"`
+	UnlockingScript []byte  `json:"unlockingScript"`
+	SequenceNumber  *uint32 `json:"sequenceNumber,omitempty"`
 }
 
 // SignActionOptions controls signing and broadcasting behavior.
@@ -174,11 +174,11 @@ type SignActionResult struct {
 // ActionInput describes a transaction input with full details.
 type ActionInput struct {
 	SourceOutpoint      transaction.Outpoint `json:"sourceOutpoint"`
-	SourceSatoshis      uint64   `json:"sourceSatoshis"`
-	SourceLockingScript []byte   `json:"sourceLockingScript,omitempty"`
-	UnlockingScript     []byte   `json:"unlockingScript,omitempty"`
-	InputDescription    string   `json:"inputDescription"`
-	SequenceNumber      uint32   `json:"sequenceNumber"`
+	SourceSatoshis      uint64               `json:"sourceSatoshis"`
+	SourceLockingScript []byte               `json:"sourceLockingScript,omitempty"`
+	UnlockingScript     []byte               `json:"unlockingScript,omitempty"`
+	InputDescription    string               `json:"inputDescription"`
+	SequenceNumber      uint32               `json:"sequenceNumber"`
 }
 
 // ActionOutput describes a transaction output with full details.
@@ -251,8 +251,8 @@ type ListActionsArgs struct {
 	IncludeInputUnlockingScripts     *bool     `json:"includeInputUnlockingScripts,omitempty"`
 	IncludeOutputs                   *bool     `json:"includeOutputs,omitempty"`
 	IncludeOutputLockingScripts      *bool     `json:"includeOutputLockingScripts,omitempty"`
-	Limit                            uint32    `json:"limit,omitempty"` // Default 10, max 10000
-	Offset                           uint32    `json:"offset,omitempty"`
+	Limit                            *uint32   `json:"limit,omitempty"` // Default 10, max 10000
+	Offset                           *uint32   `json:"offset,omitempty"`
 	SeekPermission                   *bool     `json:"seekPermission,omitempty"` // Default true
 }
 
@@ -297,13 +297,13 @@ type ListOutputsArgs struct {
 
 // Output represents a wallet UTXO with its metadata
 type Output struct {
-	Satoshis           uint64   `json:"satoshis"`
-	LockingScript      []byte   `json:"lockingScript,omitempty"` // Hex encoded
-	Spendable          bool     `json:"spendable"`
-	CustomInstructions string   `json:"customInstructions,omitempty"`
-	Tags               []string `json:"tags,omitempty"`
+	Satoshis           uint64               `json:"satoshis"`
+	LockingScript      []byte               `json:"lockingScript,omitempty"` // Hex encoded
+	Spendable          bool                 `json:"spendable"`
+	CustomInstructions string               `json:"customInstructions,omitempty"`
+	Tags               []string             `json:"tags,omitempty"`
 	Outpoint           transaction.Outpoint `json:"outpoint"` // Format: "txid.index"
-	Labels             []string `json:"labels,omitempty"`
+	Labels             []string             `json:"labels,omitempty"`
 }
 
 // ListOutputsResult contains a paginated list of wallet outputs matching the query.
@@ -469,26 +469,26 @@ type KeyringRevealer struct {
 // AcquireCertificateArgs contains parameters for acquiring a new certificate.
 // This includes the certificate type, certifier information, and acquisition method.
 type AcquireCertificateArgs struct {
-	Type                CertificateType     `json:"type"`
-	Certifier           *ec.PublicKey       `json:"certifier"`
-	AcquisitionProtocol AcquisitionProtocol `json:"acquisitionProtocol"` // "direct" | "issuance"
-	Fields              map[string]string   `json:"fields,omitempty"`
-	SerialNumber        SerialNumber        `json:"serialNumber"`
-	RevocationOutpoint  *transaction.Outpoint           `json:"revocationOutpoint,omitempty"`
-	Signature           *ec.Signature       `json:"signature,omitempty"`
-	CertifierUrl        string              `json:"certifierUrl,omitempty"`
-	KeyringRevealer     KeyringRevealer     `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
-	KeyringForSubject   map[string]string   `json:"keyringForSubject,omitempty"`
-	Privileged          *bool               `json:"privileged,omitempty"`
-	PrivilegedReason    string              `json:"privilegedReason,omitempty"`
+	Type                CertificateType       `json:"type"`
+	Certifier           *ec.PublicKey         `json:"certifier"`
+	AcquisitionProtocol AcquisitionProtocol   `json:"acquisitionProtocol"` // "direct" | "issuance"
+	Fields              map[string]string     `json:"fields,omitempty"`
+	SerialNumber        SerialNumber          `json:"serialNumber"`
+	RevocationOutpoint  *transaction.Outpoint `json:"revocationOutpoint,omitempty"`
+	Signature           *ec.Signature         `json:"signature,omitempty"`
+	CertifierUrl        string                `json:"certifierUrl,omitempty"`
+	KeyringRevealer     KeyringRevealer       `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
+	KeyringForSubject   map[string]string     `json:"keyringForSubject,omitempty"`
+	Privileged          *bool                 `json:"privileged,omitempty"`
+	PrivilegedReason    string                `json:"privilegedReason,omitempty"`
 }
 
 // ListCertificatesArgs contains parameters for listing certificates with filtering and pagination.
 type ListCertificatesArgs struct {
 	Certifiers       []*ec.PublicKey   `json:"certifiers"`
 	Types            []CertificateType `json:"types"`
-	Limit            uint32            `json:"limit"`
-	Offset           uint32            `json:"offset"`
+	Limit            *uint32           `json:"limit,omitempty"`
+	Offset           *uint32           `json:"offset,omitempty"`
 	Privileged       *bool             `json:"privileged,omitempty"`
 	PrivilegedReason string            `json:"privilegedReason,omitempty"`
 }
@@ -515,7 +515,7 @@ type RelinquishCertificateArgs struct {
 
 // RelinquishOutputArgs contains parameters for relinquishing ownership of an output.
 type RelinquishOutputArgs struct {
-	Basket string   `json:"basket"`
+	Basket string               `json:"basket"`
 	Output transaction.Outpoint `json:"output"`
 }
 
@@ -533,8 +533,8 @@ type RelinquishCertificateResult struct {
 // This allows finding certificates associated with a specific public key identity.
 type DiscoverByIdentityKeyArgs struct {
 	IdentityKey    *ec.PublicKey `json:"identityKey"`
-	Limit          uint32        `json:"limit"`
-	Offset         uint32        `json:"offset"`
+	Limit          *uint32       `json:"limit"`
+	Offset         *uint32       `json:"offset"`
 	SeekPermission *bool         `json:"seekPermission,omitempty"`
 }
 
@@ -542,8 +542,8 @@ type DiscoverByIdentityKeyArgs struct {
 // This allows finding certificates that contain specific field values.
 type DiscoverByAttributesArgs struct {
 	Attributes     map[string]string `json:"attributes"`
-	Limit          uint32            `json:"limit"`
-	Offset         uint32            `json:"offset"`
+	Limit          *uint32           `json:"limit"`
+	Offset         *uint32           `json:"offset"`
 	SeekPermission *bool             `json:"seekPermission,omitempty"`
 }
 

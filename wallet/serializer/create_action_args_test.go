@@ -31,7 +31,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 						InputDescription:      "input 1",
 						UnlockingScript:       []byte{0xab, 0xcd},
 						UnlockingScriptLength: 2, // Length is in bytes, "abcd" is 2 bytes when decoded from hex
-						SequenceNumber:        1,
+						SequenceNumber:        util.Uint32Ptr(1),
 					},
 				},
 				Outputs: []wallet.CreateActionOutput{
@@ -44,8 +44,8 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 						Tags:               []string{"tag1", "tag2"},
 					},
 				},
-				LockTime: 100,
-				Version:  1,
+				LockTime: util.Uint32Ptr(100),
+				Version:  util.Uint32Ptr(1),
 				Labels:   []string{"label1", "label2"},
 				Options: &wallet.CreateActionOptions{
 					SignAndProcess:         util.BoolPtr(true),
@@ -112,7 +112,7 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 						InputDescription:      "input 2",
 						UnlockingScript:       []byte{0xef, 0xef},
 						UnlockingScriptLength: 2, // "efef" is 2 bytes when decoded from hex
-						SequenceNumber:        2,
+						SequenceNumber:        util.Uint32Ptr(2),
 					},
 				},
 			},

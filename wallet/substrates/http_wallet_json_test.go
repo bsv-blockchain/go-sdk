@@ -2,6 +2,7 @@ package substrates
 
 import (
 	"encoding/json"
+	"github.com/bsv-blockchain/go-sdk/v2/util"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -265,7 +266,7 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 	client := NewHTTPWalletJSON("", ts.URL, nil)
 	result, err := client.ListActions(t.Context(), wallet.ListActionsArgs{
 		Labels: []string{"test-label"},
-		Limit:  10,
+		Limit:  util.Uint32Ptr(10),
 	})
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), result.TotalActions)
