@@ -249,7 +249,7 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&args)
 		require.NoError(t, err)
 		require.Equal(t, []string{"test-label"}, args.Labels)
-		require.Equal(t, uint32(10), args.Limit)
+		require.Equal(t, util.Uint32Ptr(uint32(10)), args.Limit)
 
 		writeJSONResponse(t, w, wallet.ListActionsResult{
 			TotalActions: 1,
