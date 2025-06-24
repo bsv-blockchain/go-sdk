@@ -209,7 +209,6 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "getPublicKey-simple-args",
 		Object: wallet.GetPublicKeyArgs{
-			IdentityKey: true,
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
 					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
@@ -853,6 +852,30 @@ func TestVectors(t *testing.T) {
 				case wallet.GetVersionResult:
 					serialized, err1 := serializer.SerializeGetVersionResult(&obj)
 					deserialized, err2 := serializer.DeserializeGetVersionResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.GetPublicKeyArgs:
+					serialized, err1 := serializer.SerializeGetPublicKeyArgs(&obj)
+					deserialized, err2 := serializer.DeserializeGetPublicKeyArgs(frameParams)
+					checkWireSerialize(substrates.CallGetPublicKey, &obj, serialized, err1, deserialized, err2)
+				case wallet.GetPublicKeyResult:
+					serialized, err1 := serializer.SerializeGetPublicKeyResult(&obj)
+					deserialized, err2 := serializer.DeserializeGetPublicKeyResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.RevealCounterpartyKeyLinkageArgs:
+					serialized, err1 := serializer.SerializeRevealCounterpartyKeyLinkageArgs(&obj)
+					deserialized, err2 := serializer.DeserializeRevealCounterpartyKeyLinkageArgs(frameParams)
+					checkWireSerialize(substrates.CallRevealCounterpartyKeyLinkage, &obj, serialized, err1, deserialized, err2)
+				case wallet.RevealCounterpartyKeyLinkageResult:
+					serialized, err1 := serializer.SerializeRevealCounterpartyKeyLinkageResult(&obj)
+					deserialized, err2 := serializer.DeserializeRevealCounterpartyKeyLinkageResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.RevealSpecificKeyLinkageArgs:
+					serialized, err1 := serializer.SerializeRevealSpecificKeyLinkageArgs(&obj)
+					deserialized, err2 := serializer.DeserializeRevealSpecificKeyLinkageArgs(frameParams)
+					checkWireSerialize(substrates.CallRevealSpecificKeyLinkage, &obj, serialized, err1, deserialized, err2)
+				case wallet.RevealSpecificKeyLinkageResult:
+					serialized, err1 := serializer.SerializeRevealSpecificKeyLinkageResult(&obj)
+					deserialized, err2 := serializer.DeserializeRevealSpecificKeyLinkageResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				case wallet.ListActionsArgs:
 					serialized, err1 := serializer.SerializeListActionsArgs(&obj)

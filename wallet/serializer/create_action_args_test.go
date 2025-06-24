@@ -179,7 +179,7 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 				w.WriteBytes([]byte{0x01, 0x02})
 				return w.Buf
 			}(),
-			err: "error decoding outpoint: failed to read txid: read past end of data",
+			err: "error decoding outpoint: failed to read txid",
 		},
 		{
 			name: "invalid unlocking script",

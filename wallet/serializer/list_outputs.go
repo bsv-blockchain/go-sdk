@@ -134,8 +134,8 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 	result.TotalOutputs = r.ReadVarInt32()
 
 	// Optional BEEF
-	beefLen := r.ReadByte()
-	if !util.IsNegativeOne(uint64(beefLen)) {
+	beefLen := r.ReadVarInt()
+	if !util.IsNegativeOne(beefLen) {
 		result.BEEF = r.ReadBytes(int(beefLen))
 	}
 

@@ -176,20 +176,10 @@ func decodeProtocol(r *util.ReaderHoldError) (wallet.Protocol, error) {
 func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 	w := util.NewWriter()
 
-	// Write privileged flag
-	if privileged != nil {
-		if *privileged {
-			w.WriteByte(1)
-		} else {
-			w.WriteByte(0)
-		}
-	} else {
-		w.WriteNegativeOne()
-	}
+	w.WriteOptionalBool(privileged)
 
 	// Write privileged reason
 	if privilegedReason != "" {
-		w.WriteByte(byte(len(privilegedReason)))
 		w.WriteString(privilegedReason)
 	} else {
 		w.WriteNegativeOne()
@@ -201,25 +191,10 @@ func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 // decodePrivilegedParams deserializes privileged flag and reason matching TypeScript format
 func decodePrivilegedParams(r *util.ReaderHoldError) (*bool, string) {
 	// Read privileged flag
-	var privileged *bool
-	flag := r.ReadByte()
-	if !util.IsNegativeOneByte(flag) {
-		val := flag == 1
-		privileged = &val
-	} else {
-		// Skip 8 more bytes if flag was 0xFF (TypeScript writes 9 bytes of 0xFF)
-		r.ReadBytes(8)
-	}
+	privileged := r.ReadOptionalBool()
 
-	// Read privileged reason length
-	var privilegedReason string
-	reasonLen := r.ReadByte()
-	if !util.IsNegativeOneByte(reasonLen) {
-		privilegedReason = r.ReadString()
-	} else {
-		// Skip 8 more bytes if length was 0xFF (TypeScript writes 9 bytes of 0xFF)
-		r.ReadBytes(8)
-	}
+	// Read privileged reason
+	privilegedReason := r.ReadString()
 
 	return privileged, privilegedReason
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -502,7 +503,7 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 	// Test get public key by counterparty
 	getByCounterpartyPubKeyArgs := wallet.GetPublicKeyArgs{
 		EncryptionArgs: baseArgs,
-		ForSelf:        true,
+		ForSelf:        util.BoolPtr(true),
 	}
 	getByCounterpartyPubKeyArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,

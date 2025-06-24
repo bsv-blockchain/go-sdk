@@ -10,6 +10,7 @@ import (
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	hash "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // ProtoWallet is a precursor to a full wallet, capable of performing foundational cryptographic operations.
@@ -89,7 +90,7 @@ func (p *ProtoWallet) GetPublicKey(ctx context.Context, args GetPublicKeyArgs, _
 			args.ProtocolID,
 			args.KeyID,
 			counterparty,
-			args.ForSelf,
+			util.ReadOptionalBoolAsBool(args.ForSelf),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive public key: %v", err)

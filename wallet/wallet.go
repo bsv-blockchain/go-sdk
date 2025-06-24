@@ -105,8 +105,8 @@ type DecryptResult struct {
 // It extends EncryptionArgs with flags to specify identity key or derived key behavior.
 type GetPublicKeyArgs struct {
 	EncryptionArgs
-	IdentityKey bool `json:"identityKey"`
-	ForSelf     bool `json:"forSelf,omitempty"`
+	IdentityKey bool  `json:"identityKey,omitempty"`
+	ForSelf     *bool `json:"forSelf,omitempty"`
 }
 
 // GetPublicKeyResult contains the result of a public key retrieval operation.

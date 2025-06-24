@@ -33,8 +33,8 @@ func TestMasterCertificate(t *testing.T) {
 	certifierWallet, _ := certificates.NewCompletedProtoWallet(certifierPrivateKey)
 
 	// Get identity keys with the originator parameter
-	subjectIdentityKey, _ := subjectWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
-	certifierIdentityKey, _ := certifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
+	subjectIdentityKey, _ := subjectWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "go-sdk")
+	certifierIdentityKey, _ := certifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "go-sdk")
 
 	subjectCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: subjectIdentityKey.PublicKey}
 	certifierCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: certifierIdentityKey.PublicKey}
@@ -257,7 +257,7 @@ func TestMasterCertificate(t *testing.T) {
 		verifierPrivateKey, _ := ec.NewPrivateKey()
 		// Use CompletedProtoWallet for the verifier
 		verifierWallet, _ := certificates.NewCompletedProtoWallet(verifierPrivateKey)
-		verifierIdentityKey, _ := verifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
+		verifierIdentityKey, _ := verifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "go-sdk")
 		verifierCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: verifierIdentityKey.PublicKey}
 
 		t.Run("should create a verifier keyring for specified fields", func(t *testing.T) {
@@ -289,7 +289,7 @@ func TestMasterCertificate(t *testing.T) {
 
 			// Test VerifiableCertificate decryption using the verifierWallet and keyringForVerifier
 			verifiableCert := certificates.NewVerifiableCertificate(&issueCert.Certificate, keyringForVerifier)
-			
+
 			decryptedFields, err := verifiableCert.DecryptFields(
 				t.Context(),
 				verifierWallet,
@@ -299,17 +299,17 @@ func TestMasterCertificate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("VerifiableCertificate.DecryptFields failed: %v", err)
 			}
-			
+
 			// Verify that only the revealed field was decrypted
 			if len(decryptedFields) != 1 {
 				t.Errorf("Expected 1 decrypted field, got %d", len(decryptedFields))
 			}
-			
+
 			expectedValue := plainFieldsKrStr["name"]
 			if decryptedFields["name"] != expectedValue {
 				t.Errorf("Expected decrypted field 'name' to be '%s', got '%s'", expectedValue, decryptedFields["name"])
 			}
-			
+
 			// Verify that DecryptedFields was populated on the VerifiableCertificate
 			if verifiableCert.DecryptedFields == nil {
 				t.Error("Expected VerifiableCertificate.DecryptedFields to be populated")
