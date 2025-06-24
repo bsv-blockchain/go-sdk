@@ -65,28 +65,11 @@ func DeserializeDecryptArgs(data []byte) (*wallet.DecryptArgs, error) {
 }
 
 func SerializeDecryptResult(result *wallet.DecryptResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
-	w.WriteBytes(result.Plaintext)
-	return w.Buf, nil
+	return result.Plaintext, nil
 }
 
 func DeserializeDecryptResult(data []byte) (*wallet.DecryptResult, error) {
-	r := util.NewReaderHoldError(data)
-	result := &wallet.DecryptResult{}
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("decrypt failed with error byte %d", errorByte)
-	}
-
-	// Read plaintext (remaining bytes)
-	result.Plaintext = r.ReadRemaining()
-
-	if r.Err != nil {
-		return nil, fmt.Errorf("error decrypting result: %w", r.Err)
-	}
-
-	return result, nil
+	return &wallet.DecryptResult{
+		Plaintext: data,
+	}, nil
 }
