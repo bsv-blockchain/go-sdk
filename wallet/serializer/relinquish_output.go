@@ -36,25 +36,15 @@ func DeserializeRelinquishOutputArgs(data []byte) (*wallet.RelinquishOutputArgs,
 }
 
 func SerializeRelinquishOutputResult(result *wallet.RelinquishOutputResult) ([]byte, error) {
-	w := util.NewWriter()
-
-	// Write 1 byte boolean flag (1 = true, 0 = false)
-	if result.Relinquished {
-		w.WriteByte(1)
-	} else {
-		w.WriteByte(0)
-	}
-
-	return w.Buf, nil
+	return nil, nil
 }
 
 func DeserializeRelinquishOutputResult(data []byte) (*wallet.RelinquishOutputResult, error) {
-	if len(data) < 1 {
-		return nil, fmt.Errorf("invalid result data length")
+	if len(data) > 0 {
+		return nil, fmt.Errorf("invalid result data length, expected 0, got %d", len(data))
 	}
-
-	result := &wallet.RelinquishOutputResult{
-		Relinquished: data[0] == 1,
-	}
-	return result, nil
+	// Error in frame, empty data means success
+	return &wallet.RelinquishOutputResult{
+		Relinquished: true,
+	}, nil
 }

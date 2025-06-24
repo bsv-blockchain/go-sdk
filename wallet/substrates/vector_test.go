@@ -196,7 +196,6 @@ func TestVectors(t *testing.T) {
 		},
 	}, {
 		Filename: "relinquishOutput-simple-args",
-		IsResult: true,
 		Object: wallet.RelinquishOutputArgs{
 			Basket: "test-basket",
 			Output: *tu.OutpointFromString(t, "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"),
@@ -870,6 +869,14 @@ func TestVectors(t *testing.T) {
 				case wallet.ListOutputsResult:
 					serialized, err1 := serializer.SerializeListOutputsResult(&obj)
 					deserialized, err2 := serializer.DeserializeListOutputsResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.RelinquishOutputArgs:
+					serialized, err1 := serializer.SerializeRelinquishOutputArgs(&obj)
+					deserialized, err2 := serializer.DeserializeRelinquishOutputArgs(frameParams)
+					checkWireSerialize(substrates.CallRelinquishOutput, &obj, serialized, err1, deserialized, err2)
+				case wallet.RelinquishOutputResult:
+					serialized, err1 := serializer.SerializeRelinquishOutputResult(&obj)
+					deserialized, err2 := serializer.DeserializeRelinquishOutputResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)
