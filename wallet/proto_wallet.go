@@ -315,7 +315,10 @@ func (p *ProtoWallet) CreateHMAC(
 	mac.Write(args.Data)
 	hmacValue := mac.Sum(nil)
 
-	return &CreateHMACResult{HMAC: hmacValue}, nil
+	result := &CreateHMACResult{}
+	copy(result.HMAC[:], hmacValue)
+
+	return result, nil
 }
 
 // VerifyHMAC verifies that the provided HMAC matches the expected value for the given data.
@@ -353,7 +356,7 @@ func (p *ProtoWallet) VerifyHMAC(
 	expectedHMAC := mac.Sum(nil)
 
 	// Verify HMAC
-	if !hmac.Equal(expectedHMAC, args.HMAC) {
+	if !hmac.Equal(expectedHMAC, args.HMAC[:]) {
 		return &VerifyHMACResult{Valid: false}, nil
 	}
 

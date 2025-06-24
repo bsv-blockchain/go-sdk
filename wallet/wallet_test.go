@@ -623,7 +623,7 @@ func TestHMACCreateVerify(t *testing.T) {
 				},
 			},
 			Data: []byte("BRC-2 HMAC Compliance Validated!"),
-			HMAC: []byte{
+			HMAC: [32]byte{
 				81, 240, 18, 153, 163, 45, 174, 85, 9, 246, 142, 125, 209, 133, 82, 76,
 				254, 103, 46, 182, 86, 59, 219, 61, 126, 30, 176, 232, 233, 100, 234, 14,
 			},

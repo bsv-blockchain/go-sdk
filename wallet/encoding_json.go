@@ -687,3 +687,66 @@ func (r *GetHeaderResult) UnmarshalJSON(data []byte) error {
 	r.Header = []byte(aux.Header)
 	return nil
 }
+
+type aliasVerifyHMACArgs VerifyHMACArgs
+type jsonVerifyHMACArgs struct {
+	Data BytesList `json:"data"`
+	HMAC BytesList `json:"hmac"`
+	*aliasVerifyHMACArgs
+}
+
+func (v VerifyHMACArgs) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&jsonVerifyHMACArgs{
+		Data:                v.Data,
+		HMAC:                v.HMAC[:],
+		aliasVerifyHMACArgs: (*aliasVerifyHMACArgs)(&v),
+	})
+}
+
+func (v *VerifyHMACArgs) UnmarshalJSON(data []byte) error {
+	aux := &jsonVerifyHMACArgs{
+		aliasVerifyHMACArgs: (*aliasVerifyHMACArgs)(v),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling VerifyHMACArgs: %w", err)
+	}
+
+	v.Data = aux.Data
+	if len(aux.HMAC) != 32 {
+		return fmt.Errorf("expected HMAC to be 32 bytes, got %d", len(aux.HMAC))
+	}
+	copy(v.HMAC[:], aux.HMAC)
+
+	return nil
+}
+
+type aliasCreateHMACResult CreateHMACResult
+type jsonCreateHMACResult struct {
+	HMAC BytesList `json:"hmac"`
+	*aliasCreateHMACResult
+}
+
+func (c CreateHMACResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&jsonCreateHMACResult{
+		HMAC:                  c.HMAC[:],
+		aliasCreateHMACResult: (*aliasCreateHMACResult)(&c),
+	})
+}
+
+func (c *CreateHMACResult) UnmarshalJSON(data []byte) error {
+	aux := &jsonCreateHMACResult{
+		aliasCreateHMACResult: (*aliasCreateHMACResult)(c),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling CreateHMACResult: %w", err)
+	}
+
+	if len(aux.HMAC) != 32 {
+		return fmt.Errorf("expected HMAC to be 32 bytes, got %d", len(aux.HMAC))
+	}
+	copy(c.HMAC[:], aux.HMAC)
+
+	return nil
+}

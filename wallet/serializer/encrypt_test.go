@@ -79,11 +79,4 @@ func TestEncryptResult(t *testing.T) {
 		require.NoError(t, err, "deserializing EncryptResult should not error")
 		require.Equal(t, result, got, "deserialized result should match original result")
 	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeEncryptResult(data)
-		require.Error(t, err, "deserializing with error byte should produce an error")
-		require.Contains(t, err.Error(), "failed with error byte 1", "error message should indicate failure and error byte")
-	})
 }

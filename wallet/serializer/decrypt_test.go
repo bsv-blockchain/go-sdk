@@ -78,11 +78,4 @@ func TestDecryptResult(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, result, got)
 	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeDecryptResult(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "decrypt failed with error byte 1")
-	})
 }

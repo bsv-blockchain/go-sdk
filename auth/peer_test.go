@@ -124,7 +124,7 @@ func CreatePeerPair(t *testing.T) (*Peer, *Peer, *wallet.MockWallet, *wallet.Moc
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
-	hmacBytes := make([]byte, 32)
+	hmacBytes := [32]byte{}
 	for i := range hmacBytes {
 		hmacBytes[i] = byte(i)
 	}
@@ -549,7 +549,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
-	hmacBytes := make([]byte, 32)
+	hmacBytes := [32]byte{}
 	for i := range hmacBytes {
 		hmacBytes[i] = byte(i)
 	}
@@ -759,7 +759,7 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
-	hmacBytes1 := make([]byte, 32)
+	hmacBytes1 := [32]byte{}
 	for i := range hmacBytes1 {
 		hmacBytes1[i] = byte(i)
 	}
@@ -812,7 +812,7 @@ func TestPeerMultiDeviceAuthentication(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
-	hmacBytes2 := make([]byte, 32)
+	hmacBytes2 := [32]byte{}
 	for i := range hmacBytes2 {
 		hmacBytes2[i] = byte(i)
 	}
@@ -1074,7 +1074,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
-	hmacBytes := make([]byte, 32)
+	hmacBytes := [32]byte{}
 	for i := range hmacBytes {
 		hmacBytes[i] = byte(i)
 	}
@@ -1350,7 +1350,7 @@ func TestLibraryCardVerification(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
-	hmacBytes := make([]byte, 32)
+	hmacBytes := [32]byte{}
 	for i := range hmacBytes {
 		hmacBytes[i] = byte(i)
 	}
@@ -1696,7 +1696,7 @@ func TestNonmatchingCertificateRejection(t *testing.T) {
 	}
 
 	// Setup HMAC
-	hmacBytes := make([]byte, 32)
+	hmacBytes := [32]byte{}
 	for i := range hmacBytes {
 		hmacBytes[i] = byte(i)
 	}

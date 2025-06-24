@@ -352,7 +352,7 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 
 func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 	testData := []byte("test data")
-	testHMAC := []byte("test-hmac")
+	testHMAC := tu.GetByte32FromString("test-hmac")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/createHmac" {
@@ -368,7 +368,7 @@ func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&args)
 			require.NoError(t, err)
 			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testHMAC, []byte(args.HMAC))
+			require.Equal(t, testHMAC, args.HMAC)
 
 			resp := wallet.VerifyHMACResult{Valid: true}
 			writeJSONResponse(t, w, &resp)
@@ -383,7 +383,7 @@ func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 		Data: testData,
 	})
 	require.NoError(t, err)
-	require.Equal(t, testHMAC, []byte(hmacResult.HMAC))
+	require.Equal(t, testHMAC, hmacResult.HMAC)
 
 	// Test verify HMAC
 	verifyResult, err := client.VerifyHMAC(t.Context(), wallet.VerifyHMACArgs{

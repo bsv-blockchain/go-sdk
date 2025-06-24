@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,7 @@ func setupMockWalletForAuth(t *testing.T) *wallet.MockWallet {
 	// Set up CreateHMAC response for nonce generation
 	mockWallet.MockCreateHMAC = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
 		return &wallet.CreateHMACResult{
-			HMAC: []byte("test-hmac-value"),
+			HMAC: tu.GetByte32FromString("test-hmac-value"),
 		}, nil
 	}
 

@@ -345,7 +345,10 @@ func TestVectors(t *testing.T) {
 		Filename: "createHMAC-simple-result",
 		IsResult: true,
 		Object: wallet.CreateHMACResult{
-			HMAC: []byte{50, 60, 70, 80, 90, 100, 110, 120},
+			HMAC: [32]byte{50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120},
 		},
 	}, {
 		Filename: "verifyHMAC-simple-args",
@@ -362,7 +365,10 @@ func TestVectors(t *testing.T) {
 				SeekPermission:   true,
 			},
 			Data: []byte{10, 20, 30, 40},
-			HMAC: []byte{50, 60, 70, 80, 90, 100, 110, 120},
+			HMAC: [32]byte{50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120},
 		},
 	}, {
 		Filename: "verifyHMAC-simple-result",
