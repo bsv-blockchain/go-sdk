@@ -290,8 +290,8 @@ type ListOutputsArgs struct {
 	IncludeCustomInstructions *bool         `json:"includeCustomInstructions,omitempty"`
 	IncludeTags               *bool         `json:"includeTags,omitempty"`
 	IncludeLabels             *bool         `json:"includeLabels,omitempty"`
-	Limit                     uint32        `json:"limit"` // Default 10, max 10000
-	Offset                    uint32        `json:"offset,omitempty"`
+	Limit                     *uint32       `json:"limit,omitempty"` // Default 10, max 10000
+	Offset                    *uint32       `json:"offset,omitempty"`
 	SeekPermission            *bool         `json:"seekPermission,omitempty"` // Default true
 }
 

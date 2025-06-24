@@ -170,14 +170,13 @@ func TestVectors(t *testing.T) {
 		},
 	}, {
 		Filename: "listOutputs-simple-args",
-		IsResult: true,
 		Object: wallet.ListOutputsArgs{
 			Basket:       "test-basket",
 			Tags:         []string{"tag1", "tag2"},
 			TagQueryMode: wallet.QueryModeAny,
 			Include:      wallet.OutputIncludeLockingScripts,
 			IncludeTags:  util.BoolPtr(true),
-			Limit:        10,
+			Limit:        util.Uint32Ptr(10),
 		},
 	}, {
 		Filename: "listOutputs-simple-result",
@@ -191,7 +190,7 @@ func TestVectors(t *testing.T) {
 				Outpoint:  *tu.OutpointFromString(t, fmt.Sprintf("%s.0", txID)),
 			}, {
 				Satoshis:  5000,
-				Spendable: false,
+				Spendable: true,
 				Outpoint:  *tu.OutpointFromString(t, "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"),
 			}},
 		},
@@ -863,6 +862,14 @@ func TestVectors(t *testing.T) {
 				case wallet.ListActionsResult:
 					serialized, err1 := serializer.SerializeListActionsResult(&obj)
 					deserialized, err2 := serializer.DeserializeListActionsResult(frameParams)
+					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+				case wallet.ListOutputsArgs:
+					serialized, err1 := serializer.SerializeListOutputsArgs(&obj)
+					deserialized, err2 := serializer.DeserializeListOutputsArgs(frameParams)
+					checkWireSerialize(substrates.CallListOutputs, &obj, serialized, err1, deserialized, err2)
+				case wallet.ListOutputsResult:
+					serialized, err1 := serializer.SerializeListOutputsResult(&obj)
+					deserialized, err2 := serializer.DeserializeListOutputsResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				default:
 					t.Fatalf("Unsupported object type: %T", obj)

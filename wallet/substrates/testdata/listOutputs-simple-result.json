@@ -15,7 +15,7 @@
       },
       {
         "satoshis": 5000,
-        "spendable": false,
+        "spendable": true,
         "outpoint": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"
       }
     ]

@@ -18,7 +18,7 @@ import (
 // encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint *transaction.Outpoint) []byte {
 	writer := util.NewWriter()
-	writer.WriteBytes(outpoint.Txid[:])
+	writer.WriteBytesReverse(outpoint.Txid[:])
 	writer.WriteVarInt(uint64(outpoint.Index))
 	return writer.Buf
 }
@@ -57,7 +57,7 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 
 	outpoints := make([]transaction.Outpoint, 0, count)
 	for i := uint64(0); i < count; i++ {
-		txBytes, err := r.ReadBytes(chainhash.HashSize)
+		txBytes, err := r.ReadBytesReverse(chainhash.HashSize)
 		if err != nil {
 			return nil, err
 		}
@@ -79,7 +79,7 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 
 // decodeOutpoint converts binary outpoint data to Outpoint object
 func decodeOutpoint(reader *util.Reader) (*transaction.Outpoint, error) {
-	txidBytes, err := reader.ReadBytes(32)
+	txidBytes, err := reader.ReadBytesReverse(32)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read txid: %w", err)
 	}

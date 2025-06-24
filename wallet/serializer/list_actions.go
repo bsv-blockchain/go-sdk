@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	queryModeAnyCode uint8 = 1
-	queryModeAllCode uint8 = 2
+	labelQueryModeAnyCode uint8 = 1
+	labelQueryModeAllCode uint8 = 2
 )
 
 func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
@@ -23,9 +23,9 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	// Serialize labelQueryMode
 	switch args.LabelQueryMode {
 	case wallet.QueryModeAny:
-		w.WriteByte(queryModeAnyCode)
+		w.WriteByte(labelQueryModeAnyCode)
 	case wallet.QueryModeAll:
-		w.WriteByte(queryModeAllCode)
+		w.WriteByte(labelQueryModeAllCode)
 	case "":
 		w.WriteNegativeOneByte()
 	default:
@@ -60,9 +60,9 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 
 	// Deserialize labelQueryMode
 	switch r.ReadByte() {
-	case queryModeAnyCode:
+	case labelQueryModeAnyCode:
 		args.LabelQueryMode = wallet.QueryModeAny
-	case queryModeAllCode:
+	case labelQueryModeAllCode:
 		args.LabelQueryMode = wallet.QueryModeAll
 	case util.NegativeOneByte:
 		args.LabelQueryMode = ""

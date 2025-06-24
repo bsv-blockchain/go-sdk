@@ -226,6 +226,9 @@ func (r *Reader) ReadStringSlice() ([]string, error) {
 	if count == math.MaxUint64 {
 		return nil, nil
 	}
+	if count >= math.MaxInt {
+		return nil, fmt.Errorf("slice count %d exceeds maximum int size", count)
+	}
 
 	slice := make([]string, 0, count)
 	for i := uint64(0); i < count; i++ {
