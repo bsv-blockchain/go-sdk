@@ -197,7 +197,7 @@ func TestWhatsOnChainCurrentHeight(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	height, err := woc.CurrentHeight(nil)
+	height, err := woc.CurrentHeight(t.Context())
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
