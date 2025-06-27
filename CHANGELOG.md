@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.2 - 2025-06-27](#122---2025-06-27)
 - [1.2.1 - 2025-06-12](#121---2025-06-12)
 - [1.2.0 - 2025-06-10](#120---2025-06-10)
 - [1.1.27 - 2025-05-15](#1127---2025-05-15)
@@ -35,6 +36,13 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.2] - 2025-06-27
+### Added
+- New `CurrentHeight` function on chaintracker interface
+
+### Fixed
+- Update type `wallet.Action.Satoshis` from `uint64` to `int64`
 
 ## [1.2.1] - 2025-06-12
 
