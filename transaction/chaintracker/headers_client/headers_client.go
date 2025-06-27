@@ -59,7 +59,7 @@ func (c Client) IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool,
 	if err != nil {
 		return false, fmt.Errorf("error sending request: %v", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer func() { _ = res.Body.Close() }()
+		defer res.Body.Close()
 		if err := json.NewDecoder(res.Body).Decode(&headers); err != nil {
 			return nil, err
 		}
@@ -119,7 +119,7 @@ func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error)
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer func() { _ = res.Body.Close() }()
+		defer res.Body.Close()
 		if err := json.NewDecoder(res.Body).Decode(headerState); err != nil {
 			return nil, err
 		}
@@ -138,7 +138,7 @@ func (c *Client) GetChaintip(ctx context.Context) (*State, error) {
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer func() { _ = res.Body.Close() }()
+		defer res.Body.Close()
 		if err := json.NewDecoder(res.Body).Decode(headerState); err != nil {
 			return nil, err
 		}

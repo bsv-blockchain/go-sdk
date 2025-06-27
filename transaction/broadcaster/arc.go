@@ -145,7 +145,7 @@ func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*tr
 			Description: err.Error(),
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, &transaction.BroadcastFailure{
@@ -208,7 +208,7 @@ func (a *Arc) Status(txid string) (*ArcResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

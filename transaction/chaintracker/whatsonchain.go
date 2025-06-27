@@ -61,7 +61,7 @@ func (w *WhatsOnChain) GetBlockHeader(height uint32) (header *BlockHeader, err e
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -100,7 +100,7 @@ func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err er
 	if err != nil {
 		return
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return 0, fmt.Errorf("chain info not found for network %s", w.Network)
