@@ -145,3 +145,11 @@ func (c *Client) GetChaintip(ctx context.Context) (*State, error) {
 	}
 	return headerState, nil
 }
+
+func (c *Client) CurrentHeight(ctx context.Context) (uint32, error) {
+	tip, err := c.GetChaintip(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return tip.Height, nil
+}

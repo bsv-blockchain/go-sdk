@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"testing"
@@ -102,6 +103,10 @@ func (mct MyChainTracker) IsValidRootForHeight(root *chainhash.Hash, height uint
 
 	// Assuming BRC74JSON.BlockHeight is of type uint64, and needs to be cast to uint64
 	return root.String() == BRC74Root && height == BRC74JSON.BlockHeight, nil
+}
+
+func (mct MyChainTracker) CurrentHeight(ctx context.Context) (uint32, error) {
+	return 800000, nil // Return a dummy height for testing
 }
 
 func TestMerklePath_Verify(t *testing.T) {
