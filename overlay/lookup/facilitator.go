@@ -34,7 +34,7 @@ func (f *HTTPSOverlayLookupFacilitator) Lookup(ctx context.Context, url string, 
 		if err != nil {
 			return nil, err
 		}
-		defer func() { _ = resp.Body.Close() }()
+		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
 			return nil, &util.HTTPError{
 				StatusCode: resp.StatusCode,

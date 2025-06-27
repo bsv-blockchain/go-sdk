@@ -96,7 +96,7 @@ func (u *Uploader) getUploadInfo(ctx context.Context, fileSize int, retentionPer
 	if err != nil {
 		return nil, fmt.Errorf("failed to get upload info: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("upload info request failed: HTTP %d", resp.StatusCode)
@@ -136,7 +136,7 @@ func (u *Uploader) uploadFile(ctx context.Context, uploadURL string, file Upload
 	if err != nil {
 		return UploadFileResult{}, fmt.Errorf("file upload failed: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -193,7 +193,7 @@ func (u *Uploader) FindFile(ctx context.Context, uhrpURL string) (FindFileData, 
 	if err != nil {
 		return FindFileData{}, fmt.Errorf("findFile request failed: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return FindFileData{}, fmt.Errorf("findFile request failed: HTTP %d", resp.StatusCode)
@@ -232,7 +232,7 @@ func (u *Uploader) ListUploads(ctx context.Context) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("listUploads request failed: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("listUploads request failed: HTTP %d", resp.StatusCode)
@@ -283,7 +283,7 @@ func (u *Uploader) RenewFile(ctx context.Context, uhrpURL string, additionalMinu
 	if err != nil {
 		return RenewFileResult{}, fmt.Errorf("renewFile request failed: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return RenewFileResult{}, fmt.Errorf("renewFile request failed: HTTP %d", resp.StatusCode)

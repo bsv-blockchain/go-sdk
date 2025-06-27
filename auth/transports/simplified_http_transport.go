@@ -66,7 +66,7 @@ func (t *SimplifiedHTTPTransport) Send(ctx context.Context, message *auth.AuthMe
 		if err != nil {
 			return fmt.Errorf("failed to perform proxied HTTP request: %w", err)
 		}
-		defer func() { _ = resp.Body.Close() }()
+		defer resp.Body.Close()
 
 		// Step 3: Serialize the response as an AuthMessage and notify handlers
 		respPayloadWriter := util.NewWriter()
@@ -114,7 +114,7 @@ func (t *SimplifiedHTTPTransport) Send(ctx context.Context, message *auth.AuthMe
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
