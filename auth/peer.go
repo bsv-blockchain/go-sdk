@@ -7,7 +7,6 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -21,7 +20,7 @@ import (
 )
 
 // AUTH_PROTOCOL_ID is the protocol ID for authentication messages as specified in BRC-31 (Authrite)
-const AUTH_PROTOCOL_ID = "authrite message signature"
+const AUTH_PROTOCOL_ID = "auth message signature"
 
 // AUTH_VERSION is the version of the auth protocol
 const AUTH_VERSION = "0.1"
@@ -284,14 +283,10 @@ func (p *Peer) GetAuthenticatedSession(ctx context.Context, identityKey *ec.Publ
 
 // initiateHandshake starts the mutual authentication handshake with a peer
 func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.PublicKey, maxWaitTimeMs int) (*PeerSession, error) {
-	// Create a session nonce
-	nonceBytes := make([]byte, 32)
-	_, err := rand.Read(nonceBytes)
+	sessionNonce, err := utils.CreateNonce(ctx, p.wallet, wallet.Counterparty{Type: wallet.CounterpartyTypeSelf})
 	if err != nil {
-		return nil, NewAuthError("failed to generate nonce", err)
+		return nil, NewAuthError("failed to create session nonce", err)
 	}
-
-	sessionNonce := base64.StdEncoding.EncodeToString(nonceBytes)
 
 	// Add a preliminary session entry (not yet authenticated)
 	session := &PeerSession{
@@ -495,9 +490,41 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 		IdentityKey:  identityKeyResult.PublicKey,
 		Nonce:        ourNonce,
 		YourNonce:    message.InitialNonce,
-		InitialNonce: message.InitialNonce,
+		InitialNonce: session.SessionNonce,
 		Certificates: certs,
 	}
+
+	data := message.InitialNonce + session.SessionNonce
+	sigData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return NewAuthError("failed to prepare data to sign", err)
+	}
+
+	keyID := fmt.Sprintf("%s %s", message.InitialNonce, session.SessionNonce)
+
+	arg := wallet.CreateSignatureArgs{
+		EncryptionArgs: wallet.EncryptionArgs{
+			ProtocolID: wallet.Protocol{
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
+			},
+			KeyID: keyID,
+			Counterparty: wallet.Counterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: message.IdentityKey,
+			},
+		},
+		// Sign the certificate request data, as in TypeScript
+		Data: sigData,
+	}
+
+	sigResult, err := p.wallet.CreateSignature(ctx, arg, "")
+	if err != nil {
+		return fmt.Errorf("failed to sign initial response: %w", err)
+	}
+
+	response.Signature = sigResult.Signature.Serialize()
 
 	// Send the response
 	return p.transport.Send(ctx, response)
@@ -505,65 +532,149 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 
 // handleInitialResponse processes the response to our initial authentication request
 func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, senderPublicKey *ec.PublicKey) error {
-	// Validate the response has required nonces
-	if message.YourNonce == "" || message.InitialNonce == "" {
+	valid, err := utils.VerifyNonce(ctx, message.YourNonce, p.wallet, wallet.Counterparty{Type: wallet.CounterpartyTypeSelf})
+	if err != nil {
+		return fmt.Errorf("failed to validate nonce: %w", err)
+	}
+	if !valid {
 		return ErrInvalidNonce
 	}
 
-	// Find corresponding initial request callback by the initial nonce
-	for id, callback := range p.onInitialResponseReceivedCallbacks {
-		if callback.SessionNonce == message.InitialNonce {
-			// Process certificates if included
-			if len(message.Certificates) > 0 {
-				// Create utils.AuthMessage from our message
-				utilsMessage := &AuthMessage{
-					IdentityKey:  message.IdentityKey,
-					Certificates: message.Certificates,
-				}
+	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
+	if err != nil || session == nil {
+		return ErrSessionNotFound
+	}
 
-				// Convert our RequestedCertificateSet to utils.RequestedCertificateSet
-				utilsRequestedCerts := &utils.RequestedCertificateSet{
-					Certifiers: p.CertificatesToRequest.Certifiers,
-				}
+	data := message.InitialNonce + session.SessionNonce
 
-				// Convert map type
-				certTypes := make(utils.RequestedCertificateTypeIDAndFieldList)
-				for k, v := range p.CertificatesToRequest.CertificateTypes {
-					certTypes[k] = v
-				}
-				utilsRequestedCerts.CertificateTypes = certTypes
+	sigData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return NewAuthError("failed to prepare data to sign", err)
+	}
 
-				// Call ValidateCertificates with proper types
-				err := ValidateCertificates(
-					ctx,
-					p.wallet,
-					utilsMessage,
-					utilsRequestedCerts,
-				)
-				if err != nil {
-					// Log the error but continue - certificate error shouldn't stop auth
-					p.logger.Printf("Warning: Certificate validation failed: %v", err)
-				}
+	signature, err := ec.ParseSignature(message.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to parse signature: %w", err)
+	}
 
-				// Notify certificate listeners
-				for _, callback := range p.onCertificateReceivedCallbacks {
-					err := callback(senderPublicKey, message.Certificates)
-					if err != nil {
-						// Log callback error but continue
-						p.logger.Printf("Warning: Certificate callback error: %v", err)
-					}
-				}
+	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
+		Data:      sigData,
+		Signature: signature,
+		EncryptionArgs: wallet.EncryptionArgs{
+			ProtocolID: wallet.Protocol{
+				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      AUTH_PROTOCOL_ID,
+			},
+			KeyID: fmt.Sprintf("%s %s", message.InitialNonce, session.SessionNonce),
+			Counterparty: wallet.Counterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: message.IdentityKey,
+			},
+		},
+	}, "")
+	if err != nil {
+		return fmt.Errorf("unable to verify signature in initial response: %w", err)
+	} else if !verifyResult.Valid {
+		return ErrInvalidSignature
+	}
+
+	session.PeerNonce = message.InitialNonce
+	session.PeerIdentityKey = message.IdentityKey
+	session.IsAuthenticated = true
+	session.LastUpdate = time.Now().UnixMilli()
+	p.sessionManager.UpdateSession(session)
+
+	if p.CertificatesToRequest != nil && len(p.CertificatesToRequest.Certifiers) > 0 && len(message.Certificates) > 0 {
+		// Create utils.AuthMessage from our message
+		utilsMessage := &AuthMessage{
+			IdentityKey:  message.IdentityKey,
+			Certificates: message.Certificates,
+		}
+
+		// Convert our RequestedCertificateSet to utils.RequestedCertificateSet
+		utilsRequestedCerts := &utils.RequestedCertificateSet{
+			Certifiers: p.CertificatesToRequest.Certifiers,
+		}
+
+		// Convert map type
+		certTypes := make(utils.RequestedCertificateTypeIDAndFieldList)
+		for k, v := range p.CertificatesToRequest.CertificateTypes {
+			certTypes[k] = v
+		}
+		utilsRequestedCerts.CertificateTypes = certTypes
+
+		// Call ValidateCertificates with proper types
+		err := ValidateCertificates(
+			ctx,
+			p.wallet,
+			utilsMessage,
+			utilsRequestedCerts,
+		)
+		if err != nil {
+			return fmt.Errorf("invalid certificates: %w", err)
+		}
+
+		for _, callback := range p.onCertificateReceivedCallbacks {
+			err := callback(senderPublicKey, message.Certificates)
+			if err != nil {
+				return fmt.Errorf("certificate received callback error: %w", err)
 			}
+		}
+	}
 
+	p.lastInteractedWithPeer = message.IdentityKey
+
+	for id, callback := range p.onInitialResponseReceivedCallbacks {
+		if callback.SessionNonce == session.SessionNonce {
 			// Call the initial response callback with the peer's nonce
-			err := callback.Callback(message.Nonce)
+			err := callback.Callback(session.SessionNonce)
 			delete(p.onInitialResponseReceivedCallbacks, id)
 			return err
 		}
 	}
 
-	// No matching callback found
-	return fmt.Errorf("no matching initial request found for response with nonce %s", message.InitialNonce)
+	// The peer might also request certificates from us
+	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
+		err = p.sendCertificates(ctx, message)
+		if err != nil {
+			return fmt.Errorf("failed to send requested certificates: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (p *Peer) sendCertificates(ctx context.Context, message *AuthMessage) error {
+	if len(p.onCertificateRequestReceivedCallbacks) > 0 {
+		for _, callback := range p.onCertificateRequestReceivedCallbacks {
+			err := callback(message.IdentityKey, message.RequestedCertificates)
+			if err != nil {
+				// Log callback error but continue
+				return fmt.Errorf("on certificate request callback failed: %w", err)
+			}
+		}
+		return nil
+	}
+
+	certs, err := utils.GetVerifiableCertificates(
+		ctx,
+		&utils.GetVerifiableCertificatesOptions{
+			Wallet:                p.wallet,
+			RequestedCertificates: &message.RequestedCertificates,
+			VerifierIdentityKey:   message.IdentityKey,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get verifiable certificates: %w", err)
+	}
+
+	err = p.SendCertificateResponse(ctx, message.IdentityKey, certs)
+	if err != nil {
+		return fmt.Errorf("failed to send certificate response: %w", err)
+	}
+
+	return nil
 }
 
 // handleCertificateRequest processes a certificate request message
@@ -574,8 +685,11 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 		return ErrSessionNotFound
 	}
 
-	// Verify nonces match
-	if message.YourNonce != session.SessionNonce {
+	valid, err := utils.VerifyNonce(ctx, message.YourNonce, p.wallet, wallet.Counterparty{Type: wallet.CounterpartyTypeSelf})
+	if err != nil {
+		return fmt.Errorf("failed to validate nonce: %w", err)
+	}
+	if !valid {
 		return ErrInvalidNonce
 	}
 
@@ -623,31 +737,10 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 		return fmt.Errorf("invalid signature in certificate request: %w", err)
 	}
 
-	// Notify certificate request listeners
-	for _, callback := range p.onCertificateRequestReceivedCallbacks {
-		err := callback(senderPublicKey, message.RequestedCertificates)
-		if err != nil {
-			// Log callback error but continue
-			p.logger.Printf("Warning: Certificate request callback error: %v", err)
-		}
-	}
-
-	// If we have auto-response enabled, automatically send certificates
 	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
-		certs, err := utils.GetVerifiableCertificates(
-			ctx,
-			&utils.GetVerifiableCertificatesOptions{
-				Wallet:                p.wallet,
-				RequestedCertificates: &message.RequestedCertificates,
-				VerifierIdentityKey:   senderPublicKey,
-			},
-		)
-		if err == nil && len(certs) > 0 {
-			// Auto-respond with available certificates
-			err = p.SendCertificateResponse(ctx, senderPublicKey, certs)
-			if err != nil {
-				p.logger.Printf("Warning: Failed to auto-respond with certificates: %v", err)
-			}
+		err = p.sendCertificates(ctx, message)
+		if err != nil {
+			return fmt.Errorf("failed to send requested certificates: %w", err)
 		}
 	}
 
@@ -662,8 +755,11 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 		return ErrSessionNotFound
 	}
 
-	// Verify nonces match
-	if message.YourNonce != session.SessionNonce {
+	valid, err := utils.VerifyNonce(ctx, message.YourNonce, p.wallet, wallet.Counterparty{Type: wallet.CounterpartyTypeSelf})
+	if err != nil {
+		return fmt.Errorf("failed to validate nonce: %w", err)
+	}
+	if !valid {
 		return ErrInvalidNonce
 	}
 
@@ -752,27 +848,19 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 
 // handleGeneralMessage processes a general message
 func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, senderPublicKey *ec.PublicKey) error {
+	valid, err := utils.VerifyNonce(ctx, message.YourNonce, p.wallet, wallet.Counterparty{Type: wallet.CounterpartyTypeSelf})
+	if err != nil {
+		return fmt.Errorf("failed to validate nonce: %w", err)
+	}
+	if !valid {
+		return ErrInvalidNonce
+	}
+
 	// Validate the session exists and is authenticated
 	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
-	if !session.IsAuthenticated {
-		if p.CertificatesToRequest != nil && len(p.CertificatesToRequest.Certifiers) > 0 {
-			return ErrMissingCertificate
-		}
-
-		return ErrNotAuthenticated
-	}
-
-	// Verify nonces match
-	if message.YourNonce != session.SessionNonce {
-		return ErrInvalidNonce
-	}
-
-	// Update session timestamp
-	session.LastUpdate = time.Now().UnixMilli()
-	p.sessionManager.UpdateSession(session)
 
 	// Try to parse the signature
 	signature, err := ec.ParseSignature(message.Signature)
@@ -801,6 +889,10 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	if err != nil || !verifyResult.Valid {
 		return fmt.Errorf("invalid signature in general message: %w", err)
 	}
+
+	// Update session timestamp
+	session.LastUpdate = time.Now().UnixMilli()
+	p.sessionManager.UpdateSession(session)
 
 	// Update last interacted peer
 	if p.autoPersistLastSession {
