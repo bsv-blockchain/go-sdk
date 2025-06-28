@@ -3,7 +3,11 @@
 Welcome to the BSV Blockchain Libraries Project, the comprehensive Go SDK designed to provide an updated and unified layer for developing scalable applications on the BSV Blockchain. This SDK addresses the limitations of previous tools by offering a fresh, peer-to-peer approach, adhering to SPV, and ensuring privacy and scalability.
 
 # Status
-![golangci-lint](https://github.com/bsv-blockchain/go-sdk/workflows/golangci-lint/badge.svg)
+[![CodeQL](https://github.com/bsv-blockchain/go-sdk/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/github-code-scanning/codeql)
+[![Dependabot Updates](https://github.com/bsv-blockchain/go-sdk/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/dependabot/dependabot-updates)
+[![golangci-lint](https://github.com/bsv-blockchain/go-sdk/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/golangci-lint.yaml)
+[![pages-build-deployment](https://github.com/bsv-blockchain/go-sdk/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/pages/pages-build-deployment)
+[![sonarcloud-analysis](https://github.com/bsv-blockchain/go-sdk/actions/workflows/sonar.yaml/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/sonar.yaml)
 
 ## Table of Contents
 
