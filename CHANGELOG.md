@@ -47,6 +47,7 @@ All notable changes to this project will be documented in this file. The format 
   - 2.1x faster for STAS scripts (high opcode density)
   - 1.3x faster for large data scripts  
   - 2.7x faster for small P2PKH scripts
+  - 1.2x faster for complex multi-push scripts
   - Optimal memory usage: allocates exactly what's needed
 
 ## [1.2.4] - 2025-06-30
