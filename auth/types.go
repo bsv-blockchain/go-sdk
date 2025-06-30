@@ -225,15 +225,15 @@ func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&struct {
 		IdentityKey  string                                `json:"identityKey"`
-		Payload      string                                `json:"payload,omitempty"`
-		Signature    string                                `json:"signature,omitempty"`
 		Certificates []*certificates.VerifiableCertificate `json:"certificates,omitempty"`
+		Payload      wallet.BytesList                      `json:"payload,omitempty"`
+		Signature    wallet.BytesList                      `json:"signature,omitempty"`
 		*Alias
 	}{
 		IdentityKey:  m.IdentityKey.ToDERHex(),
-		Payload:      base64.StdEncoding.EncodeToString(m.Payload),
-		Signature:    base64.StdEncoding.EncodeToString(m.Signature),
 		Certificates: formattedCerts,
+		Payload:      m.Payload,
+		Signature:    m.Signature,
 		Alias:        (*Alias)(m),
 	})
 }
@@ -244,9 +244,9 @@ func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 	type Alias AuthMessage
 
 	aux := &struct {
-		IdentityKey string `json:"identityKey"`
-		Payload     string `json:"payload,omitempty"`
-		Signature   string `json:"signature,omitempty"`
+		IdentityKey string           `json:"identityKey"`
+		Payload     wallet.BytesList `json:"payload,omitempty"`
+		Signature   wallet.BytesList `json:"signature,omitempty"`
 		*Alias
 	}{
 		Alias: (*Alias)(m),
@@ -256,25 +256,14 @@ func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("error unmarshaling AuthMessage: %w", err)
 	}
 
+	m.Payload = aux.Payload
+	m.Signature = aux.Signature
+
 	pubKey, err := ec.PublicKeyFromString(aux.IdentityKey)
 	if err != nil {
 		return fmt.Errorf("invalid public key: %w", err)
 	}
 	m.IdentityKey = pubKey
-
-	if aux.Payload != "" {
-		m.Payload, err = base64.StdEncoding.DecodeString(aux.Payload)
-		if err != nil {
-			return fmt.Errorf("invalid payload base64: %w", err)
-		}
-	}
-
-	if aux.Signature != "" {
-		m.Signature, err = base64.StdEncoding.DecodeString(aux.Signature)
-		if err != nil {
-			return fmt.Errorf("invalid signature base64: %w", err)
-		}
-	}
 
 	// Process certificates to ensure signature is in correct format for validation
 	for i, cert := range m.Certificates {
