@@ -34,7 +34,7 @@ type Client struct {
 	ApiKey string
 }
 
-func (c Client) IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool, error) {
+func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
 	type requestBody struct {
 		MerkleRoot  string `json:"merkleRoot"`
 		BlockHeight uint32 `json:"blockHeight"`
@@ -46,7 +46,7 @@ func (c Client) IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool,
 		return false, fmt.Errorf("error marshaling JSON: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", c.Url+"/api/v1/chain/merkleroot/verify", bytes.NewBuffer(jsonPayload))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.Url+"/api/v1/chain/merkleroot/verify", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return false, fmt.Errorf("error creating request: %v", err)
 	}

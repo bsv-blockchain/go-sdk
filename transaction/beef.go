@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -780,7 +781,7 @@ func (b *Beef) IsValid(allowTxidOnly bool) bool {
 	return r.valid
 }
 
-func (b *Beef) Verify(chainTracker chaintracker.ChainTracker, allowTxidOnly bool) (bool, error) {
+func (b *Beef) Verify(ctx context.Context, chainTracker chaintracker.ChainTracker, allowTxidOnly bool) (bool, error) {
 	r := b.verifyValid(allowTxidOnly)
 	if !r.valid {
 		return false, nil
@@ -790,7 +791,7 @@ func (b *Beef) Verify(chainTracker chaintracker.ChainTracker, allowTxidOnly bool
 		if err != nil {
 			return false, err
 		}
-		ok, err := chainTracker.IsValidRootForHeight(h, height)
+		ok, err := chainTracker.IsValidRootForHeight(ctx, h, height)
 		if err != nil || !ok {
 			return false, err
 		}

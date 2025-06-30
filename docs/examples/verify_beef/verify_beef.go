@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/bsv-blockchain/go-sdk/spv"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
@@ -15,6 +17,6 @@ func main() {
 		panic(err)
 	}
 	// This ensures the BEEF structure is legitimate
-	verified, _ := tx.MerklePath.Verify(tx.TxID(), &spv.GullibleHeadersClient{})
+	verified, _ := tx.MerklePath.Verify(context.Background(), tx.TxID(), &spv.GullibleHeadersClient{})
 	println(verified)
 }
