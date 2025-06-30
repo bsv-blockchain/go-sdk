@@ -132,6 +132,22 @@ func (o *ParsedOpcode) enforceMinimumDataPush() error {
 	return nil
 }
 
+// updateConditionalDepth updates the conditional depth based on the opcode
+// Returns true if this is an OP_RETURN outside of conditionals
+func updateConditionalDepth(op byte, depth *int) bool {
+	switch op {
+	case script.OpIF, script.OpNOTIF, script.OpVERIF, script.OpVERNOTIF:
+		*depth++
+	case script.OpENDIF:
+		if *depth > 0 {
+			*depth--
+		}
+	case script.OpRETURN:
+		return *depth == 0
+	}
+	return false
+}
+
 // advancePosition calculates the next position after parsing an opcode
 func advancePosition(scr []byte, i int, op byte) (int, error) {
 	switch op {
@@ -194,24 +210,19 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 		instruction := scr[i]
 		op := opcodeArray[instruction]
 		
-		// Track conditionals to know if OP_RETURN will consume the script
-		switch op.val {
-		case script.OpIF, script.OpNOTIF, script.OpVERIF, script.OpVERNOTIF:
-			conditionalDepth++
-		case script.OpENDIF:
-			if conditionalDepth > 0 {
-				conditionalDepth--
-			}
-		case script.OpRETURN:
+		// Track conditionals and check for OP_RETURN
+		if isOpReturnOutsideConditional := updateConditionalDepth(op.val, &conditionalDepth); isOpReturnOutsideConditional {
 			opcodeCount++
 			// OP_RETURN outside conditionals consumes rest of script
-			if conditionalDepth == 0 {
-				// Rest of script becomes data for OP_RETURN
-				i = len(scr)
-				break
-			}
+			i = len(scr)
+			break
+		}
+		
+		// Special handling for OP_RETURN inside conditionals
+		if op.val == script.OpRETURN {
 			// Inside conditional, just skip the single byte
 			i++
+			opcodeCount++
 			continue
 		}
 		
@@ -237,24 +248,15 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 			return nil, errs.NewError(errs.ErrInvalidParams, "tx and previous output must be supplied for checksig")
 		}
 
-		switch parsedOp.op.val {
-		case script.OpIF, script.OpNOTIF, script.OpVERIF, script.OpVERNOTIF:
-			conditionalBlock++
-		case script.OpENDIF:
-			conditionalBlock--
-		case script.OpRETURN:
-			// If we are not in a conditional block, we end script evaluation.
-			// This must be the final evaluated opcode, everything after is ignored.
-			if conditionalBlock == 0 {
-				if i+1 < len(scr) {
-					parsedOp.Data = scr[i+1:]
-					parsedOp.op.length = 1 + len(parsedOp.Data)
-				}
-				parsedOps = append(parsedOps, parsedOp)
-				return parsedOps, nil
+		// Track conditionals and check for OP_RETURN
+		if isOpReturnOutsideConditional := updateConditionalDepth(parsedOp.op.val, &conditionalBlock); isOpReturnOutsideConditional {
+			// OP_RETURN outside conditionals - extract remaining data and return
+			if i+1 < len(scr) {
+				parsedOp.Data = scr[i+1:]
+				parsedOp.op.length = 1 + len(parsedOp.Data)
 			}
-			// If we are in an conditional block, we continue parsing the other branches,
-			// therefore all data must adhere to push data rules.
+			parsedOps = append(parsedOps, parsedOp)
+			return parsedOps, nil
 		}
 
 		// Extract data for this opcode
