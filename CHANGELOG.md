@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.5 - 2025-01-09](#125---2025-01-09)
 - [1.2.4 - 2025-06-30](#124---2025-06-30)
 - [1.2.3 - 2025-06-30](#123---2025-06-30)
 - [1.2.2 - 2025-06-27](#122---2025-06-27)
@@ -38,6 +39,17 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.5] - 2025-01-09
+
+### Fixed
+- Optimize script parsing performance with two-pass approach for exact memory allocation (#198)
+  - 49% faster for small P2PKH scripts
+  - 29% faster for large data scripts (100KB)
+  - 28% faster for super large data scripts (5MB)
+  - 40% faster for scripts with many push operations
+  - 41% faster for complex STAS scripts
+  - Optimal memory usage: allocates exactly what's needed
 
 ## [1.2.4] - 2025-06-30
 
