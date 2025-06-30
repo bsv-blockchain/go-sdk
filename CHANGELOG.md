@@ -43,11 +43,12 @@ All notable changes to this project will be documented in this file. The format 
 ## [1.2.5] - 2025-01-09
 
 ### Fixed
-- Script parsing performance regression with two-pass approach for exact memory allocation (#109)
-  - 2.1x faster for STAS scripts (high opcode density)
-  - 1.3x faster for large data scripts  
-  - 2.7x faster for small P2PKH scripts
-  - 1.2x faster for complex multi-push scripts
+- Optimize script parsing performance with two-pass approach for exact memory allocation (#198)
+  - 49% faster for small P2PKH scripts
+  - 29% faster for large data scripts (100KB)
+  - 28% faster for super large data scripts (5MB)
+  - 40% faster for scripts with many push operations
+  - 41% faster for complex STAS scripts
   - Optimal memory usage: allocates exactly what's needed
 
 ## [1.2.4] - 2025-06-30
