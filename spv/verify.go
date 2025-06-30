@@ -9,13 +9,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
 )
 
-func Verify(t *transaction.Transaction,
-	chainTracker chaintracker.ChainTracker,
-	feeModel transaction.FeeModel) (bool, error) {
-	return VerifyContext(context.Background(), t, chainTracker, feeModel)
-}
-
-func VerifyContext(ctx context.Context, t *transaction.Transaction,
+func Verify(ctx context.Context, t *transaction.Transaction,
 	chainTracker chaintracker.ChainTracker,
 	feeModel transaction.FeeModel) (bool, error) {
 	verifiedTxids := make(map[string]struct{})
@@ -87,6 +81,6 @@ func VerifyContext(ctx context.Context, t *transaction.Transaction,
 	return true, nil
 }
 
-func VerifyScripts(t *transaction.Transaction) (bool, error) {
-	return Verify(t, &GullibleHeadersClient{}, nil)
+func VerifyScripts(ctx context.Context, t *transaction.Transaction) (bool, error) {
+	return Verify(ctx, t, &GullibleHeadersClient{}, nil)
 }

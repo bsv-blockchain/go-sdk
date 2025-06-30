@@ -17,7 +17,8 @@ const BEEF = "AQC+7wH+kQYNAAcCVAIKXThHm90iVbs15AIfFQEYl5xesbHCXMkYy9SqoR1vNVUAAZ
 func TestSPVVerify(t *testing.T) {
 	tx, err := transaction.NewTransactionFromBEEFHex(BRC62Hex)
 	require.NoError(t, err)
-	verified, err := Verify(tx, &GullibleHeadersClient{}, nil)
+	ctx := t.Context()
+	verified, err := Verify(ctx, tx, &GullibleHeadersClient{}, nil)
 	require.NoError(t, err)
 	require.True(t, verified)
 }
@@ -27,7 +28,8 @@ func TestSPVVerifyScripts(t *testing.T) {
 	require.NoError(t, err)
 	tx, err := transaction.NewTransactionFromBEEF(buf)
 	require.NoError(t, err)
-	verified, err := VerifyScripts(tx)
+	ctx := t.Context()
+	verified, err := VerifyScripts(ctx, tx)
 	require.NoError(t, err)
 	require.True(t, verified)
 }
@@ -40,7 +42,8 @@ func TestSPVVerifyWithSufficientFee(t *testing.T) {
 		Satoshis: 10,
 	}
 
-	verified, err := Verify(tx, &GullibleHeadersClient{}, feeModel)
+	ctx := t.Context()
+	verified, err := Verify(ctx, tx, &GullibleHeadersClient{}, feeModel)
 	require.NoError(t, err)
 	require.True(t, verified)
 }
@@ -53,7 +56,8 @@ func TestSPVVerifyWithInsufficientFee(t *testing.T) {
 		Satoshis: 1,
 	}
 
-	verified, err := Verify(tx, &GullibleHeadersClient{}, feeModel)
+	ctx := t.Context()
+	verified, err := Verify(ctx, tx, &GullibleHeadersClient{}, feeModel)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "fee is too low")
 	require.False(t, verified)

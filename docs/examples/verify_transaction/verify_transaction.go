@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/bsv-blockchain/go-sdk/spv"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
@@ -16,6 +18,7 @@ func main() {
 	}
 	// This ensures the BEEF structure is legitimate, the scripts are valid, and the merkle path is correct
 	// Also optionally verifies fees
-	verified, _ := spv.Verify(tx, &spv.GullibleHeadersClient{}, nil)
+	ctx := context.Background()
+	verified, _ := spv.Verify(ctx, tx, &spv.GullibleHeadersClient{}, nil)
 	println(verified)
 }
