@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -451,10 +452,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 	}
 
 	// Generate a symmetric key for field encryption
-	fieldSymmetricKeyBytes := make([]byte, 32)
-	for i := range fieldSymmetricKeyBytes {
-		fieldSymmetricKeyBytes[i] = byte(i) // Deterministic for testing
-	}
+	fieldSymmetricKeyBytes := bytes.Repeat([]byte{1}, 32)
 	fieldSymmetricKey := ec.NewSymmetricKey(fieldSymmetricKeyBytes)
 	
 	// Encrypt the field value
