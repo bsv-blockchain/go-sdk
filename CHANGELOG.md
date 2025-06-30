@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.4 - 2025-06-30](#124---2025-06-30)
 - [1.2.3 - 2025-06-30](#123---2025-06-30)
 - [1.2.2 - 2025-06-27](#122---2025-06-27)
 - [1.2.1 - 2025-06-12](#121---2025-06-12)
@@ -37,6 +38,15 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.4] - 2025-06-30
+
+### Changed
+- Add context parameter to ChainTracker.IsValidRootForHeight for cancellation/timeout support
+- Update all ChainTracker implementations to take context (WhatsOnChain, HeadersClient, GullibleHeadersClient)
+- Update MerklePath.Verify and VerifyHex to take context
+- Update BEEF.Verify to take context
+- Update spv.Verify and VerifyScripts to take context
 
 ## [1.2.3] - 2025-06-30
 

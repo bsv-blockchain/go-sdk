@@ -48,9 +48,9 @@ func NewWhatsOnChain(network Network, apiKey string) *WhatsOnChain {
 }
 
 // Assuming BlockHeader is defined elsewhere
-func (w *WhatsOnChain) GetBlockHeader(height uint32) (header *BlockHeader, err error) {
+func (w *WhatsOnChain) GetBlockHeader(ctx context.Context, height uint32) (header *BlockHeader, err error) {
 	url := fmt.Sprintf("%s/block/%d/header", w.baseURL, height)
-	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +78,8 @@ func (w *WhatsOnChain) GetBlockHeader(height uint32) (header *BlockHeader, err e
 	return header, nil
 }
 
-func (w *WhatsOnChain) IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool, error) {
-	if header, err := w.GetBlockHeader(height); err != nil {
+func (w *WhatsOnChain) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
+	if header, err := w.GetBlockHeader(ctx, height); err != nil {
 		return false, err
 	} else {
 		return header.MerkleRoot.IsEqual(root), nil
@@ -89,7 +89,7 @@ func (w *WhatsOnChain) IsValidRootForHeight(root *chainhash.Hash, height uint32)
 // Assuming BlockHeader is defined elsewhere
 func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err error) {
 	url := fmt.Sprintf("%s/chain/info", w.baseURL)
-	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return
 	}
