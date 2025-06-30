@@ -214,7 +214,6 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 		if isOpReturnOutsideConditional := updateConditionalDepth(op.val, &conditionalDepth); isOpReturnOutsideConditional {
 			opcodeCount++
 			// OP_RETURN outside conditionals consumes rest of script
-			i = len(scr)
 			break
 		}
 		
