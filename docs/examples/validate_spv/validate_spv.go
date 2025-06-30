@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 
@@ -32,7 +33,8 @@ func main() {
 		return
 	}
 
-	valid, err := client.IsValidRootForHeight(root, tx.MerklePath.BlockHeight)
+	ctx := context.Background()
+	valid, err := client.IsValidRootForHeight(ctx, root, tx.MerklePath.BlockHeight)
 	if err != nil {
 		fmt.Println("Error validating root for height:", err)
 		return

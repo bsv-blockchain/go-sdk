@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -263,20 +264,20 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 
 // Verify checks if a given transaction ID is part of the Merkle tree
 // at the specified block height using a chain tracker
-func (mp *MerklePath) VerifyHex(txidStr string, ct chaintracker.ChainTracker) (bool, error) {
+func (mp *MerklePath) VerifyHex(ctx context.Context, txidStr string, ct chaintracker.ChainTracker) (bool, error) {
 	if txid, err := chainhash.NewHashFromHex(txidStr); err != nil {
 		return false, err
 	} else {
-		return mp.Verify(txid, ct)
+		return mp.Verify(ctx, txid, ct)
 	}
 }
 
-func (mp *MerklePath) Verify(txid *chainhash.Hash, ct chaintracker.ChainTracker) (bool, error) {
+func (mp *MerklePath) Verify(ctx context.Context, txid *chainhash.Hash, ct chaintracker.ChainTracker) (bool, error) {
 	root, err := mp.ComputeRoot(txid)
 	if err != nil {
 		return false, err
 	}
-	return ct.IsValidRootForHeight(root, mp.BlockHeight)
+	return ct.IsValidRootForHeight(ctx, root, mp.BlockHeight)
 }
 
 func (m *MerklePath) Combine(other *MerklePath) (err error) {

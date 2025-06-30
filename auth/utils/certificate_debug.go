@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -60,11 +61,28 @@ func GetEncodedCertificateForDebug(cert wallet.Certificate) wallet.Certificate {
 // SignCertificateForTest properly signs a certificate for test purposes
 // It creates a real signature that will pass verification
 func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signerPrivateKey *ec.PrivateKey) (wallet.Certificate, error) {
+	signerWallet, err := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypePrivateKey, PrivateKey: signerPrivateKey})
+	if err != nil {
+		return cert, fmt.Errorf("failed to create wallet from private key: %w", err)
+	}
+
+	return SignCertificateWithWalletForTest(ctx, cert, signerWallet)
+
+}
+
+// SignCertificateWithWalletForTest properly signs a certificate for test purposes
+// It creates a real signature that will pass verification
+func SignCertificateWithWalletForTest(ctx context.Context, cert wallet.Certificate, signerWallet wallet.KeyOperations) (wallet.Certificate, error) {
 	// Create a copy of the certificate with encoded fields
 	encodedCert := GetEncodedCertificateForDebug(cert)
 
 	// Make sure the certifier is set to the signer's public key
-	encodedCert.Certifier = signerPrivateKey.PubKey()
+	publicKeyResult, err := signerWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "")
+	if err != nil {
+		return encodedCert, fmt.Errorf("failed to get identity key of signer: %w", err)
+	}
+
+	encodedCert.Certifier = publicKeyResult.PublicKey
 
 	certObj, err := certificates.FromWalletCertificate(&encodedCert)
 	if err != nil {
@@ -77,8 +95,24 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 		return encodedCert, fmt.Errorf("failed to serialize certificate: %w", err)
 	}
 
-	// Create signature
-	signature, err := signerPrivateKey.Sign(dataToSign)
+	certType := base64.StdEncoding.EncodeToString(cert.Type[:])
+	certSerial := base64.StdEncoding.EncodeToString(cert.SerialNumber[:])
+
+	args := wallet.CreateSignatureArgs{
+		EncryptionArgs: wallet.EncryptionArgs{
+			ProtocolID: wallet.Protocol{
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      "certificate signature",
+			},
+			KeyID: fmt.Sprintf("%s %s", certType, certSerial),
+			Counterparty: wallet.Counterparty{
+				Type: wallet.CounterpartyTypeAnyone,
+			},
+		},
+		Data: dataToSign,
+	}
+
+	signatureResult, err := signerWallet.CreateSignature(ctx, args, "")
 	if err != nil {
 		return encodedCert, fmt.Errorf("failed to sign certificate: %w", err)
 	}
@@ -91,7 +125,7 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 		Certifier:          &certObj.Certifier,
 		RevocationOutpoint: encodedCert.RevocationOutpoint,
 		Fields:             encodedCert.Fields,
-		Signature:          signature,
+		Signature:          signatureResult.Signature,
 	}
 
 	return finalCert, nil

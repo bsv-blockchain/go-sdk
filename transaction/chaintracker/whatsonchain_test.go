@@ -53,7 +53,8 @@ func TestWhatsOnChainGetBlockHeaderSuccess(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	header, err := woc.GetBlockHeader(100)
+	ctx := t.Context()
+	header, err := woc.GetBlockHeader(ctx, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 		return // Add this return statement
@@ -81,7 +82,8 @@ func TestWhatsOnChainGetBlockHeaderNotFound(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	header, err := woc.GetBlockHeader(100)
+	ctx := t.Context()
+	header, err := woc.GetBlockHeader(ctx, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -105,7 +107,8 @@ func TestWhatsOnChainGetBlockHeaderErrorResponse(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	header, err := woc.GetBlockHeader(100)
+	ctx := t.Context()
+	header, err := woc.GetBlockHeader(ctx, 100)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -136,7 +139,8 @@ func TestWhatsOnChainIsValidRootForHeightSuccess(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	isValid, err := woc.IsValidRootForHeight(&merkleRootHash, 100)
+	ctx := t.Context()
+	isValid, err := woc.IsValidRootForHeight(ctx, &merkleRootHash, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -168,11 +172,41 @@ func TestWhatsOnChainIsValidRootForHeightInvalidRoot(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	isValid, err := woc.IsValidRootForHeight(&differentMerkleRootHash, 100)
+	ctx := t.Context()
+	isValid, err := woc.IsValidRootForHeight(ctx, &differentMerkleRootHash, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	if isValid {
 		t.Fatalf("expected isValid to be false, got true")
+	}
+}
+
+func TestWhatsOnChainCurrentHeight(t *testing.T) {
+	// Mock ChainInfo data
+	expectedBlocks := uint32(800000)
+
+	// Create a test server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		info := &ChainInfo{Blocks: expectedBlocks}
+		err := json.NewEncoder(w).Encode(info)
+		require.NoError(t, err)
+	}))
+	defer ts.Close()
+
+	woc := &WhatsOnChain{
+		Network: "main",
+		ApiKey:  "testapikey",
+		baseURL: ts.URL,
+		client:  ts.Client(),
+	}
+
+	height, err := woc.CurrentHeight(t.Context())
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if height != expectedBlocks {
+		t.Fatalf("expected height %d, got %d", expectedBlocks, height)
 	}
 }
