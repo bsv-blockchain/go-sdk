@@ -118,7 +118,7 @@ func TestMerklePath_Verify(t *testing.T) {
 			Path:        BRC74JSON.Path,
 		}
 		tracker := MyChainTracker{}
-		ctx := context.Background()
+		ctx := t.Context()
 		result, err := path.VerifyHex(ctx, BRC74TXID1, tracker)
 		require.NoError(t, err)
 		require.True(t, result)
