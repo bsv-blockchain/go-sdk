@@ -1,6 +1,7 @@
 package spv
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
@@ -9,6 +10,12 @@ import (
 )
 
 func Verify(t *transaction.Transaction,
+	chainTracker chaintracker.ChainTracker,
+	feeModel transaction.FeeModel) (bool, error) {
+	return VerifyContext(context.Background(), t, chainTracker, feeModel)
+}
+
+func VerifyContext(ctx context.Context, t *transaction.Transaction,
 	chainTracker chaintracker.ChainTracker,
 	feeModel transaction.FeeModel) (bool, error) {
 	verifiedTxids := make(map[string]struct{})
@@ -28,7 +35,7 @@ func Verify(t *transaction.Transaction,
 		}
 
 		if tx.MerklePath != nil {
-			if isValid, err := tx.MerklePath.Verify(txid, chainTracker); err != nil {
+			if isValid, err := tx.MerklePath.Verify(ctx, txid, chainTracker); err != nil {
 				return false, err
 			} else if isValid {
 				verifiedTxids[txidStr] = struct{}{}

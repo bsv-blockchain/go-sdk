@@ -3,6 +3,7 @@
 package chaintracker
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -53,7 +54,8 @@ func TestWhatsOnChainGetBlockHeaderSuccess(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	header, err := woc.GetBlockHeader(100)
+	ctx := context.Background()
+	header, err := woc.GetBlockHeader(ctx, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 		return // Add this return statement
@@ -81,7 +83,8 @@ func TestWhatsOnChainGetBlockHeaderNotFound(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	header, err := woc.GetBlockHeader(100)
+	ctx := context.Background()
+	header, err := woc.GetBlockHeader(ctx, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -105,7 +108,8 @@ func TestWhatsOnChainGetBlockHeaderErrorResponse(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	header, err := woc.GetBlockHeader(100)
+	ctx := context.Background()
+	header, err := woc.GetBlockHeader(ctx, 100)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -136,7 +140,8 @@ func TestWhatsOnChainIsValidRootForHeightSuccess(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	isValid, err := woc.IsValidRootForHeight(&merkleRootHash, 100)
+	ctx := context.Background()
+	isValid, err := woc.IsValidRootForHeight(ctx, &merkleRootHash, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -168,7 +173,8 @@ func TestWhatsOnChainIsValidRootForHeightInvalidRoot(t *testing.T) {
 		client:  ts.Client(),
 	}
 
-	isValid, err := woc.IsValidRootForHeight(&differentMerkleRootHash, 100)
+	ctx := context.Background()
+	isValid, err := woc.IsValidRootForHeight(ctx, &differentMerkleRootHash, 100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

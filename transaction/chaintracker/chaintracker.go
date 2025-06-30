@@ -7,6 +7,6 @@ import (
 )
 
 type ChainTracker interface {
-	IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool, error)
+	IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error)
 	CurrentHeight(ctx context.Context) (uint32, error)
 }
