@@ -135,7 +135,74 @@ func (o *ParsedOpcode) enforceMinimumDataPush() error {
 // Parse takes a *script.Script and returns a []interpreter.ParsedOp
 func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 	scr := *s
-	parsedOps := make([]ParsedOpcode, 0)
+	
+	// First pass: count opcodes
+	opcodeCount := 0
+	i := 0
+	conditionalDepth := 0
+	
+	for i < len(scr) {
+		instruction := scr[i]
+		op := opcodeArray[instruction]
+		
+		// Track conditionals to know if OP_RETURN will consume the script
+		switch op.val {
+		case script.OpIF, script.OpNOTIF, script.OpVERIF, script.OpVERNOTIF:
+			conditionalDepth++
+		case script.OpENDIF:
+			if conditionalDepth > 0 {
+				conditionalDepth--
+			}
+		case script.OpRETURN:
+			opcodeCount++
+			// OP_RETURN outside conditionals consumes rest of script
+			if conditionalDepth == 0 {
+				// Rest of script becomes data for OP_RETURN
+				i = len(scr)
+				break
+			}
+			// Inside conditional, just skip the single byte
+			i++
+			continue
+		}
+		
+		// Skip to next opcode
+		switch {
+		case op.length == 1:
+			i++
+		case op.length > 1:
+			if i+op.length > len(scr) {
+				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
+			}
+			i += op.length
+		case op.length < 0:
+			// Variable length
+			if i+1-op.length > len(scr) {
+				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
+			}
+			var dataLen int
+			switch op.length {
+			case -1:
+				dataLen = int(scr[i+1])
+			case -2:
+				dataLen = int(scr[i+1]) | (int(scr[i+2]) << 8)
+			case -4:
+				dataLen = int(scr[i+1]) | (int(scr[i+2]) << 8) | (int(scr[i+3]) << 16) | (int(scr[i+4]) << 24)
+			default:
+				return nil, errs.NewError(errs.ErrMalformedPush, "invalid opcode length %d", op.length)
+			}
+			newPos := i + 1 - op.length + dataLen
+			if newPos > len(scr) || dataLen < 0 {
+				return nil, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+			}
+			i = newPos
+		}
+		
+		opcodeCount++
+	}
+	
+	// Second pass: allocate exactly what we need and parse
+	parsedOps := make([]ParsedOpcode, 0, opcodeCount)
 	conditionalBlock := 0
 
 	for i := 0; i < len(scr); {
