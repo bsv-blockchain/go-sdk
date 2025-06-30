@@ -132,24 +132,6 @@ func (o *ParsedOpcode) enforceMinimumDataPush() error {
 	return nil
 }
 
-// readDataLength reads the data length for variable-length opcodes (PUSHDATA1/2/4)
-func readDataLength(scr []byte, offset int, opLength int) (int, error) {
-	if len(scr[offset:]) < -opLength {
-		return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
-	}
-	
-	switch opLength {
-	case -1:
-		return int(scr[offset]), nil
-	case -2:
-		return int(binary.LittleEndian.Uint16(scr[offset:])), nil
-	case -4:
-		return int(binary.LittleEndian.Uint32(scr[offset:])), nil
-	default:
-		return 0, errs.NewError(errs.ErrMalformedPush, "invalid opcode length %d", opLength)
-	}
-}
-
 // Parse takes a *script.Script and returns a []interpreter.ParsedOp
 func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 	scr := *s
@@ -185,25 +167,47 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 		}
 		
 		// Skip to next opcode
-		switch {
-		case op.length == 1:
-			i++
-		case op.length > 1:
-			if i+op.length > len(scr) {
+		switch op.val {
+		case script.OpPUSHDATA1:
+			if len(scr) < i+2 {
 				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
 			}
-			i += op.length
-		case op.length < 0:
-			// Variable length
-			dataLen, err := readDataLength(scr, i+1, op.length)
-			if err != nil {
-				return nil, err
-			}
-			newPos := i + 1 - op.length + dataLen
-			if newPos > len(scr) || dataLen < 0 {
+			dataLen := int(scr[i+1])
+			newPos := i + 2 + dataLen
+			if newPos > len(scr) {
 				return nil, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
 			}
 			i = newPos
+		case script.OpPUSHDATA2:
+			if len(scr) < i+3 {
+				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
+			}
+			dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
+			newPos := i + 3 + dataLen
+			if newPos > len(scr) {
+				return nil, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+			}
+			i = newPos
+		case script.OpPUSHDATA4:
+			if len(scr) < i+5 {
+				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
+			}
+			dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
+			newPos := i + 5 + dataLen
+			if newPos > len(scr) {
+				return nil, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+			}
+			i = newPos
+		default:
+			// Fixed length opcodes
+			if op.length > 1 {
+				if i+op.length > len(scr) {
+					return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
+				}
+				i += op.length
+			} else {
+				i++
+			}
 		}
 		
 		opcodeCount++
@@ -241,32 +245,55 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 			// therefore all data must adhere to push data rules.
 		}
 
-		switch {
-		case parsedOp.op.length == 1:
-			i++
-		case parsedOp.op.length > 1:
-			if len(scr[i:]) < parsedOp.op.length {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s required %d bytes, script has %d remaining",
-					parsedOp.Name(), parsedOp.op.length, len(scr[i:]))
+		switch parsedOp.op.val {
+		case script.OpPUSHDATA1:
+			if len(scr) < i+2 {
+				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s requires %d bytes, script has %d remaining",
+					parsedOp.Name(), 2, len(scr)-i)
 			}
-			parsedOp.Data = scr[i+1 : i+parsedOp.op.length]
-			i += parsedOp.op.length
-		case parsedOp.op.length < 0:
-			// Variable length
-			offset := i + 1
-			dataLen, err := readDataLength(scr, offset, parsedOp.op.length)
-			if err != nil {
-				return nil, err
-			}
-			
-			offset += -parsedOp.op.length
-			if dataLen > len(scr[offset:]) || dataLen < 0 {
+			dataLen := int(scr[i+1])
+			if len(scr) < i+2+dataLen {
 				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s pushes %d bytes, script has %d remaining",
-					parsedOp.Name(), dataLen, len(scr[offset:]))
+					parsedOp.Name(), dataLen, len(scr)-i-2)
 			}
-
-			parsedOp.Data = scr[offset : offset+dataLen]
-			i += 1 - parsedOp.op.length + dataLen
+			parsedOp.Data = scr[i+2 : i+2+dataLen]
+			i += 2 + dataLen
+		case script.OpPUSHDATA2:
+			if len(scr) < i+3 {
+				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s requires %d bytes, script has %d remaining",
+					parsedOp.Name(), 3, len(scr)-i)
+			}
+			dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
+			if len(scr) < i+3+dataLen {
+				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s pushes %d bytes, script has %d remaining",
+					parsedOp.Name(), dataLen, len(scr)-i-3)
+			}
+			parsedOp.Data = scr[i+3 : i+3+dataLen]
+			i += 3 + dataLen
+		case script.OpPUSHDATA4:
+			if len(scr) < i+5 {
+				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s requires %d bytes, script has %d remaining",
+					parsedOp.Name(), 5, len(scr)-i)
+			}
+			dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
+			if len(scr) < i+5+dataLen {
+				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s pushes %d bytes, script has %d remaining",
+					parsedOp.Name(), dataLen, len(scr)-i-5)
+			}
+			parsedOp.Data = scr[i+5 : i+5+dataLen]
+			i += 5 + dataLen
+		default:
+			// Fixed length opcodes
+			if parsedOp.op.length > 1 {
+				if len(scr[i:]) < parsedOp.op.length {
+					return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s required %d bytes, script has %d remaining",
+						parsedOp.Name(), parsedOp.op.length, len(scr[i:]))
+				}
+				parsedOp.Data = scr[i+1 : i+parsedOp.op.length]
+				i += parsedOp.op.length
+			} else {
+				i++
+			}
 		}
 
 		parsedOps = append(parsedOps, parsedOp)
