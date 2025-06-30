@@ -47,7 +47,7 @@ jobs:
           args: --timeout=5m --issues-exit-code=0 --output.checkstyle.path=golangci-lint-report.xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        uses: SonarSource/sonarqube-scan-action@v5.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

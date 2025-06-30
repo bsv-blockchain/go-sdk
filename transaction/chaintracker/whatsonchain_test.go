@@ -176,3 +176,32 @@ func TestWhatsOnChainIsValidRootForHeightInvalidRoot(t *testing.T) {
 		t.Fatalf("expected isValid to be false, got true")
 	}
 }
+
+func TestWhatsOnChainCurrentHeight(t *testing.T) {
+	// Mock ChainInfo data
+	expectedBlocks := uint32(800000)
+
+	// Create a test server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		info := &ChainInfo{Blocks: expectedBlocks}
+		err := json.NewEncoder(w).Encode(info)
+		require.NoError(t, err)
+	}))
+	defer ts.Close()
+
+	woc := &WhatsOnChain{
+		Network: "main",
+		ApiKey:  "testapikey",
+		baseURL: ts.URL,
+		client:  ts.Client(),
+	}
+
+	height, err := woc.CurrentHeight(t.Context())
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if height != expectedBlocks {
+		t.Fatalf("expected height %d, got %d", expectedBlocks, height)
+	}
+}

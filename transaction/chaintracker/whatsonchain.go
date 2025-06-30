@@ -34,6 +34,10 @@ type WhatsOnChain struct {
 	client  *http.Client
 }
 
+type ChainInfo struct {
+	Blocks uint32 `json:"blocks"`
+}
+
 func NewWhatsOnChain(network Network, apiKey string) *WhatsOnChain {
 	return &WhatsOnChain{
 		Network: network,
@@ -57,7 +61,7 @@ func (w *WhatsOnChain) GetBlockHeader(height uint32) (header *BlockHeader, err e
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -80,4 +84,35 @@ func (w *WhatsOnChain) IsValidRootForHeight(root *chainhash.Hash, height uint32)
 	} else {
 		return header.MerkleRoot.IsEqual(root), nil
 	}
+}
+
+// Assuming BlockHeader is defined elsewhere
+func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err error) {
+	url := fmt.Sprintf("%s/chain/info", w.baseURL)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Authorization", w.ApiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return 0, fmt.Errorf("chain info not found for network %s", w.Network)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("failed to verify merkleroot for height %d: %v", height, resp.Status)
+	}
+
+	info := &ChainInfo{}
+	if err := json.NewDecoder(resp.Body).Decode(info); err != nil {
+		return 0, err
+	}
+
+	return info.Blocks, nil
 }
