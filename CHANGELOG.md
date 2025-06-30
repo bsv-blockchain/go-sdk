@@ -40,12 +40,25 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [1.2.3] - 2025-06-30
 
+### Added
+- Enhanced peer authentication with proper message handling at receiver side
+- Centralized certificate exchange logic with new `sendCertificates` method
+- Added `SignCertificateWithWalletForTest` for wallet-based certificate signing in tests
+- Implemented proper nonce creation/verification using `utils.CreateNonce` and `utils.VerifyNonce`
+
+### Changed
+- Updated `AUTH_PROTOCOL_ID` from "authrite message signature" to "auth message signature"
+- Changed `AuthMessage` JSON marshaling to use `wallet.BytesList` for Payload and Signature fields
+- Enhanced signature creation/verification to use wallet methods with explicit protocol details
+- Improved mock wallet with `VerifyHMAC` implementation
+
 ### Fixed
-- Fixed an encoding bug in peer authentication
+- Fixed base64 concatenation bug in peer authentication nonce handling
 - Fixed certificate signing bug in `certificate_debug.go`
 - Fixed `TestPeerCertificateExchange` test to properly encrypt certificate fields
 - Improved error handling consistency using `NewAuthError`
 - Fixed variable naming consistency
+- Enhanced session state management and error messages throughout auth flow
 
 ## [1.2.2] - 2025-06-27
 ### Added
