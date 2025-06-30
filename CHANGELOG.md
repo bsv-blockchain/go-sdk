@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.2 - 2025-06-30](#122---2025-06-30)
 - [1.2.1 - 2025-06-12](#121---2025-06-12)
 - [1.2.0 - 2025-06-10](#120---2025-06-10)
 - [1.1.27 - 2025-05-15](#1127---2025-05-15)
@@ -35,6 +36,16 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.2] - 2025-06-30
+
+### Fixed
+- Fixed an encoding bug in peer authentication
+- Fixed certificate signing bug in `certificate_debug.go`
+- Fixed `TestPeerCertificateExchange` test to properly encrypt certificate fields
+- Improved error handling consistency using `NewAuthError`
+- Fixed variable naming consistency
+
 
 ## [1.2.1] - 2025-06-12
 
