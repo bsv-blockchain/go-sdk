@@ -132,6 +132,55 @@ func (o *ParsedOpcode) enforceMinimumDataPush() error {
 	return nil
 }
 
+// advancePosition calculates the next position after parsing an opcode
+func advancePosition(scr []byte, i int, op byte) (int, error) {
+	switch op {
+	case script.OpPUSHDATA1:
+		if len(scr) < i+2 {
+			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+		}
+		dataLen := int(scr[i+1])
+		newPos := i + 2 + dataLen
+		if newPos > len(scr) {
+			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+		}
+		return newPos, nil
+		
+	case script.OpPUSHDATA2:
+		if len(scr) < i+3 {
+			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+		}
+		dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
+		newPos := i + 3 + dataLen
+		if newPos > len(scr) {
+			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+		}
+		return newPos, nil
+		
+	case script.OpPUSHDATA4:
+		if len(scr) < i+5 {
+			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+		}
+		dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
+		newPos := i + 5 + dataLen
+		if newPos > len(scr) {
+			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+		}
+		return newPos, nil
+		
+	default:
+		// For other opcodes, we need to check opcodeArray
+		opInfo := opcodeArray[op]
+		if opInfo.length > 1 {
+			if i+opInfo.length > len(scr) {
+				return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+			}
+			return i + opInfo.length, nil
+		}
+		return i + 1, nil
+	}
+}
+
 // Parse takes a *script.Script and returns a []interpreter.ParsedOp
 func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 	scr := *s
@@ -167,48 +216,11 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 		}
 		
 		// Skip to next opcode
-		switch op.val {
-		case script.OpPUSHDATA1:
-			if len(scr) < i+2 {
-				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
-			}
-			dataLen := int(scr[i+1])
-			newPos := i + 2 + dataLen
-			if newPos > len(scr) {
-				return nil, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
-			}
-			i = newPos
-		case script.OpPUSHDATA2:
-			if len(scr) < i+3 {
-				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
-			}
-			dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
-			newPos := i + 3 + dataLen
-			if newPos > len(scr) {
-				return nil, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
-			}
-			i = newPos
-		case script.OpPUSHDATA4:
-			if len(scr) < i+5 {
-				return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
-			}
-			dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
-			newPos := i + 5 + dataLen
-			if newPos > len(scr) {
-				return nil, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
-			}
-			i = newPos
-		default:
-			// Fixed length opcodes
-			if op.length > 1 {
-				if i+op.length > len(scr) {
-					return nil, errs.NewError(errs.ErrMalformedPush, "script truncated")
-				}
-				i += op.length
-			} else {
-				i++
-			}
+		newPos, err := advancePosition(scr, i, instruction)
+		if err != nil {
+			return nil, err
 		}
+		i = newPos
 		
 		opcodeCount++
 	}
@@ -245,56 +257,43 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 			// therefore all data must adhere to push data rules.
 		}
 
+		// Extract data for this opcode
 		switch parsedOp.op.val {
 		case script.OpPUSHDATA1:
-			if len(scr) < i+2 {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s requires %d bytes, script has %d remaining",
-					parsedOp.Name(), 2, len(scr)-i)
+			if len(scr) >= i+2 {
+				dataLen := int(scr[i+1])
+				if len(scr) >= i+2+dataLen {
+					parsedOp.Data = scr[i+2 : i+2+dataLen]
+				}
 			}
-			dataLen := int(scr[i+1])
-			if len(scr) < i+2+dataLen {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s pushes %d bytes, script has %d remaining",
-					parsedOp.Name(), dataLen, len(scr)-i-2)
-			}
-			parsedOp.Data = scr[i+2 : i+2+dataLen]
-			i += 2 + dataLen
 		case script.OpPUSHDATA2:
-			if len(scr) < i+3 {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s requires %d bytes, script has %d remaining",
-					parsedOp.Name(), 3, len(scr)-i)
+			if len(scr) >= i+3 {
+				dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
+				if len(scr) >= i+3+dataLen {
+					parsedOp.Data = scr[i+3 : i+3+dataLen]
+				}
 			}
-			dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
-			if len(scr) < i+3+dataLen {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s pushes %d bytes, script has %d remaining",
-					parsedOp.Name(), dataLen, len(scr)-i-3)
-			}
-			parsedOp.Data = scr[i+3 : i+3+dataLen]
-			i += 3 + dataLen
 		case script.OpPUSHDATA4:
-			if len(scr) < i+5 {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s requires %d bytes, script has %d remaining",
-					parsedOp.Name(), 5, len(scr)-i)
+			if len(scr) >= i+5 {
+				dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
+				if len(scr) >= i+5+dataLen {
+					parsedOp.Data = scr[i+5 : i+5+dataLen]
+				}
 			}
-			dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
-			if len(scr) < i+5+dataLen {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s pushes %d bytes, script has %d remaining",
-					parsedOp.Name(), dataLen, len(scr)-i-5)
-			}
-			parsedOp.Data = scr[i+5 : i+5+dataLen]
-			i += 5 + dataLen
 		default:
 			// Fixed length opcodes
-			if parsedOp.op.length > 1 {
-				if len(scr[i:]) < parsedOp.op.length {
-					return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s required %d bytes, script has %d remaining",
-						parsedOp.Name(), parsedOp.op.length, len(scr[i:]))
-				}
+			if parsedOp.op.length > 1 && len(scr[i:]) >= parsedOp.op.length {
 				parsedOp.Data = scr[i+1 : i+parsedOp.op.length]
-				i += parsedOp.op.length
-			} else {
-				i++
 			}
 		}
+		
+		// Advance position using the same logic as first pass
+		newPos, err := advancePosition(scr, i, instruction)
+		if err != nil {
+			// This shouldn't happen since first pass validated
+			return nil, err
+		}
+		i = newPos
 
 		parsedOps = append(parsedOps, parsedOp)
 	}
