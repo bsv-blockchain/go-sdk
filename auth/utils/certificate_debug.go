@@ -82,7 +82,7 @@ func SignCertificateWithWalletForTest(ctx context.Context, cert wallet.Certifica
 		return encodedCert, fmt.Errorf("failed to get identity key of signer: %w", err)
 	}
 
-	cert.Certifier = publicKeyResult.PublicKey
+	encodedCert.Certifier = publicKeyResult.PublicKey
 
 	certObj, err := certificates.FromWalletCertificate(&encodedCert)
 	if err != nil {

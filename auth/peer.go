@@ -494,15 +494,21 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 		Certificates: certs,
 	}
 
-	data := message.InitialNonce + session.SessionNonce
-	sigData, err := base64.StdEncoding.DecodeString(data)
+	// Decode the nonces first before concatenating
+	initialNonceBytes, err := base64.StdEncoding.DecodeString(message.InitialNonce)
 	if err != nil {
-		return NewAuthError("failed to prepare data to sign", err)
+		return NewAuthError("failed to decode initial nonce", err)
 	}
+	sessionNonceBytes, err := base64.StdEncoding.DecodeString(session.SessionNonce)
+	if err != nil {
+		return NewAuthError("failed to decode session nonce", err)
+	}
+	// Concatenate the decoded bytes
+	sigData := append(initialNonceBytes, sessionNonceBytes...)
 
 	keyID := fmt.Sprintf("%s %s", message.InitialNonce, session.SessionNonce)
 
-	arg := wallet.CreateSignatureArgs{
+	args := wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
@@ -515,13 +521,12 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 				Counterparty: message.IdentityKey,
 			},
 		},
-		// Sign the certificate request data, as in TypeScript
 		Data: sigData,
 	}
 
-	sigResult, err := p.wallet.CreateSignature(ctx, arg, "")
+	sigResult, err := p.wallet.CreateSignature(ctx, args, "")
 	if err != nil {
-		return fmt.Errorf("failed to sign initial response: %w", err)
+		return NewAuthError("failed to sign initial response", err)
 	}
 
 	response.Signature = sigResult.Signature.Serialize()
@@ -545,16 +550,21 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		return ErrSessionNotFound
 	}
 
-	data := message.InitialNonce + session.SessionNonce
-
-	sigData, err := base64.StdEncoding.DecodeString(data)
+	// Decode the nonces first before concatenating
+	initialNonceBytes, err := base64.StdEncoding.DecodeString(message.InitialNonce)
 	if err != nil {
-		return NewAuthError("failed to prepare data to sign", err)
+		return NewAuthError("failed to decode initial nonce", err)
 	}
+	sessionNonceBytes, err := base64.StdEncoding.DecodeString(session.SessionNonce)
+	if err != nil {
+		return NewAuthError("failed to decode session nonce", err)
+	}
+	// Concatenate the decoded bytes
+	sigData := append(initialNonceBytes, sessionNonceBytes...)
 
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
+		return NewAuthError("failed to parse signature", err)
 	}
 
 	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
@@ -612,13 +622,13 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 			utilsRequestedCerts,
 		)
 		if err != nil {
-			return fmt.Errorf("invalid certificates: %w", err)
+			return NewAuthError("invalid certificates", err)
 		}
 
 		for _, callback := range p.onCertificateReceivedCallbacks {
 			err := callback(senderPublicKey, message.Certificates)
 			if err != nil {
-				return fmt.Errorf("certificate received callback error: %w", err)
+				return NewAuthError("certificate received callback error", err)
 			}
 		}
 	}
@@ -638,7 +648,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
 		err = p.sendCertificates(ctx, message)
 		if err != nil {
-			return fmt.Errorf("failed to send requested certificates: %w", err)
+			return NewAuthError("failed to send requested certificates", err)
 		}
 	}
 
@@ -712,7 +722,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	// Try to parse the signature
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
+		return NewAuthError("failed to parse signature", err)
 	}
 
 	// Verify signature
@@ -740,7 +750,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
 		err = p.sendCertificates(ctx, message)
 		if err != nil {
-			return fmt.Errorf("failed to send requested certificates: %w", err)
+			return NewAuthError("failed to send requested certificates", err)
 		}
 	}
 
@@ -776,7 +786,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 	// Try to parse the signature
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
+		return NewAuthError("failed to parse signature", err)
 	}
 
 	// Verify signature
@@ -865,7 +875,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	// Try to parse the signature
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
-		return fmt.Errorf("failed to parse signature: %w", err)
+		return NewAuthError("failed to parse signature", err)
 	}
 
 	// Verify signature
