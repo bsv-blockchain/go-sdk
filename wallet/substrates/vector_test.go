@@ -48,6 +48,7 @@ func TestVectors(t *testing.T) {
 
 	typeArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
 	serialArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
+	serialNumber := wallet.SerialNumber(serialArray)
 
 	ref, err := base64.StdEncoding.DecodeString("dGVzdA==")
 	require.NoError(t, err)
@@ -427,14 +428,23 @@ func TestVectors(t *testing.T) {
 		Object: wallet.AcquireCertificateArgs{
 			Type:                typeArray,
 			Certifier:           certifier,
-			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
+			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
 			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
-			SerialNumber:        serialArray,
+			SerialNumber:        &serialNumber,
 			RevocationOutpoint:  outpoint,
 			Signature:           signature,
-			CertifierUrl:        "https://certifier.example.com",
-			KeyringRevealer:     wallet.KeyringRevealer{PubKey: pubKey},
+			KeyringRevealer:     &wallet.KeyringRevealer{PubKey: pubKey},
 			KeyringForSubject:   map[string]string{"field1": "key1", "field2": "key2"},
+			Privileged:          util.BoolPtr(false),
+		},
+	}, {
+		Filename: "acquireCertificate-issuance-args",
+		Object: wallet.AcquireCertificateArgs{
+			Type:                typeArray,
+			Certifier:           certifier,
+			AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
+			Fields:              map[string]string{"name": "Alice", "email": "alice@example.com"},
+			CertifierUrl:        "https://certifier.example.com",
 			Privileged:          util.BoolPtr(false),
 		},
 	}, {

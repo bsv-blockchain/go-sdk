@@ -26,10 +26,10 @@ func TestAcquireCertificateArgs(t *testing.T) {
 				"field1": "value1",
 				"field2": "value2",
 			},
-			SerialNumber:       [32]byte{1},
+			SerialNumber:       &wallet.SerialNumber{1},
 			RevocationOutpoint: revocationOutpoint,
 			Signature:          sig,
-			KeyringRevealer:    wallet.KeyringRevealer{Certifier: true},
+			KeyringRevealer:    &wallet.KeyringRevealer{Certifier: true},
 			KeyringForSubject: map[string]string{
 				"field1": base64.StdEncoding.EncodeToString([]byte("keyring1")),
 			},
@@ -53,9 +53,21 @@ func TestAcquireCertificateArgs(t *testing.T) {
 			Type:                tu.GetByte32FromString("minimal"),
 			Certifier:           tu.GetPKFromBytes([]byte{3}),
 			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
-			SerialNumber:        [32]byte{3},
+			SerialNumber:        &wallet.SerialNumber{3},
 			RevocationOutpoint:  revocationOutpoint,
-			KeyringRevealer:     wallet.KeyringRevealer{Certifier: true},
+			KeyringRevealer:     &wallet.KeyringRevealer{Certifier: true},
+		},
+	}, {
+		name: "long privileged reason > 255 bytes",
+		args: &wallet.AcquireCertificateArgs{
+			Type:                tu.GetByte32FromString("minimal"),
+			Certifier:           tu.GetPKFromBytes([]byte{3}),
+			AcquisitionProtocol: wallet.AcquisitionProtocolDirect,
+			SerialNumber:        &wallet.SerialNumber{3},
+			RevocationOutpoint:  revocationOutpoint,
+			KeyringRevealer:     &wallet.KeyringRevealer{Certifier: true},
+			Privileged:          util.BoolPtr(true),
+			PrivilegedReason:    "a very long reason that exceeds the 255 byte limit for privileged reasons in acquire certificate args, this is just a test to ensure that we can handle long strings properly without any issues or errors, it should be truncated or handled gracefully in the serialization process",
 		},
 	}}
 

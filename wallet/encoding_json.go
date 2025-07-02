@@ -637,7 +637,7 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 // Custom marshalling for AcquireCertificateArgs
 type aliasAcquireCertificateArgs AcquireCertificateArgs
 type jsonAcquireCertificateArgs struct {
-	Signature BytesHex `json:"signature"`
+	Signature BytesHex `json:"signature,omitempty"`
 	*aliasAcquireCertificateArgs
 }
 

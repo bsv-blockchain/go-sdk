@@ -473,11 +473,11 @@ type AcquireCertificateArgs struct {
 	Certifier           *ec.PublicKey         `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol   `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string     `json:"fields,omitempty"`
-	SerialNumber        SerialNumber          `json:"serialNumber"`
+	SerialNumber        *SerialNumber         `json:"serialNumber,omitempty"`
 	RevocationOutpoint  *transaction.Outpoint `json:"revocationOutpoint,omitempty"`
 	Signature           *ec.Signature         `json:"signature,omitempty"`
 	CertifierUrl        string                `json:"certifierUrl,omitempty"`
-	KeyringRevealer     KeyringRevealer       `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
+	KeyringRevealer     *KeyringRevealer      `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
 	KeyringForSubject   map[string]string     `json:"keyringForSubject,omitempty"`
 	Privileged          *bool                 `json:"privileged,omitempty"`
 	PrivilegedReason    string                `json:"privilegedReason,omitempty"`

@@ -182,7 +182,7 @@ func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 	if privilegedReason != "" {
 		w.WriteString(privilegedReason)
 	} else {
-		w.WriteNegativeOne()
+		w.WriteNegativeOneByte()
 	}
 
 	return w.Buf
@@ -194,6 +194,14 @@ func decodePrivilegedParams(r *util.ReaderHoldError) (*bool, string) {
 	privileged := r.ReadOptionalBool()
 
 	// Read privileged reason
+	b := r.ReadByte()
+	// Technically if string length > MaxInt32 it will prefix with 0xFF which will get interpreted as NegativeOneByte
+	// Since that would be an extremely long string (4 billion characters), this should be safe
+	if b == util.NegativeOneByte {
+		return privileged, ""
+	}
+
+	r.Reader.Pos-- // Move back one byte to read the string correctly
 	privilegedReason := r.ReadString()
 
 	return privileged, privilegedReason
