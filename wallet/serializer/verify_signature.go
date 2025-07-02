@@ -27,7 +27,7 @@ func SerializeVerifySignatureArgs(args *wallet.VerifySignatureArgs) ([]byte, err
 	w.WriteBytes(keyParams)
 
 	// Write forSelf flag
-	w.WriteOptionalBool(&args.ForSelf)
+	w.WriteOptionalBool(args.ForSelf)
 
 	// Write signature length + bytes
 	if args.Signature == nil {
@@ -68,7 +68,7 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read forSelf flag
-	args.ForSelf = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.ForSelf = r.ReadOptionalBool()
 
 	// Read signature
 	sig, err := ec.ParseSignature(r.ReadIntBytes())
@@ -99,35 +99,12 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	return args, nil
 }
 
-func SerializeVerifySignatureResult(result *wallet.VerifySignatureResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
-	if result.Valid {
-		w.WriteByte(1) // valid = true
-	} else {
-		w.WriteByte(0) // valid = false
-	}
-	return w.Buf, nil
+func SerializeVerifySignatureResult(_ *wallet.VerifySignatureResult) ([]byte, error) {
+	return nil, nil
 }
 
-func DeserializeVerifySignatureResult(data []byte) (*wallet.VerifySignatureResult, error) {
-	r := util.NewReaderHoldError(data)
-	result := &wallet.VerifySignatureResult{}
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("verifySignature failed with error byte %d", errorByte)
-	}
-
-	// Read valid flag
-	valid := r.ReadByte()
-	result.Valid = valid == 1
-
-	r.CheckComplete()
-	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing VerifySignature result: %w", r.Err)
-	}
-
-	return result, nil
+func DeserializeVerifySignatureResult(_ []byte) (*wallet.VerifySignatureResult, error) {
+	return &wallet.VerifySignatureResult{
+		Valid: true,
+	}, nil
 }

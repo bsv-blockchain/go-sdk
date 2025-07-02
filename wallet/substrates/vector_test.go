@@ -401,23 +401,21 @@ func TestVectors(t *testing.T) {
 		},
 	}, {
 		Filename: "verifySignature-simple-args",
-		Object: func() wallet.VerifySignatureArgs {
-			var args wallet.VerifySignatureArgs
-			// Unmarshal known good JSON to create the test object
-			argsJSON := `{
-				"protocolID": [1, "test-protocol"],
-				"keyID": "test-key",
-				"counterparty": "self",
-				"privileged": true,
-				"privilegedReason": "test reason",
-				"seekPermission": true,
-				"data": [11, 22, 33, 44],
-				"signature": [48,37,2,32,78,69,225,105,50,184,175,81,73,97,161,211,161,162,95,223,63,79,119,50,233,214,36,198,198,21,72,171,95,184,205,65,2,1,1]
-			}`
-			err := json.Unmarshal([]byte(argsJSON), &args)
-			require.NoError(t, err)
-			return args
-		}(),
+		Object: wallet.VerifySignatureArgs{
+			EncryptionArgs: wallet.EncryptionArgs{
+				ProtocolID: wallet.Protocol{
+					SecurityLevel: wallet.SecurityLevelEveryApp,
+					Protocol:      "test-protocol",
+				},
+				KeyID:            "test-key",
+				Counterparty:     wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
+				Privileged:       true,
+				PrivilegedReason: "test reason",
+				SeekPermission:   true,
+			},
+			Data:      []byte{11, 22, 33, 44},
+			Signature: tu.GetSigFromHex(t, "302502204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41020101"),
+		},
 	}, {
 		Filename: "verifySignature-simple-result",
 		IsResult: true,

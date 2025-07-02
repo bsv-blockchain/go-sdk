@@ -261,7 +261,7 @@ func (p *ProtoWallet) VerifySignature(
 		args.ProtocolID,
 		args.KeyID,
 		counterparty,
-		args.ForSelf,
+		util.ReadOptionalBoolAsBool(args.ForSelf),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive public key: %v", err)

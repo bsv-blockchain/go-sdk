@@ -83,7 +83,6 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 
 func SerializeCreateSignatureResult(result *wallet.CreateSignatureResult) ([]byte, error) {
 	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
 	w.WriteBytes(result.Signature.Serialize())
 	return w.Buf, nil
 }
@@ -91,12 +90,6 @@ func SerializeCreateSignatureResult(result *wallet.CreateSignatureResult) ([]byt
 func DeserializeCreateSignatureResult(data []byte) (*wallet.CreateSignatureResult, error) {
 	r := util.NewReaderHoldError(data)
 	result := &wallet.CreateSignatureResult{}
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("createSignature failed with error byte %d", errorByte)
-	}
 
 	// Read signature (remaining bytes)
 	sig, err := ec.ParseSignature(r.ReadRemaining())

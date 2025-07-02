@@ -132,13 +132,17 @@ func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
 
 type aliasVerifySignatureArgs VerifySignatureArgs
 type jsonVerifySignatureArgs struct {
-	Signature Signature `json:"signature"`
+	Data                 BytesList `json:"data,omitempty"`
+	HashToDirectlyVerify BytesList `json:"hashToDirectlyVerify,omitempty"`
+	Signature            Signature `json:"signature"`
 	*aliasVerifySignatureArgs
 }
 
 // MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
 func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonVerifySignatureArgs{
+		Data:                     v.Data,
+		HashToDirectlyVerify:     v.HashToDirectlyVerify,
 		aliasVerifySignatureArgs: (*aliasVerifySignatureArgs)(&v),
 		Signature:                Signature(*v.Signature),
 	})
@@ -151,6 +155,8 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	v.Data = aux.Data
+	v.HashToDirectlyVerify = aux.HashToDirectlyVerify
 	v.Signature = (*ec.Signature)(&aux.Signature)
 	return nil
 }
