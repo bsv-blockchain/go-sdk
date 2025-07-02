@@ -466,13 +466,31 @@ func TestVectors(t *testing.T) {
 			Certifiers:       []*ec.PublicKey{counterparty, verifier},
 			Types:            []wallet.CertificateType{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
 			Limit:            util.Uint32Ptr(5),
-			Offset:           nil,
+			Offset:           util.Uint32Ptr(0),
 			Privileged:       util.BoolPtr(true),
 			PrivilegedReason: "list-cert-reason",
 		},
 	}, {
 		Filename: "listCertificates-simple-result",
 		IsResult: true,
+		Object: wallet.ListCertificatesResult{
+			TotalCertificates: 1,
+			Certificates: []wallet.CertificateResult{{
+				Certificate: wallet.Certificate{
+					Type:               typeArray,
+					SerialNumber:       serialArray,
+					Subject:            pubKey,
+					Certifier:          counterparty,
+					RevocationOutpoint: outpoint,
+					Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
+					Signature:          signature,
+				},
+			}},
+		},
+	}, {
+		Filename: "listCertificates-full-result",
+		IsResult: true,
+		Skip:     true, // ts-sdk doesn't serialize Keyring and Verifier, so this test fails
 		Object: wallet.ListCertificatesResult{
 			TotalCertificates: 1,
 			Certificates: []wallet.CertificateResult{{
@@ -719,9 +737,9 @@ func TestVectors(t *testing.T) {
 							Params: serialized,
 						})
 					}
-					require.Equal(t, wire, serializedWithFrame, "Serialized wire mismatch")
 					require.NoError(t, errDeserialize, "Deserializing wire error")
 					require.EqualValues(t, obj, deserialized, "Deserialized object mismatch")
+					require.Equal(t, wire, serializedWithFrame, "Serialized wire mismatch")
 				}
 
 				// Serialize and deserialize using the wire binary format

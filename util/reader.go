@@ -307,12 +307,12 @@ func (r *ReaderHoldError) ReadOptionalUint32() *uint32 {
 	return val
 }
 
-func (r *ReaderHoldError) ReadBytes(n int) []byte {
+func (r *ReaderHoldError) ReadBytes(n int, errMsg ...string) []byte {
 	if r.Err != nil {
 		return nil
 	}
 	val, err := r.Reader.ReadBytes(n)
-	r.Err = err
+	r.Err = getErr(err, errMsg)
 	return val
 }
 
@@ -437,4 +437,14 @@ func (r *ReaderHoldError) ReadRemaining() []byte {
 		return nil
 	}
 	return r.Reader.ReadRemaining()
+}
+
+func getErr(err error, errMsg []string) error {
+	if err == nil {
+		return nil
+	}
+	if len(errMsg) == 0 {
+		return err
+	}
+	return fmt.Errorf("%s: %w", errMsg[0], err)
 }
