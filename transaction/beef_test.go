@@ -35,10 +35,10 @@ func TestFromBEEF(t *testing.T) {
 	require.NoError(t, err, "FromBEEF method failed")
 
 	expectedTxID := "ce70df889d5ba66a989b8e47294c751d19f948f004075cf265c4cbb2a7c97838"
-	actualTxID := tx.TxID().String()
-	require.Equal(t, expectedTxID, actualTxID, "Transaction ID does not match")
+	txid := tx.TxID()
+	require.Equal(t, expectedTxID, txid.String(), "Transaction ID does not match")
 
-	_, err = tx.collectAncestors(&actualTxID, map[string]*Transaction{}, true)
+	_, err = tx.collectAncestors(txid, map[string]*Transaction{}, true)
 	require.NoError(t, err, "collectAncestors method failed")
 
 	atomic, err := tx.AtomicBEEF(false)
@@ -48,7 +48,7 @@ func TestFromBEEF(t *testing.T) {
 	require.NoError(t, err, "NewTransactionFromBEEF method failed")
 	require.Equal(t, tx.TxID().String(), tx2.TxID().String(), "Transaction ID does not match")
 
-	_, txid, err := NewBeefFromAtomicBytes(atomic)
+	_, txid, err = NewBeefFromAtomicBytes(atomic)
 	require.NoError(t, err, "NewBeefFromAtomicBytes method failed")
 	require.Equal(t, txid.String(), expectedTxID, "Transaction ID does not match")
 

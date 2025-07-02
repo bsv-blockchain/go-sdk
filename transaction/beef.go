@@ -261,9 +261,9 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	}
 	beef := NewBeefV2()
 	bumpMap := map[uint32]int{}
-	txid := t.TxID().String()
-	txns := map[string]*Transaction{txid: t}
-	ancestors, err := t.collectAncestors(&txid, txns, false)
+	txid := t.TxID()
+	txns := map[string]*Transaction{txid.String(): t}
+	ancestors, err := t.collectAncestors(txid, txns, false)
 	if err != nil {
 		return nil, err
 	}
@@ -445,15 +445,13 @@ func (t *Transaction) BEEFHex() (string, error) {
 	}
 }
 
-func (t *Transaction) collectAncestors(txidPtr *string, txns map[string]*Transaction, allowPartial bool) ([]string, error) {
-	var txid string
-	if txidPtr == nil {
-		txid = t.TxID().String()
-	} else {
-		txid = *txidPtr
+func (t *Transaction) collectAncestors(txid *chainhash.Hash, txns map[string]*Transaction, allowPartial bool) ([]string, error) {
+	if txid == nil {
+		txid = t.TxID()
 	}
+	txidStr := txid.String()
 	if t.MerklePath != nil {
-		return []string{txid}, nil
+		return []string{txidStr}, nil
 	}
 	ancestors := make([]string, 0)
 	for _, input := range t.Inputs {
@@ -466,13 +464,13 @@ func (t *Transaction) collectAncestors(txidPtr *string, txns map[string]*Transac
 		}
 		sourceTxid := input.SourceTXID.String()
 		txns[sourceTxid] = input.SourceTransaction
-		if grands, err := input.SourceTransaction.collectAncestors(&sourceTxid, txns, allowPartial); err != nil {
+		if grands, err := input.SourceTransaction.collectAncestors(input.SourceTXID, txns, allowPartial); err != nil {
 			return nil, err
 		} else {
 			ancestors = append(grands, ancestors...)
 		}
 	}
-	ancestors = append(ancestors, txid)
+	ancestors = append(ancestors, txidStr)
 
 	found := make(map[string]struct{})
 	results := make([]string, 0, len(ancestors))
