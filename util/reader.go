@@ -405,12 +405,12 @@ func (r *ReaderHoldError) ReadOptionalBytes(opts ...BytesOption) []byte {
 	return val
 }
 
-func (r *ReaderHoldError) ReadString() string {
+func (r *ReaderHoldError) ReadString(errMsg ...string) string {
 	if r.Err != nil {
 		return ""
 	}
 	val, err := r.Reader.ReadString()
-	r.Err = err
+	r.Err = getErr(err, errMsg)
 	return val
 }
 

@@ -462,7 +462,6 @@ func TestVectors(t *testing.T) {
 		},
 	}, {
 		Filename: "listCertificates-simple-args",
-		IsResult: true,
 		Object: wallet.ListCertificatesArgs{
 			Certifiers:       []*ec.PublicKey{counterparty, verifier},
 			Types:            []wallet.CertificateType{tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMSAgICAgICAgICAgICAgICAgICAgICA="), tu.GetByte32FromBase64String(t, "dGVzdC10eXBlMiAgICAgICAgICAgICAgICAgICAgICA=")},
