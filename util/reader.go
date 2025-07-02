@@ -373,7 +373,7 @@ func (r *ReaderHoldError) ReadOptionalBool() *bool {
 	return val
 }
 
-func ReadOptionalBoolAsBool(opt *bool) bool {
+func PtrToBool(opt *bool) bool {
 	return opt != nil && *opt
 }
 

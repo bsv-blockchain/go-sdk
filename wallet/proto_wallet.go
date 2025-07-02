@@ -90,7 +90,7 @@ func (p *ProtoWallet) GetPublicKey(ctx context.Context, args GetPublicKeyArgs, _
 			args.ProtocolID,
 			args.KeyID,
 			counterparty,
-			util.ReadOptionalBoolAsBool(args.ForSelf),
+			util.PtrToBool(args.ForSelf),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive public key: %v", err)
@@ -261,7 +261,7 @@ func (p *ProtoWallet) VerifySignature(
 		args.ProtocolID,
 		args.KeyID,
 		counterparty,
-		util.ReadOptionalBoolAsBool(args.ForSelf),
+		util.PtrToBool(args.ForSelf),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive public key: %v", err)

@@ -46,7 +46,7 @@ func DeserializeCreateHMACArgs(data []byte) (*wallet.CreateHMACArgs, error) {
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.PtrToBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read data
@@ -54,7 +54,7 @@ func DeserializeCreateHMACArgs(data []byte) (*wallet.CreateHMACArgs, error) {
 	args.Data = r.ReadBytes(int(dataLen))
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {

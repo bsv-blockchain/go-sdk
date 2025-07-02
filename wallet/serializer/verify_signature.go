@@ -64,7 +64,7 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.PtrToBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read forSelf flag
@@ -89,7 +89,7 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	}
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {

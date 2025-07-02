@@ -75,12 +75,12 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 	} else {
 		// Read privileged params for identity key case
 		privileged, privilegedReason := decodePrivilegedParams(r)
-		args.Privileged = util.ReadOptionalBoolAsBool(privileged)
+		args.Privileged = util.PtrToBool(privileged)
 		args.PrivilegedReason = privilegedReason
 	}
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {

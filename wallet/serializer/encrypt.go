@@ -46,7 +46,7 @@ func DeserializeEncryptArgs(data []byte) (*wallet.EncryptArgs, error) {
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.PtrToBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read plaintext
@@ -54,7 +54,7 @@ func DeserializeEncryptArgs(data []byte) (*wallet.EncryptArgs, error) {
 	args.Plaintext = r.ReadBytes(int(plaintextLen))
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {
