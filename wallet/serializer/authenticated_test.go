@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestAuthenticatedResult(t *testing.T) {
+func TestIsAuthenticatedResult(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    *wallet.AuthenticatedResult
@@ -27,19 +27,19 @@ func TestAuthenticatedResult(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test serialization
-			data, err := SerializeAuthenticatedResult(tt.input)
+			data, err := SerializeIsAuthenticatedResult(tt.input)
 			require.NoError(t, err)
-			require.Equal(t, 2, len(data)) // error byte + auth byte
+			require.Equal(t, 1, len(data)) // auth byte
 
 			// Test deserialization
-			result, err := DeserializeAuthenticatedResult(data)
+			result, err := DeserializeIsAuthenticatedResult(data)
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result.Authenticated)
 		})
 	}
 }
 
-func TestAuthenticatedResultErrors(t *testing.T) {
+func TestIsAuthenticatedResultErrors(t *testing.T) {
 	tests := []struct {
 		name      string
 		data      []byte
@@ -50,18 +50,26 @@ func TestAuthenticatedResultErrors(t *testing.T) {
 			data:      []byte{},
 			wantError: "invalid data length",
 		},
-		{
-			name:      "error byte set",
-			data:      []byte{1, 1}, // error byte=1
-			wantError: "error byte indicates failure",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := DeserializeAuthenticatedResult(tt.data)
+			_, err := DeserializeIsAuthenticatedResult(tt.data)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tt.wantError)
 		})
 	}
+}
+
+func TestWaitAuthenticatedResult(t *testing.T) {
+	// Test serialization
+	input := &wallet.AuthenticatedResult{Authenticated: false}
+	data, err := SerializeWaitAuthenticatedResult(input)
+	require.NoError(t, err)
+	require.Nil(t, data)
+
+	// Test deserialization
+	result, err := DeserializeWaitAuthenticatedResult(nil)
+	require.NoError(t, err)
+	require.True(t, result.Authenticated)
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -862,9 +863,15 @@ func TestVectors(t *testing.T) {
 					deserialized, err2 := serializer.DeserializeDiscoverByAttributesArgs(frameParams)
 					checkWireSerialize(substrates.CallDiscoverByAttributes, &obj, serialized, err1, deserialized, err2)
 				case wallet.AuthenticatedResult:
-					serialized, err1 := serializer.SerializeAuthenticatedResult(&obj)
-					deserialized, err2 := serializer.DeserializeAuthenticatedResult(frameParams)
-					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+					if strings.Contains(tt.Filename, "wait") {
+						serialized, err1 := serializer.SerializeWaitAuthenticatedResult(&obj)
+						deserialized, err2 := serializer.DeserializeWaitAuthenticatedResult(frameParams)
+						checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+					} else {
+						serialized, err1 := serializer.SerializeIsAuthenticatedResult(&obj)
+						deserialized, err2 := serializer.DeserializeIsAuthenticatedResult(frameParams)
+						checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
+					}
 				case wallet.GetHeightResult:
 					serialized, err1 := serializer.SerializeGetHeightResult(&obj)
 					deserialized, err2 := serializer.DeserializeGetHeightResult(frameParams)
