@@ -152,7 +152,6 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 
 func SerializeProveCertificateResult(result *wallet.ProveCertificateResult) ([]byte, error) {
 	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
 
 	// Write keyringForVerifier
 	w.WriteVarInt(uint64(len(result.KeyringForVerifier)))
@@ -172,12 +171,6 @@ func SerializeProveCertificateResult(result *wallet.ProveCertificateResult) ([]b
 func DeserializeProveCertificateResult(data []byte) (*wallet.ProveCertificateResult, error) {
 	r := util.NewReaderHoldError(data)
 	result := &wallet.ProveCertificateResult{}
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("proveCertificate failed with error byte %d", errorByte)
-	}
 
 	// Read keyringForVerifier
 	keyringLen := r.ReadVarInt()

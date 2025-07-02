@@ -54,31 +54,12 @@ func DeserializeRelinquishCertificateArgs(data []byte) (*wallet.RelinquishCertif
 	return args, nil
 }
 
-func SerializeRelinquishCertificateResult(result *wallet.RelinquishCertificateResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
-	w.WriteByte(1) // relinquished = true
-	return w.Buf, nil
+func SerializeRelinquishCertificateResult(_ *wallet.RelinquishCertificateResult) ([]byte, error) {
+	return nil, nil
 }
 
-func DeserializeRelinquishCertificateResult(data []byte) (*wallet.RelinquishCertificateResult, error) {
-	r := util.NewReaderHoldError(data)
-	result := &wallet.RelinquishCertificateResult{}
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("relinquishCertificate failed with error byte %d", errorByte)
-	}
-
-	// Read relinquished flag
-	relinquished := r.ReadByte()
-	result.Relinquished = relinquished == 1
-
-	r.CheckComplete()
-	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing RelinquishCertificate result: %w", r.Err)
-	}
-
-	return result, nil
+func DeserializeRelinquishCertificateResult(_ []byte) (*wallet.RelinquishCertificateResult, error) {
+	return &wallet.RelinquishCertificateResult{
+		Relinquished: true,
+	}, nil
 }

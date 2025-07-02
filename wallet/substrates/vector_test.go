@@ -46,6 +46,7 @@ func TestVectors(t *testing.T) {
 	prover := tu.GetPKFromHex(t, "02e14bb4fbcd33d02a0bad2b60dcd14c36506fa15599e3c28ec87eff440a97a2b8")
 	certifier := tu.GetPKFromHex(t, "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
 
+	const nameKeyBase64 = "bmFtZS1rZXk="
 	typeArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=")
 	serialArray := tu.GetByte32FromBase64String(t, "AAAAAAAAAAAAAAAAAAB0ZXN0LXNlcmlhbC1udW1iZXI=")
 	serialNumber := wallet.SerialNumber(serialArray)
@@ -528,7 +529,7 @@ func TestVectors(t *testing.T) {
 		Filename: "proveCertificate-simple-result",
 		IsResult: true,
 		Object: wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{"name": "name-key"},
+			KeyringForVerifier: map[string]string{"name": nameKeyBase64},
 		},
 	}, {
 		Filename: "relinquishCertificate-simple-args",
@@ -548,7 +549,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.DiscoverByIdentityKeyArgs{
 			IdentityKey:    counterparty,
 			Limit:          util.Uint32Ptr(10),
-			Offset:         nil,
+			Offset:         util.Uint32Ptr(0),
 			SeekPermission: util.BoolPtr(true),
 		},
 	}, {
