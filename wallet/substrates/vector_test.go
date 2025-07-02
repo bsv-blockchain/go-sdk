@@ -38,6 +38,7 @@ func base64ToBytes(t *testing.T, s string) []byte {
 func TestVectors(t *testing.T) {
 	privKey, err := ec.PrivateKeyFromHex("6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8")
 	require.NoError(t, err)
+	const PubKeyBase64 = "AlrUOiKsONC8H4usqrsyO11jRwO3p3TEJo9qCeTd95CX"
 	pubKey, err := ec.PublicKeyFromString("025ad43a22ac38d0bc1f8bacaabb323b5d634703b7a774c4268f6a09e4ddf79097")
 	require.NoError(t, err)
 	require.Equal(t, privKey.PubKey(), pubKey)
@@ -574,7 +575,7 @@ func TestVectors(t *testing.T) {
 						Description: "Certifier description",
 						Trust:       5,
 					},
-					PubliclyRevealedKeyring: map[string]string{"pubField": "pubKey"},
+					PubliclyRevealedKeyring: map[string]string{"pubField": PubKeyBase64},
 					DecryptedFields:         map[string]string{"name": "Alice"},
 				},
 			},
@@ -584,7 +585,7 @@ func TestVectors(t *testing.T) {
 		Object: wallet.DiscoverByAttributesArgs{
 			Attributes:     map[string]string{"email": "alice@example.com", "role": "admin"},
 			Limit:          util.Uint32Ptr(5),
-			Offset:         nil,
+			Offset:         util.Uint32Ptr(0),
 			SeekPermission: util.BoolPtr(false),
 		},
 	}, {
@@ -609,7 +610,7 @@ func TestVectors(t *testing.T) {
 						Description: "Certifier description",
 						Trust:       5,
 					},
-					PubliclyRevealedKeyring: map[string]string{"pubField": "pubKey"},
+					PubliclyRevealedKeyring: map[string]string{"pubField": PubKeyBase64},
 					DecryptedFields:         map[string]string{"name": "Alice"},
 				},
 			},

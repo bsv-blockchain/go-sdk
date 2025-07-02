@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -27,7 +28,11 @@ func SerializeIdentityCertificate(cert *wallet.IdentityCertificate) ([]byte, err
 	w.WriteVarInt(uint64(len(cert.PubliclyRevealedKeyring)))
 	for k, v := range cert.PubliclyRevealedKeyring {
 		w.WriteString(k)
-		w.WriteString(v)
+		b, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding base64 value for key %s: %w", k, err)
+		}
+		w.WriteIntBytes(b)
 	}
 
 	// Serialize DecryptedFields
@@ -40,8 +45,7 @@ func SerializeIdentityCertificate(cert *wallet.IdentityCertificate) ([]byte, err
 	return w.Buf, nil
 }
 
-func DeserializeIdentityCertificate(data []byte) (*wallet.IdentityCertificate, error) {
-	r := util.NewReaderHoldError(data)
+func DeserializeIdentityCertificate(r *util.ReaderHoldError) (*wallet.IdentityCertificate, error) {
 	cert := &wallet.IdentityCertificate{}
 
 	// Deserialize base Certificate
@@ -64,8 +68,8 @@ func DeserializeIdentityCertificate(data []byte) (*wallet.IdentityCertificate, e
 		cert.PubliclyRevealedKeyring = make(map[string]string, keyringLen)
 		for i := uint64(0); i < keyringLen; i++ {
 			key := r.ReadString()
-			value := r.ReadString()
-			cert.PubliclyRevealedKeyring[key] = value
+			value := r.ReadIntBytes()
+			cert.PubliclyRevealedKeyring[key] = base64.StdEncoding.EncodeToString(value)
 		}
 	}
 

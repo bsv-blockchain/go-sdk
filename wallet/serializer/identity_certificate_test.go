@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -47,8 +48,10 @@ func TestIdentityCertificate(t *testing.T) {
 	require.NoError(t, err, "serializing IdentityCertificate should not error")
 
 	// Test deserialization
-	got, err := DeserializeIdentityCertificate(data)
+	reader := util.NewReaderHoldError(data)
+	got, err := DeserializeIdentityCertificate(reader)
 	require.NoError(t, err, "deserializing IdentityCertificate should not error")
+	require.NoError(t, reader.Err, "deserializing IdentityCertificate should not reader error")
 
 	// Compare results
 	require.Equal(t, cert, got, "deserialized certificate should match original certificate")
