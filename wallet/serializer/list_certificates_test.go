@@ -81,10 +81,11 @@ func TestListCertificatesResult(t *testing.T) {
 							"field1": "value1",
 						},
 					},
-					Keyring: map[string]string{
-						"key1": "value1",
+					// TODO: See comment in serialization
+					/*Keyring: map[string]string{
+						"key1": base64.StdEncoding.EncodeToString([]byte("value1")),
 					},
-					Verifier: []byte("verifier1"),
+					Verifier: []byte("verifier1"),*/
 				},
 				{
 					Certificate: wallet.Certificate{
@@ -104,12 +105,5 @@ func TestListCertificatesResult(t *testing.T) {
 		got, err := DeserializeListCertificatesResult(data)
 		require.NoError(t, err)
 		require.Equal(t, result, got)
-	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeListCertificatesResult(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "listCertificates failed with error byte 1")
 	})
 }

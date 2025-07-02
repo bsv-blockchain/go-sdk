@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/base64"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -34,8 +35,8 @@ func TestIdentityCertificate(t *testing.T) {
 			Trust:       5,
 		},
 		PubliclyRevealedKeyring: map[string]string{
-			"key1": "value1",
-			"key2": "value2",
+			"key1": base64.StdEncoding.EncodeToString([]byte("value1")),
+			"key2": base64.StdEncoding.EncodeToString([]byte("value2")),
 		},
 		DecryptedFields: map[string]string{
 			"field1": "decrypted1",

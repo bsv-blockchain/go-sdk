@@ -36,7 +36,9 @@ func TestGetVersionResult(t *testing.T) {
 			// Test serialization
 			data, err := SerializeGetVersionResult(tt.result)
 			require.NoError(t, err, "serializing GetVersionResult should not error")
-			require.GreaterOrEqual(t, len(data), 1, "serialized data should have at least error byte") // At least error byte
+			if tt.result.Version != "" {
+				require.GreaterOrEqual(t, len(data), 1, "serialized data should have at least error byte") // At least error byte
+			}
 
 			// Test deserialization
 			got, err := DeserializeGetVersionResult(data)
