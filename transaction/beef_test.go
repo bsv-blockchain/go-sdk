@@ -38,7 +38,7 @@ func TestFromBEEF(t *testing.T) {
 	actualTxID := tx.TxID().String()
 	require.Equal(t, expectedTxID, actualTxID, "Transaction ID does not match")
 
-	_, err = tx.collectAncestors(map[string]*Transaction{}, true)
+	_, err = tx.collectAncestors(&actualTxID, map[string]*Transaction{}, true)
 	require.NoError(t, err, "collectAncestors method failed")
 
 	atomic, err := tx.AtomicBEEF(false)

@@ -261,8 +261,9 @@ func NewBeefFromTransaction(t *Transaction) (*Beef, error) {
 	}
 	beef := NewBeefV2()
 	bumpMap := map[uint32]int{}
-	txns := map[string]*Transaction{t.TxID().String(): t}
-	ancestors, err := t.collectAncestors(txns, false)
+	txid := t.TxID().String()
+	txns := map[string]*Transaction{txid: t}
+	ancestors, err := t.collectAncestors(&txid, txns, false)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +399,7 @@ func (t *Transaction) BEEF() ([]byte, error) {
 	bumps := []*MerklePath{}
 	bumpMap := map[uint32]int{}
 	txns := map[string]*Transaction{t.TxID().String(): t}
-	ancestors, err := t.collectAncestors(txns, false)
+	ancestors, err := t.collectAncestors(nil, txns, false)
 	if err != nil {
 		return nil, err
 	}
@@ -444,8 +445,13 @@ func (t *Transaction) BEEFHex() (string, error) {
 	}
 }
 
-func (t *Transaction) collectAncestors(txns map[string]*Transaction, allowPartial bool) ([]string, error) {
-	txid := t.TxID().String()
+func (t *Transaction) collectAncestors(txidPtr *string, txns map[string]*Transaction, allowPartial bool) ([]string, error) {
+	var txid string
+	if txidPtr == nil {
+		txid = t.TxID().String()
+	} else {
+		txid = *txidPtr
+	}
 	if t.MerklePath != nil {
 		return []string{txid}, nil
 	}
@@ -460,7 +466,7 @@ func (t *Transaction) collectAncestors(txns map[string]*Transaction, allowPartia
 		}
 		sourceTxid := input.SourceTXID.String()
 		txns[sourceTxid] = input.SourceTransaction
-		if grands, err := input.SourceTransaction.collectAncestors(txns, allowPartial); err != nil {
+		if grands, err := input.SourceTransaction.collectAncestors(&sourceTxid, txns, allowPartial); err != nil {
 			return nil, err
 		} else {
 			ancestors = append(grands, ancestors...)
