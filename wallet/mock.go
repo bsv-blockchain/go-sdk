@@ -206,8 +206,9 @@ func (m *MockWallet) CreateHMAC(ctx context.Context, args CreateHMACArgs, origin
 }
 
 func (m *MockWallet) VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error) {
-	require.Fail(m.T, "VerifyHMAC mock not implemented")
-	return nil, errors.New("VerifyHMAC mock not implemented")
+	return &VerifyHMACResult{
+		Valid: true,
+	}, nil
 }
 
 func (m *MockWallet) VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error) {

@@ -3,6 +3,7 @@ package wallet
 import (
 	"context"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -209,7 +210,7 @@ const (
 // Action contains full details about a wallet transaction including inputs, outputs and metadata.
 type Action struct {
 	Txid        chainhash.Hash `json:"txid"`
-	Satoshis    uint64         `json:"satoshis"`
+	Satoshis    int64          `json:"satoshis"`
 	Status      ActionStatus   `json:"status"`
 	IsOutgoing  bool           `json:"isOutgoing"`
 	Description string         `json:"description"`

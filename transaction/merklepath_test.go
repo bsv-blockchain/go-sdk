@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"testing"
@@ -96,12 +97,16 @@ func TestMerklePathComputeRootHex(t *testing.T) {
 type MyChainTracker struct{}
 
 // Implement the IsValidRootForHeight method on MyChainTracker.
-func (mct MyChainTracker) IsValidRootForHeight(root *chainhash.Hash, height uint32) (bool, error) {
+func (mct MyChainTracker) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
 	// Convert BRC74Root hex string to a byte slice for comparison
 	// expectedRoot, _ := hex.DecodeString(BRC74Root)
 
 	// Assuming BRC74JSON.BlockHeight is of type uint64, and needs to be cast to uint64
 	return root.String() == BRC74Root && height == BRC74JSON.BlockHeight, nil
+}
+
+func (mct MyChainTracker) CurrentHeight(ctx context.Context) (uint32, error) {
+	return 800000, nil // Return a dummy height for testing
 }
 
 func TestMerklePath_Verify(t *testing.T) {
@@ -113,7 +118,8 @@ func TestMerklePath_Verify(t *testing.T) {
 			Path:        BRC74JSON.Path,
 		}
 		tracker := MyChainTracker{}
-		result, err := path.VerifyHex(BRC74TXID1, tracker)
+		ctx := t.Context()
+		result, err := path.VerifyHex(ctx, BRC74TXID1, tracker)
 		require.NoError(t, err)
 		require.True(t, result)
 	})

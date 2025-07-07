@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -405,6 +406,7 @@ func (t *LoggingMockTransport) OnData(callback func(context.Context, *AuthMessag
 
 // TestPeerCertificateExchange tests certificate request and exchange
 func TestPeerCertificateExchange(t *testing.T) {
+
 	var certType = tu.GetByte32FromString("testCertType")
 	requiredField := "testField"
 
@@ -449,13 +451,23 @@ func TestPeerCertificateExchange(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
-	// Create raw certificates with proper base64 encoding using our helper
+	// Generate a symmetric key for field encryption
+	fieldSymmetricKeyBytes := bytes.Repeat([]byte{1}, 32)
+	fieldSymmetricKey := ec.NewSymmetricKey(fieldSymmetricKeyBytes)
+	
+	// Encrypt the field value
+	plainFieldValue := []byte("decrypted field value")
+	encryptedFieldBytes, err := fieldSymmetricKey.Encrypt(plainFieldValue)
+	require.NoError(t, err)
+	encryptedFieldValue := base64.StdEncoding.EncodeToString(encryptedFieldBytes)
+
+	// Create raw certificates with encrypted fields
 	aliceCertRaw := wallet.Certificate{
 		Type:               certType,
 		SerialNumber:       tu.GetByte32FromString("serial1"),
 		Subject:            aliceSubject,
 		Certifier:          bobSubject,
-		Fields:             map[string]string{requiredField: "fieldValue"},
+		Fields:             map[string]string{requiredField: encryptedFieldValue},
 		RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 	}
 
@@ -464,7 +476,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 		SerialNumber:       tu.GetByte32FromString("serial2"),
 		Subject:            bobSubject,
 		Certifier:          aliceSubject,
-		Fields:             map[string]string{requiredField: "fieldValue"},
+		Fields:             map[string]string{requiredField: encryptedFieldValue},
 		RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
 	}
 
@@ -508,28 +520,29 @@ func TestPeerCertificateExchange(t *testing.T) {
 	logger.Printf("DEBUG: Alice cert signature: %x", aliceCert.Signature)
 	logger.Printf("DEBUG: Bob cert signature: %x", bobCert.Signature)
 
-	// Create mock keyring results - also properly encoded
-	fieldValueBase64 := base64.StdEncoding.EncodeToString([]byte("key-for-field"))
+	// Mock keyring - in real usage this would be the symmetric key encrypted for the verifier
+	// For testing, we just need valid encrypted data that MockDecrypt can "decrypt" to fieldSymmetricKeyBytes
+	encryptedSymmetricKey := base64.StdEncoding.EncodeToString(fieldSymmetricKeyBytes)
 	aliceWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
 		return &wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{requiredField: fieldValueBase64},
+			KeyringForVerifier: map[string]string{requiredField: encryptedSymmetricKey},
 		}, nil
 	}
 	bobWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
 		return &wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{requiredField: fieldValueBase64},
+			KeyringForVerifier: map[string]string{requiredField: encryptedSymmetricKey},
 		}, nil
 	}
 
-	// Configure wallet mocks for Decrypt to make DecryptFields work
+	// MockDecrypt returns the symmetric key for field decryption
 	aliceWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
 		return &wallet.DecryptResult{
-			Plaintext: []byte("decrypted field value"),
+			Plaintext: fieldSymmetricKeyBytes,
 		}, nil
 	}
 	bobWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
 		return &wallet.DecryptResult{
-			Plaintext: []byte("decrypted field value"),
+			Plaintext: fieldSymmetricKeyBytes,
 		}, nil
 	}
 
@@ -606,29 +619,16 @@ func TestPeerCertificateExchange(t *testing.T) {
 		return nil
 	})
 
-	// Debug listeners for certificate requests
-	alicePeer.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, req utils.RequestedCertificateSet) error {
-		logger.Printf("Alice received certificate request from %s with %d types",
-			senderPublicKey.ToDERHex(), len(req.CertificateTypes))
-		return nil
-	})
-
-	bobPeer.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, req utils.RequestedCertificateSet) error {
-		logger.Printf("Bob received certificate request from %s with %d types",
-			senderPublicKey.ToDERHex(), len(req.CertificateTypes))
-		return nil
-	})
-
 	// Set certificate requirements - We need to use the RAW type string here, not base64 encoded
 	aliceCertReqs := &utils.RequestedCertificateSet{
-		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")}, // "any" is special value that accepts any certifier
+		Certifiers: []*ec.PublicKey{aliceSubject}, // bob has cert signed by alice, so she requires herself es certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
 		},
 	}
 
 	bobCertReqs := &utils.RequestedCertificateSet{
-		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")}, // "any" is special value that accepts any certifier
+		Certifiers: []*ec.PublicKey{bobSubject}, // alice has cert signed by bob, so he requires himself es certifier
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{requiredField},
 		},
@@ -1126,19 +1126,6 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		return nil
 	})
 
-	// Add more debug for certificate requests
-	alice.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, req utils.RequestedCertificateSet) error {
-		t.Logf("Alice received certificate request from %s with %d types",
-			senderPublicKey.ToDERHex(), len(req.CertificateTypes))
-		return nil
-	})
-
-	bob.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, req utils.RequestedCertificateSet) error {
-		t.Logf("Bob received certificate request from %s with %d types",
-			senderPublicKey.ToDERHex(), len(req.CertificateTypes))
-		return nil
-	})
-
 	// Add logging to help debug issues
 	alice.ListenForGeneralMessages(func(sender *ec.PublicKey, payload []byte) error {
 		t.Logf("Alice received message: %s", string(payload))
@@ -1152,7 +1139,7 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 
 	// Setup certificate requirements - requesting two fields but accepting partial matches
 	requestedCertificates := &utils.RequestedCertificateSet{
-		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")},
+		Certifiers: []*ec.PublicKey{},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"name", "email"},
 		},
@@ -1393,16 +1380,6 @@ func TestLibraryCardVerification(t *testing.T) {
 		return nil
 	})
 
-	// Bob listens for certificate requests with debugging
-	bob.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, req utils.RequestedCertificateSet) error {
-		t.Logf("Bob received certificate request from %s with %d types",
-			senderPublicKey.ToDERHex(), len(req.CertificateTypes))
-		for certType, fields := range req.CertificateTypes {
-			t.Logf("Bob cert request details - Type: %s, Fields: %v", certType, fields)
-		}
-		return nil
-	})
-
 	// Bob listens for a special message ("Here's your book") which Alice will send after verifying his certificate
 	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, message []byte) error {
 		t.Logf("Bob received message: %s", string(message))
@@ -1420,7 +1397,7 @@ func TestLibraryCardVerification(t *testing.T) {
 
 	// Setup certificate requirements - Alice requires Bob's library card number
 	alice.CertificatesToRequest = &utils.RequestedCertificateSet{
-		Certifiers: []*ec.PublicKey{tu.GetPKFromString("any")},
+		Certifiers: []*ec.PublicKey{},
 		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"cardNumber"},
 		},

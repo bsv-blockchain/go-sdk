@@ -119,7 +119,7 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 	for _, action := range result.Actions {
 		// Serialize basic action fields
 		w.WriteBytesReverse(action.Txid[:])
-		w.WriteVarInt(action.Satoshis)
+		w.WriteVarInt(uint64(action.Satoshis))
 
 		// Serialize status
 		switch action.Status {
@@ -205,7 +205,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 
 		// Deserialize basic action fields
 		copy(action.Txid[:], r.ReadBytesReverse(chainhash.HashSize))
-		action.Satoshis = r.ReadVarInt()
+		action.Satoshis = int64(r.ReadVarInt())
 
 		// Deserialize status
 		status := r.ReadByte()
