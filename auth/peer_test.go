@@ -454,7 +454,7 @@ func TestPeerCertificateExchange(t *testing.T) {
 	// Generate a symmetric key for field encryption
 	fieldSymmetricKeyBytes := bytes.Repeat([]byte{1}, 32)
 	fieldSymmetricKey := ec.NewSymmetricKey(fieldSymmetricKeyBytes)
-	
+
 	// Encrypt the field value
 	plainFieldValue := []byte("decrypted field value")
 	encryptedFieldBytes, err := fieldSymmetricKey.Encrypt(plainFieldValue)
