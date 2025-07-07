@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -12,8 +13,14 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 
 	// Serialize spends map
 	w.WriteVarInt(uint64(len(args.Spends)))
-	for index, spend := range args.Spends {
-		w.WriteVarInt(uint64(index))
+	var keys []uint32
+	for key := range args.Spends {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	for _, key := range keys {
+		spend := args.Spends[key]
+		w.WriteVarInt(uint64(key))
 
 		// Unlocking script
 		w.WriteIntBytes(spend.UnlockingScript)

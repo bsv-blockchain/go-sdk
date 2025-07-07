@@ -26,19 +26,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w.WriteBytes(args.Certifier.Compressed())
 
 	// Encode fields
-	fieldEntries := make([]string, 0, len(args.Fields))
-	// TODO: Iterating over maps doesn't guarantee order to be consistent
-	for k := range args.Fields {
-		fieldEntries = append(fieldEntries, k)
-	}
-	sort.Slice(fieldEntries, func(i, j int) bool {
-		return fieldEntries[i] < fieldEntries[j]
-	})
-	w.WriteVarInt(uint64(len(fieldEntries)))
-	for _, key := range fieldEntries {
-		w.WriteString(key)
-		w.WriteString(args.Fields[key])
-	}
+	w.WriteStringMap(args.Fields)
 
 	// Encode privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -81,6 +69,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		for k := range args.KeyringForSubject {
 			keyringKeys = append(keyringKeys, k)
 		}
+		sort.Strings(keyringKeys)
 		w.WriteVarInt(uint64(len(keyringKeys)))
 		for _, key := range keyringKeys {
 			w.WriteIntBytes([]byte(key))

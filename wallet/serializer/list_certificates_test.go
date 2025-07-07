@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/base64"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -81,11 +82,10 @@ func TestListCertificatesResult(t *testing.T) {
 							"field1": "value1",
 						},
 					},
-					// TODO: See comment in serialization
-					/*Keyring: map[string]string{
+					Keyring: map[string]string{
 						"key1": base64.StdEncoding.EncodeToString([]byte("value1")),
 					},
-					Verifier: []byte("verifier1"),*/
+					Verifier: []byte("verifier1"),
 				},
 				{
 					Certificate: wallet.Certificate{

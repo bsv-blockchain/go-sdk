@@ -42,20 +42,14 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 
 	w.WriteVarInt(uint64(len(fieldEntries)))
 	for _, key := range fieldEntries {
-		keyBytes := []byte(key)
-		w.WriteVarInt(uint64(len(keyBytes)))
-		w.WriteBytes(keyBytes)
-		valueBytes := []byte(args.Certificate.Fields[key])
-		w.WriteVarInt(uint64(len(valueBytes)))
-		w.WriteBytes(valueBytes)
+		w.WriteIntBytes([]byte(key))
+		w.WriteIntBytes([]byte(args.Certificate.Fields[key]))
 	}
 
 	// Encode fieldsToReveal
 	w.WriteVarInt(uint64(len(args.FieldsToReveal)))
 	for _, field := range args.FieldsToReveal {
-		fieldBytes := []byte(field)
-		w.WriteVarInt(uint64(len(fieldBytes)))
-		w.WriteBytes(fieldBytes)
+		w.WriteIntBytes([]byte(field))
 	}
 
 	// Encode verifier (hex)
@@ -110,13 +104,8 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 		args.Certificate.Fields = make(map[string]string, fieldsLen)
 	}
 	for i := uint64(0); i < fieldsLen; i++ {
-		keyLen := r.ReadVarInt()
-		keyBytes := r.ReadBytes(int(keyLen))
-		key := string(keyBytes)
-
-		valueLen := r.ReadVarInt()
-		valueBytes := r.ReadBytes(int(valueLen))
-		value := string(valueBytes)
+		key := string(r.ReadIntBytes())
+		value := string(r.ReadIntBytes())
 
 		args.Certificate.Fields[key] = value
 		if r.Err != nil {
@@ -128,8 +117,7 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	fieldsToRevealLen := r.ReadVarInt()
 	args.FieldsToReveal = make([]string, 0, fieldsToRevealLen)
 	for i := uint64(0); i < fieldsToRevealLen; i++ {
-		fieldLen := r.ReadVarInt()
-		fieldBytes := r.ReadBytes(int(fieldLen))
+		fieldBytes := r.ReadIntBytes()
 		args.FieldsToReveal = append(args.FieldsToReveal, string(fieldBytes))
 	}
 
@@ -161,9 +149,7 @@ func SerializeProveCertificateResult(result *wallet.ProveCertificateResult) ([]b
 	// Write keyringForVerifier
 	w.WriteVarInt(uint64(len(result.KeyringForVerifier)))
 	for k, v := range result.KeyringForVerifier {
-		keyBytes := []byte(k)
-		w.WriteVarInt(uint64(len(keyBytes)))
-		w.WriteBytes(keyBytes)
+		w.WriteIntBytes([]byte(k))
 
 		if err := w.WriteIntFromBase64(v); err != nil {
 			return nil, fmt.Errorf("invalid keyring value base64: %w", err)
@@ -183,9 +169,7 @@ func DeserializeProveCertificateResult(data []byte) (*wallet.ProveCertificateRes
 		result.KeyringForVerifier = make(map[string]string, keyringLen)
 	}
 	for i := uint64(0); i < keyringLen; i++ {
-		keyLen := r.ReadVarInt()
-		keyBytes := r.ReadBytes(int(keyLen))
-		key := string(keyBytes)
+		key := string(r.ReadIntBytes())
 
 		result.KeyringForVerifier[key] = r.ReadBase64Int()
 

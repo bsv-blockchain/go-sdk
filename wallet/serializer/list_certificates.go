@@ -97,8 +97,7 @@ func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]b
 		}
 		w.WriteIntBytes(certBytes)
 
-		// TODO: Not included in ts-sdk, so removing from go-sdk for now
-		/*// Write keyring if present
+		// Write keyring if present
 		if cert.Keyring != nil {
 			w.WriteByte(1) // present
 			w.WriteVarInt(uint64(len(cert.Keyring)))
@@ -116,7 +115,7 @@ func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]b
 			w.WriteIntBytes(cert.Verifier)
 		} else {
 			w.WriteByte(0) // not present
-		}*/
+		}
 	}
 
 	return w.Buf, nil
@@ -141,8 +140,7 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 
 		certResult := wallet.CertificateResult{Certificate: *cert}
 
-		// TODO: Not included in ts-sdk, so removing from go-sdk for now
-		/*// Read keyring if present
+		// Read keyring if present
 		if r.ReadByte() == 1 {
 			keyringLen := r.ReadVarInt()
 			if keyringLen > 0 {
@@ -158,7 +156,7 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 		// Read verifier if present
 		if r.ReadByte() == 1 {
 			certResult.Verifier = r.ReadIntBytes()
-		}*/
+		}
 
 		result.Certificates = append(result.Certificates, certResult)
 	}

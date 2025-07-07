@@ -3,6 +3,7 @@ package serializer
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -25,8 +26,14 @@ func SerializeIdentityCertificate(cert *wallet.IdentityCertificate) ([]byte, err
 	w.WriteByte(cert.CertifierInfo.Trust)
 
 	// Serialize PubliclyRevealedKeyring
+	var keys []string
+	for k := range cert.PubliclyRevealedKeyring {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	w.WriteVarInt(uint64(len(cert.PubliclyRevealedKeyring)))
-	for k, v := range cert.PubliclyRevealedKeyring {
+	for _, k := range keys {
+		v := cert.PubliclyRevealedKeyring[k]
 		w.WriteString(k)
 		b, err := base64.StdEncoding.DecodeString(v)
 		if err != nil {
@@ -36,11 +43,7 @@ func SerializeIdentityCertificate(cert *wallet.IdentityCertificate) ([]byte, err
 	}
 
 	// Serialize DecryptedFields
-	w.WriteVarInt(uint64(len(cert.DecryptedFields)))
-	for k, v := range cert.DecryptedFields {
-		w.WriteString(k)
-		w.WriteString(v)
-	}
+	w.WriteStringMap(cert.DecryptedFields)
 
 	return w.Buf, nil
 }

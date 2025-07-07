@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
+	"sort"
 )
 
 // Writer is a helper for building binary messages
@@ -241,4 +242,17 @@ func (w *Writer) WriteTxidSlice(txIDs []chainhash.Hash) error {
 		w.WriteVarInt(math.MaxUint64) // -1
 	}
 	return nil
+}
+
+func (w *Writer) WriteStringMap(stringMap map[string]string) {
+	keys := make([]string, 0, len(stringMap))
+	for k := range stringMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	w.WriteVarInt(uint64(len(keys)))
+	for _, key := range keys {
+		w.WriteString(key)
+		w.WriteString(stringMap[key])
+	}
 }
