@@ -77,7 +77,14 @@ func (kd *KeyDeriver) DeriveSymmetricKey(protocol Protocol, keyID string, counte
 	}
 
 	// Return the x coordinate of the shared secret point
-	return ec.NewSymmetricKey(sharedSecret.X.Bytes()), nil
+	// Ensure the key is always 32 bytes by padding with leading zeros if needed
+	xBytes := sharedSecret.X.Bytes()
+	if len(xBytes) < 32 {
+		paddedBytes := make([]byte, 32)
+		copy(paddedBytes[32-len(xBytes):], xBytes)
+		xBytes = paddedBytes
+	}
+	return ec.NewSymmetricKey(xBytes), nil
 }
 
 // DerivePublicKey creates a public key based on protocol ID, key ID, and counterparty.
@@ -163,7 +170,14 @@ func (kd *KeyDeriver) RevealSpecificSecret(counterparty Counterparty, protocol P
 	}
 
 	// Compute HMAC-SHA256 of shared secret and invoice number
-	mac := hmac.New(sha256.New, sharedSecret.X.Bytes())
+	// Ensure the key is always 32 bytes by padding with leading zeros if needed
+	xBytes := sharedSecret.X.Bytes()
+	if len(xBytes) < 32 {
+		paddedBytes := make([]byte, 32)
+		copy(paddedBytes[32-len(xBytes):], xBytes)
+		xBytes = paddedBytes
+	}
+	mac := hmac.New(sha256.New, xBytes)
 	mac.Write([]byte(invoiceNumber))
 	return mac.Sum(nil), nil
 }
