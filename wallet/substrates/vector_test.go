@@ -518,7 +518,7 @@ func TestVectors(t *testing.T) {
 				Subject:            pubKey,
 				Certifier:          counterparty,
 				RevocationOutpoint: outpoint,
-				Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
+				Fields:             map[string]string{"email": "alice@example.com", "name": "Alice"},
 				Signature:          signature,
 			},
 			FieldsToReveal:   []string{"name"},

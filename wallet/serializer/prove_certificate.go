@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+	"sort"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -35,6 +36,10 @@ func SerializeProveCertificateArgs(args *wallet.ProveCertificateArgs) ([]byte, e
 	for k := range args.Certificate.Fields {
 		fieldEntries = append(fieldEntries, k)
 	}
+
+	// Sort field entries for consistent serialization
+	sort.Strings(fieldEntries)
+
 	w.WriteVarInt(uint64(len(fieldEntries)))
 	for _, key := range fieldEntries {
 		keyBytes := []byte(key)
