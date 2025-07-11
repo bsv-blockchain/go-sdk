@@ -13,7 +13,6 @@ import (
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/topic"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -38,7 +37,7 @@ func NewClient(w wallet.Interface, options *IdentityClientOptions, originator Or
 			return nil, fmt.Errorf("failed to create private key: %w", err)
 		}
 
-		completedWallet, err := utils.NewCompletedProtoWallet(randomKey)
+		completedWallet, err := wallet.NewCompletedProtoWallet(randomKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to complete wallet: %w", err)
 		}

@@ -15,7 +15,7 @@ func TestCreateNonce(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create private key: %v", err)
 	}
-	completedWallet, err := NewCompletedProtoWallet(privateKey)
+	completedWallet, err := wallet.NewCompletedProtoWallet(privateKey)
 	if err != nil {
 		t.Fatalf("Failed to create completed wallet: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestVerifyNonce(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create private key: %v", err)
 	}
-	completedWallet, err := NewCompletedProtoWallet(privateKey)
+	completedWallet, err := wallet.NewCompletedProtoWallet(privateKey)
 	if err != nil {
 		t.Fatalf("Failed to create completed wallet: %v", err)
 	}

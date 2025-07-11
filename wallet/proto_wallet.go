@@ -184,15 +184,12 @@ func (p *ProtoWallet) CreateSignature(
 		return nil, errors.New("keyDeriver is undefined")
 	}
 
-	if len(args.Data) == 0 && len(args.HashToDirectlySign) == 0 {
-		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
-	}
-
 	// Get hash to sign
 	var dataHash []byte
 	if len(args.HashToDirectlySign) > 0 {
 		dataHash = args.HashToDirectlySign
 	} else {
+		// Handle empty data by hashing it (sha256 of empty is valid)
 		dataHash = hash.Sha256(args.Data)
 	}
 

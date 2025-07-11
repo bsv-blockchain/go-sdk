@@ -29,8 +29,8 @@ func TestMasterCertificate(t *testing.T) {
 	}
 
 	// Use CompletedProtoWallet for testing
-	subjectWallet, _ := certificates.NewCompletedProtoWallet(subjectPrivateKey)
-	certifierWallet, _ := certificates.NewCompletedProtoWallet(certifierPrivateKey)
+	subjectWallet, _ := wallet.NewCompletedProtoWallet(subjectPrivateKey)
+	certifierWallet, _ := wallet.NewCompletedProtoWallet(certifierPrivateKey)
 
 	// Get identity keys with the originator parameter
 	subjectIdentityKey, _ := subjectWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
@@ -256,7 +256,7 @@ func TestMasterCertificate(t *testing.T) {
 		// Define verifier within this scope too
 		verifierPrivateKey, _ := ec.NewPrivateKey()
 		// Use CompletedProtoWallet for the verifier
-		verifierWallet, _ := certificates.NewCompletedProtoWallet(verifierPrivateKey)
+		verifierWallet, _ := wallet.NewCompletedProtoWallet(verifierPrivateKey)
 		verifierIdentityKey, _ := verifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
 		verifierCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: verifierIdentityKey.PublicKey}
 

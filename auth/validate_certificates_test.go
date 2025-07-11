@@ -54,9 +54,9 @@ func TestValidateCertificates(t *testing.T) {
 		certifierPrivateKey, _ := ec.NewPrivateKey()
 
 		// Create CompletedProtoWallets
-		subjectWallet, err := certificates.NewCompletedProtoWallet(subjectPrivateKey)
+		subjectWallet, err := wallet.NewCompletedProtoWallet(subjectPrivateKey)
 		require.NoError(t, err)
-		certifierWallet, err := certificates.NewCompletedProtoWallet(certifierPrivateKey)
+		certifierWallet, err := wallet.NewCompletedProtoWallet(certifierPrivateKey)
 		require.NoError(t, err)
 
 		// Get identity keys
@@ -150,7 +150,7 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Validate certificates - using an "anyone" wallet for verification
-		anyoneWallet, err := certificates.NewCompletedProtoWallet(nil)
+		anyoneWallet, err := wallet.NewCompletedProtoWallet(nil)
 		require.NoError(t, err)
 
 		err = ValidateCertificates(t.Context(), anyoneWallet, message, certReqs)
@@ -162,7 +162,7 @@ func TestValidateCertificates(t *testing.T) {
 		subjectPrivateKey, _ := ec.NewPrivateKey()
 
 		// Create CompletedProtoWallet
-		subjectWallet, err := certificates.NewCompletedProtoWallet(subjectPrivateKey)
+		subjectWallet, err := wallet.NewCompletedProtoWallet(subjectPrivateKey)
 		require.NoError(t, err)
 
 		// Get identity key
@@ -251,8 +251,8 @@ func TestValidateCertificates(t *testing.T) {
 		differentPrivateKey, _ := ec.NewPrivateKey()
 
 		// Create wallets
-		subjectWallet, _ := certificates.NewCompletedProtoWallet(subjectPrivateKey)
-		certifierWallet, _ := certificates.NewCompletedProtoWallet(certifierPrivateKey)
+		subjectWallet, _ := wallet.NewCompletedProtoWallet(subjectPrivateKey)
+		certifierWallet, _ := wallet.NewCompletedProtoWallet(certifierPrivateKey)
 
 		// Get identity keys
 		subjectIdentityKey, _ := subjectWallet.GetPublicKey(t.Context(), wallet.GetPublicKeyArgs{IdentityKey: true}, "")
@@ -310,7 +310,7 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Validate should fail due to invalid signature
-		anyoneWallet, _ := certificates.NewCompletedProtoWallet(nil)
+		anyoneWallet, _ := wallet.NewCompletedProtoWallet(nil)
 		err := ValidateCertificates(t.Context(), anyoneWallet, message, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "signature")
