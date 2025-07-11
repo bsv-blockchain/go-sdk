@@ -2,11 +2,10 @@ package wallet
 
 import (
 	"context"
-	"errors"
-	"fmt"
-
 	"crypto/hmac"
 	"crypto/sha256"
+	"errors"
+	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	hash "github.com/bsv-blockchain/go-sdk/primitives/hash"
@@ -271,9 +270,6 @@ func (p *ProtoWallet) VerifySignature(
 		return nil, fmt.Errorf("signature is nil")
 	}
 	valid := args.Signature.Verify(dataHash, pubKey)
-	if !valid {
-		return nil, fmt.Errorf("signature is not valid")
-	}
 
 	return &VerifySignatureResult{
 		Valid: valid,
