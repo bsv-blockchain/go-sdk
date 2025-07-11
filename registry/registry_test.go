@@ -528,11 +528,11 @@ func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 		[]byte("https://example.com/docs"),
 		pubKeyBytes, // registry operator
 	}
-	pushDropTemplate := &pushdrop.PushDropTemplate{
+	pushDrop := &pushdrop.PushDrop{
 		Wallet:     mockRegistry,
 		Originator: "test_originator",
 	}
-	lockingScript, err := pushDropTemplate.Lock(ctx, fields, wallet.Protocol{}, "1", wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone}, false, false, true)
+	lockingScript, err := pushDrop.Lock(ctx, fields, wallet.Protocol{}, "1", wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone}, false, false, pushdrop.LockBefore)
 	require.NoError(t, err)
 
 	// Create a parent transaction

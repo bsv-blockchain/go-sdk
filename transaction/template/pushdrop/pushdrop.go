@@ -103,16 +103,6 @@ type PushDrop struct {
 	Originator string
 }
 
-// New creates a new PushDrop instance matching TypeScript: new PushDrop(wallet)
-func New(wallet wallet.Interface, originator ...string) *PushDrop {
-	pd := &PushDrop{
-		Wallet: wallet,
-	}
-	if len(originator) > 0 {
-		pd.Originator = originator[0]
-	}
-	return pd
-}
 
 // Lock creates a PushDrop locking script matching TypeScript's API
 func (p *PushDrop) Lock(

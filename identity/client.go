@@ -139,21 +139,21 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Create PushDrop with the certificate data
-	pushDropTemplate := &pushdrop.PushDropTemplate{
+	pushDrop := &pushdrop.PushDrop{
 		Wallet:     c.Wallet,
 		Originator: string(c.Originator),
 	}
 
 	// Create locking script using PushDrop with the certificate JSON
-	lockingScript, err := pushDropTemplate.Lock(
+	lockingScript, err := pushDrop.Lock(
 		ctx,
 		[][]byte{certJSON},
 		c.Options.ProtocolID,
 		c.Options.KeyID,
 		wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone},
-		true,
-		true,
-		true,
+		true,  // forSelf
+		true,  // includeSignature
+		pushdrop.LockBefore,
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create locking script: %w", err)

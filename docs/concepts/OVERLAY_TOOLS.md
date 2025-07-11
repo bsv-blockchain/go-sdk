@@ -138,10 +138,10 @@ answer, err := resolver.Query(ctx, question, 5*time.Second)
 
 ## Admin Token
 
-The `OverlayAdminTokenTemplate` enables the creation and unlocking of SHIP and SLAP advertisement tokens, allowing hosts to advertise their services.
+The `OverlayAdminToken` enables the creation and unlocking of SHIP and SLAP advertisement tokens, allowing hosts to advertise their services.
 
 ```go
-template := &admintoken.OverlayAdminTokenTemplate{
+template := &admintoken.OverlayAdminToken{
     PushDrop: myPushDropTemplate,
 }
 

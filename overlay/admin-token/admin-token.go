@@ -18,15 +18,21 @@ type OverlayAdminTokenData struct {
 	TopicOrService string
 }
 
-// OverlayAdminTokenTemplate is a script template for creating, unlocking, and decoding SHIP and SLAP advertisements
-type OverlayAdminTokenTemplate struct {
+// OverlayAdminToken is a script template for creating, unlocking, and decoding SHIP and SLAP advertisements
+type OverlayAdminToken struct {
 	PushDrop *pushdrop.PushDrop
 }
 
-// NewOverlayAdminTokenTemplate creates a new overlay admin token template instance
-func NewOverlayAdminTokenTemplate(wallet wallet.Interface, originator ...string) *OverlayAdminTokenTemplate {
-	return &OverlayAdminTokenTemplate{
-		PushDrop: pushdrop.New(wallet, originator...),
+// NewOverlayAdminToken creates a new overlay admin token instance
+func NewOverlayAdminToken(wallet wallet.Interface, originator ...string) *OverlayAdminToken {
+	pd := &pushdrop.PushDrop{
+		Wallet: wallet,
+	}
+	if len(originator) > 0 {
+		pd.Originator = originator[0]
+	}
+	return &OverlayAdminToken{
+		PushDrop: pd,
 	}
 }
 
@@ -65,7 +71,7 @@ func Decode(s *script.Script) *OverlayAdminTokenData {
 }
 
 // Lock creates a new overlay admin token locking script for the specified protocol, domain, and topic/service
-func (o *OverlayAdminTokenTemplate) Lock(
+func (o *OverlayAdminToken) Lock(
 	ctx context.Context,
 	protocol overlay.Protocol,
 	domain string,
@@ -108,7 +114,7 @@ func (o *OverlayAdminTokenTemplate) Lock(
 }
 
 // Unlock creates an unlocker for overlay admin tokens of the specified protocol
-func (o *OverlayAdminTokenTemplate) Unlock(
+func (o *OverlayAdminToken) Unlock(
 	ctx context.Context,
 	protocol overlay.Protocol,
 ) *pushdrop.Unlocker {

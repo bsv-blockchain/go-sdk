@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	pushdroptpl "github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -128,7 +128,7 @@ func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValu
 	}
 
 	// Extract push drop data from script object (which is already parsed)
-	pushDropData := pushdroptpl.Decode(txOutput.LockingScript)
+	pushDropData := pushdrop.Decode(txOutput.LockingScript)
 	if pushDropData == nil || len(pushDropData.Fields) < 1 {
 		return nil, fmt.Errorf("invalid pushdrop token format found for key %s in output %s", key, mostRecentOutput.Outpoint)
 	}
@@ -260,7 +260,10 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 		valueBytes = encryptResult.Ciphertext
 	}
 
-	pushDrop := pushdroptpl.PushDropTemplate{Wallet: kv.wallet, Originator: kv.originator}
+	pushDrop := &pushdrop.PushDrop{
+		Wallet:     kv.wallet,
+		Originator: kv.originator,
+	}
 	lockingScript, err := pushDrop.Lock(
 		ctx,
 		[][]byte{valueBytes},
@@ -269,7 +272,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 		wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
 		true,
 		false,
-		true,
+		pushdrop.LockBefore,
 	)
 	if err != nil {
 		// Error creating script itself, not a wallet op yet
@@ -388,7 +391,10 @@ func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []
 	}
 
 	// Now signableTx.Inputs[i].SourceTransaction should be populated
-	pushDrop := pushdroptpl.PushDropTemplate{Wallet: kv.wallet, Originator: kv.originator}
+	pushDrop := &pushdrop.PushDrop{
+		Wallet:     kv.wallet,
+		Originator: kv.originator,
+	}
 
 	for i := range inputs {
 		// Check if SourceTransaction was linked
@@ -405,7 +411,7 @@ func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []
 			wallet.SignOutputsAll,
 			false,
 		)
-		unlockingScript, err := unlocker.Sign(signableTx, uint32(i))
+		unlockingScript, err := unlocker.Sign(signableTx, i)
 		if err != nil {
 			// Signing error for a specific input
 			return nil, fmt.Errorf("failed to sign input %d: %w", i, err) // Consider wrapping as ErrTransactionSign?
@@ -438,7 +444,10 @@ func (kv *LocalKVStore) Remove(ctx context.Context, key string) ([]string, error
 			break
 		}
 
-		pushDrop := pushdroptpl.PushDropTemplate{Wallet: kv.wallet, Originator: kv.originator}
+		pushDrop := &pushdrop.PushDrop{
+			Wallet:     kv.wallet,
+			Originator: kv.originator,
+		}
 		inputs := make([]wallet.CreateActionInput, 0, len(lookupResult.outpoints))
 		for _, outpoint := range lookupResult.outpoints {
 			unlocker := pushDrop.Unlock(

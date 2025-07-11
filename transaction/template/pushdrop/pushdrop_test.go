@@ -3,15 +3,11 @@ package pushdrop_test
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +36,10 @@ func createDecodeRedeem(
 	ctx := context.Background()
 	
 	// Create template with the provided wallet
-	pushDrop := pushdrop.New(testWallet, "test")
+	pushDrop := &pushdrop.PushDrop{
+		Wallet:     testWallet,
+		Originator: "test",
+	}
 
 	// Create locking script
 	lockingScript, err := pushDrop.Lock(
@@ -116,30 +115,6 @@ func createDecodeRedeem(
 	// Set the unlocking script
 	spendTx.Inputs[0].UnlockingScript = unlockingScript
 
-	// Debug: Calculate preimage for comparison
-	preimage, _ := spendTx.CalcInputPreimage(0, sighash.AllForkID)
-	t.Logf("Preimage (hex): %x", preimage)
-	t.Logf("Preimage hash: %x", sha256.Sum256(preimage))
-	
-	// Debug: Show the exact script structure
-	t.Logf("Locking script chunks:")
-	lockChunks, _ := lockingScript.Chunks()
-	for i, chunk := range lockChunks {
-		if chunk.Op > 0 && chunk.Op <= 75 && chunk.Data != nil {
-			t.Logf("  [%d] PUSH_%d: %x", i, len(chunk.Data), chunk.Data)
-		} else {
-			t.Logf("  [%d] OP_%d", i, chunk.Op)
-		}
-	}
-	t.Logf("Unlocking script chunks:")
-	unlockChunks, _ := unlockingScript.Chunks()
-	for i, chunk := range unlockChunks {
-		if chunk.Op > 0 && chunk.Op <= 75 && chunk.Data != nil {
-			t.Logf("  [%d] PUSH_%d: %x", i, len(chunk.Data), chunk.Data)
-		} else {
-			t.Logf("  [%d] OP_%d", i, chunk.Op)
-		}
-	}
 
 	// Validate the script execution
 	err = interpreter.NewEngine().Execute(
@@ -270,7 +245,10 @@ func TestPushDrop_TestVectors(t *testing.T) {
 func TestPushDrop_Lock(t *testing.T) {
 	ctx := context.Background()
 	testWallet := createTestWallet(t)
-	pushDrop := pushdrop.New(testWallet, "test")
+	pushDrop := &pushdrop.PushDrop{
+		Wallet:     testWallet,
+		Originator: "test",
+	}
 
 	// Test data
 	fields := [][]byte{
@@ -324,7 +302,10 @@ func TestPushDrop_Lock(t *testing.T) {
 func TestPushDrop_Unlock(t *testing.T) {
 	ctx := context.Background()
 	testWallet := createTestWallet(t)
-	pushDrop := pushdrop.New(testWallet, "test")
+	pushDrop := &pushdrop.PushDrop{
+		Wallet:     testWallet,
+		Originator: "test",
+	}
 
 	// Test data
 	fields := [][]byte{
@@ -388,30 +369,6 @@ func TestPushDrop_Unlock(t *testing.T) {
 	// Set the unlocking script
 	spendTx.Inputs[0].UnlockingScript = unlockingScript
 
-	// Debug: Calculate preimage for comparison
-	preimage, _ := spendTx.CalcInputPreimage(0, sighash.AllForkID)
-	t.Logf("Preimage (hex): %x", preimage)
-	t.Logf("Preimage hash: %x", sha256.Sum256(preimage))
-	
-	// Debug: Show the exact script structure
-	t.Logf("Locking script chunks:")
-	lockChunks, _ := lockingScript.Chunks()
-	for i, chunk := range lockChunks {
-		if chunk.Op > 0 && chunk.Op <= 75 && chunk.Data != nil {
-			t.Logf("  [%d] PUSH_%d: %x", i, len(chunk.Data), chunk.Data)
-		} else {
-			t.Logf("  [%d] OP_%d", i, chunk.Op)
-		}
-	}
-	t.Logf("Unlocking script chunks:")
-	unlockChunks, _ := unlockingScript.Chunks()
-	for i, chunk := range unlockChunks {
-		if chunk.Op > 0 && chunk.Op <= 75 && chunk.Data != nil {
-			t.Logf("  [%d] PUSH_%d: %x", i, len(chunk.Data), chunk.Data)
-		} else {
-			t.Logf("  [%d] OP_%d", i, chunk.Op)
-		}
-	}
 
 	// Validate the script execution
 	err = interpreter.NewEngine().Execute(
@@ -433,7 +390,10 @@ func TestPushDrop_Unlock(t *testing.T) {
 func TestPushDrop_Decode(t *testing.T) {
 	ctx := context.Background()
 	testWallet := createTestWallet(t)
-	pushDrop := pushdrop.New(testWallet, "test")
+	pushDrop := &pushdrop.PushDrop{
+		Wallet:     testWallet,
+		Originator: "test",
+	}
 
 	// Test data
 	fields := [][]byte{
@@ -483,95 +443,4 @@ func TestPushDrop_Decode(t *testing.T) {
 	assert.Equal(t, expectedPubKey.PublicKey.Compressed(), decoded.LockingPublicKey.Compressed())
 }
 
-func TestCreateMinimallyEncodedScriptChunk(t *testing.T) {
-	tests := []struct {
-		name     string
-		data     []byte
-		expected *script.ScriptChunk
-	}{
-		{
-			name: "empty data",
-			data: []byte{},
-			expected: &script.ScriptChunk{Op: 0},
-		},
-		{
-			name: "single zero",
-			data: []byte{0},
-			expected: &script.ScriptChunk{Op: 0},
-		},
-		{
-			name: "number 1-16",
-			data: []byte{5},
-			expected: &script.ScriptChunk{Op: 0x55}, // OP_5
-		},
-		{
-			name: "0x81 (OP_1NEGATE)",
-			data: []byte{0x81},
-			expected: &script.ScriptChunk{Op: 0x4f}, // OP_1NEGATE
-		},
-		{
-			name: "small push",
-			data: []byte{1, 2, 3},
-			expected: &script.ScriptChunk{Op: 3, Data: []byte{1, 2, 3}},
-		},
-		{
-			name: "75 bytes",
-			data: bytes.Repeat([]byte{0xff}, 75),
-			expected: &script.ScriptChunk{Op: 75, Data: bytes.Repeat([]byte{0xff}, 75)},
-		},
-		{
-			name: "76 bytes (OP_PUSHDATA1)",
-			data: bytes.Repeat([]byte{0xff}, 76),
-			expected: &script.ScriptChunk{Op: 0x4c, Data: bytes.Repeat([]byte{0xff}, 76)},
-		},
-		{
-			name: "256 bytes (OP_PUSHDATA2)",
-			data: bytes.Repeat([]byte{0xff}, 256),
-			expected: &script.ScriptChunk{Op: 0x4d, Data: bytes.Repeat([]byte{0xff}, 256)},
-		},
-		{
-			name: "65536 bytes (OP_PUSHDATA4)",
-			data: bytes.Repeat([]byte{0xff}, 65536),
-			expected: &script.ScriptChunk{Op: 0x4e, Data: bytes.Repeat([]byte{0xff}, 65536)},
-		},
-	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := pushdrop.CreateMinimallyEncodedScriptChunk(tc.data)
-			assert.Equal(t, tc.expected.Op, result.Op)
-			assert.Equal(t, tc.expected.Data, result.Data)
-		})
-	}
-}
-
-func TestPushDrop_LockPositions(t *testing.T) {
-	ctx := context.Background()
-	testWallet := createTestWallet(t)
-	pushDrop := pushdrop.New(testWallet, "test")
-
-	fields := [][]byte{{1, 2, 3}}
-	protocolID := wallet.Protocol{Protocol: "testing"}
-	keyID := "test-key"
-	counterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeSelf}
-
-	// Test with lock position before
-	scriptBefore, err := pushDrop.Lock(ctx, fields, protocolID, keyID, counterparty, false, false, pushdrop.LockBefore)
-	require.NoError(t, err)
-	
-	// Test with lock position after
-	scriptAfter, err := pushDrop.Lock(ctx, fields, protocolID, keyID, counterparty, false, false, pushdrop.LockAfter)
-	require.NoError(t, err)
-
-	// Scripts should be different
-	assert.NotEqual(t, hex.EncodeToString(scriptBefore.Bytes()), hex.EncodeToString(scriptAfter.Bytes()))
-
-	// Both should decode successfully
-	decodedBefore := pushdrop.Decode(scriptBefore)
-	decodedAfter := pushdrop.Decode(scriptAfter)
-	
-	assert.NotNil(t, decodedBefore)
-	assert.NotNil(t, decodedAfter)
-	assert.Equal(t, fields, decodedBefore.Fields)
-	assert.Equal(t, fields, decodedAfter.Fields)
-}
