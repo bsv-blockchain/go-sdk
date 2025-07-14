@@ -21,9 +21,9 @@ func Decode(s *script.Script) *PushDropData {
 	if err != nil || len(chunks) < 2 {
 		return nil
 	}
-	
+
 	pushDrop := &PushDropData{}
-	
+
 	// Check if this is a lock-before pattern (pubkey at start)
 	if pubKey, err := ec.PublicKeyFromBytes(chunks[0].Data); err == nil && chunks[1].Op == script.OpCHECKSIG {
 		// Lock-before pattern: [pubkey, CHECKSIG, data..., DROP/2DROP...]
@@ -31,12 +31,12 @@ func Decode(s *script.Script) *PushDropData {
 		for i := 2; i < len(chunks); i++ {
 			chunk := chunks[i].Data
 			if len(chunk) == 0 {
-				if chunks[i].Op >= 80 && chunks[i].Op <= 95 {
+				if chunks[i].Op >= script.Op1-1 && chunks[i].Op <= script.Op16 {
 					chunk = []byte{byte(chunks[i].Op - 80)}
-				} else if chunks[i].Op == 0 {
+				} else if chunks[i].Op == script.Op0 {
 					chunk = []byte{0}
-				} else if chunks[i].Op == 0x4f {
-					chunk = []byte{0x81}
+				} else if chunks[i].Op == script.Op1NEGATE {
+					chunk = []byte{0x81} // -1 in Bitcoin script number encoding
 				}
 			}
 			pushDrop.Fields = append(pushDrop.Fields, chunk)
@@ -50,42 +50,46 @@ func Decode(s *script.Script) *PushDropData {
 		}
 		return pushDrop
 	}
-	
-	// Check if this is a lock-after pattern (pubkey at end)
-	// Find the last occurrence of CHECKSIG
-	checksigIndex := -1
-	for i := len(chunks) - 1; i >= 1; i-- {
-		if chunks[i].Op == script.OpCHECKSIG {
-			checksigIndex = i
-			break
+
+	// NOTE: The following code is commented out as this pattern handling is not present in the TypeScript
+	// implementation and the exact logic for this use case is not defined.
+	/*
+		// Check if this is a lock-after pattern (pubkey at end)
+		// Find the last occurrence of CHECKSIG
+		checksigIndex := -1
+		for i := len(chunks) - 1; i >= 1; i-- {
+			if chunks[i].Op == script.OpCHECKSIG {
+				checksigIndex = i
+				break
+			}
 		}
-	}
-	
-	if checksigIndex > 0 {
-		// Try to parse the public key before CHECKSIG
-		if pubKey, err := ec.PublicKeyFromBytes(chunks[checksigIndex-1].Data); err == nil {
-			// Lock-after pattern: [data..., DROP/2DROP..., pubkey, CHECKSIG]
-			pushDrop.LockingPublicKey = pubKey
-			for i := 0; i < checksigIndex-1; i++ {
-				chunk := chunks[i].Data
-				if len(chunk) == 0 {
-					if chunks[i].Op >= 80 && chunks[i].Op <= 95 {
-						chunk = []byte{byte(chunks[i].Op - 80)}
-					} else if chunks[i].Op == 0 {
-						chunk = []byte{0}
-					} else if chunks[i].Op == 0x4f {
-						chunk = []byte{0x81}
+
+		if checksigIndex > 0 {
+			// Try to parse the public key before CHECKSIG
+			if pubKey, err := ec.PublicKeyFromBytes(chunks[checksigIndex-1].Data); err == nil {
+				// Lock-after pattern: [data..., DROP/2DROP..., pubkey, CHECKSIG]
+				pushDrop.LockingPublicKey = pubKey
+				for i := range checksigIndex {
+					chunk := chunks[i].Data
+					if len(chunk) == 0 {
+						if chunks[i].Op >= script.Op1 && chunks[i].Op <= script.Op16 {
+							chunk = []byte{byte(chunks[i].Op - 80)}
+						} else if chunks[i].Op == script.Op0 {
+							chunk = []byte{0}
+						} else if chunks[i].Op == script.Op1NEGATE {
+							chunk = []byte{script.Op1}
+						}
+					}
+					// Only add if it's not a DROP operation
+					if chunks[i].Op != script.OpDROP && chunks[i].Op != script.Op2DROP {
+						pushDrop.Fields = append(pushDrop.Fields, chunk)
 					}
 				}
-				// Only add if it's not a DROP operation
-				if chunks[i].Op != script.OpDROP && chunks[i].Op != script.Op2DROP {
-					pushDrop.Fields = append(pushDrop.Fields, chunk)
-				}
+				return pushDrop
 			}
-			return pushDrop
 		}
-	}
-	
+	*/
+
 	return nil
 }
 
@@ -103,7 +107,6 @@ type PushDrop struct {
 	Originator string
 }
 
-
 // Lock creates a PushDrop locking script matching TypeScript's API
 func (p *PushDrop) Lock(
 	ctx context.Context,
@@ -116,7 +119,7 @@ func (p *PushDrop) Lock(
 	lockPosition LockPosition,
 ) (*script.Script, error) {
 	lockBefore := (lockPosition == LockBefore || lockPosition == "")
-	
+
 	pub, err := p.Wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID:   protocolID,
@@ -223,7 +226,7 @@ func (u *Unlocker) Sign(tx *transaction.Transaction, inputIndex int) (*script.Sc
 		// Append signature with sighash type
 		sigBytes := sig.Signature.Serialize()
 		sigWithHashType := append(sigBytes, byte(signatureScope))
-		
+
 		s := (&script.Script{})
 		// Error throws if data is too big which wont happen here
 		_ = s.AppendPushData(sigWithHashType)
@@ -262,35 +265,35 @@ func (p *PushDrop) Unlock(
 		signOutputs:  signOutputs,
 		anyoneCanPay: anyoneCanPay,
 	}
-	
+
 	// Apply optional parameters if provided
 	if len(opts) > 0 {
 		unlocker.sourceSatoshis = opts[0].SourceSatoshis
 		unlocker.lockingScript = opts[0].LockingScript
 	}
-	
+
 	return unlocker
 }
 
 func CreateMinimallyEncodedScriptChunk(data []byte) *script.ScriptChunk {
 	if len(data) == 0 {
 		return &script.ScriptChunk{
-			Op: 0,
+			Op: script.Op0,
 		}
 	}
 	if len(data) == 1 && data[0] == 0 {
 		return &script.ScriptChunk{
-			Op: 0,
+			Op: script.Op0,
 		}
 	}
 	if len(data) == 1 && data[0] > 0 && data[0] <= 16 {
 		return &script.ScriptChunk{
-			Op: 0x50 + data[0],
+			Op: 80 + data[0], // OP_1 through OP_16
 		}
 	}
-	if len(data) == 1 && data[0] == 0x81 {
+	if len(data) == 1 && data[0] == 0x81 { // -1 in Bitcoin script number encoding
 		return &script.ScriptChunk{
-			Op: 0x4f,
+			Op: script.Op1NEGATE,
 		}
 	}
 	if len(data) <= 75 {
@@ -301,18 +304,18 @@ func CreateMinimallyEncodedScriptChunk(data []byte) *script.ScriptChunk {
 	}
 	if len(data) <= 255 {
 		return &script.ScriptChunk{
-			Op:   0x4c,
+			Op:   script.OpPUSHDATA1,
 			Data: data,
 		}
 	}
 	if len(data) <= 65535 {
 		return &script.ScriptChunk{
-			Op:   0x4d,
+			Op:   script.OpPUSHDATA2,
 			Data: data,
 		}
 	}
 	return &script.ScriptChunk{
-		Op:   0x4e,
+		Op:   script.OpPUSHDATA4,
 		Data: data,
 	}
 }
