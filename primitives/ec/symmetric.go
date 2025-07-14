@@ -59,6 +59,12 @@ func (s *SymmetricKey) FromBytes(b []byte) *SymmetricKey {
 }
 
 func NewSymmetricKey(key []byte) *SymmetricKey {
+	if len(key) < 32 {
+		// Pad the key to 32 bytes if it's shorter
+		paddedKey := make([]byte, 32)
+		copy(paddedKey[32-len(key):], key)
+		key = paddedKey
+	}
 	return &SymmetricKey{key: key}
 }
 
