@@ -32,7 +32,7 @@ func Decode(s *script.Script) *PushDropData {
 			chunk := chunks[i].Data
 			if len(chunk) == 0 {
 				if chunks[i].Op >= script.Op1-1 && chunks[i].Op <= script.Op16 {
-					chunk = []byte{byte(chunks[i].Op - 80)}
+					chunk = []byte{chunks[i].Op - 80}
 				} else if chunks[i].Op == script.Op0 {
 					chunk = []byte{0}
 				} else if chunks[i].Op == script.Op1NEGATE {
@@ -73,7 +73,7 @@ func Decode(s *script.Script) *PushDropData {
 					chunk := chunks[i].Data
 					if len(chunk) == 0 {
 						if chunks[i].Op >= script.Op1 && chunks[i].Op <= script.Op16 {
-							chunk = []byte{byte(chunks[i].Op - 80)}
+							chunk = []byte{chunks[i].Op - 80}
 						} else if chunks[i].Op == script.Op0 {
 							chunk = []byte{0}
 						} else if chunks[i].Op == script.Op1NEGATE {
