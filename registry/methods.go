@@ -26,7 +26,7 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 	registryOperator := fmt.Sprintf("%x", pubKeyResult.PublicKey.Compressed())
 
 	// Create a PushDrop template
-	pushDropTemplate := &pushdrop.PushDropTemplate{
+	pushDrop := &pushdrop.PushDrop{
 		Wallet:     c.wallet,
 		Originator: c.originator,
 	}
@@ -41,7 +41,7 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 	protocol := mapDefinitionTypeToWalletProtocol(data.GetDefinitionType())
 
 	// Lock the fields into a pushdrop-based UTXO
-	lockingScript, err := pushDropTemplate.Lock(
+	lockingScript, err := pushDrop.Lock(
 		ctx,
 		fields,
 		protocol,
@@ -51,7 +51,7 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 		},
 		false,
 		true,
-		true, // lockPosBefore
+		pushdrop.LockBefore,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create locking script: %w", err)
@@ -428,12 +428,12 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 	}
 
 	// Prepare the unlocker
-	pushDropTemplate := &pushdrop.PushDropTemplate{
+	pushDrop := &pushdrop.PushDrop{
 		Wallet:     c.wallet,
 		Originator: c.originator,
 	}
 
-	unlocker := pushDropTemplate.Unlock(
+	unlocker := pushDrop.Unlock(
 		ctx,
 		mapDefinitionTypeToWalletProtocol(record.GetDefinitionType()),
 		"1",
@@ -445,7 +445,7 @@ func (c *RegistryClient) RevokeOwnRegistryEntry(ctx context.Context, record *Reg
 	)
 
 	// Apply signature to the unlocker
-	finalUnlockScript, err := unlocker.Sign(partialTx, record.OutputIndex)
+	finalUnlockScript, err := unlocker.Sign(partialTx, int(record.OutputIndex))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign transaction: %w", err)
 	}
