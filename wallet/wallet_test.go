@@ -278,8 +278,9 @@ func TestCreateVerifySignature(t *testing.T) {
 			Signature:      verifyArgs.Signature,
 			Data:           append([]byte{0}, sampleData...),
 		}
-		_, err := counterpartyWallet.VerifySignature(ctx, invalidVerifySignatureArgs, "example")
-		require.Error(t, err)
+		result, err := counterpartyWallet.VerifySignature(ctx, invalidVerifySignatureArgs, "example")
+		assert.NoError(t, err)
+		require.False(t, result.Valid)
 	})
 
 	t.Run("fails to verify signature with wrong protocol", func(t *testing.T) {
