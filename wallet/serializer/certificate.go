@@ -73,15 +73,18 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	cert = &wallet.Certificate{}
 
 	// Read type (base64)
-	copy(cert.Type[:], r.ReadBytes(sizeType))
+	copy(cert.Type[:], r.ReadBytes(sizeType, "error reading certificate type"))
 
 	// Read serial number (base64)
-	copy(cert.SerialNumber[:], r.ReadBytes(sizeSerial))
+	copy(cert.SerialNumber[:], r.ReadBytes(sizeSerial, "error reading certificate serial number"))
 
 	// Read subject (hex)
-	cert.Subject, err = ec.PublicKeyFromBytes(r.ReadBytes(sizeSubject))
+	cert.Subject, err = ec.PublicKeyFromBytes(r.ReadBytes(sizeSubject, "error reading subject public key"))
 	if err != nil {
-		return nil, fmt.Errorf("error reading subject public key: %w", err)
+		if r.Err != nil {
+			return nil, r.Err
+		}
+		return nil, fmt.Errorf("error subject public key from bytes: %w", err)
 	}
 
 	// Read certifier (hex)

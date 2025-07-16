@@ -68,7 +68,7 @@ type CreateActionInput struct {
 	InputDescription      string               `json:"inputDescription"`
 	UnlockingScript       []byte               `json:"unlockingScript,omitempty"`
 	UnlockingScriptLength uint32               `json:"unlockingScriptLength,omitempty"`
-	SequenceNumber        uint32               `json:"sequenceNumber,omitempty"`
+	SequenceNumber        *uint32              `json:"sequenceNumber,omitempty"`
 }
 
 // CreateActionOutput represents an output to be created in a transaction
@@ -108,8 +108,8 @@ type CreateActionArgs struct {
 	InputBEEF   []byte               `json:"inputBEEF,omitempty"`
 	Inputs      []CreateActionInput  `json:"inputs,omitempty"`
 	Outputs     []CreateActionOutput `json:"outputs,omitempty"`
-	LockTime    uint32               `json:"lockTime,omitempty"`
-	Version     uint32               `json:"version,omitempty"`
+	LockTime    *uint32              `json:"lockTime,omitempty"`
+	Version     *uint32              `json:"version,omitempty"`
 	Labels      []string             `json:"labels,omitempty"`
 	Options     *CreateActionOptions `json:"options,omitempty"`
 }
@@ -146,8 +146,8 @@ type SignableTransaction struct {
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
 type SignActionSpend struct {
-	UnlockingScript []byte `json:"unlockingScript"`
-	SequenceNumber  uint32 `json:"sequenceNumber,omitempty"`
+	UnlockingScript []byte  `json:"unlockingScript"`
+	SequenceNumber  *uint32 `json:"sequenceNumber,omitempty"`
 }
 
 // SignActionOptions controls signing and broadcasting behavior.
@@ -252,8 +252,8 @@ type ListActionsArgs struct {
 	IncludeInputUnlockingScripts     *bool     `json:"includeInputUnlockingScripts,omitempty"`
 	IncludeOutputs                   *bool     `json:"includeOutputs,omitempty"`
 	IncludeOutputLockingScripts      *bool     `json:"includeOutputLockingScripts,omitempty"`
-	Limit                            uint32    `json:"limit,omitempty"` // Default 10, max 10000
-	Offset                           uint32    `json:"offset,omitempty"`
+	Limit                            *uint32   `json:"limit,omitempty"` // Default 10, max 10000
+	Offset                           *uint32   `json:"offset,omitempty"`
 	SeekPermission                   *bool     `json:"seekPermission,omitempty"` // Default true
 }
 
@@ -291,8 +291,8 @@ type ListOutputsArgs struct {
 	IncludeCustomInstructions *bool         `json:"includeCustomInstructions,omitempty"`
 	IncludeTags               *bool         `json:"includeTags,omitempty"`
 	IncludeLabels             *bool         `json:"includeLabels,omitempty"`
-	Limit                     uint32        `json:"limit"` // Default 10, max 10000
-	Offset                    uint32        `json:"offset,omitempty"`
+	Limit                     *uint32       `json:"limit,omitempty"` // Default 10, max 10000
+	Offset                    *uint32       `json:"offset,omitempty"`
 	SeekPermission            *bool         `json:"seekPermission,omitempty"` // Default true
 }
 
@@ -326,9 +326,9 @@ type AbortActionResult struct {
 
 // Payment contains derivation and identity data for wallet payment outputs.
 type Payment struct {
-	DerivationPrefix  string `json:"derivationPrefix"`
-	DerivationSuffix  string `json:"derivationSuffix"`
-	SenderIdentityKey string `json:"senderIdentityKey"`
+	DerivationPrefix  []byte        `json:"derivationPrefix"`
+	DerivationSuffix  []byte        `json:"derivationSuffix"`
+	SenderIdentityKey *ec.PublicKey `json:"senderIdentityKey"`
 }
 
 // BasketInsertion contains metadata for outputs being inserted into baskets.
@@ -474,11 +474,11 @@ type AcquireCertificateArgs struct {
 	Certifier           *ec.PublicKey         `json:"certifier"`
 	AcquisitionProtocol AcquisitionProtocol   `json:"acquisitionProtocol"` // "direct" | "issuance"
 	Fields              map[string]string     `json:"fields,omitempty"`
-	SerialNumber        SerialNumber          `json:"serialNumber"`
+	SerialNumber        *SerialNumber         `json:"serialNumber,omitempty"`
 	RevocationOutpoint  *transaction.Outpoint `json:"revocationOutpoint,omitempty"`
 	Signature           *ec.Signature         `json:"signature,omitempty"`
 	CertifierUrl        string                `json:"certifierUrl,omitempty"`
-	KeyringRevealer     KeyringRevealer       `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
+	KeyringRevealer     *KeyringRevealer      `json:"keyringRevealer,omitempty"` // "certifier" | PubKeyHex
 	KeyringForSubject   map[string]string     `json:"keyringForSubject,omitempty"`
 	Privileged          *bool                 `json:"privileged,omitempty"`
 	PrivilegedReason    string                `json:"privilegedReason,omitempty"`
@@ -488,8 +488,8 @@ type AcquireCertificateArgs struct {
 type ListCertificatesArgs struct {
 	Certifiers       []*ec.PublicKey   `json:"certifiers"`
 	Types            []CertificateType `json:"types"`
-	Limit            uint32            `json:"limit"`
-	Offset           uint32            `json:"offset"`
+	Limit            *uint32           `json:"limit,omitempty"`
+	Offset           *uint32           `json:"offset,omitempty"`
 	Privileged       *bool             `json:"privileged,omitempty"`
 	PrivilegedReason string            `json:"privilegedReason,omitempty"`
 }
@@ -534,8 +534,8 @@ type RelinquishCertificateResult struct {
 // This allows finding certificates associated with a specific public key identity.
 type DiscoverByIdentityKeyArgs struct {
 	IdentityKey    *ec.PublicKey `json:"identityKey"`
-	Limit          uint32        `json:"limit"`
-	Offset         uint32        `json:"offset"`
+	Limit          *uint32       `json:"limit"`
+	Offset         *uint32       `json:"offset"`
 	SeekPermission *bool         `json:"seekPermission,omitempty"`
 }
 
@@ -543,8 +543,8 @@ type DiscoverByIdentityKeyArgs struct {
 // This allows finding certificates that contain specific field values.
 type DiscoverByAttributesArgs struct {
 	Attributes     map[string]string `json:"attributes"`
-	Limit          uint32            `json:"limit"`
-	Offset         uint32            `json:"offset"`
+	Limit          *uint32           `json:"limit"`
+	Offset         *uint32           `json:"offset"`
 	SeekPermission *bool             `json:"seekPermission,omitempty"`
 }
 

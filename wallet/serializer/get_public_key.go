@@ -36,7 +36,7 @@ func SerializeGetPublicKeyArgs(args *wallet.GetPublicKeyArgs) ([]byte, error) {
 		w.WriteBytes(keyParams)
 
 		// Write forSelf flag
-		w.WriteOptionalBool(&args.ForSelf)
+		w.WriteOptionalBool(args.ForSelf)
 	} else {
 		// Write privileged params for identity key case
 		w.WriteBytes(encodePrivilegedParams(&args.Privileged, args.PrivilegedReason))
@@ -71,16 +71,16 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 		args.PrivilegedReason = keyParams.PrivilegedReason
 
 		// Read forSelf flag
-		args.ForSelf = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+		args.ForSelf = r.ReadOptionalBool()
 	} else {
 		// Read privileged params for identity key case
 		privileged, privilegedReason := decodePrivilegedParams(r)
-		args.Privileged = privileged != nil && *privileged
+		args.Privileged = util.PtrToBool(privileged)
 		args.PrivilegedReason = privilegedReason
 	}
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {

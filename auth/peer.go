@@ -742,9 +742,10 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 		Data:      certRequestData,
 		Signature: signature,
 	}, "")
-
-	if err != nil || !verifyResult.Valid {
-		return fmt.Errorf("invalid signature in certificate request: %w", err)
+	if err != nil {
+		return fmt.Errorf("unable to verify signature in certificate request: %w", err)
+	} else if !verifyResult.Valid {
+		return fmt.Errorf("certificate request - %w", ErrInvalidSignature)
 	}
 
 	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
@@ -806,9 +807,10 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 		Data:      certData,
 		Signature: signature,
 	}, "")
-
-	if err != nil || !verifyResult.Valid {
-		return fmt.Errorf("invalid signature in certificate response: %w", err)
+	if err != nil {
+		return fmt.Errorf("unable to verify signature in certificate response: %w", err)
+	} else if !verifyResult.Valid {
+		return fmt.Errorf("certificate response - %w", ErrInvalidSignature)
 	}
 
 	// Process certificates if included
@@ -895,9 +897,10 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 		Data:      message.Payload,
 		Signature: signature,
 	}, "")
-
-	if err != nil || !verifyResult.Valid {
-		return fmt.Errorf("invalid signature in general message: %w", err)
+	if err != nil {
+		return fmt.Errorf("unable to verify signature in general message: %w", err)
+	} else if !verifyResult.Valid {
+		return fmt.Errorf("general message - %w", ErrInvalidSignature)
 	}
 
 	// Update session timestamp

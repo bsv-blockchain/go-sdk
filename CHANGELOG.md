@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.5 - 2025-07-16](#125---2025-07-16)
 - [1.2.4 - 2025-06-30](#124---2025-06-30)
 - [1.2.3 - 2025-06-30](#123---2025-06-30)
 - [1.2.2 - 2025-06-27](#122---2025-06-27)
@@ -38,6 +39,26 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.5] - 2025-07-16
+
+### Changed
+- Consolidated PushDrop implementation into single struct
+- Merged CompletedProtoWallet implementations
+- Renamed OverlayAdminTokenTemplate to use new API
+- Optimized collectAncestors performance (3.17x faster, 78% less memory)
+- Improved script parsing performance with two-pass approach
+  - 28-49% performance improvement
+
+### Added
+- Optional sourceSatoshis and lockingScript parameters to Unlock method
+- Pre-allocation for parsed opcodes in script parser
+
+### Fixed
+- Wire format fixes for 32 byte key padding
+- Distinguish invalid signature errors from internal errors
+- Script parsing performance regression
+
 
 ## [1.2.4] - 2025-06-30
 

@@ -510,8 +510,7 @@ func (t *Transaction) AtomicBEEF(allowPartial bool) ([]byte, error) {
 	}
 
 	// Write the subject TXID (big-endian)
-	txid := t.TxID().CloneBytes()
-	writer.Write(txid)
+	writer.Write(t.TxID().CloneBytes())
 
 	err = binary.Write(writer, binary.LittleEndian, BEEF_V2)
 	if err != nil {
@@ -519,8 +518,9 @@ func (t *Transaction) AtomicBEEF(allowPartial bool) ([]byte, error) {
 	}
 	bumps := []*MerklePath{}
 	bumpMap := map[uint32]int{}
-	txns := map[string]*Transaction{t.TxID().String(): t}
-	ancestors, err := t.collectAncestors(txns, allowPartial)
+	txid := t.TxID()
+	txns := map[string]*Transaction{txid.String(): t}
+	ancestors, err := t.collectAncestors(txid, txns, allowPartial)
 	if err != nil {
 		return nil, err
 	}

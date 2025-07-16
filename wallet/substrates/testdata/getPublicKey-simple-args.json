@@ -8,8 +8,7 @@
     "counterparty": "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1",
     "privileged": true,
     "privilegedReason": "privileged reason",
-    "seekPermission": true,
-    "identityKey": true
+    "seekPermission": true
   },
-  "wire": "080001011170726976696c6567656420726561736f6e01"
+  "wire": "080000020574657374730b746573742d6b65792d69640294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1011170726976696c6567656420726561736f6eff01"
 }

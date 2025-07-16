@@ -2,14 +2,14 @@ package wallet
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 
-	"crypto/hmac"
-	"crypto/sha256"
-
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	hash "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // ProtoWallet is a precursor to a full wallet, capable of performing foundational cryptographic operations.
@@ -89,7 +89,7 @@ func (p *ProtoWallet) GetPublicKey(ctx context.Context, args GetPublicKeyArgs, _
 			args.ProtocolID,
 			args.KeyID,
 			counterparty,
-			args.ForSelf,
+			util.PtrToBool(args.ForSelf),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive public key: %v", err)
@@ -184,15 +184,12 @@ func (p *ProtoWallet) CreateSignature(
 		return nil, errors.New("keyDeriver is undefined")
 	}
 
-	if len(args.Data) == 0 && len(args.HashToDirectlySign) == 0 {
-		return nil, fmt.Errorf("args.data or args.hashToDirectlySign must be valid")
-	}
-
 	// Get hash to sign
 	var dataHash []byte
 	if len(args.HashToDirectlySign) > 0 {
 		dataHash = args.HashToDirectlySign
 	} else {
+		// Handle empty data by hashing it (sha256 of empty is valid)
 		dataHash = hash.Sha256(args.Data)
 	}
 
@@ -260,7 +257,7 @@ func (p *ProtoWallet) VerifySignature(
 		args.ProtocolID,
 		args.KeyID,
 		counterparty,
-		args.ForSelf,
+		util.PtrToBool(args.ForSelf),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive public key: %v", err)
@@ -271,9 +268,6 @@ func (p *ProtoWallet) VerifySignature(
 		return nil, fmt.Errorf("signature is nil")
 	}
 	valid := args.Signature.Verify(dataHash, pubKey)
-	if !valid {
-		return nil, fmt.Errorf("signature is not valid")
-	}
 
 	return &VerifySignatureResult{
 		Valid: valid,
@@ -314,7 +308,10 @@ func (p *ProtoWallet) CreateHMAC(
 	mac.Write(args.Data)
 	hmacValue := mac.Sum(nil)
 
-	return &CreateHMACResult{HMAC: hmacValue}, nil
+	result := &CreateHMACResult{}
+	copy(result.HMAC[:], hmacValue)
+
+	return result, nil
 }
 
 // VerifyHMAC verifies that the provided HMAC matches the expected value for the given data.
@@ -352,7 +349,7 @@ func (p *ProtoWallet) VerifyHMAC(
 	expectedHMAC := mac.Sum(nil)
 
 	// Verify HMAC
-	if !hmac.Equal(expectedHMAC, args.HMAC) {
+	if !hmac.Equal(expectedHMAC, args.HMAC[:]) {
 		return &VerifyHMACResult{Valid: false}, nil
 	}
 

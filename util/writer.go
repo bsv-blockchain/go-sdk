@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
+	"sort"
 )
 
 // Writer is a helper for building binary messages
@@ -26,6 +27,15 @@ func (w *Writer) WriteBytes(b []byte) {
 	w.Buf = append(w.Buf, b...)
 }
 
+func (w *Writer) WriteBytesReverse(b []byte) {
+	// Reverse the byte slice before appending
+	var newBytes = make([]byte, len(b))
+	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
+		newBytes[i], newBytes[j] = b[j], b[i]
+	}
+	w.WriteBytes(newBytes)
+}
+
 func (w *Writer) WriteIntBytes(b []byte) {
 	w.WriteVarInt(uint64(len(b)))
 	w.WriteBytes(b)
@@ -41,6 +51,14 @@ func (w *Writer) WriteIntBytesOptional(b []byte) {
 
 func (w *Writer) WriteVarInt(n uint64) {
 	w.WriteBytes(VarInt(n).Bytes())
+}
+
+func (w *Writer) WriteVarIntOptional(n *uint64) {
+	if n == nil {
+		w.WriteNegativeOne()
+		return
+	}
+	w.WriteBytes(VarInt(*n).Bytes())
 }
 
 const (
@@ -183,9 +201,9 @@ func (w *Writer) WriteOptionalBytes(b []byte, options ...BytesOption) {
 	}
 }
 
-func (w *Writer) WriteOptionalUint32(n uint32) {
-	if n > 0 {
-		w.WriteVarInt(uint64(n))
+func (w *Writer) WriteOptionalUint32(n *uint32) {
+	if n != nil {
+		w.WriteVarInt(uint64(*n))
 	} else {
 		w.WriteNegativeOne()
 	}
@@ -224,4 +242,17 @@ func (w *Writer) WriteTxidSlice(txIDs []chainhash.Hash) error {
 		w.WriteVarInt(math.MaxUint64) // -1
 	}
 	return nil
+}
+
+func (w *Writer) WriteStringMap(stringMap map[string]string) {
+	keys := make([]string, 0, len(stringMap))
+	for k := range stringMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	w.WriteVarInt(uint64(len(keys)))
+	for _, key := range keys {
+		w.WriteString(key)
+		w.WriteString(stringMap[key])
+	}
 }

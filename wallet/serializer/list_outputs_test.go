@@ -24,8 +24,8 @@ func TestListOutputsArgs(t *testing.T) {
 				IncludeCustomInstructions: util.BoolPtr(true),
 				IncludeTags:               util.BoolPtr(true),
 				IncludeLabels:             util.BoolPtr(false),
-				Limit:                     100,
-				Offset:                    10,
+				Limit:                     util.Uint32Ptr(100),
+				Offset:                    util.Uint32Ptr(10),
 				SeekPermission:            util.BoolPtr(true),
 			},
 		},
@@ -33,7 +33,7 @@ func TestListOutputsArgs(t *testing.T) {
 			name: "minimal args",
 			args: &wallet.ListOutputsArgs{
 				Basket: "minimal-basket",
-				Limit:  10,
+				Limit:  util.Uint32Ptr(10),
 			},
 		},
 	}
@@ -76,7 +76,7 @@ func TestListOutputsResult(t *testing.T) {
 				{
 					Satoshis:      2000,
 					LockingScript: script2.Bytes(),
-					Spendable:     false,
+					Spendable:     true,
 					Outpoint:      *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.1"),
 				},
 			},

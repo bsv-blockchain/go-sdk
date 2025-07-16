@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -277,8 +278,9 @@ func TestCreateVerifySignature(t *testing.T) {
 			Signature:      verifyArgs.Signature,
 			Data:           append([]byte{0}, sampleData...),
 		}
-		_, err := counterpartyWallet.VerifySignature(ctx, invalidVerifySignatureArgs, "example")
-		require.Error(t, err)
+		result, err := counterpartyWallet.VerifySignature(ctx, invalidVerifySignatureArgs, "example")
+		assert.NoError(t, err)
+		require.False(t, result.Valid)
 	})
 
 	t.Run("fails to verify signature with wrong protocol", func(t *testing.T) {
@@ -502,7 +504,7 @@ func TestGetPublicKeyForCounterparty(t *testing.T) {
 	// Test get public key by counterparty
 	getByCounterpartyPubKeyArgs := wallet.GetPublicKeyArgs{
 		EncryptionArgs: baseArgs,
-		ForSelf:        true,
+		ForSelf:        util.BoolPtr(true),
 	}
 	getByCounterpartyPubKeyArgs.Counterparty = wallet.Counterparty{
 		Type:         wallet.CounterpartyTypeOther,
@@ -622,7 +624,7 @@ func TestHMACCreateVerify(t *testing.T) {
 				},
 			},
 			Data: []byte("BRC-2 HMAC Compliance Validated!"),
-			HMAC: []byte{
+			HMAC: [32]byte{
 				81, 240, 18, 153, 163, 45, 174, 85, 9, 246, 142, 125, 209, 133, 82, 76,
 				254, 103, 46, 182, 86, 59, 219, 61, 126, 30, 176, 232, 233, 100, 234, 14,
 			},

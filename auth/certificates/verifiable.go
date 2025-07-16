@@ -10,7 +10,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-
 // VerifiableCertificate extends the Certificate struct to include a verifier-specific keyring.
 // This keyring allows selective decryption of certificate fields for authorized verifiers.
 // It mirrors the structure and functionality of the TypeScript VerifiableCertificate class.

@@ -25,7 +25,7 @@ func TestVerifyHMACArgs(t *testing.T) {
 				SeekPermission:   true,
 			},
 			Data: []byte{1, 2, 3, 4},
-			HMAC: make([]byte, 32), // 32 byte HMAC
+			HMAC: [32]byte{},
 		},
 	}, {
 		name: "minimal args",
@@ -38,7 +38,7 @@ func TestVerifyHMACArgs(t *testing.T) {
 				KeyID: "minimal-key",
 			},
 			Data: []byte{1},
-			HMAC: make([]byte, 32),
+			HMAC: [32]byte{},
 		},
 	}, {
 		name: "empty data",
@@ -50,8 +50,7 @@ func TestVerifyHMACArgs(t *testing.T) {
 				},
 				KeyID: "empty-key",
 			},
-			Data: []byte{},
-			HMAC: make([]byte, 32),
+			HMAC: [32]byte{},
 		},
 	}}
 
@@ -80,12 +79,5 @@ func TestVerifyHMACResult(t *testing.T) {
 		got, err := DeserializeVerifyHMACResult(data)
 		require.NoError(t, err)
 		require.Equal(t, result, got)
-	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeVerifyHMACResult(data)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "verifyHMAC failed with error byte 1")
 	})
 }

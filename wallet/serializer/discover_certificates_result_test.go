@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"encoding/base64"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -19,7 +20,7 @@ func TestDiscoverCertificatesResult(t *testing.T) {
 		var certType [32]byte
 		copy(certType[:], "dGVzdC10eXBl") // "test-type" in base64
 		result := &wallet.DiscoverCertificatesResult{
-			TotalCertificates: 2,
+			TotalCertificates: 1,
 			Certificates: []wallet.IdentityCertificate{
 				{
 					Certificate: wallet.Certificate{
@@ -40,7 +41,7 @@ func TestDiscoverCertificatesResult(t *testing.T) {
 						Trust:       5,
 					},
 					PubliclyRevealedKeyring: map[string]string{
-						"key1": "value1",
+						"key1": base64.StdEncoding.EncodeToString([]byte("value1")),
 					},
 					DecryptedFields: map[string]string{
 						"field1": "decrypted1",
@@ -55,12 +56,5 @@ func TestDiscoverCertificatesResult(t *testing.T) {
 		got, err := DeserializeDiscoverCertificatesResult(data)
 		require.NoError(t, err, "deserializing DiscoverCertificatesResult should not error")
 		require.Equal(t, result, got, "deserialized result should match original result")
-	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeDiscoverCertificatesResult(data)
-		require.Error(t, err, "deserializing with error byte should produce an error")
-		require.Contains(t, err.Error(), "discoverByIdentityKey failed with error byte 1", "error message should indicate failure and error byte")
 	})
 }

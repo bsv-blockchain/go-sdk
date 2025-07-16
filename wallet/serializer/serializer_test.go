@@ -228,7 +228,7 @@ func TestDecodeOutpoint(t *testing.T) {
 
 	// Create valid outpoint bytes
 	var validData []byte
-	validData = append(validData, validTxIDHash[:]...)
+	validData = append(validData, util.ReverseBytes(validTxIDHash[:])...)
 	validData = append(validData, util.VarInt(validIndex).Bytes()...)
 
 	tests := []struct {
@@ -301,7 +301,7 @@ func TestEncodeOutpoint(t *testing.T) {
 
 	// Expected valid binary output
 	var expectedBytes []byte
-	expectedBytes = append(expectedBytes, validTxIDHash[:]...)
+	expectedBytes = append(expectedBytes, util.ReverseBytes(validTxIDHash[:])...)
 	expectedBytes = append(expectedBytes, util.VarInt(validIndex).Bytes()...)
 
 	tests := []struct {

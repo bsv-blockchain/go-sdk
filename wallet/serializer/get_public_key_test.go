@@ -2,6 +2,7 @@ package serializer
 
 import (
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -28,7 +29,7 @@ func TestGetPublicKeyArgs(t *testing.T) {
 		{
 			name: "full args without identity key",
 			args: &wallet.GetPublicKeyArgs{
-				ForSelf: true,
+				ForSelf: util.BoolPtr(true),
 				EncryptionArgs: wallet.EncryptionArgs{
 					ProtocolID: wallet.Protocol{
 						SecurityLevel: wallet.SecurityLevelEveryApp,

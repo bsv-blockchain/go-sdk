@@ -23,8 +23,8 @@ func TestVerifiableCertificate(t *testing.T) {
 	verifierIdentityKey := verifierPrivateKey.PubKey()
 
 	// Create wallets
-	subjectWallet, _ := NewCompletedProtoWallet(subjectPrivateKey)
-	verifierWallet, _ := NewCompletedProtoWallet(verifierPrivateKey)
+	subjectWallet, _ := wallet.NewCompletedProtoWallet(subjectPrivateKey)
+	verifierWallet, _ := wallet.NewCompletedProtoWallet(verifierPrivateKey)
 
 	// Sample data
 	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32)))
@@ -244,7 +244,7 @@ func TestVerifiableCertificate(t *testing.T) {
 
 			// Create a wallet with wrong key
 			wrongPrivateKey, _ := ec.NewPrivateKey()
-			wrongWallet, _ := NewCompletedProtoWallet(wrongPrivateKey)
+			wrongWallet, _ := wallet.NewCompletedProtoWallet(wrongPrivateKey)
 
 			// Decrypt should fail
 			_, err := verifiableCert.DecryptFields(
@@ -382,7 +382,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			}
 
 			// Create certificate with "anyone" certifier
-			anyoneWallet, err := NewCompletedProtoWallet(nil)
+			anyoneWallet, err := wallet.NewCompletedProtoWallet(nil)
 			if err != nil {
 				t.Fatalf("Failed to create anyone wallet: %v", err)
 			}
