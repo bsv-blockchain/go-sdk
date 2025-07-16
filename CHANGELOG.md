@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file. The format 
 - Renamed OverlayAdminTokenTemplate to use new API
 - Optimized collectAncestors performance (3.17x faster, 78% less memory)
 - Improved script parsing performance with two-pass approach
+  - 28-49% performance improvement
 
 ### Added
 - Optional sourceSatoshis and lockingScript parameters to Unlock method
@@ -57,6 +58,7 @@ All notable changes to this project will be documented in this file. The format 
 - Wire format fixes for 32 byte key padding
 - Distinguish invalid signature errors from internal errors
 - Script parsing performance regression
+
 
 ## [1.2.4] - 2025-06-30
 

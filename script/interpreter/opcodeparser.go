@@ -132,10 +132,111 @@ func (o *ParsedOpcode) enforceMinimumDataPush() error {
 	return nil
 }
 
+// updateConditionalDepth updates the conditional depth based on the opcode
+// Returns true if this is an OP_RETURN outside of conditionals
+func updateConditionalDepth(op byte, depth *int) bool {
+	switch op {
+	case script.OpIF, script.OpNOTIF, script.OpVERIF, script.OpVERNOTIF:
+		*depth++
+	case script.OpENDIF:
+		if *depth > 0 {
+			*depth--
+		}
+	case script.OpRETURN:
+		return *depth == 0
+	}
+	return false
+}
+
+// advancePosition calculates the next position after parsing an opcode
+func advancePosition(scr []byte, i int, op byte) (int, error) {
+	switch op {
+	case script.OpPUSHDATA1:
+		if len(scr) < i+2 {
+			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+		}
+		dataLen := int(scr[i+1])
+		newPos := i + 2 + dataLen
+		if newPos > len(scr) {
+			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+		}
+		return newPos, nil
+		
+	case script.OpPUSHDATA2:
+		if len(scr) < i+3 {
+			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+		}
+		dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
+		newPos := i + 3 + dataLen
+		if newPos > len(scr) {
+			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+		}
+		return newPos, nil
+		
+	case script.OpPUSHDATA4:
+		if len(scr) < i+5 {
+			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+		}
+		dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
+		newPos := i + 5 + dataLen
+		if newPos > len(scr) {
+			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
+		}
+		return newPos, nil
+		
+	default:
+		// For other opcodes, we need to check opcodeArray
+		opInfo := opcodeArray[op]
+		if opInfo.length > 1 {
+			if i+opInfo.length > len(scr) {
+				return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
+			}
+			return i + opInfo.length, nil
+		}
+		return i + 1, nil
+	}
+}
+
 // Parse takes a *script.Script and returns a []interpreter.ParsedOp
 func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 	scr := *s
-	parsedOps := make([]ParsedOpcode, 0)
+	
+	// First pass: count opcodes
+	opcodeCount := 0
+	i := 0
+	conditionalDepth := 0
+	
+	for i < len(scr) {
+		instruction := scr[i]
+		op := opcodeArray[instruction]
+		
+		// Track conditionals and check for OP_RETURN
+		if isOpReturnOutsideConditional := updateConditionalDepth(op.val, &conditionalDepth); isOpReturnOutsideConditional {
+			opcodeCount++
+			// OP_RETURN outside conditionals consumes rest of script
+			break
+		}
+		
+		// Special handling for OP_RETURN inside conditionals
+		if op.val == script.OpRETURN {
+			// Inside conditional, just skip the single byte
+			i++
+			opcodeCount++
+			continue
+		}
+		
+		// Skip to next opcode
+		newPos, err := advancePosition(scr, i, instruction)
+		if err != nil {
+			return nil, err
+		}
+		i = newPos
+		
+		opcodeCount++
+	}
+	
+	// Second pass: allocate exactly what we need and parse
+	parsedOps := make([]ParsedOpcode, 0, opcodeCount)
 	conditionalBlock := 0
 
 	for i := 0; i < len(scr); {
@@ -146,68 +247,54 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 			return nil, errs.NewError(errs.ErrInvalidParams, "tx and previous output must be supplied for checksig")
 		}
 
+		// Track conditionals and check for OP_RETURN
+		if isOpReturnOutsideConditional := updateConditionalDepth(parsedOp.op.val, &conditionalBlock); isOpReturnOutsideConditional {
+			// OP_RETURN outside conditionals - extract remaining data and return
+			if i+1 < len(scr) {
+				parsedOp.Data = scr[i+1:]
+				parsedOp.op.length = 1 + len(parsedOp.Data)
+			}
+			parsedOps = append(parsedOps, parsedOp)
+			return parsedOps, nil
+		}
+
+		// Extract data for this opcode
 		switch parsedOp.op.val {
-		case script.OpIF, script.OpNOTIF, script.OpVERIF, script.OpVERNOTIF:
-			conditionalBlock++
-		case script.OpENDIF:
-			conditionalBlock--
-		case script.OpRETURN:
-			// If we are not in a conditional block, we end script evaluation.
-			// This must be the final evaluated opcode, everything after is ignored.
-			if conditionalBlock == 0 {
-				if i+1 < len(scr) {
-					parsedOp.Data = scr[i+1:]
-					parsedOp.op.length = 1 + len(parsedOp.Data)
+		case script.OpPUSHDATA1:
+			if len(scr) >= i+2 {
+				dataLen := int(scr[i+1])
+				if len(scr) >= i+2+dataLen {
+					parsedOp.Data = scr[i+2 : i+2+dataLen]
 				}
-				parsedOps = append(parsedOps, parsedOp)
-				return parsedOps, nil
 			}
-			// If we are in an conditional block, we continue parsing the other branches,
-			// therefore all data must adhere to push data rules.
+		case script.OpPUSHDATA2:
+			if len(scr) >= i+3 {
+				dataLen := int(binary.LittleEndian.Uint16(scr[i+1:]))
+				if len(scr) >= i+3+dataLen {
+					parsedOp.Data = scr[i+3 : i+3+dataLen]
+				}
+			}
+		case script.OpPUSHDATA4:
+			if len(scr) >= i+5 {
+				dataLen := int(binary.LittleEndian.Uint32(scr[i+1:]))
+				if len(scr) >= i+5+dataLen {
+					parsedOp.Data = scr[i+5 : i+5+dataLen]
+				}
+			}
+		default:
+			// Fixed length opcodes
+			if parsedOp.op.length > 1 && len(scr[i:]) >= parsedOp.op.length {
+				parsedOp.Data = scr[i+1 : i+parsedOp.op.length]
+			}
 		}
-
-		switch {
-		case parsedOp.op.length == 1:
-			i++
-		case parsedOp.op.length > 1:
-			if len(scr[i:]) < parsedOp.op.length {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s required %d bytes, script has %d remaining",
-					parsedOp.Name(), parsedOp.op.length, len(scr[i:]))
-			}
-			parsedOp.Data = scr[i+1 : i+parsedOp.op.length]
-			i += parsedOp.op.length
-		case parsedOp.op.length < 0:
-			var l uint
-			offset := i + 1
-			if len(scr[offset:]) < -parsedOp.op.length {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s required %d bytes, script has %d remaining",
-					parsedOp.Name(), parsedOp.op.length, len(scr[offset:]))
-			}
-			// Next -length bytes are little endian length of data.
-			switch parsedOp.op.length {
-			case -1:
-				l = uint(scr[offset])
-			case -2:
-				l = ((uint(scr[offset+1]) << 8) |
-					uint(scr[offset]))
-			case -4:
-				l = ((uint(scr[offset+3]) << 24) |
-					(uint(scr[offset+2]) << 16) |
-					(uint(scr[offset+1]) << 8) |
-					uint(scr[offset]))
-			default:
-				return nil, errs.NewError(errs.ErrMalformedPush, "invalid opcode length %d", parsedOp.op.length)
-			}
-
-			offset += -parsedOp.op.length
-			if int(l) > len(scr[offset:]) || int(l) < 0 {
-				return nil, errs.NewError(errs.ErrMalformedPush, "opcode %s pushes %d bytes, script has %d remaining",
-					parsedOp.Name(), l, len(scr[offset:]))
-			}
-
-			parsedOp.Data = scr[offset : offset+int(l)]
-			i += 1 - parsedOp.op.length + int(l)
+		
+		// Advance position using the same logic as first pass
+		newPos, err := advancePosition(scr, i, instruction)
+		if err != nil {
+			// This shouldn't happen since first pass validated
+			return nil, err
 		}
+		i = newPos
 
 		parsedOps = append(parsedOps, parsedOp)
 	}
