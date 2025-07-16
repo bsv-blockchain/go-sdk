@@ -9,6 +9,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,7 +35,7 @@ func createDecodeRedeem(
 	anyoneCanPay bool,
 ) {
 	ctx := context.Background()
-	
+
 	// Create template with the provided wallet
 	pushDrop := &pushdrop.PushDrop{
 		Wallet:     testWallet,
@@ -48,8 +49,8 @@ func createDecodeRedeem(
 		protocolID,
 		keyID,
 		counterparty,
-		false, // forSelf
-		true,  // includeSignature
+		false,               // forSelf
+		true,                // includeSignature
 		pushdrop.LockBefore, // lockPosition
 	)
 	require.NoError(t, err)
@@ -58,7 +59,7 @@ func createDecodeRedeem(
 	// Decode and verify
 	decoded := pushdrop.Decode(lockingScript)
 	require.NotNil(t, decoded)
-	
+
 	// In TypeScript version, signature is added to fields if includeSignatures is true
 	// So we need to compare without the signature field
 	expectedFields := fields
@@ -76,7 +77,7 @@ func createDecodeRedeem(
 			KeyID:        keyID,
 			Counterparty: counterparty,
 		},
-		ForSelf: false,
+		ForSelf: util.BoolPtr(false),
 	}, "test")
 	require.NoError(t, err)
 	assert.Equal(t, expectedPubKey.PublicKey.Compressed(), decoded.LockingPublicKey.Compressed())
@@ -99,8 +100,8 @@ func createDecodeRedeem(
 	satoshis := uint64(1)
 	sourceTx := transaction.NewTransaction()
 	sourceTx.AddOutput(&transaction.TransactionOutput{
-		Satoshis:       satoshis,
-		LockingScript:  lockingScript,
+		Satoshis:      satoshis,
+		LockingScript: lockingScript,
 	})
 
 	// Create spending transaction
@@ -114,7 +115,6 @@ func createDecodeRedeem(
 
 	// Set the unlocking script
 	spendTx.Inputs[0].UnlockingScript = unlockingScript
-
 
 	// Validate the script execution
 	err = interpreter.NewEngine().Execute(
@@ -136,7 +136,7 @@ func createDecodeRedeem(
 func TestPushDrop_TestVectors(t *testing.T) {
 	// Create a single wallet to use for all test vectors
 	testWallet := createTestWallet(t)
-	
+
 	tests := []struct {
 		name         string
 		fields       [][]byte
@@ -223,7 +223,7 @@ func TestPushDrop_TestVectors(t *testing.T) {
 			counterparty := wallet.Counterparty{
 				Type: wallet.CounterpartyTypeSelf,
 			}
-			
+
 			if tc.signOutputs == 0 {
 				tc.signOutputs = wallet.SignOutputsAll
 			}
@@ -272,8 +272,8 @@ func TestPushDrop_Lock(t *testing.T) {
 		protocolID,
 		keyID,
 		counterparty,
-		false, // forSelf
-		true,  // includeSignature
+		false,               // forSelf
+		true,                // includeSignature
 		pushdrop.LockBefore, // lockPosition
 	)
 	require.NoError(t, err)
@@ -282,7 +282,7 @@ func TestPushDrop_Lock(t *testing.T) {
 	// Decode and verify
 	decoded := pushdrop.Decode(lockingScript)
 	require.NotNil(t, decoded)
-	
+
 	// Check fields (without signature)
 	assert.Equal(t, fields, decoded.Fields[:len(fields)])
 
@@ -293,7 +293,7 @@ func TestPushDrop_Lock(t *testing.T) {
 			KeyID:        keyID,
 			Counterparty: counterparty,
 		},
-		ForSelf: false,
+		ForSelf: util.BoolPtr(false),
 	}, "test")
 	require.NoError(t, err)
 	assert.Equal(t, expectedPubKey.PublicKey.Compressed(), decoded.LockingPublicKey.Compressed())
@@ -329,8 +329,8 @@ func TestPushDrop_Unlock(t *testing.T) {
 		protocolID,
 		keyID,
 		counterparty,
-		false, // forSelf
-		true,  // includeSignature
+		false,               // forSelf
+		true,                // includeSignature
 		pushdrop.LockBefore, // lockPosition
 	)
 	require.NoError(t, err)
@@ -353,8 +353,8 @@ func TestPushDrop_Unlock(t *testing.T) {
 	satoshis := uint64(1)
 	sourceTx := transaction.NewTransaction()
 	sourceTx.AddOutput(&transaction.TransactionOutput{
-		Satoshis:       satoshis,
-		LockingScript:  lockingScript,
+		Satoshis:      satoshis,
+		LockingScript: lockingScript,
 	})
 
 	// Create spending transaction
@@ -368,7 +368,6 @@ func TestPushDrop_Unlock(t *testing.T) {
 
 	// Set the unlocking script
 	spendTx.Inputs[0].UnlockingScript = unlockingScript
-
 
 	// Validate the script execution
 	err = interpreter.NewEngine().Execute(
@@ -417,8 +416,8 @@ func TestPushDrop_Decode(t *testing.T) {
 		protocolID,
 		keyID,
 		counterparty,
-		false, // forSelf
-		true,  // includeSignature
+		false,               // forSelf
+		true,                // includeSignature
 		pushdrop.LockBefore, // lockPosition
 	)
 	require.NoError(t, err)
@@ -426,7 +425,7 @@ func TestPushDrop_Decode(t *testing.T) {
 	// Decode
 	decoded := pushdrop.Decode(lockingScript)
 	require.NotNil(t, decoded)
-	
+
 	// Verify fields (without signature)
 	assert.Equal(t, fields, decoded.Fields[:len(fields)])
 
@@ -437,10 +436,8 @@ func TestPushDrop_Decode(t *testing.T) {
 			KeyID:        keyID,
 			Counterparty: counterparty,
 		},
-		ForSelf: false,
+		ForSelf: util.BoolPtr(false),
 	}, "test")
 	require.NoError(t, err)
 	assert.Equal(t, expectedPubKey.PublicKey.Compressed(), decoded.LockingPublicKey.Compressed())
 }
-
-

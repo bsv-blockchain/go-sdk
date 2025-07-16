@@ -15,6 +15,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -257,7 +258,7 @@ func TestMasterCertificate(t *testing.T) {
 		verifierPrivateKey, _ := ec.NewPrivateKey()
 		// Use CompletedProtoWallet for the verifier
 		verifierWallet, _ := wallet.NewCompletedProtoWallet(verifierPrivateKey)
-		verifierIdentityKey, _ := verifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: false}, "go-sdk")
+		verifierIdentityKey, _ := verifierWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true, ForSelf: util.BoolPtr(false)}, "go-sdk")
 		verifierCounterparty := wallet.Counterparty{Type: wallet.CounterpartyTypeOther, Counterparty: verifierIdentityKey.PublicKey}
 
 		t.Run("should create a verifier keyring for specified fields", func(t *testing.T) {
