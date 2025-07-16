@@ -17,8 +17,8 @@ func TestDiscoverByIdentityKeyArgs(t *testing.T) {
 		name: "full args",
 		args: &wallet.DiscoverByIdentityKeyArgs{
 			IdentityKey:    tu.GetPKFromHex(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
-			Limit:          10,
-			Offset:         5,
+			Limit:          util.Uint32Ptr(10),
+			Offset:         util.Uint32Ptr(5),
 			SeekPermission: util.BoolPtr(true),
 		},
 	}, {

@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -177,7 +178,7 @@ func (kv *LocalKVStore) getOutputs(ctx context.Context, key string, limit int) (
 		Basket:  kv.context,
 		Tags:    []string{key},
 		Include: "entire transactions",
-		Limit:   uint32(limit),
+		Limit:   util.Uint32Ptr(uint32(limit)),
 	}
 	result, err := kv.wallet.ListOutputs(ctx, listArgs, kv.originator)
 	if err != nil {

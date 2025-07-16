@@ -3,8 +3,14 @@ package serializer
 import (
 	"fmt"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+)
+
+const (
+	internalizeActionProtocolWalletPayment   = 1
+	internalizeActionProtocolBasketInsertion = 2
 )
 
 func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte, error) {
@@ -18,32 +24,30 @@ func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte,
 	w.WriteVarInt(uint64(len(args.Outputs)))
 	for _, output := range args.Outputs {
 		w.WriteVarInt(uint64(output.OutputIndex))
-		w.WriteString(string(output.Protocol))
-
-		// Payment remittance
-		if output.PaymentRemittance != nil {
-			w.WriteByte(1) // present
-			w.WriteString(output.PaymentRemittance.DerivationPrefix)
-			w.WriteString(output.PaymentRemittance.DerivationSuffix)
-			w.WriteString(output.PaymentRemittance.SenderIdentityKey)
+		if output.Protocol == wallet.InternalizeProtocolWalletPayment {
+			// Payment remittance
+			if output.PaymentRemittance == nil {
+				return nil, fmt.Errorf("payment remittance is required for wallet payment protocol")
+			}
+			w.WriteByte(internalizeActionProtocolWalletPayment)
+			w.WriteBytes(output.PaymentRemittance.SenderIdentityKey.Compressed())
+			w.WriteIntBytes(output.PaymentRemittance.DerivationPrefix)
+			w.WriteIntBytes(output.PaymentRemittance.DerivationSuffix)
 		} else {
-			w.WriteByte(0) // not present
-		}
-
-		// Insertion remittance
-		if output.InsertionRemittance != nil {
-			w.WriteByte(1) // present
+			// Basket insertion remittance
+			if output.InsertionRemittance == nil {
+				return nil, fmt.Errorf("insertion remittance is required for basket insertion protocol")
+			}
+			w.WriteByte(internalizeActionProtocolBasketInsertion)
 			w.WriteString(output.InsertionRemittance.Basket)
 			w.WriteOptionalString(output.InsertionRemittance.CustomInstructions)
 			w.WriteStringSlice(output.InsertionRemittance.Tags)
-		} else {
-			w.WriteByte(0) // not present
 		}
 	}
 
 	// Description, labels, and seek permission
-	w.WriteString(args.Description)
 	w.WriteStringSlice(args.Labels)
+	w.WriteString(args.Description)
 	w.WriteOptionalBool(args.SeekPermission)
 
 	return w.Buf, nil
@@ -68,28 +72,28 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 			OutputIndex: r.ReadVarInt32(),
 		}
 
-		protocol, err := wallet.InternalizeProtocolFromString(r.ReadString())
-		if err != nil {
-			return nil, fmt.Errorf("error reading protocol: %w", err)
-		}
-		output.Protocol = protocol
-
 		// Payment remittance
-		if r.ReadByte() == 1 {
-			output.PaymentRemittance = &wallet.Payment{
-				DerivationPrefix:  r.ReadString(),
-				DerivationSuffix:  r.ReadString(),
-				SenderIdentityKey: r.ReadString(),
+		switch r.ReadByte() {
+		case internalizeActionProtocolWalletPayment:
+			output.Protocol = wallet.InternalizeProtocolWalletPayment
+			senderIdentityKey, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
+			if err != nil {
+				return nil, fmt.Errorf("error parsing sender identity key: %w", err)
 			}
-		}
-
-		// Insertion remittance
-		if r.ReadByte() == 1 {
+			output.PaymentRemittance = &wallet.Payment{
+				SenderIdentityKey: senderIdentityKey,
+				DerivationPrefix:  r.ReadIntBytes(),
+				DerivationSuffix:  r.ReadIntBytes(),
+			}
+		case internalizeActionProtocolBasketInsertion:
+			output.Protocol = wallet.InternalizeProtocolBasketInsertion
 			output.InsertionRemittance = &wallet.BasketInsertion{
 				Basket:             r.ReadString(),
 				CustomInstructions: r.ReadString(),
 				Tags:               r.ReadStringSlice(),
 			}
+		default:
+			return nil, fmt.Errorf("invalid internalize action protocol: %d", r.Err)
 		}
 
 		// Check error each loop
@@ -101,8 +105,8 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	}
 
 	// Description, labels, and seek permission
-	args.Description = r.ReadString()
 	args.Labels = r.ReadStringSlice()
+	args.Description = r.ReadString()
 	args.SeekPermission = r.ReadOptionalBool()
 
 	r.CheckComplete()

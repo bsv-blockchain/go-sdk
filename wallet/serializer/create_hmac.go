@@ -46,7 +46,7 @@ func DeserializeCreateHMACArgs(data []byte) (*wallet.CreateHMACArgs, error) {
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.PtrToBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read data
@@ -54,7 +54,7 @@ func DeserializeCreateHMACArgs(data []byte) (*wallet.CreateHMACArgs, error) {
 	args.Data = r.ReadBytes(int(dataLen))
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {
@@ -66,27 +66,17 @@ func DeserializeCreateHMACArgs(data []byte) (*wallet.CreateHMACArgs, error) {
 
 func SerializeCreateHMACResult(result *wallet.CreateHMACResult) ([]byte, error) {
 	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
-	w.WriteBytes(result.HMAC)
+	w.WriteBytes(result.HMAC[:])
 	return w.Buf, nil
 }
 
 func DeserializeCreateHMACResult(data []byte) (*wallet.CreateHMACResult, error) {
-	r := util.NewReaderHoldError(data)
+	if len(data) < 32 {
+		return nil, fmt.Errorf("data too short for HMAC, expected at least 32 bytes, got %d", len(data))
+	}
+
 	result := &wallet.CreateHMACResult{}
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("createHMAC failed with error byte %d", errorByte)
-	}
-
-	// Read hmac (remaining bytes)
-	result.HMAC = r.ReadRemaining()
-
-	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing CreateHMAC result: %w", r.Err)
-	}
+	copy(result.HMAC[:], data)
 
 	return result, nil
 }

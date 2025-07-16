@@ -70,7 +70,7 @@ func TestCreateHMACArgs(t *testing.T) {
 
 func TestCreateHMACResult(t *testing.T) {
 	t.Run("serialize/deserialize", func(t *testing.T) {
-		result := &wallet.CreateHMACResult{HMAC: []byte{1, 2, 3, 4}}
+		result := &wallet.CreateHMACResult{HMAC: [32]byte{1, 2, 3, 4}}
 		data, err := SerializeCreateHMACResult(result)
 		require.NoError(t, err)
 

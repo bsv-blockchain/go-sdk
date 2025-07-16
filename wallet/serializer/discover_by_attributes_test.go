@@ -18,8 +18,8 @@ func TestDiscoverByAttributesArgs(t *testing.T) {
 				"field1": "value1",
 				"field2": "value2",
 			},
-			Limit:          10,
-			Offset:         5,
+			Limit:          util.Uint32Ptr(10),
+			Offset:         util.Uint32Ptr(5),
 			SeekPermission: util.BoolPtr(true),
 		},
 	}, {

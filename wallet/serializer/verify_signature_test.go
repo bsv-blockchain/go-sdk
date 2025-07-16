@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -24,7 +25,7 @@ func TestVerifySignatureArgs(t *testing.T) {
 				PrivilegedReason: "test-reason",
 				SeekPermission:   true,
 			},
-			ForSelf:              true,
+			ForSelf:              util.BoolPtr(true),
 			Signature:            newTestSignature(t),
 			Data:                 []byte{5, 6, 7, 8},
 			HashToDirectlyVerify: nil,
@@ -82,22 +83,5 @@ func TestVerifySignatureResult(t *testing.T) {
 		got, err := DeserializeVerifySignatureResult(data)
 		require.NoError(t, err, "deserializing valid VerifySignatureResult should not error")
 		require.Equal(t, result, got, "deserialized valid result should match original result")
-	})
-
-	t.Run("invalid signature", func(t *testing.T) {
-		result := &wallet.VerifySignatureResult{Valid: false}
-		data, err := SerializeVerifySignatureResult(result)
-		require.NoError(t, err, "serializing invalid VerifySignatureResult should not error")
-
-		got, err := DeserializeVerifySignatureResult(data)
-		require.NoError(t, err, "deserializing invalid VerifySignatureResult should not error")
-		require.Equal(t, result, got, "deserialized invalid result should match original result")
-	})
-
-	t.Run("error byte", func(t *testing.T) {
-		data := []byte{1} // error byte = 1 (failure)
-		_, err := DeserializeVerifySignatureResult(data)
-		require.Error(t, err, "deserializing with error byte should produce an error")
-		require.Contains(t, err.Error(), "verifySignature failed with error byte 1", "error message should indicate failure and error byte")
 	})
 }

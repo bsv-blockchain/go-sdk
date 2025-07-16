@@ -29,27 +29,11 @@ func DeserializeGetHeaderArgs(data []byte) (*wallet.GetHeaderArgs, error) {
 }
 
 func SerializeGetHeaderResult(result *wallet.GetHeaderResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0
-	w.WriteBytes(result.Header)
-	return w.Buf, nil
+	return result.Header, nil
 }
 
 func DeserializeGetHeaderResult(data []byte) (*wallet.GetHeaderResult, error) {
-	r := util.NewReaderHoldError(data)
-
-	// Read error byte (must be 0 for success)
-	if errByte := r.ReadByte(); errByte != 0 {
-		return nil, fmt.Errorf("error byte indicates failure: %d", errByte)
-	}
-
-	// Read remaining bytes as header
-	headerBytes := r.ReadRemaining()
-	if r.Err != nil {
-		return nil, fmt.Errorf("error reading header bytes: %w", r.Err)
-	}
-
 	return &wallet.GetHeaderResult{
-		Header: headerBytes,
+		Header: data,
 	}, nil
 }

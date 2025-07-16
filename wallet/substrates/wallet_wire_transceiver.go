@@ -316,7 +316,7 @@ func (t *WalletWireTransceiver) IsAuthenticated(ctx context.Context, args any, o
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit is authenticated call: %w", err)
 	}
-	return serializer.DeserializeAuthenticatedResult(resp)
+	return serializer.DeserializeIsAuthenticatedResult(resp)
 }
 
 func (t *WalletWireTransceiver) WaitForAuthentication(ctx context.Context, args any, originator string) (*wallet.AuthenticatedResult, error) {
@@ -324,7 +324,7 @@ func (t *WalletWireTransceiver) WaitForAuthentication(ctx context.Context, args 
 	if err != nil {
 		return nil, fmt.Errorf("failed to transmit wait for authentication call: %w", err)
 	}
-	return serializer.DeserializeAuthenticatedResult(resp)
+	return serializer.DeserializeWaitAuthenticatedResult(resp)
 }
 
 func (t *WalletWireTransceiver) GetHeight(ctx context.Context, args any, originator string) (*wallet.GetHeightResult, error) {

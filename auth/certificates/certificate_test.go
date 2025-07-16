@@ -454,10 +454,10 @@ func TestCertificate(t *testing.T) {
 		serialBytes := tu.GetByte32FromString("test-wallet-serial")
 
 		walletCert := &wallet.Certificate{
-			Type:         typeBytes,
-			SerialNumber: serialBytes,
-			Subject:      sampleSubjectPubKey,
-			Certifier:    sampleCertifierPubKey,
+			Type:               typeBytes,
+			SerialNumber:       serialBytes,
+			Subject:            sampleSubjectPubKey,
+			Certifier:          sampleCertifierPubKey,
 			RevocationOutpoint: sampleRevocationOutpoint,
 			Fields: map[string]string{
 				"name":  "Alice",

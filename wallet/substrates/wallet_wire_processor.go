@@ -366,7 +366,7 @@ func (w *WalletWireProcessor) processIsAuthenticated(ctx context.Context, reques
 	if err != nil {
 		return nil, fmt.Errorf("failed to process is authenticated: %w", err)
 	}
-	return serializer.SerializeAuthenticatedResult(result)
+	return serializer.SerializeIsAuthenticatedResult(result)
 }
 
 func (w *WalletWireProcessor) processWaitForAuthentication(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {
@@ -374,7 +374,7 @@ func (w *WalletWireProcessor) processWaitForAuthentication(ctx context.Context, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to process wait for authentication: %w", err)
 	}
-	return serializer.SerializeAuthenticatedResult(result)
+	return serializer.SerializeWaitAuthenticatedResult(result)
 }
 
 func (w *WalletWireProcessor) processGetHeight(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {

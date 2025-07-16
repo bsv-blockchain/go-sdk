@@ -132,13 +132,17 @@ func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
 
 type aliasVerifySignatureArgs VerifySignatureArgs
 type jsonVerifySignatureArgs struct {
-	Signature Signature `json:"signature"`
+	Data                 BytesList `json:"data,omitempty"`
+	HashToDirectlyVerify BytesList `json:"hashToDirectlyVerify,omitempty"`
+	Signature            Signature `json:"signature"`
 	*aliasVerifySignatureArgs
 }
 
 // MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
 func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonVerifySignatureArgs{
+		Data:                     v.Data,
+		HashToDirectlyVerify:     v.HashToDirectlyVerify,
 		aliasVerifySignatureArgs: (*aliasVerifySignatureArgs)(&v),
 		Signature:                Signature(*v.Signature),
 	})
@@ -151,6 +155,8 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	v.Data = aux.Data
+	v.HashToDirectlyVerify = aux.HashToDirectlyVerify
 	v.Signature = (*ec.Signature)(&aux.Signature)
 	return nil
 }
@@ -631,7 +637,7 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 // Custom marshalling for AcquireCertificateArgs
 type aliasAcquireCertificateArgs AcquireCertificateArgs
 type jsonAcquireCertificateArgs struct {
-	Signature BytesHex `json:"signature"`
+	Signature BytesHex `json:"signature,omitempty"`
 	*aliasAcquireCertificateArgs
 }
 
@@ -685,5 +691,68 @@ func (r *GetHeaderResult) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("error unmarshaling GetHeaderResult: %w", err)
 	}
 	r.Header = []byte(aux.Header)
+	return nil
+}
+
+type aliasVerifyHMACArgs VerifyHMACArgs
+type jsonVerifyHMACArgs struct {
+	Data BytesList `json:"data"`
+	HMAC BytesList `json:"hmac"`
+	*aliasVerifyHMACArgs
+}
+
+func (v VerifyHMACArgs) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&jsonVerifyHMACArgs{
+		Data:                v.Data,
+		HMAC:                v.HMAC[:],
+		aliasVerifyHMACArgs: (*aliasVerifyHMACArgs)(&v),
+	})
+}
+
+func (v *VerifyHMACArgs) UnmarshalJSON(data []byte) error {
+	aux := &jsonVerifyHMACArgs{
+		aliasVerifyHMACArgs: (*aliasVerifyHMACArgs)(v),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling VerifyHMACArgs: %w", err)
+	}
+
+	v.Data = aux.Data
+	if len(aux.HMAC) != 32 {
+		return fmt.Errorf("expected HMAC to be 32 bytes, got %d", len(aux.HMAC))
+	}
+	copy(v.HMAC[:], aux.HMAC)
+
+	return nil
+}
+
+type aliasCreateHMACResult CreateHMACResult
+type jsonCreateHMACResult struct {
+	HMAC BytesList `json:"hmac"`
+	*aliasCreateHMACResult
+}
+
+func (c CreateHMACResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&jsonCreateHMACResult{
+		HMAC:                  c.HMAC[:],
+		aliasCreateHMACResult: (*aliasCreateHMACResult)(&c),
+	})
+}
+
+func (c *CreateHMACResult) UnmarshalJSON(data []byte) error {
+	aux := &jsonCreateHMACResult{
+		aliasCreateHMACResult: (*aliasCreateHMACResult)(c),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling CreateHMACResult: %w", err)
+	}
+
+	if len(aux.HMAC) != 32 {
+		return fmt.Errorf("expected HMAC to be 32 bytes, got %d", len(aux.HMAC))
+	}
+	copy(c.HMAC[:], aux.HMAC)
+
 	return nil
 }
