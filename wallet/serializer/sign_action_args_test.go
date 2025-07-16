@@ -21,11 +21,11 @@ func TestSerializeSignActionArgs(t *testing.T) {
 				Spends: map[uint32]wallet.SignActionSpend{
 					0: {
 						UnlockingScript: []byte{0xab, 0xcd, 0xef},
-						SequenceNumber:  123,
+						SequenceNumber:  util.Uint32Ptr(123),
 					},
 					1: {
 						UnlockingScript: []byte{0xde, 0xad, 0xbe, 0xef},
-						SequenceNumber:  456,
+						SequenceNumber:  util.Uint32Ptr(456),
 					},
 				},
 				Reference: []byte("ref123"),
@@ -46,7 +46,7 @@ func TestSerializeSignActionArgs(t *testing.T) {
 				Spends: map[uint32]wallet.SignActionSpend{
 					0: {
 						UnlockingScript: []byte{0x00},
-						SequenceNumber:  0,
+						SequenceNumber:  nil,
 					},
 				},
 			},
@@ -109,11 +109,11 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 				Spends: map[uint32]wallet.SignActionSpend{
 					0: {
 						UnlockingScript: script,
-						SequenceNumber:  123,
+						SequenceNumber:  util.Uint32Ptr(123),
 					},
 					1: {
 						UnlockingScript: script,
-						SequenceNumber:  456,
+						SequenceNumber:  util.Uint32Ptr(456),
 					},
 				},
 				Reference: ref,

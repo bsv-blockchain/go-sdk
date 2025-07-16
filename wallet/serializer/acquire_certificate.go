@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+	"sort"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -25,20 +26,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	w.WriteBytes(args.Certifier.Compressed())
 
 	// Encode fields
-	fieldEntries := make([]string, 0, len(args.Fields))
-	// TODO: Iterating over maps doesn't guarantee order to be consistent
-	for k := range args.Fields {
-		fieldEntries = append(fieldEntries, k)
-	}
-	w.WriteVarInt(uint64(len(fieldEntries)))
-	for _, key := range fieldEntries {
-		keyBytes := []byte(key)
-		w.WriteVarInt(uint64(len(keyBytes)))
-		w.WriteBytes(keyBytes)
-		valueBytes := []byte(args.Fields[key])
-		w.WriteVarInt(uint64(len(valueBytes)))
-		w.WriteBytes(valueBytes)
-	}
+	w.WriteStringMap(args.Fields)
 
 	// Encode privileged params
 	w.WriteBytes(encodePrivilegedParams(args.Privileged, args.PrivilegedReason))
@@ -48,7 +36,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	case wallet.AcquisitionProtocolDirect:
 		w.WriteByte(acquisitionProtocolDirect)
 		// Serial number (base64)
-		if args.SerialNumber == [32]byte{} {
+		if args.SerialNumber == nil {
 			return nil, fmt.Errorf("serialNumber is empty")
 		}
 		w.WriteBytes(args.SerialNumber[:])
@@ -64,9 +52,15 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		w.WriteIntBytes(sigBytes)
 
 		// Keyring revealer
+		if args.KeyringRevealer == nil {
+			return nil, fmt.Errorf("keyringRevealer cannot be nil")
+		}
 		if args.KeyringRevealer.Certifier {
 			w.WriteByte(keyRingRevealerCertifier)
 		} else {
+			if args.KeyringRevealer.PubKey == nil {
+				return nil, fmt.Errorf("keyringRevealer PubKey cannot be nil if not certifier")
+			}
 			w.WriteBytes(args.KeyringRevealer.PubKey.Compressed())
 		}
 
@@ -75,11 +69,10 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 		for k := range args.KeyringForSubject {
 			keyringKeys = append(keyringKeys, k)
 		}
+		sort.Strings(keyringKeys)
 		w.WriteVarInt(uint64(len(keyringKeys)))
 		for _, key := range keyringKeys {
-			keyBytes := []byte(key)
-			w.WriteVarInt(uint64(len(keyBytes)))
-			w.WriteBytes(keyBytes)
+			w.WriteIntBytes([]byte(key))
 			if err := w.WriteIntFromBase64(args.KeyringForSubject[key]); err != nil {
 				return nil, fmt.Errorf("invalid keyringForSubject value base64: %w", err)
 			}
@@ -87,9 +80,7 @@ func SerializeAcquireCertificateArgs(args *wallet.AcquireCertificateArgs) ([]byt
 	case wallet.AcquisitionProtocolIssuance:
 		w.WriteByte(acquisitionProtocolIssuance)
 		// Certifier URL
-		urlBytes := []byte(args.CertifierUrl)
-		w.WriteVarInt(uint64(len(urlBytes)))
-		w.WriteBytes(urlBytes)
+		w.WriteString(args.CertifierUrl)
 	default:
 		return nil, fmt.Errorf("invalid acquisition protocol: %s", args.AcquisitionProtocol)
 	}
@@ -115,8 +106,8 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		args.Fields = make(map[string]string, fieldsLength)
 	}
 	for i := uint64(0); i < fieldsLength; i++ {
-		fieldName := string(r.ReadIntBytes())
-		fieldValue := string(r.ReadIntBytes())
+		fieldName := r.ReadString()
+		fieldValue := r.ReadString()
 
 		if r.Err != nil {
 			return nil, fmt.Errorf("error reading field %s: %w", fieldName, r.Err)
@@ -141,6 +132,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	if args.AcquisitionProtocol == wallet.AcquisitionProtocolDirect {
 		// Read serial number
+		args.SerialNumber = new(wallet.SerialNumber)
 		copy(args.SerialNumber[:], r.ReadBytes(sizeSerial))
 
 		// Read revocation outpoint
@@ -163,7 +155,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		// Read keyring revealer
 		keyringRevealerIdentifier := r.ReadByte()
 		if keyringRevealerIdentifier == keyRingRevealerCertifier {
-			args.KeyringRevealer = wallet.KeyringRevealer{
+			args.KeyringRevealer = &wallet.KeyringRevealer{
 				Certifier: true,
 			}
 		} else {
@@ -173,7 +165,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 			if err != nil {
 				return nil, fmt.Errorf("error parsing keyring revealer public key: %w", err)
 			}
-			args.KeyringRevealer.PubKey = parsedKeyringPubKey
+			args.KeyringRevealer = &wallet.KeyringRevealer{PubKey: parsedKeyringPubKey}
 		}
 
 		// Read keyring for subject
@@ -183,10 +175,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		}
 
 		for i := uint64(0); i < keyringEntriesLength; i++ {
-			fieldKeyLength := r.ReadVarInt()
-			fieldKeyBytes := r.ReadBytes(int(fieldKeyLength))
-			fieldKey := string(fieldKeyBytes)
-
+			fieldKey := r.ReadString()
 			args.KeyringForSubject[fieldKey] = r.ReadBase64Int()
 			if r.Err != nil {
 				return nil, fmt.Errorf("error reading keyring for subject %s: %w", fieldKey, r.Err)
@@ -194,9 +183,7 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		}
 	} else {
 		// Read certifier URL
-		certifierUrlLength := r.ReadVarInt()
-		certifierUrlBytes := r.ReadBytes(int(certifierUrlLength))
-		args.CertifierUrl = string(certifierUrlBytes)
+		args.CertifierUrl = r.ReadString()
 	}
 
 	r.CheckComplete()

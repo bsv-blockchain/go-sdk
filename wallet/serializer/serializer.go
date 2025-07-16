@@ -18,7 +18,7 @@ import (
 // encodeOutpoint converts outpoint string "txid.index" to binary format
 func encodeOutpoint(outpoint *transaction.Outpoint) []byte {
 	writer := util.NewWriter()
-	writer.WriteBytes(outpoint.Txid[:])
+	writer.WriteBytesReverse(outpoint.Txid[:])
 	writer.WriteVarInt(uint64(outpoint.Index))
 	return writer.Buf
 }
@@ -57,7 +57,7 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 
 	outpoints := make([]transaction.Outpoint, 0, count)
 	for i := uint64(0); i < count; i++ {
-		txBytes, err := r.ReadBytes(chainhash.HashSize)
+		txBytes, err := r.ReadBytesReverse(chainhash.HashSize)
 		if err != nil {
 			return nil, err
 		}
@@ -79,7 +79,7 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 
 // decodeOutpoint converts binary outpoint data to Outpoint object
 func decodeOutpoint(reader *util.Reader) (*transaction.Outpoint, error) {
-	txidBytes, err := reader.ReadBytes(32)
+	txidBytes, err := reader.ReadBytesReverse(32)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read txid: %w", err)
 	}
@@ -176,23 +176,13 @@ func decodeProtocol(r *util.ReaderHoldError) (wallet.Protocol, error) {
 func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 	w := util.NewWriter()
 
-	// Write privileged flag
-	if privileged != nil {
-		if *privileged {
-			w.WriteByte(1)
-		} else {
-			w.WriteByte(0)
-		}
-	} else {
-		w.WriteNegativeOne()
-	}
+	w.WriteOptionalBool(privileged)
 
 	// Write privileged reason
 	if privilegedReason != "" {
-		w.WriteByte(byte(len(privilegedReason)))
 		w.WriteString(privilegedReason)
 	} else {
-		w.WriteNegativeOne()
+		w.WriteNegativeOneByte()
 	}
 
 	return w.Buf
@@ -201,25 +191,18 @@ func encodePrivilegedParams(privileged *bool, privilegedReason string) []byte {
 // decodePrivilegedParams deserializes privileged flag and reason matching TypeScript format
 func decodePrivilegedParams(r *util.ReaderHoldError) (*bool, string) {
 	// Read privileged flag
-	var privileged *bool
-	flag := r.ReadByte()
-	if !util.IsNegativeOneByte(flag) {
-		val := flag == 1
-		privileged = &val
-	} else {
-		// Skip 8 more bytes if flag was 0xFF (TypeScript writes 9 bytes of 0xFF)
-		r.ReadBytes(8)
+	privileged := r.ReadOptionalBool()
+
+	// Read privileged reason
+	b := r.ReadByte()
+	// Technically if string length > MaxInt32 it will prefix with 0xFF which will get interpreted as NegativeOneByte
+	// Since that would be an extremely long string (4 billion characters), this should be safe
+	if b == util.NegativeOneByte {
+		return privileged, ""
 	}
 
-	// Read privileged reason length
-	var privilegedReason string
-	reasonLen := r.ReadByte()
-	if !util.IsNegativeOneByte(reasonLen) {
-		privilegedReason = r.ReadString()
-	} else {
-		// Skip 8 more bytes if length was 0xFF (TypeScript writes 9 bytes of 0xFF)
-		r.ReadBytes(8)
-	}
+	r.Reader.Pos-- // Move back one byte to read the string correctly
+	privilegedReason := r.ReadString()
 
 	return privileged, privilegedReason
 }

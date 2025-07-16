@@ -30,7 +30,7 @@ func TestGetNetworkResult(t *testing.T) {
 			// Test serialization
 			data, err := SerializeGetNetworkResult(tt.result)
 			require.NoError(t, err)
-			require.Equal(t, 2, len(data)) // error byte + network byte
+			require.Equal(t, 1, len(data)) // error byte + network byte
 
 			// Test deserialization
 			got, err := DeserializeGetNetworkResult(data)

@@ -2,16 +2,16 @@ package serializer
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 const (
-	queryModeAnyCode uint8 = 1
-	queryModeAllCode uint8 = 2
+	labelQueryModeAnyCode uint8 = 1
+	labelQueryModeAllCode uint8 = 2
 )
 
 func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
@@ -23,9 +23,9 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	// Serialize labelQueryMode
 	switch args.LabelQueryMode {
 	case wallet.QueryModeAny:
-		w.WriteByte(queryModeAnyCode)
+		w.WriteByte(labelQueryModeAnyCode)
 	case wallet.QueryModeAll:
-		w.WriteByte(queryModeAllCode)
+		w.WriteByte(labelQueryModeAllCode)
 	case "":
 		w.WriteNegativeOneByte()
 	default:
@@ -41,7 +41,7 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	w.WriteOptionalBool(args.IncludeOutputLockingScripts)
 
 	// Serialize limit, offset, and seekPermission
-	if args.Limit > wallet.MaxActionsLimit {
+	if args.Limit != nil && *args.Limit > wallet.MaxActionsLimit {
 		return nil, fmt.Errorf("limit exceeds maximum allowed value: %d", args.Limit)
 	}
 	w.WriteOptionalUint32(args.Limit)
@@ -60,9 +60,9 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 
 	// Deserialize labelQueryMode
 	switch r.ReadByte() {
-	case queryModeAnyCode:
+	case labelQueryModeAnyCode:
 		args.LabelQueryMode = wallet.QueryModeAny
-	case queryModeAllCode:
+	case labelQueryModeAllCode:
 		args.LabelQueryMode = wallet.QueryModeAll
 	case util.NegativeOneByte:
 		args.LabelQueryMode = ""
@@ -107,14 +107,18 @@ const (
 func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error) {
 	w := util.NewWriter()
 
+	if int(result.TotalActions) != len(result.Actions) {
+		return nil, fmt.Errorf("totalActions %d does not match length of actions %d",
+			result.TotalActions, len(result.Actions))
+	}
+
 	// Serialize totalActions
 	w.WriteVarInt(uint64(result.TotalActions))
 
 	// Serialize actions
-	w.WriteVarInt(uint64(len(result.Actions)))
 	for _, action := range result.Actions {
 		// Serialize basic action fields
-		w.WriteBytes(action.Txid[:])
+		w.WriteBytesReverse(action.Txid[:])
 		w.WriteVarInt(uint64(action.Satoshis))
 
 		// Serialize status
@@ -145,7 +149,11 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		w.WriteVarInt(uint64(action.LockTime))
 
 		// Serialize inputs
-		w.WriteVarInt(uint64(len(action.Inputs)))
+		if len(action.Inputs) == 0 {
+			w.WriteNegativeOne()
+		} else {
+			w.WriteVarInt(uint64(len(action.Inputs)))
+		}
 		for _, input := range action.Inputs {
 			w.WriteBytes(encodeOutpoint(&input.SourceOutpoint))
 			w.WriteVarInt(input.SourceSatoshis)
@@ -161,7 +169,11 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 		}
 
 		// Serialize outputs
-		w.WriteVarInt(uint64(len(action.Outputs)))
+		if len(action.Outputs) == 0 {
+			w.WriteNegativeOne()
+		} else {
+			w.WriteVarInt(uint64(len(action.Outputs)))
+		}
 		for _, output := range action.Outputs {
 			w.WriteVarInt(uint64(output.OutputIndex))
 			w.WriteVarInt(output.Satoshis)
@@ -187,13 +199,12 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 	result.TotalActions = r.ReadVarInt32()
 
 	// Deserialize actions
-	actionCount := r.ReadVarInt()
-	result.Actions = make([]wallet.Action, 0, actionCount)
-	for i := uint64(0); i < actionCount; i++ {
+	result.Actions = make([]wallet.Action, 0, result.TotalActions)
+	for i := uint32(0); i < result.TotalActions; i++ {
 		action := wallet.Action{}
 
 		// Deserialize basic action fields
-		copy(action.Txid[:], r.ReadBytes(chainhash.HashSize))
+		copy(action.Txid[:], r.ReadBytesReverse(chainhash.HashSize))
 		action.Satoshis = int64(r.ReadVarInt())
 
 		// Deserialize status
@@ -226,7 +237,11 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 
 		// Deserialize inputs
 		inputCount := r.ReadVarInt()
-		action.Inputs = make([]wallet.ActionInput, 0, inputCount)
+		if inputCount == math.MaxUint64 {
+			inputCount = 0
+		} else {
+			action.Inputs = make([]wallet.ActionInput, 0, inputCount)
+		}
 		for j := uint64(0); j < inputCount; j++ {
 			input := wallet.ActionInput{}
 
@@ -253,7 +268,11 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 
 		// Deserialize outputs
 		outputCount := r.ReadVarInt()
-		action.Outputs = make([]wallet.ActionOutput, 0, outputCount)
+		if outputCount == math.MaxUint64 {
+			outputCount = 0
+		} else {
+			action.Outputs = make([]wallet.ActionOutput, 0, outputCount)
+		}
 		for k := uint64(0); k < outputCount; k++ {
 			output := wallet.ActionOutput{}
 

@@ -7,11 +7,8 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-func SerializeAuthenticatedResult(result *wallet.AuthenticatedResult) ([]byte, error) {
+func SerializeIsAuthenticatedResult(result *wallet.AuthenticatedResult) ([]byte, error) {
 	w := util.NewWriter()
-
-	// Error byte (0 for success)
-	w.WriteByte(0)
 
 	// Authenticated flag (1=true, 0=false)
 	if result.Authenticated {
@@ -23,20 +20,25 @@ func SerializeAuthenticatedResult(result *wallet.AuthenticatedResult) ([]byte, e
 	return w.Buf, nil
 }
 
-func DeserializeAuthenticatedResult(data []byte) (*wallet.AuthenticatedResult, error) {
-	if len(data) != 2 {
+func DeserializeIsAuthenticatedResult(data []byte) (*wallet.AuthenticatedResult, error) {
+	if len(data) != 1 {
 		return nil, fmt.Errorf("invalid data length for authenticated result")
-	}
-
-	// First byte is error code (0=success)
-	if data[0] != 0 {
-		return nil, fmt.Errorf("error byte indicates failure")
 	}
 
 	// Second byte is authenticated flag
 	result := &wallet.AuthenticatedResult{
-		Authenticated: data[1] == 1,
+		Authenticated: data[0] == 1,
 	}
 
 	return result, nil
+}
+
+func SerializeWaitAuthenticatedResult(_ *wallet.AuthenticatedResult) ([]byte, error) {
+	return nil, nil
+}
+
+func DeserializeWaitAuthenticatedResult(_ []byte) (*wallet.AuthenticatedResult, error) {
+	return &wallet.AuthenticatedResult{
+		Authenticated: true,
+	}, nil
 }

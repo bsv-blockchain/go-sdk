@@ -9,6 +9,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -66,7 +67,7 @@ func (p *PushDropTemplate) Lock(
 			KeyID:        keyID,
 			Counterparty: counterparty,
 		},
-		ForSelf: forSelf,
+		ForSelf: util.BoolPtr(forSelf),
 	}, p.Originator)
 	if err != nil {
 		return nil, err

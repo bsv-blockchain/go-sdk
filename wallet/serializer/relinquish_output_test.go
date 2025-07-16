@@ -54,14 +54,4 @@ func TestRelinquishOutputResult(t *testing.T) {
 		require.NoError(t, err, "deserializing successful RelinquishOutputResult should not error")
 		require.Equal(t, result, got, "deserialized successful result should match original")
 	})
-
-	t.Run("failed relinquish", func(t *testing.T) {
-		result := &wallet.RelinquishOutputResult{Relinquished: false}
-		data, err := SerializeRelinquishOutputResult(result)
-		require.NoError(t, err, "serializing failed RelinquishOutputResult should not error")
-
-		got, err := DeserializeRelinquishOutputResult(data)
-		require.NoError(t, err, "deserializing failed RelinquishOutputResult should not error")
-		require.Equal(t, result, got, "deserialized failed result should match original")
-	})
 }

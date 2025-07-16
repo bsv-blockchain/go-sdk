@@ -53,7 +53,7 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.PtrToBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read data type flag and content
@@ -71,7 +71,7 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 	}
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {
@@ -83,7 +83,6 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 
 func SerializeCreateSignatureResult(result *wallet.CreateSignatureResult) ([]byte, error) {
 	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
 	w.WriteBytes(result.Signature.Serialize())
 	return w.Buf, nil
 }
@@ -91,12 +90,6 @@ func SerializeCreateSignatureResult(result *wallet.CreateSignatureResult) ([]byt
 func DeserializeCreateSignatureResult(data []byte) (*wallet.CreateSignatureResult, error) {
 	r := util.NewReaderHoldError(data)
 	result := &wallet.CreateSignatureResult{}
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("createSignature failed with error byte %d", errorByte)
-	}
 
 	// Read signature (remaining bytes)
 	sig, err := ec.ParseSignature(r.ReadRemaining())

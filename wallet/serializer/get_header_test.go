@@ -68,11 +68,3 @@ func TestGetHeaderResult(t *testing.T) {
 		})
 	}
 }
-
-func TestGetHeaderResultError(t *testing.T) {
-	// Test error byte handling
-	data := []byte{1} // Error byte = 1
-	_, err := DeserializeGetHeaderResult(data)
-	require.Error(t, err, "deserializing with error byte should produce an error")
-	require.Contains(t, err.Error(), "error byte indicates failure", "error message should indicate failure")
-}

@@ -81,13 +81,15 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 
 func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]byte, error) {
 	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
+
+	if result.TotalCertificates != uint32(len(result.Certificates)) {
+		return nil, fmt.Errorf("total certificates %d does not match length of certificates %d", result.TotalCertificates, len(result.Certificates))
+	}
 
 	// Write total certificates
 	w.WriteVarInt(uint64(result.TotalCertificates))
 
 	// Write certificates
-	w.WriteVarInt(uint64(len(result.Certificates)))
 	for _, cert := range result.Certificates {
 		certBytes, err := SerializeCertificate(&cert.Certificate)
 		if err != nil {
@@ -123,21 +125,14 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 	r := util.NewReaderHoldError(data)
 	result := &wallet.ListCertificatesResult{}
 
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("listCertificates failed with error byte %d", errorByte)
-	}
-
 	// Read total certificates
 	result.TotalCertificates = uint32(r.ReadVarInt())
 
 	// Read certificates
-	certCount := r.ReadVarInt()
-	if certCount > 0 {
-		result.Certificates = make([]wallet.CertificateResult, 0, certCount)
+	if result.TotalCertificates > 0 {
+		result.Certificates = make([]wallet.CertificateResult, 0, result.TotalCertificates)
 	}
-	for i := uint64(0); i < certCount; i++ {
+	for i := uint32(0); i < result.TotalCertificates; i++ {
 		cert, err := DeserializeCertificate(r.ReadIntBytes())
 		if err != nil {
 			return nil, fmt.Errorf("error deserializing certificate: %w", err)

@@ -74,3 +74,51 @@ func TestSymmetricKeyDecryption(t *testing.T) {
 
 	}
 }
+
+func TestSymmetricKeyWith31ByteKeyEncryption(t *testing.T) {
+	// Use a private key that generates a 31-byte X coordinate
+	privKey, err := PrivateKeyFromWif("L4B2postXdaP7TiUrUBYs53Fqzheu7WhSoQVPuY8qBdoBeEwbmZx")
+	require.NoError(t, err, "Failed to create private key from WIF")
+
+	pubKey := privKey.PubKey()
+	keyBytes := pubKey.X.Bytes()
+
+	// Verify this is indeed a 31-byte key
+	require.Equal(t, 31, len(keyBytes), "Expected 31-byte key")
+
+	symmetricKey := NewSymmetricKey(keyBytes)
+	plaintext := []byte("test message")
+
+	// Test encryption
+	ciphertext, err := symmetricKey.Encrypt(plaintext)
+	require.NoError(t, err, "Failed to encrypt with 31-byte key")
+
+	// Test decryption
+	decrypted, err := symmetricKey.Decrypt(ciphertext)
+	require.NoError(t, err, "Failed to decrypt with 31-byte key")
+	require.Equal(t, plaintext, decrypted, "Decrypted text does not match original")
+}
+
+func TestSymmetricKeyWith32ByteKeyEncryption(t *testing.T) {
+	// Use a private key that generates a 32-byte X coordinate
+	privKey, err := PrivateKeyFromWif("KyLGEhYicSoGchHKmVC2fUx2MRrHzWqvwBFLLT4DZB93Nv5DxVR9")
+	require.NoError(t, err, "Failed to create private key from WIF")
+
+	pubKey := privKey.PubKey()
+	keyBytes := pubKey.X.Bytes()
+
+	// Verify this is indeed a 32-byte key
+	require.Equal(t, 32, len(keyBytes), "Expected 32-byte key")
+
+	symmetricKey := NewSymmetricKey(keyBytes)
+	plaintext := []byte("test message")
+
+	// Test encryption
+	ciphertext, err := symmetricKey.Encrypt(plaintext)
+	require.NoError(t, err, "Failed to encrypt with 32-byte key")
+
+	// Test decryption
+	decrypted, err := symmetricKey.Decrypt(ciphertext)
+	require.NoError(t, err, "Failed to decrypt with 32-byte key")
+	require.Equal(t, plaintext, decrypted, "Decrypted text does not match original")
+}

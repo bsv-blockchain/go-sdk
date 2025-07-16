@@ -1,0 +1,14 @@
+{
+  "json": {
+    "type": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXN0LXR5cGU=",
+    "certifier": "0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1",
+    "acquisitionProtocol": "issuance",
+    "fields": {
+      "email": "alice@example.com",
+      "name": "Alice"
+    },
+    "certifierUrl": "https://certifier.example.com",
+    "privileged": false
+  },
+  "wire": "11000000000000000000000000000000000000000000000000746573742d747970650294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a10205656d61696c11616c696365406578616d706c652e636f6d046e616d6505416c69636500ff021d68747470733a2f2f6365727469666965722e6578616d706c652e636f6d"
+}

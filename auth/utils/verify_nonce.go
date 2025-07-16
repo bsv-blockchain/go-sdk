@@ -43,8 +43,8 @@ func VerifyNonce(
 			Counterparty: counterparty,
 		},
 		Data: data,
-		HMAC: hmac,
 	}
+	copy(args.HMAC[:], hmac)
 
 	// Verify the hmac
 	result, err := w.VerifyHMAC(ctx, args, "")

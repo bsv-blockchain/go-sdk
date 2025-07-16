@@ -105,8 +105,8 @@ type DecryptResult struct {
 // It extends EncryptionArgs with flags to specify identity key or derived key behavior.
 type GetPublicKeyArgs struct {
 	EncryptionArgs
-	IdentityKey bool `json:"identityKey"`
-	ForSelf     bool `json:"forSelf,omitempty"`
+	IdentityKey bool  `json:"identityKey,omitempty"`
+	ForSelf     *bool `json:"forSelf,omitempty"`
 }
 
 // GetPublicKeyResult contains the result of a public key retrieval operation.
@@ -141,10 +141,10 @@ var (
 // It can verify against either raw data (which will be hashed) or a pre-computed hash.
 type VerifySignatureArgs struct {
 	EncryptionArgs
-	Data                 BytesList     `json:"data,omitempty"`
-	HashToDirectlyVerify BytesList     `json:"hashToDirectlyVerify,omitempty"`
+	Data                 []byte        `json:"data,omitempty"`
+	HashToDirectlyVerify []byte        `json:"hashToDirectlyVerify,omitempty"`
 	Signature            *ec.Signature `json:"-"` // Ignore original field for JSON
-	ForSelf              bool          `json:"forSelf,omitempty"`
+	ForSelf              *bool         `json:"forSelf,omitempty"`
 }
 
 // CreateHMACArgs contains parameters for creating an HMAC.
@@ -156,15 +156,15 @@ type CreateHMACArgs struct {
 
 // CreateHMACResult contains the result of an HMAC creation operation.
 type CreateHMACResult struct {
-	HMAC BytesList `json:"hmac"`
+	HMAC [32]byte `json:"hmac"`
 }
 
 // VerifyHMACArgs contains parameters for verifying an HMAC.
 // It extends EncryptionArgs with the data and HMAC to be verified.
 type VerifyHMACArgs struct {
 	EncryptionArgs
-	Data BytesList `json:"data"`
-	HMAC BytesList `json:"hmac"`
+	Data []byte   `json:"data"`
+	HMAC [32]byte `json:"hmac"`
 }
 
 // VerifyHMACResult contains the result of an HMAC verification operation.

@@ -7,6 +7,14 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
+const (
+	tagQueryModeAllCode uint8 = 1
+	tagQueryModeAnyCode uint8 = 2
+
+	outputIncludeLockingScriptsCode     uint8 = 1
+	outputIncludeEntireTransactionsCode uint8 = 2
+)
+
 func SerializeListOutputsArgs(args *wallet.ListOutputsArgs) ([]byte, error) {
 	w := util.NewWriter()
 
@@ -15,17 +23,32 @@ func SerializeListOutputsArgs(args *wallet.ListOutputsArgs) ([]byte, error) {
 
 	// Tags and query mode
 	w.WriteStringSlice(args.Tags)
-	w.WriteString(string(args.TagQueryMode))
+	switch args.TagQueryMode {
+	case wallet.QueryModeAll:
+		w.WriteByte(tagQueryModeAllCode)
+	case wallet.QueryModeAny:
+		w.WriteByte(tagQueryModeAnyCode)
+	default:
+		w.WriteNegativeOneByte()
+	}
 
 	// Include options
-	w.WriteString(string(args.Include))
+	switch args.Include {
+	case wallet.OutputIncludeLockingScripts:
+		w.WriteByte(outputIncludeLockingScriptsCode)
+	case wallet.OutputIncludeEntireTransactions:
+		w.WriteByte(outputIncludeEntireTransactionsCode)
+	default:
+		w.WriteNegativeOneByte()
+	}
+
 	w.WriteOptionalBool(args.IncludeCustomInstructions)
 	w.WriteOptionalBool(args.IncludeTags)
 	w.WriteOptionalBool(args.IncludeLabels)
 
 	// Pagination
-	w.WriteVarInt(uint64(args.Limit))
-	w.WriteVarInt(uint64(args.Offset))
+	w.WriteOptionalUint32(args.Limit)
+	w.WriteOptionalUint32(args.Offset)
 	w.WriteOptionalBool(args.SeekPermission)
 
 	return w.Buf, nil
@@ -41,23 +64,25 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 		return nil, fmt.Errorf("error reading basket/tags: %w", r.Err)
 	}
 
-	qm, err := wallet.QueryModeFromString(r.ReadString())
-	if err != nil {
-		return nil, fmt.Errorf("error reading tag query mode: %w", err)
+	switch r.ReadByte() {
+	case tagQueryModeAllCode:
+		args.TagQueryMode = wallet.QueryModeAll
+	case tagQueryModeAnyCode:
+		args.TagQueryMode = wallet.QueryModeAny
 	}
-	args.TagQueryMode = qm
 
-	inc, err := wallet.OutputIncludeFromString(r.ReadString())
-	if err != nil {
-		return nil, fmt.Errorf("error reading include option: %w", err)
+	switch r.ReadByte() {
+	case outputIncludeLockingScriptsCode:
+		args.Include = wallet.OutputIncludeLockingScripts
+	case outputIncludeEntireTransactionsCode:
+		args.Include = wallet.OutputIncludeEntireTransactions
 	}
-	args.Include = inc
 
 	args.IncludeCustomInstructions = r.ReadOptionalBool()
 	args.IncludeTags = r.ReadOptionalBool()
 	args.IncludeLabels = r.ReadOptionalBool()
-	args.Limit = r.ReadVarInt32()
-	args.Offset = r.ReadVarInt32()
+	args.Limit = r.ReadOptionalUint32()
+	args.Offset = r.ReadOptionalUint32()
 	args.SeekPermission = r.ReadOptionalBool()
 
 	r.CheckComplete()
@@ -71,27 +96,31 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 func SerializeListOutputsResult(result *wallet.ListOutputsResult) ([]byte, error) {
 	w := util.NewWriter()
 
+	if uint32(len(result.Outputs)) != result.TotalOutputs {
+		return nil, fmt.Errorf("total outputs %d does not match actual outputs %d", result.TotalOutputs, len(result.Outputs))
+	}
+
 	w.WriteVarInt(uint64(result.TotalOutputs))
 
 	// Optional BEEF
 	if result.BEEF != nil {
-		w.WriteByte(1)
-		w.WriteVarInt(uint64(len(result.BEEF)))
-		w.WriteBytes(result.BEEF)
+		w.WriteIntBytes(result.BEEF)
 	} else {
-		w.WriteByte(0)
+		w.WriteNegativeOne()
 	}
 
 	// Outputs
-	w.WriteVarInt(uint64(len(result.Outputs)))
 	for _, output := range result.Outputs {
 		// Serialize each output
+		w.WriteBytes(encodeOutpoint(&output.Outpoint))
 		w.WriteVarInt(output.Satoshis)
-		w.WriteIntBytes(output.LockingScript)
-		w.WriteOptionalBool(&output.Spendable)
+		if len(output.LockingScript) > 0 {
+			w.WriteIntBytes(output.LockingScript)
+		} else {
+			w.WriteNegativeOne()
+		}
 		w.WriteOptionalString(output.CustomInstructions)
 		w.WriteStringSlice(output.Tags)
-		w.WriteBytes(encodeOutpoint(&output.Outpoint))
 		w.WriteStringSlice(output.Labels)
 	}
 
@@ -105,28 +134,33 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 	result.TotalOutputs = r.ReadVarInt32()
 
 	// Optional BEEF
-	if r.ReadByte() == 1 {
-		beefLen := r.ReadVarInt()
+	beefLen := r.ReadVarInt()
+	if !util.IsNegativeOne(beefLen) {
 		result.BEEF = r.ReadBytes(int(beefLen))
 	}
 
 	// Outputs
-	outputCount := r.ReadVarInt()
-	result.Outputs = make([]wallet.Output, 0, outputCount)
-	for i := uint64(0); i < outputCount; i++ {
-		output := wallet.Output{
-			Satoshis:           r.ReadVarInt(),
-			LockingScript:      r.ReadIntBytes(),
-			Spendable:          *r.ReadOptionalBool(),
-			CustomInstructions: r.ReadString(),
-			Tags:               r.ReadStringSlice(),
-		}
+	result.Outputs = make([]wallet.Output, 0, result.TotalOutputs)
+	for i := uint32(0); i < result.TotalOutputs; i++ {
 		outpoint, err := decodeOutpoint(&r.Reader)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding outpoint: %w", err)
 		}
-		output.Outpoint = *outpoint
-		output.Labels = r.ReadStringSlice()
+		sats := r.ReadVarInt()
+		lockScriptByteLen := r.ReadVarInt()
+		var lockingScript []byte
+		if !util.IsNegativeOne(lockScriptByteLen) {
+			lockingScript = r.ReadBytes(int(lockScriptByteLen))
+		}
+		output := wallet.Output{
+			Outpoint:           *outpoint,
+			Satoshis:           sats,
+			LockingScript:      lockingScript,
+			Spendable:          true, // Default to true, matches ts-sdk
+			CustomInstructions: r.ReadString(),
+			Tags:               r.ReadStringSlice(),
+			Labels:             r.ReadStringSlice(),
+		}
 		// Check error each loop
 		if r.Err != nil {
 			return nil, fmt.Errorf("error reading output: %w", r.Err)

@@ -1,9 +1,11 @@
 package serializer
 
 import (
+	"encoding/base64"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
@@ -33,8 +35,8 @@ func TestIdentityCertificate(t *testing.T) {
 			Trust:       5,
 		},
 		PubliclyRevealedKeyring: map[string]string{
-			"key1": "value1",
-			"key2": "value2",
+			"key1": base64.StdEncoding.EncodeToString([]byte("value1")),
+			"key2": base64.StdEncoding.EncodeToString([]byte("value2")),
 		},
 		DecryptedFields: map[string]string{
 			"field1": "decrypted1",
@@ -47,8 +49,10 @@ func TestIdentityCertificate(t *testing.T) {
 	require.NoError(t, err, "serializing IdentityCertificate should not error")
 
 	// Test deserialization
-	got, err := DeserializeIdentityCertificate(data)
+	reader := util.NewReaderHoldError(data)
+	got, err := DeserializeIdentityCertificate(reader)
 	require.NoError(t, err, "deserializing IdentityCertificate should not error")
+	require.NoError(t, reader.Err, "deserializing IdentityCertificate should not reader error")
 
 	// Compare results
 	require.Equal(t, cert, got, "deserialized certificate should match original certificate")

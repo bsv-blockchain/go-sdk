@@ -25,11 +25,10 @@ func SerializeVerifyHMACArgs(args *wallet.VerifyHMACArgs) ([]byte, error) {
 	w.WriteBytes(keyParams)
 
 	// Write HMAC bytes (fixed 32 bytes)
-	w.WriteBytes(args.HMAC)
+	w.WriteBytes(args.HMAC[:])
 
 	// Write data length + bytes
-	w.WriteVarInt(uint64(len(args.Data)))
-	w.WriteBytes(args.Data)
+	w.WriteIntBytes(args.Data)
 
 	// Write seekPermission flag
 	w.WriteOptionalBool(&args.SeekPermission)
@@ -49,18 +48,17 @@ func DeserializeVerifyHMACArgs(data []byte) (*wallet.VerifyHMACArgs, error) {
 	args.ProtocolID = params.ProtocolID
 	args.KeyID = params.KeyID
 	args.Counterparty = params.Counterparty
-	args.Privileged = util.ReadOptionalBoolAsBool(params.Privileged)
+	args.Privileged = util.PtrToBool(params.Privileged)
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read HMAC (fixed 32 bytes)
-	args.HMAC = r.ReadBytes(32)
+	copy(args.HMAC[:], r.ReadBytes(32))
 
 	// Read data
-	dataLen := r.ReadVarInt()
-	args.Data = r.ReadBytes(int(dataLen))
+	args.Data = r.ReadIntBytes()
 
 	// Read seekPermission
-	args.SeekPermission = util.ReadOptionalBoolAsBool(r.ReadOptionalBool())
+	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())
 
 	r.CheckComplete()
 	if r.Err != nil {
@@ -70,25 +68,10 @@ func DeserializeVerifyHMACArgs(data []byte) (*wallet.VerifyHMACArgs, error) {
 	return args, nil
 }
 
-func SerializeVerifyHMACResult(result *wallet.VerifyHMACResult) ([]byte, error) {
-	w := util.NewWriter()
-	w.WriteByte(0) // errorByte = 0 (success)
-	return w.Buf, nil
+func SerializeVerifyHMACResult(_ *wallet.VerifyHMACResult) ([]byte, error) {
+	return nil, nil
 }
 
-func DeserializeVerifyHMACResult(data []byte) (*wallet.VerifyHMACResult, error) {
-	r := util.NewReaderHoldError(data)
-
-	// Read error byte (0 = success)
-	errorByte := r.ReadByte()
-	if errorByte != 0 {
-		return nil, fmt.Errorf("verifyHMAC failed with error byte %d", errorByte)
-	}
-
-	r.CheckComplete()
-	if r.Err != nil {
-		return nil, fmt.Errorf("error deserializing VerifyHMAC result: %w", r.Err)
-	}
-
+func DeserializeVerifyHMACResult(_ []byte) (*wallet.VerifyHMACResult, error) {
 	return &wallet.VerifyHMACResult{Valid: true}, nil
 }

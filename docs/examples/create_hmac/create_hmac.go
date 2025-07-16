@@ -95,14 +95,10 @@ func main() {
 	fmt.Println("\n--- 5. Verifying with tampered HMAC (expected failure) ---")
 	tamperedHmacArgs := verifyHmacArgs // Copy previous args
 	// Create a slightly altered HMAC. Ensure it's different but same length if possible.
-	corruptedHmac := make([]byte, len(hmacBytes))
-	copy(corruptedHmac, hmacBytes)
-	if len(corruptedHmac) > 0 {
-		corruptedHmac[0] ^= 0xFF // Flip all bits of the first byte
-	} else {
-		corruptedHmac = append(corruptedHmac, 0x00) // Or handle if HMAC was empty (should not be)
-	}
-	tamperedHmacArgs.HMAC = wallet.BytesList(corruptedHmac)
+	corruptedHmac := [32]byte{}
+	copy(corruptedHmac[:], hmacBytes[:])
+	corruptedHmac[0] ^= 0xFF // Flip all bits of the first byte
+	tamperedHmacArgs.HMAC = corruptedHmac
 	tamperedHmacVerifyResult, err := myWallet.VerifyHMAC(ctx, tamperedHmacArgs, "verifier_tampered_hmac")
 	if err != nil {
 		log.Fatalf("Error during tampered HMAC verification call: %v", err)
