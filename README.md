@@ -32,10 +32,10 @@ The BSV Blockchain Libraries Project aims to structure and maintain a middleware
 
 ### Installation
 
-To install the SDK, run:
+To add the SDK to your Go module:
 
 ```bash
-go install github.com/bsv-blockchain/go-sdk
+go get github.com/bsv-blockchain/go-sdk
 ```
 
 ### Basic Usage

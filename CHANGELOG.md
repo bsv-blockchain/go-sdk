@@ -45,6 +45,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Fixed
 - Fixed BEEF validation stability issue where `IsValid` returned inconsistent results (#211)
+- Fixed README installation instructions to use `go get` instead of `go install` (#202)
 
 ## [1.2.5] - 2025-07-16
 
