@@ -30,9 +30,11 @@ func NewBeef() *Beef {
 	}
 }
 
-const BEEF_V1 = uint32(4022206465)     // BRC-64
-const BEEF_V2 = uint32(4022206466)     // BRC-96
-const ATOMIC_BEEF = uint32(0x01010101) // BRC-95
+const (
+	BEEF_V1     = uint32(4022206465) // BRC-64
+	BEEF_V2     = uint32(4022206466) // BRC-96
+	ATOMIC_BEEF = uint32(0x01010101) // BRC-95
+)
 
 func (t *Transaction) FromBEEF(beef []byte) error {
 	tx, err := NewTransactionFromBEEF(beef)
@@ -902,7 +904,6 @@ func (b *Beef) SortTxs() struct {
 
 func (b *Beef) verifyValid(allowTxidOnly bool) verifyResult {
 	r := verifyResult{valid: false, roots: map[uint32]string{}}
-	b.SortTxs() // Assume this sorts transactions in dependency order
 
 	txids := make(map[string]bool)
 	for _, tx := range b.Transactions {
@@ -941,15 +942,36 @@ func (b *Beef) verifyValid(allowTxidOnly bool) verifyResult {
 		}
 	}
 
-	for txid, beefTx := range b.Transactions {
-		if beefTx.DataFormat != TxIDOnly && beefTx.Transaction.MerklePath == nil {
+	txsLeft := b.Transactions
+	lastLen := -1
+	for lastLen != len(txsLeft) {
+		lastLen = len(txsLeft)
+		unvalidated := make(map[string]*BeefTx)
+		for txid, beefTx := range txsLeft {
+			if txids[txid] {
+				continue
+			}
+
+			allInputsValid := true
 			for _, in := range beefTx.Transaction.Inputs {
 				if !txids[in.SourceTXID.String()] {
-					return r
+					allInputsValid = false
+					break
 				}
 			}
+
+			if allInputsValid {
+				txids[txid] = true
+			} else {
+				unvalidated[txid] = beefTx
+			}
 		}
-		txids[txid] = true
+		txsLeft = unvalidated
+	}
+
+	if len(txsLeft) != 0 {
+		// some transactions' inputs were not found - failed the validation
+		return r
 	}
 
 	r.valid = true
