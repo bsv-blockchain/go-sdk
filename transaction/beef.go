@@ -803,23 +803,18 @@ func (b *Beef) Verify(ctx context.Context, chainTracker chaintracker.ChainTracke
 	return true, nil
 }
 
-// SortTxs sorts the transactions in the BEEF by dependency order.
-func (b *Beef) SortTxs() struct {
+type SortResult struct {
 	MissingInputs     []string
 	NotValid          []string
 	Valid             []string
 	WithMissingInputs []string
 	TxidOnly          []string
-} {
-	type sortResult struct {
-		MissingInputs     []string
-		NotValid          []string
-		Valid             []string
-		WithMissingInputs []string
-		TxidOnly          []string
-	}
+}
 
-	res := sortResult{}
+// SortTxs sorts the transactions in the BEEF by dependency order.
+func (b *Beef) SortTxs() SortResult {
+
+	res := SortResult{}
 
 	// Collect all transactions into a slice for sorting and keep track of which txid is valid
 	allTxs := make([]*BeefTx, 0, len(b.Transactions))
@@ -891,13 +886,7 @@ func (b *Beef) SortTxs() struct {
 	for k := range missing {
 		res.MissingInputs = append(res.MissingInputs, k)
 	}
-	return struct {
-		MissingInputs     []string
-		NotValid          []string
-		Valid             []string
-		WithMissingInputs []string
-		TxidOnly          []string
-	}(res)
+	return res
 }
 
 func (b *Beef) verifyValid(allowTxidOnly bool) verifyResult {
@@ -941,15 +930,40 @@ func (b *Beef) verifyValid(allowTxidOnly bool) verifyResult {
 		}
 	}
 
+	// Single pass: add transactions with merkle paths to valid set and collect those needing validation
+	remaining := make(map[string]*BeefTx)
 	for txid, beefTx := range b.Transactions {
-		if beefTx.DataFormat != TxIDOnly && beefTx.Transaction.MerklePath == nil {
+		if beefTx.Transaction != nil && beefTx.Transaction.MerklePath != nil {
+			txids[txid] = true
+		} else if beefTx.DataFormat != TxIDOnly && beefTx.Transaction != nil {
+			remaining[txid] = beefTx
+		}
+	}
+
+	// Keep processing until we've validated all transactions or can't make progress
+	for len(remaining) > 0 {
+		progress := false
+		for txid, beefTx := range remaining {
+			// Check if all inputs are valid
+			allInputsValid := true
 			for _, in := range beefTx.Transaction.Inputs {
 				if !txids[in.SourceTXID.String()] {
-					return r
+					allInputsValid = false
+					break
 				}
 			}
+			
+			if allInputsValid {
+				txids[txid] = true
+				delete(remaining, txid)
+				progress = true
+			}
 		}
-		txids[txid] = true
+		
+		// If we didn't make progress, the remaining transactions have missing inputs
+		if !progress {
+			return r
+		}
 	}
 
 	r.valid = true
