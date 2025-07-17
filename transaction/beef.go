@@ -368,13 +368,10 @@ func readAllTransactions(reader *bytes.Reader, BUMPs []*MerklePath) (map[string]
 			sourceTxid := input.SourceTXID.String()
 			if sourceObj, ok := transactions[sourceTxid]; ok {
 				input.SourceTransaction = sourceObj
-			} else if tx.MerklePath == nil {
-				panic(fmt.Sprintf(
-					"There is no Merkle Path or Source Transaction for outpoint: %s, %d",
-					sourceTxid,
-					input.SourceTxOutIndex,
-				))
 			}
+			// Note: Unlike the previous implementation, we don't panic here if the source
+			// transaction is missing. This matches the TypeScript SDK behavior where
+			// source transaction assignment is deferred until needed.
 		}
 		transactions[txid.String()] = tx
 	}
@@ -803,104 +800,214 @@ func (b *Beef) Verify(ctx context.Context, chainTracker chaintracker.ChainTracke
 	return true, nil
 }
 
-type SortResult struct {
-	MissingInputs     []string
-	NotValid          []string
-	Valid             []string
-	WithMissingInputs []string
-	TxidOnly          []string
+// ValidationResult contains the results of transaction validation
+type ValidationResult struct {
+	Valid             []string // Transactions that are fully validated
+	NotValid          []string // Transactions that cannot be validated
+	TxidOnly          []string // Transactions represented only by txid
+	WithMissingInputs []string // Transactions with inputs not in BEEF
+	MissingInputs     []string // Input txids that are missing
 }
 
-// SortTxs sorts the transactions in the BEEF by dependency order.
-func (b *Beef) SortTxs() SortResult {
-
-	res := SortResult{}
-
-	// Collect all transactions into a slice for sorting and keep track of which txid is valid
-	allTxs := make([]*BeefTx, 0, len(b.Transactions))
-	validTxids := map[string]bool{}
-	missing := map[string]bool{}
-
-	for txid, beefTx := range b.Transactions {
-		allTxs = append(allTxs, beefTx)
-		// Mark transactions with proof or no inputs as valid
-		if beefTx.Transaction != nil && beefTx.Transaction.MerklePath != nil {
-			validTxids[txid] = true
-		} else if beefTx.DataFormat == TxIDOnly && beefTx.KnownTxID != nil {
-			res.TxidOnly = append(res.TxidOnly, txid)
-			validTxids[txid] = true
-		}
-	}
-
-	// Separate transactions that have at least one missing input
-	queue := make([]*BeefTx, 0)
-	for _, beefTx := range allTxs {
-		if beefTx.Transaction != nil {
-			hasMissing := false
-			for _, in := range beefTx.Transaction.Inputs {
-				if !validTxids[in.SourceTXID.String()] && b.findTxid(in.SourceTXID.String()) == nil {
-					missing[in.SourceTXID.String()] = true
-					hasMissing = true
+// ValidateTransactions validates the transactions in this BEEF and sorts them by dependency order.
+// It returns a ValidationResult containing the validation status of each transaction.
+//
+// Validation rules:
+// - Transactions with merkle paths are automatically valid
+// - Transactions without merkle paths must have all inputs traceable to transactions with merkle paths
+// - For DataFormat == RawTx or TxIDOnly, checks if the txid appears in BUMPs (has proof)
+// - For DataFormat == RawTxAndBumpIndex, verifies the bump index is accurate
+func (b *Beef) ValidateTransactions() *ValidationResult {
+	// Build a map of txids that appear in BUMPs (have proof)
+	txidsInBumps := make(map[string]bool)
+	for _, bump := range b.BUMPs {
+		if len(bump.Path) > 0 {
+			// Check level 0 (leaf level) for transaction hashes
+			for _, elem := range bump.Path[0] {
+				if elem.Hash != nil && elem.Txid != nil && *elem.Txid {
+					txidsInBumps[elem.Hash.String()] = true
 				}
 			}
-			if hasMissing {
-				res.WithMissingInputs = append(res.WithMissingInputs, beefTx.Transaction.TxID().String())
+		}
+	}
+
+	result := &ValidationResult{
+		MissingInputs:     []string{},
+		NotValid:          []string{},
+		Valid:             []string{},
+		WithMissingInputs: []string{},
+		TxidOnly:          []string{},
+	}
+
+	// Maps for tracking
+	validTxids := make(map[string]bool)
+	txByID := make(map[string]*BeefTx)
+	missingInputs := make(map[string]bool)
+
+	// Lists for processing
+	var hasProof []*BeefTx
+	var txidOnly []*BeefTx
+	var needsValidation []*BeefTx
+	var withMissingInputs []*BeefTx
+
+	// First pass: categorize transactions
+	for txid, beefTx := range b.Transactions {
+		txByID[txid] = beefTx
+
+		switch beefTx.DataFormat {
+		case TxIDOnly:
+			// TxIDOnly transactions are valid if they appear in BUMPs
+			if txidsInBumps[txid] {
+				validTxids[txid] = true
+				txidOnly = append(txidOnly, beefTx)
 			} else {
-				queue = append(queue, beefTx)
+				// TxIDOnly without proof - add to txidOnly list but not valid
+				txidOnly = append(txidOnly, beefTx)
+			}
+		case RawTxAndBumpIndex:
+			// Verify the bump index is accurate
+			if beefTx.BumpIndex >= 0 && beefTx.BumpIndex < len(b.BUMPs) {
+				bump := b.BUMPs[beefTx.BumpIndex]
+				// Check if this transaction appears in the specified bump
+				foundInBump := false
+				for _, elem := range bump.Path[0] {
+					if elem.Hash != nil && elem.Hash.String() == txid {
+						foundInBump = true
+						break
+					}
+				}
+				if foundInBump {
+					validTxids[txid] = true
+					hasProof = append(hasProof, beefTx)
+				} else {
+					// Invalid bump index - treat as needing validation
+					needsValidation = append(needsValidation, beefTx)
+				}
+			} else {
+				// Invalid bump index - treat as needing validation
+				needsValidation = append(needsValidation, beefTx)
+			}
+		case RawTx:
+			// RawTx is valid if it appears in a BUMP
+			if txidsInBumps[txid] {
+				validTxids[txid] = true
+				hasProof = append(hasProof, beefTx)
+			} else if beefTx.Transaction != nil {
+				// Check if all inputs are available
+				hasMissing := false
+				for _, input := range beefTx.Transaction.Inputs {
+					if _, exists := b.Transactions[input.SourceTXID.String()]; !exists {
+						missingInputs[input.SourceTXID.String()] = true
+						hasMissing = true
+					}
+				}
+				if hasMissing {
+					withMissingInputs = append(withMissingInputs, beefTx)
+				} else {
+					needsValidation = append(needsValidation, beefTx)
+				}
 			}
 		}
 	}
 
-	// Try to validate any transactions whose inputs are now known
-	oldLen := -1
-	for oldLen != len(queue) {
-		oldLen = len(queue)
-		newQueue := make([]*BeefTx, 0, len(queue))
-		for _, beefTx := range queue {
+	// Iteratively validate transactions that depend on other transactions
+	for len(needsValidation) > 0 {
+		progress := false
+		var stillNeedsValidation []*BeefTx
+
+		for _, beefTx := range needsValidation {
+			// Check if all inputs are valid
+			allInputsValid := true
 			if beefTx.Transaction != nil {
-				allInputsValid := true
-				for _, in := range beefTx.Transaction.Inputs {
-					if !validTxids[in.SourceTXID.String()] {
+				for _, input := range beefTx.Transaction.Inputs {
+					if !validTxids[input.SourceTXID.String()] {
 						allInputsValid = false
 						break
 					}
 				}
-				if allInputsValid {
-					validTxids[beefTx.Transaction.TxID().String()] = true
-					res.Valid = append(res.Valid, beefTx.Transaction.TxID().String())
-				} else {
-					newQueue = append(newQueue, beefTx)
-				}
+			}
+
+			if allInputsValid {
+				txid := beefTx.Transaction.TxID().String()
+				validTxids[txid] = true
+				hasProof = append(hasProof, beefTx)
+				progress = true
+			} else {
+				stillNeedsValidation = append(stillNeedsValidation, beefTx)
 			}
 		}
-		queue = newQueue
-	}
 
-	// Now, whatever is left in queue is not valid
-	for _, beefTx := range queue {
-		if beefTx.Transaction != nil {
-			res.NotValid = append(res.NotValid, beefTx.Transaction.TxID().String())
+		needsValidation = stillNeedsValidation
+		if !progress {
+			// No progress made - remaining transactions are not valid
+			for _, beefTx := range needsValidation {
+				if beefTx.Transaction != nil {
+					result.NotValid = append(result.NotValid, beefTx.Transaction.TxID().String())
+				}
+			}
+			break
 		}
 	}
 
-	for k := range missing {
-		res.MissingInputs = append(res.MissingInputs, k)
+	// Populate result lists
+	// Add transactions with missing inputs
+	for _, beefTx := range withMissingInputs {
+		if beefTx.Transaction != nil {
+			txid := beefTx.Transaction.TxID().String()
+			result.WithMissingInputs = append(result.WithMissingInputs, txid)
+		}
 	}
-	return res
+
+	// Add txid-only transactions
+	for _, beefTx := range txidOnly {
+		var txid string
+		if beefTx.KnownTxID != nil {
+			txid = beefTx.KnownTxID.String()
+		} else if beefTx.Transaction != nil {
+			txid = beefTx.Transaction.TxID().String()
+		} else {
+			continue
+		}
+		result.TxidOnly = append(result.TxidOnly, txid)
+		if validTxids[txid] {
+			result.Valid = append(result.Valid, txid)
+		}
+	}
+
+	// Add valid transactions with proofs (in dependency order)
+	for _, beefTx := range hasProof {
+		if beefTx.Transaction != nil {
+			txid := beefTx.Transaction.TxID().String()
+			result.Valid = append(result.Valid, txid)
+		}
+	}
+
+	// Populate missing inputs list
+	for txid := range missingInputs {
+		result.MissingInputs = append(result.MissingInputs, txid)
+	}
+
+	return result
 }
 
 func (b *Beef) verifyValid(allowTxidOnly bool) verifyResult {
 	r := verifyResult{valid: false, roots: map[uint32]string{}}
-	b.SortTxs() // Assume this sorts transactions in dependency order
+	
+	// Validate and sort transactions
+	vr := b.ValidateTransactions()
+	
+	// Check if validation passed
+	if len(vr.MissingInputs) > 0 ||
+		len(vr.NotValid) > 0 ||
+		(len(vr.TxidOnly) > 0 && !allowTxidOnly) ||
+		len(vr.WithMissingInputs) > 0 {
+		return r
+	}
 
+	// Build valid txids set
 	txids := make(map[string]bool)
-	for _, tx := range b.Transactions {
-		if tx.DataFormat == TxIDOnly {
-			if !allowTxidOnly {
-				return r
-			}
-			txids[tx.KnownTxID.String()] = true
-		}
+	for _, txid := range vr.Valid {
+		txids[txid] = true
 	}
 
 	confirmComputedRoot := func(mp *MerklePath, txid string) bool {
@@ -919,50 +1026,34 @@ func (b *Beef) verifyValid(allowTxidOnly bool) verifyResult {
 		return true
 	}
 
+	// Verify all BUMPs have consistent roots
 	for _, mp := range b.BUMPs {
 		for _, n := range mp.Path[0] {
-			if n.Txid != nil && n.Hash != nil {
+			if n.Txid != nil && *n.Txid && n.Hash != nil {
 				if !confirmComputedRoot(mp, n.Hash.String()) {
 					return r
 				}
-				txids[n.Hash.String()] = true
 			}
 		}
 	}
 
-	// Single pass: add transactions with merkle paths to valid set and collect those needing validation
-	remaining := make(map[string]*BeefTx)
+	// Verify all transactions with BumpIndex have matching txid in the BUMP
 	for txid, beefTx := range b.Transactions {
-		if beefTx.Transaction != nil && beefTx.Transaction.MerklePath != nil {
-			txids[txid] = true
-		} else if beefTx.DataFormat != TxIDOnly && beefTx.Transaction != nil {
-			remaining[txid] = beefTx
-		}
-	}
-
-	// Keep processing until we've validated all transactions or can't make progress
-	for len(remaining) > 0 {
-		progress := false
-		for txid, beefTx := range remaining {
-			// Check if all inputs are valid
-			allInputsValid := true
-			for _, in := range beefTx.Transaction.Inputs {
-				if !txids[in.SourceTXID.String()] {
-					allInputsValid = false
+		if beefTx.DataFormat == RawTxAndBumpIndex {
+			if beefTx.BumpIndex < 0 || beefTx.BumpIndex >= len(b.BUMPs) {
+				return r
+			}
+			bump := b.BUMPs[beefTx.BumpIndex]
+			found := false
+			for _, leaf := range bump.Path[0] {
+				if leaf.Hash != nil && leaf.Hash.String() == txid {
+					found = true
 					break
 				}
 			}
-			
-			if allInputsValid {
-				txids[txid] = true
-				delete(remaining, txid)
-				progress = true
+			if !found {
+				return r
 			}
-		}
-		
-		// If we didn't make progress, the remaining transactions have missing inputs
-		if !progress {
-			return r
 		}
 	}
 
@@ -1127,7 +1218,7 @@ func (b *Beef) trimUnreferencedBumps() {
 }
 
 func (b *Beef) GetValidTxids() []string {
-	r := b.SortTxs()
+	r := b.ValidateTransactions()
 	return r.Valid
 }
 

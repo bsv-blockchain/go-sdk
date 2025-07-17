@@ -195,7 +195,7 @@ func TestBeefSortTxs(t *testing.T) {
 	}
 
 	// Test SortTxs
-	result := beef.SortTxs()
+	result := beef.ValidateTransactions()
 	require.NotNil(t, result)
 
 	// Log the results
@@ -405,7 +405,7 @@ func TestBeefGetValidTxids(t *testing.T) {
 	}
 
 	// Get sorted transactions to see what's valid
-	sorted := beef.SortTxs()
+	sorted := beef.ValidateTransactions()
 	t.Log("\nSorted transaction results:")
 	t.Logf("  Valid: %v", sorted.Valid)
 	t.Logf("  TxidOnly: %v", sorted.TxidOnly)
@@ -417,8 +417,8 @@ func TestBeefGetValidTxids(t *testing.T) {
 	validTxids := beef.GetValidTxids()
 	t.Logf("\nGetValidTxids result: %v", validTxids)
 
-	// Verify results match
-	require.Equal(t, sorted.Valid, validTxids, "GetValidTxids should return same txids as SortTxs.Valid")
+	// Verify results match (order doesn't matter)
+	require.ElementsMatch(t, sorted.Valid, validTxids, "GetValidTxids should return same txids as ValidateTransactions.Valid")
 
 	// If we have any valid transactions, verify they exist and have valid inputs
 	if len(validTxids) > 0 {
@@ -427,10 +427,11 @@ func TestBeefGetValidTxids(t *testing.T) {
 			require.NotNil(t, tx, "Valid txid should exist in transactions map")
 
 			// If it has a transaction, verify it has no missing inputs
-			if tx.Transaction != nil {
+			// (unless it has a merkle path, in which case it's already proven)
+			if tx.Transaction != nil && tx.Transaction.MerklePath == nil {
 				for _, input := range tx.Transaction.Inputs {
 					sourceTx := beef.findTxid(input.SourceTXID.String())
-					require.NotNil(t, sourceTx, "Input transaction should exist for valid transaction")
+					require.NotNil(t, sourceTx, "Input transaction should exist for valid transaction without merkle path")
 				}
 			}
 		}
@@ -465,7 +466,7 @@ func TestBeefFindTransactionForSigning(t *testing.T) {
 	}
 
 	// Get sorted transactions to see what's valid
-	sorted := beef.SortTxs()
+	sorted := beef.ValidateTransactions()
 	t.Log("\nSorted transaction results:")
 	t.Logf("  Valid: %v", sorted.Valid)
 	t.Logf("  TxidOnly: %v", sorted.TxidOnly)
@@ -736,7 +737,7 @@ func TestBeefEdgeCases(t *testing.T) {
 			require.NotNil(t, tx.KnownTxID, "TxIDOnly transaction should have KnownTxID")
 
 			// Test that TxIDOnly transactions are properly categorized
-			sorted := beef.SortTxs()
+			sorted := beef.ValidateTransactions()
 			require.NotContains(t, sorted.Valid, txid, "TxIDOnly transaction should not be considered valid")
 			require.Contains(t, sorted.TxidOnly, txid, "TxIDOnly transaction should be in TxidOnly list")
 

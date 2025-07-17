@@ -45,7 +45,13 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Fixed
 - Fixed BEEF validation stability issue where `IsValid` returned inconsistent results (#211)
+- Fixed BEEF parsing panic when encountering transactions without merkle paths (#96)
+- Fixed validation logic to properly check if transactions appear in BUMPs
 - Fixed README installation instructions to use `go get` instead of `go install` (#202)
+
+### Changed
+- Renamed `SortTxs()` method to `ValidateTransactions()` for clarity
+- Improved BEEF validation to handle transactions without source transactions gracefully
 
 ## [1.2.5] - 2025-07-16
 
