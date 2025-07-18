@@ -1261,7 +1261,7 @@ func TestMakeTxidOnlyAndBytes(t *testing.T) {
 
 	beef.MakeTxidOnly(hash)
 
-	_, err = beef.Bytes() // <--------- it panics here
+	_, err = beef.Bytes()
 	require.NoError(t, err)
 	_ = beef.ToLogString()
 }
