@@ -52,6 +52,9 @@ All notable changes to this project will be documented in this file. The format 
 ### Changed
 - Renamed `SortTxs()` method to `ValidateTransactions()` for clarity
 - Improved BEEF validation to handle transactions without source transactions gracefully
+- Refactored BEEF implementation to use `chainhash.Hash` directly as map keys instead of string conversions for improved performance
+- Added `*ByHash` versions of BEEF methods (`findTxidByHash`, `FindBumpByHash`, etc.) to avoid unnecessary hash/string conversions
+- Updated `collectAncestors` to return `[]chainhash.Hash` instead of `[]string`
 
 ## [1.2.5] - 2025-07-16
 

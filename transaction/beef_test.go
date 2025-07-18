@@ -38,7 +38,7 @@ func TestFromBEEF(t *testing.T) {
 	txid := tx.TxID()
 	require.Equal(t, expectedTxID, txid.String(), "Transaction ID does not match")
 
-	_, err = tx.collectAncestors(txid, map[string]*Transaction{}, true)
+	_, err = tx.collectAncestors(txid, map[chainhash.Hash]*Transaction{}, true)
 	require.NoError(t, err, "collectAncestors method failed")
 
 	atomic, err := tx.AtomicBEEF(false)
@@ -124,14 +124,14 @@ func TestBeefTransactionFinding(t *testing.T) {
 	// Test RemoveExistingTxid and findTxid
 	for txid := range beef.Transactions {
 		// Verify we can find it
-		tx := beef.findTxid(txid)
+		tx := beef.findTxid(&txid)
 		require.NotNil(t, tx)
 
 		// Remove it
-		beef.RemoveExistingTxid(txid)
+		beef.RemoveExistingTxid(&txid)
 
 		// Verify it's gone
-		tx = beef.findTxid(txid)
+		tx = beef.findTxid(&txid)
 		require.Nil(t, tx)
 		break // just test one
 	}
@@ -147,7 +147,7 @@ func TestBeefMakeTxidOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	// Get first transaction and verify it exists
-	var txid string
+	var txid chainhash.Hash
 	var originalTx *BeefTx
 	for id, tx := range beef.Transactions {
 		if tx.Transaction != nil {
@@ -156,19 +156,15 @@ func TestBeefMakeTxidOnly(t *testing.T) {
 			break
 		}
 	}
-	require.NotEmpty(t, txid)
+	require.NotEqual(t, chainhash.Hash{}, txid)
 	require.NotNil(t, originalTx)
 
-	// Convert the hash to ensure it's valid
-	hash, err := chainhash.NewHashFromHex(txid)
-	require.NoError(t, err)
-
 	// Test MakeTxidOnly
-	txidOnly := beef.MakeTxidOnly(txid)
+	txidOnly := beef.MakeTxidOnly(&txid)
 	require.NotNil(t, txidOnly)
 	require.Equal(t, TxIDOnly, txidOnly.DataFormat)
 	require.NotNil(t, txidOnly.KnownTxID)
-	require.Equal(t, hash.String(), txidOnly.KnownTxID.String())
+	require.Equal(t, txid.String(), txidOnly.KnownTxID.String())
 
 	t.Log(beef.ToLogString())
 }
@@ -345,8 +341,8 @@ func TestBeefTrimknownTxIDs(t *testing.T) {
 	for txid, tx := range beef.Transactions {
 		if tx.Transaction != nil {
 			// Convert to TxIDOnly and add to our list to trim
-			beef.MakeTxidOnly(txid)
-			txidsToTrim = append(txidsToTrim, txid)
+			beef.MakeTxidOnly(&txid)
+			txidsToTrim = append(txidsToTrim, txid.String())
 			if len(txidsToTrim) >= 2 { // Convert 2 transactions to test with
 				break
 			}
@@ -356,7 +352,9 @@ func TestBeefTrimknownTxIDs(t *testing.T) {
 
 	// Verify the transactions are now in TxIDOnly format
 	for _, txid := range txidsToTrim {
-		tx := beef.findTxid(txid)
+		hash, err := chainhash.NewHashFromHex(txid)
+		require.NoError(t, err)
+		tx := beef.findTxid(hash)
 		require.NotNil(t, tx)
 		require.Equal(t, TxIDOnly, tx.DataFormat)
 	}
@@ -366,13 +364,15 @@ func TestBeefTrimknownTxIDs(t *testing.T) {
 
 	// Verify the transactions were removed
 	for _, txid := range txidsToTrim {
-		tx := beef.findTxid(txid)
+		hash, err := chainhash.NewHashFromHex(txid)
+		require.NoError(t, err)
+		tx := beef.findTxid(hash)
 		require.Nil(t, tx, "Transaction should have been removed")
 	}
 
 	// Verify other transactions still exist
 	for txid, tx := range beef.Transactions {
-		require.NotContains(t, txidsToTrim, txid, "Remaining transaction should not have been in trim list")
+		require.NotContains(t, txidsToTrim, txid.String(), "Remaining transaction should not have been in trim list")
 		if tx.DataFormat == TxIDOnly {
 			require.NotContains(t, txidsToTrim, txid, "TxIDOnly transaction that wasn't in trim list should still exist")
 		}
@@ -423,14 +423,16 @@ func TestBeefGetValidTxids(t *testing.T) {
 	// If we have any valid transactions, verify they exist and have valid inputs
 	if len(validTxids) > 0 {
 		for _, txid := range validTxids {
-			tx := beef.findTxid(txid)
+			hash, err := chainhash.NewHashFromHex(txid)
+			require.NoError(t, err)
+			tx := beef.findTxid(hash)
 			require.NotNil(t, tx, "Valid txid should exist in transactions map")
 
 			// If it has a transaction, verify it has no missing inputs
 			// (unless it has a merkle path, in which case it's already proven)
 			if tx.Transaction != nil && tx.Transaction.MerklePath == nil {
 				for _, input := range tx.Transaction.Inputs {
-					sourceTx := beef.findTxid(input.SourceTXID.String())
+					sourceTx := beef.findTxid(input.SourceTXID)
 					require.NotNil(t, sourceTx, "Input transaction should exist for valid transaction without merkle path")
 				}
 			}
@@ -482,7 +484,7 @@ func TestBeefFindTransactionForSigning(t *testing.T) {
 	var testTxid string
 	for txid, tx := range beef.Transactions {
 		if tx.Transaction != nil {
-			testTxid = txid
+			testTxid = txid.String()
 			break
 		}
 
@@ -508,7 +510,7 @@ func TestBeefFindAtomicTransaction(t *testing.T) {
 	var testTxid string
 	for txid, tx := range beef.Transactions {
 		if tx.Transaction != nil {
-			testTxid = txid
+			testTxid = txid.String()
 			break
 		}
 	}
@@ -623,7 +625,7 @@ func TestBeefMergeTransactions(t *testing.T) {
 			// Delete this transaction from beef1 to ensure we can merge it
 			delete(beef1.Transactions, id)
 			txToMerge = tx
-			txid = id
+			txid = id.String()
 			break
 		}
 	}
@@ -641,7 +643,9 @@ func TestBeefMergeTransactions(t *testing.T) {
 	// Test MergeTransaction
 	beef3, err := NewBeefFromBytes(beefBytes)
 	require.NoError(t, err)
-	delete(beef3.Transactions, txid)
+	hash, err := chainhash.NewHashFromHex(txid)
+	require.NoError(t, err)
+	delete(beef3.Transactions, *hash)
 	initialTxCount = len(beef3.Transactions)
 	beefTx, err = beef3.MergeTransaction(txToMerge.Transaction)
 	require.NoError(t, err)
@@ -738,12 +742,12 @@ func TestBeefEdgeCases(t *testing.T) {
 
 			// Test that TxIDOnly transactions are properly categorized
 			sorted := beef.ValidateTransactions()
-			require.NotContains(t, sorted.Valid, txid, "TxIDOnly transaction should not be considered valid")
-			require.Contains(t, sorted.TxidOnly, txid, "TxIDOnly transaction should be in TxidOnly list")
+			require.NotContains(t, sorted.Valid, txid.String(), "TxIDOnly transaction should not be considered valid")
+			require.Contains(t, sorted.TxidOnly, txid.String(), "TxIDOnly transaction should be in TxidOnly list")
 
 			// Test that the transaction is not returned by GetValidTxids
 			validTxids := beef.GetValidTxids()
-			require.NotContains(t, validTxids, txid, "TxIDOnly transaction should not be in GetValidTxids result")
+			require.NotContains(t, validTxids, txid.String(), "TxIDOnly transaction should not be in GetValidTxids result")
 		}
 	})
 }
@@ -812,7 +816,7 @@ func TestBeefMergeBeefTx(t *testing.T) {
 		beef := &Beef{
 			Version:      BEEF_V2,
 			BUMPs:        make([]*MerklePath, 0),
-			Transactions: make(map[string]*BeefTx),
+			Transactions: make(map[chainhash.Hash]*BeefTx),
 		}
 
 		btx := &BeefTx{
@@ -830,7 +834,7 @@ func TestBeefMergeBeefTx(t *testing.T) {
 		beef := &Beef{
 			Version:      BEEF_V2,
 			BUMPs:        make([]*MerklePath, 0),
-			Transactions: make(map[string]*BeefTx),
+			Transactions: make(map[chainhash.Hash]*BeefTx),
 		}
 
 		// Test with nil BeefTx
@@ -845,7 +849,7 @@ func TestBeefMergeBeefTx(t *testing.T) {
 		beef := &Beef{
 			Version:      BEEF_V2,
 			BUMPs:        make([]*MerklePath, 0),
-			Transactions: make(map[string]*BeefTx),
+			Transactions: make(map[chainhash.Hash]*BeefTx),
 		}
 
 		// Test with BeefTx that has nil Transaction
@@ -867,7 +871,7 @@ func TestBeefFindAtomicTransactionWithSourceTransactions(t *testing.T) {
 	beef := &Beef{
 		Version:      BEEF_V2,
 		BUMPs:        make([]*MerklePath, 0),
-		Transactions: make(map[string]*BeefTx),
+		Transactions: make(map[chainhash.Hash]*BeefTx),
 	}
 
 	// Create source transaction
@@ -881,8 +885,7 @@ func TestBeefFindAtomicTransactionWithSourceTransactions(t *testing.T) {
 		DataFormat:  RawTx,
 		Transaction: sourceTx,
 	}
-	sourceTxid := sourceTx.TxID().String()
-	beef.Transactions[sourceTxid] = sourceBeefTx
+	beef.Transactions[*sourceTx.TxID()] = sourceBeefTx
 
 	// Create main transaction that references the source
 	mainTx := &Transaction{
@@ -903,8 +906,7 @@ func TestBeefFindAtomicTransactionWithSourceTransactions(t *testing.T) {
 		DataFormat:  RawTx,
 		Transaction: mainTx,
 	}
-	mainTxid := mainTx.TxID().String()
-	beef.Transactions[mainTxid] = mainBeefTx
+	beef.Transactions[*mainTx.TxID()] = mainBeefTx
 
 	// Create a BUMP for the source transaction
 	bump := &MerklePath{
@@ -921,6 +923,7 @@ func TestBeefFindAtomicTransactionWithSourceTransactions(t *testing.T) {
 	beef.BUMPs = append(beef.BUMPs, bump)
 
 	// Test FindAtomicTransaction
+	mainTxid := mainTx.TxID().String()
 	result := beef.FindAtomicTransaction(mainTxid)
 	require.NotNil(t, result)
 	require.Equal(t, mainTxid, result.TxID().String())
@@ -935,7 +938,7 @@ func TestBeefMergeTxidOnly(t *testing.T) {
 	beef := &Beef{
 		Version:      BEEF_V2,
 		BUMPs:        make([]*MerklePath, 0),
-		Transactions: make(map[string]*BeefTx),
+		Transactions: make(map[chainhash.Hash]*BeefTx),
 	}
 
 	// Create a transaction ID
@@ -945,7 +948,7 @@ func TestBeefMergeTxidOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test MergeTxidOnly
-	result := beef.MergeTxidOnly(txid.String())
+	result := beef.MergeTxidOnly(txid)
 	require.NotNil(t, result)
 	require.Equal(t, TxIDOnly, result.DataFormat)
 	require.NotNil(t, result.KnownTxID)
@@ -954,10 +957,10 @@ func TestBeefMergeTxidOnly(t *testing.T) {
 
 	// Verify the transaction was added to the BEEF object
 	require.Len(t, beef.Transactions, 1)
-	require.Contains(t, beef.Transactions, txid.String())
+	require.Contains(t, beef.Transactions, *txid)
 
 	// Test merging the same txid again
-	result2 := beef.MergeTxidOnly(txid.String())
+	result2 := beef.MergeTxidOnly(txid)
 	require.NotNil(t, result2)
 	require.Equal(t, result, result2)
 	require.Len(t, beef.Transactions, 1)
@@ -968,7 +971,7 @@ func TestBeefFindBumpWithNilBumpIndex(t *testing.T) {
 	beef := &Beef{
 		Version:      BEEF_V2,
 		BUMPs:        make([]*MerklePath, 0),
-		Transactions: make(map[string]*BeefTx),
+		Transactions: make(map[chainhash.Hash]*BeefTx),
 	}
 
 	// Create a transaction with a source transaction
@@ -995,11 +998,11 @@ func TestBeefFindBumpWithNilBumpIndex(t *testing.T) {
 	}
 
 	// Add transactions to BEEF
-	beef.Transactions[sourceTx.TxID().String()] = &BeefTx{
+	beef.Transactions[*sourceTx.TxID()] = &BeefTx{
 		DataFormat:  RawTx,
 		Transaction: sourceTx,
 	}
-	beef.Transactions[mainTx.TxID().String()] = &BeefTx{
+	beef.Transactions[*mainTx.TxID()] = &BeefTx{
 		DataFormat:  RawTx,
 		Transaction: mainTx,
 	}
@@ -1019,7 +1022,7 @@ func TestBeefBytes(t *testing.T) {
 		beef := &Beef{
 			Version:      BEEF_V2,
 			BUMPs:        make([]*MerklePath, 0),
-			Transactions: make(map[string]*BeefTx),
+			Transactions: make(map[chainhash.Hash]*BeefTx),
 		}
 
 		// Add a TxIDOnly transaction
@@ -1027,7 +1030,7 @@ func TestBeefBytes(t *testing.T) {
 		require.NoError(t, err)
 		txid, err := chainhash.NewHash(txidBytes)
 		require.NoError(t, err)
-		beef.MergeTxidOnly(txid.String())
+		beef.MergeTxidOnly(txid)
 
 		// Add a RawTx transaction
 		tx := &Transaction{
@@ -1092,7 +1095,7 @@ func TestBeefAddComputedLeaves(t *testing.T) {
 	beef := &Beef{
 		Version:      BEEF_V2,
 		BUMPs:        make([]*MerklePath, 0),
-		Transactions: make(map[string]*BeefTx),
+		Transactions: make(map[chainhash.Hash]*BeefTx),
 	}
 
 	// Create leaf hashes
@@ -1253,8 +1256,10 @@ func TestMakeTxidOnlyAndBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	knownTxID := "b1fc0f44ba629dbdffab9e34fcc4faf9dbde3560a7365c55c26fe4daab052aac"
+	hash, err := chainhash.NewHashFromHex(knownTxID)
+	require.NoError(t, err)
 
-	beef.MakeTxidOnly(knownTxID)
+	beef.MakeTxidOnly(hash)
 
 	_, err = beef.Bytes() // <--------- it panics here
 	require.NoError(t, err)
