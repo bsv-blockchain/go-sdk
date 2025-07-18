@@ -519,7 +519,7 @@ func (t *Transaction) AtomicBEEF(allowPartial bool) ([]byte, error) {
 	bumps := []*MerklePath{}
 	bumpMap := map[uint32]int{}
 	txid := t.TxID()
-	txns := map[string]*Transaction{txid.String(): t}
+	txns := map[chainhash.Hash]*Transaction{*txid: t}
 	ancestors, err := t.collectAncestors(txid, txns, allowPartial)
 	if err != nil {
 		return nil, err
