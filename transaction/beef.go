@@ -1007,6 +1007,7 @@ func (b *Beef) ValidateTransactions() *ValidationResult {
 	}
 
 	// Populate missing inputs list
+	result.MissingInputs = make([]string, 0, len(missingInputs))
 	for txid := range missingInputs {
 		result.MissingInputs = append(result.MissingInputs, txid.String())
 	}
