@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.6 - 2025-07-21](#126---2025-07-21)
 - [1.2.5 - 2025-07-16](#125---2025-07-16)
 - [1.2.4 - 2025-06-30](#124---2025-06-30)
 - [1.2.3 - 2025-06-30](#123---2025-06-30)
@@ -39,6 +40,21 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.6] - 2025-07-21
+
+### Fixed
+- Fixed BEEF validation stability issue where `IsValid` returned inconsistent results (#211)
+- Fixed BEEF parsing panic when encountering transactions without merkle paths (#96)
+- Fixed validation logic to properly check if transactions appear in BUMPs
+- Fixed README installation instructions to use `go get` instead of `go install` (#202)
+
+### Changed
+- Renamed `SortTxs()` method to `ValidateTransactions()` for clarity
+- Improved BEEF validation to handle transactions without source transactions gracefully
+- Refactored BEEF implementation to use `chainhash.Hash` directly as map keys instead of string conversions for improved performance
+- Added `*ByHash` versions of BEEF methods (`findTxidByHash`, `FindBumpByHash`, etc.) to avoid unnecessary hash/string conversions
+- Updated `collectAncestors` to return `[]chainhash.Hash` instead of `[]string`
 
 ## [1.2.5] - 2025-07-16
 
