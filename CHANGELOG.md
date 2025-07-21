@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
-- [1.2.6 - 2025-07-17](#126---2025-07-17)
+- [1.2.6 - 2025-07-21](#126---2025-07-21)
 - [1.2.5 - 2025-07-16](#125---2025-07-16)
 - [1.2.4 - 2025-06-30](#124---2025-06-30)
 - [1.2.3 - 2025-06-30](#123---2025-06-30)
@@ -41,7 +41,7 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
 
-## [1.2.6] - 2025-07-17
+## [1.2.6] - 2025-07-21
 
 ### Fixed
 - Fixed BEEF validation stability issue where `IsValid` returned inconsistent results (#211)
