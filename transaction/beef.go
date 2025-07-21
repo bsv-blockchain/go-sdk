@@ -983,6 +983,7 @@ func (b *Beef) ValidateTransactions() *ValidationResult {
 	}
 
 	// Add txid-only transactions
+	result.TxidOnly = make([]string, 0, len(txidOnly))
 	for _, beefTx := range txidOnly {
 		var txidHash *chainhash.Hash
 		if beefTx.KnownTxID != nil {
