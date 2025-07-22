@@ -545,7 +545,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		return ErrInvalidNonce
 	}
 
-	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
+	session, err := p.sessionManager.GetSession(message.YourNonce)
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
@@ -560,7 +560,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		return NewAuthError("failed to decode session nonce", err)
 	}
 	// Concatenate the decoded bytes
-	sigData := append(initialNonceBytes, sessionNonceBytes...)
+	sigData := append(sessionNonceBytes, initialNonceBytes...)
 
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
@@ -576,7 +576,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", message.InitialNonce, session.SessionNonce),
+			KeyID: fmt.Sprintf("%s %s", session.SessionNonce, message.InitialNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: message.IdentityKey,
