@@ -1,12 +1,10 @@
 package auth
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
@@ -67,89 +65,11 @@ func ValidateCertificates(
 	message *AuthMessage,
 	certificatesRequested *utils.RequestedCertificateSet,
 ) error {
-	// Check if certificates are provided
-	if message.Certificates == nil {
-		return fmt.Errorf("no certificates were provided in the AuthMessage")
+	err := utils.ValidateCertificates(ctx, verifierWallet, message.Certificates, message.IdentityKey, certificatesRequested)
+	if err != nil {
+		return fmt.Errorf("invalid certificates in Auth Message: %w", err)
 	}
-
-	// Use a wait group to wait for all certificate validations to complete
-	var wg sync.WaitGroup
-	errCh := make(chan error, len(message.Certificates))
-
-	// Process each certificate concurrently
-	for _, incomingCert := range message.Certificates {
-		wg.Add(1)
-		go func(cert *certificates.VerifiableCertificate) {
-			defer wg.Done()
-
-			// Check that the certificate subject matches the message identity key
-			subjectKey := cert.Subject.ToDER()
-			messageIdentityKey := message.IdentityKey.ToDER()
-			if !bytes.Equal(subjectKey, messageIdentityKey) {
-				errCh <- fmt.Errorf(
-					"the subject of one of your certificates (\"%x\") is not the same as the request sender (\"%x\")",
-					subjectKey,
-					messageIdentityKey,
-				)
-				return
-			}
-
-			// Verify Certificate structure and signature
-			err := cert.Verify(ctx)
-			if err != nil {
-				errCh <- fmt.Errorf("the signature for the certificate with serial number %s is invalid: %v",
-					cert.SerialNumber, err)
-				return
-			}
-
-			// Check if the certificate matches requested certifiers, types, and fields
-			if certificatesRequested != nil {
-				certifiers := certificatesRequested.Certifiers
-				types := certificatesRequested.CertificateTypes
-
-				// Check certifier matches
-				if !utils.CertifierInSlice(certifiers, &cert.Certifier) {
-					errCh <- fmt.Errorf(
-						"certificate with serial number %s has an unrequested certifier: %x",
-						cert.SerialNumber,
-						cert.Certifier.ToDER(),
-					)
-					return
-				}
-
-				certType, err := cert.Type.ToArray()
-				if err != nil {
-					errCh <- fmt.Errorf("failed to convert certificate type to byte array: %v", err)
-					return
-				}
-
-				// Check type match
-				_, typeExists := types[certType]
-				if !typeExists {
-					errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
-					return
-				}
-			}
-
-			_, err = cert.DecryptFields(ctx, verifierWallet, false, "")
-			if err != nil {
-				errCh <- fmt.Errorf("failed to decrypt certificate fields: %v", err)
-				return
-			}
-		}(incomingCert)
-	}
-
-	// Wait for all goroutines to finish
-	wg.Wait()
-	close(errCh)
-
-	// Check if any errors occurred
-	select {
-	case err := <-errCh:
-		return err
-	default:
-		return nil
-	}
+	return nil
 }
 
 // Transport defines the interface for sending and receiving AuthMessages

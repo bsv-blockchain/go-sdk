@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -841,16 +842,14 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 			utilsRequestedCerts,
 		)
 		if err != nil {
-			// Log the error but continue - certificate error shouldn't stop auth
-			p.logger.Printf("Warning: Certificate validation failed: %v", err)
+			return errors.Join(ErrCertificateValidation, err)
 		}
 
 		// Notify certificate listeners
 		for _, callback := range p.onCertificateReceivedCallbacks {
 			err := callback(senderPublicKey, message.Certificates)
 			if err != nil {
-				// Log callback error but continue
-				p.logger.Printf("Warning: Certificate callback error: %v", err)
+				return fmt.Errorf("certificate received callback error: %w", err)
 			}
 		}
 	}

@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -90,13 +92,28 @@ func ValidateCertificates(
 		return errors.New("no certificates were provided")
 	}
 
-	// Create an error channel with capacity equal to number of certificates
+	// Use a wait group to wait for all certificate validations to complete
+	var wg sync.WaitGroup
 	errCh := make(chan error, len(certs))
-	done := make(chan struct{})
+
+	var cancel func()
+	ctx, cancel = context.WithCancel(ctx)
 
 	// Process each certificate in a goroutine
 	for _, incomingCert := range certs {
+		wg.Add(1)
 		go func(cert *certificates.VerifiableCertificate) {
+			defer wg.Done()
+
+			notifyError := func(err error) {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					errCh <- err
+				}
+			}
+
 			// Check that certificate subject matches identity key
 			subjectPubKey := &cert.Subject
 			if isEmptyPublicKey(cert.Subject) || identityKey == nil || !subjectPubKey.IsEqual(identityKey) {
@@ -107,27 +124,33 @@ func ValidateCertificates(
 				if identityKey != nil {
 					identityStr = identityKey.ToDERHex()
 				}
-				errCh <- fmt.Errorf("the subject of one of your certificates (%s) is not the same as the request sender (%s)",
-					subjectStr, identityStr)
+				notifyError(fmt.Errorf("the subject of one of your certificates (%q) is not the same as the request sender (%q)",
+					subjectStr, identityStr))
 				return
 			}
 
 			// Verify certificate structure and signature
-			err := cert.Verify(ctx)
-			if err != nil {
-				errCh <- fmt.Errorf("the signature for the certificate with serial number %s is invalid: %v",
-					cert.SerialNumber, err)
+			// this could take some time, so check if context isn't already done
+			select {
+			case <-ctx.Done():
 				return
+			default:
+				err := cert.Verify(ctx)
+				if err != nil {
+					notifyError(fmt.Errorf("the signature for the certificate with serial number %s is invalid: %v",
+						cert.SerialNumber, err))
+					return
+				}
 			}
 
 			// Check if the certificate matches requested certifiers, types, and fields
 			if certificatesRequested != nil {
-				// Check certifier matches
-				if !isEmptyPublicKey(cert.Certifier) {
+				// Check certifier matches requested certifiers if any
+				if !isEmptyPublicKey(cert.Certifier) && len(certificatesRequested.Certifiers) > 0 {
 					certifierKey := &cert.Certifier
 					if !CertifierInSlice(certificatesRequested.Certifiers, certifierKey) {
-						errCh <- fmt.Errorf("certificate with serial number %s has an unrequested certifier: %x",
-							cert.SerialNumber, certifierKey)
+						notifyError(fmt.Errorf("certificate with serial number %s has an unrequested certifier: %x",
+							cert.SerialNumber, certifierKey))
 						return
 					}
 				}
@@ -136,12 +159,12 @@ func ValidateCertificates(
 				if cert.Type != "" {
 					certType, err := cert.Type.ToArray()
 					if err != nil {
-						errCh <- fmt.Errorf("failed to convert certificate type to byte array: %v", err)
+						notifyError(fmt.Errorf("failed to convert certificate type to byte array: %v", err))
 						return
 					}
 					requestedFields, typeExists := certificatesRequested.CertificateTypes[certType]
 					if !typeExists {
-						errCh <- fmt.Errorf("certificate with type %s was not requested", cert.Type)
+						notifyError(fmt.Errorf("certificate with type %s was not requested", cert.Type))
 						return
 					}
 
@@ -151,29 +174,38 @@ func ValidateCertificates(
 			}
 
 			// Attempt to decrypt fields
-			_, err = cert.DecryptFields(ctx, verifierWallet, false, "")
-			if err != nil {
-				errCh <- fmt.Errorf("failed to decrypt certificate fields: %v", err)
+			// this could take some time, so check if the context isn't already done
+			select {
+			case <-ctx.Done():
 				return
+			default:
+				_, err := cert.DecryptFields(ctx, verifierWallet, false, "")
+				if err != nil {
+					notifyError(fmt.Errorf("failed to decrypt certificate fields: %v", err))
+					return
+				}
 			}
-
 			// If we reach here, this certificate is valid
 		}(incomingCert)
 	}
 
+	done := make(chan struct{})
 	// Wait for all goroutines to finish
 	go func() {
-		// This will be called after all certificates are processed
+		wg.Wait()
 		done <- struct{}{}
 	}()
 
 	// Check for any errors
 	select {
 	case err := <-errCh:
+		cancel()
 		return err
 	case <-done:
+		cancel()
 		return nil
 	case <-ctx.Done():
+		cancel()
 		return ctx.Err()
 	}
 }
