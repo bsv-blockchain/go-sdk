@@ -132,7 +132,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 		fieldRevelationKey := decryptResult.Plaintext
 
 		// 2. Decrypt the actual field value using the field revelation key.
-		encryptedFieldValueBase64, exists := vc.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)]
+		encryptedFieldValueBase64, exists := vc.Fields[fieldName]
 		if !exists {
 			// This case should ideally not happen if the keyring is consistent with fields,
 			// but handle it defensively.

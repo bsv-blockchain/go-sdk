@@ -978,22 +978,31 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
+	decryptionKey := []byte("decryption-key")
+	symmetricKey := ec.NewSymmetricKey(decryptionKey)
+
+	encryptedAliceName, err := symmetricKey.EncryptString("Alice")
+	require.NoError(t, err)
+
 	// Create raw certificates
 	aliceCertRaw := wallet.Certificate{
 		Type:               certType,
 		SerialNumber:       tu.GetByte32FromString("alice-serial"),
 		Subject:            aliceKey.PubKey(),
 		Certifier:          bobKey.PubKey(),
-		Fields:             map[string]string{"name": "Alice"},
+		Fields:             map[string]string{"name": encryptedAliceName},
 		RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0"),
 	}
+
+	encryptedBobName, err := symmetricKey.EncryptString("Bob")
+	require.NoError(t, err)
 
 	bobCertRaw := wallet.Certificate{
 		Type:               certType,
 		SerialNumber:       tu.GetByte32FromString("bob-serial"),
 		Subject:            bobKey.PubKey(),
 		Certifier:          aliceKey.PubKey(),
-		Fields:             map[string]string{"name": "Bob"},
+		Fields:             map[string]string{"name": encryptedBobName},
 		RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
 	}
 
@@ -1049,12 +1058,12 @@ func TestPartialCertificateAcceptance(t *testing.T) {
 	// Configure wallet mocks for Decrypt to make DecryptFields work
 	aliceWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
 		return &wallet.DecryptResult{
-			Plaintext: []byte("decrypted-value"),
+			Plaintext: decryptionKey,
 		}, nil
 	}
 	bobWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
 		return &wallet.DecryptResult{
-			Plaintext: []byte("decrypted-value"),
+			Plaintext: decryptionKey,
 		}, nil
 	}
 
@@ -1277,13 +1286,22 @@ func TestLibraryCardVerification(t *testing.T) {
 		return &wallet.VerifySignatureResult{Valid: true}, nil
 	}
 
+	decryptionKey := []byte("decryption-key")
+	symmetricKey := ec.NewSymmetricKey(decryptionKey)
+
+	encryptedBobName, err := symmetricKey.EncryptString("Bob")
+	require.NoError(t, err)
+
+	encryptedCardNumber, err := symmetricKey.EncryptString("123456")
+	require.NoError(t, err)
+
 	// Bob has a library card - create with proper base64 encoding
 	bobCertRaw := wallet.Certificate{
 		Type:               certType,
 		SerialNumber:       tu.GetByte32FromString("lib-123456"),
 		Subject:            bobKey.PubKey(),
 		Certifier:          aliceKey.PubKey(),
-		Fields:             map[string]string{"name": "Bob", "cardNumber": "123456"},
+		Fields:             map[string]string{"name": encryptedBobName, "cardNumber": encryptedCardNumber},
 		RevocationOutpoint: tu.OutpointFromString(t, "a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.1"),
 	}
 
@@ -1312,12 +1330,12 @@ func TestLibraryCardVerification(t *testing.T) {
 	// Configure wallet mocks for Decrypt to make DecryptFields work
 	aliceWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
 		return &wallet.DecryptResult{
-			Plaintext: []byte("123456"),
+			Plaintext: decryptionKey,
 		}, nil
 	}
 	bobWallet.MockDecrypt = func(ctx context.Context, args wallet.DecryptArgs, originator string) (*wallet.DecryptResult, error) {
 		return &wallet.DecryptResult{
-			Plaintext: []byte("123456"),
+			Plaintext: decryptionKey,
 		}, nil
 	}
 

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"log"
 
 	aesgcm "github.com/bsv-blockchain/go-sdk/primitives/aesgcm"
@@ -11,6 +12,16 @@ import (
 
 type SymmetricKey struct {
 	key []byte
+}
+
+// EncryptString decrypts the given message using the symmetric key using AES-GCM
+// It is a convenient wrapper for encrypting strings instead of bytes.
+func (s *SymmetricKey) EncryptString(message string) (ciphertext string, err error) {
+	result, err := s.Encrypt([]byte(message))
+	if err != nil {
+		return "", fmt.Errorf("failed to encrypt string: %w", err)
+	}
+	return string(result), nil
 }
 
 // Encrypt encrypts the given message using the symmetric key using AES-GCM
@@ -31,6 +42,16 @@ func (s *SymmetricKey) Encrypt(message []byte) (ciphertext []byte, err error) {
 	copy(result[len(iv):], ciphertext)
 	copy(result[len(iv)+len(ciphertext):], tag)
 	return result, nil
+}
+
+// DecryptString decrypts the given message using the symmetric key using AES-GCM
+// It is a convenient wrapper for decrypting strings instead of bytes.
+func (s *SymmetricKey) DecryptString(message string) (plaintext string, err error) {
+	result, err := s.Decrypt([]byte(message))
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt string: %w", err)
+	}
+	return string(result), nil
 }
 
 // Decrypt decrypts the given message using the symmetric key using AES-GCM
