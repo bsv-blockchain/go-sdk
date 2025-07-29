@@ -52,8 +52,7 @@ type TestWallet struct {
 	// By default, it is set to the identity key.
 	Name string
 
-	t                  testing.TB
-	expectedOriginator string
+	t testing.TB
 
 	// Function implementations for methods needed by identity client tests
 	getPublicKeyHandler                 func(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
@@ -115,6 +114,7 @@ func NewTestWallet[KeySource PrivateKeySource](t testing.TB, keySource KeySource
 
 	return &TestWallet{
 		t:      t,
+		Name:   privKey.PubKey().ToDERHex(),
 		logger: logging.NewTestLogger(t),
 		proto:  proto,
 	}
