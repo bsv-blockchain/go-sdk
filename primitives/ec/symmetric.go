@@ -14,7 +14,7 @@ type SymmetricKey struct {
 	key []byte
 }
 
-// EncryptString decrypts the given message using the symmetric key using AES-GCM
+// EncryptString encrypts the given message using the symmetric key using AES-GCM
 // It is a convenient wrapper for encrypting strings instead of bytes.
 func (s *SymmetricKey) EncryptString(message string) (ciphertext string, err error) {
 	result, err := s.Encrypt([]byte(message))

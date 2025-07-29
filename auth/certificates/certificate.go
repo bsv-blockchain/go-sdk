@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -159,7 +160,7 @@ func (c *Certificate) Verify(ctx context.Context) error {
 
 // Sign adds a signature to the certificate using the certifier's wallet
 // Certificate must not be already signed.
-func (c *Certificate) Sign(ctx context.Context, certifierWallet *wallet.ProtoWallet) error {
+func (c *Certificate) Sign(ctx context.Context, certifierWallet CertifierWallet) error {
 	if c.Signature != nil {
 		return ErrAlreadySigned
 	}

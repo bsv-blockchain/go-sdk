@@ -292,10 +292,6 @@ import (
 //   })
 // })
 
-type MockWallet struct {
-	wallet.MockWallet
-}
-
 // Helper function to create a private key from an integer
 func privateKeyFromInt(i int) (*ec.PrivateKey, *ec.PublicKey) {
 	// Convert int to byte slice (little endian)
@@ -307,7 +303,7 @@ func privateKeyFromInt(i int) (*ec.PrivateKey, *ec.PublicKey) {
 // TestPubliclyRevealAttributes tests the PubliclyRevealAttributes method
 func TestPubliclyRevealAttributes(t *testing.T) {
 	// Create mock wallet
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 
 	// Create identity client with mock wallet
 	client, err := NewClient(mockWallet, nil, "")
@@ -364,7 +360,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		}
 
 		// Create a testable client with our mock verifier
-		specificMockWallet := wallet.NewMockWallet(t)
+		specificMockWallet := wallet.NewTestWalletForRandomKey(t)
 		testableClient, err := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
 		require.NoError(t, err)
 
@@ -379,7 +375,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 	t.Run("should throw if createAction returns no tx", func(t *testing.T) {
 		// Setup a certificate
-		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
+		privKey, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		// Use a valid outpoint format so we get past the verification error
 		certificate := &wallet.Certificate{
@@ -394,48 +390,31 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
 		// Create a test-specific wallet to avoid affecting other tests
-		specificMockWallet := wallet.NewMockWallet(t)
-
-		// Mock GetPublicKey to return a test key
-		specificMockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-			return &wallet.GetPublicKeyResult{
-				PublicKey: pubKey,
-			}, nil
-		}
+		specificMockWallet := wallet.NewTestWallet(t, privKey)
 
 		// Mock CreateSignature to succeed
-		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-			// Create a simple signature with R=1, S=1
-			return &wallet.CreateSignatureResult{
-				Signature: &ec.Signature{
-					R: big.NewInt(1),
-					S: big.NewInt(1),
-				},
-			}, nil
-		}
+		// Mock CreateSignature to succeed
+		specificMockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
+			Signature: &ec.Signature{
+				R: big.NewInt(1),
+				S: big.NewInt(1),
+			},
+		})
 
 		// Mock ProveCertificate to succeed
-		specificMockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
-			return &wallet.ProveCertificateResult{
-				KeyringForVerifier: map[string]string{"key": "value"},
-			}, nil
-		}
+		specificMockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
+			KeyringForVerifier: map[string]string{"key": "value"},
+		})
 
 		// Mock CreateAction to return nil TX
-		specificMockWallet.MockCreateAction = func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-			return &wallet.CreateActionResult{
+		specificMockWallet.OnCreateAction().ReturnSuccess(
+			&wallet.CreateActionResult{
 				Tx: nil,
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        nil,
 					Reference: []byte("ref"),
 				},
-			}, nil
-		}
-
-		// Mock GetNetwork to return testnet
-		specificMockWallet.MockGetNetwork = func(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
-			return &wallet.GetNetworkResult{Network: "testnet"}, nil
-		}
+			})
 
 		// Create a mock certificate verifier that always succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -456,7 +435,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 	t.Run("should still fail properly with valid tx but NewTransactionFromBEEF failure", func(t *testing.T) {
 		// Setup a certificate
-		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
+		privKey, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
 			Type:               typeXCert,
@@ -470,48 +449,30 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
 		// Create a test-specific wallet
-		specificMockWallet := wallet.NewMockWallet(t)
-
-		// Mock GetPublicKey to return a test key
-		specificMockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-			return &wallet.GetPublicKeyResult{
-				PublicKey: pubKey,
-			}, nil
-		}
+		specificMockWallet := wallet.NewTestWallet(t, privKey)
 
 		// Mock CreateSignature to succeed
-		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-			// Create a simple signature with R=1, S=1
-			return &wallet.CreateSignatureResult{
-				Signature: &ec.Signature{
-					R: big.NewInt(1),
-					S: big.NewInt(1),
-				},
-			}, nil
-		}
+		specificMockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
+			Signature: &ec.Signature{
+				R: big.NewInt(1),
+				S: big.NewInt(1),
+			},
+		})
 
 		// Mock ProveCertificate to succeed
-		specificMockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
-			return &wallet.ProveCertificateResult{
-				KeyringForVerifier: map[string]string{"key": "value"},
-			}, nil
-		}
+		specificMockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
+			KeyringForVerifier: map[string]string{"key": "value"},
+		})
 
 		// Mock CreateAction to return a valid TX (but one that will fail in NewTransactionFromBEEF)
-		specificMockWallet.MockCreateAction = func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-			return &wallet.CreateActionResult{
+		specificMockWallet.OnCreateAction().ReturnSuccess(
+			&wallet.CreateActionResult{
 				Tx: []byte{1, 2, 3}, // This will fail in NewTransactionFromBEEF
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        []byte{1, 2, 3},
 					Reference: []byte("ref"),
 				},
-			}, nil
-		}
-
-		// Mock GetNetwork to return testnet
-		specificMockWallet.MockGetNetwork = func(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
-			return &wallet.GetNetworkResult{Network: "testnet"}, nil
-		}
+			})
 
 		// Create a mock certificate verifier that always succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -532,7 +493,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 	t.Run("should publicly reveal attributes successfully", func(t *testing.T) {
 		// Setup a certificate
-		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
+		privKey, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
 			Type:               typeXCert,
@@ -546,31 +507,22 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
 		// Create a test-specific wallet
-		specificMockWallet := wallet.NewMockWallet(t)
+		specificMockWallet := wallet.NewTestWallet(t, privKey)
 
 		// Track if the functions were called with the right arguments
 		var proveCertificateCalled bool
 		var createActionCalled bool
 
-		// Mock GetPublicKey to return a test key
-		specificMockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-			return &wallet.GetPublicKeyResult{
-				PublicKey: pubKey,
-			}, nil
-		}
-
 		// Mock CreateSignature to succeed
-		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-			return &wallet.CreateSignatureResult{
-				Signature: &ec.Signature{
-					R: big.NewInt(1),
-					S: big.NewInt(1),
-				},
-			}, nil
-		}
+		specificMockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
+			Signature: &ec.Signature{
+				R: big.NewInt(1),
+				S: big.NewInt(1),
+			},
+		})
 
 		// Mock ProveCertificate to succeed and track call
-		specificMockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
+		specificMockWallet.OnProveCertificate().Do(func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
 			// Verify the correct certificate and fields were passed
 			require.Equal(t, *certificate, args.Certificate)
 			require.Contains(t, args.FieldsToReveal, "name")
@@ -580,10 +532,10 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 			return &wallet.ProveCertificateResult{
 				KeyringForVerifier: map[string]string{"key": "value"},
 			}, nil
-		}
+		})
 
 		// Mock CreateAction to return a valid TX
-		specificMockWallet.MockCreateAction = func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
+		specificMockWallet.OnCreateAction().Do(func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 			// Verify the action is created with expected parameters
 			require.Equal(t, "Create a new Identity Token", args.Description)
 			require.Equal(t, 1, len(args.Outputs))
@@ -597,12 +549,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 					Reference: []byte("ref"),
 				},
 			}, nil
-		}
-
-		// Mock GetNetwork to return testnet
-		specificMockWallet.MockGetNetwork = func(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
-			return &wallet.GetNetworkResult{Network: "testnet"}, nil
-		}
+		})
 
 		// Create a mock certificate verifier that succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -630,7 +577,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 	// New test case for the simple API
 	t.Run("should use simple API for TypeScript compatibility", func(t *testing.T) {
 		// Setup a certificate
-		_, pubKey := ec.PrivateKeyFromBytes([]byte{123})
+		privKey, pubKey := ec.PrivateKeyFromBytes([]byte{123})
 
 		certificate := &wallet.Certificate{
 			Type:               typeXCert,
@@ -644,43 +591,27 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
 		// Create a test-specific wallet
-		specificMockWallet := wallet.NewMockWallet(t)
+		specificMockWallet := wallet.NewTestWallet(t, privKey)
 
-		// Mock necessary wallet functions
-		specificMockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-			return &wallet.GetPublicKeyResult{
-				PublicKey: pubKey,
-			}, nil
-		}
+		specificMockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
+			Signature: &ec.Signature{
+				R: big.NewInt(1),
+				S: big.NewInt(1),
+			},
+		})
 
-		specificMockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-			return &wallet.CreateSignatureResult{
-				Signature: &ec.Signature{
-					R: big.NewInt(1),
-					S: big.NewInt(1),
-				},
-			}, nil
-		}
+		specificMockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
+			KeyringForVerifier: map[string]string{"key": "value"},
+		})
 
-		specificMockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
-			return &wallet.ProveCertificateResult{
-				KeyringForVerifier: map[string]string{"key": "value"},
-			}, nil
-		}
-
-		specificMockWallet.MockCreateAction = func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
-			return &wallet.CreateActionResult{
+		specificMockWallet.OnCreateAction().ReturnSuccess(
+			&wallet.CreateActionResult{
 				Tx: []byte{1, 2, 3, 4},
 				SignableTransaction: &wallet.SignableTransaction{
 					Tx:        []byte{1, 2, 3, 4},
 					Reference: []byte("ref"),
 				},
-			}, nil
-		}
-
-		specificMockWallet.MockGetNetwork = func(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
-			return &wallet.GetNetworkResult{Network: "testnet"}, nil
-		}
+			})
 
 		// Create a mock certificate verifier that succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -703,7 +634,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 // TestResolveByIdentityKey tests the ResolveByIdentityKey method
 func TestResolveByIdentityKey(t *testing.T) {
 	// Create mock wallet
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 
 	// Create identity client with mock wallet
 	client, err := NewClient(mockWallet, nil, "")
@@ -719,8 +650,8 @@ func TestResolveByIdentityKey(t *testing.T) {
 		require.NoError(t, err)
 
 		// Setup mock DiscoverByIdentityKey
-		mockWallet.MockDiscoverByIdentityKey = func(ctx context.Context, args wallet.DiscoverByIdentityKeyArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
-			return &wallet.DiscoverCertificatesResult{
+		mockWallet.OnDiscoverByIdentityKey().ReturnSuccess(
+			&wallet.DiscoverCertificatesResult{
 				Certificates: []wallet.IdentityCertificate{
 					{
 						Certificate: wallet.Certificate{
@@ -737,8 +668,7 @@ func TestResolveByIdentityKey(t *testing.T) {
 						},
 					},
 				},
-			}, nil
-		}
+			})
 
 		// Call ResolveByIdentityKey
 		identities, err := client.ResolveByIdentityKey(context.Background(), wallet.DiscoverByIdentityKeyArgs{
@@ -761,7 +691,7 @@ func TestResolveByIdentityKey(t *testing.T) {
 // TestResolveByAttributes tests the ResolveByAttributes method
 func TestResolveByAttributes(t *testing.T) {
 	// Create mock wallet
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 
 	// Create identity client with mock wallet
 	client, err := NewClient(mockWallet, nil, "")
@@ -777,8 +707,8 @@ func TestResolveByAttributes(t *testing.T) {
 		require.NoError(t, err)
 
 		// Setup mock DiscoverByAttributes
-		mockWallet.MockDiscoverByAttributes = func(ctx context.Context, args wallet.DiscoverByAttributesArgs, originator string) (*wallet.DiscoverCertificatesResult, error) {
-			return &wallet.DiscoverCertificatesResult{
+		mockWallet.OnDiscoverByAttributes().ReturnSuccess(
+			&wallet.DiscoverCertificatesResult{
 				Certificates: []wallet.IdentityCertificate{
 					{
 						Certificate: wallet.Certificate{
@@ -794,8 +724,7 @@ func TestResolveByAttributes(t *testing.T) {
 						},
 					},
 				},
-			}, nil
-		}
+			})
 
 		// Call ResolveByAttributes
 		identities, err := client.ResolveByAttributes(context.Background(), wallet.DiscoverByAttributesArgs{
