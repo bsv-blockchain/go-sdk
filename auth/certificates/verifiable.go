@@ -112,15 +112,16 @@ func (vc *VerifiableCertificate) DecryptFields(
 		// Use the certificate's serial number as required for verifier keyring decryption.
 		protocolID, keyID := GetCertificateEncryptionDetails(string(fieldName), string(vc.SerialNumber))
 
+		args := wallet.EncryptionArgs{
+			ProtocolID:       protocolID,
+			KeyID:            keyID,
+			Counterparty:     subjectCounterparty,
+			Privileged:       privileged,
+			PrivilegedReason: privilegedReason,
+		}
 		decryptResult, err := verifierWallet.Decrypt(ctx, wallet.DecryptArgs{
-			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID:       protocolID,
-				KeyID:            keyID,
-				Counterparty:     subjectCounterparty,
-				Privileged:       privileged,
-				PrivilegedReason: privilegedReason,
-			},
-			Ciphertext: encryptedKeyBytes,
+			EncryptionArgs: args,
+			Ciphertext:     encryptedKeyBytes,
 		}, "")
 		if err != nil {
 			// Wrap error from the wallet's Decrypt method, matching TS error style

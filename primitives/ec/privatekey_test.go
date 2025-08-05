@@ -16,6 +16,7 @@ import (
 
 	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
 	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -117,13 +118,57 @@ func TestBRC42PrivateVectors(t *testing.T) {
 }
 
 func TestPrivateKeyFromInvalidHex(t *testing.T) {
-	hex := ""
-	_, err := PrivateKeyFromHex(hex)
+	_, err := PrivateKeyFromHex("")
 	require.Error(t, err)
 
 	wif := "L4o1GXuUSHauk19f9Cfpm1qfSXZuGLBUAC2VZM6vdmfMxRxAYkWq"
 	_, err = PrivateKeyFromHex(wif)
 	require.Error(t, err)
+}
+
+func TestPrivateKeySerializationAndDeserialization(t *testing.T) {
+	expectedPK, err := NewPrivateKey()
+	require.NoError(t, err, "failed to generate private key")
+
+	t.Run("serialize", func(t *testing.T) {
+		// when:
+		serialized := expectedPK.Serialize()
+		require.NotNil(t, serialized, "failed to serialize private key")
+
+		// and:
+		deserialized, _ := PrivateKeyFromBytes(serialized)
+
+		// then:
+		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
+	})
+
+	t.Run("hex", func(t *testing.T) {
+		// when:
+		serialized := expectedPK.Hex()
+		require.NotEmpty(t, serialized, "failed to serialize private key")
+
+		// and:
+		deserialized, err := PrivateKeyFromHex(serialized)
+
+		// then:
+		assert.NoError(t, err, "failed to deserialize private key")
+		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
+
+	})
+
+	t.Run("WIF", func(t *testing.T) {
+		// when:
+		serialized := expectedPK.Wif()
+		require.NotEmpty(t, serialized, "failed to serialize private key")
+
+		// and:
+		deserialized, err := PrivateKeyFromWif(serialized)
+
+		// then:
+		assert.NoError(t, err, "failed to deserialize private key")
+		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
+	})
+
 }
 
 func TestPrivateKeyFromInvalidWif(t *testing.T) {
@@ -250,11 +295,11 @@ func TestStaticKeyShares(t *testing.T) {
 }
 
 func TestUmod(t *testing.T) {
-	big, _ := new(big.Int).SetString("96062736363790697194862546171394473697392259359830162418218835520086413272341", 10)
+	bigNum, _ := new(big.Int).SetString("96062736363790697194862546171394473697392259359830162418218835520086413272341", 10)
 
-	umodded := util.Umod(big, keyshares.NewCurve().P)
+	umodded := util.Umod(bigNum, keyshares.NewCurve().P)
 
-	require.Equal(t, umodded, big)
+	require.Equal(t, umodded, bigNum)
 }
 
 func TestPolynomialDifferentThresholdsAndShares(t *testing.T) {

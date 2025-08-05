@@ -73,8 +73,8 @@ func CertifierInSlice(certifiers []*ec.PublicKey, certifier *ec.PublicKey) bool 
 	return false
 }
 
-// isEmptyPublicKey checks if a public key is empty/uninitialized
-func isEmptyPublicKey(key ec.PublicKey) bool {
+// IsEmptyPublicKey checks if a public key is empty/uninitialized
+func IsEmptyPublicKey(key ec.PublicKey) bool {
 	return key.X == nil || key.Y == nil
 }
 
@@ -230,7 +230,7 @@ func verifyRequestedCertifier(cert *certificates.VerifiableCertificate, certific
 		return nil
 	}
 
-	if !isEmptyPublicKey(cert.Certifier) && !CertifierInSlice(certificatesRequested.Certifiers, &cert.Certifier) {
+	if !IsEmptyPublicKey(cert.Certifier) && !CertifierInSlice(certificatesRequested.Certifiers, &cert.Certifier) {
 		return fmt.Errorf("certificate with serial number %s has an unrequested certifier: %s",
 			cert.SerialNumber, cert.Certifier.ToDERHex())
 	}
@@ -239,9 +239,9 @@ func verifyRequestedCertifier(cert *certificates.VerifiableCertificate, certific
 
 func verifySubjectIdentityKey(cert *certificates.VerifiableCertificate, identityKey *ec.PublicKey) error {
 	subjectPubKey := &cert.Subject
-	if isEmptyPublicKey(cert.Subject) || identityKey == nil || !subjectPubKey.IsEqual(identityKey) {
+	if IsEmptyPublicKey(cert.Subject) || identityKey == nil || !subjectPubKey.IsEqual(identityKey) {
 		var subjectStr, identityStr string
-		if !isEmptyPublicKey(cert.Subject) {
+		if !IsEmptyPublicKey(cert.Subject) {
 			subjectStr = cert.Subject.ToDERHex()
 		}
 		if identityKey != nil {

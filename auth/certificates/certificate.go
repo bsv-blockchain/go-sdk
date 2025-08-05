@@ -7,19 +7,20 @@ package certificates
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 )
 
 var (
-	ErrInvalidCertificate = errors.New("invalid-certificate")
-	ErrAlreadySigned      = errors.New("certificate has already been signed")
-	ErrNotSigned          = errors.New("certificate is not signed")
+	ErrAlreadySigned = errors.New("certificate has already been signed")
+	ErrNotSigned     = errors.New("certificate is not signed")
 )
 
 // Certificate represents an Identity Certificate as per the Wallet interface specifications.
@@ -44,7 +45,44 @@ type Certificate struct {
 	Fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64 `json:"fields"`
 
 	// Certificate signature by the certifier's private key
-	Signature []byte `json:"signature,omitempty"`
+	Signature util.ByteString `json:"signature,omitempty"`
+}
+
+type SignatureHex []byte
+
+func (s *SignatureHex) UnmarshalJSON(bytes []byte) error {
+	if len(bytes) == 0 {
+		*s = nil
+		return nil
+	}
+
+	if len(bytes) < 2 {
+		return fmt.Errorf("signature hex must be JSON string type %s", bytes)
+	}
+
+	if bytes[0] != '"' || bytes[len(bytes)-1] != '"' {
+		return fmt.Errorf("signature hex must be JSON string type %s", bytes)
+	}
+
+	bytes = bytes[1 : len(bytes)-1]
+
+	if len(bytes)%2 != 0 {
+		return fmt.Errorf("signature hex must have even size %s", bytes)
+	}
+
+	var err error
+	*s, err = hex.DecodeString(string(bytes))
+	if err != nil {
+		return fmt.Errorf("failed to decode signature hex: %w", err)
+	}
+	return nil
+}
+
+func (s SignatureHex) MarshalJSON() ([]byte, error) {
+	if len(s) == 0 {
+		return []byte(""), nil
+	}
+	return []byte("\"" + hex.EncodeToString(s) + "\""), nil
 }
 
 // NewCertificate creates a new certificate with the given fields
@@ -294,7 +332,7 @@ func FromWalletCertificate(walletCert *wallet.Certificate) (*Certificate, error)
 // so the keyID is formed by concatenating the serialNumber and fieldName.
 func GetCertificateEncryptionDetails(fieldName string, serialNumber string) (wallet.Protocol, string) {
 	protocolID := wallet.Protocol{
-		SecurityLevel: wallet.SecurityLevelEveryApp,
+		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 		Protocol:      "certificate field encryption",
 	}
 
