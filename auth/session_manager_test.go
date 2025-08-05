@@ -1,41 +1,21 @@
-package auth
+package auth_test
 
 import (
 	"testing"
 	"time"
 
+	"github.com/bsv-blockchain/go-sdk/auth"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewSessionManager(t *testing.T) {
-	manager := NewSessionManager()
-	if manager == nil {
-		t.Fatal("Expected session manager to be created")
-	}
-
-	// Type assert to DefaultSessionManager for field access
-	dsm, ok := manager.(*DefaultSessionManager)
-	if !ok {
-		t.Fatal("Expected manager to be of type *DefaultSessionManager")
-	}
-
-	if dsm.sessionNonceToSession == nil {
-		t.Error("Expected sessionNonceToSession map to be initialized")
-	}
-
-	if dsm.identityKeyToNonces == nil {
-		t.Error("Expected identityKeyToNonces map to be initialized")
-	}
-}
-
 func TestSessionManager(t *testing.T) {
-	manager := NewSessionManager()
+	manager := auth.NewSessionManager()
 
 	pk, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	// Create a session
-	session := &PeerSession{
+	session := &auth.PeerSession{
 		IsAuthenticated: true,
 		SessionNonce:    "test-nonce",
 		PeerNonce:       "peer-nonce",
@@ -102,7 +82,7 @@ func TestSessionManager(t *testing.T) {
 	}
 
 	// Test adding session with missing nonce
-	invalidSession := &PeerSession{
+	invalidSession := &auth.PeerSession{
 		IsAuthenticated: true,
 		PeerIdentityKey: pk.PubKey(),
 		LastUpdate:      time.Now().UnixNano() / int64(time.Millisecond),

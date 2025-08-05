@@ -1,6 +1,9 @@
 package auth
 
-import "errors"
+import (
+	"errors"
+	"sync"
+)
 
 // SessionManager defines the interface for managing peer sessions.
 type SessionManager interface {
@@ -11,21 +14,25 @@ type SessionManager interface {
 	HasSession(identifier string) bool
 }
 
+// ensure that DefaultSessionManager is implementing SessionManager
+var _ SessionManager = (*DefaultSessionManager)(nil)
+
 // DefaultSessionManager manages sessions for peers, allowing multiple concurrent sessions
 // per identity key. Primary lookup is always by sessionNonce.
 type DefaultSessionManager struct {
 	// Maps sessionNonce -> PeerSession
-	sessionNonceToSession map[string]*PeerSession
+	sessionNonceToSession sync.Map
+
+	keyToNoncesLock sync.RWMutex
 
 	// Maps identityKey -> Set of sessionNonces
 	identityKeyToNonces map[string]map[string]struct{}
 }
 
 // NewSessionManager creates a new session manager
-func NewSessionManager() SessionManager {
+func NewSessionManager() *DefaultSessionManager {
 	return &DefaultSessionManager{
-		sessionNonceToSession: make(map[string]*PeerSession),
-		identityKeyToNonces:   make(map[string]map[string]struct{}),
+		identityKeyToNonces: make(map[string]map[string]struct{}),
 	}
 }
 
@@ -40,10 +47,12 @@ func (sm *DefaultSessionManager) AddSession(session *PeerSession) error {
 	}
 
 	// Use the sessionNonce as the primary key
-	sm.sessionNonceToSession[session.SessionNonce] = session
+	sm.sessionNonceToSession.Store(session.SessionNonce, session)
 
 	// Also track it by identity key if present
 	if session.PeerIdentityKey != nil {
+		sm.keyToNoncesLock.Lock()
+		defer sm.keyToNoncesLock.Unlock()
 		nonces := sm.identityKeyToNonces[session.PeerIdentityKey.ToDERHex()]
 		if nonces == nil {
 			nonces = make(map[string]struct{})
@@ -72,11 +81,13 @@ func (sm *DefaultSessionManager) UpdateSession(session *PeerSession) {
 // authenticated) session associated with that peer, if any.
 func (sm *DefaultSessionManager) GetSession(identifier string) (*PeerSession, error) {
 	// Check if this identifier is directly a sessionNonce
-	if direct, ok := sm.sessionNonceToSession[identifier]; ok {
-		return direct, nil
+	if direct, ok := sm.sessionNonceToSession.Load(identifier); ok {
+		return direct.(*PeerSession), nil
 	}
 
 	// Otherwise, interpret the identifier as an identity key
+	sm.keyToNoncesLock.RLock()
+	defer sm.keyToNoncesLock.RUnlock()
 	nonces, ok := sm.identityKeyToNonces[identifier]
 	if !ok || len(nonces) == 0 {
 		return nil, errors.New("session-not-found")
@@ -86,7 +97,8 @@ func (sm *DefaultSessionManager) GetSession(identifier string) (*PeerSession, er
 	// - Choose the most recently updated, preferring authenticated sessions
 	var best *PeerSession
 	for nonce := range nonces {
-		if s, ok := sm.sessionNonceToSession[nonce]; ok {
+		if s, ok := sm.sessionNonceToSession.Load(nonce); ok {
+			s := s.(*PeerSession)
 			if best == nil {
 				best = s
 			} else if s.LastUpdate > best.LastUpdate {
@@ -105,10 +117,12 @@ func (sm *DefaultSessionManager) GetSession(identifier string) (*PeerSession, er
 // RemoveSession removes a session from the manager by clearing all associated identifiers.
 func (sm *DefaultSessionManager) RemoveSession(session *PeerSession) {
 	if session.SessionNonce != "" {
-		delete(sm.sessionNonceToSession, session.SessionNonce)
+		sm.sessionNonceToSession.Delete(session.SessionNonce)
 	}
 
 	if session.PeerIdentityKey != nil {
+		sm.keyToNoncesLock.Lock()
+		defer sm.keyToNoncesLock.Unlock()
 		nonces := sm.identityKeyToNonces[session.PeerIdentityKey.ToDERHex()]
 		if nonces != nil {
 			delete(nonces, session.SessionNonce)
@@ -122,12 +136,14 @@ func (sm *DefaultSessionManager) RemoveSession(session *PeerSession) {
 // HasSession checks if a session exists for a given identifier (either sessionNonce or identityKey).
 func (sm *DefaultSessionManager) HasSession(identifier string) bool {
 	// Check if the identifier is a sessionNonce
-	direct := sm.sessionNonceToSession[identifier] != nil
-	if direct {
+	_, ok := sm.sessionNonceToSession.Load(identifier)
+	if ok {
 		return true
 	}
 
 	// If not directly a nonce, interpret as identityKey
+	sm.keyToNoncesLock.RLock()
+	defer sm.keyToNoncesLock.RUnlock()
 	nonces, ok := sm.identityKeyToNonces[identifier]
 	return ok && len(nonces) > 0
 }

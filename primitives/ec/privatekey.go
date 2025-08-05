@@ -178,6 +178,11 @@ func (p *PrivateKey) Serialize() []byte {
 	return paddedAppend(PrivateKeyBytesLen, b, p.D.Bytes())
 }
 
+// Hex returns the hexadecimal string representation of the serialized private key.
+func (p *PrivateKey) Hex() string {
+	return hex.EncodeToString(p.Serialize())
+}
+
 func (p *PrivateKey) DeriveSharedSecret(key *PublicKey) (*PublicKey, error) {
 	if !key.Validate() {
 		return nil, fmt.Errorf("public key is not on the curve")

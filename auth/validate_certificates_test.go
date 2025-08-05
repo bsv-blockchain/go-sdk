@@ -1,9 +1,10 @@
-package auth
+package auth_test
 
 import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -19,11 +20,11 @@ import (
 func TestValidateCertificates(t *testing.T) {
 	t.Run("Rejects empty certificates", func(t *testing.T) {
 		mockWallet := wallet.NewTestWalletForRandomKey(t)
-		message := &AuthMessage{
+		message := &auth.AuthMessage{
 			Certificates: nil,
 		}
 
-		err := ValidateCertificates(t.Context(), mockWallet, message, nil)
+		err := auth.ValidateCertificates(t.Context(), mockWallet, message, nil)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "no certificates were provided")
@@ -73,7 +74,7 @@ func TestValidateCertificates(t *testing.T) {
 
 		// Certificate fields
 		plaintextFields := map[string]string{
-			"name":  "Test User",
+			"Name":  "Test User",
 			"email": "test@example.com",
 			"role":  "Developer",
 		}
@@ -101,7 +102,7 @@ func TestValidateCertificates(t *testing.T) {
 
 		// Create a verifiable certificate from the master certificate
 		// First, create keyring for a verifier (in this case, we'll use "anyone")
-		fieldNames := []wallet.CertificateFieldNameUnder50Bytes{"name", "email", "role"}
+		fieldNames := []wallet.CertificateFieldNameUnder50Bytes{"Name", "email", "role"}
 		certifierCounterparty := wallet.Counterparty{
 			Type:         wallet.CounterpartyTypeOther,
 			Counterparty: certifierIdentityKey.PublicKey,
@@ -132,7 +133,7 @@ func TestValidateCertificates(t *testing.T) {
 		verifiableCert := certificates.NewVerifiableCertificate(&masterCert.Certificate, keyringMap)
 
 		// Create AuthMessage with the certificate - USE SUBJECT'S IDENTITY KEY, NOT CERTIFIER'S
-		message := &AuthMessage{
+		message := &auth.AuthMessage{
 			Certificates: []*certificates.VerifiableCertificate{verifiableCert},
 			IdentityKey:  subjectIdentityKey.PublicKey, // Fixed: use subject's key
 		}
@@ -145,7 +146,7 @@ func TestValidateCertificates(t *testing.T) {
 		certReqs := &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{certifierIdentityKey.PublicKey},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
-				certType32: []string{"name", "email"},
+				certType32: []string{"Name", "email"},
 			},
 		}
 
@@ -153,7 +154,7 @@ func TestValidateCertificates(t *testing.T) {
 		anyoneWallet, err := wallet.NewCompletedProtoWallet(nil)
 		require.NoError(t, err)
 
-		err = ValidateCertificates(t.Context(), anyoneWallet, message, certReqs)
+		err = auth.ValidateCertificates(t.Context(), anyoneWallet, message, certReqs)
 		assert.NoError(t, err)
 	})
 
@@ -222,7 +223,7 @@ func TestValidateCertificates(t *testing.T) {
 		verifiableCert := certificates.NewVerifiableCertificate(&masterCert.Certificate, keyringMap)
 
 		// Create message
-		message := &AuthMessage{
+		message := &auth.AuthMessage{
 			Certificates: []*certificates.VerifiableCertificate{verifiableCert},
 			IdentityKey:  subjectIdentityKey.PublicKey,
 		}
@@ -240,7 +241,7 @@ func TestValidateCertificates(t *testing.T) {
 		}
 
 		// Validate
-		err = ValidateCertificates(t.Context(), subjectWallet, message, certReqs)
+		err = auth.ValidateCertificates(t.Context(), subjectWallet, message, certReqs)
 		assert.NoError(t, err)
 	})
 
@@ -304,14 +305,14 @@ func TestValidateCertificates(t *testing.T) {
 		verifiableCert := certificates.NewVerifiableCertificate(&masterCert.Certificate, keyringMap)
 
 		// Create message - USE SUBJECT'S IDENTITY KEY, NOT CERTIFIER'S
-		message := &AuthMessage{
+		message := &auth.AuthMessage{
 			Certificates: []*certificates.VerifiableCertificate{verifiableCert},
 			IdentityKey:  subjectIdentityKey.PublicKey, // Fixed: use subject's key
 		}
 
 		// Validate should fail due to invalid signature
 		anyoneWallet, _ := wallet.NewCompletedProtoWallet(nil)
-		err := ValidateCertificates(t.Context(), anyoneWallet, message, nil)
+		err := auth.ValidateCertificates(t.Context(), anyoneWallet, message, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "signature")
 	})

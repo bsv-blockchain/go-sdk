@@ -14,6 +14,33 @@ import (
 // ensure that TestWallet is implementing wallet.Interface
 var _ Interface = &TestWallet{}
 
+type TestWalletOpts struct {
+	Name        string
+	Logger      *slog.Logger
+	CertManager CertificatesManagement
+}
+
+// WithTestWalletName sets the name for TestWallet
+func WithTestWalletName(name string) func(*TestWalletOpts) {
+	return func(opts *TestWalletOpts) {
+		opts.Name = name
+	}
+}
+
+// WithTestWalletLogger sets a custom logger for TestWallet, allowing customized logging during test operations.
+func WithTestWalletLogger(logger *slog.Logger) func(*TestWalletOpts) {
+	return func(opts *TestWalletOpts) {
+		opts.Logger = logger
+	}
+}
+
+// WithTestWalletCertManager sets a certificate manager on TestWallet, responsible for operations on certificates.
+func WithTestWalletCertManager(certManager CertificatesManagement) func(*TestWalletOpts) {
+	return func(opts *TestWalletOpts) {
+		opts.CertManager = certManager
+	}
+}
+
 // TestWallet is a testing implementation of a wallet used in tests.
 // It includes mock handlers for various cryptographic and identity-related operations.
 // By default, it implements wallet.Interface methods using wallet.CompletedProtoWallet.
@@ -84,26 +111,30 @@ type TestWallet struct {
 	getNetworkHandler                   func(ctx context.Context, args any, originator string) (*GetNetworkResult, error)
 	getVersionHandler                   func(ctx context.Context, args any, originator string) (*GetVersionResult, error)
 
-	proto              *CompletedProtoWallet
+	proto              Interface
 	logger             *slog.Logger
 	globalExpectations []func(ctx context.Context, args any, originator string)
+	certManager        CertificatesManagement
 }
 
 // NewTestWalletForRandomKey creates a new TestWallet with a randomly generated private key.
 // This is a convenience function for tests that don't need a specific key.
-// It internally calls NewTestWallet with the generated key.
-func NewTestWalletForRandomKey(t testing.TB) *TestWallet {
+// The created TestWallet uses a CompletedProtoWallet internally to implement
+// the wallet.Interface methods.
+// But allows you to override/mock part of them with OnXyz methods (see TestWallet description for details)
+func NewTestWalletForRandomKey(t testing.TB, opts ...func(walletOpts *TestWalletOpts)) *TestWallet {
 	key, err := ec.NewPrivateKey()
 	require.NoError(t, err, "Failed to create random key")
 
-	return NewTestWallet(t, key)
+	return NewTestWallet(t, key, opts...)
 }
 
 // NewTestWallet creates a new TestWallet with the provided private key source.
 // It accepts any type that implements the PrivateKeySource interface.
 // The created TestWallet uses a CompletedProtoWallet internally to implement
 // the wallet.Interface methods.
-func NewTestWallet[KeySource PrivateKeySource](t testing.TB, keySource KeySource) *TestWallet {
+// But allows you to override/mock part of them with OnXyz methods (see TestWallet description for details)
+func NewTestWallet[KeySource PrivateKeySource](t testing.TB, keySource KeySource, opts ...func(walletOpts *TestWalletOpts)) *TestWallet {
 	t.Helper()
 
 	privKey, err := ToPrivateKey(keySource)
@@ -112,11 +143,34 @@ func NewTestWallet[KeySource PrivateKeySource](t testing.TB, keySource KeySource
 	proto, err := NewCompletedProtoWallet(privKey)
 	require.NoError(t, err, "Cannot create CompletedProtoWallet")
 
+	return NewTestWalletFromWallet(t, proto, opts...)
+}
+
+// NewTestWalletFromWallet creates a new TestWallet instance from an existing wallet Interface.
+// The created TestWallet by default will pass all operations to the provided implementation of Interface.
+// But allows you to override/mock part of them with OnXyz methods (see TestWallet description for details)
+func NewTestWalletFromWallet(t testing.TB, proto Interface, opts ...func(walletOpts *TestWalletOpts)) *TestWallet {
+	t.Helper()
+
+	pubKey, err := proto.GetPublicKey(t.Context(), GetPublicKeyArgs{IdentityKey: true}, "")
+	require.NoError(t, err, "Cannot get public key from wallet")
+
+	options := &TestWalletOpts{
+		Logger:      logging.NewTestLogger(t),
+		CertManager: proto,
+		Name:        pubKey.PublicKey.ToDERHex(),
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	return &TestWallet{
-		t:      t,
-		Name:   privKey.PubKey().ToDERHex(),
-		logger: logging.NewTestLogger(t),
-		proto:  proto,
+		t:           t,
+		Name:        options.Name,
+		logger:      options.Logger.With("service", "TestWallet"),
+		proto:       proto,
+		certManager: options.CertManager,
 	}
 }
 
@@ -594,7 +648,7 @@ func (m *TestWallet) AcquireCertificate(ctx context.Context, args AcquireCertifi
 	if m.acquireCertificateHandler != nil {
 		return m.acquireCertificateHandler(ctx, args, originator)
 	}
-	return m.proto.AcquireCertificate(ctx, args, originator)
+	return m.certManager.AcquireCertificate(ctx, args, originator)
 }
 
 // OnListCertificates returns a MockWalletMethods object that can be used to configure the behavior
@@ -617,7 +671,7 @@ func (m *TestWallet) ListCertificates(ctx context.Context, args ListCertificates
 	if m.listCertificatesHandler != nil {
 		return m.listCertificatesHandler(ctx, args, originator)
 	}
-	return m.proto.ListCertificates(ctx, args, originator)
+	return m.certManager.ListCertificates(ctx, args, originator)
 }
 
 // OnProveCertificate returns a MockWalletMethods object that can be used to configure the behavior
@@ -640,7 +694,7 @@ func (m *TestWallet) ProveCertificate(ctx context.Context, args ProveCertificate
 	if m.proveCertificateHandler != nil {
 		return m.proveCertificateHandler(ctx, args, originator)
 	}
-	return m.proto.ProveCertificate(ctx, args, originator)
+	return m.certManager.ProveCertificate(ctx, args, originator)
 }
 
 // OnRelinquishCertificate returns a MockWalletMethods object that can be used to configure the behavior
@@ -663,7 +717,7 @@ func (m *TestWallet) RelinquishCertificate(ctx context.Context, args RelinquishC
 	if m.relinquishCertificateHandler != nil {
 		return m.relinquishCertificateHandler(ctx, args, originator)
 	}
-	return m.proto.RelinquishCertificate(ctx, args, originator)
+	return m.certManager.RelinquishCertificate(ctx, args, originator)
 }
 
 // OnDiscoverByIdentityKey returns a MockWalletMethods object that can be used to configure the behavior
@@ -841,5 +895,21 @@ func (m *TestWallet) GetVersion(ctx context.Context, args any, originator string
 	if m.getVersionHandler != nil {
 		return m.getVersionHandler(ctx, args, originator)
 	}
-	return m.proto.GetVersion(ctx, args, originator)
+
+	result, err := m.proto.GetVersion(ctx, args, originator)
+	if err != nil {
+		return nil, err
+	}
+	result.Version = result.Version + "-test-wallet"
+	return result, nil
+}
+
+// UseCertificatesManager sets the certificate management system for the wallet.
+// If the provided manager is nil, it will use a wrapped wallet Interface implementation for cert management.
+func (m *TestWallet) UseCertificatesManager(manager CertificatesManagement) {
+	if manager == nil {
+		m.certManager = m.proto
+	} else {
+		m.certManager = manager
+	}
 }

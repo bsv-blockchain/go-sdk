@@ -266,7 +266,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		}
 
 		// Set up listener for response
-		var listenerID int
+		var listenerID int32
 		listenerID = peerToUse.Peer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
 			// Create a reader
 			responseReader := util.NewReader(payload)
@@ -492,7 +492,7 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 	})
 
 	// Set up certificate received listener
-	var callbackID int
+	var callbackID int32
 	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
 		a.certificatesReceived = append(a.certificatesReceived, certs...)
@@ -682,7 +682,7 @@ func (a *AuthFetch) handleFetchAndValidate(urlStr string, config *SimplifiedFetc
 func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, config *SimplifiedFetchRequestOptions, originalResponse *http.Response) (*http.Response, error) {
 	// Make sure the server is using the correct payment version
 	paymentVersion := originalResponse.Header.Get("x-bsv-payment-version")
-	if paymentVersion == "" || paymentVersion != PaymentVersion {
+	if paymentVersion != PaymentVersion {
 		return nil, fmt.Errorf("unsupported x-bsv-payment-version response header. Client version: %s, Server version: %s",
 			PaymentVersion, paymentVersion)
 	}

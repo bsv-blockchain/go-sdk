@@ -445,7 +445,7 @@ func TestCertificate(t *testing.T) {
 
 		// Verify signature can be serialized back to same bytes
 		serializedSig := walletCert.Signature.Serialize()
-		assert.Equal(t, certificate.Signature, serializedSig)
+		assert.EqualValues(t, certificate.Signature, serializedSig)
 	})
 
 	t.Run("FromWalletCertificate should convert wallet.Certificate to Certificate correctly", func(t *testing.T) {
