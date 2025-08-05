@@ -207,7 +207,7 @@ func TestKeyDeriver(t *testing.T) {
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
 		assert.NoError(t, err, "computing invoice number for verification should not error")
 
-		mac := hmac.New(sha256.New, sharedSecret.X.Bytes())
+		mac := hmac.New(sha256.New, sharedSecret.Compressed())
 		mac.Write([]byte(invoiceNumber))
 		expected := mac.Sum(nil)
 

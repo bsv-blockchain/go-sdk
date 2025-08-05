@@ -162,8 +162,8 @@ func (kd *KeyDeriver) RevealSpecificSecret(counterparty Counterparty, protocol P
 		return nil, fmt.Errorf("failed to compute invoice number: %w", err)
 	}
 
-	// Compute HMAC-SHA256 of shared secret and invoice number
-	mac := hmac.New(sha256.New, sharedSecret.X.Bytes())
+	// Compute HMAC-SHA256 using compressed shared secret as key
+	mac := hmac.New(sha256.New, sharedSecret.Compressed())
 	mac.Write([]byte(invoiceNumber))
 	return mac.Sum(nil), nil
 }
