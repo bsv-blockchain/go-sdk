@@ -195,7 +195,8 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 		Payload:     []byte("test payload"),
 	}
 
-	transport.notifyHandlers(t.Context(), testMessage)
+	err = transport.notifyHandlers(t.Context(), testMessage)
+	require.NoError(t, err, "notifyHandlers should not return error")
 
 	if !callbackCalled {
 		t.Error("Expected callback to be called")

@@ -4,83 +4,28 @@ import (
 	"context"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // setupMockWalletForAuth creates a mock wallet with the required methods for auth operations
-func setupMockWalletForAuth(t *testing.T) *wallet.MockWallet {
-	mockWallet := wallet.NewMockWallet(t)
+func setupMockWalletForAuth(t *testing.T) *wallet.TestWallet {
+	testWallet := wallet.NewTestWalletForRandomKey(t)
 
-	// Set up GetPublicKey response with proper identity key handling
-	mockWallet.MockGetPublicKey = func(ctx context.Context, args wallet.GetPublicKeyArgs, originator string) (*wallet.GetPublicKeyResult, error) {
-		t.Logf("GetPublicKey called with IdentityKey=%v, originator=%s", args.IdentityKey, originator)
+	// Return a dummy signature result
+	testWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{})
 
-		// Always return a valid public key - this is critical for auth
-		// Using a known valid public key from other tests
-		pubKeyHex := "03121a7afe56fc8e25bca4bb2c94f35eb67ebe5b84df2e149d65b9423ee65b8b4b"
+	testWallet.OnVerifySignature().ReturnSuccess(&wallet.VerifySignatureResult{
+		Valid: true,
+	})
 
-		pubKey, err := ec.PublicKeyFromString(pubKeyHex)
-		if err != nil {
-			// This shouldn't happen with a valid hex string, but handle it defensively
-			t.Fatalf("Failed to create test public key: %v", err)
-		}
-
-		return &wallet.GetPublicKeyResult{
-			PublicKey: pubKey,
-		}, nil
-	}
-
-	// Set up CreateHMAC response for nonce generation
-	mockWallet.MockCreateHMAC = func(ctx context.Context, args wallet.CreateHMACArgs, originator string) (*wallet.CreateHMACResult, error) {
-		return &wallet.CreateHMACResult{
-			HMAC: tu.GetByte32FromString("test-hmac-value"),
-		}, nil
-	}
-
-	// Set up CreateSignature response
-	mockWallet.MockCreateSignature = func(ctx context.Context, args wallet.CreateSignatureArgs, originator string) (*wallet.CreateSignatureResult, error) {
-		// Return a dummy signature result
-		return &wallet.CreateSignatureResult{}, nil
-	}
-
-	// Set up VerifySignature response
-	mockWallet.MockVerifySignature = func(ctx context.Context, args wallet.VerifySignatureArgs, originator string) (*wallet.VerifySignatureResult, error) {
-		return &wallet.VerifySignatureResult{
-			Valid: true,
-		}, nil
-	}
-
-	// Set up ListCertificates response
-	mockWallet.MockListCertificates = func(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
-		return &wallet.ListCertificatesResult{
-			Certificates: []wallet.CertificateResult{},
-		}, nil
-	}
-
-	// Set up ProveCertificate response
-	mockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
-		return &wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{},
-		}, nil
-	}
-
-	// Set up GetNetwork response
-	mockWallet.MockGetNetwork = func(ctx context.Context, args any, originator string) (*wallet.GetNetworkResult, error) {
-		return &wallet.GetNetworkResult{
-			Network: "mainnet",
-		}, nil
-	}
-
-	return mockWallet
+	return testWallet
 }
 
 func TestNewUploader(t *testing.T) {
 	// Test with valid config
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 	config := UploaderConfig{
 		StorageURL: "https://example.com/storage",
 		Wallet:     mockWallet,

@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -9,20 +10,46 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
-// KeyOperations defines the interface for cryptographic operations.
-type KeyOperations interface {
+type PublicKeyGetter interface {
 	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+}
+
+type CipherOperations interface {
 	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
 	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
+}
+
+type HMACOperations interface {
 	CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
 	VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error)
+}
+
+type SignatureOperations interface {
 	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
 	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+}
+
+// KeyOperations defines the interface for cryptographic operations.
+type KeyOperations interface {
+	PublicKeyGetter
+	CipherOperations
+	HMACOperations
+	SignatureOperations
+}
+
+// CertificatesManagement is an interface for managing certificates in a system.
+// It enables acquiring, listing, proving and relinquishing certificates.
+type CertificatesManagement interface {
+	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
+	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
+	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
+	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
 }
 
 // Interface defines the core wallet operations for transaction creation, signing and querying.
 type Interface interface {
 	KeyOperations
+	CertificatesManagement
 	CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error)
 	SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error)
 	AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error)
@@ -32,10 +59,6 @@ type Interface interface {
 	RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error)
 	RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error)
 	RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error)
-	AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error)
-	ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error)
-	ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error)
-	RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error)
 	DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error)
 	DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error)
 	IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error)
@@ -50,6 +73,43 @@ type (
 	CertificateType [32]byte
 	SerialNumber    [32]byte
 )
+
+// CertificateTypeFromString converts a string into a CertificateType, ensuring it is a valid certificate type.
+func CertificateTypeFromString(typeName string) (CertificateType, error) {
+	var certType CertificateType
+	if len(typeName) > 32 {
+		return certType, fmt.Errorf("invalid certificate type: type name is longer then 32 bytes: %q", typeName)
+	}
+	copy(certType[:], typeName)
+	return certType, nil
+}
+
+// CertificateTypeFromBase64 decodes a base64 string into a CertificateType and ensures it is a valid certificate type.
+func CertificateTypeFromBase64(typeBase64 string) (CertificateType, error) {
+	decodeString, err := base64.StdEncoding.DecodeString(typeBase64)
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	if len(decodeString) > 32 {
+		return [32]byte{}, fmt.Errorf("invalid certificate type: type is longer then 32 bytes: %q", decodeString)
+	}
+	var certType CertificateType
+	copy(certType[:], decodeString)
+	return certType, nil
+}
+
+func (c CertificateType) Bytes() []byte {
+	return c[:]
+}
+
+func (c CertificateType) String() string {
+	return string(c[:])
+}
+
+func (c *CertificateType) Base64() string {
+	return base64.StdEncoding.EncodeToString(c[:])
+}
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {
@@ -468,7 +528,7 @@ type KeyringRevealer struct {
 }
 
 // AcquireCertificateArgs contains parameters for acquiring a new certificate.
-// This includes the certificate type, certifier information, and acquisition method.
+// This includes the certificate type, certifier information and acquisition method.
 type AcquireCertificateArgs struct {
 	Type                CertificateType       `json:"type"`
 	Certifier           *ec.PublicKey         `json:"certifier"`

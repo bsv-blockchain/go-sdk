@@ -2,9 +2,8 @@ package utils
 
 import (
 	"context"
-	"errors"
-
 	"encoding/base64"
+	"errors"
 	"testing"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -37,7 +36,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 1: Retrieves matching certificates based on requested set
 	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewMockWallet(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t)
 
 		// Create base64-encoded field values as required by the standard
 		field1ValueBase64 := base64.StdEncoding.EncodeToString([]byte("encryptedData1"))
@@ -74,17 +73,14 @@ func TestGetVerifiableCertificates(t *testing.T) {
 				},
 			},
 		}
-		mockWallet.MockListCertificates = func(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
-			return mockListResult, nil
-		}
+		mockWallet.OnListCertificates().ReturnSuccess(mockListResult)
 
 		// Mock wallet.ProveCertificate response with base64-encoded keyring values
 		mockProveResult := &wallet.ProveCertificateResult{
 			KeyringForVerifier: map[string]string{"field1": keyring1Base64, "field2": keyring2Base64}, // Use base64-encoded keyring values
 		}
-		mockWallet.MockProveCertificate = func(ctx context.Context, args wallet.ProveCertificateArgs, originator string) (*wallet.ProveCertificateResult, error) {
-			return mockProveResult, nil
-		}
+
+		mockWallet.OnProveCertificate().ReturnSuccess(mockProveResult)
 
 		options := GetVerifiableCertificatesOptions{
 			Wallet:                mockWallet,
@@ -112,20 +108,13 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 2: Returns an empty array when no matching certificates are found
 	t.Run("returns an empty array when no matching certificates are found", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewMockWallet(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t)
 
 		requestedCerts := &RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
 			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
 				certType1: {"field1"},
 			},
-		}
-
-		// Mock ListCertificates to return empty results
-		mockWallet.MockListCertificates = func(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
-			return &wallet.ListCertificatesResult{
-				Certificates: []wallet.CertificateResult{},
-			}, nil
 		}
 
 		options := GetVerifiableCertificatesOptions{
@@ -142,7 +131,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 3: Propagates errors from ListCertificates
 	t.Run("propagates errors from ListCertificates", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewMockWallet(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t)
 
 		requestedCerts := &RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
@@ -152,9 +141,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 		}
 
 		// Mock ListCertificates to return an error
-		mockWallet.MockListCertificates = func(ctx context.Context, args wallet.ListCertificatesArgs, originator string) (*wallet.ListCertificatesResult, error) {
-			return nil, errors.New("listCertificates failed")
-		}
+		mockWallet.OnListCertificates().ReturnError(errors.New("listCertificates failed"))
 
 		options := GetVerifiableCertificatesOptions{
 			Wallet:                mockWallet,
@@ -171,7 +158,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 4: Handles nil requested certificates gracefully
 	t.Run("handles nil requested certificates gracefully", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewMockWallet(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t)
 		options := GetVerifiableCertificatesOptions{
 			Wallet:                mockWallet,
 			RequestedCertificates: nil,

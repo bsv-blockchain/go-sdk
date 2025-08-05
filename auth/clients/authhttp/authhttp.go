@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"sort"
@@ -267,7 +266,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		}
 
 		// Set up listener for response
-		var listenerID int
+		var listenerID int32
 		listenerID = peerToUse.Peer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
 			// Create a reader
 			responseReader := util.NewReader(payload)
@@ -493,7 +492,7 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 	})
 
 	// Set up certificate received listener
-	var callbackID int
+	var callbackID int32
 	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
 		a.certificatesReceived = append(a.certificatesReceived, certs...)
@@ -553,18 +552,15 @@ func (a *AuthFetch) serializeRequest(method string, headers map[string]string, b
 	writer.WriteString(method)
 
 	// Handle pathname (e.g. /path/to/resource)
-	if parsedURL.Path != "" {
-		writer.WriteString(parsedURL.Path)
-	} else {
-		writer.WriteVarInt(math.MaxUint64) // -1 to indicate no path
-	}
+	writer.WriteOptionalString(parsedURL.Path)
 
 	// Handle search params (e.g. ?q=hello)
-	if parsedURL.RawQuery != "" {
-		writer.WriteString("?" + parsedURL.RawQuery)
-	} else {
-		writer.WriteVarInt(math.MaxUint64) // -1 to indicate no query
+	searchParams := parsedURL.RawQuery
+	if searchParams != "" {
+		// auth client is using query string with leading "?", so the middleware need to include that character also.
+		searchParams = "?" + searchParams
 	}
+	writer.WriteOptionalString(searchParams)
 
 	// Construct headers to send / sign:
 	// - Include custom headers prefixed with x-bsv (excluding those starting with x-bsv-auth)
@@ -577,7 +573,7 @@ func (a *AuthFetch) serializeRequest(method string, headers map[string]string, b
 			if strings.HasPrefix(headerKey, "x-bsv-auth") {
 				return nil, errors.New("no BSV auth headers allowed here")
 			}
-			includedHeaders = append(includedHeaders, []string{headerKey, v})
+			includedHeaders = append(includedHeaders, []string{strings.ToLower(headerKey), v})
 		} else if strings.HasPrefix(headerKey, "content-type") {
 			// Normalize the Content-Type header by removing any parameters (e.g., "; charset=utf-8")
 			contentType := strings.Split(v, ";")[0]
@@ -621,13 +617,8 @@ func (a *AuthFetch) serializeRequest(method string, headers map[string]string, b
 		}
 	}
 
-	// Write body length and body (or -1 for no body)
-	if len(body) > 0 {
-		writer.WriteVarInt(uint64(len(body)))
-		writer.WriteBytes(body)
-	} else {
-		writer.WriteVarInt(math.MaxUint64) // -1 for no body
-	}
+	// Write body
+	writer.WriteIntBytesOptional(body)
 
 	return writer.Buf, nil
 }
@@ -691,7 +682,7 @@ func (a *AuthFetch) handleFetchAndValidate(urlStr string, config *SimplifiedFetc
 func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, config *SimplifiedFetchRequestOptions, originalResponse *http.Response) (*http.Response, error) {
 	// Make sure the server is using the correct payment version
 	paymentVersion := originalResponse.Header.Get("x-bsv-payment-version")
-	if paymentVersion == "" || paymentVersion != PaymentVersion {
+	if paymentVersion != PaymentVersion {
 		return nil, fmt.Errorf("unsupported x-bsv-payment-version response header. Client version: %s, Server version: %s",
 			PaymentVersion, paymentVersion)
 	}

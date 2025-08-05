@@ -49,50 +49,45 @@ func CreateTagForKey(key string) string {
 }
 
 // setupTestKVStore creates a test KV store with a mock wallet
-func setupTestKVStore(t *testing.T) (*kvstore.LocalKVStore, *wallet.MockWallet) {
+func setupTestKVStore(t *testing.T) (*kvstore.LocalKVStore, *wallet.TestWallet) {
 	mockTxID := tu.GetByte32FromString("mockTxId")
-	mockWallet := &wallet.MockWallet{
-		T:                  t,
-		ExpectedOriginator: "test",
-		// ExpectedCreateActionArgs: nil, // Will be validated in specific tests
-		CreateActionResultToReturn: &wallet.CreateActionResult{
-			Txid: mockTxID,
+
+	testWallet := wallet.NewTestWalletForRandomKey(t)
+
+	testWallet.ExpectOriginator("test")
+
+	testWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
+		Txid: mockTxID,
+	})
+
+	testWallet.OnSignAction().ReturnSuccess(&wallet.SignActionResult{
+		Txid: mockTxID,
+	})
+
+	testWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
+		Outputs: []wallet.Output{},
+	})
+
+	testWallet.OnRelinquishOutput().ReturnSuccess(&wallet.RelinquishOutputResult{
+		Relinquished: true,
+	})
+
+	testWallet.OnGetPublicKey().ReturnSuccess(&wallet.GetPublicKeyResult{
+		PublicKey: &ec.PublicKey{
+			X: big.NewInt(1),
+			Y: big.NewInt(2),
 		},
-		CreateActionError: nil,
-		SignActionResultToReturn: &wallet.SignActionResult{
-			Txid: mockTxID,
-		},
-		SignActionError: nil,
-		ListOutputsResultToReturn: &wallet.ListOutputsResult{
-			Outputs: []wallet.Output{},
-		},
-		ListOutputsError: nil,
-		EncryptResultToReturn: &wallet.EncryptResult{
-			Ciphertext: []byte("encryptedData"),
-		},
-		EncryptError: nil,
-		RelinquishOutputResultToReturn: &wallet.RelinquishOutputResult{
-			Relinquished: true,
-		},
-		RelinquishOutputError:       nil,
-		RelinquishOutputCalledCount: 0,
-		GetPublicKeyResult: &wallet.GetPublicKeyResult{
-			PublicKey: &ec.PublicKey{
-				X: big.NewInt(1),
-				Y: big.NewInt(2),
-			},
-		},
-	}
+	})
 
 	store, err := kvstore.NewLocalKVStore(kvstore.KVStoreConfig{
-		Wallet:     mockWallet,
+		Wallet:     testWallet,
 		Originator: "test",
 		Context:    "test-context",
 		Encrypt:    false,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, store)
-	return store, mockWallet
+	return store, testWallet
 }
 
 // func TestLocalKVStoreGet_HasData(t *testing.T) {
@@ -148,7 +143,7 @@ func TestLocalKVStoreGet_WalletError(t *testing.T) {
 	expectedError := errors.New("wallet error")
 
 	// Mock the wallet to return an error
-	mockWallet.ListOutputsError = expectedError
+	mockWallet.OnListOutputs().ReturnError(expectedError)
 
 	// Perform the Get operation
 	result, err := store.Get(context.Background(), key, "")
@@ -165,9 +160,9 @@ func TestLocalKVStoreSet_Success(t *testing.T) {
 	value := "value1"
 
 	// Setup the success case
-	mockWallet.CreateActionResultToReturn = &wallet.CreateActionResult{
+	mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
 		Txid: tu.GetByte32FromString("txId"),
-	}
+	})
 
 	// Perform the Set operation
 	_, err := store.Set(context.Background(), key, value)
@@ -183,7 +178,7 @@ func TestLocalKVStoreSet_WalletError(t *testing.T) {
 	expectedError := errors.New("wallet error")
 
 	// Mock the wallet to return an error
-	mockWallet.CreateActionError = expectedError
+	mockWallet.OnCreateAction().ReturnError(expectedError)
 
 	// Perform the Set operation
 	_, err := store.Set(context.Background(), key, value)
@@ -253,15 +248,19 @@ func TestLocalKVStoreRemove_ListOutputsError(t *testing.T) {
 	expectedError := errors.New("wallet error")
 
 	// Mock the wallet to return an error
-	mockWallet.ListOutputsError = expectedError
+	mockWallet.OnListOutputs().ReturnError(expectedError)
+
+	// ensure RelinquishOutput was not called
+	mockWallet.OnRelinquishOutput().Do(func(ctx context.Context, args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
+		require.Fail(t, "RelinquishOutput should not be called")
+		return nil, nil
+	})
 
 	// Perform the Remove operation
 	_, err := store.Remove(context.Background(), key)
+
 	require.Error(t, err)
 	require.ErrorContains(t, err, expectedError.Error())
-
-	// Verify RelinquishOutput was not called
-	require.Equal(t, 0, mockWallet.RelinquishOutputCalledCount)
 }
 
 // func TestLocalKVStoreRemove_RelinquishError(t *testing.T) {
@@ -301,7 +300,7 @@ func TestLocalKVStoreRemove_ListOutputsError(t *testing.T) {
 // func TestNewLocalKVStore_InvalidRetentionPeriod(t *testing.T) {
 // 	t.Parallel()
 
-// 	mockWallet := wallet.NewMockWallet(t)
+// 	mockWallet := wallet.NewTestWallet(t)
 
 // 	// Test invalid retention period
 // 	store, err := kvstore.NewLocalKVStore(kvstore.KVStoreConfig{
@@ -318,7 +317,7 @@ func TestLocalKVStoreRemove_ListOutputsError(t *testing.T) {
 func TestNewLocalKVStore_EmptyContext(t *testing.T) {
 	t.Parallel()
 
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 
 	// Test empty context
 	store, err := kvstore.NewLocalKVStore(kvstore.KVStoreConfig{

@@ -44,101 +44,17 @@ func NewSimplifiedHTTPTransport(options *SimplifiedHTTPTransportOptions) (*Simpl
 	}, nil
 }
 
-// Send sends an AuthMessage via HTTP
-func (t *SimplifiedHTTPTransport) Send(ctx context.Context, message *auth.AuthMessage) error {
-	// Check if any handlers are registered
+// OnData registers a callback for incoming messages
+// This method will return an error only if the provided callback is nil.
+// It must be called at least once before sending any messages.
+func (t *SimplifiedHTTPTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
+	if callback == nil {
+		return errors.New("callback cannot be nil")
+	}
+
 	t.mu.Lock()
-	if len(t.onDataFuncs) == 0 {
-		t.mu.Unlock()
-		return ErrNoHandlerRegistered
-	}
-	t.mu.Unlock()
-
-	if message.MessageType == "general" {
-		// Step 1: Deserialize the payload into an HTTP request
-		req, _, err := t.deserializeRequestPayload(message.Payload)
-		if err != nil {
-			return fmt.Errorf("failed to deserialize request payload: %w", err)
-		}
-
-		// Step 2: Perform the HTTP request
-		resp, err := t.client.Do(req)
-		if err != nil {
-			return fmt.Errorf("failed to perform proxied HTTP request: %w", err)
-		}
-		defer resp.Body.Close()
-
-		// Step 3: Serialize the response as an AuthMessage and notify handlers
-		respPayloadWriter := util.NewWriter()
-		respPayloadWriter.WriteVarInt(uint64(resp.StatusCode))
-		// Write headers (count, then key/value pairs)
-		headers := resp.Header
-		headersList := make([][2]string, 0)
-		for k, vs := range headers {
-			for _, v := range vs {
-				headersList = append(headersList, [2]string{k, v})
-			}
-		}
-		respPayloadWriter.WriteVarInt(uint64(len(headersList)))
-		for _, kv := range headersList {
-			respPayloadWriter.WriteString(kv[0])
-			respPayloadWriter.WriteString(kv[1])
-		}
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("failed to read proxied response body: %w", err)
-		}
-		respPayloadWriter.WriteVarInt(uint64(len(respBody)))
-		respPayloadWriter.WriteBytes(respBody)
-
-		responseMsg := &auth.AuthMessage{
-			Version:     message.Version,     // echo back
-			MessageType: message.MessageType, // 'general'
-			Payload:     respPayloadWriter.Buf,
-		}
-		t.notifyHandlers(ctx, responseMsg)
-		return nil
-	}
-
-	jsonData, err := json.Marshal(message)
-	if err != nil {
-		return fmt.Errorf("failed to marshal auth message: %w", err)
-	}
-
-	url := t.baseUrl
-	if message.MessageType != "general" {
-		url = t.baseUrl + "/.well-known/auth"
-	}
-
-	resp, err := t.client.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to send HTTP request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HTTP request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	// If we have a response, process it as a potential auth message
-	if resp.ContentLength > 0 {
-		var responseMsg auth.AuthMessage
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("failed to read response body: %w", err)
-		}
-
-		err = json.Unmarshal(body, &responseMsg)
-		if err != nil {
-			// Not a valid auth message, just ignore
-			return nil
-		}
-
-		// Notify handlers of the response message
-		t.notifyHandlers(ctx, &responseMsg)
-	}
-
+	defer t.mu.Unlock()
+	t.onDataFuncs = append(t.onDataFuncs, callback)
 	return nil
 }
 
@@ -153,6 +69,129 @@ func (t *SimplifiedHTTPTransport) GetRegisteredOnData() (func(context.Context, *
 
 	// Return the first handler for simplicity
 	return t.onDataFuncs[0], nil
+}
+
+// Send sends an AuthMessage via HTTP
+func (t *SimplifiedHTTPTransport) Send(ctx context.Context, message *auth.AuthMessage) error {
+	// Check if any handlers are registered
+	t.mu.Lock()
+	if len(t.onDataFuncs) == 0 {
+		t.mu.Unlock()
+		return ErrNoHandlerRegistered
+	}
+	t.mu.Unlock()
+
+	if message.MessageType == auth.MessageTypeGeneral {
+		return t.sendGeneralMessage(ctx, message)
+	}
+	return t.sendNonGeneralMessage(ctx, message)
+}
+
+func (t *SimplifiedHTTPTransport) sendNonGeneralMessage(ctx context.Context, message *auth.AuthMessage) error {
+	jsonData, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal auth message: %w", err)
+	}
+
+	requestURL := t.baseUrl
+	if message.MessageType != auth.MessageTypeGeneral {
+		requestURL = t.baseUrl + "/.well-known/auth"
+	}
+
+	resp, err := t.client.Post(requestURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to send HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseMsg, err := t.authMessageFromNonGeneralMessageResponse(resp)
+	if err != nil {
+		return fmt.Errorf("%s message to (%s | %s) failed: %w", message.MessageType, message.IdentityKey.ToDERHex(), requestURL, err)
+	}
+
+	return t.notifyHandlers(ctx, &responseMsg)
+}
+
+func (t *SimplifiedHTTPTransport) authMessageFromNonGeneralMessageResponse(resp *http.Response) (auth.AuthMessage, error) {
+	var responseMsg auth.AuthMessage
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return responseMsg, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	if resp.ContentLength == 0 {
+		return responseMsg, fmt.Errorf("empty response body")
+	}
+
+	// If we have a response, process it as a potential auth message
+	if resp.ContentLength > 0 {
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return responseMsg, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		err = json.Unmarshal(body, &responseMsg)
+		if err != nil {
+			return responseMsg, fmt.Errorf("failed to unmarshal authmessage from body (%q): %w", string(body), err)
+		}
+	}
+	return responseMsg, nil
+}
+
+func (t *SimplifiedHTTPTransport) sendGeneralMessage(ctx context.Context, message *auth.AuthMessage) error {
+	// Step 1: Deserialize the payload into an HTTP request
+	req, _, err := t.deserializeRequestPayload(message.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to deserialize request payload: %w", err)
+	}
+
+	// Step 2: Perform the HTTP request
+	resp, err := t.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to perform proxied HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseMsg, err := t.authMessageFromGeneralMessageResponse(message.Version, resp)
+	if err != nil {
+		return err
+	}
+
+	return t.notifyHandlers(ctx, responseMsg)
+}
+
+func (t *SimplifiedHTTPTransport) authMessageFromGeneralMessageResponse(version string, resp *http.Response) (*auth.AuthMessage, error) {
+	// Step 3: Serialize the response as an AuthMessage and notify handlers
+	respPayloadWriter := util.NewWriter()
+	respPayloadWriter.WriteVarInt(uint64(resp.StatusCode))
+	// Write headers (count, then key/value pairs)
+	headers := resp.Header
+	headersList := make([][2]string, 0)
+	for k, vs := range headers {
+		for _, v := range vs {
+			headersList = append(headersList, [2]string{k, v})
+		}
+	}
+	respPayloadWriter.WriteVarInt(uint64(len(headersList)))
+	for _, kv := range headersList {
+		respPayloadWriter.WriteString(kv[0])
+		respPayloadWriter.WriteString(kv[1])
+	}
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read proxied response body: %w", err)
+	}
+	respPayloadWriter.WriteVarInt(uint64(len(respBody)))
+	respPayloadWriter.WriteBytes(respBody)
+
+	responseMsg := &auth.AuthMessage{
+		Version:     version,
+		MessageType: auth.MessageTypeGeneral,
+		Payload:     respPayloadWriter.Buf,
+	}
+	return responseMsg, nil
 }
 
 // deserializeRequestPayload parses the payload into an HTTP request and requestId (basic implementation)
@@ -271,22 +310,8 @@ func (t *SimplifiedHTTPTransport) deserializeRequestPayload(payload []byte) (*ht
 	return req, string(requestId), nil
 }
 
-// OnData registers a callback for incoming messages
-// This method will return an error only if the provided callback is nil.
-// It must be called at least once before sending any messages.
-func (t *SimplifiedHTTPTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
-	if callback == nil {
-		return errors.New("callback cannot be nil")
-	}
-
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.onDataFuncs = append(t.onDataFuncs, callback)
-	return nil
-}
-
 // notifyHandlers calls all registered callbacks with the received message
-func (t *SimplifiedHTTPTransport) notifyHandlers(ctx context.Context, message *auth.AuthMessage) {
+func (t *SimplifiedHTTPTransport) notifyHandlers(ctx context.Context, message *auth.AuthMessage) error {
 	t.mu.Lock()
 	handlers := make([]func(context.Context, *auth.AuthMessage) error, len(t.onDataFuncs))
 	copy(handlers, t.onDataFuncs)
@@ -294,6 +319,10 @@ func (t *SimplifiedHTTPTransport) notifyHandlers(ctx context.Context, message *a
 
 	for _, handler := range handlers {
 		// Errors from handlers are not propagated to avoid breaking other handlers
-		_ = handler(ctx, message)
+		err := handler(ctx, message)
+		if err != nil {
+			return fmt.Errorf("failed to process %s message from peer: %w", message.MessageType, err)
+		}
 	}
+	return nil
 }

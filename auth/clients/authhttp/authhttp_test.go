@@ -51,7 +51,7 @@ func (m *MockSessionManager) HasSession(identifier string) bool {
 // TestNew tests the New function
 func TestNew(t *testing.T) {
 	// Set up dependencies
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 	mockSessionManager := NewMockSessionManager()
 	requestedCerts := &utils.RequestedCertificateSet{
 		Certifiers:       []*ec.PublicKey{},
@@ -73,7 +73,7 @@ func TestNew(t *testing.T) {
 // TestNewWithNilSessionManager tests the New function with a nil session manager
 func TestNewWithNilSessionManager(t *testing.T) {
 	// Set up dependencies
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 	requestedCerts := &utils.RequestedCertificateSet{
 		Certifiers:       []*ec.PublicKey{},
 		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
@@ -90,7 +90,7 @@ func TestNewWithNilSessionManager(t *testing.T) {
 // TestConsumeReceivedCertificates tests the ConsumeReceivedCertificates method
 func TestConsumeReceivedCertificates(t *testing.T) {
 	// Set up dependencies
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 	mockSessionManager := NewMockSessionManager()
 	requestedCerts := &utils.RequestedCertificateSet{}
 
@@ -114,7 +114,7 @@ func TestConsumeReceivedCertificates(t *testing.T) {
 // TestFetchWithRetryCounterAtZero tests the Fetch method with retry counter at 0
 func TestFetchWithRetryCounterAtZero(t *testing.T) {
 	// Set up dependencies
-	mockWallet := wallet.NewMockWallet(t)
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
 	mockSessionManager := NewMockSessionManager()
 	requestedCerts := &utils.RequestedCertificateSet{}
 

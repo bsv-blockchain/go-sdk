@@ -67,7 +67,7 @@ type CertificateFieldsResult struct {
 // This static method mirrors the TypeScript implementation.
 func CreateCertificateFields(
 	ctx context.Context,
-	creatorWallet *wallet.ProtoWallet,
+	creatorWallet wallet.CipherOperations,
 	certifierOrSubject wallet.Counterparty,
 	fields map[wallet.CertificateFieldNameUnder50Bytes]string, // Plaintext field values
 	privileged bool,
@@ -115,6 +115,12 @@ func CreateCertificateFields(
 	}, nil
 }
 
+type CertifierWallet interface {
+	wallet.PublicKeyGetter
+	wallet.CipherOperations
+	wallet.SignatureOperations
+}
+
 // IssueCertificateForSubject creates a new MasterCertificate for a specified subject.
 // This method generates a certificate containing encrypted fields and a keyring
 // for the subject to decrypt all fields. Each field is encrypted with a randomly
@@ -123,7 +129,7 @@ func CreateCertificateFields(
 // This static method mirrors the TypeScript implementation.
 func IssueCertificateForSubject(
 	ctx context.Context,
-	certifierWallet *wallet.ProtoWallet,
+	certifierWallet CertifierWallet,
 	subject wallet.Counterparty,
 	plainFields map[string]string, // Plaintext fields
 	certificateType string,
@@ -236,7 +242,7 @@ type DecryptFieldResult struct {
 // This static method mirrors the TypeScript implementation.
 func DecryptField(
 	ctx context.Context,
-	subjectOrCertifierWallet *wallet.ProtoWallet,
+	subjectOrCertifierWallet wallet.CipherOperations,
 	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
 	fieldName wallet.CertificateFieldNameUnder50Bytes,
 	encryptedFieldValue wallet.StringBase64, // Base64 encoded encrypted value
@@ -298,7 +304,7 @@ func DecryptField(
 // This static method mirrors the TypeScript implementation.
 func DecryptFields(
 	ctx context.Context,
-	subjectOrCertifierWallet *wallet.ProtoWallet,
+	subjectOrCertifierWallet wallet.CipherOperations,
 	masterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64,
 	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64, // Encrypted fields
 	counterparty wallet.Counterparty,
@@ -341,7 +347,7 @@ func DecryptFields(
 // This static method mirrors the TypeScript implementation.
 func CreateKeyringForVerifier(
 	ctx context.Context,
-	subjectWallet *wallet.ProtoWallet,
+	subjectWallet wallet.CipherOperations,
 	certifier wallet.Counterparty, // Counterparty used when decrypting master key
 	verifier wallet.Counterparty, // Counterparty to encrypt for
 	fields map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64, // All encrypted fields from cert

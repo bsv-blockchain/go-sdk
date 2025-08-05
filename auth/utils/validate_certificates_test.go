@@ -1,27 +1,18 @@
-package utils
+package utils_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	tcu "github.com/bsv-blockchain/go-sdk/util/test_cert_util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// MockWallet is mocked for integration tests that use this struct
-type MockWallet struct {
-	wallet.Interface
-}
-
-func (m *MockWallet) Decrypt(ctx context.Context, args wallet.DecryptArgs, reason string) (*wallet.DecryptResult, error) {
-	return &wallet.DecryptResult{
-		Plaintext: []byte("decrypted"),
-	}, nil
-}
 
 func TestValidateCertificatesFunctionality(t *testing.T) {
 	// Create test keys
@@ -62,7 +53,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 
 		// Check that a valid certificate with matching identity key passes validation
 		// The isEmptyPublicKey check should pass
-		assert.False(t, isEmptyPublicKey(cert.Subject))
+		assert.False(t, utils.IsEmptyPublicKey(cert.Subject))
 
 		// The subject key should match the identity key
 		assert.True(t, (&cert.Subject).IsEqual(validSubjectKey))
@@ -93,36 +84,36 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 
 	t.Run("throws an error for unrequested certifier", func(t *testing.T) {
 		// Create certificate request with different certifier
-		certificatesRequested := &RequestedCertificateSet{
+		certificatesRequested := &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("another_certifier")},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				requestedType: []string{"field1"},
 			},
 		}
 
 		// Check certifier match logic
-		assert.False(t, CertifierInSlice(certificatesRequested.Certifiers, validCertifierKey))
+		assert.False(t, utils.CertifierInSlice(certificatesRequested.Certifiers, validCertifierKey))
 		// The logic in ValidateCertificates would have raised an error here
 	})
 
 	t.Run("accepts 'any' as a certifier match", func(t *testing.T) {
 		// Create certificate request with "any" certifier
-		certificatesRequested := &RequestedCertificateSet{
+		certificatesRequested := &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{anyCertifier},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				requestedType: []string{"field1"},
 			},
 		}
 
 		// "any" should match any certifier value
-		assert.True(t, CertifierInSlice(certificatesRequested.Certifiers, anyCertifier))
+		assert.True(t, utils.CertifierInSlice(certificatesRequested.Certifiers, anyCertifier))
 	})
 
 	t.Run("throws an error for unrequested certificate type", func(t *testing.T) {
 		// Create certificate request with different type
-		certificatesRequested := &RequestedCertificateSet{
+		certificatesRequested := &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{anyCertifier},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				anotherType: []string{"field1"}, // Different from "requested_type"
 			},
 		}
@@ -134,55 +125,250 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 
 	t.Run("validate certificates request set validation", func(t *testing.T) {
 		// Test empty certifiers
-		req := &RequestedCertificateSet{
+		req := &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				type1: []string{"field1"},
 			},
 		}
-		err := ValidateRequestedCertificateSet(req)
+		err := utils.ValidateRequestedCertificateSet(req)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "certifiers list is empty")
 
 		// Test empty types
-		req = &RequestedCertificateSet{
+		req = &utils.RequestedCertificateSet{
 			Certifiers:       []*ec.PublicKey{tu.GetPKFromString("certifier1")},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{},
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{},
 		}
-		err = ValidateRequestedCertificateSet(req)
+		err = utils.ValidateRequestedCertificateSet(req)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "certificate types map is empty")
 
 		// Test empty type name
-		req = &RequestedCertificateSet{
+		req = &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				[32]byte{}: []string{"field1"},
 			},
 		}
-		err = ValidateRequestedCertificateSet(req)
+		err = utils.ValidateRequestedCertificateSet(req)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "empty certificate type specified")
 
 		// Test empty fields
-		req = &RequestedCertificateSet{
+		req = &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				type1: []string{},
 			},
 		}
-		err = ValidateRequestedCertificateSet(req)
+		err = utils.ValidateRequestedCertificateSet(req)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "no fields specified for certificate type")
 
 		// Test valid request
-		req = &RequestedCertificateSet{
+		req = &utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
-			CertificateTypes: RequestedCertificateTypeIDAndFieldList{
+			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				type1: []string{"field1"},
 			},
 		}
-		err = ValidateRequestedCertificateSet(req)
+		err = utils.ValidateRequestedCertificateSet(req)
 		assert.NoError(t, err)
 	})
+}
+
+func TestValidateCertificates(t *testing.T) {
+	// Create test keys
+	subject, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	subjectKey := subject.PubKey()
+
+	verifier, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	verifierKey := verifier.PubKey()
+
+	verifierWallet := wallet.NewTestWallet(t, verifier)
+
+	certifier, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	certifierKey := certifier.PubKey()
+
+	differentSubject, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	differentCertifierKey := differentSubject.PubKey()
+	differentVerifierrKey := differentSubject.PubKey()
+
+	// Create a requested certificate set
+	var requestedType = tcu.CertificateTypeName.ToType(t)
+
+	successTestCases := map[string]struct {
+		requestedCerts *utils.RequestedCertificateSet
+	}{
+		"valid certificate that was requested should pass validation": {
+			requestedCerts: &utils.RequestedCertificateSet{
+				Certifiers: []*ec.PublicKey{certifierKey},
+				CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
+					requestedType: []string{"field1"},
+				},
+			},
+		},
+		"valid certificate for nil requested certs should pass validation": {
+			requestedCerts: nil,
+		},
+		"valid certificate for empty requested certs should pass validation": {
+			requestedCerts: &utils.RequestedCertificateSet{},
+		},
+		"valid certificate for requested only certifier should pass validation": {
+			requestedCerts: &utils.RequestedCertificateSet{
+				Certifiers: []*ec.PublicKey{certifierKey},
+			},
+		},
+		"valid certificate for requested only type should pass validation": {
+			requestedCerts: &utils.RequestedCertificateSet{
+				CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
+					requestedType: []string{"field1"},
+				},
+			},
+		},
+	}
+	for name, test := range successTestCases {
+		t.Run(name, func(t *testing.T) {
+			// given:
+			certs := []*certificates.VerifiableCertificate{tcu.CreateValidCertificate(t, subject, certifier, verifierKey)}
+
+			// when:
+			err := utils.ValidateCertificates(context.Background(), verifierWallet, certs, subjectKey, test.requestedCerts)
+
+			// then:
+			assert.NoError(t, err)
+		})
+	}
+
+	certificatesRequested := &utils.RequestedCertificateSet{
+		Certifiers: []*ec.PublicKey{certifierKey},
+		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
+			requestedType: []string{"field1"},
+		},
+	}
+
+	errorTestCases := map[string]struct {
+		certs          func() []*certificates.VerifiableCertificate
+		requestedCerts *utils.RequestedCertificateSet
+		expectedError  string
+	}{
+		"nil certificates list is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				return nil
+			},
+			expectedError: "no certificates were provided",
+		},
+		"empty certificates list is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				return make([]*certificates.VerifiableCertificate, 0)
+			},
+			expectedError: "no certificates were provided",
+		},
+		"certificate for different subject then expected is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				return []*certificates.VerifiableCertificate{tcu.CreateValidCertificate(t, differentSubject, certifier, verifierKey)}
+			},
+			expectedError: "the subject of one of your certificates",
+		},
+		"certificate for empty subject is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				cert := tcu.CreateValidCertificate(t, subject, certifier, verifierKey)
+				cert.Subject = ec.PublicKey{}
+
+				return []*certificates.VerifiableCertificate{cert}
+			},
+			expectedError: "the subject of one of your certificates",
+		},
+		"certificate with invalid signature is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				cert := tcu.CreateValidCertificate(t, subject, certifier, verifierKey)
+				cert.Signature = []byte{1, 2, 3}
+
+				return []*certificates.VerifiableCertificate{cert}
+			},
+			expectedError: "signature",
+		},
+		"certificate with empty signature is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				cert := tcu.CreateValidCertificate(t, subject, certifier, verifierKey)
+				cert.Signature = make([]byte, 0)
+
+				return []*certificates.VerifiableCertificate{cert}
+			},
+			expectedError: "signature",
+		},
+		"certificate with signature not from certifier is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				cert := tcu.CreateValidCertificate(t, subject, certifier, verifierKey)
+				cert.Certifier = *differentCertifierKey
+
+				return []*certificates.VerifiableCertificate{cert}
+			},
+			expectedError: "signature",
+		},
+		"certificate with not requested certifier is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				return []*certificates.VerifiableCertificate{tcu.CreateValidCertificate(t, subject, certifier, verifierKey)}
+			},
+			requestedCerts: &utils.RequestedCertificateSet{
+				Certifiers: []*ec.PublicKey{differentCertifierKey},
+			},
+			expectedError: "unrequested certifier",
+		},
+		"certificate with not requested type is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				return []*certificates.VerifiableCertificate{tcu.CreateValidCertificate(t, subject, certifier, verifierKey)}
+			},
+			requestedCerts: &utils.RequestedCertificateSet{
+				CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
+					toCertType(t, "other"): []string{"field1"},
+				},
+			},
+			expectedError: "not requested",
+		},
+		"certificate with field that verifier cannot decrypt is invalid": {
+			certs: func() []*certificates.VerifiableCertificate {
+				return []*certificates.VerifiableCertificate{tcu.CreateValidCertificate(t, subject, certifier, differentVerifierrKey)}
+			},
+			expectedError: "failed to decrypt",
+		},
+	}
+	for name, test := range errorTestCases {
+		t.Run(name, func(t *testing.T) {
+			// when:
+			err := utils.ValidateCertificates(context.Background(), verifierWallet, test.certs(), subjectKey, test.requestedCerts)
+
+			// then:
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), test.expectedError)
+		})
+	}
+
+	t.Run("context cancellation should be respected", func(t *testing.T) {
+		// given:
+		certs := []*certificates.VerifiableCertificate{tcu.CreateValidCertificate(t, subject, certifier, verifierKey)}
+
+		// when:
+		ctx, cancel := context.WithCancel(context.Background())
+
+		cancel() // Cancel immediately
+
+		// and:
+		err := utils.ValidateCertificates(ctx, verifierWallet, certs, subjectKey, certificatesRequested)
+
+		// then:
+		assert.Error(t, err)
+		assert.Equal(t, context.Canceled, err)
+	})
+}
+
+func toCertType(t testing.TB, typeName string) wallet.CertificateType {
+	certType, err := wallet.CertificateTypeFromString(typeName)
+	require.NoError(t, err, "invalid test setup: invalid certificate type")
+	return certType
 }
