@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -192,7 +193,7 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 	}
 
 	// Create a nonce for this request
-	requestNonce := utils.RandomBase64(32)
+	requestNonce := string(utils.RandomBase64(32))
 
 	// Get identity key
 	identityKeyResult, err := p.wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
@@ -208,7 +209,7 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 		Version:     AUTH_VERSION,
 		MessageType: MessageTypeGeneral,
 		IdentityKey: identityKeyResult.PublicKey,
-		Nonce:       string(requestNonce),
+		Nonce:       requestNonce,
 		YourNonce:   peerSession.PeerNonce,
 		Payload:     message,
 	}
@@ -221,7 +222,7 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", requestNonce, peerSession.PeerNonce),
+			KeyID: p.keyID(requestNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: peerSession.PeerIdentityKey,
@@ -506,8 +507,6 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 	// Concatenate the decoded bytes
 	sigData := append(initialNonceBytes, sessionNonceBytes...)
 
-	keyID := fmt.Sprintf("%s %s", message.InitialNonce, session.SessionNonce)
-
 	args := wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
@@ -515,7 +514,7 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: keyID,
+			KeyID: p.keyID(message.InitialNonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: message.IdentityKey,
@@ -545,7 +544,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		return ErrInvalidNonce
 	}
 
-	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
+	session, err := p.sessionManager.GetSession(message.YourNonce)
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
@@ -560,7 +559,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		return NewAuthError("failed to decode session nonce", err)
 	}
 	// Concatenate the decoded bytes
-	sigData := append(initialNonceBytes, sessionNonceBytes...)
+	sigData := append(sessionNonceBytes, initialNonceBytes...)
 
 	signature, err := ec.ParseSignature(message.Signature)
 	if err != nil {
@@ -576,7 +575,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", message.InitialNonce, session.SessionNonce),
+			KeyID: p.keyID(session.SessionNonce, message.InitialNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: message.IdentityKey,
@@ -733,7 +732,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
+			KeyID: p.keyID(message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: senderPublicKey,
@@ -798,7 +797,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
+			KeyID: p.keyID(message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: senderPublicKey,
@@ -841,16 +840,14 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 			utilsRequestedCerts,
 		)
 		if err != nil {
-			// Log the error but continue - certificate error shouldn't stop auth
-			p.logger.Printf("Warning: Certificate validation failed: %v", err)
+			return errors.Join(ErrCertificateValidation, err)
 		}
 
 		// Notify certificate listeners
 		for _, callback := range p.onCertificateReceivedCallbacks {
 			err := callback(senderPublicKey, message.Certificates)
 			if err != nil {
-				// Log callback error but continue
-				p.logger.Printf("Warning: Certificate callback error: %v", err)
+				return fmt.Errorf("certificate received callback error: %w", err)
 			}
 		}
 	}
@@ -888,7 +885,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", message.Nonce, session.SessionNonce),
+			KeyID: p.keyID(message.Nonce, session.SessionNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: senderPublicKey,
@@ -971,7 +968,7 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", requestNonce, peerSession.PeerNonce),
+			KeyID: p.keyID(requestNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: nil, // We can't add the peer's public key here due to type issues
@@ -1053,7 +1050,7 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 				Protocol:      AUTH_PROTOCOL_ID,
 			},
-			KeyID: fmt.Sprintf("%s %s", responseNonce, peerSession.PeerNonce),
+			KeyID: p.keyID(responseNonce, peerSession.PeerNonce),
 			Counterparty: wallet.Counterparty{
 				Type:         wallet.CounterpartyTypeOther,
 				Counterparty: nil, // We can't add the peer's public key here due to type issues
@@ -1086,4 +1083,8 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 	}
 
 	return nil
+}
+
+func (p *Peer) keyID(prefix, suffix string) string {
+	return fmt.Sprintf("%s %s", prefix, suffix)
 }

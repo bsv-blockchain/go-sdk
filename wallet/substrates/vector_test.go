@@ -729,8 +729,8 @@ func TestVectors(t *testing.T) {
 				// Define a function to check wire serialization and deserialization
 				checkWireSerialize := func(call substrates.Call, obj any,
 					serialized []byte, errSerialize error, deserialized any, errDeserialize error) {
-					require.Equal(t, frameCall, call, "Frame call mismatch")
-					require.NoError(t, errSerialize, "Serializing object error")
+					require.Equalf(t, frameCall, call, "Frame call mismatch: call=%d", call)
+					require.NoErrorf(t, errSerialize, "Serializing object error: call=%d", call)
 					var serializedWithFrame []byte
 					if tt.IsResult {
 						serializedWithFrame = serializer.WriteResultFrame(serialized, nil)
@@ -740,9 +740,9 @@ func TestVectors(t *testing.T) {
 							Params: serialized,
 						})
 					}
-					require.NoError(t, errDeserialize, "Deserializing wire error")
-					require.EqualValues(t, obj, deserialized, "Deserialized object mismatch")
-					require.Equal(t, wire, serializedWithFrame, "Serialized wire mismatch")
+					require.NoErrorf(t, errDeserialize, "Deserializing wire error: call=%d", call)
+					require.EqualValuesf(t, obj, deserialized, "Deserialized object mismatch: call=%d", call)
+					require.Equalf(t, wire, serializedWithFrame, "Serialized wire mismatch: call=%d", call)
 				}
 
 				// Serialize and deserialize using the wire binary format

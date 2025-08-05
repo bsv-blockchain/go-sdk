@@ -18,7 +18,7 @@ import (
 // TestValidateCertificates tests the validateCertificates function
 func TestValidateCertificates(t *testing.T) {
 	t.Run("Rejects empty certificates", func(t *testing.T) {
-		mockWallet := wallet.NewMockWallet(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t)
 		message := &AuthMessage{
 			Certificates: nil,
 		}

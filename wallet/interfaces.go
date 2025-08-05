@@ -9,15 +9,31 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
-// KeyOperations defines the interface for cryptographic operations.
-type KeyOperations interface {
+type PublicKeyGetter interface {
 	GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error)
+}
+
+type CipherOperations interface {
 	Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error)
 	Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error)
+}
+
+type HMACOperations interface {
 	CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error)
 	VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error)
+}
+
+type SignatureOperations interface {
 	CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error)
 	VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error)
+}
+
+// KeyOperations defines the interface for cryptographic operations.
+type KeyOperations interface {
+	PublicKeyGetter
+	CipherOperations
+	HMACOperations
+	SignatureOperations
 }
 
 // Interface defines the core wallet operations for transaction creation, signing and querying.
@@ -50,6 +66,10 @@ type (
 	CertificateType [32]byte
 	SerialNumber    [32]byte
 )
+
+func (c CertificateType) Bytes() []byte {
+	return c[:]
+}
 
 // Certificate represents a basic certificate in the wallet
 type Certificate struct {

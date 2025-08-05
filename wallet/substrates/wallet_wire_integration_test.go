@@ -1,6 +1,7 @@
 package substrates
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 
@@ -17,7 +18,7 @@ func createTestWalletWire(wallet wallet.Interface) *WalletWireTransceiver {
 
 func TestCreateAction(t *testing.T) {
 	// Setup mock
-	mock := wallet.NewMockWallet(t)
+	mock := wallet.NewTestWalletForRandomKey(t)
 	walletTransceiver := createTestWalletWire(mock)
 	ctx := t.Context()
 	txID := tu.GetByte32FromHexString(t, "deadbeef20248806deadbeef20248806deadbeef20248806deadbeef20248806")
@@ -27,7 +28,7 @@ func TestCreateAction(t *testing.T) {
 		lockScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
 		require.NoError(t, err, "decoding locking script should not error")
 
-		mock.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
+		var expectedCreateActionArgs = wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
 				LockingScript:      lockScript,
@@ -39,21 +40,31 @@ func TestCreateAction(t *testing.T) {
 			}},
 			Labels: []string{"test-label"},
 		}
-		mock.ExpectedOriginator = "test originator"
 
-		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
+		const originator = "test originator"
+
+		var expectedResult = &wallet.CreateActionResult{
 			Txid: txID,
 			Tx:   []byte{1, 2, 3, 4},
 		}
 
+		mock.OnCreateAction().
+			Expect(func(ctx context.Context, args wallet.CreateActionArgs, originator string) {
+				require.Equal(t, expectedCreateActionArgs.Description, args.Description)
+				require.Equal(t, expectedCreateActionArgs.Outputs, args.Outputs)
+				require.Equal(t, expectedCreateActionArgs.Labels, args.Labels)
+			}).
+			ExpectOriginator(originator).
+			ReturnSuccess(expectedResult)
+
 		// Execute test
-		result, err := walletTransceiver.CreateAction(ctx, *mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
+		result, err := walletTransceiver.CreateAction(ctx, expectedCreateActionArgs, originator)
 
 		// Verify results
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.Equal(t, mock.CreateActionResultToReturn.Txid, result.Txid)
-		require.Equal(t, mock.CreateActionResultToReturn.Tx, result.Tx)
+		require.Equal(t, expectedResult.Txid, result.Txid)
+		require.Equal(t, expectedResult.Tx, result.Tx)
 		require.Nil(t, result.NoSendChange)
 		require.Nil(t, result.SendWithResults)
 		require.Nil(t, result.SignableTransaction)
@@ -61,21 +72,27 @@ func TestCreateAction(t *testing.T) {
 
 	t.Run("should create an action with minimal inputs (only description)", func(t *testing.T) {
 		// Expected arguments and return value
-		mock.ExpectedCreateActionArgs = &wallet.CreateActionArgs{
+		var expectedCreateActionArgs = wallet.CreateActionArgs{
 			Description: "Minimal action description",
 		}
-		mock.ExpectedOriginator = ""
-		mock.CreateActionResultToReturn = &wallet.CreateActionResult{
+
+		var expectedResult = &wallet.CreateActionResult{
 			Txid: txID,
 		}
 
+		mock.OnCreateAction().
+			Expect(func(ctx context.Context, args wallet.CreateActionArgs, originator string) {
+				require.Equal(t, expectedCreateActionArgs.Description, args.Description)
+			}).
+			ReturnSuccess(expectedResult)
+
 		// Execute test
-		result, err := walletTransceiver.CreateAction(ctx, *mock.ExpectedCreateActionArgs, mock.ExpectedOriginator)
+		result, err := walletTransceiver.CreateAction(ctx, expectedCreateActionArgs, "")
 
 		// Verify results
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.Equal(t, mock.CreateActionResultToReturn.Txid, result.Txid)
+		require.Equal(t, expectedResult.Txid, result.Txid)
 		require.Nil(t, result.Tx)
 		require.Nil(t, result.NoSendChange)
 		require.Nil(t, result.SendWithResults)
