@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.7 - 2025-08-05](#127---2025-08-05)
 - [1.2.6 - 2025-07-21](#126---2025-07-21)
 - [1.2.5 - 2025-07-16](#125---2025-07-16)
 - [1.2.4 - 2025-06-30](#124---2025-06-30)
@@ -40,6 +41,36 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.7] - 2025-08-05
+
+### Added
+- Implemented `RevealCounterpartyKeyLinkage` and `RevealSpecificKeyLinkage` methods in ProtoWallet (#219)
+- Added Schnorr zero-knowledge proof primitive in `primitives/schnorr` package
+- Added BRC-2 and BRC-3 compliance test vectors
+- Added `TestWallet` implementation for testing with comprehensive certificate management
+- Added `WalletKeys` interface and implementation for standardized key operations
+- Added test certificate manager in `wallet/testcertificates` package
+- Added `NewPrivateKeyFromInt` method to create private keys from integer values
+- Added `Pad` method to SymmetricKey for zero-padding keys to 32 bytes
+
+### Changed
+- Updated `RevealSpecificSecret` in KeyDeriver to use compressed shared secret for HMAC computation
+- Standardized proof serialization format to use compressed points (98 bytes total)
+- Improved auth fetch process to prevent hanging and fix certificate exchange between peers (#217, #220)
+- Refactored certificate validation logic with enhanced error handling
+- Updated SonarQube scan action from v5.2.0 to v5.3.0 (#216)
+- Enhanced `SimplifiedHTTPTransport` with better context handling and error management
+- Improved peer authentication handshake process with better certificate handling
+
+### Fixed
+- Fixed auth fetch hanging process during initial handshake
+- Fixed certificate exchange issues between peers
+- Fixed certificate validation edge cases and improved test coverage
+- Fixed session manager context cancellation handling
+
+### Removed
+- Removed `MockWallet` implementation in favor of `TestWallet`
 
 ## [1.2.6] - 2025-07-21
 

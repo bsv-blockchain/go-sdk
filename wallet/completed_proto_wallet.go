@@ -102,11 +102,11 @@ func (c *CompletedProtoWallet) RelinquishOutput(ctx context.Context, args Relinq
 }
 
 func (c *CompletedProtoWallet) RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error) {
-	return nil, nil
+	return c.ProtoWallet.RevealCounterpartyKeyLinkage(ctx, args, originator)
 }
 
 func (c *CompletedProtoWallet) RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error) {
-	return nil, nil
+	return c.ProtoWallet.RevealSpecificKeyLinkage(ctx, args, originator)
 }
 
 func (c *CompletedProtoWallet) RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error) {
