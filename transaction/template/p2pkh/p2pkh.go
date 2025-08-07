@@ -40,7 +40,24 @@ func Lock(a *script.Address) (*script.Script, error) {
 	return &s, nil
 }
 
-func Unlock(key *ec.PrivateKey, sigHashFlag *sighash.Flag) (*P2PKH, error) {
+// UnlockOption is a functional option for configuring P2PKH unlock parameters
+type UnlockOption func(*P2PKH)
+
+// WithSourceSatoshis sets the source satoshis for the P2PKH unlock
+func WithSourceSatoshis(satoshis uint64) UnlockOption {
+	return func(p *P2PKH) {
+		p.SourceSatoshis = &satoshis
+	}
+}
+
+// WithLockingScript sets the locking script for the P2PKH unlock
+func WithLockingScript(script *script.Script) UnlockOption {
+	return func(p *P2PKH) {
+		p.LockingScript = script
+	}
+}
+
+func Unlock(key *ec.PrivateKey, sigHashFlag *sighash.Flag, opts ...UnlockOption) (*P2PKH, error) {
 	if key == nil {
 		return nil, ErrNoPrivateKey
 	}
@@ -48,20 +65,57 @@ func Unlock(key *ec.PrivateKey, sigHashFlag *sighash.Flag) (*P2PKH, error) {
 		shf := sighash.AllForkID
 		sigHashFlag = &shf
 	}
-	return &P2PKH{
+	p := &P2PKH{
 		PrivateKey:  key,
 		SigHashFlag: sigHashFlag,
-	}, nil
+	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p, nil
 }
 
 type P2PKH struct {
-	PrivateKey  *ec.PrivateKey
-	SigHashFlag *sighash.Flag
+	PrivateKey     *ec.PrivateKey
+	SigHashFlag    *sighash.Flag
+	SourceSatoshis *uint64
+	LockingScript  *script.Script
 	// optionally could support a code separator index
 }
 
 func (p *P2PKH) Sign(tx *transaction.Transaction, inputIndex uint32) (*script.Script, error) {
-	if tx.Inputs[inputIndex].SourceTxOutput() == nil {
+	input := tx.Inputs[inputIndex]
+	
+	// If optional parameters are provided, temporarily set them
+	var originalOutput *transaction.TransactionOutput
+	if p.SourceSatoshis != nil || p.LockingScript != nil {
+		originalOutput = input.SourceTxOutput()
+		
+		// Create a temporary output with the provided values
+		tempOutput := &transaction.TransactionOutput{}
+		
+		// Use provided satoshis or fall back to original
+		if p.SourceSatoshis != nil {
+			tempOutput.Satoshis = *p.SourceSatoshis
+		} else if originalOutput != nil {
+			tempOutput.Satoshis = originalOutput.Satoshis
+		}
+		
+		// Use provided locking script or fall back to original
+		if p.LockingScript != nil {
+			tempOutput.LockingScript = p.LockingScript
+		} else if originalOutput != nil {
+			tempOutput.LockingScript = originalOutput.LockingScript
+		}
+		
+		input.SetSourceTxOutput(tempOutput)
+		defer func() {
+			// Restore original output
+			input.SetSourceTxOutput(originalOutput)
+		}()
+	}
+	
+	if input.SourceTxOutput() == nil {
 		return nil, transaction.ErrEmptyPreviousTx
 	}
 

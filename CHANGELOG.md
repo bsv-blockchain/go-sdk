@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.8 - 2025-08-07](#128---2025-08-07)
 - [1.2.7 - 2025-08-05](#127---2025-08-05)
 - [1.2.6 - 2025-07-21](#126---2025-07-21)
 - [1.2.5 - 2025-07-16](#125---2025-07-16)
@@ -41,6 +42,18 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.8] - 2025-08-07
+
+### Added
+- Extended P2PKH template's Unlock function with optional parameters for sourceSatoshis and lockingScript (#218)
+  - Added `WithSourceSatoshis` and `WithLockingScript` functional options
+  - Added cross-implementation test vectors
+
+### Changed
+- Replaced `log.Logger` with `slog.Logger` in AuthFetch and Peer (#215)
+  - Added `SetLogger` for custom logger configuration
+  - Structured logging for improved observability
 
 ## [1.2.7] - 2025-08-05
 

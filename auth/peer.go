@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
@@ -58,7 +58,7 @@ type Peer struct {
 	callbackIdCounter      atomic.Int32
 	autoPersistLastSession bool
 	lastInteractedWithPeer *ec.PublicKey
-	logger                 *log.Logger // Logger for debug messages
+	logger                 *slog.Logger // Logger for debug messages
 }
 
 // PeerOptions contains configuration options for creating a new Peer instance.
@@ -68,7 +68,7 @@ type PeerOptions struct {
 	CertificatesToRequest  *utils.RequestedCertificateSet
 	SessionManager         SessionManager
 	AutoPersistLastSession *bool
-	Logger                 *log.Logger // Optional logger for debug messages
+	Logger                 *slog.Logger // Optional logger for debug messages
 }
 
 // NewPeer creates a new peer instance
@@ -87,9 +87,9 @@ func NewPeer(cfg *PeerOptions) *Peer {
 		logger: cfg.Logger,
 	}
 
-	// Use a discard logger if none provided
+	// Use default logger if none provided
 	if peer.logger == nil {
-		peer.logger = log.New(log.Writer(), "[Auth Peer] ", log.LstdFlags)
+		peer.logger = slog.Default().With("component", "AuthPeer")
 	}
 
 	if peer.sessionManager == nil {
@@ -112,10 +112,15 @@ func NewPeer(cfg *PeerOptions) *Peer {
 	// Start the peer
 	err := peer.Start()
 	if err != nil {
-		peer.logger.Printf("Warning: Failed to start peer: %v", err)
+		peer.logger.Warn("Failed to start peer", "error", err)
 	}
 
 	return peer
+}
+
+// SetLogger sets a custom logger for the Peer instance.
+func (p *Peer) SetLogger(logger *slog.Logger) {
+	p.logger = logger
 }
 
 // Start initializes the peer by setting up the transport's message handler
@@ -124,7 +129,7 @@ func (p *Peer) Start() error {
 	err := p.transport.OnData(func(ctx context.Context, message *AuthMessage) error {
 		err := p.handleIncomingMessage(ctx, message)
 		if err != nil {
-			p.logger.Printf("Error handling incoming message: %v", err)
+			p.logger.Error("Error handling incoming message", "error", err)
 			return err
 		}
 		return nil
@@ -379,38 +384,37 @@ func (p *Peer) handleIncomingMessage(ctx context.Context, message *AuthMessage) 
 	switch message.MessageType {
 	case MessageTypeInitialRequest:
 		if err := p.handleInitialRequest(ctx, message, message.IdentityKey); err != nil {
-			p.logger.Printf("Error handling initial request: %v", err)
+			p.logger.Error("Error handling initial request", "error", err)
 			return err
 		}
 		return nil
 	case MessageTypeInitialResponse:
 		if err := p.handleInitialResponse(ctx, message, message.IdentityKey); err != nil {
-			p.logger.Printf("Error handling initial response: %v", err)
+			p.logger.Error("Error handling initial response", "error", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateRequest:
 		if err := p.handleCertificateRequest(ctx, message, message.IdentityKey); err != nil {
-			p.logger.Printf("Error handling certificate request: %v", err)
+			p.logger.Error("Error handling certificate request", "error", err)
 			return err
 		}
 		return nil
 	case MessageTypeCertificateResponse:
 		if err := p.handleCertificateResponse(ctx, message, message.IdentityKey); err != nil {
-			p.logger.Printf("Error handling certificate response: %v", err)
+			p.logger.Error("Error handling certificate response", "error", err)
 			return err
 		}
 		return nil
 	case MessageTypeGeneral:
 		if err := p.handleGeneralMessage(ctx, message, message.IdentityKey); err != nil {
-			p.logger.Printf("Error handling general message: %v", err)
+			p.logger.Error("Error handling general message", "error", err)
 			return err
 		}
 		return nil
 	default:
-		errMsg := fmt.Sprintf("unknown message type: %s", message.MessageType)
-		p.logger.Println(errMsg)
-		return fmt.Errorf("%s", errMsg)
+		p.logger.Error("Unknown message type", "messageType", message.MessageType)
+		return fmt.Errorf("unknown message type: %s", message.MessageType)
 	}
 }
 
@@ -894,7 +898,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 		err := callback(senderPublicKey, message.Payload)
 		if err != nil {
 			// Log callback error but continue
-			p.logger.Printf("Warning: General message callback error: %v", err)
+			p.logger.Warn("General message callback error", "error", err)
 		}
 	}
 

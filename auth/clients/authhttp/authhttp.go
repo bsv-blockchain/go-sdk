@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -22,6 +22,8 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/transports"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -59,7 +61,7 @@ type AuthFetch struct {
 	certificatesReceived  []*certificates.VerifiableCertificate
 	requestedCertificates *utils.RequestedCertificateSet
 	peers                 map[string]*AuthPeer
-	logger                *log.Logger // Logger for debug/warning messages
+	logger                *slog.Logger // Logger for debug/warning messages
 }
 
 // New constructs a new AuthFetch instance.
@@ -75,8 +77,13 @@ func New(w wallet.Interface, requestedCerts *utils.RequestedCertificateSet, sess
 		certificatesReceived:  []*certificates.VerifiableCertificate{},
 		requestedCertificates: requestedCerts,
 		peers:                 make(map[string]*AuthPeer),
-		logger:                log.New(log.Writer(), "[AuthHTTP] ", log.LstdFlags),
+		logger:                slog.Default().With("component", "AuthHTTP"),
 	}
+}
+
+// SetLogger sets a custom logger for the AuthFetch instance.
+func (a *AuthFetch) SetLogger(logger *slog.Logger) {
+	a.logger = logger
 }
 
 // Fetch mutually authenticates and sends a HTTP request to a server.
@@ -229,10 +236,10 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 
 		// Setup callback for this request
 		a.callbacks[requestNonceBase64] = struct {
-			resolve func(interface{})
-			reject  func(interface{})
+			resolve func(any)
+			reject  func(any)
 		}{
-			resolve: func(resp interface{}) {
+			resolve: func(resp any) {
 				if httpResp, ok := resp.(*http.Response); ok {
 					responseChan <- struct {
 						resp *http.Response
@@ -245,7 +252,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					}{nil, fmt.Errorf("invalid response type")}
 				}
 			},
-			reject: func(err interface{}) {
+			reject: func(err any) {
 				if errStr, ok := err.(string); ok {
 					responseChan <- struct {
 						resp *http.Response
@@ -580,7 +587,7 @@ func (a *AuthFetch) serializeRequest(method string, headers map[string]string, b
 			includedHeaders = append(includedHeaders, []string{headerKey, strings.TrimSpace(contentType)})
 		} else {
 			// In Go we're more tolerant of headers, but log a warning
-			a.logger.Printf("Warning: Unsupported header in simplified fetch: %s", k)
+			a.logger.Warn("Unsupported header in simplified fetch", "header", k)
 		}
 	}
 
@@ -742,15 +749,30 @@ func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, co
 		return nil, fmt.Errorf("failed to derive payment key: %w", err)
 	}
 
-	// Use the wallet to create a P2PKH locking script from the derived key
-	// The wallet will handle the conversion of public key to address and script generation
+	// Build a P2PKH locking script from the derived public key (to match TS implementation)
+	// Determine network for address construction
+	mainnet := true
+	if netRes, netErr := a.wallet.GetNetwork(ctx, nil, "auth-payment"); netErr == nil {
+		if netRes.Network == wallet.NetworkTestnet {
+			mainnet = false
+		}
+	}
+	addr, err := script.NewAddressFromPublicKey(derivedKey.PublicKey, mainnet)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create address from derived key: %w", err)
+	}
+	lockScript, err := p2pkh.Lock(addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create P2PKH locking script: %w", err)
+	}
+
 	randomizeOutputs := false
 	actionResult, err := a.wallet.CreateAction(ctx, wallet.CreateActionArgs{
 		Description: fmt.Sprintf("Payment for request to %s", urlStr),
 		Outputs: []wallet.CreateActionOutput{
 			{
 				Satoshis:      satoshisRequired,
-				LockingScript: derivedKey.PublicKey.ToDER(),
+				LockingScript: lockScript.Bytes(),
 				CustomInstructions: fmt.Sprintf(`{"derivationPrefix":"%s","derivationSuffix":"%s","payee":"%s"}`,
 					derivationPrefix, derivationSuffix, serverIdentityKey),
 				OutputDescription: "HTTP request payment",
