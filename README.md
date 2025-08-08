@@ -40,7 +40,7 @@ go get github.com/bsv-blockchain/go-sdk
 
 ### Basic Usage
 
-Here's a simple example of using the SDK to create and sign a P2PKH transaction:
+Here's a [simple example](https://goplay.tools/snippet/WotzYGbOSQ6) of using the SDK to create and sign a P2PKH transaction:
 
 ```go
 package main
