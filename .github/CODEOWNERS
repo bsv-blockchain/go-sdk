@@ -1,0 +1,4 @@
+# Use CODEOWNERS to manage reviewers for Dependabot PRs per GitHub change:
+# https://github.blog/changelog/2025-04-29-dependabot-reviewers-configuration-option-being-replaced-by-code-owners/
+
+* @shruggr @rohenaz
