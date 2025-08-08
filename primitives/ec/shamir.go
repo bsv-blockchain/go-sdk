@@ -2,19 +2,16 @@ package primitives
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
 	"github.com/bsv-blockchain/go-sdk/util"
 )
-
-// testDeriveShareX is a test seam used only by unit tests to override
-// x-coordinate derivation when generating key shares. It MUST remain nil in
-// production code paths. Tests can set and restore this variable.
-var testDeriveShareX func(shareIndex, attempt int, seed []byte) *big.Int
 
 // ToPolynomial creates a polynomial of the given threshold using the private key
 // as the constant term (point at x=0).
@@ -66,25 +63,32 @@ func (p *PrivateKey) ToKeyShares(threshold int, totalShares int) (keyShares *key
 	usedX := make(map[string]struct{})
 
 	for i := range totalShares {
-		var x *big.Int
 		const maxAttempts = 5
-		var ok bool
-		for attempt := range maxAttempts {
-			if testDeriveShareX != nil {
-				x = testDeriveShareX(i, attempt, seed)
-				if x == nil {
-					return nil, fmt.Errorf("testDeriveShareX returned nil")
-				}
-				x.Mod(x, curve.P)
-			} else {
-				pk, err := NewPrivateKey()
-				if err != nil {
-					return nil, err
-				}
-				x = new(big.Int).Set(pk.D)
-				x.Mod(x, curve.P)
+		attempts := 0
+		var x *big.Int
+		for {
+			// counter: i (4 bytes) | attempt (4 bytes) | 32 bytes randomness
+			counter := make([]byte, 0, 40)
+			var ib [4]byte
+			var ab [4]byte
+			binary.BigEndian.PutUint32(ib[:], uint32(i))
+			binary.BigEndian.PutUint32(ab[:], uint32(attempts))
+			counter = append(counter, ib[:]...)
+			counter = append(counter, ab[:]...)
+			rnd := make([]byte, 32)
+			if _, err := rand.Read(rnd); err != nil {
+				return nil, fmt.Errorf("failed to read randomness: %w", err)
 			}
+			counter = append(counter, rnd...)
 
+			h := crypto.Sha512HMAC(counter, seed)
+			x = new(big.Int).SetBytes(h)
+			x.Mod(x, curve.P)
+
+			attempts++
+			if attempts > maxAttempts {
+				return nil, fmt.Errorf("failed to generate unique x coordinate after %d attempts", maxAttempts)
+			}
 			if x.Sign() == 0 {
 				continue
 			}
@@ -93,11 +97,7 @@ func (p *PrivateKey) ToKeyShares(threshold int, totalShares int) (keyShares *key
 				continue
 			}
 			usedX[key] = struct{}{}
-			ok = true
 			break
-		}
-		if !ok || x == nil || x.Sign() == 0 {
-			return nil, fmt.Errorf("failed to generate unique x coordinate")
 		}
 
 		y := new(big.Int).Set(poly.ValueAt(x))
