@@ -42,3 +42,5 @@ golangci-lint-report.xml
 
 # Ignore files related to AI tools
 CLAUDE.md
+
+coverage.out
