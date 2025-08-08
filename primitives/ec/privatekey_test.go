@@ -608,16 +608,3 @@ func TestExampleFromTypescript(t *testing.T) {
 	require.NotNil(t, recoveredKey)
 	require.Equal(t, wif, recoveredKey.Wif())
 }
-
-func TestKnownPolynomialValueAt(t *testing.T) { // moved to shamir_test.go
-	wif := "L1vTr2wRMZoXWBM3u1Mvbzk9bfoJE5PT34t52HYGt9jzZMyavWrk"
-	pk, err := PrivateKeyFromWif(wif)
-	require.NoError(t, err)
-	expectedPkD := "8c507a209d082d9db947bea9ffb248bbb977e59953405dacf5ea8c4be3a11a2f"
-	require.Equal(t, expectedPkD, hex.EncodeToString(pk.D.Bytes()))
-	poly, err := pk.ToPolynomial(3)
-	require.NoError(t, err)
-	result := poly.ValueAt(big.NewInt(0))
-	expected := "8c507a209d082d9db947bea9ffb248bbb977e59953405dacf5ea8c4be3a11a2f"
-	require.Equal(t, expected, hex.EncodeToString(result.Bytes()))
-}
