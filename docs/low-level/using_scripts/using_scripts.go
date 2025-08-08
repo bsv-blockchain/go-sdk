@@ -51,6 +51,8 @@ func main() {
 	lockingScriptASM := lockingScript.ToASM()
 	log.Printf("Locking Script (ASM): %s\n", lockingScriptASM)
 
+	// See docs/examples/set_source_tx_output for setting input source transactions
+
 	// Serializing Scripts
 	p2pkhScript := "OP_DUP OP_HASH160 1451baa3aad777144a0759998a03538018dd7b4b OP_EQUALVERIFY OP_CHECKSIG"
 	script, err := script.NewFromASM(p2pkhScript)

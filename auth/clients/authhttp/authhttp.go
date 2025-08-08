@@ -65,11 +65,15 @@ type AuthFetch struct {
 }
 
 // New constructs a new AuthFetch instance.
-func New(w wallet.Interface, requestedCerts *utils.RequestedCertificateSet, sessionMgr auth.SessionManager) *AuthFetch {
+func New(w wallet.Interface, requestedCerts *utils.RequestedCertificateSet, sessionMgr auth.SessionManager, logger ...*slog.Logger) *AuthFetch {
 	if sessionMgr == nil {
 		sessionMgr = auth.NewSessionManager()
 	}
 
+	l := slog.Default().With("component", "AuthHTTP")
+	if len(logger) > 0 && logger[0] != nil {
+		l = logger[0]
+	}
 	return &AuthFetch{
 		sessionManager:        sessionMgr,
 		wallet:                w,
@@ -77,14 +81,12 @@ func New(w wallet.Interface, requestedCerts *utils.RequestedCertificateSet, sess
 		certificatesReceived:  []*certificates.VerifiableCertificate{},
 		requestedCertificates: requestedCerts,
 		peers:                 make(map[string]*AuthPeer),
-		logger:                slog.Default().With("component", "AuthHTTP"),
+		logger:                l,
 	}
 }
 
-// SetLogger sets a custom logger for the AuthFetch instance.
-func (a *AuthFetch) SetLogger(logger *slog.Logger) {
-	a.logger = logger
-}
+// Deprecated: SetLogger is deprecated; pass logger to New(..., logger) instead.
+func (a *AuthFetch) SetLogger(logger *slog.Logger) { a.logger = logger }
 
 // Fetch mutually authenticates and sends a HTTP request to a server.
 //

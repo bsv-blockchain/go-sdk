@@ -46,13 +46,14 @@ All notable changes to this project will be documented in this file. The format 
 ## [1.2.8] - 2025-08-07
 
 ### Added
-- Extended P2PKH template's Unlock function with optional parameters for sourceSatoshis and lockingScript (#218)
-  - Added `WithSourceSatoshis` and `WithLockingScript` functional options
+- Documented using SetSourceTxOutput to address (#218)
+  - Added example `docs/examples/set_source_tx_output/` with `set_source_tx_output.go` and README
   - Added cross-implementation test vectors
 
 ### Changed
 - Replaced `log.Logger` with `slog.Logger` in AuthFetch and Peer (#215)
-  - Added `SetLogger` for custom logger configuration
+  - Auth HTTP client now accepts an optional `*slog.Logger` in its constructor (`authhttp.New(..., logger...)`)
+  - Prefer constructor injection over setters; `SetLogger` is deprecated
   - Structured logging for improved observability
 
 ### Fixed
