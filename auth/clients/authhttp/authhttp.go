@@ -749,7 +749,7 @@ func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, co
 		return nil, fmt.Errorf("failed to derive payment key: %w", err)
 	}
 
-	// Build a P2PKH locking script from the derived public key (to match TS implementation)
+	// Build a P2PKH locking script from the derived public key
 	// Determine network for address construction
 	mainnet := true
 	if netRes, netErr := a.wallet.GetNetwork(ctx, nil, "auth-payment"); netErr == nil {

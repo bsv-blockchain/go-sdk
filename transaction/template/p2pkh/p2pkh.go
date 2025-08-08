@@ -40,10 +40,7 @@ func Lock(a *script.Address) (*script.Script, error) {
 	return &s, nil
 }
 
-// UnlockOption is a functional option for configuring P2PKH unlock parameters
-type UnlockOption func(*P2PKH)
-
-func Unlock(key *ec.PrivateKey, sigHashFlag *sighash.Flag, _ ...UnlockOption) (*P2PKH, error) {
+func Unlock(key *ec.PrivateKey, sigHashFlag *sighash.Flag) (*P2PKH, error) {
 	if key == nil {
 		return nil, ErrNoPrivateKey
 	}
