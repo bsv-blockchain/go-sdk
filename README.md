@@ -17,8 +17,8 @@ Welcome to the BSV Blockchain Libraries Project, the comprehensive Go SDK design
   - [Getting Started](#getting-started)
     - [Installation](#installation)
     - [Basic Usage](#basic-usage)
-    - [Examples](#examples)
-  - [Features \& Deliverables](#features--deliverables)
+    - [Examples & Usage Guides](#examples--usage-guides)
+  - [Features](#features)
   - [Documentation](#documentation)
   - [Contribution Guidelines](#contribution-guidelines)
   - [Support \& Contacts](#support--contacts)
@@ -40,42 +40,47 @@ go get github.com/bsv-blockchain/go-sdk
 
 ### Basic Usage
 
-Here's a [simple example](https://goplay.tools/snippet/bnsS-pA56ob) of using the SDK to create and sign a transaction:
+Here's a simple example of using the SDK to create and sign a P2PKH transaction:
 
 ```go
 package main
 
 import (
-	"context"
-	"log"
+    "log"
 
-	wif "github.com/bsv-blockchain/go-sdk/compat/wif"
-	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/bsv-blockchain/go-sdk/transaction/unlocker"
+    ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+    "github.com/bsv-blockchain/go-sdk/transaction"
+    "github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 )
 
 func main() {
-	tx := transaction.NewTransaction()
+    // 1) Load a private key (WIF shown for example purposes)
+    priv, _ := ec.PrivateKeyFromWif("KznvCNc6Yf4iztSThoMH6oHWzH9EgjfodKxmeuUGPq5DEX5maspS")
 
-	unlockingScriptTemplate, _ := p2pkh.Unlock(priv, nil)
-   if err := tx.AddInputFrom(
-		"11b476ad8e0a48fcd40807a111a050af51114877e09283bfa7f3505081a1819d",
-		0,
-		"76a9144bca0c466925b875875a8e1355698bdcc0b2d45d88ac",
-		1500,
-		unlockingScriptTemplate,
-	); err!= nil {
-      log.Fatal(err.Error())
-   }
+    // 2) Create a new transaction
+    tx := transaction.NewTransaction()
 
-	_ = tx.PayToAddress("1AdZmoAQUw4XCsCihukoHMvNWXcsd8jDN6", 1000)
+    // 3) Build an unlocker for P2PKH
+    unlocker, _ := p2pkh.Unlock(priv, nil)
 
-	priv, _ := ec.PrivateKeyFromWif("KznvCNc6Yf4iztSThoMH6oHWzH9EgjfodKxmeuUGPq5DEX5maspS")
+    // 4) Add an input with its source output details
+    //    If you don't have the source tx, fetch satoshis+lockingScript for the outpoint
+    _ = tx.AddInputFrom(
+        "11b476ad8e0a48fcd40807a111a050af51114877e09283bfa7f3505081a1819d", // prev txid
+        0,                                                                  // vout
+        "76a9144bca0c466925b875875a8e1355698bdcc0b2d45d88ac",              // source locking script
+        1500,                                                               // source satoshis
+        unlocker,                                                           // unlocking script template
+    )
 
-	if err := tx.Sign(); err != nil {
-		log.Fatal(err.Error())
-	}
-	log.Printf("tx: %s\n", tx)
+    // 5) Add an output
+    _ = tx.PayToAddress("1AdZmoAQUw4XCsCihukoHMvNWXcsd8jDN6", 1000)
+
+    // 6) Sign all inputs with attached templates
+    if err := tx.Sign(); err != nil {
+        log.Fatal(err)
+    }
+    log.Printf("tx hex: %s\n", tx.Hex())
 }
 
 ```
