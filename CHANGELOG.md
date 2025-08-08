@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.8 - 2025-08-07](#128---2025-08-07)
 - [1.2.7 - 2025-08-05](#127---2025-08-05)
 - [1.2.6 - 2025-07-21](#126---2025-07-21)
 - [1.2.5 - 2025-07-16](#125---2025-07-16)
@@ -41,6 +42,22 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.8] - 2025-08-07
+
+### Added
+- Documented using SetSourceTxOutput to address (#218)
+  - Added example `docs/examples/set_source_tx_output/` with `set_source_tx_output.go` and README
+  - Added cross-implementation test vectors
+
+### Changed
+- Replaced `log.Logger` with `slog.Logger` in AuthFetch and Peer (#215)
+  - Auth HTTP client now accepts an optional `*slog.Logger` in its constructor (`authhttp.New(..., logger...)`)
+  - Prefer constructor injection over setters; `SetLogger` is deprecated
+  - Structured logging for improved observability
+
+### Fixed
+- Shamir key split: enforce non-zero, unique x-coordinates in `ToKeyShares` and add tests to prevent regressions. Refactor Shamir logic into `primitives/ec/shamir.go` for clarity.
 
 ## [1.2.7] - 2025-08-05
 

@@ -48,10 +48,8 @@ func Unlock(key *ec.PrivateKey, sigHashFlag *sighash.Flag) (*P2PKH, error) {
 		shf := sighash.AllForkID
 		sigHashFlag = &shf
 	}
-	return &P2PKH{
-		PrivateKey:  key,
-		SigHashFlag: sigHashFlag,
-	}, nil
+	p := &P2PKH{PrivateKey: key, SigHashFlag: sigHashFlag}
+	return p, nil
 }
 
 type P2PKH struct {
@@ -61,7 +59,9 @@ type P2PKH struct {
 }
 
 func (p *P2PKH) Sign(tx *transaction.Transaction, inputIndex uint32) (*script.Script, error) {
-	if tx.Inputs[inputIndex].SourceTxOutput() == nil {
+	input := tx.Inputs[inputIndex]
+
+	if input.SourceTxOutput() == nil {
 		return nil, transaction.ErrEmptyPreviousTx
 	}
 
