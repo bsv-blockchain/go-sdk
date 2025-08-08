@@ -186,37 +186,6 @@ func TestPrivateKeyFromInvalidWif(t *testing.T) {
 }
 
 // TestPolynomialFromPrivateKey checks if a polynomial is correctly created from a private key
-func TestPolynomialFromPrivateKey(t *testing.T) {
-
-	pk, _ := NewPrivateKey()
-	threshold := 3
-
-	poly, err := pk.ToPolynomial(threshold)
-	if err != nil {
-		t.Fatalf(createPolyFail, err)
-	}
-
-	if len(poly.Points) != threshold {
-		t.Errorf("Incorrect number of points. Expected %d, got %d", threshold, len(poly.Points))
-	}
-
-	if poly.Points[0].X.Cmp(big.NewInt(0)) != 0 {
-		t.Errorf("First point x-coordinate should be 0, got %v", poly.Points[0].X)
-	}
-
-	if poly.Points[0].Y.Cmp(pk.D) != 0 {
-		t.Errorf("First point y-coordinate should be the key, got %v", poly.Points[0].Y)
-	}
-
-	// Check for uniqueness of x-coordinates
-	xCoords := make(map[string]bool)
-	for _, point := range poly.Points {
-		if xCoords[point.X.String()] {
-			t.Errorf("Duplicate x-coordinate found: %v", point.X)
-		}
-		xCoords[point.X.String()] = true
-	}
-}
 
 func TestPolynomialFullProcess(t *testing.T) {
 	// Create a private key
@@ -640,7 +609,7 @@ func TestExampleFromTypescript(t *testing.T) {
 	require.Equal(t, wif, recoveredKey.Wif())
 }
 
-func TestKnownPolynomialValueAt(t *testing.T) {
+func TestKnownPolynomialValueAt(t *testing.T) { // moved to shamir_test.go
 	wif := "L1vTr2wRMZoXWBM3u1Mvbzk9bfoJE5PT34t52HYGt9jzZMyavWrk"
 	pk, err := PrivateKeyFromWif(wif)
 	require.NoError(t, err)

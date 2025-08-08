@@ -55,6 +55,9 @@ All notable changes to this project will be documented in this file. The format 
   - Added `SetLogger` for custom logger configuration
   - Structured logging for improved observability
 
+### Fixed
+- Shamir key split: enforce non-zero, unique x-coordinates in `ToKeyShares` and add tests to prevent regressions. Refactor Shamir logic into `primitives/ec/shamir.go` for clarity.
+
 ## [1.2.7] - 2025-08-05
 
 ### Added
