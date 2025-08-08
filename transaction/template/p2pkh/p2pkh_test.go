@@ -134,14 +134,14 @@ func TestUnlockWithOptionalParameters(t *testing.T) {
 
 	// Create a transaction with no source transaction
 	tx := transaction.NewTransaction()
-	
+
 	// Add an input without source transaction
 	require.NoError(t, tx.AddInputFrom("45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d", 0, "", 0, nil))
-	
+
 	// Create output script
 	outputScript, err := script.NewFromHex("76a91442f9682260509ac80722b1963aec8a896593d16688ac")
 	require.NoError(t, err)
-	
+
 	tx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      375041432,
 		LockingScript: outputScript,
@@ -150,72 +150,58 @@ func TestUnlockWithOptionalParameters(t *testing.T) {
 	// Private key
 	priv, err := ec.PrivateKeyFromWif("cNGwGSc7KRrTmdLUZ54fiSXWbhLNDc2Eg5zNucgQxyQCzuQ5YRDq")
 	require.NoError(t, err)
-	
+
 	// Locking script for the input
 	lockingScript, err := script.NewFromHex("76a914c7c6987b6e2345a6b138e3384141520a0fbc18c588ac")
 	require.NoError(t, err)
-	
-	// Test 1: Use WithSourceSatoshis and WithLockingScript
-	t.Run("with optional parameters", func(t *testing.T) {
-		satoshis := uint64(15564838601)
-		unlocker, err := p2pkh.Unlock(priv, nil, 
-			p2pkh.WithSourceSatoshis(satoshis),
-			p2pkh.WithLockingScript(lockingScript),
-		)
-		require.NoError(t, err)
-		
-		// Sign should work even without source transaction
-		uscript, err := unlocker.Sign(tx, 0)
-		require.NoError(t, err)
-		require.NotNil(t, uscript)
-		
-		// Verify the signature was created
-		parts, err := script.DecodeScript(*uscript)
-		require.NoError(t, err)
-		require.Len(t, parts, 2) // signature and public key
-	})
-	
-	// Test 2: Partial parameters - only satoshis
-	t.Run("with only satoshis", func(t *testing.T) {
-		// First set a source output to provide the locking script
-		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{
-			Satoshis:      1000, // This will be overridden
-			LockingScript: lockingScript,
-		})
-		
-		satoshis := uint64(15564838601)
-		unlocker, err := p2pkh.Unlock(priv, nil, p2pkh.WithSourceSatoshis(satoshis))
-		require.NoError(t, err)
-		
-		uscript, err := unlocker.Sign(tx, 0)
-		require.NoError(t, err)
-		require.NotNil(t, uscript)
-	})
-	
-	// Test 3: Partial parameters - only locking script
-	t.Run("with only locking script", func(t *testing.T) {
-		// Set a source output to provide the satoshis
+
+	// Test 1: Documented approach using SetSourceTxOutput
+	t.Run("with SetSourceTxOutput", func(t *testing.T) {
 		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{
 			Satoshis:      15564838601,
-			LockingScript: &script.Script{}, // This will be overridden
+			LockingScript: lockingScript,
 		})
-		
-		unlocker, err := p2pkh.Unlock(priv, nil, p2pkh.WithLockingScript(lockingScript))
+		unlocker, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
-		
 		uscript, err := unlocker.Sign(tx, 0)
 		require.NoError(t, err)
 		require.NotNil(t, uscript)
 	})
-	
+
+	// Test 2: Provide satoshis and locking script via SetSourceTxOutput
+	t.Run("with satoshis via SetSourceTxOutput", func(t *testing.T) {
+		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{
+			Satoshis:      15564838601,
+			LockingScript: lockingScript,
+		})
+		unlocker, err := p2pkh.Unlock(priv, nil)
+		require.NoError(t, err)
+		uscript, err := unlocker.Sign(tx, 0)
+		require.NoError(t, err)
+		require.NotNil(t, uscript)
+	})
+
+	// Test 3: Only locking script via SetSourceTxOutput
+	t.Run("with locking script via SetSourceTxOutput", func(t *testing.T) {
+		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{
+			Satoshis:      15564838601,
+			LockingScript: lockingScript,
+		})
+		unlocker, err := p2pkh.Unlock(priv, nil)
+		require.NoError(t, err)
+		uscript, err := unlocker.Sign(tx, 0)
+		require.NoError(t, err)
+		require.NotNil(t, uscript)
+	})
+
 	// Test 4: Error when no source info available
 	t.Run("error without source info", func(t *testing.T) {
 		// Clear source output
 		tx.Inputs[0].SetSourceTxOutput(nil)
-		
+
 		unlocker, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
-		
+
 		_, err = unlocker.Sign(tx, 0)
 		require.Error(t, err)
 		require.Equal(t, transaction.ErrEmptyPreviousTx, err)

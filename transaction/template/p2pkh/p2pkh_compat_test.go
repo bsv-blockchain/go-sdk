@@ -22,11 +22,11 @@ func TestP2PKHCompatibilityWithTypeScript(t *testing.T) {
 
 	// Create a transaction without source transaction (mimicking TypeScript behavior)
 	tx := transaction.NewTransaction()
-	
+
 	// Add input using AddInputFrom (similar to TypeScript's addInput)
 	require.NoError(t, tx.AddInputFrom(
-		"45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d", 
-		0, 
+		"45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d",
+		0,
 		"", // Empty script, will be provided via options
 		0,  // Zero satoshis, will be provided via options
 		nil,
@@ -41,16 +41,14 @@ func TestP2PKHCompatibilityWithTypeScript(t *testing.T) {
 	})
 
 	// Test case 1: Using optional parameters matching TypeScript's behavior
-	t.Run("TypeScript compatible signing with optional params", func(t *testing.T) {
+	t.Run("TypeScript compatible signing with SetSourceTxOutput", func(t *testing.T) {
 		// This mimics TypeScript's: sourceSatoshis: 15564838601, lockingScript: Script
 		satoshis := uint64(15564838601)
 		lockingScript, err := script.NewFromHex("76a914c7c6987b6e2345a6b138e3384141520a0fbc18c588ac")
 		require.NoError(t, err)
 
-		unlocker, err := p2pkh.Unlock(priv, nil,
-			p2pkh.WithSourceSatoshis(satoshis),
-			p2pkh.WithLockingScript(lockingScript),
-		)
+		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{Satoshis: satoshis, LockingScript: lockingScript})
+		unlocker, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
 
 		// Sign the transaction
@@ -90,16 +88,8 @@ func TestP2PKHCompatibilityWithTypeScript(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create two unlockers with same parameters
-		unlocker1, err := p2pkh.Unlock(priv, nil,
-			p2pkh.WithSourceSatoshis(satoshis),
-			p2pkh.WithLockingScript(lockingScript),
-		)
-		require.NoError(t, err)
-
-		unlocker2, err := p2pkh.Unlock(priv, nil,
-			p2pkh.WithSourceSatoshis(satoshis),
-			p2pkh.WithLockingScript(lockingScript),
-		)
+		tx2.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{Satoshis: satoshis, LockingScript: lockingScript})
+		unlocker1, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
 
 		// Both should produce valid signatures
@@ -116,6 +106,9 @@ func TestP2PKHCompatibilityWithTypeScript(t *testing.T) {
 			Satoshis:      375041432,
 			LockingScript: outputScript,
 		})
+		tx3.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{Satoshis: satoshis, LockingScript: lockingScript})
+		unlocker2, err := p2pkh.Unlock(priv, nil)
+		require.NoError(t, err)
 
 		uscript2, err := unlocker2.Sign(tx3, 0)
 		require.NoError(t, err)
@@ -123,11 +116,11 @@ func TestP2PKHCompatibilityWithTypeScript(t *testing.T) {
 		// The scripts structure should be identical (though signatures may differ due to randomness)
 		parts1, _ := script.DecodeScript(*uscript1)
 		parts2, _ := script.DecodeScript(*uscript2)
-		
+
 		// Same number of parts
 		require.Len(t, parts1, 2)
 		require.Len(t, parts2, 2)
-		
+
 		// Same public key
 		require.Equal(t, parts1[1].Data, parts2[1].Data)
 	})
@@ -136,10 +129,10 @@ func TestP2PKHCompatibilityWithTypeScript(t *testing.T) {
 	t.Run("Cross implementation test vector", func(t *testing.T) {
 		// This test uses the exact same transaction structure as TypeScript tests
 		// to ensure both implementations produce compatible signatures
-		
+
 		// Create source transaction output info
 		sourceTx := transaction.NewTransaction()
-		
+
 		// Source output
 		sourceScript, err := script.NewFromHex("76a914c7c6987b6e2345a6b138e3384141520a0fbc18c588ac")
 		require.NoError(t, err)
@@ -147,31 +140,31 @@ func TestP2PKHCompatibilityWithTypeScript(t *testing.T) {
 			Satoshis:      100000000, // 1 BSV
 			LockingScript: sourceScript,
 		})
-		
+
 		// Create spending transaction
 		spendTx := transaction.NewTransaction()
 		spendTx.AddInputFromTx(sourceTx, 0, nil)
-		
+
 		// Add output - sending to same address with fee
 		spendTx.AddOutput(&transaction.TransactionOutput{
 			Satoshis:      99990000, // 0.9999 BSV (0.0001 BSV fee)
 			LockingScript: sourceScript,
 		})
-		
+
 		// Create unlocker and sign
 		unlocker, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
-		
+
 		unlockingScript, err := unlocker.Sign(spendTx, 0)
 		require.NoError(t, err)
 		spendTx.Inputs[0].UnlockingScript = unlockingScript
-		
+
 		// Verify the transaction structure
 		require.Equal(t, uint32(1), spendTx.Version)
 		require.Equal(t, uint32(0), spendTx.LockTime)
 		require.Len(t, spendTx.Inputs, 1)
 		require.Len(t, spendTx.Outputs, 1)
-		
+
 		// The unlocking script should unlock the source output
 		// In a full implementation, we would verify the script execution here
 	})
@@ -187,17 +180,11 @@ func TestP2PKHOptionalParametersEdgeCases(t *testing.T) {
 	t.Run("Zero satoshis", func(t *testing.T) {
 		tx := transaction.NewTransaction()
 		require.NoError(t, tx.AddInputFrom("45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d", 0, "", 0, nil))
-		
 		lockingScript, err := script.NewFromHex("76a914c7c6987b6e2345a6b138e3384141520a0fbc18c588ac")
 		require.NoError(t, err)
-		
-		// Test with 0 satoshis
-		unlocker, err := p2pkh.Unlock(priv, nil,
-			p2pkh.WithSourceSatoshis(0),
-			p2pkh.WithLockingScript(lockingScript),
-		)
+		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{Satoshis: 0, LockingScript: lockingScript})
+		unlocker, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
-		
 		_, err = unlocker.Sign(tx, 0)
 		require.NoError(t, err)
 	})
@@ -205,18 +192,12 @@ func TestP2PKHOptionalParametersEdgeCases(t *testing.T) {
 	t.Run("Maximum satoshis", func(t *testing.T) {
 		tx := transaction.NewTransaction()
 		require.NoError(t, tx.AddInputFrom("45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d", 0, "", 0, nil))
-		
 		lockingScript, err := script.NewFromHex("76a914c7c6987b6e2345a6b138e3384141520a0fbc18c588ac")
 		require.NoError(t, err)
-		
-		// Test with maximum possible satoshis (21 million BSV)
 		maxSatoshis := uint64(21000000) * uint64(100000000)
-		unlocker, err := p2pkh.Unlock(priv, nil,
-			p2pkh.WithSourceSatoshis(maxSatoshis),
-			p2pkh.WithLockingScript(lockingScript),
-		)
+		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{Satoshis: maxSatoshis, LockingScript: lockingScript})
+		unlocker, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
-		
 		_, err = unlocker.Sign(tx, 0)
 		require.NoError(t, err)
 	})
@@ -224,15 +205,10 @@ func TestP2PKHOptionalParametersEdgeCases(t *testing.T) {
 	t.Run("Empty locking script", func(t *testing.T) {
 		tx := transaction.NewTransaction()
 		require.NoError(t, tx.AddInputFrom("45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d", 0, "", 0, nil))
-		
 		emptyScript := &script.Script{}
-		
-		unlocker, err := p2pkh.Unlock(priv, nil,
-			p2pkh.WithSourceSatoshis(1000),
-			p2pkh.WithLockingScript(emptyScript),
-		)
+		tx.Inputs[0].SetSourceTxOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: emptyScript})
+		unlocker, err := p2pkh.Unlock(priv, nil)
 		require.NoError(t, err)
-		
 		// Should still sign successfully (though spending would fail)
 		_, err = unlocker.Sign(tx, 0)
 		require.NoError(t, err)
@@ -245,7 +221,7 @@ func TestP2PKHSignatureHashCalculation(t *testing.T) {
 
 	// Use a known test vector to verify signature hash calculation
 	// This ensures both Go and TypeScript calculate the same hash for signing
-	
+
 	priv, err := ec.PrivateKeyFromWif("cNGwGSc7KRrTmdLUZ54fiSXWbhLNDc2Eg5zNucgQxyQCzuQ5YRDq")
 	require.NoError(t, err)
 
