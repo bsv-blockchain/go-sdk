@@ -9,9 +9,6 @@ updates:
       interval: "daily"
       time: "10:00"
       timezone: "America/New_York"
-    reviewers:
-      - "shruggr"
-      - "rohenaz"
     assignees:
       - "shruggr"
       - "rohenaz"
@@ -26,9 +23,6 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    reviewers:
-      - "shruggr"
-      - "rohenaz"
     assignees:
       - "shruggr"
       - "rohenaz"
