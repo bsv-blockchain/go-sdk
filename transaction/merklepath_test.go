@@ -67,13 +67,38 @@ func TestMerklePathParseHex(t *testing.T) {
 }
 
 func TestMerklePathToHex(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("serializes to hex", func(t *testing.T) {
+		// Create a local copy to avoid race conditions
 		path := MerklePath{
 			BlockHeight: BRC74JSON.BlockHeight,
-			Path:        BRC74JSON.Path,
+			Path:        make([][]*PathElement, len(BRC74JSON.Path)),
 		}
+		// Deep copy the path elements
+		for i, level := range BRC74JSON.Path {
+			path.Path[i] = make([]*PathElement, len(level))
+			for j, elem := range level {
+				// Create a new PathElement with copied values
+				newElem := &PathElement{
+					Offset: elem.Offset,
+				}
+				if elem.Hash != nil {
+					hash := *elem.Hash
+					newElem.Hash = &hash
+				}
+				if elem.Txid != nil {
+					txid := *elem.Txid
+					newElem.Txid = &txid
+				}
+				if elem.Duplicate != nil {
+					dup := *elem.Duplicate
+					newElem.Duplicate = &dup
+				}
+				path.Path[i][j] = newElem
+			}
+		}
+		
 		hex := path.Hex()
 		require.Equal(t, BRC74Hex, hex)
 	})
@@ -83,11 +108,37 @@ func TestMerklePathComputeRootHex(t *testing.T) {
 	t.Parallel()
 
 	t.Run("computes a root", func(t *testing.T) {
+		// Create a local copy to avoid race conditions
 		path := MerklePath{
 			BlockHeight: BRC74JSON.BlockHeight,
-			Path:        BRC74JSON.Path,
+			Path:        make([][]*PathElement, len(BRC74JSON.Path)),
 		}
-		root, err := path.ComputeRootHex(&BRC74TXID1)
+		// Deep copy the path elements
+		for i, level := range BRC74JSON.Path {
+			path.Path[i] = make([]*PathElement, len(level))
+			for j, elem := range level {
+				// Create a new PathElement with copied values
+				newElem := &PathElement{
+					Offset: elem.Offset,
+				}
+				if elem.Hash != nil {
+					hash := *elem.Hash
+					newElem.Hash = &hash
+				}
+				if elem.Txid != nil {
+					txid := *elem.Txid
+					newElem.Txid = &txid
+				}
+				if elem.Duplicate != nil {
+					dup := *elem.Duplicate
+					newElem.Duplicate = &dup
+				}
+				path.Path[i][j] = newElem
+			}
+		}
+		
+		txid := BRC74TXID1
+		root, err := path.ComputeRootHex(&txid)
 		require.NoError(t, err)
 		require.Equal(t, BRC74Root, root)
 	})
@@ -113,13 +164,39 @@ func TestMerklePath_Verify(t *testing.T) {
 	t.Parallel()
 
 	t.Run("verifies using a ChainTracker", func(t *testing.T) {
+		// Create a local copy to avoid race conditions
 		path := MerklePath{
 			BlockHeight: BRC74JSON.BlockHeight,
-			Path:        BRC74JSON.Path,
+			Path:        make([][]*PathElement, len(BRC74JSON.Path)),
 		}
+		// Deep copy the path elements
+		for i, level := range BRC74JSON.Path {
+			path.Path[i] = make([]*PathElement, len(level))
+			for j, elem := range level {
+				// Create a new PathElement with copied values
+				newElem := &PathElement{
+					Offset: elem.Offset,
+				}
+				if elem.Hash != nil {
+					hash := *elem.Hash
+					newElem.Hash = &hash
+				}
+				if elem.Txid != nil {
+					txid := *elem.Txid
+					newElem.Txid = &txid
+				}
+				if elem.Duplicate != nil {
+					dup := *elem.Duplicate
+					newElem.Duplicate = &dup
+				}
+				path.Path[i][j] = newElem
+			}
+		}
+		
 		tracker := MyChainTracker{}
 		ctx := t.Context()
-		result, err := path.VerifyHex(ctx, BRC74TXID1, tracker)
+		txid := BRC74TXID1
+		result, err := path.VerifyHex(ctx, txid, tracker)
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -167,12 +244,39 @@ func TestMerklePathCombine(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, pathARoot, BRC74Root)
 
-		err = BRC74JSON.Combine(&BRC74JSON)
+		// Create a deep copy of BRC74JSON to avoid modifying the global variable
+		jsonCopy := MerklePath{
+			BlockHeight: BRC74JSON.BlockHeight,
+			Path:        make([][]*PathElement, len(BRC74JSON.Path)),
+		}
+		for i, level := range BRC74JSON.Path {
+			jsonCopy.Path[i] = make([]*PathElement, len(level))
+			for j, elem := range level {
+				newElem := &PathElement{
+					Offset: elem.Offset,
+				}
+				if elem.Hash != nil {
+					hash := *elem.Hash
+					newElem.Hash = &hash
+				}
+				if elem.Txid != nil {
+					txid := *elem.Txid
+					newElem.Txid = &txid
+				}
+				if elem.Duplicate != nil {
+					dup := *elem.Duplicate
+					newElem.Duplicate = &dup
+				}
+				jsonCopy.Path[i][j] = newElem
+			}
+		}
+		
+		err = jsonCopy.Combine(&jsonCopy)
 		require.NoError(t, err)
-		out, err := json.Marshal(BRC74JSON)
+		out, err := json.Marshal(jsonCopy)
 		require.NoError(t, err)
 		require.JSONEq(t, BRC74JSONTrimmed, string(out))
-		root, err := BRC74JSON.ComputeRootHex(nil)
+		root, err := jsonCopy.ComputeRootHex(nil)
 		require.NoError(t, err)
 		require.Equal(t, root, BRC74Root)
 

@@ -330,7 +330,7 @@ func TestVectors(t *testing.T) {
 			Plaintext: []byte{1, 2, 3, 4},
 		},
 	}, {
-		Filename: "createHMAC-simple-args",
+		Filename: "createHmac-simple-args",
 		Object: wallet.CreateHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
@@ -346,7 +346,7 @@ func TestVectors(t *testing.T) {
 			Data: []byte{10, 20, 30, 40},
 		},
 	}, {
-		Filename: "createHMAC-simple-result",
+		Filename: "createHmac-simple-result",
 		IsResult: true,
 		Object: wallet.CreateHMACResult{
 			HMAC: [32]byte{50, 60, 70, 80, 90, 100, 110, 120,
@@ -355,7 +355,7 @@ func TestVectors(t *testing.T) {
 				50, 60, 70, 80, 90, 100, 110, 120},
 		},
 	}, {
-		Filename: "verifyHMAC-simple-args",
+		Filename: "verifyHmac-simple-args",
 		Object: wallet.VerifyHMACArgs{
 			EncryptionArgs: wallet.EncryptionArgs{
 				ProtocolID: wallet.Protocol{
@@ -375,7 +375,7 @@ func TestVectors(t *testing.T) {
 				50, 60, 70, 80, 90, 100, 110, 120},
 		},
 	}, {
-		Filename: "verifyHMAC-simple-result",
+		Filename: "verifyHmac-simple-result",
 		IsResult: true,
 		Object: wallet.VerifyHMACResult{
 			Valid: true,
