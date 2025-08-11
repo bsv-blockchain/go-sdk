@@ -5,7 +5,7 @@ Overlay Tools is a collection of components to interact with the Overlay Service
 ## Core Concepts
 
 ### SHIP (Service Host Interconnect Protocol)
-SHIP enables broadcasting transactions to Overlay Service hosts, which can then process these transactions according to their topic managers' rules. Clients can tag BEEF (Binary Encoded Envelope Format) with topics and submit them to hosts.
+SHIP enables broadcasting transactions to Overlay Service hosts, which can then process these transactions according to their topic managers' rules. Clients can tag BEEF (Background Evaluation Extended Format) with topics and submit them to hosts.
 
 ### SLAP (Service Lookup Availability Protocol)
 SLAP allows discovering which hosts provide specific lookup services. SLAP servers maintain a registry of service advertisements, and clients can query these servers to find hosts that offer a particular service.
