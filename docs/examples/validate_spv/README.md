@@ -5,7 +5,7 @@ This example demonstrates how to use the `transaction` and `headers_client` pack
 ## Overview
 
 The `validate_spv` example showcases:
-1. Decoding a Base64 encoded BEEF (Bitcoin Extended Envelope Format) string.
+1. Decoding a Base64 encoded BEEF (Background Evaluation Extended Format) string.
 2. Creating a `transaction.Transaction` object from the BEEF data.
 3. Extracting the Merkle path and block height from the transaction.
 4. Computing the Merkle root from the transaction's Merkle path and its ID.
