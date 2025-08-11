@@ -1,6 +1,6 @@
 # Verify BEEF Example
 
-This example demonstrates how to use the `transaction` and `spv` packages to perform a basic verification of a BEEF (Bitcoin Extended Envelope Format) data structure.
+This example demonstrates how to use the `transaction` and `spv` packages to perform a basic verification of a BEEF (Background Evaluation Extended Format) data structure.
 
 ## Overview
 

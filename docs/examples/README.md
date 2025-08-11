@@ -21,7 +21,7 @@ Here, you will find a number of common usage examples for the go-sdk.
 - [Create TX With OP_RETURN](./create_tx_with_op_return/) - Create a transaction with an OP_RETURN output.
 - [Fee Modeling](./fee_modeling/) - Examples of transaction fee calculation and modeling.
 - [Validate SPV](./validate_spv/) - Validate a Simple Payment Verification (SPV) proof.
-- [Verify Beef](./verify_beef/) - Verify a B.E.E.F (Bitcoin Extended Envelope Format) transaction.
+- [Verify BEEF](./verify_beef/) - Verify a BEEF (Background Evaluation Extended Format) transaction.
 - [Verify Transaction](./verify_transaction/) - Verify the validity of a Bitcoin transaction.
 
 ## Messaging and Authentication
