@@ -95,6 +95,7 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 		}(host)
 	}
 	wg.Wait()
+	close(responses)
 
 	var successfulResponses []*LookupAnswer
 	for result := range responses {
@@ -117,8 +118,10 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 			continue
 		}
 		for _, output := range response.Outputs {
-			if tx, err := transaction.NewTransactionFromBEEF(output.Beef); err != nil {
-				log.Println("Error parsing transaction ID:", err)
+			if beef, err := transaction.NewBeefFromBytes(output.Beef); err != nil {
+				log.Println("Error parsing BEEF:", err)
+			} else if tx := findTransactionForOutput(beef, output.OutputIndex); tx == nil {
+				log.Println("Error finding transaction for output index:", output.OutputIndex)
 			} else {
 				outputsMap[fmt.Sprintf("%s.%d", tx.TxID().String(), output.OutputIndex)] = output
 			}
@@ -160,6 +163,7 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 		}(url)
 	}
 	wg.Wait()
+	close(responses)
 
 	hosts := make(map[string]struct{})
 	for result := range responses {
@@ -167,8 +171,10 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 			continue
 		}
 		for _, output := range result.Outputs {
-			if tx, err := transaction.NewTransactionFromBEEF(output.Beef); err != nil {
-				log.Println("Error parsing transaction ID:", err)
+			if beef, err := transaction.NewBeefFromBytes(output.Beef); err != nil {
+				log.Println("Error parsing BEEF:", err)
+			} else if tx := findTransactionForOutput(beef, output.OutputIndex); tx == nil {
+				log.Println("Error finding transaction for output index:", output.OutputIndex)
 			} else {
 				script := tx.Outputs[output.OutputIndex].LockingScript
 				if parsed := admintoken.Decode(script); parsed == nil || parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
@@ -182,4 +188,22 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 	}
 
 	return
+}
+
+// findTransactionForOutput finds the transaction in a BEEF that contains the specified output index
+func findTransactionForOutput(beef *transaction.Beef, outputIndex uint32) *transaction.Transaction {
+	// Try to find a transaction that has enough outputs to contain the requested index
+	for _, beefTx := range beef.Transactions {
+		if beefTx.Transaction != nil && len(beefTx.Transaction.Outputs) > int(outputIndex) {
+			return beefTx.Transaction
+		}
+	}
+	// If no transaction found with enough outputs, return any available transaction
+	// This maintains compatibility with the original behavior
+	for _, beefTx := range beef.Transactions {
+		if beefTx.Transaction != nil {
+			return beefTx.Transaction
+		}
+	}
+	return nil
 }
