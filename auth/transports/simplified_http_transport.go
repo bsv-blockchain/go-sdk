@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
+	"github.com/bsv-blockchain/go-sdk/auth/payload"
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
@@ -142,7 +143,7 @@ func (t *SimplifiedHTTPTransport) authMessageFromNonGeneralMessageResponse(resp 
 
 func (t *SimplifiedHTTPTransport) sendGeneralMessage(ctx context.Context, message *auth.AuthMessage) error {
 	// Step 1: Deserialize the payload into an HTTP request
-	req, _, err := t.deserializeRequestPayload(message.Payload)
+	_, req, err := payload.ToHTTPRequest(message.Payload, payload.WithBaseURL(t.baseUrl))
 	if err != nil {
 		return fmt.Errorf("failed to deserialize request payload: %w", err)
 	}
@@ -248,7 +249,7 @@ func (t *SimplifiedHTTPTransport) deserializeRequestPayload(payload []byte) (*ht
 	search := ""
 	if searchLen > 0 {
 		s := make([]byte, searchLen)
-		if _, err := io.ReadFull(reader, s); err != nil {
+		if _, err = io.ReadFull(reader, s); err != nil {
 			return nil, "", err
 		}
 		search = string(s)

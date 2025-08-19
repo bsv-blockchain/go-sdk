@@ -5,8 +5,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 // Reader is a helper for reading binary messages
@@ -128,6 +129,18 @@ func (r *Reader) ReadString() (string, error) {
 		return "", fmt.Errorf("error reading string bytes: %w", err)
 	}
 	return string(data), nil
+}
+
+func (r *Reader) ReadOptionalString(opts ...BytesOption) (string, error) {
+	bytes, err := r.ReadOptionalBytes(opts...)
+	if err != nil {
+		return "", err
+	}
+	if bytes == nil {
+		return "", nil
+	}
+	return string(bytes), nil
+
 }
 
 func (r *Reader) ReadOptionalBytes(opts ...BytesOption) ([]byte, error) {

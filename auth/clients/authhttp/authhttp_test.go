@@ -59,7 +59,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Create AuthFetch instance
-	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts), WithSessionManager(mockSessionManager))
 
 	// Assertions
 	require.NotNil(t, authFetch)
@@ -80,7 +80,7 @@ func TestNewWithNilSessionManager(t *testing.T) {
 	}
 
 	// Create AuthFetch instance with nil session manager
-	authFetch := New(mockWallet, requestedCerts, nil)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts))
 
 	// Assertions
 	require.NotNil(t, authFetch)
@@ -95,7 +95,7 @@ func TestConsumeReceivedCertificates(t *testing.T) {
 	requestedCerts := &utils.RequestedCertificateSet{}
 
 	// Create AuthFetch instance
-	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts), WithSessionManager(mockSessionManager))
 
 	// Add some mock certificates
 	cert1 := &certificates.VerifiableCertificate{}
@@ -119,7 +119,7 @@ func TestFetchWithRetryCounterAtZero(t *testing.T) {
 	requestedCerts := &utils.RequestedCertificateSet{}
 
 	// Create AuthFetch instance
-	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts), WithSessionManager(mockSessionManager))
 
 	// Set up test parameters
 	ctx := context.Background()
