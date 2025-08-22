@@ -12,20 +12,18 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
+	"github.com/bsv-blockchain/go-sdk/auth/authpayload"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
-	"github.com/bsv-blockchain/go-sdk/auth/payload"
 	"github.com/bsv-blockchain/go-sdk/auth/transports"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -191,6 +189,13 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		config.Method = "GET"
 	}
 
+	// validate headers
+	for key := range config.Headers {
+		if !authpayload.IsHeaderToIncludeInRequest(key) {
+			return nil, fmt.Errorf("header %s is not allowed in auth fetch", key)
+		}
+	}
+
 	// Handle retry counter
 	if config.RetryCounter != nil {
 		if *config.RetryCounter <= 0 {
@@ -217,7 +222,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 	go func() {
 		baseURL := fmt.Sprintf("%s://%s", req.URL.Scheme, req.URL.Host)
 
-		// Create a new transport for this base URL if needed
+		// Create new transport for this base URL if needed
 		var peerToUse *AuthPeer
 		if _, exists := a.peers[baseURL]; !exists {
 			// Create a peer for the request
@@ -248,13 +253,13 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			a.peers[baseURL] = peerToUse
 
 			// Set up certificate received listener
-			peerToUse.Peer.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+			peerToUse.Peer.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 				a.certificatesReceived = append(a.certificatesReceived, certs...)
 				return nil
 			})
 
 			// Set up certificate requested listener
-			peerToUse.Peer.ListenForCertificatesRequested(func(verifier *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+			peerToUse.Peer.ListenForCertificatesRequested(func(_ context.Context, verifier *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 				a.peers[baseURL].PendingCertificateRequests = append(a.peers[baseURL].PendingCertificateRequests, true)
 
 				certificatesToInclude, err := utils.GetVerifiableCertificates(
@@ -310,7 +315,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		requestNonceBase64 := base64.StdEncoding.EncodeToString(requestNonce)
 
 		// Serialize the simplified fetch request
-		requestData, err := payload.FromHTTPRequest(requestNonce, req)
+		requestData, err := authpayload.FromHTTPRequest(requestNonce, req)
 		if err != nil {
 			responseChan <- struct {
 				resp *http.Response
@@ -359,85 +364,23 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 
 		// Set up listener for response
 		var listenerID int32
-		listenerID = peerToUse.Peer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
-			// Create a reader
-			responseReader := util.NewReader(payload)
-
-			// Deserialize first 32 bytes of payload (response nonce)
-			responseNonce, err := responseReader.ReadBytes(32)
-			if err != nil {
-				return fmt.Errorf("failed to read response nonce: %w", err)
-			}
-
-			responseNonceBase64 := base64.StdEncoding.EncodeToString(responseNonce)
-			if responseNonceBase64 != requestNonceBase64 {
-				return nil // Not our response
-			}
-
-			// Stop listening once we got our response
+		listenerID = peerToUse.Peer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 			peerToUse.Peer.StopListeningForGeneralMessages(listenerID)
 
-			// Save the identity key for the peer
 			if senderPublicKey != nil {
 				a.peers[baseURL].IdentityKey = senderPublicKey.ToDERHex()
 				supportsMutualAuth := true
 				a.peers[baseURL].SupportsMutualAuth = &supportsMutualAuth
 			}
 
-			// Read status code
-			statusCode, err := responseReader.ReadVarInt32()
+			requestIDFromResponse, response, err := authpayload.ToHTTPResponse(payload, authpayload.WithSenderPublicKey(senderPublicKey))
 			if err != nil {
-				return fmt.Errorf("failed to read status code: %w", err)
+				return fmt.Errorf("invalid response send by server: %w", err)
 			}
 
-			// Read headers
-			responseHeaders := make(http.Header)
-			nHeaders, err := responseReader.ReadVarInt32()
-			if err != nil {
-				return fmt.Errorf("failed to read header count: %w", err)
-			}
-
-			for i := uint32(0); i < nHeaders; i++ {
-				// Read header key
-				headerKey, err := responseReader.ReadString()
-				if err != nil {
-					return fmt.Errorf("failed to read header key: %w", err)
-				}
-
-				// Read header value
-				headerValue, err := responseReader.ReadString()
-				if err != nil {
-					return fmt.Errorf("failed to read header value: %w", err)
-				}
-
-				responseHeaders.Add(headerKey, headerValue)
-			}
-
-			// Add back server identity key header
-			if senderPublicKey != nil {
-				responseHeaders.Add("x-bsv-auth-identity-key", senderPublicKey.ToDERHex())
-			}
-
-			// Read body
-			var responseBody []byte
-			bodyLen, err := responseReader.ReadVarInt32()
-			if err != nil {
-				return fmt.Errorf("failed to read body length: %w", err)
-			}
-
-			if bodyLen > 0 {
-				responseBody, err = responseReader.ReadBytes(int(bodyLen))
-				if err != nil {
-					return fmt.Errorf("failed to read body: %w", err)
-				}
-			}
-
-			// Create response object
-			response := &http.Response{
-				StatusCode: int(statusCode),
-				Status:     fmt.Sprintf("%d", statusCode),
-				Header:     responseHeaders,
-				Body:       io.NopCloser(bytes.NewReader(responseBody)),
+			responseNonceBase64 := base64.StdEncoding.EncodeToString(requestIDFromResponse)
+			if responseNonceBase64 != requestNonceBase64 {
+				return nil // Not our response
 			}
 
 			// Resolve with the response
@@ -575,7 +518,7 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 
 	// Set up certificate received listener
 	var callbackID int32
-	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
 		a.certificatesReceived = append(a.certificatesReceived, certs...)
 		certChan <- struct {
@@ -621,98 +564,6 @@ func (a *AuthFetch) ConsumeReceivedCertificates() []*certificates.VerifiableCert
 	certs := a.certificatesReceived
 	a.certificatesReceived = []*certificates.VerifiableCertificate{}
 	return certs
-}
-
-// serializeRequest serializes the HTTP request to be sent over the Transport.
-func (a *AuthFetch) serializeRequest(method string, headers map[string]string, body []byte, parsedURL *url.URL, requestNonce []byte) ([]byte, error) {
-	writer := util.NewWriter()
-
-	// Write request nonce
-	writer.WriteBytes(requestNonce)
-
-	// Write method
-	writer.WriteString(method)
-
-	// Handle pathname (e.g. /path/to/resource)
-	writer.WriteOptionalString(parsedURL.Path)
-
-	// Handle search params (e.g. ?q=hello)
-	searchParams := parsedURL.RawQuery
-	if searchParams != "" {
-		// auth client is using query string with leading "?", so the middleware need to include that character also.
-		searchParams = "?" + searchParams
-	}
-	writer.WriteOptionalString(searchParams)
-
-	// Construct headers to send / sign:
-	// - Include custom headers prefixed with x-bsv (excluding those starting with x-bsv-auth)
-	// - Include a normalized version of the content-type header
-	// - Include the authorization header
-	includedHeaders := [][]string{}
-	for k, v := range headers {
-		headerKey := strings.ToLower(k) // Always sign lower-case header keys
-		if strings.HasPrefix(headerKey, "x-bsv-") || headerKey == "authorization" {
-			if strings.HasPrefix(headerKey, "x-bsv-auth") {
-				return nil, errors.New("no BSV auth headers allowed here")
-			}
-			includedHeaders = append(includedHeaders, []string{strings.ToLower(headerKey), v})
-		} else if strings.HasPrefix(headerKey, "content-type") {
-			// Normalize the Content-Type header by removing any parameters (e.g., "; charset=utf-8")
-			contentType := strings.Split(v, ";")[0]
-			includedHeaders = append(includedHeaders, []string{headerKey, strings.TrimSpace(contentType)})
-		} else {
-			// In Go we're more tolerant of headers, but log a warning
-			a.logger.Warn("Unsupported header in simplified fetch", "header", k)
-		}
-	}
-
-	// Sort the headers by key to ensure a consistent order for signing and verification
-	sort.Slice(includedHeaders, func(i, j int) bool {
-		return includedHeaders[i][0] < includedHeaders[j][0]
-	})
-
-	// Write number of headers
-	writer.WriteVarInt(uint64(len(includedHeaders)))
-
-	// Write each header
-	for _, header := range includedHeaders {
-		// Write header key
-		writer.WriteString(header[0])
-		// Write header value
-		writer.WriteString(header[1])
-	}
-
-	// If method typically carries a body and body is empty, default it
-	methodsThatTypicallyHaveBody := []string{"POST", "PUT", "PATCH", "DELETE"}
-	if len(body) == 0 && contains(methodsThatTypicallyHaveBody, strings.ToUpper(method)) {
-		// Check if content-type is application/json
-		for _, header := range includedHeaders {
-			if header[0] == "content-type" && strings.Contains(header[1], "application/json") {
-				body = []byte("{}")
-				break
-			}
-		}
-
-		// If still empty and not JSON, use empty string
-		if len(body) == 0 {
-			body = []byte("")
-		}
-	}
-
-	// Write body
-	writer.WriteIntBytesOptional(body)
-
-	return writer.Buf, nil
-}
-
-// contains checks if a string is present in a slice
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
 
 // handleFetchAndValidate handles a non-authenticated fetch requests and validates that the server is not claiming to be authenticated.

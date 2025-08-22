@@ -3,17 +3,20 @@ package transports
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
-	"github.com/bsv-blockchain/go-sdk/auth/payload"
-	"github.com/bsv-blockchain/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/auth/authpayload"
+	"github.com/bsv-blockchain/go-sdk/auth/brc104"
+	"github.com/bsv-blockchain/go-sdk/auth/utils"
+	primitives "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // SimplifiedHTTPTransport implements the Transport interface for HTTP communication
@@ -143,10 +146,20 @@ func (t *SimplifiedHTTPTransport) authMessageFromNonGeneralMessageResponse(resp 
 
 func (t *SimplifiedHTTPTransport) sendGeneralMessage(ctx context.Context, message *auth.AuthMessage) error {
 	// Step 1: Deserialize the payload into an HTTP request
-	_, req, err := payload.ToHTTPRequest(message.Payload, payload.WithBaseURL(t.baseUrl))
+	requestIDBytes, req, err := authpayload.ToHTTPRequest(message.Payload, authpayload.WithBaseURL(t.baseUrl))
 	if err != nil {
 		return fmt.Errorf("failed to deserialize request payload: %w", err)
 	}
+
+	requestID := base64.StdEncoding.EncodeToString(requestIDBytes)
+
+	req.Header.Set(brc104.HeaderVersion, message.Version)
+	req.Header.Set(brc104.HeaderIdentityKey, message.IdentityKey.ToDERHex())
+	req.Header.Set(brc104.HeaderMessageType, string(message.MessageType))
+	req.Header.Set(brc104.HeaderNonce, message.Nonce)
+	req.Header.Set(brc104.HeaderYourNonce, message.YourNonce)
+	req.Header.Set(brc104.HeaderSignature, hex.EncodeToString(message.Signature))
+	req.Header.Set(brc104.HeaderRequestID, requestID)
 
 	// Step 2: Perform the HTTP request
 	resp, err := t.client.Do(req)
@@ -155,7 +168,7 @@ func (t *SimplifiedHTTPTransport) sendGeneralMessage(ctx context.Context, messag
 	}
 	defer resp.Body.Close()
 
-	responseMsg, err := t.authMessageFromGeneralMessageResponse(message.Version, resp)
+	responseMsg, err := t.authMessageFromGeneralMessageResponse(requestIDBytes, resp)
 	if err != nil {
 		return err
 	}
@@ -163,152 +176,58 @@ func (t *SimplifiedHTTPTransport) sendGeneralMessage(ctx context.Context, messag
 	return t.notifyHandlers(ctx, responseMsg)
 }
 
-func (t *SimplifiedHTTPTransport) authMessageFromGeneralMessageResponse(version string, resp *http.Response) (*auth.AuthMessage, error) {
-	// Step 3: Serialize the response as an AuthMessage and notify handlers
-	respPayloadWriter := util.NewWriter()
-	respPayloadWriter.WriteVarInt(uint64(resp.StatusCode))
-	// Write headers (count, then key/value pairs)
-	headers := resp.Header
-	headersList := make([][2]string, 0)
-	for k, vs := range headers {
-		for _, v := range vs {
-			headersList = append(headersList, [2]string{k, v})
+func (t *SimplifiedHTTPTransport) authMessageFromGeneralMessageResponse(requestID []byte, res *http.Response) (*auth.AuthMessage, error) {
+	version := res.Header.Get(brc104.HeaderVersion)
+	if version == "" {
+		return nil, errors.New("server failed to authenticate: missing version header in response")
+	}
+
+	responsePayload, err := authpayload.FromHTTPResponse(requestID, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize response to payload: %w", err)
+	}
+
+	messageType := res.Header.Get(brc104.HeaderMessageType)
+	if messageType != "" && messageType != string(auth.MessageTypeGeneral) {
+		return nil, fmt.Errorf("unexpectedly received non-general message type %s in response to general message", messageType)
+	}
+
+	identityKey := res.Header.Get(brc104.HeaderIdentityKey)
+	if identityKey == "" {
+		return nil, errors.New("missing identity key header in response")
+	}
+	pubKey, err := primitives.PublicKeyFromString(identityKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid identity key format in reponse: %w", err)
+	}
+
+	signature := res.Header.Get(brc104.HeaderSignature)
+	sigBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return nil, fmt.Errorf("invalid signature format in response: %w", err)
+	}
+
+	requestedCertificatesJson := res.Header.Get(brc104.HeaderRequestedCertificates)
+
+	var requestedCertificates utils.RequestedCertificateSet
+	if requestedCertificatesJson != "" {
+		err = json.Unmarshal([]byte(requestedCertificatesJson), &requestedCertificates)
+		if err != nil {
+			return nil, fmt.Errorf("invalid format of requested certificates in response: %w", err)
 		}
 	}
-	respPayloadWriter.WriteVarInt(uint64(len(headersList)))
-	for _, kv := range headersList {
-		respPayloadWriter.WriteString(kv[0])
-		respPayloadWriter.WriteString(kv[1])
-	}
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read proxied response body: %w", err)
-	}
-	respPayloadWriter.WriteVarInt(uint64(len(respBody)))
-	respPayloadWriter.WriteBytes(respBody)
 
 	responseMsg := &auth.AuthMessage{
-		Version:     version,
-		MessageType: auth.MessageTypeGeneral,
-		Payload:     respPayloadWriter.Buf,
+		Version:               version,
+		MessageType:           auth.MessageTypeGeneral,
+		IdentityKey:           pubKey,
+		Nonce:                 res.Header.Get(brc104.HeaderNonce),
+		YourNonce:             res.Header.Get(brc104.HeaderYourNonce),
+		Signature:             sigBytes,
+		RequestedCertificates: requestedCertificates,
+		Payload:               responsePayload,
 	}
 	return responseMsg, nil
-}
-
-// deserializeRequestPayload parses the payload into an HTTP request and requestId (basic implementation)
-func (t *SimplifiedHTTPTransport) deserializeRequestPayload(payload []byte) (*http.Request, string, error) {
-	// This is a minimal implementation for alignment and test unblocking
-	if len(payload) < 32 {
-		return nil, "", errors.New("payload too short for requestId")
-	}
-	requestId := payload[:32] // first 32 bytes is requestId (as in TS)
-	reader := bytes.NewReader(payload[32:])
-
-	// Helper to read a varint (as in TS)
-	readVarInt := func() (int, error) {
-		var b [1]byte
-		if _, err := reader.Read(b[:]); err != nil {
-			return 0, err
-		}
-		return int(b[0]), nil // Only support 1-byte varint for now
-	}
-
-	// Method
-	methodLen, err := readVarInt()
-	if err != nil {
-		return nil, "", err
-	}
-	method := "GET"
-	if methodLen > 0 {
-		m := make([]byte, methodLen)
-		if _, err := io.ReadFull(reader, m); err != nil {
-			return nil, "", err
-		}
-		method = string(m)
-	}
-
-	// Path
-	pathLen, err := readVarInt()
-	if err != nil {
-		return nil, "", err
-	}
-	path := ""
-	if pathLen > 0 {
-		p := make([]byte, pathLen)
-		if _, err := io.ReadFull(reader, p); err != nil {
-			return nil, "", err
-		}
-		path = string(p)
-	}
-
-	// Search
-	searchLen, err := readVarInt()
-	if err != nil {
-		return nil, "", err
-	}
-	search := ""
-	if searchLen > 0 {
-		s := make([]byte, searchLen)
-		if _, err = io.ReadFull(reader, s); err != nil {
-			return nil, "", err
-		}
-		search = string(s)
-	}
-
-	// Headers
-	headers := http.Header{}
-	nHeaders, err := readVarInt()
-	if err != nil {
-		return nil, "", err
-	}
-	for i := 0; i < nHeaders; i++ {
-		keyLen, err := readVarInt()
-		if err != nil {
-			return nil, "", err
-		}
-		key := make([]byte, keyLen)
-		if _, err := io.ReadFull(reader, key); err != nil {
-			return nil, "", err
-		}
-		valLen, err := readVarInt()
-		if err != nil {
-			return nil, "", err
-		}
-		val := make([]byte, valLen)
-		if _, err := io.ReadFull(reader, val); err != nil {
-			return nil, "", err
-		}
-		headers.Add(string(key), string(val))
-	}
-
-	// Body
-	bodyLen, err := readVarInt()
-	if err != nil {
-		return nil, "", err
-	}
-	var body []byte
-	if bodyLen > 0 {
-		body = make([]byte, bodyLen)
-		if _, err := io.ReadFull(reader, body); err != nil {
-			return nil, "", err
-		}
-	}
-
-	// Build the URL
-	urlStr := t.baseUrl + path + search
-	parsedUrl, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// Build the request
-	req, err := http.NewRequest(method, parsedUrl.String(), bytes.NewReader(body))
-	if err != nil {
-		return nil, "", err
-	}
-	req.Header = headers
-
-	return req, string(requestId), nil
 }
 
 // notifyHandlers calls all registered callbacks with the received message

@@ -29,15 +29,15 @@ const AUTH_VERSION = "0.1"
 
 // OnGeneralMessageReceivedCallback is called when a general message is received from a peer.
 // The callback receives the sender's public key and the message payload.
-type OnGeneralMessageReceivedCallback func(senderPublicKey *ec.PublicKey, payload []byte) error
+type OnGeneralMessageReceivedCallback func(ctx context.Context, senderPublicKey *ec.PublicKey, payload []byte) error
 
 // OnCertificateReceivedCallback is called when certificates are received from a peer.
 // The callback receives the sender's public key and the list of certificates.
-type OnCertificateReceivedCallback func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error
+type OnCertificateReceivedCallback func(ctx context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error
 
 // OnCertificateRequestReceivedCallback is called when a certificate request is received from a peer.
 // The callback receives the sender's public key and the requested certificate set.
-type OnCertificateRequestReceivedCallback func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error
+type OnCertificateRequestReceivedCallback func(ctx context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error
 
 // Peer represents a peer capable of performing mutual authentication.
 // It manages sessions, handles authentication handshakes, certificate requests and responses,
@@ -89,8 +89,9 @@ func NewPeer(cfg *PeerOptions) *Peer {
 
 	// Use default logger if none provided
 	if peer.logger == nil {
-		peer.logger = slog.Default().With("component", "AuthPeer")
+		peer.logger = slog.Default()
 	}
+	peer.logger = peer.logger.With("component", "Peer")
 
 	if peer.sessionManager == nil {
 		peer.sessionManager = NewSessionManager()
@@ -612,7 +613,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		}
 
 		for _, callback := range p.onCertificateReceivedCallbacks {
-			err := callback(senderPublicKey, message.Certificates)
+			err := callback(ctx, senderPublicKey, message.Certificates)
 			if err != nil {
 				return NewAuthError("certificate received callback error", err)
 			}
@@ -646,7 +647,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 func (p *Peer) sendCertificates(ctx context.Context, message *AuthMessage) error {
 	if len(p.onCertificateRequestReceivedCallbacks) > 0 {
 		for _, callback := range p.onCertificateRequestReceivedCallbacks {
-			err := callback(message.IdentityKey, message.RequestedCertificates)
+			err := callback(ctx, message.IdentityKey, message.RequestedCertificates)
 			if err != nil {
 				// Log callback error but continue
 				return fmt.Errorf("on certificate request callback failed: %w", err)
@@ -829,7 +830,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 		// TODO: maybe it should by default (if no callback) check if there are all required certificates
 		// Notify certificate listeners
 		for _, callback := range p.onCertificateReceivedCallbacks {
-			err := callback(senderPublicKey, message.Certificates)
+			err := callback(ctx, senderPublicKey, message.Certificates)
 			if err != nil {
 				return fmt.Errorf("certificate received callback error: %w", err)
 			}
@@ -862,7 +863,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	}
 
 	// Verify signature
-	verifyResult, err := p.wallet.VerifySignature(ctx, wallet.VerifySignatureArgs{
+	verifySigArgs := wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: wallet.Protocol{
 				// SecurityLevel set to 2 (SecurityLevelEveryAppAndCounterparty) as specified in BRC-31 (Authrite)
@@ -877,7 +878,8 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 		},
 		Data:      message.Payload,
 		Signature: signature,
-	}, "")
+	}
+	verifyResult, err := p.wallet.VerifySignature(ctx, verifySigArgs, "")
 	if err != nil {
 		return fmt.Errorf("unable to verify signature in general message: %w", err)
 	} else if !verifyResult.Valid {
@@ -895,7 +897,7 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 
 	// Notify general message listeners
 	for _, callback := range p.onGeneralMessageReceivedCallbacks {
-		err := callback(senderPublicKey, message.Payload)
+		err := callback(ctx, senderPublicKey, message.Payload)
 		if err != nil {
 			// Log callback error but continue
 			p.logger.Warn("General message callback error", "error", err)

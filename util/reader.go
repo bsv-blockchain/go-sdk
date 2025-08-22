@@ -140,7 +140,6 @@ func (r *Reader) ReadOptionalString(opts ...BytesOption) (string, error) {
 		return "", nil
 	}
 	return string(bytes), nil
-
 }
 
 func (r *Reader) ReadOptionalBytes(opts ...BytesOption) ([]byte, error) {

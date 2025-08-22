@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
+	"github.com/bsv-blockchain/go-sdk/auth/authpayload"
+	"github.com/bsv-blockchain/go-sdk/auth/brc104"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/assert"
@@ -20,24 +22,13 @@ func TestNewSimplifiedHTTPTransport(t *testing.T) {
 		BaseURL: "http://example.com",
 	})
 
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-
-	if transport == nil {
-		t.Fatal("Expected transport to be created")
-		return
-	}
-
-	if transport.baseUrl != "http://example.com" {
-		t.Errorf("Expected URL to be 'http://example.com', got '%s'", transport.baseUrl)
-	}
+	assert.NoError(t, err, "Expected no error")
+	require.NotNil(t, transport, "Expected transport to be created")
+	assert.Equal(t, "http://example.com", transport.baseUrl, "Expected URL to be 'http://example.com'")
 
 	// Test with missing URL
 	_, err = NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{})
-	if err == nil {
-		t.Error("Expected error for missing URL")
-	}
+	assert.Error(t, err, "Expected error for missing URL")
 }
 
 // Helper to encode a valid general payload for the test
@@ -63,23 +54,19 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// For 'general' messageType, expect a proxied HTTP request
-		if r.Method != "POST" {
-			t.Errorf("Expected POST request, got %s", r.Method)
-		}
-		if r.URL.Path != "/test" {
-			t.Errorf("Expected path '/test', got '%s'", r.URL.Path)
-		}
-		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
-			t.Errorf("Expected Content-Type 'application/json', got '%s'", ct)
-		}
+		assert.Equal(t, "POST", r.Method, "Expected POST request")
+		assert.Equal(t, "/test", r.URL.Path, "Expected path '/test'")
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"), "Expected Content-Type 'application/json'")
+
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("Failed to read request body: %v", err)
-		}
-		if string(body) != `{"foo":"bar"}` {
-			t.Errorf("Expected body '{\"foo\":\"bar\"}', got '%s'", string(body))
-		}
+		assert.NoError(t, err, "Failed to read request body")
+		assert.Equal(t, `{"foo":"bar"}`, string(body), "Expected body '{\"foo\":\"bar\"}'")
+
 		receivedRequest = r
+
+		w.Header().Set(brc104.HeaderVersion, "0.1")
+		w.Header().Set(brc104.HeaderIdentityKey, "02dae142239f2f2b065759cd6b3599002b5a927ba533653ccdfdafd3ae262c9410")
+		w.Header().Set(brc104.HeaderRequestID, r.Header.Get(brc104.HeaderRequestID))
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -95,9 +82,9 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 	// Create a test message
 	pubKeyHex := "02bbc996771abe50be940a9cfd91d6f28a70d139f340bedc8cdd4f236e5e9c9889"
 	pubKey, _ := ec.PublicKeyFromString(pubKeyHex)
-	requestId := make([]byte, 32)
-	copy(requestId, []byte("test-request-id-123456789012345")) // pad to 32 bytes
-	payload := encodeGeneralPayload(requestId, "POST", "/test", "", map[string]string{"Content-Type": "application/json"}, []byte(`{"foo":"bar"}`))
+	requestID := make([]byte, 32)
+	copy(requestID, "test-request-id-123456789012345") // pad to 32 bytes
+	payload := encodeGeneralPayload(requestID, "POST", "/test", "", map[string]string{"Content-Type": "application/json"}, []byte(`{"foo":"bar"}`))
 	testMessage := &auth.AuthMessage{
 		Version:     "0.1",
 		MessageType: auth.MessageTypeGeneral,
@@ -111,41 +98,16 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 		if msg.MessageType != auth.MessageTypeGeneral {
 			t.Errorf("Expected response message type 'general', got '%s'", msg.MessageType)
 		}
-		reader := util.NewReader(msg.Payload)
-		status, err := reader.ReadVarInt()
-		if err != nil {
-			t.Errorf("Failed to read status from response payload: %v", err)
-		}
-		if status != 200 {
-			t.Errorf("Expected status 200, got %d", status)
-		}
-		nHeaders, err := reader.ReadVarInt()
-		if err != nil {
-			t.Errorf("Failed to read nHeaders: %v", err)
-		}
-		headers := map[string]string{}
-		for i := uint64(0); i < nHeaders; i++ {
-			key, err := reader.ReadString()
-			if err != nil {
-				t.Errorf("Failed to read header key: %v", err)
-			}
-			val, err := reader.ReadString()
-			if err != nil {
-				t.Errorf("Failed to read header value: %v", err)
-			}
-			headers[key] = val
-		}
-		bodyLen, err := reader.ReadVarInt()
-		if err != nil {
-			t.Errorf("Failed to read bodyLen: %v", err)
-		}
-		body, err := reader.ReadBytes(int(bodyLen))
-		if err != nil {
-			t.Errorf("Failed to read response body: %v", err)
-		}
-		if string(body) != "" { // The test server sends an empty body
-			t.Errorf("Expected empty response body, got '%s'", string(body))
-		}
+
+		reqIDFromResponse, res, err := authpayload.ToSimplifiedHttpResponse(msg.Payload)
+		assert.NoError(t, err, "Payload should be deserializable to response")
+
+		assert.EqualValuesf(t, requestID, reqIDFromResponse, "Request ID from response should match this from request")
+
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Expected status code 200")
+
+		assert.Empty(t, res.Body, "Expected empty response body")
+
 		responseChecked = true
 		return nil
 	})
@@ -155,9 +117,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 
 	// Send the message
 	err = transport.Send(context.Background(), testMessage)
-	if err != nil {
-		t.Errorf("Failed to send message: %v", err)
-	}
+	assert.NoError(t, err, "Failed to send message")
 
 	// Verify the proxied HTTP request was received
 	if receivedRequest == nil {
@@ -173,9 +133,7 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 	transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
 		BaseURL: "http://example.com",
 	})
-	if err != nil {
-		t.Fatalf("Failed to create transport: %v", err)
-	}
+	require.NoError(t, err, "Failed to create transport")
 
 	// Test registering callbacks
 	callbackCalled := false
@@ -184,9 +142,7 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 		return nil
 	})
 
-	if err != nil {
-		t.Errorf("Failed to register callback: %v", err)
-	}
+	assert.NoError(t, err, "Failed to register callback")
 
 	// Test notifying handlers
 	testMessage := &auth.AuthMessage{
@@ -198,9 +154,7 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 	err = transport.notifyHandlers(t.Context(), testMessage)
 	require.NoError(t, err, "notifyHandlers should not return error")
 
-	if !callbackCalled {
-		t.Error("Expected callback to be called")
-	}
+	assert.True(t, callbackCalled, "Expected callback to be called")
 }
 
 // TestSimplifiedHTTPTransportSendWithNoHandler tests that Send returns ErrNoHandlerRegistered when no handler is registered
