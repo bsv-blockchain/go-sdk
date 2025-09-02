@@ -102,6 +102,10 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 				return &header, nil
 			}
 		}
+		// Check if headers array is empty before accessing
+		if len(headers) == 0 {
+			return nil, fmt.Errorf("no block headers found for height %d", height)
+		}
 		header := &headers[0]
 		header.Height = height
 		return header, nil
