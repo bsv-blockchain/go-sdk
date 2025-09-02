@@ -13,7 +13,7 @@ import (
 
 func TestProtoWallet_RevealCounterpartyKeyLinkage(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Initialize keys
 	proverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestProtoWallet_RevealCounterpartyKeyLinkage(t *testing.T) {
 
 func TestProtoWallet_RevealSpecificKeyLinkage(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Initialize keys
 	proverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
@@ -181,10 +181,10 @@ func TestProtoWallet_RevealSpecificKeyLinkage(t *testing.T) {
 
 func TestProtoWallet_RevealCounterpartyKeyLinkage_Errors(t *testing.T) {
 	ctx := context.Background()
-	
+
 	proverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
-	
+
 	proverWallet, err := NewProtoWallet(ProtoWalletArgs{
 		Type:       ProtoWalletArgsTypePrivateKey,
 		PrivateKey: proverKey,
@@ -210,10 +210,10 @@ func TestProtoWallet_RevealCounterpartyKeyLinkage_Errors(t *testing.T) {
 
 func TestProtoWallet_RevealSpecificKeyLinkage_Errors(t *testing.T) {
 	ctx := context.Background()
-	
+
 	proverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
-	
+
 	proverWallet, err := NewProtoWallet(ProtoWalletArgs{
 		Type:       ProtoWalletArgsTypePrivateKey,
 		PrivateKey: proverKey,
@@ -277,7 +277,7 @@ func TestSchnorrProofIntegration(t *testing.T) {
 
 func TestCompletedProtoWallet_RevealMethods(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Create keys
 	proverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
@@ -285,17 +285,17 @@ func TestCompletedProtoWallet_RevealMethods(t *testing.T) {
 	require.NoError(t, err)
 	verifierKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
-	
+
 	// Create CompletedProtoWallet
 	wallet, err := NewCompletedProtoWallet(proverKey)
 	require.NoError(t, err)
-	
+
 	t.Run("RevealCounterpartyKeyLinkage delegates correctly", func(t *testing.T) {
 		result, err := wallet.RevealCounterpartyKeyLinkage(ctx, RevealCounterpartyKeyLinkageArgs{
 			Counterparty: counterpartyKey.PubKey(),
 			Verifier:     verifierKey.PubKey(),
 		}, "test")
-		
+
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, proverKey.PubKey(), result.Prover)
@@ -305,7 +305,7 @@ func TestCompletedProtoWallet_RevealMethods(t *testing.T) {
 		assert.NotEmpty(t, result.EncryptedLinkageProof)
 		assert.NotEmpty(t, result.RevelationTime)
 	})
-	
+
 	t.Run("RevealSpecificKeyLinkage delegates correctly", func(t *testing.T) {
 		result, err := wallet.RevealSpecificKeyLinkage(ctx, RevealSpecificKeyLinkageArgs{
 			Counterparty: Counterparty{Type: CounterpartyTypeOther, Counterparty: counterpartyKey.PubKey()},
@@ -313,7 +313,7 @@ func TestCompletedProtoWallet_RevealMethods(t *testing.T) {
 			ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "test suite"},
 			KeyID:        "test-key-id",
 		}, "test")
-		
+
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, proverKey.PubKey(), result.Prover)

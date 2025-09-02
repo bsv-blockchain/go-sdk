@@ -12,7 +12,8 @@ import (
 // Example: Setting source transaction outputs on inputs when you don't have full BEEF
 // Problem: You have UTXOs from an API, but not the full source transactions.
 // Solution: For each input, look up the previous output (satoshis + locking script)
-//           and set it via SetSourceTxOutput. This enables sighash calculation and signing.
+//
+//	and set it via SetSourceTxOutput. This enables sighash calculation and signing.
 func main() {
 	// Create a transaction
 	tx := transaction.NewTransaction()
