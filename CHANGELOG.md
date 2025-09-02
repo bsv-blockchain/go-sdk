@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.9 - 2025-09-02](#129---2025-09-02)
 - [1.2.8 - 2025-08-07](#128---2025-08-07)
 - [1.2.7 - 2025-08-05](#127---2025-08-05)
 - [1.2.6 - 2025-07-21](#126---2025-07-21)
@@ -42,6 +43,12 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.9] - 2025-09-02
+
+### Fixed
+- SPV verification now properly handles invalid merkle paths by returning error instead of fallback to input verification
+- Headers client BlockByHeight now includes bounds check for empty headers array
 
 ## [1.2.8] - 2025-08-07
 
