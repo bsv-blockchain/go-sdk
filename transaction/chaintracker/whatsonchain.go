@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
@@ -27,11 +28,34 @@ var (
 	TestNet Network = "test"
 )
 
+type headerCache map[uint32]*BlockHeader
+
+func (m headerCache) Insert(header *BlockHeader) {
+	if header == nil {
+		return
+	}
+	const maxHeaderCacheSize = 100
+	if len(m) >= maxHeaderCacheSize {
+		// remove an arbitrary element, range over map is randomly ordered
+		for k := range m {
+			delete(m, k)
+			break
+		}
+	}
+	m[header.Height] = header
+}
+
+func (m headerCache) Get(height uint32) *BlockHeader {
+	return m[height]
+}
+
 type WhatsOnChain struct {
 	Network Network
 	ApiKey  string
 	baseURL string
 	client  *http.Client
+	mutex   *sync.Mutex // Serialize to avoid 429 errors and prevent duplicate requests
+	cache   headerCache // Cache recent to de-duplicate requests
 }
 
 type ChainInfo struct {
@@ -43,21 +67,30 @@ func NewWhatsOnChain(network Network, apiKey string) *WhatsOnChain {
 		Network: network,
 		ApiKey:  apiKey,
 		baseURL: fmt.Sprintf("https://api.whatsonchain.com/v1/bsv/%s", network),
-		client:  http.DefaultClient,
+		client: &http.Client{
+			// Empty transport to not use HTTP/2, which seems to mere easily trigger 429 errors
+			Transport: &http.Transport{},
+		},
+		mutex: &sync.Mutex{},
+		cache: make(headerCache),
 	}
 }
 
 // Assuming BlockHeader is defined elsewhere
 func (w *WhatsOnChain) GetBlockHeader(ctx context.Context, height uint32) (header *BlockHeader, err error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	if cacheHeader := w.cache.Get(height); cacheHeader != nil {
+		return cacheHeader, nil
+	}
 	url := fmt.Sprintf("%s/block/%d/header", w.baseURL, height)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+	w.setHTTPHeaders(req)
 
-	req.Header.Set("Authorization", w.ApiKey)
-
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := w.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +107,7 @@ func (w *WhatsOnChain) GetBlockHeader(ctx context.Context, height uint32) (heade
 	if err := json.NewDecoder(resp.Body).Decode(header); err != nil {
 		return nil, err
 	}
+	w.cache.Insert(header)
 
 	return header, nil
 }
@@ -88,15 +122,16 @@ func (w *WhatsOnChain) IsValidRootForHeight(ctx context.Context, root *chainhash
 
 // Assuming BlockHeader is defined elsewhere
 func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	url := fmt.Sprintf("%s/chain/info", w.baseURL)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return
 	}
+	w.setHTTPHeaders(req)
 
-	req.Header.Set("Authorization", w.ApiKey)
-
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := w.client.Do(req)
 	if err != nil {
 		return
 	}
@@ -115,4 +150,11 @@ func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err er
 	}
 
 	return info.Blocks, nil
+}
+
+func (w *WhatsOnChain) setHTTPHeaders(req *http.Request) {
+	req.Header.Set("Accept", "application/json")
+	if w.ApiKey != "" {
+		req.Header.Set("Authorization", w.ApiKey)
+	}
 }
