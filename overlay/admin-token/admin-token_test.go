@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	admintoken "github.com/bsv-blockchain/go-sdk/overlay/admin-token"
 	"github.com/bsv-blockchain/go-sdk/overlay"
+	admintoken "github.com/bsv-blockchain/go-sdk/overlay/admin-token"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -46,7 +46,7 @@ func TestOverlayAdminToken_LockAndDecode(t *testing.T) {
 		assert.Equal(t, protocol, decoded.Protocol)
 		assert.Equal(t, domain, decoded.Domain)
 		assert.Equal(t, topicOrService, decoded.TopicOrService)
-		
+
 		// Get the identity key to verify it matches
 		identityKey, err := testWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
 			IdentityKey: true,
@@ -156,6 +156,3 @@ func TestOverlayAdminToken_Unlock(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
-
-
-

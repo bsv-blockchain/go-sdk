@@ -2,6 +2,9 @@ package clients
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
@@ -59,7 +62,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Create AuthFetch instance
-	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts), WithSessionManager(mockSessionManager))
 
 	// Assertions
 	require.NotNil(t, authFetch)
@@ -80,11 +83,56 @@ func TestNewWithNilSessionManager(t *testing.T) {
 	}
 
 	// Create AuthFetch instance with nil session manager
-	authFetch := New(mockWallet, requestedCerts, nil)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts))
 
 	// Assertions
 	require.NotNil(t, authFetch)
 	require.NotNil(t, authFetch.sessionManager)
+}
+
+type failingTransport struct {
+	t testing.TB
+}
+
+func (f *failingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	require.Failf(f.t, "Request should not be made", "Unexpected request to: %s %s", req.Method, req.URL.String())
+	return nil, fmt.Errorf("unexpected request")
+}
+
+func TestAuthFetchWithUnsupportedHeaders(t *testing.T) {
+	tests := map[string]struct {
+		headerName  string
+		headerValue string
+	}{
+		"x-bsv-auth": {
+			headerName:  "x-bsv-auth",
+			headerValue: "123",
+		},
+		"custom header": {
+			headerName:  "x-custom-header",
+			headerValue: "123",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// given:
+			mockWallet := wallet.NewTestWalletForRandomKey(t)
+
+			// and:
+			authFetch := New(mockWallet, WithHttpClientTransport(&failingTransport{t: t}))
+
+			// when:
+			_, err := authFetch.Fetch(t.Context(), "https://example.com", &SimplifiedFetchRequestOptions{
+				Method: "GET",
+				Headers: map[string]string{
+					test.headerName: test.headerValue,
+				},
+			})
+
+			// then:
+			require.ErrorContains(t, err, strings.ToLower(test.headerName))
+		})
+	}
 }
 
 // TestConsumeReceivedCertificates tests the ConsumeReceivedCertificates method
@@ -95,7 +143,7 @@ func TestConsumeReceivedCertificates(t *testing.T) {
 	requestedCerts := &utils.RequestedCertificateSet{}
 
 	// Create AuthFetch instance
-	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts), WithSessionManager(mockSessionManager))
 
 	// Add some mock certificates
 	cert1 := &certificates.VerifiableCertificate{}
@@ -119,7 +167,7 @@ func TestFetchWithRetryCounterAtZero(t *testing.T) {
 	requestedCerts := &utils.RequestedCertificateSet{}
 
 	// Create AuthFetch instance
-	authFetch := New(mockWallet, requestedCerts, mockSessionManager)
+	authFetch := New(mockWallet, WithCertificatesToRequest(requestedCerts), WithSessionManager(mockSessionManager))
 
 	// Set up test parameters
 	ctx := context.Background()

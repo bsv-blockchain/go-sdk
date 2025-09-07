@@ -134,8 +134,8 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 		c.Options.ProtocolID,
 		c.Options.KeyID,
 		wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone},
-		true,  // forSelf
-		true,  // includeSignature
+		true, // forSelf
+		true, // includeSignature
 		pushdrop.LockBefore,
 	)
 	if err != nil {

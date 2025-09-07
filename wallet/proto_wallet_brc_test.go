@@ -146,7 +146,7 @@ func TestKeyDeriver_FixedTestVectors(t *testing.T) {
 	rootKeyBytes := make([]byte, 32)
 	rootKeyBytes[31] = 42
 	rootPrivateKey, _ := ec.PrivateKeyFromBytes(rootKeyBytes)
-	
+
 	// Create a 32-byte array with value 69
 	counterpartyKeyBytes := make([]byte, 32)
 	counterpartyKeyBytes[31] = 69
@@ -158,7 +158,7 @@ func TestKeyDeriver_FixedTestVectors(t *testing.T) {
 	// Test invoice number computation
 	protocolID := Protocol{SecurityLevel: 0, Protocol: "testprotocol"}
 	keyID := "12345"
-	
+
 	invoiceNumber, err := kd.computeInvoiceNumber(protocolID, keyID)
 	require.NoError(t, err)
 	assert.Equal(t, "0-testprotocol-12345", invoiceNumber)
@@ -185,28 +185,28 @@ func TestSchnorr_FixedKeyVector(t *testing.T) {
 	// Fixed keys for deterministic testing
 	aHex := "0000000000000000000000000000000123456789abcdef123456789abcdef123456789abcdef123456789abcdef"
 	bHex := "00000000000000000000000000000000abcdef123456789abcdef123456789abcdef123456789abcdef123456789"
-	
+
 	// Note: The hex strings above are longer than 32 bytes, so we'll use the last 32 bytes
 	aBytes, err := hex.DecodeString(aHex[len(aHex)-64:])
 	require.NoError(t, err)
 	a, _ := ec.PrivateKeyFromBytes(aBytes)
-	
+
 	bBytes, err := hex.DecodeString(bHex[len(bHex)-64:])
 	require.NoError(t, err)
 	b, _ := ec.PrivateKeyFromBytes(bBytes)
-	
+
 	A := a.PubKey()
 	B := b.PubKey()
-	
+
 	// Compute shared secret
 	S, err := a.DeriveSharedSecret(B)
 	require.NoError(t, err)
-	
+
 	// Generate and verify proof
 	s := schnorr.New()
 	proof, err := s.GenerateProof(a, A, B, S)
 	require.NoError(t, err)
-	
+
 	valid := s.VerifyProof(A, B, S, proof)
 	assert.True(t, valid)
 }

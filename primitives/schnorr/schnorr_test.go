@@ -178,7 +178,7 @@ func TestSchnorr_VerifyWithFixedKeys(t *testing.T) {
 	// Use fixed private keys for determinism (matching TypeScript test)
 	a, err := ec.PrivateKeyFromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 	require.NoError(t, err)
-	
+
 	b, err := ec.PrivateKeyFromHex("fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321")
 	require.NoError(t, err)
 

@@ -299,13 +299,13 @@ func main() {
 	})
 
 	// Set up message handlers
-	alicePeer.ListenForGeneralMessages(func(senderPubKey *ec.PublicKey, payload []byte) error {
+	alicePeer.ListenForGeneralMessages(func(_ context.Context, senderPubKey *ec.PublicKey, payload []byte) error {
 
 		fmt.Printf("Alice received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
 		return nil
 	})
 
-	bobPeer.ListenForGeneralMessages(func(senderPubKey *ec.PublicKey, payload []byte) error {
+	bobPeer.ListenForGeneralMessages(func(_ context.Context, senderPubKey *ec.PublicKey, payload []byte) error {
 		fmt.Printf("Bob received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
 		return nil
 	})
