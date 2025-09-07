@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -88,7 +88,7 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 		go func(host string) {
 			defer wg.Done()
 			if answer, err := l.Facilitator.Lookup(ctx, host, question); err != nil {
-				log.Println("Error querying host", host, err)
+				slog.Error("Error querying host", "host", host, "error", err)
 			} else {
 				responses <- answer
 			}
@@ -119,9 +119,9 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 		}
 		for _, output := range response.Outputs {
 			if beef, err := transaction.NewBeefFromBytes(output.Beef); err != nil {
-				log.Println("Error parsing BEEF:", err)
+				slog.Error(fmt.Sprintf("Error parsing BEEF: %v", err))
 			} else if tx := findTransactionForOutput(beef, output.OutputIndex); tx == nil {
-				log.Println("Error finding transaction for output index:", output.OutputIndex)
+				slog.Error(fmt.Sprintf("Error finding transaction for output index: %v", output.OutputIndex))
 			} else {
 				outputsMap[fmt.Sprintf("%s.%d", tx.TxID().String(), output.OutputIndex)] = output
 			}
@@ -156,7 +156,7 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 			defer cancel()
 
 			if answer, err := l.Facilitator.Lookup(ctxWithTimeout, url, query); err != nil {
-				log.Println("Error querying tracker", url, err)
+				slog.Error(fmt.Sprintf("Error querying tracker: %s %v", url, err))
 			} else {
 				responses <- answer
 			}
@@ -172,9 +172,9 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 		}
 		for _, output := range result.Outputs {
 			if beef, err := transaction.NewBeefFromBytes(output.Beef); err != nil {
-				log.Println("Error parsing BEEF:", err)
+				slog.Error("Error parsing BEEF:", err)
 			} else if tx := findTransactionForOutput(beef, output.OutputIndex); tx == nil {
-				log.Println("Error finding transaction for output index:", output.OutputIndex)
+				slog.Error("Error finding transaction for output index:", output.OutputIndex)
 			} else {
 				script := tx.Outputs[output.OutputIndex].LockingScript
 				if parsed := admintoken.Decode(script); parsed == nil || parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
