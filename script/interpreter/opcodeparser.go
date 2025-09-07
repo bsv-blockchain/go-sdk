@@ -161,7 +161,7 @@ func advancePosition(scr []byte, i int, op byte) (int, error) {
 			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
 		}
 		return newPos, nil
-		
+
 	case script.OpPUSHDATA2:
 		if len(scr) < i+3 {
 			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
@@ -172,7 +172,7 @@ func advancePosition(scr []byte, i int, op byte) (int, error) {
 			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
 		}
 		return newPos, nil
-		
+
 	case script.OpPUSHDATA4:
 		if len(scr) < i+5 {
 			return 0, errs.NewError(errs.ErrMalformedPush, "script truncated")
@@ -183,7 +183,7 @@ func advancePosition(scr []byte, i int, op byte) (int, error) {
 			return 0, errs.NewError(errs.ErrMalformedPush, "push data exceeds script length")
 		}
 		return newPos, nil
-		
+
 	default:
 		// For other opcodes, we need to check opcodeArray
 		opInfo := opcodeArray[op]
@@ -200,23 +200,23 @@ func advancePosition(scr []byte, i int, op byte) (int, error) {
 // Parse takes a *script.Script and returns a []interpreter.ParsedOp
 func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 	scr := *s
-	
+
 	// First pass: count opcodes
 	opcodeCount := 0
 	i := 0
 	conditionalDepth := 0
-	
+
 	for i < len(scr) {
 		instruction := scr[i]
 		op := opcodeArray[instruction]
-		
+
 		// Track conditionals and check for OP_RETURN
 		if isOpReturnOutsideConditional := updateConditionalDepth(op.val, &conditionalDepth); isOpReturnOutsideConditional {
 			opcodeCount++
 			// OP_RETURN outside conditionals consumes rest of script
 			break
 		}
-		
+
 		// Special handling for OP_RETURN inside conditionals
 		if op.val == script.OpRETURN {
 			// Inside conditional, just skip the single byte
@@ -224,17 +224,17 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 			opcodeCount++
 			continue
 		}
-		
+
 		// Skip to next opcode
 		newPos, err := advancePosition(scr, i, instruction)
 		if err != nil {
 			return nil, err
 		}
 		i = newPos
-		
+
 		opcodeCount++
 	}
-	
+
 	// Second pass: allocate exactly what we need and parse
 	parsedOps := make([]ParsedOpcode, 0, opcodeCount)
 	conditionalBlock := 0
@@ -287,7 +287,7 @@ func (p *DefaultOpcodeParser) Parse(s *script.Script) (ParsedScript, error) {
 				parsedOp.Data = scr[i+1 : i+parsedOp.op.length]
 			}
 		}
-		
+
 		// Advance position using the same logic as first pass
 		newPos, err := advancePosition(scr, i, instruction)
 		if err != nil {

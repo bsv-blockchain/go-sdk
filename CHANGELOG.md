@@ -60,6 +60,8 @@ All notable changes to this project will be documented in this file. The format 
 ### Fixed
 - AuthFetch communication flow issues and hanging processes during handshake
 - HTTP request payload preparation in auth client
+- SPV verification now properly handles invalid merkle paths by returning error instead of fallback to input verification
+- Headers client BlockByHeight now includes bounds check for empty headers array
 
 ## [1.2.8] - 2025-08-07
 

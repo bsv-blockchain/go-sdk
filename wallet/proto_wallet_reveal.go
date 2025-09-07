@@ -47,13 +47,13 @@ func (p *ProtoWallet) RevealCounterpartyKeyLinkage(
 	// Serialize the proof components
 	// Format: R compressed (33 bytes) || S' compressed (33 bytes) || z (32 bytes) = 98 bytes total
 	proofBytes := make([]byte, 0, 98)
-	
+
 	// R point compressed
 	proofBytes = append(proofBytes, proof.R.Compressed()...)
-	
+
 	// S' point compressed
 	proofBytes = append(proofBytes, proof.SPrime.Compressed()...)
-	
+
 	// z value (32 bytes)
 	proofBytes = append(proofBytes, padTo32Bytes(proof.Z.Bytes())...)
 

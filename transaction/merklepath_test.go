@@ -98,7 +98,7 @@ func TestMerklePathToHex(t *testing.T) {
 				path.Path[i][j] = newElem
 			}
 		}
-		
+
 		hex := path.Hex()
 		require.Equal(t, BRC74Hex, hex)
 	})
@@ -136,7 +136,7 @@ func TestMerklePathComputeRootHex(t *testing.T) {
 				path.Path[i][j] = newElem
 			}
 		}
-		
+
 		txid := BRC74TXID1
 		root, err := path.ComputeRootHex(&txid)
 		require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestMerklePath_Verify(t *testing.T) {
 				path.Path[i][j] = newElem
 			}
 		}
-		
+
 		tracker := MyChainTracker{}
 		ctx := t.Context()
 		txid := BRC74TXID1
@@ -270,7 +270,7 @@ func TestMerklePathCombine(t *testing.T) {
 				jsonCopy.Path[i][j] = newElem
 			}
 		}
-		
+
 		err = jsonCopy.Combine(&jsonCopy)
 		require.NoError(t, err)
 		out, err := json.Marshal(jsonCopy)
