@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
@@ -32,9 +33,18 @@ type Client struct {
 	Ctx    context.Context
 	Url    string
 	ApiKey string
+	// validatedRoots caches successful validations for (merkleRoot, height)
+	// Key format: merkleRootString|height
+	validatedRoots sync.Map
 }
 
-func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
+func (c *Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
+	// Check cache first to avoid repeated validations
+	cacheKey := fmt.Sprintf("%s|%d", root.String(), height)
+	if _, ok := c.validatedRoots.Load(cacheKey); ok {
+		return true, nil
+	}
+
 	type requestBody struct {
 		MerkleRoot  string `json:"merkleRoot"`
 		BlockHeight uint32 `json:"blockHeight"`
@@ -75,7 +85,12 @@ func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, 
 		return false, fmt.Errorf("error unmarshaling JSON: %v", err)
 	}
 
-	return response.ConfirmationState == "CONFIRMED", nil
+	isConfirmed := response.ConfirmationState == "CONFIRMED"
+	if isConfirmed {
+		// Cache only positive confirmations; negatives may change with reorgs
+		c.validatedRoots.Store(cacheKey, struct{}{})
+	}
+	return isConfirmed, nil
 }
 
 func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, error) {
