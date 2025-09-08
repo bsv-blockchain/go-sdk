@@ -54,6 +54,10 @@ type Wallet struct {
 // NewWallet creates a new wallet instance using the provided private key.
 // The private key serves as the root of trust for all cryptographic operations.
 func NewWallet(privateKey *ec.PrivateKey) (*Wallet, error) {
+	if privateKey == nil {
+		// Anyone wallet
+		return &Wallet{ProtoWallet: ProtoWallet{keyDeriver: NewKeyDeriver(nil)}}, nil
+	}
 	w, err := NewProtoWallet(ProtoWalletArgs{
 		Type:       ProtoWalletArgsTypePrivateKey,
 		PrivateKey: privateKey,

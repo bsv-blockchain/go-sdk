@@ -3,6 +3,7 @@ package admintoken
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
@@ -87,11 +88,10 @@ func (o *OverlayAdminToken) Lock(
 
 	protocolID := wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+		Protocol:      string(protocol.ID()),
 	}
-	if protocol == overlay.ProtocolSHIP {
-		protocolID.Protocol = "Service Host Interconnect"
-	} else {
-		protocolID.Protocol = "Service Lookup Availability"
+	if protocolID.Protocol == "" {
+		return nil, fmt.Errorf("invalid overlay protocol id: %s", protocol)
 	}
 
 	return o.PushDrop.Lock(
@@ -120,11 +120,7 @@ func (o *OverlayAdminToken) Unlock(
 ) *pushdrop.Unlocker {
 	protocolID := wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
-	}
-	if protocol == overlay.ProtocolSHIP {
-		protocolID.Protocol = "Service Host Interconnect"
-	} else {
-		protocolID.Protocol = "Service Lookup Availability"
+		Protocol:      string(protocol.ID()),
 	}
 	return o.PushDrop.Unlock(
 		ctx,

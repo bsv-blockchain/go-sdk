@@ -19,6 +19,24 @@ const (
 	ProtocolSLAP Protocol = "SLAP"
 )
 
+type ProtocolID string
+
+const (
+	ProtocolIDSHIP ProtocolID = "service host interconnect"
+	ProtocolIDSLAP ProtocolID = "service lookup availability"
+)
+
+func (protocol Protocol) ID() ProtocolID {
+	switch protocol {
+	case ProtocolSHIP:
+		return ProtocolIDSHIP
+	case ProtocolSLAP:
+		return ProtocolIDSLAP
+	default:
+		return ""
+	}
+}
+
 // TaggedBEEF represents a BEEF (Background Evaluation Extended Format) transaction with associated overlay topics
 type TaggedBEEF struct {
 	Beef           []byte
