@@ -435,7 +435,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					err  error
 				}{resp, retryErr}
 				return
-			} else if strings.Contains(err.Error(), "HTTP server failed to authenticate") {
+			} else if errors.Is(err, transports.ErrHTTPServerFailedToAuthenticate) {
 				// Fall back to regular HTTP request
 				resp, fallbackErr := a.handleFetchAndValidate(urlStr, config, peerToUse)
 				responseChan <- struct {
