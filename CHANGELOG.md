@@ -49,8 +49,6 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 - New error type `ErrHTTPServerFailedToAuthenticate` for authentication failures
-- `errors.Join()` usage in `simplified_http_transport.go`
-- `errors.Is()` type checking in `authhttp.go`
 
 ### Changed
 - Updated error return to include the new error type using `errors.Join()`
