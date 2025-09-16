@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.10 - 2025-09-16](#1210---2025-09-16)
 - [1.2.9 - 2025-09-07](#129---2025-09-07)
 - [1.2.8 - 2025-08-07](#128---2025-08-07)
 - [1.2.7 - 2025-08-05](#127---2025-08-05)
@@ -43,6 +44,15 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.10] - 2025-09-16
+
+### Added
+- New error type `ErrHTTPServerFailedToAuthenticate` for authentication failures
+
+### Changed
+- Updated error return to include the new error type using `errors.Join()`
+- Replaced string-based error checking with proper `errors.Is()` type checking
 
 ## [1.2.9] - 2025-09-07
 
