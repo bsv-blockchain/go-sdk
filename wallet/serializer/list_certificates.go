@@ -103,19 +103,15 @@ func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]b
 			w.WriteVarInt(uint64(len(cert.Keyring)))
 			for k, v := range cert.Keyring {
 				w.WriteString(k)
-				w.WriteString(v)
+				if err := w.WriteIntFromBase64(v); err != nil {
+					return nil, fmt.Errorf("invalid keyring value base64: %w", err)
+				}
 			}
 		} else {
 			w.WriteByte(0) // not present
 		}
 
-		// Write verifier if present
-		if len(cert.Verifier) > 0 {
-			w.WriteByte(1) // present
-			w.WriteIntBytes(cert.Verifier)
-		} else {
-			w.WriteByte(0) // not present
-		}
+		w.WriteIntBytes(cert.Verifier)
 	}
 
 	return w.Buf, nil
@@ -148,15 +144,12 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 			}
 			for j := uint64(0); j < keyringLen; j++ {
 				key := r.ReadString()
-				value := r.ReadString()
+				value := r.ReadBase64Int()
 				certResult.Keyring[key] = value
 			}
 		}
 
-		// Read verifier if present
-		if r.ReadByte() == 1 {
-			certResult.Verifier = r.ReadIntBytes()
-		}
+		certResult.Verifier = r.ReadIntBytes()
 
 		result.Certificates = append(result.Certificates, certResult)
 	}
