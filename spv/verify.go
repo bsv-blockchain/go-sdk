@@ -34,6 +34,8 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 			} else if isValid {
 				verifiedTxids[txidStr] = struct{}{}
 				continue
+			} else {
+				return false, fmt.Errorf("invalid merkle path for transaction %s", txidStr)
 			}
 		}
 

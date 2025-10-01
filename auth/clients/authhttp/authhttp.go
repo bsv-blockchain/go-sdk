@@ -12,19 +12,18 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
+	"github.com/bsv-blockchain/go-sdk/auth/authpayload"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/transports"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -48,6 +47,85 @@ type AuthPeer struct {
 	PendingCertificateRequests []bool
 }
 
+// AuthFetchOptions provides configuration options for AuthFetch.
+type AuthFetchOptions struct {
+	CertificatesToRequest *utils.RequestedCertificateSet
+	SessionManager        auth.SessionManager
+	Logger                *slog.Logger
+	HttpClient            *http.Client
+}
+
+// WithCertificatesToRequest sets the CertificatesToRequest with the provided certificate set.
+// Those certificates will be requested on the handshake with any server.
+// CertificatesToRequest argument cannot be nil.
+func WithCertificatesToRequest(certificatesToRequest *utils.RequestedCertificateSet) func(*AuthFetchOptions) {
+	if certificatesToRequest == nil {
+		panic("certificatesToRequest must be provided in WithCertificatesToRequest")
+	}
+	return func(opts *AuthFetchOptions) {
+		opts.CertificatesToRequest = certificatesToRequest
+	}
+}
+
+// WithSessionManager sets a custom session manager for AuthFetch.
+// sessionManager argument cannot be nil.
+func WithSessionManager(sessionManager auth.SessionManager) func(*AuthFetchOptions) {
+	if sessionManager == nil {
+		panic("sessionManager cannot be set to nil")
+	}
+	return func(opts *AuthFetchOptions) {
+		opts.SessionManager = sessionManager
+	}
+}
+
+// WithLogger sets provided logger for AuthFetch.
+// Logger cannot be nil.
+// To prevent AuthFetch from logging, use WithoutLogging or simply pass a logger with slog.DiscardHandler.
+func WithLogger(logger *slog.Logger) func(*AuthFetchOptions) {
+	if logger == nil {
+		panic("logger cannot be set to nil")
+	}
+	return func(opts *AuthFetchOptions) {
+		opts.Logger = logger
+	}
+}
+
+// WithoutLogging disables logging by assigning a no-op logger to the AuthFetch.
+func WithoutLogging() func(*AuthFetchOptions) {
+	return func(opts *AuthFetchOptions) {
+		opts.Logger = slog.New(slog.DiscardHandler)
+	}
+}
+
+// WithHttpClient sets a custom HTTP client for AuthFetch.
+// Useful if you have preconfigured HttpClient, or want to reuse a single HttpClient for all operations.
+// Provided client cannot be nil.
+func WithHttpClient(httpClient *http.Client) func(*AuthFetchOptions) {
+	if httpClient == nil {
+		panic("httpClient cannot be set to nil")
+	}
+	return func(opts *AuthFetchOptions) {
+		opts.HttpClient = httpClient
+	}
+}
+
+// WithHttpClientTransport sets a custom HTTP Transport on the HttpClient in AuthFetch.
+// Useful for testing purposes.
+// Provided transport cannot be nil.
+//
+// WARNING: It will override a transport in configured HttpClient - use with caution.
+func WithHttpClientTransport(transport http.RoundTripper) func(*AuthFetchOptions) {
+	if transport == nil {
+		panic("roundTripper cannot be set to nil")
+	}
+	return func(opts *AuthFetchOptions) {
+		if opts.HttpClient == nil {
+			opts.HttpClient = &http.Client{}
+		}
+		opts.HttpClient.Transport = transport
+	}
+}
+
 // AuthFetch provides a lightweight client for interacting with servers
 // over a simplified HTTP transport mechanism. It integrates session management, peer communication,
 // and certificate handling to enable secure and mutually-authenticated requests.
@@ -62,26 +140,36 @@ type AuthFetch struct {
 	requestedCertificates *utils.RequestedCertificateSet
 	peers                 map[string]*AuthPeer
 	logger                *slog.Logger // Logger for debug/warning messages
+	client                *http.Client
 }
 
 // New constructs a new AuthFetch instance.
-func New(w wallet.Interface, requestedCerts *utils.RequestedCertificateSet, sessionMgr auth.SessionManager, logger ...*slog.Logger) *AuthFetch {
-	if sessionMgr == nil {
-		sessionMgr = auth.NewSessionManager()
+func New(w wallet.Interface, opts ...func(*AuthFetchOptions)) *AuthFetch {
+	if w == nil {
+		panic("wallet cannot be nil")
 	}
 
-	l := slog.Default().With("component", "AuthHTTP")
-	if len(logger) > 0 && logger[0] != nil {
-		l = logger[0]
+	options := &AuthFetchOptions{
+		SessionManager: auth.NewSessionManager(),
+		HttpClient:     &http.Client{},
+		Logger:         slog.Default(),
 	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	logger := options.Logger.With("component", "AuthFetch")
+
 	return &AuthFetch{
-		sessionManager:        sessionMgr,
+		logger:                logger,
 		wallet:                w,
+		sessionManager:        options.SessionManager,
+		requestedCertificates: options.CertificatesToRequest,
 		callbacks:             make(map[string]struct{ resolve, reject func(interface{}) }),
 		certificatesReceived:  []*certificates.VerifiableCertificate{},
-		requestedCertificates: requestedCerts,
 		peers:                 make(map[string]*AuthPeer),
-		logger:                l,
+		client:                options.HttpClient,
 	}
 }
 
@@ -97,6 +185,16 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 	if config == nil {
 		config = &SimplifiedFetchRequestOptions{}
 	}
+	if config.Method == "" {
+		config.Method = "GET"
+	}
+
+	// validate headers
+	for key := range config.Headers {
+		if !authpayload.IsHeaderToIncludeInRequest(key) {
+			return nil, fmt.Errorf("header %s is not allowed in auth fetch", key)
+		}
+	}
 
 	// Handle retry counter
 	if config.RetryCounter != nil {
@@ -107,6 +205,14 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		config.RetryCounter = &counter
 	}
 
+	req, err := http.NewRequestWithContext(ctx, config.Method, urlStr, bytes.NewReader(config.Body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	for key, value := range config.Headers {
+		req.Header.Set(key, value)
+	}
+
 	// Create response channel
 	responseChan := make(chan struct {
 		resp *http.Response
@@ -114,34 +220,15 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 	})
 
 	go func() {
-		// Apply defaults
-		method := config.Method
-		if method == "" {
-			method = "GET"
-		}
-		headers := config.Headers
-		if headers == nil {
-			headers = make(map[string]string)
-		}
-		body := config.Body
+		baseURL := fmt.Sprintf("%s://%s", req.URL.Scheme, req.URL.Host)
 
-		// Extract a base URL
-		parsedURL, err := url.Parse(urlStr)
-		if err != nil {
-			responseChan <- struct {
-				resp *http.Response
-				err  error
-			}{nil, fmt.Errorf("invalid URL: %w", err)}
-			return
-		}
-		baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
-
-		// Create a new transport for this base URL if needed
+		// Create new transport for this base URL if needed
 		var peerToUse *AuthPeer
 		if _, exists := a.peers[baseURL]; !exists {
 			// Create a peer for the request
 			transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
 				BaseURL: baseURL,
+				Client:  a.client,
 			})
 			if err != nil {
 				responseChan <- struct {
@@ -156,6 +243,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 				Transport:             transport,
 				CertificatesToRequest: a.requestedCertificates,
 				SessionManager:        a.sessionManager,
+				Logger:                a.logger,
 			}
 
 			peerToUse = &AuthPeer{
@@ -165,13 +253,13 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			a.peers[baseURL] = peerToUse
 
 			// Set up certificate received listener
-			peerToUse.Peer.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+			peerToUse.Peer.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 				a.certificatesReceived = append(a.certificatesReceived, certs...)
 				return nil
 			})
 
 			// Set up certificate requested listener
-			peerToUse.Peer.ListenForCertificatesRequested(func(verifier *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+			peerToUse.Peer.ListenForCertificatesRequested(func(_ context.Context, verifier *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 				a.peers[baseURL].PendingCertificateRequests = append(a.peers[baseURL].PendingCertificateRequests, true)
 
 				certificatesToInclude, err := utils.GetVerifiableCertificates(
@@ -227,7 +315,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		requestNonceBase64 := base64.StdEncoding.EncodeToString(requestNonce)
 
 		// Serialize the simplified fetch request
-		requestData, err := a.serializeRequest(method, headers, body, parsedURL, requestNonce)
+		requestData, err := authpayload.FromHTTPRequest(requestNonce, req)
 		if err != nil {
 			responseChan <- struct {
 				resp *http.Response
@@ -276,85 +364,23 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 
 		// Set up listener for response
 		var listenerID int32
-		listenerID = peerToUse.Peer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
-			// Create a reader
-			responseReader := util.NewReader(payload)
-
-			// Deserialize first 32 bytes of payload (response nonce)
-			responseNonce, err := responseReader.ReadBytes(32)
-			if err != nil {
-				return fmt.Errorf("failed to read response nonce: %w", err)
-			}
-
-			responseNonceBase64 := base64.StdEncoding.EncodeToString(responseNonce)
-			if responseNonceBase64 != requestNonceBase64 {
-				return nil // Not our response
-			}
-
-			// Stop listening once we got our response
+		listenerID = peerToUse.Peer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 			peerToUse.Peer.StopListeningForGeneralMessages(listenerID)
 
-			// Save the identity key for the peer
 			if senderPublicKey != nil {
 				a.peers[baseURL].IdentityKey = senderPublicKey.ToDERHex()
 				supportsMutualAuth := true
 				a.peers[baseURL].SupportsMutualAuth = &supportsMutualAuth
 			}
 
-			// Read status code
-			statusCode, err := responseReader.ReadVarInt32()
+			requestIDFromResponse, response, err := authpayload.ToHTTPResponse(payload, authpayload.WithSenderPublicKey(senderPublicKey))
 			if err != nil {
-				return fmt.Errorf("failed to read status code: %w", err)
+				return fmt.Errorf("invalid response send by server: %w", err)
 			}
 
-			// Read headers
-			responseHeaders := make(http.Header)
-			nHeaders, err := responseReader.ReadVarInt32()
-			if err != nil {
-				return fmt.Errorf("failed to read header count: %w", err)
-			}
-
-			for i := uint32(0); i < nHeaders; i++ {
-				// Read header key
-				headerKey, err := responseReader.ReadString()
-				if err != nil {
-					return fmt.Errorf("failed to read header key: %w", err)
-				}
-
-				// Read header value
-				headerValue, err := responseReader.ReadString()
-				if err != nil {
-					return fmt.Errorf("failed to read header value: %w", err)
-				}
-
-				responseHeaders.Add(headerKey, headerValue)
-			}
-
-			// Add back server identity key header
-			if senderPublicKey != nil {
-				responseHeaders.Add("x-bsv-auth-identity-key", senderPublicKey.ToDERHex())
-			}
-
-			// Read body
-			var responseBody []byte
-			bodyLen, err := responseReader.ReadVarInt32()
-			if err != nil {
-				return fmt.Errorf("failed to read body length: %w", err)
-			}
-
-			if bodyLen > 0 {
-				responseBody, err = responseReader.ReadBytes(int(bodyLen))
-				if err != nil {
-					return fmt.Errorf("failed to read body: %w", err)
-				}
-			}
-
-			// Create response object
-			response := &http.Response{
-				StatusCode: int(statusCode),
-				Status:     fmt.Sprintf("%d", statusCode),
-				Header:     responseHeaders,
-				Body:       io.NopCloser(bytes.NewReader(responseBody)),
+			responseNonceBase64 := base64.StdEncoding.EncodeToString(requestIDFromResponse)
+			if responseNonceBase64 != requestNonceBase64 {
+				return nil // Not our response
 			}
 
 			// Resolve with the response
@@ -371,22 +397,12 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			ticker := time.NewTicker(100 * time.Millisecond)
 			defer ticker.Stop()
 
-			done := make(chan bool)
-			go func() {
-				for {
-					select {
-					case <-done:
-						return
-					case <-ticker.C:
-						if len(peerToUse.PendingCertificateRequests) == 0 {
-							done <- true
-							return
-						}
-					}
+			for {
+				<-ticker.C
+				if len(peerToUse.PendingCertificateRequests) == 0 {
+					break
 				}
-			}()
-
-			<-done
+			}
 		}
 
 		// Send the request
@@ -419,7 +435,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					err  error
 				}{resp, retryErr}
 				return
-			} else if strings.Contains(err.Error(), "HTTP server failed to authenticate") {
+			} else if errors.Is(err, transports.ErrHTTPServerFailedToAuthenticate) {
 				// Fall back to regular HTTP request
 				resp, fallbackErr := a.handleFetchAndValidate(urlStr, config, peerToUse)
 				responseChan <- struct {
@@ -502,7 +518,7 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 
 	// Set up certificate received listener
 	var callbackID int32
-	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
 		a.certificatesReceived = append(a.certificatesReceived, certs...)
 		certChan <- struct {
@@ -548,98 +564,6 @@ func (a *AuthFetch) ConsumeReceivedCertificates() []*certificates.VerifiableCert
 	certs := a.certificatesReceived
 	a.certificatesReceived = []*certificates.VerifiableCertificate{}
 	return certs
-}
-
-// serializeRequest serializes the HTTP request to be sent over the Transport.
-func (a *AuthFetch) serializeRequest(method string, headers map[string]string, body []byte, parsedURL *url.URL, requestNonce []byte) ([]byte, error) {
-	writer := util.NewWriter()
-
-	// Write request nonce
-	writer.WriteBytes(requestNonce)
-
-	// Write method
-	writer.WriteString(method)
-
-	// Handle pathname (e.g. /path/to/resource)
-	writer.WriteOptionalString(parsedURL.Path)
-
-	// Handle search params (e.g. ?q=hello)
-	searchParams := parsedURL.RawQuery
-	if searchParams != "" {
-		// auth client is using query string with leading "?", so the middleware need to include that character also.
-		searchParams = "?" + searchParams
-	}
-	writer.WriteOptionalString(searchParams)
-
-	// Construct headers to send / sign:
-	// - Include custom headers prefixed with x-bsv (excluding those starting with x-bsv-auth)
-	// - Include a normalized version of the content-type header
-	// - Include the authorization header
-	includedHeaders := [][]string{}
-	for k, v := range headers {
-		headerKey := strings.ToLower(k) // Always sign lower-case header keys
-		if strings.HasPrefix(headerKey, "x-bsv-") || headerKey == "authorization" {
-			if strings.HasPrefix(headerKey, "x-bsv-auth") {
-				return nil, errors.New("no BSV auth headers allowed here")
-			}
-			includedHeaders = append(includedHeaders, []string{strings.ToLower(headerKey), v})
-		} else if strings.HasPrefix(headerKey, "content-type") {
-			// Normalize the Content-Type header by removing any parameters (e.g., "; charset=utf-8")
-			contentType := strings.Split(v, ";")[0]
-			includedHeaders = append(includedHeaders, []string{headerKey, strings.TrimSpace(contentType)})
-		} else {
-			// In Go we're more tolerant of headers, but log a warning
-			a.logger.Warn("Unsupported header in simplified fetch", "header", k)
-		}
-	}
-
-	// Sort the headers by key to ensure a consistent order for signing and verification
-	sort.Slice(includedHeaders, func(i, j int) bool {
-		return includedHeaders[i][0] < includedHeaders[j][0]
-	})
-
-	// Write number of headers
-	writer.WriteVarInt(uint64(len(includedHeaders)))
-
-	// Write each header
-	for _, header := range includedHeaders {
-		// Write header key
-		writer.WriteString(header[0])
-		// Write header value
-		writer.WriteString(header[1])
-	}
-
-	// If method typically carries a body and body is empty, default it
-	methodsThatTypicallyHaveBody := []string{"POST", "PUT", "PATCH", "DELETE"}
-	if len(body) == 0 && contains(methodsThatTypicallyHaveBody, strings.ToUpper(method)) {
-		// Check if content-type is application/json
-		for _, header := range includedHeaders {
-			if header[0] == "content-type" && strings.Contains(header[1], "application/json") {
-				body = []byte("{}")
-				break
-			}
-		}
-
-		// If still empty and not JSON, use empty string
-		if len(body) == 0 {
-			body = []byte("")
-		}
-	}
-
-	// Write body
-	writer.WriteIntBytesOptional(body)
-
-	return writer.Buf, nil
-}
-
-// contains checks if a string is present in a slice
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
 
 // handleFetchAndValidate handles a non-authenticated fetch requests and validates that the server is not claiming to be authenticated.

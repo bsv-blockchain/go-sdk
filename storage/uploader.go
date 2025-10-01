@@ -55,7 +55,7 @@ func NewUploader(config UploaderConfig) (*Uploader, error) {
 	}
 
 	// Create auth fetch client
-	authClient := authhttp.New(config.Wallet, nil, nil)
+	authClient := authhttp.New(config.Wallet)
 
 	return &Uploader{
 		baseURL:   config.StorageURL,

@@ -303,7 +303,7 @@ func TestPeerAuthentication(t *testing.T) {
 
 	// when:
 	messageFromReceived := make(chan string, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageFromReceived <- senderPublicKey.ToDERHex()
 		close(messageFromReceived)
 		return nil
@@ -346,7 +346,7 @@ func TestPeerMessageExchange(t *testing.T) {
 
 	// when: Set up message reception for Bob
 	messageReceived := make(chan []byte, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- payload
 		close(messageReceived)
 		return nil
@@ -385,7 +385,7 @@ func TestAuthenticationOfMultipleSenderPeerDevices(t *testing.T) {
 
 	// and: listen for received messages
 	messageReceived := make(chan ReceivedMessage, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- ReceivedMessage{
 			Device:         bob.Name,
 			SenderIdentity: senderPublicKey.ToDERHex(),
@@ -453,7 +453,7 @@ func TestAuthenticationOfMultipleReceiverPeerDevices(t *testing.T) {
 
 	// and: listen for received messages
 	messageReceived := make(chan ReceivedMessage, 1)
-	bobPhone.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bobPhone.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- ReceivedMessage{
 			Device:         bobPhone.Name,
 			SenderIdentity: senderPublicKey.ToDERHex(),
@@ -461,7 +461,7 @@ func TestAuthenticationOfMultipleReceiverPeerDevices(t *testing.T) {
 		}
 		return nil
 	})
-	bobComputer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bobComputer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- ReceivedMessage{
 			Device:         bobComputer.Name,
 			SenderIdentity: senderPublicKey.ToDERHex(),
@@ -522,7 +522,7 @@ func TestAuthenticationWithCertificatesRequestedBySender(t *testing.T) {
 
 	// and: listen for a received message
 	messageReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- struct{}{}
 		close(messageReceived)
 		return nil
@@ -563,7 +563,7 @@ func TestAuthenticationWithCertificatesRequestedByReceiver(t *testing.T) {
 
 	// and: listen for a received message
 	messageReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- struct{}{}
 		close(messageReceived)
 		return nil
@@ -615,7 +615,7 @@ func TestAuthenticationWithCertificatesReceivedListenerOnReceiverSide(t *testing
 
 	// and: listen for a received message
 	messageReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- struct{}{}
 		close(messageReceived)
 		return nil
@@ -631,7 +631,7 @@ func TestAuthenticationWithCertificatesReceivedListenerOnReceiverSide(t *testing
 
 	// and: Bob (receiver) treats only email field in certificate as required
 	var certificatesReceivedListenerCalled bool
-	bob.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+	bob.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		certificatesReceivedListenerCalled = true
 		logger := logging.NewTestLogger(t).With(slog.String("service", "ListenForCertificatesReceived"), slog.String("actor", "Bob"))
 
@@ -686,7 +686,7 @@ func TestAuthenticationWithCertificatesReceivedListenerOnSenderSide(t *testing.T
 
 	// and: listen for a received message
 	messageReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- struct{}{}
 		close(messageReceived)
 		return nil
@@ -702,7 +702,7 @@ func TestAuthenticationWithCertificatesReceivedListenerOnSenderSide(t *testing.T
 
 	// and: Alice (sender) treats only email field in certificate as required
 	var certificatesReceivedListenerCalled bool
-	alice.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+	alice.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		certificatesReceivedListenerCalled = true
 		logger := logging.NewTestLogger(t).With(slog.String("service", "ListenForCertificatesReceived"), slog.String("actor", "Alice"))
 
@@ -741,7 +741,7 @@ func TestAuthenticationWithCertificatesFromCustomCertificatesRequestedCallbackOn
 	bob.Wallet.OnListCertificates().ReturnError(fmt.Errorf("unexpected call to wallet.ListCertificates"))
 
 	// and: Bob will setup custom certificates requested callback
-	bob.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+	bob.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 		var cert certificates.VerifiableCertificate
 		// Use a verifiable certificate, that was working with TypeScript version
 		err := json.Unmarshal([]byte(`{
@@ -767,7 +767,7 @@ func TestAuthenticationWithCertificatesFromCustomCertificatesRequestedCallbackOn
 
 	// and: listen for a received message
 	messageReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- struct{}{}
 		close(messageReceived)
 		return nil
@@ -803,14 +803,14 @@ func TestAuthenticationWithCertificatesFromCustomCertificatesRequestedCallbackOn
 
 	// and: listen for a received message
 	messageReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- struct{}{}
 		close(messageReceived)
 		return nil
 	})
 
 	// and: Alice will setup custom certificates requested callback
-	alice.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+	alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 		var cert certificates.VerifiableCertificate
 		// Use a verifiable certificate, that was working with TypeScript version
 		err := json.Unmarshal([]byte(`{
@@ -874,7 +874,7 @@ func TestCertificateExchange(t *testing.T) {
 
 	// and: Alice listen for a received certificates
 	var certificatesReceivedListenerCalled bool
-	alice.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+	alice.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		certificatesReceivedListenerCalled = true
 		logger := logging.NewTestLogger(t).With(slog.String("service", "ListenForCertificatesReceived"), slog.String("actor", "Alice"))
 
@@ -925,7 +925,7 @@ func TestCertificateExchangeWithCustomFlow(t *testing.T) {
 
 	// and: Alice will listen for receiving the book
 	messageReceived := make(chan []byte, 1)
-	alice.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	alice.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		messageReceived <- payload
 		close(messageReceived)
 		return nil
@@ -933,7 +933,7 @@ func TestCertificateExchangeWithCustomFlow(t *testing.T) {
 
 	// when: Bob receives message about book, he requires sender to give him a library card
 	certReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 
 		// Bob will make a dedicated request for certificates
 		err := bob.RequestCertificates(t.Context(), senderPublicKey, utils.RequestedCertificateSet{
@@ -962,7 +962,7 @@ func TestCertificateExchangeWithCustomFlow(t *testing.T) {
 	})
 
 	// and: Bob
-	bob.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+	bob.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		// We're expecting to receive library card only.
 		assert.Len(t, certs, 1, "Bob should receive a library card only")
 		assert.EqualValues(t, certType.Base64(), certs[0].Type, "Bob should receive cert of type library card")
@@ -1036,7 +1036,7 @@ func TestCertificatesRejectedByReceiver(t *testing.T) {
 			// and: alice will send invalid certificate
 			invalidCertificate := test.makeInvalid(verifiableCert)
 
-			alice.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+			alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 				err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
 				if err != nil {
 					return fmt.Errorf("failed to send certificates to counterparty, %w", err)
@@ -1045,7 +1045,7 @@ func TestCertificatesRejectedByReceiver(t *testing.T) {
 			})
 
 			// and: listen for a received message
-			bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+			bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 				assert.Fail(t, "Bob should not receive a general messsage")
 				return nil
 			})
@@ -1059,7 +1059,7 @@ func TestCertificatesRejectedByReceiver(t *testing.T) {
 			}
 
 			// and: applies custom validation on received certificates
-			bob.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+			bob.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 				if test.customValidationFail {
 					return fmt.Errorf("custom validation error")
 				}
@@ -1122,7 +1122,7 @@ func TestCertificatesRejectedBySender(t *testing.T) {
 			// and: Bob will send invalid certificate
 			invalidCertificate := test.makeInvalid(verifiableCert)
 
-			bob.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+			bob.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 				err := bob.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
 				if err != nil {
 					return fmt.Errorf("failed to send certificates to counterparty, %w", err)
@@ -1131,7 +1131,7 @@ func TestCertificatesRejectedBySender(t *testing.T) {
 			})
 
 			// and: listen for a received message
-			bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+			bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 				assert.Fail(t, "Bob should not receive a general messsage")
 				return nil
 			})
@@ -1145,7 +1145,7 @@ func TestCertificatesRejectedBySender(t *testing.T) {
 			}
 
 			// and: applies custom validation on received certificates
-			alice.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+			alice.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 				if test.customValidationFail {
 					return fmt.Errorf("custom validation error")
 				}
@@ -1208,7 +1208,7 @@ func TestCustomRequestedCertificatesRejected(t *testing.T) {
 			// and: Bob will send invalid certificate
 			invalidCertificate := test.makeInvalid(verifiableCert)
 
-			bob.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+			bob.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 				err := bob.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
 				if err != nil {
 					return fmt.Errorf("failed to send certificates to counterparty, %w", err)
@@ -1217,7 +1217,7 @@ func TestCustomRequestedCertificatesRejected(t *testing.T) {
 			})
 
 			// when: applies custom validation on received certificates
-			alice.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+			alice.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 				if test.customValidationFail {
 					return fmt.Errorf("custom validation error")
 				}
@@ -1245,7 +1245,7 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 
 		// when: callback registered
 		var numberOfCalls int
-		callbackID := bob.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+		callbackID := bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 			numberOfCalls++
 			return nil
 		})
@@ -1289,7 +1289,7 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 
 		// when: callback registered
 		var numberOfCalls int
-		callbackID := bob.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+		callbackID := bob.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 			numberOfCalls++
 			return nil
 		})
@@ -1325,7 +1325,7 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 
 		// when: callback registered
 		var numberOfCalls int
-		callbackID := bob.ListenForCertificatesReceived(func(senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+		callbackID := bob.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 			numberOfCalls++
 			return nil
 		})
@@ -1376,7 +1376,7 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 
 		// when: callback registered
 		var numberOfCalls int
-		callbackID := alice.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+		callbackID := alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 			numberOfCalls++
 			err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{aliceCert.ToVerifiableCertificate(senderPublicKey)})
 			if err != nil {
@@ -1416,7 +1416,7 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 
 		// when: callback registered
 		var numberOfCalls int
-		callbackID := alice.ListenForCertificatesRequested(func(senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+		callbackID := alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 			numberOfCalls++
 			err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{aliceCert.ToVerifiableCertificate(senderPublicKey)})
 			if err != nil {

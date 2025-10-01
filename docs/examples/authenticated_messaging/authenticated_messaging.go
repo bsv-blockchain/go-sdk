@@ -217,12 +217,12 @@ func main() {
 	fmt.Printf("Bob's identity key: %s\n", bobIdentity)
 
 	// Set up message listeners
-	alicePeer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	alicePeer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		fmt.Printf("Alice received message from %s: %s\n", senderPublicKey.Compressed(), string(payload))
 		return nil
 	})
 
-	bobPeer.ListenForGeneralMessages(func(senderPublicKey *ec.PublicKey, payload []byte) error {
+	bobPeer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey.Compressed(), string(payload))
 
 		// Reply to Alice
