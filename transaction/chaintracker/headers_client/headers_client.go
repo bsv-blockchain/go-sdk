@@ -28,6 +28,11 @@ type State struct {
 	Height uint32 `json:"height"`
 }
 
+type MerkleRootInfo struct {
+	MerkleRoot  chainhash.Hash `json:"merkleRoot"`
+	BlockHeight int32          `json:"blockHeight"`
+}
+
 type Client struct {
 	Ctx    context.Context
 	Url    string
@@ -156,4 +161,161 @@ func (c *Client) CurrentHeight(ctx context.Context) (uint32, error) {
 		return 0, err
 	}
 	return tip.Height, nil
+}
+
+// GetMerkleRoots fetches merkle roots in bulk from the block-headers-service
+func (c *Client) GetMerkleRoots(ctx context.Context, batchSize int, lastEvaluatedKey *chainhash.Hash) ([]MerkleRootInfo, error) {
+	client := &http.Client{}
+
+	// Build URL with query parameters
+	url := fmt.Sprintf("%s/api/v1/chain/merkleroot?batchSize=%d", c.Url, batchSize)
+	if lastEvaluatedKey != nil {
+		url += fmt.Sprintf("&lastEvaluatedKey=%s", lastEvaluatedKey.String())
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	// Parse the paged response
+	var response struct {
+		Content []MerkleRootInfo `json:"content"`
+		Page    struct {
+			LastEvaluatedKey string `json:"lastEvaluatedKey"`
+		} `json:"page"`
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	return response.Content, nil
+}
+
+// WebhookRequest represents a webhook registration request
+type WebhookRequest struct {
+	URL          string       `json:"url"`
+	RequiredAuth RequiredAuth `json:"requiredAuth"`
+}
+
+// RequiredAuth defines auth information for webhook registration
+type RequiredAuth struct {
+	Type   string `json:"type"`   // e.g., "Bearer"
+	Token  string `json:"token"`  // The auth token
+	Header string `json:"header"` // e.g., "Authorization"
+}
+
+// Webhook represents a registered webhook
+type Webhook struct {
+	URL               string `json:"url"`
+	CreatedAt         string `json:"createdAt"`
+	LastEmitStatus    string `json:"lastEmitStatus"`
+	LastEmitTimestamp string `json:"lastEmitTimestamp"`
+	ErrorsCount       int    `json:"errorsCount"`
+	Active            bool   `json:"active"`
+}
+
+// RegisterWebhook registers a webhook URL with the block headers service
+func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authToken string) (*Webhook, error) {
+	req := WebhookRequest{
+		URL: callbackURL,
+		RequiredAuth: RequiredAuth{
+			Type:   "Bearer",
+			Token:  authToken,
+			Header: "Authorization",
+		},
+	}
+
+	jsonPayload, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling webhook request: %v", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", c.Url+"/api/v1/webhook", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("error sending request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to register webhook: status=%d, body=%s", resp.StatusCode, body)
+	}
+
+	var webhook Webhook
+	if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return &webhook, nil
+}
+
+// UnregisterWebhook removes a webhook URL from the block headers service
+func (c *Client) UnregisterWebhook(ctx context.Context, callbackURL string) error {
+	httpReq, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/api/v1/webhook?url=%s", c.Url, callbackURL), nil)
+	if err != nil {
+		return fmt.Errorf("error creating request: %v", err)
+	}
+
+	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("error sending request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to unregister webhook: status=%d, body=%s", resp.StatusCode, body)
+	}
+
+	return nil
+}
+
+// GetWebhook retrieves a webhook by URL from the block headers service
+func (c *Client) GetWebhook(ctx context.Context, callbackURL string) (*Webhook, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/v1/webhook?url=%s", c.Url, callbackURL), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
+	}
+
+	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("error sending request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to get webhook: status=%d, body=%s", resp.StatusCode, body)
+	}
+
+	var webhook Webhook
+	if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return &webhook, nil
 }
