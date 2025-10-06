@@ -1450,3 +1450,39 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 		require.Equal(t, 1, numberOfCalls, "Only one callback should have been registered")
 	})
 }
+
+func TestGeneralMessageRejectedBecauseCertificatesWereNotProvided(t *testing.T) {
+	// given:
+	alice, bob := CreateActorsPair(t)
+
+	// and: Alice has some certificate
+	aliceCertManager := testcertificates.NewManager(t, alice.Wallet, testcertificates.WithSkipAssignToSubjectWallet())
+
+	aliceCert := aliceCertManager.CertificateForTest().WithType(contactCertTypeName).
+		WithFieldValue(emailField, aliceName+"@example.com").
+		Issue()
+
+	alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+		return nil
+	})
+
+	// and: listen for a received message
+	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
+		assert.Fail(t, "Bob should not receive a general message")
+		return nil
+	})
+
+	// when: Bob (receiver) request certificates from counterparties
+	bob.CertificatesToRequest = &utils.RequestedCertificateSet{
+		Certifiers: []*ec.PublicKey{aliceCert.WalletCert.Certifier},
+		CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
+			aliceCert.WalletCert.Type: []string{emailField},
+		},
+	}
+
+	// and:
+	err := alice.ToPeer(t.Context(), anyMessage, bob.IdentityKey, 5000)
+
+	// then:
+	require.Error(t, err, "Alice general message should be rejected because of missing certificates response: thanks to mock transport Alice should get info about rejected certificate")
+}
