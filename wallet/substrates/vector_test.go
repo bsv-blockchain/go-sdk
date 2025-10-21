@@ -475,7 +475,6 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "listCertificates-simple-result",
 		IsResult: true,
-		Skip:     true, // ts-sdk doesn't serialize Keyring and Verifier, so this test fails
 		Object: wallet.ListCertificatesResult{
 			TotalCertificates: 1,
 			Certificates: []wallet.CertificateResult{{
@@ -493,7 +492,6 @@ func TestVectors(t *testing.T) {
 	}, {
 		Filename: "listCertificates-full-result",
 		IsResult: true,
-		Skip:     true, // ts-sdk doesn't serialize Keyring and Verifier, so this test fails
 		Object: wallet.ListCertificatesResult{
 			TotalCertificates: 1,
 			Certificates: []wallet.CertificateResult{{
@@ -506,7 +504,10 @@ func TestVectors(t *testing.T) {
 					Fields:             map[string]string{"name": "Alice", "email": "alice@example.com"},
 					Signature:          signature,
 				},
-				Keyring:  map[string]string{"field1": "key1", "field2": "key2"},
+				Keyring: map[string]string{
+					"field1": "a2V5MQ==", // "key1"
+					"field2": "a2V5Mg==", // "key2"
+				},
 				Verifier: verifier.ToDER(),
 			}},
 		},
