@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -39,6 +40,12 @@ type OnCertificateReceivedCallback func(ctx context.Context, senderPublicKey *ec
 // The callback receives the sender's public key and the requested certificate set.
 type OnCertificateRequestReceivedCallback func(ctx context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error
 
+// InitialResponseCallback holds a callback function and associated session nonce for initial response handling.
+type InitialResponseCallback struct {
+	Callback     func(sessionNonce string) error
+	SessionNonce string
+}
+
 // Peer represents a peer capable of performing mutual authentication.
 // It manages sessions, handles authentication handshakes, certificate requests and responses,
 // and sending and receiving general messages over a transport layer.
@@ -51,10 +58,8 @@ type Peer struct {
 	onGeneralMessageReceivedCallbacks     map[int32]OnGeneralMessageReceivedCallback
 	onCertificateReceivedCallbacks        map[int32]OnCertificateReceivedCallback
 	onCertificateRequestReceivedCallbacks map[int32]OnCertificateRequestReceivedCallback
-	onInitialResponseReceivedCallbacks    map[int32]struct {
-		Callback     func(sessionNonce string) error
-		SessionNonce string
-	}
+	onInitialResponseReceivedCallbacks    map[int32]InitialResponseCallback
+	callbacksMu            sync.RWMutex
 	callbackIdCounter      atomic.Int32
 	autoPersistLastSession bool
 	lastInteractedWithPeer *ec.PublicKey
@@ -80,10 +85,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 		onGeneralMessageReceivedCallbacks:     make(map[int32]OnGeneralMessageReceivedCallback),
 		onCertificateReceivedCallbacks:        make(map[int32]OnCertificateReceivedCallback),
 		onCertificateRequestReceivedCallbacks: make(map[int32]OnCertificateRequestReceivedCallback),
-		onInitialResponseReceivedCallbacks: make(map[int32]struct {
-			Callback     func(sessionNonce string) error
-			SessionNonce string
-		}),
+		onInitialResponseReceivedCallbacks:    make(map[int32]InitialResponseCallback),
 		logger: cfg.Logger,
 	}
 
@@ -154,37 +156,49 @@ func (p *Peer) Stop() error {
 // ListenForGeneralMessages registers a callback for general messages
 func (p *Peer) ListenForGeneralMessages(callback OnGeneralMessageReceivedCallback) int32 {
 	callbackID := p.callbackIdCounter.Add(1)
+	p.callbacksMu.Lock()
 	p.onGeneralMessageReceivedCallbacks[callbackID] = callback
+	p.callbacksMu.Unlock()
 	return callbackID
 }
 
 // StopListeningForGeneralMessages removes a general message listener
 func (p *Peer) StopListeningForGeneralMessages(callbackID int32) {
+	p.callbacksMu.Lock()
 	delete(p.onGeneralMessageReceivedCallbacks, callbackID)
+	p.callbacksMu.Unlock()
 }
 
 // ListenForCertificatesReceived registers a callback for certificate reception
 func (p *Peer) ListenForCertificatesReceived(callback OnCertificateReceivedCallback) int32 {
 	callbackID := p.callbackIdCounter.Add(1)
+	p.callbacksMu.Lock()
 	p.onCertificateReceivedCallbacks[callbackID] = callback
+	p.callbacksMu.Unlock()
 	return callbackID
 }
 
 // StopListeningForCertificatesReceived removes a certificate reception listener
 func (p *Peer) StopListeningForCertificatesReceived(callbackID int32) {
+	p.callbacksMu.Lock()
 	delete(p.onCertificateReceivedCallbacks, callbackID)
+	p.callbacksMu.Unlock()
 }
 
 // ListenForCertificatesRequested registers a callback for certificate requests
 func (p *Peer) ListenForCertificatesRequested(callback OnCertificateRequestReceivedCallback) int32 {
 	callbackID := p.callbackIdCounter.Add(1)
+	p.callbacksMu.Lock()
 	p.onCertificateRequestReceivedCallbacks[callbackID] = callback
+	p.callbacksMu.Unlock()
 	return callbackID
 }
 
 // StopListeningForCertificatesRequested removes a certificate request listener
 func (p *Peer) StopListeningForCertificatesRequested(callbackID int32) {
+	p.callbacksMu.Lock()
 	delete(p.onCertificateRequestReceivedCallbacks, callbackID)
+	p.callbacksMu.Unlock()
 }
 
 // ToPeer sends a message to a peer, initiating authentication if needed
@@ -335,16 +349,15 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	// Register a callback for the response
 	callbackID := p.callbackIdCounter.Add(1)
 
-	p.onInitialResponseReceivedCallbacks[callbackID] = struct {
-		Callback     func(sessionNonce string) error
-		SessionNonce string
-	}{
+	p.callbacksMu.Lock()
+	p.onInitialResponseReceivedCallbacks[callbackID] = InitialResponseCallback{
 		Callback: func(peerNonce string) error {
 			responseChan <- struct{}{}
 			return nil
 		},
 		SessionNonce: sessionNonce,
 	}
+	p.callbacksMu.Unlock()
 
 	// TODO: replace maxWait with simply context with timeout
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(maxWaitTimeMs)*time.Millisecond)
@@ -354,7 +367,9 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	err = p.transport.Send(ctx, initialRequest)
 	if err != nil {
 		close(responseChan)
+		p.callbacksMu.Lock()
 		delete(p.onInitialResponseReceivedCallbacks, callbackID)
+		p.callbacksMu.Unlock()
 		return nil, NewAuthError("failed to send initial request", err)
 	}
 
@@ -362,10 +377,14 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	select {
 	case <-responseChan:
 		close(responseChan)
+		p.callbacksMu.Lock()
 		delete(p.onInitialResponseReceivedCallbacks, callbackID)
+		p.callbacksMu.Unlock()
 		return session, nil
 	case <-ctxWithTimeout.Done():
+		p.callbacksMu.Lock()
 		delete(p.onInitialResponseReceivedCallbacks, callbackID)
+		p.callbacksMu.Unlock()
 		return nil, ErrTimeout
 	}
 }
@@ -612,7 +631,14 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 			return NewAuthError("invalid certificates", err)
 		}
 
+		p.callbacksMu.RLock()
+		callbacks := make([]OnCertificateReceivedCallback, 0, len(p.onCertificateReceivedCallbacks))
 		for _, callback := range p.onCertificateReceivedCallbacks {
+			callbacks = append(callbacks, callback)
+		}
+		p.callbacksMu.RUnlock()
+
+		for _, callback := range callbacks {
 			err := callback(ctx, senderPublicKey, message.Certificates)
 			if err != nil {
 				return NewAuthError("certificate received callback error", err)
@@ -622,11 +648,20 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 
 	p.lastInteractedWithPeer = message.IdentityKey
 
-	for id, callback := range p.onInitialResponseReceivedCallbacks {
+	p.callbacksMu.RLock()
+	callbacksCopy := make(map[int32]InitialResponseCallback)
+	for k, v := range p.onInitialResponseReceivedCallbacks {
+		callbacksCopy[k] = v
+	}
+	p.callbacksMu.RUnlock()
+
+	for id, callback := range callbacksCopy {
 		if callback.SessionNonce == session.SessionNonce {
 			// Call the initial response callback with the peer's nonce
 			err := callback.Callback(session.SessionNonce)
+			p.callbacksMu.Lock()
 			delete(p.onInitialResponseReceivedCallbacks, id)
+			p.callbacksMu.Unlock()
 			if err != nil {
 				return NewAuthError("initial response received callback error", err)
 			}
@@ -645,16 +680,24 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 }
 
 func (p *Peer) sendCertificates(ctx context.Context, message *AuthMessage) error {
-	if len(p.onCertificateRequestReceivedCallbacks) > 0 {
+	p.callbacksMu.RLock()
+	hasCallbacks := len(p.onCertificateRequestReceivedCallbacks) > 0
+	if hasCallbacks {
+		callbacks := make([]OnCertificateRequestReceivedCallback, 0, len(p.onCertificateRequestReceivedCallbacks))
 		for _, callback := range p.onCertificateRequestReceivedCallbacks {
+			callbacks = append(callbacks, callback)
+		}
+		p.callbacksMu.RUnlock()
+
+		for _, callback := range callbacks {
 			err := callback(ctx, message.IdentityKey, message.RequestedCertificates)
 			if err != nil {
-				// Log callback error but continue
 				return fmt.Errorf("on certificate request callback failed: %w", err)
 			}
 		}
 		return nil
 	}
+	p.callbacksMu.RUnlock()
 
 	certs, err := utils.GetVerifiableCertificates(
 		ctx,
@@ -829,7 +872,14 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 
 		// TODO: maybe it should by default (if no callback) check if there are all required certificates
 		// Notify certificate listeners
+		p.callbacksMu.RLock()
+		callbacks := make([]OnCertificateReceivedCallback, 0, len(p.onCertificateReceivedCallbacks))
 		for _, callback := range p.onCertificateReceivedCallbacks {
+			callbacks = append(callbacks, callback)
+		}
+		p.callbacksMu.RUnlock()
+
+		for _, callback := range callbacks {
 			err := callback(ctx, senderPublicKey, message.Certificates)
 			if err != nil {
 				return fmt.Errorf("certificate received callback error: %w", err)
@@ -896,7 +946,14 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	}
 
 	// Notify general message listeners
+	p.callbacksMu.RLock()
+	callbacks := make([]OnGeneralMessageReceivedCallback, 0, len(p.onGeneralMessageReceivedCallbacks))
 	for _, callback := range p.onGeneralMessageReceivedCallbacks {
+		callbacks = append(callbacks, callback)
+	}
+	p.callbacksMu.RUnlock()
+
+	for _, callback := range callbacks {
 		err := callback(ctx, senderPublicKey, message.Payload)
 		if err != nil {
 			// Log callback error but continue
