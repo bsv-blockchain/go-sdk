@@ -201,6 +201,24 @@ func (p *Peer) StopListeningForCertificatesRequested(callbackID int32) {
 	p.callbacksMu.Unlock()
 }
 
+// StopListeningForInitialResponse removes a certificate initial response listener
+func (p *Peer) StopListeningForInitialResponse(callbackID int32) {
+	p.callbacksMu.Lock()
+	defer p.callbacksMu.Unlock()
+	delete(p.onInitialResponseReceivedCallbacks, callbackID)
+}
+
+// getInitialResponseCallbacks retrieves the initial response callbacks
+func (p *Peer) getInitialResponseCallbacks() map[int32]InitialResponseCallback {
+	p.callbacksMu.RLock()
+	defer p.callbacksMu.RUnlock()
+	callbacks := make(map[int32]InitialResponseCallback)
+	for k, v := range p.onInitialResponseReceivedCallbacks {
+		callbacks[k] = v
+	}
+	return callbacks
+}
+
 // ToPeer sends a message to a peer, initiating authentication if needed
 func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.PublicKey, maxWaitTime int) error {
 	if p.autoPersistLastSession && p.lastInteractedWithPeer != nil && identityKey == nil {
@@ -367,9 +385,7 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	err = p.transport.Send(ctx, initialRequest)
 	if err != nil {
 		close(responseChan)
-		p.callbacksMu.Lock()
-		delete(p.onInitialResponseReceivedCallbacks, callbackID)
-		p.callbacksMu.Unlock()
+		p.StopListeningForInitialResponse(callbackID)
 		return nil, NewAuthError("failed to send initial request", err)
 	}
 
@@ -377,14 +393,10 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	select {
 	case <-responseChan:
 		close(responseChan)
-		p.callbacksMu.Lock()
-		delete(p.onInitialResponseReceivedCallbacks, callbackID)
-		p.callbacksMu.Unlock()
+		p.StopListeningForInitialResponse(callbackID)
 		return session, nil
 	case <-ctxWithTimeout.Done():
-		p.callbacksMu.Lock()
-		delete(p.onInitialResponseReceivedCallbacks, callbackID)
-		p.callbacksMu.Unlock()
+		p.StopListeningForInitialResponse(callbackID)
 		return nil, ErrTimeout
 	}
 }
@@ -648,20 +660,11 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 
 	p.lastInteractedWithPeer = message.IdentityKey
 
-	p.callbacksMu.RLock()
-	callbacks := make(map[int32]InitialResponseCallback)
-	for k, v := range p.onInitialResponseReceivedCallbacks {
-		callbacks[k] = v
-	}
-	p.callbacksMu.RUnlock()
-
-	for id, callback := range callbacks {
+	for id, callback := range p.getInitialResponseCallbacks() {
 		if callback.SessionNonce == session.SessionNonce {
 			// Call the initial response callback with the peer's nonce
 			err := callback.Callback(session.SessionNonce)
-			p.callbacksMu.Lock()
-			delete(p.onInitialResponseReceivedCallbacks, id)
-			p.callbacksMu.Unlock()
+			p.StopListeningForInitialResponse(id)
 			if err != nil {
 				return NewAuthError("initial response received callback error", err)
 			}
