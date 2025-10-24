@@ -721,18 +721,20 @@ func (p *Peer) sendCertificates(ctx context.Context, message *AuthMessage) error
 
 // handleCertificateRequest processes a certificate request message
 func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessage, senderPublicKey *ec.PublicKey) error {
-	// Validate the session exists and is authenticated
-	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
-	if err != nil || session == nil {
-		return ErrSessionNotFound
-	}
-
 	valid, err := utils.VerifyNonce(ctx, message.YourNonce, p.wallet, wallet.Counterparty{Type: wallet.CounterpartyTypeSelf})
 	if err != nil {
 		return fmt.Errorf("failed to validate nonce: %w", err)
 	}
 	if !valid {
 		return ErrInvalidNonce
+	}
+
+	// Validate the session exists and is authenticated
+	// Use YourNonce to look up the session, which uniquely identifies the correct session
+	// even when multiple devices share the same identity key
+	session, err := p.sessionManager.GetSession(message.YourNonce)
+	if err != nil || session == nil {
+		return ErrSessionNotFound
 	}
 
 	// Update session timestamp
@@ -786,18 +788,20 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 
 // handleCertificateResponse processes a certificate response message
 func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessage, senderPublicKey *ec.PublicKey) error {
-	// Validate the session exists and is authenticated
-	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
-	if err != nil || session == nil {
-		return ErrSessionNotFound
-	}
-
 	valid, err := utils.VerifyNonce(ctx, message.YourNonce, p.wallet, wallet.Counterparty{Type: wallet.CounterpartyTypeSelf})
 	if err != nil {
 		return fmt.Errorf("failed to validate nonce: %w", err)
 	}
 	if !valid {
 		return ErrInvalidNonce
+	}
+
+	// Validate the session exists and is authenticated
+	// Use YourNonce to look up the session, which uniquely identifies the correct session
+	// even when multiple devices share the same identity key
+	session, err := p.sessionManager.GetSession(message.YourNonce)
+	if err != nil || session == nil {
+		return ErrSessionNotFound
 	}
 
 	// Update session timestamp
@@ -901,7 +905,9 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	}
 
 	// Validate the session exists and is authenticated
-	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
+	// Use YourNonce to look up the session, which uniquely identifies the correct session
+	// even when multiple devices share the same identity key
+	session, err := p.sessionManager.GetSession(message.YourNonce)
 	if err != nil || session == nil {
 		return ErrSessionNotFound
 	}
