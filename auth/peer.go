@@ -59,11 +59,11 @@ type Peer struct {
 	onCertificateReceivedCallbacks        map[int32]OnCertificateReceivedCallback
 	onCertificateRequestReceivedCallbacks map[int32]OnCertificateRequestReceivedCallback
 	onInitialResponseReceivedCallbacks    map[int32]InitialResponseCallback
-	callbacksMu            sync.RWMutex
-	callbackIdCounter      atomic.Int32
-	autoPersistLastSession bool
-	lastInteractedWithPeer *ec.PublicKey
-	logger                 *slog.Logger // Logger for debug messages
+	callbacksMu                           sync.RWMutex
+	callbackIdCounter                     atomic.Int32
+	autoPersistLastSession                bool
+	lastInteractedWithPeer                *ec.PublicKey
+	logger                                *slog.Logger // Logger for debug messages
 }
 
 // PeerOptions contains configuration options for creating a new Peer instance.
@@ -86,7 +86,7 @@ func NewPeer(cfg *PeerOptions) *Peer {
 		onCertificateReceivedCallbacks:        make(map[int32]OnCertificateReceivedCallback),
 		onCertificateRequestReceivedCallbacks: make(map[int32]OnCertificateRequestReceivedCallback),
 		onInitialResponseReceivedCallbacks:    make(map[int32]InitialResponseCallback),
-		logger: cfg.Logger,
+		logger:                                cfg.Logger,
 	}
 
 	// Use default logger if none provided
@@ -649,13 +649,13 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 	p.lastInteractedWithPeer = message.IdentityKey
 
 	p.callbacksMu.RLock()
-	callbacksCopy := make(map[int32]InitialResponseCallback)
+	callbacks := make(map[int32]InitialResponseCallback)
 	for k, v := range p.onInitialResponseReceivedCallbacks {
-		callbacksCopy[k] = v
+		callbacks[k] = v
 	}
 	p.callbacksMu.RUnlock()
 
-	for id, callback := range callbacksCopy {
+	for id, callback := range callbacks {
 		if callback.SessionNonce == session.SessionNonce {
 			// Call the initial response callback with the peer's nonce
 			err := callback.Callback(session.SessionNonce)
