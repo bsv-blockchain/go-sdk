@@ -118,9 +118,9 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 			continue
 		}
 		for _, output := range response.Outputs {
-			if beef, err := transaction.NewBeefFromBytes(output.Beef); err != nil {
+			if _, tx, _, err := transaction.ParseBeef(output.Beef); err != nil {
 				slog.Error(fmt.Sprintf("Error parsing BEEF: %v", err))
-			} else if tx := findTransactionForOutput(beef, output.OutputIndex); tx == nil {
+			} else if tx == nil {
 				slog.Error(fmt.Sprintf("Error finding transaction for output index: %v", output.OutputIndex))
 			} else {
 				outputsMap[fmt.Sprintf("%s.%d", tx.TxID().String(), output.OutputIndex)] = output
@@ -171,10 +171,12 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 			continue
 		}
 		for _, output := range result.Outputs {
-			if beef, err := transaction.NewBeefFromBytes(output.Beef); err != nil {
+			if _, tx, _, err := transaction.ParseBeef(output.Beef); err != nil {
 				slog.Error("Error parsing BEEF", "error", err)
-			} else if tx := findTransactionForOutput(beef, output.OutputIndex); tx == nil {
-				slog.Error("Error finding transaction", "output index", output.OutputIndex)
+			} else if tx == nil {
+				slog.Error("No transaction found in BEEF")
+			} else if len(tx.Outputs) <= int(output.OutputIndex) {
+				slog.Error("Output index out of range", "outputIndex", output.OutputIndex)
 			} else {
 				script := tx.Outputs[output.OutputIndex].LockingScript
 				if parsed := admintoken.Decode(script); parsed == nil || parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
@@ -188,22 +190,4 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 	}
 
 	return
-}
-
-// findTransactionForOutput finds the transaction in a BEEF that contains the specified output index
-func findTransactionForOutput(beef *transaction.Beef, outputIndex uint32) *transaction.Transaction {
-	// Try to find a transaction that has enough outputs to contain the requested index
-	for _, beefTx := range beef.Transactions {
-		if beefTx.Transaction != nil && len(beefTx.Transaction.Outputs) > int(outputIndex) {
-			return beefTx.Transaction
-		}
-	}
-	// If no transaction found with enough outputs, return any available transaction
-	// This maintains compatibility with the original behavior
-	for _, beefTx := range beef.Transactions {
-		if beefTx.Transaction != nil {
-			return beefTx.Transaction
-		}
-	}
-	return nil
 }
