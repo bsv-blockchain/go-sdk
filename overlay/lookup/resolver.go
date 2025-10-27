@@ -172,9 +172,9 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 		}
 		for _, output := range result.Outputs {
 			if beef, err := transaction.NewBeefFromBytes(output.Beef); err != nil {
-				slog.Error("Error parsing BEEF:", err)
+				slog.Error("Error parsing BEEF", "error", err)
 			} else if tx := findTransactionForOutput(beef, output.OutputIndex); tx == nil {
-				slog.Error("Error finding transaction for output index:", output.OutputIndex)
+				slog.Error("Error finding transaction", "output index", output.OutputIndex)
 			} else {
 				script := tx.Outputs[output.OutputIndex].LockingScript
 				if parsed := admintoken.Decode(script); parsed == nil || parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
