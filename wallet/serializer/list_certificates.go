@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+	"sort"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -100,8 +101,14 @@ func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]b
 		// Write keyring if present
 		if cert.Keyring != nil {
 			w.WriteByte(1) // present
+			keyringKeys := make([]string, 0, len(cert.Keyring))
+			for k := range cert.Keyring {
+				keyringKeys = append(keyringKeys, k)
+			}
+			sort.Strings(keyringKeys)
 			w.WriteVarInt(uint64(len(cert.Keyring)))
-			for k, v := range cert.Keyring {
+			for _, k := range keyringKeys {
+				v := cert.Keyring[k]
 				w.WriteString(k)
 				if err := w.WriteIntFromBase64(v); err != nil {
 					return nil, fmt.Errorf("invalid keyring value base64: %w", err)

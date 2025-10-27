@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -15,6 +16,7 @@ func SerializeDiscoverByAttributesArgs(args *wallet.DiscoverByAttributesArgs) ([
 	for k := range args.Attributes {
 		attributeKeys = append(attributeKeys, k)
 	}
+	sort.Strings(attributeKeys)
 	w.WriteVarInt(uint64(len(attributeKeys)))
 	for _, key := range attributeKeys {
 		w.WriteIntBytes([]byte(key))
