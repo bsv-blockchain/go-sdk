@@ -34,9 +34,17 @@ type MerkleRootInfo struct {
 }
 
 type Client struct {
-	Ctx    context.Context
-	Url    string
-	ApiKey string
+	Ctx        context.Context
+	Url        string
+	ApiKey     string
+	httpClient *http.Client
+}
+
+func (c *Client) getHTTPClient() *http.Client {
+	if c.httpClient != nil {
+		return c.httpClient
+	}
+	return &http.Client{}
 }
 
 func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
@@ -165,8 +173,6 @@ func (c *Client) CurrentHeight(ctx context.Context) (uint32, error) {
 
 // GetMerkleRoots fetches merkle roots in bulk from the block-headers-service
 func (c *Client) GetMerkleRoots(ctx context.Context, batchSize int, lastEvaluatedKey *chainhash.Hash) ([]MerkleRootInfo, error) {
-	client := &http.Client{}
-
 	// Build URL with query parameters
 	url := fmt.Sprintf("%s/api/v1/chain/merkleroot?batchSize=%d", c.Url, batchSize)
 	if lastEvaluatedKey != nil {
@@ -179,7 +185,7 @@ func (c *Client) GetMerkleRoots(ctx context.Context, batchSize int, lastEvaluate
 	}
 	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
 
-	res, err := client.Do(req)
+	res, err := c.getHTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -247,8 +253,7 @@ func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authTo
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
 
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
+	resp, err := c.getHTTPClient().Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %v", err)
 	}
@@ -276,8 +281,7 @@ func (c *Client) UnregisterWebhook(ctx context.Context, callbackURL string) erro
 
 	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
 
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
+	resp, err := c.getHTTPClient().Do(httpReq)
 	if err != nil {
 		return fmt.Errorf("error sending request: %v", err)
 	}
@@ -300,8 +304,7 @@ func (c *Client) GetWebhook(ctx context.Context, callbackURL string) (*Webhook, 
 
 	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
 
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
+	resp, err := c.getHTTPClient().Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %v", err)
 	}
