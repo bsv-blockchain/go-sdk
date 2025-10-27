@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -88,13 +88,14 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 		go func(host string) {
 			defer wg.Done()
 			if answer, err := l.Facilitator.Lookup(ctx, host, question); err != nil {
-				log.Println("Error querying host", host, err)
+				slog.Error("Error querying host", "host", host, "error", err)
 			} else {
 				responses <- answer
 			}
 		}(host)
 	}
 	wg.Wait()
+	close(responses)
 
 	var successfulResponses []*LookupAnswer
 	for result := range responses {
@@ -117,8 +118,10 @@ func (l *LookupResolver) Query(ctx context.Context, question *LookupQuestion) (*
 			continue
 		}
 		for _, output := range response.Outputs {
-			if tx, err := transaction.NewTransactionFromBEEF(output.Beef); err != nil {
-				log.Println("Error parsing transaction ID:", err)
+			if _, tx, _, err := transaction.ParseBeef(output.Beef); err != nil {
+				slog.Error(fmt.Sprintf("Error parsing BEEF: %v", err))
+			} else if tx == nil {
+				slog.Error(fmt.Sprintf("Error finding transaction for output index: %v", output.OutputIndex))
 			} else {
 				outputsMap[fmt.Sprintf("%s.%d", tx.TxID().String(), output.OutputIndex)] = output
 			}
@@ -153,13 +156,14 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 			defer cancel()
 
 			if answer, err := l.Facilitator.Lookup(ctxWithTimeout, url, query); err != nil {
-				log.Println("Error querying tracker", url, err)
+				slog.Error(fmt.Sprintf("Error querying tracker: %s %v", url, err))
 			} else {
 				responses <- answer
 			}
 		}(url)
 	}
 	wg.Wait()
+	close(responses)
 
 	hosts := make(map[string]struct{})
 	for result := range responses {
@@ -167,8 +171,12 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 			continue
 		}
 		for _, output := range result.Outputs {
-			if tx, err := transaction.NewTransactionFromBEEF(output.Beef); err != nil {
-				log.Println("Error parsing transaction ID:", err)
+			if _, tx, _, err := transaction.ParseBeef(output.Beef); err != nil {
+				slog.Error("Error parsing BEEF", "error", err)
+			} else if tx == nil {
+				slog.Error("No transaction found in BEEF")
+			} else if len(tx.Outputs) <= int(output.OutputIndex) {
+				slog.Error("Output index out of range", "outputIndex", output.OutputIndex)
 			} else {
 				script := tx.Outputs[output.OutputIndex].LockingScript
 				if parsed := admintoken.Decode(script); parsed == nil || parsed.TopicOrService != service || parsed.Protocol != "SLAP" {
