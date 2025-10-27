@@ -578,11 +578,15 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 
 	session.PeerNonce = message.InitialNonce
 	session.PeerIdentityKey = message.IdentityKey
-	session.IsAuthenticated = true
 	session.LastUpdate = time.Now().UnixMilli()
-	p.sessionManager.UpdateSession(session)
 
-	if p.CertificatesToRequest != nil && len(message.Certificates) > 0 {
+	// Check if we require certificates from the peer
+	needsCerts := p.CertificatesToRequest != nil && len(p.CertificatesToRequest.CertificateTypes) > 0
+
+	if !needsCerts {
+		// No certificates required, authenticate immediately
+		session.IsAuthenticated = true
+	} else if len(message.Certificates) > 0 {
 		// Create utils.AuthMessage from our message
 		utilsMessage := &AuthMessage{
 			IdentityKey:  message.IdentityKey,
@@ -612,13 +616,21 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 			return NewAuthError("invalid certificates", err)
 		}
 
+		// Certificates validated successfully, authenticate the session
+		session.IsAuthenticated = true
+
 		for _, callback := range p.onCertificateReceivedCallbacks {
 			err := callback(ctx, senderPublicKey, message.Certificates)
 			if err != nil {
 				return NewAuthError("certificate received callback error", err)
 			}
 		}
+	} else {
+		// Certificates required but not provided, leave IsAuthenticated = false
+		session.IsAuthenticated = false
 	}
+
+	p.sessionManager.UpdateSession(session)
 
 	p.lastInteractedWithPeer = message.IdentityKey
 
@@ -827,6 +839,11 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 			return errors.Join(ErrCertificateValidation, err)
 		}
 
+		// Certificates validated successfully, authenticate the session
+		session.IsAuthenticated = true
+		session.LastUpdate = time.Now().UnixMilli()
+		p.sessionManager.UpdateSession(session)
+
 		// TODO: maybe it should by default (if no callback) check if there are all required certificates
 		// Notify certificate listeners
 		for _, callback := range p.onCertificateReceivedCallbacks {
@@ -854,6 +871,11 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	session, err := p.sessionManager.GetSession(senderPublicKey.ToDERHex())
 	if err != nil || session == nil {
 		return ErrSessionNotFound
+	}
+
+	// Block general messages until session is authenticated
+	if !session.IsAuthenticated {
+		return ErrNotAuthenticated
 	}
 
 	// Try to parse the signature
