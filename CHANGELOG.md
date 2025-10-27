@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.11 - 2025-10-27](#1211---2025-10-27)
 - [1.2.10 - 2025-09-16](#1210---2025-09-16)
 - [1.2.9 - 2025-09-07](#129---2025-09-07)
 - [1.2.8 - 2025-08-07](#128---2025-08-07)
@@ -44,6 +45,30 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.11] - 2025-10-27
+
+### Added
+- Webhook management methods in headers client (`RegisterWebhook`, `UnregisterWebhook`, `GetWebhook`)
+- `GetMerkleRoots` method in headers client for bulk merkle root fetching with pagination
+- Protocol ID support in overlay services with `ProtocolID` type and `ID()` method
+- `OffChainValues` field to `TaggedBEEF` structure
+- Anyone wallet support (nil private key handling in `NewWallet`)
+- Comprehensive test coverage for headers client (450+ lines)
+
+### Changed
+- Session lookup now uses `YourNonce` instead of identity key for multi-device support
+- Switched from `log` to `slog` for structured logging in overlay lookup resolver
+- BEEF parsing changed from `NewTransactionFromBEEF` to `ParseBeef` with improved error handling
+- Wallet serialization now deterministic with sorted keys in `DiscoverByAttributes` and `ListCertificates`
+- Keyring serialization changed to proper base64 handling (`WriteIntFromBase64`/`ReadBase64Int`)
+
+### Fixed
+- Data race in auth peer callback management with proper mutex protection
+- Authentication flow to properly validate session state before processing general messages
+- Certificate validation logic in `handleInitialResponse` and `handleCertificateResponse`
+- Channel closing in overlay lookup resolver goroutines
+- Wallet serialization test vectors for `ListCertificates`
 
 ## [1.2.10] - 2025-09-16
 
