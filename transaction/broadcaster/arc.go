@@ -64,7 +64,7 @@ func (a *Arc) Broadcast(t *transaction.Transaction) (*transaction.BroadcastSucce
 	return a.BroadcastCtx(context.Background(), t)
 }
 
-func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+func (a *Arc) ArcBroadcast(ctx context.Context, t *transaction.Transaction) (*ArcResponse, error) {
 	var buf *bytes.Buffer
 	for _, input := range t.Inputs {
 		if input.SourceTxOutput() == nil {
@@ -74,10 +74,7 @@ func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*tr
 	}
 	if buf == nil {
 		if ef, err := t.EF(); err != nil {
-			return nil, &transaction.BroadcastFailure{
-				Code:        "500",
-				Description: err.Error(),
-			}
+			return nil, err
 		} else {
 			buf = bytes.NewBuffer(ef)
 		}
@@ -90,10 +87,7 @@ func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*tr
 		buf,
 	)
 	if err != nil {
-		return nil, &transaction.BroadcastFailure{
-			Code:        "500",
-			Description: err.Error(),
-		}
+		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
@@ -140,18 +134,12 @@ func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*tr
 	}
 	resp, err := a.Client.Do(req)
 	if err != nil {
-		return nil, &transaction.BroadcastFailure{
-			Code:        "500",
-			Description: err.Error(),
-		}
+		return nil, err
 	}
 	defer resp.Body.Close()
 	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, &transaction.BroadcastFailure{
-			Code:        "500",
-			Description: err.Error(),
-		}
+		return nil, err
 	}
 
 	response := &ArcResponse{}
@@ -159,6 +147,15 @@ func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*tr
 		log.Println("msg", string(msg))
 	}
 	err = json.Unmarshal(msg, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (a *Arc) BroadcastCtx(ctx context.Context, t *transaction.Transaction) (*transaction.BroadcastSuccess, *transaction.BroadcastFailure) {
+	response, err := a.ArcBroadcast(ctx, t)
 	if err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
