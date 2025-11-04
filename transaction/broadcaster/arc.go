@@ -17,15 +17,19 @@ import (
 type ArcStatus string
 
 const (
-	REJECTED             ArcStatus = "REJECTED"
-	QUEUED               ArcStatus = "QUEUED"
-	RECEIVED             ArcStatus = "RECEIVED"
-	STORED               ArcStatus = "STORED"
-	ANNOUNCED_TO_NETWORK ArcStatus = "ANNOUNCED_TO_NETWORK"
-	REQUESTED_BY_NETWORK ArcStatus = "REQUESTED_BY_NETWORK"
-	SENT_TO_NETWORK      ArcStatus = "SENT_TO_NETWORK"
-	ACCEPTED_BY_NETWORK  ArcStatus = "ACCEPTED_BY_NETWORK"
-	SEEN_ON_NETWORK      ArcStatus = "SEEN_ON_NETWORK"
+	REJECTED               ArcStatus = "REJECTED"
+	QUEUED                 ArcStatus = "QUEUED"
+	RECEIVED               ArcStatus = "RECEIVED"
+	STORED                 ArcStatus = "STORED"
+	ANNOUNCED_TO_NETWORK   ArcStatus = "ANNOUNCED_TO_NETWORK"
+	REQUESTED_BY_NETWORK   ArcStatus = "REQUESTED_BY_NETWORK"
+	SENT_TO_NETWORK        ArcStatus = "SENT_TO_NETWORK"
+	ACCEPTED_BY_NETWORK    ArcStatus = "ACCEPTED_BY_NETWORK"
+	SEEN_ON_NETWORK        ArcStatus = "SEEN_ON_NETWORK"
+	MINED                  ArcStatus = "MINED"
+	CONFIRMED              ArcStatus = "CONFIRMED"
+	DOUBLE_SPEND_ATTEMPTED ArcStatus = "DOUBLE_SPEND_ATTEMPTED"
+	SEEN_IN_ORPHAN_MEMPOOL ArcStatus = "SEEN_IN_ORPHAN_MEMPOOL"
 )
 
 type Arc struct {
