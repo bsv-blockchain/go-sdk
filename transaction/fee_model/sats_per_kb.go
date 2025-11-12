@@ -33,5 +33,5 @@ func (s *SatoshisPerKilobyte) ComputeFee(tx *transaction.Transaction) (uint64, e
 		size += len(*o.LockingScript)
 	}
 	size += 4
-	return (uint64(math.Ceil(float64(size) / 1000))) * s.Satoshis, nil
+	return (uint64(math.Ceil(float64(size)/1000)) * s.Satoshis), nil
 }
