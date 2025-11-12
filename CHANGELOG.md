@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.12 - 2025-11-12](#1212---2025-11-12)
 - [1.2.11 - 2025-10-27](#1211---2025-10-27)
 - [1.2.10 - 2025-09-16](#1210---2025-09-16)
 - [1.2.9 - 2025-09-07](#129---2025-09-07)
@@ -45,6 +46,19 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.12] - 2025-11-12
+
+### Added
+- `ArcBroadcast` method in Arc broadcaster for direct access to ARC response
+- Missing ARC status constants: `MINED`, `CONFIRMED`, `DOUBLE_SPEND_ATTEMPTED`, `SEEN_IN_ORPHAN_MEMPOOL`
+- Test coverage for fee calculation with `TestCalculateFee`
+
+### Changed
+- Arc broadcaster refactored with `ArcBroadcast` abstraction for better error handling
+
+### Fixed
+- Fee calculation formula to multiply in float space before casting to uint64, ensuring accurate fees for all satoshi rates
 
 ## [1.2.11] - 2025-10-27
 
