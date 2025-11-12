@@ -41,7 +41,7 @@ jobs:
 
       # Re-run golangci separately without exiting on errors and generating a report for use in Sonar
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=5m --issues-exit-code=0 --output.checkstyle.path=golangci-lint-report.xml
