@@ -17,12 +17,12 @@ const (
 
 // Header represents a Bitcoin block header (80 bytes)
 type Header struct {
-	Version    int32         // 4 bytes - Block version
-	PrevBlock  chainhash.Hash // 32 bytes - Previous block hash
-	MerkleRoot chainhash.Hash // 32 bytes - Merkle root hash
-	Timestamp  uint32        // 4 bytes - Block timestamp (Unix time)
-	Bits       uint32        // 4 bytes - Difficulty target
-	Nonce      uint32        // 4 bytes - Nonce
+	Version    int32          `json:"version"`    // 4 bytes - Block version
+	PrevBlock  chainhash.Hash `json:"prevBlock"`  // 32 bytes - Previous block hash
+	MerkleRoot chainhash.Hash `json:"merkleRoot"` // 32 bytes - Merkle root hash
+	Timestamp  uint32         `json:"timestamp"`  // 4 bytes - Block timestamp (Unix time)
+	Bits       uint32         `json:"bits"`       // 4 bytes - Difficulty target
+	Nonce      uint32         `json:"nonce"`      // 4 bytes - Nonce
 }
 
 // NewHeaderFromBytes creates a BlockHeader from an 80-byte slice
@@ -82,7 +82,7 @@ func (h *Header) Bytes() []byte {
 	buf.Grow(HeaderSize)
 
 	// Write version (4 bytes, little-endian)
-	binary.Write(buf, binary.LittleEndian, h.Version)
+	_ = binary.Write(buf, binary.LittleEndian, h.Version)
 
 	// Write previous block hash (32 bytes)
 	buf.Write(h.PrevBlock[:])
@@ -91,13 +91,13 @@ func (h *Header) Bytes() []byte {
 	buf.Write(h.MerkleRoot[:])
 
 	// Write timestamp (4 bytes, little-endian)
-	binary.Write(buf, binary.LittleEndian, h.Timestamp)
+	_ = binary.Write(buf, binary.LittleEndian, h.Timestamp)
 
 	// Write bits (4 bytes, little-endian)
-	binary.Write(buf, binary.LittleEndian, h.Bits)
+	_ = binary.Write(buf, binary.LittleEndian, h.Bits)
 
 	// Write nonce (4 bytes, little-endian)
-	binary.Write(buf, binary.LittleEndian, h.Nonce)
+	_ = binary.Write(buf, binary.LittleEndian, h.Nonce)
 
 	return buf.Bytes()
 }
