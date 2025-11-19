@@ -17,12 +17,12 @@ const (
 
 // Header represents a Bitcoin block header (80 bytes)
 type Header struct {
-	Version    int32          `json:"version"`    // 4 bytes - Block version
-	PrevBlock  chainhash.Hash `json:"prevBlock"`  // 32 bytes - Previous block hash
-	MerkleRoot chainhash.Hash `json:"merkleRoot"` // 32 bytes - Merkle root hash
-	Timestamp  uint32         `json:"timestamp"`  // 4 bytes - Block timestamp (Unix time)
-	Bits       uint32         `json:"bits"`       // 4 bytes - Difficulty target
-	Nonce      uint32         `json:"nonce"`      // 4 bytes - Nonce
+	Version    int32          `json:"version"`      // 4 bytes - Block version
+	PrevHash   chainhash.Hash `json:"previousHash"` // 32 bytes - Previous block hash
+	MerkleRoot chainhash.Hash `json:"merkleRoot"`   // 32 bytes - Merkle root hash
+	Timestamp  uint32         `json:"time"`         // 4 bytes - Block timestamp (Unix time)
+	Bits       uint32         `json:"bits"`         // 4 bytes - Difficulty target
+	Nonce      uint32         `json:"nonce"`        // 4 bytes - Nonce
 }
 
 // NewHeaderFromBytes creates a BlockHeader from an 80-byte slice
@@ -40,7 +40,7 @@ func NewHeaderFromBytes(data []byte) (*Header, error) {
 	}
 
 	// Read previous block hash (32 bytes)
-	if _, err := io.ReadFull(r, h.PrevBlock[:]); err != nil {
+	if _, err := io.ReadFull(r, h.PrevHash[:]); err != nil {
 		return nil, fmt.Errorf("failed to read prev block hash: %w", err)
 	}
 
@@ -85,7 +85,7 @@ func (h *Header) Bytes() []byte {
 	_ = binary.Write(buf, binary.LittleEndian, h.Version)
 
 	// Write previous block hash (32 bytes)
-	buf.Write(h.PrevBlock[:])
+	buf.Write(h.PrevHash[:])
 
 	// Write merkle root (32 bytes)
 	buf.Write(h.MerkleRoot[:])
@@ -115,5 +115,5 @@ func (h *Header) Hash() chainhash.Hash {
 // String returns a string representation of the header
 func (h *Header) String() string {
 	return fmt.Sprintf("Header{Hash: %s, PrevBlock: %s, Height: ?, Bits: %d}",
-		h.Hash().String(), h.PrevBlock.String(), h.Bits)
+		h.Hash().String(), h.PrevHash.String(), h.Bits)
 }

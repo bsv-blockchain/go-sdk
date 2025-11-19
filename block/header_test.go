@@ -105,7 +105,7 @@ func TestHeaderPrevBlockAndMerkleRoot(t *testing.T) {
 		t.Fatalf("NewHeaderFromHex() error = %v", err)
 	}
 
-	prevBlockStr := header.PrevBlock.String()
+	prevBlockStr := header.PrevHash.String()
 	if prevBlockStr != expectedPrevBlock {
 		t.Errorf("PrevBlock = %s, want %s", prevBlockStr, expectedPrevBlock)
 	}
