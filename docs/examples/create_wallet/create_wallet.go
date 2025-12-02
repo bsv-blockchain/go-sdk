@@ -26,7 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to generate mnemonic: %v", err)
 	}
-	fmt.Printf("Generated Mnemonic: %s\n\n", mnemonic)
+	fmt.Println("Mnemonic generated (not logged for security). Store it securely.")
 
 	// Generate a seed from the mnemonic
 	// An empty password is used for simplicity in this example
@@ -39,7 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create master key: %v", err)
 	}
-	fmt.Printf("Master Private Key (xPriv): %s\n", masterKey.String())
+	fmt.Println("Master private key created (not logged for security).")
 
 	// Create a wallet instance from the master private key
 	// Note: The wallet instance itself doesn't store the mnemonic or master xPriv directly for this example
@@ -75,7 +75,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get derived private key: %v", err)
 	}
-	fmt.Printf("Derived Private Key (Hex): %x\n", privateKey.Serialize())
+	fmt.Println("Derived private key created (not logged for security).")
 
 	// Get the public key from the private key
 	publicKey := privateKey.PubKey()
@@ -93,5 +93,5 @@ func main() {
 
 	fmt.Println("Wallet creation and key derivation complete.")
 	fmt.Println("IMPORTANT: Store your mnemonic phrase securely. This example generates a new wallet on each run.")
-	fmt.Printf("To use this wallet, you would typically persist the mnemonic or the master extended private key (xPriv: %s).\n", masterKey.String())
+	fmt.Println("Never log or transmit your mnemonic or private keys in plaintext.")
 }
