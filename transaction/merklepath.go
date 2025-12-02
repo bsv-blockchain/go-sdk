@@ -55,6 +55,15 @@ func (ip IndexedPath) GetOffsetLeaf(layer int, offset uint64) *PathElement {
 	return nil
 }
 
+// Clone creates a deep copy of the MerklePath by serializing and deserializing.
+func (mp *MerklePath) Clone() *MerklePath {
+	if mp == nil {
+		return nil
+	}
+	clone, _ := NewMerklePathFromBinary(mp.Bytes())
+	return clone
+}
+
 // NewMerklePath creates a new MerklePath with the given block height and path
 func NewMerklePath(blockHeight uint32, path [][]*PathElement) *MerklePath {
 	return &MerklePath{
