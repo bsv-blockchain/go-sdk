@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"log"
 
@@ -79,7 +80,8 @@ func main() {
 
 	// Get the public key from the private key
 	publicKey := privateKey.PubKey()
-	fmt.Printf("Derived Public Key (Hex): %x\n", publicKey.Compressed())
+	publicKeyHash := sha256.Sum256(publicKey.Compressed())
+	fmt.Printf("Derived public key fingerprint: %x\n", publicKeyHash[:8])
 
 	// Get the P2PKH address from the public key
 	// This is one way to get the address.
