@@ -7,7 +7,7 @@ This example demonstrates how to use the `bip32` compatibility package to genera
 The `generate_hd_key` example showcases:
 1. Calling `bip32.GenerateHDKeyPair` with a specified seed length (`bip32.SecureSeedLength`).
 2. Receiving the generated extended private key (xPriv) and extended public key (xPub).
-3. Printing both keys.
+3. Verifying the public key via a fingerprint without exposing key material.
 
 ## Code Walkthrough
 
@@ -21,9 +21,9 @@ if err != nil {
     log.Fatalf("Error generating HD key pair: %s", err.Error())
 }
 
-// Print the generated keys
-log.Printf("xPrivateKey: %s\n", xPrivateKey)
-log.Printf("xPublicKey: %s\n", xPublicKey)
+// Never log raw keys. Use a small fingerprint to confirm success.
+fingerprint := sha256.Sum256([]byte(xPublicKey))
+log.Printf("Generated HD key pair (xPriv length: %d, xPub fingerprint: %x)", len(xPrivateKey), fingerprint[:8])
 ```
 
 This section shows the direct use of `bip32.GenerateHDKeyPair`. This function creates a new master HD key from a randomly generated seed of the given length. It returns the extended private key (xPriv) and the corresponding extended public key (xPub) as strings.
@@ -35,11 +35,11 @@ To run this example:
 ```bash
 go run generate_hd_key.go
 ```
-The output will be the newly generated xPrivateKey and xPublicKey strings. Each run will produce a different key pair.
+The output will confirm the generated key lengths and show a short fingerprint of the xPub. Each run will produce a different key pair, so securely store the raw keys instead of logging them.
 
 **Note**:
-- The generated xPrivateKey is the master private key for an HD wallet structure. It should be kept extremely secure.
-- The xPublicKey can be used to derive child public keys without exposing the private key.
+- The generated xPrivateKey is the master private key for an HD wallet structure. It should be kept extremely secure and never logged in plaintext.
+- The xPublicKey can be used to derive child public keys without exposing the private key. Only expose fingerprints when confirming values in logs.
 - `bip32.SecureSeedLength` is typically 32 bytes (256 bits) or 64 bytes (512 bits) for strong security.
 
 ## Integration Steps
