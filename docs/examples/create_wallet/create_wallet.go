@@ -68,7 +68,7 @@ func main() {
 	// The DeriveChildFromPath method handles string paths.
 	derivedKey, err := masterKey.DeriveChildFromPath(derivationPathStr)
 	if err != nil {
-		log.Fatalf("Failed to derive key for path %s: %v", derivationPathStr, err)
+		log.Fatal("Failed to derive key for requested path; aborting to protect sensitive data")
 	}
 
 	// Get the private key from the derived extended key
