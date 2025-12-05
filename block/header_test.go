@@ -2,6 +2,7 @@ package block
 
 import (
 	"encoding/hex"
+	"strings"
 	"testing"
 )
 
@@ -108,5 +109,31 @@ func TestHeaderPrevBlockAndMerkleRoot(t *testing.T) {
 	prevBlockStr := header.PrevHash.String()
 	if prevBlockStr != expectedPrevBlock {
 		t.Errorf("PrevBlock = %s, want %s", prevBlockStr, expectedPrevBlock)
+	}
+}
+
+func TestHeaderString(t *testing.T) {
+	genesisHex := "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
+
+	header, err := NewHeaderFromHex(genesisHex)
+	if err != nil {
+		t.Fatalf("NewHeaderFromHex() error = %v", err)
+	}
+
+	str := header.String()
+	if str == "" {
+		t.Error("String() returned empty string")
+	}
+
+	expectedHash := "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+	if !strings.Contains(str, expectedHash) {
+		t.Errorf("String() should contain hash %s, got %s", expectedHash, str)
+	}
+}
+
+func TestNewHeaderFromHexInvalid(t *testing.T) {
+	_, err := NewHeaderFromHex("invalid hex")
+	if err == nil {
+		t.Error("NewHeaderFromHex() with invalid hex should return error")
 	}
 }

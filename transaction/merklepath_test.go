@@ -296,3 +296,25 @@ func TestMerklePathCombine(t *testing.T) {
 		}
 	})
 }
+
+func TestMerklePathClone(t *testing.T) {
+	t.Run("clones nil merkle path", func(t *testing.T) {
+		var mp *MerklePath
+		clone := mp.Clone()
+		require.Nil(t, clone)
+	})
+
+	t.Run("clones valid merkle path", func(t *testing.T) {
+		original, err := NewMerklePathFromHex(BRC74Hex)
+		require.NoError(t, err)
+
+		clone := original.Clone()
+		require.NotNil(t, clone)
+		require.Equal(t, original.BlockHeight, clone.BlockHeight)
+		require.Equal(t, len(original.Path), len(clone.Path))
+
+		// Verify modifying clone doesn't affect original
+		clone.BlockHeight = 999999
+		require.NotEqual(t, original.BlockHeight, clone.BlockHeight)
+	})
+}

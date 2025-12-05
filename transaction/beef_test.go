@@ -267,6 +267,26 @@ func TestBeefClone(t *testing.T) {
 	original, err := NewBeefFromBytes(beefBytes)
 	require.NoError(t, err)
 
+	// Test cloning with nil fields by adding a BeefTx with minimal data
+	nilFieldsTxID := chainhash.HashH([]byte("test-nil-fields"))
+	original.Transactions[nilFieldsTxID] = &BeefTx{
+		DataFormat:  TxIDOnly,
+		KnownTxID:   nil,
+		InputTxids:  nil,
+		Transaction: nil,
+	}
+
+	// Test cloning with InputTxids populated
+	inputTxidsTxID := chainhash.HashH([]byte("test-input-txids"))
+	knownID := chainhash.HashH([]byte("known-id"))
+	inputID1 := chainhash.HashH([]byte("input-1"))
+	original.Transactions[inputTxidsTxID] = &BeefTx{
+		DataFormat:  TxIDOnly,
+		KnownTxID:   &knownID,
+		InputTxids:  []*chainhash.Hash{&inputID1, nil},
+		Transaction: nil,
+	}
+
 	// Clone the object
 	clone := original.Clone()
 
