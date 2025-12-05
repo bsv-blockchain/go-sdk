@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.13 - 2025-12-05](#1213---2025-12-05)
 - [1.2.12 - 2025-11-12](#1212---2025-11-12)
 - [1.2.11 - 2025-10-27](#1211---2025-10-27)
 - [1.2.10 - 2025-09-16](#1210---2025-09-16)
@@ -46,6 +47,15 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.13] - 2025-12-05
+
+### Added
+- `Header` type in block package for 80-byte Bitcoin block header parsing
+- `MerklePath.Clone()` method for deep copying merkle paths
+
+### Fixed
+- `Beef.Clone()` now performs deep copy of all nested structures (BUMPs, transactions, input references)
 
 ## [1.2.12] - 2025-11-12
 

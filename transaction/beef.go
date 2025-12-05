@@ -1138,15 +1138,67 @@ txLoop:
 	return log
 }
 
+// Clone creates a deep copy of the Beef object.
+// All nested structures are copied, so modifications to the clone
+// will not affect the original.
 func (b *Beef) Clone() *Beef {
 	c := &Beef{
 		Version:      b.Version,
-		BUMPs:        append([]*MerklePath(nil), b.BUMPs...),
+		BUMPs:        make([]*MerklePath, len(b.BUMPs)),
 		Transactions: make(map[chainhash.Hash]*BeefTx, len(b.Transactions)),
 	}
-	for k, v := range b.Transactions {
-		c.Transactions[k] = v
+
+	// Deep clone BUMPs
+	for i, mp := range b.BUMPs {
+		c.BUMPs[i] = mp.Clone()
 	}
+
+	// First pass: ShallowClone all Transactions
+	for txid, beefTx := range b.Transactions {
+		cloned := &BeefTx{
+			DataFormat: beefTx.DataFormat,
+			BumpIndex:  beefTx.BumpIndex,
+		}
+
+		if beefTx.KnownTxID != nil {
+			id := *beefTx.KnownTxID
+			cloned.KnownTxID = &id
+		}
+
+		if beefTx.InputTxids != nil {
+			cloned.InputTxids = make([]*chainhash.Hash, len(beefTx.InputTxids))
+			for i, inputTxid := range beefTx.InputTxids {
+				if inputTxid != nil {
+					id := *inputTxid
+					cloned.InputTxids[i] = &id
+				}
+			}
+		}
+
+		if beefTx.Transaction != nil {
+			cloned.Transaction = beefTx.Transaction.ShallowClone()
+			// Link to cloned BUMP
+			if beefTx.DataFormat == RawTxAndBumpIndex && beefTx.BumpIndex >= 0 && beefTx.BumpIndex < len(c.BUMPs) {
+				cloned.Transaction.MerklePath = c.BUMPs[beefTx.BumpIndex]
+			}
+		}
+
+		c.Transactions[txid] = cloned
+	}
+
+	// Second pass: wire up SourceTransaction references
+	for _, beefTx := range c.Transactions {
+		if beefTx.Transaction != nil {
+			for _, input := range beefTx.Transaction.Inputs {
+				if input.SourceTXID != nil {
+					if sourceBeefTx, ok := c.Transactions[*input.SourceTXID]; ok && sourceBeefTx.Transaction != nil {
+						input.SourceTransaction = sourceBeefTx.Transaction
+					}
+				}
+			}
+		}
+	}
+
 	return c
 }
 
