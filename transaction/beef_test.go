@@ -1144,16 +1144,16 @@ func TestBeefAddComputedLeaves(t *testing.T) {
 	expectedParent := MerkleTreeParent(leaf1, leaf2)
 	require.Equal(t, expectedParent.String(), beef.BUMPs[0].Path[1][0].Hash.String(), "Parent hash should match")
 
-	// Test findLeafByOffset
-	foundLeaf := findLeafByOffset(beef.BUMPs[0].Path[0], 0)
+	// Test FindLeafByOffset
+	foundLeaf := beef.BUMPs[0].FindLeafByOffset(0, 0)
 	require.NotNil(t, foundLeaf, "Should find leaf at offset 0")
 	require.Equal(t, leaf1.String(), foundLeaf.Hash.String(), "Found leaf should match")
 
-	foundLeaf = findLeafByOffset(beef.BUMPs[0].Path[0], 1)
+	foundLeaf = beef.BUMPs[0].FindLeafByOffset(0, 1)
 	require.NotNil(t, foundLeaf, "Should find leaf at offset 1")
 	require.Equal(t, leaf2.String(), foundLeaf.Hash.String(), "Found leaf should match")
 
-	foundLeaf = findLeafByOffset(beef.BUMPs[0].Path[0], 2)
+	foundLeaf = beef.BUMPs[0].FindLeafByOffset(0, 2)
 	require.Nil(t, foundLeaf, "Should not find leaf at offset 2")
 
 	// Test case where right leaf is missing
