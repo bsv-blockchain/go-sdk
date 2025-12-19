@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // Outpoint represents a transaction output reference consisting of a transaction ID and output index
@@ -22,24 +21,26 @@ func (o *Outpoint) Equal(other *Outpoint) bool {
 	return o.Txid.Equal(other.Txid) && o.Index == other.Index
 }
 
-// TxBytes returns the outpoint as a byte slice in transaction format (little-endian)
-func (o *Outpoint) TxBytes() []byte {
+// Bytes returns the outpoint as 36 bytes (32-byte txid + 4-byte little-endian index)
+func (o *Outpoint) Bytes() []byte {
 	return binary.LittleEndian.AppendUint32(o.Txid.CloneBytes(), o.Index)
 }
 
-// NewOutpointFromBytes creates a new Outpoint from a 36-byte array in standard byte format (big-endian)
-func NewOutpointFromBytes(b [36]byte) (o *Outpoint) {
-	o = &Outpoint{
-		Index: binary.BigEndian.Uint32(b[32:]),
-	}
-	txid, _ := chainhash.NewHash(util.ReverseBytes(b[:32]))
-	o.Txid = *txid
-	return
+// TxBytes is an alias for Bytes for backward compatibility
+func (o *Outpoint) TxBytes() []byte {
+	return o.Bytes()
 }
 
-// Bytes returns the outpoint as a byte slice in standard format (big-endian)
-func (o *Outpoint) Bytes() []byte {
-	return binary.BigEndian.AppendUint32(util.ReverseBytes(o.Txid.CloneBytes()), o.Index)
+// NewOutpointFromBytes creates a new Outpoint from a 36-byte slice
+func NewOutpointFromBytes(b []byte) *Outpoint {
+	if len(b) != 36 {
+		return nil
+	}
+	o := &Outpoint{
+		Index: binary.LittleEndian.Uint32(b[32:]),
+	}
+	copy(o.Txid[:], b[:32])
+	return o
 }
 
 // OutpointFromString creates a new Outpoint from a string in the format "txid.outputIndex"
@@ -101,7 +102,7 @@ func (o *Outpoint) Scan(value any) error {
 	if b, ok := value.([]byte); !ok || len(b) != 36 {
 		return fmt.Errorf("invalid-outpoint")
 	} else {
-		op := NewOutpointFromBytes([36]byte(b))
+		op := NewOutpointFromBytes(b)
 		*o = *op
 		return nil
 	}

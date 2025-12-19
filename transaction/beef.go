@@ -1301,30 +1301,8 @@ func (b *Beef) GetValidTxids() []string {
 // AddComputedLeaves adds leaves that can be computed from row zero to the BUMP MerklePaths.
 func (b *Beef) AddComputedLeaves() {
 	for _, bump := range b.BUMPs {
-		for row := 1; row < len(bump.Path); row++ {
-			for _, leafL := range bump.Path[row-1] {
-				if leafL.Hash != nil && (leafL.Offset&1) == 0 {
-					leafR := findLeafByOffset(bump.Path[row-1], leafL.Offset+1)
-					offsetOnRow := leafL.Offset >> 1
-					if leafR != nil && leafR.Hash != nil && findLeafByOffset(bump.Path[row], offsetOnRow) == nil {
-						bump.Path[row] = append(bump.Path[row], &PathElement{
-							Offset: offsetOnRow,
-							Hash:   MerkleTreeParent(leafL.Hash, leafR.Hash),
-						})
-					}
-				}
-			}
-		}
+		bump.ComputeMissingHashes()
 	}
-}
-
-func findLeafByOffset(leaves []*PathElement, offset uint64) *PathElement {
-	for _, leaf := range leaves {
-		if leaf.Offset == offset {
-			return leaf
-		}
-	}
-	return nil
 }
 
 // Bytes returns the BEEF BRC-96 as a byte slice.

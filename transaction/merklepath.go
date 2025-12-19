@@ -343,3 +343,80 @@ func (m *MerklePath) Combine(other *MerklePath) (err error) {
 
 	return
 }
+
+// FindLeafByOffset finds a PathElement at the given offset in the specified level.
+// Returns nil if not found.
+func (mp *MerklePath) FindLeafByOffset(level int, offset uint64) *PathElement {
+	if level < 0 || level >= len(mp.Path) {
+		return nil
+	}
+	for _, leaf := range mp.Path[level] {
+		if leaf.Offset == offset {
+			return leaf
+		}
+	}
+	return nil
+}
+
+// AddLeaf adds a PathElement to the specified level.
+// Grows the Path slice if necessary to accommodate the level.
+func (mp *MerklePath) AddLeaf(level int, element *PathElement) {
+	// Grow Path slice if needed
+	for len(mp.Path) <= level {
+		mp.Path = append(mp.Path, []*PathElement{})
+	}
+	mp.Path[level] = append(mp.Path[level], element)
+}
+
+// ComputeMissingHashes walks up the tree from level 0 and computes parent hashes
+// where both children are present but the parent is missing.
+// This allows building a complete merkle path from sparse data.
+func (mp *MerklePath) ComputeMissingHashes() {
+	if len(mp.Path) < 2 {
+		return
+	}
+
+	for level := 1; level < len(mp.Path); level++ {
+		prevLevel := mp.Path[level-1]
+
+		for _, leftLeaf := range prevLevel {
+			// Only process left children (even offsets)
+			if leftLeaf.Hash == nil || (leftLeaf.Offset&1) != 0 {
+				continue
+			}
+
+			rightOffset := leftLeaf.Offset + 1
+			rightLeaf := mp.FindLeafByOffset(level-1, rightOffset)
+
+			parentOffset := leftLeaf.Offset >> 1
+
+			// Skip if parent already exists
+			if mp.FindLeafByOffset(level, parentOffset) != nil {
+				continue
+			}
+
+			// Compute parent if we have both children
+			if rightLeaf != nil && rightLeaf.Hash != nil {
+				parentHash := MerkleTreeParent(leftLeaf.Hash, rightLeaf.Hash)
+				mp.Path[level] = append(mp.Path[level], &PathElement{
+					Offset: parentOffset,
+					Hash:   parentHash,
+				})
+			} else if rightLeaf != nil && rightLeaf.Duplicate != nil && *rightLeaf.Duplicate {
+				// Handle duplicate case
+				parentHash := MerkleTreeParent(leftLeaf.Hash, leftLeaf.Hash)
+				mp.Path[level] = append(mp.Path[level], &PathElement{
+					Offset: parentOffset,
+					Hash:   parentHash,
+				})
+			}
+		}
+	}
+
+	// Sort each level by offset for consistency
+	for _, level := range mp.Path {
+		slices.SortFunc(level, func(a, b *PathElement) int {
+			return int(a.Offset) - int(b.Offset)
+		})
+	}
+}

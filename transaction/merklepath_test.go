@@ -318,3 +318,95 @@ func TestMerklePathClone(t *testing.T) {
 		require.NotEqual(t, original.BlockHeight, clone.BlockHeight)
 	})
 }
+
+func TestMerklePathAddLeafAndComputeMissingHashes(t *testing.T) {
+	t.Run("builds path from leaves and computes intermediate hashes", func(t *testing.T) {
+		// Create 4 leaf hashes
+		leaf0, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000001")
+		leaf1, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000002")
+		leaf2, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000003")
+		leaf3, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000004")
+
+		// Build the expected intermediate hashes
+		h01 := MerkleTreeParent(leaf0, leaf1)
+		h23 := MerkleTreeParent(leaf2, leaf3)
+		root := MerkleTreeParent(h01, h23)
+
+		// Create a MerklePath and add leaves at level 0
+		mp := &MerklePath{BlockHeight: 1000}
+
+		txidFlag := true
+		mp.AddLeaf(0, &PathElement{Offset: 0, Hash: leaf0})
+		mp.AddLeaf(0, &PathElement{Offset: 1, Hash: leaf1})
+		mp.AddLeaf(0, &PathElement{Offset: 2, Hash: leaf2, Txid: &txidFlag}) // Mark this as the tx we're proving
+		mp.AddLeaf(0, &PathElement{Offset: 3, Hash: leaf3})
+
+		// Ensure we have space for higher levels
+		mp.AddLeaf(1, &PathElement{}) // Placeholder to ensure level 1 exists
+		mp.AddLeaf(2, &PathElement{}) // Placeholder to ensure level 2 exists
+
+		// Remove the placeholder elements (they have zero offset and nil hash)
+		mp.Path[1] = []*PathElement{}
+		mp.Path[2] = []*PathElement{}
+
+		// Compute intermediate hashes
+		mp.ComputeMissingHashes()
+
+		// Verify level 1 has the two intermediate hashes
+		require.Len(t, mp.Path[1], 2, "Level 1 should have 2 hashes")
+		found01 := mp.FindLeafByOffset(1, 0)
+		require.NotNil(t, found01)
+		require.Equal(t, h01.String(), found01.Hash.String())
+
+		found23 := mp.FindLeafByOffset(1, 1)
+		require.NotNil(t, found23)
+		require.Equal(t, h23.String(), found23.Hash.String())
+
+		// Verify level 2 has the root
+		require.Len(t, mp.Path[2], 1, "Level 2 should have 1 hash (root)")
+		foundRoot := mp.FindLeafByOffset(2, 0)
+		require.NotNil(t, foundRoot)
+		require.Equal(t, root.String(), foundRoot.Hash.String())
+	})
+
+	t.Run("handles odd number of leaves with duplicate", func(t *testing.T) {
+		leaf0, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000001")
+		leaf1, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000002")
+		leaf2, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000003")
+
+		mp := &MerklePath{BlockHeight: 1000, Path: make([][]*PathElement, 3)}
+
+		dupFlag := true
+		mp.AddLeaf(0, &PathElement{Offset: 0, Hash: leaf0})
+		mp.AddLeaf(0, &PathElement{Offset: 1, Hash: leaf1})
+		mp.AddLeaf(0, &PathElement{Offset: 2, Hash: leaf2})
+		mp.AddLeaf(0, &PathElement{Offset: 3, Duplicate: &dupFlag}) // Duplicate of leaf2
+
+		mp.ComputeMissingHashes()
+
+		// h01 should be computed normally
+		h01 := MerkleTreeParent(leaf0, leaf1)
+		found01 := mp.FindLeafByOffset(1, 0)
+		require.NotNil(t, found01)
+		require.Equal(t, h01.String(), found01.Hash.String())
+
+		// h23 should use leaf2 twice (duplicate)
+		h23 := MerkleTreeParent(leaf2, leaf2)
+		found23 := mp.FindLeafByOffset(1, 1)
+		require.NotNil(t, found23)
+		require.Equal(t, h23.String(), found23.Hash.String())
+	})
+
+	t.Run("AddLeaf grows path slice as needed", func(t *testing.T) {
+		mp := &MerklePath{BlockHeight: 1000}
+
+		leaf, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000001")
+
+		// Add leaf at level 5 (should grow the slice)
+		mp.AddLeaf(5, &PathElement{Offset: 0, Hash: leaf})
+
+		require.Len(t, mp.Path, 6, "Path should have 6 levels (0-5)")
+		require.Len(t, mp.Path[5], 1, "Level 5 should have 1 element")
+		require.Equal(t, leaf.String(), mp.Path[5][0].Hash.String())
+	})
+}
