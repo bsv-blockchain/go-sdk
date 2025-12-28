@@ -48,10 +48,10 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 			tx.TotalOutputSatoshis()
 			if txFee, err := tx.GetFee(); err != nil {
 				return false, err
-			} else if cloneFee, err := clone.GetFee(); err != nil {
+			} else if requiredFee, err := clone.GetFee(); err != nil {
 				return false, err
-			} else if cloneFee < txFee {
-				return false, fmt.Errorf("fee is too low")
+			} else if txFee < requiredFee {
+				return false, fmt.Errorf("fee is too low: paid %d, required %d", txFee, requiredFee)
 			}
 		}
 
