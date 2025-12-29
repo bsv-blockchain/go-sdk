@@ -171,22 +171,37 @@ sequence:     %x
 
 // Bytes encodes the Input into a hex byte array.
 func (i *TransactionInput) Bytes(clear bool) []byte {
-	h := make([]byte, 0)
-
-	h = append(h, i.SourceTXID.CloneBytes()...)
-	h = append(h, util.LittleEndianBytes(i.SourceTxOutIndex, 4)...)
-	if clear {
-		h = append(h, 0x00)
+	// Calculate total size: 32 (txid) + 4 (index) + varint + script + 4 (sequence)
+	var scriptLen int
+	var varInt util.VarInt
+	var varIntLen int
+	if clear || i.UnlockingScript == nil {
+		varIntLen = 1
+		scriptLen = 0
 	} else {
-		if i.UnlockingScript == nil {
-			h = append(h, util.VarInt(0).Bytes()...)
-		} else {
-			h = append(h, util.VarInt(uint64(len(*i.UnlockingScript))).Bytes()...)
-			h = append(h, *i.UnlockingScript...)
-		}
+		scriptLen = len(*i.UnlockingScript)
+		varInt = util.VarInt(uint64(scriptLen))
+		varIntLen = varInt.Length()
+	}
+	totalLen := 32 + 4 + varIntLen + scriptLen + 4
+
+	h := make([]byte, totalLen)
+	copy(h[0:32], i.SourceTXID.CloneBytes())
+	binary.LittleEndian.PutUint32(h[32:36], i.SourceTxOutIndex)
+
+	offset := 36
+	if clear || i.UnlockingScript == nil {
+		h[offset] = 0x00
+		offset++
+	} else {
+		varInt.PutBytes(h[offset:])
+		offset += varIntLen
+		copy(h[offset:], *i.UnlockingScript)
+		offset += scriptLen
 	}
 
-	return append(h, util.LittleEndianBytes(i.SequenceNumber, 4)...)
+	binary.LittleEndian.PutUint32(h[offset:], i.SequenceNumber)
+	return h
 }
 
 func (i *TransactionInput) SetSourceTxOutput(txo *TransactionOutput) {

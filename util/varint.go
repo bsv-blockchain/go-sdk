@@ -103,6 +103,28 @@ func (v *VarInt) ReadFrom(r io.Reader) (int64, error) {
 	}
 }
 
+// PutBytes writes the VarInt to the destination buffer and returns the number of bytes written.
+// The destination buffer must be at least Length() bytes long.
+func (v VarInt) PutBytes(dst []byte) int {
+	if v < 0xfd {
+		dst[0] = byte(v)
+		return 1
+	}
+	if v < 0x10000 {
+		dst[0] = 0xfd
+		binary.LittleEndian.PutUint16(dst[1:3], uint16(v))
+		return 3
+	}
+	if v < 0x100000000 {
+		dst[0] = 0xfe
+		binary.LittleEndian.PutUint32(dst[1:5], uint32(v))
+		return 5
+	}
+	dst[0] = 0xff
+	binary.LittleEndian.PutUint64(dst[1:9], uint64(v))
+	return 9
+}
+
 // UpperLimitInc returns true if a number is at the
 // upper limit of a VarInt and will result in a VarInt
 // length change if incremented. The value returned will
