@@ -128,3 +128,35 @@ func TestVarInt_Size(t *testing.T) {
 		})
 	}
 }
+
+func TestVarInt_PutBytes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		value    uint64
+		expected []byte
+	}{
+		{"1 byte - zero", 0, []byte{0x00}},
+		{"1 byte - one", 1, []byte{0x01}},
+		{"1 byte - max", 252, []byte{0xfc}},
+		{"3 byte - min", 253, []byte{0xfd, 0xfd, 0x00}},
+		{"3 byte - max", 65535, []byte{0xfd, 0xff, 0xff}},
+		{"5 byte - min", 65536, []byte{0xfe, 0x00, 0x00, 0x01, 0x00}},
+		{"5 byte - max", 4294967295, []byte{0xfe, 0xff, 0xff, 0xff, 0xff}},
+		{"9 byte - min", 4294967296, []byte{0xff, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00}},
+		{"9 byte - max", 18446744073709551615, []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			v := util.VarInt(test.value)
+			buf := make([]byte, v.Length())
+			n := v.PutBytes(buf)
+			assert.Equal(t, len(test.expected), n)
+			assert.Equal(t, test.expected, buf)
+			// Verify PutBytes produces same result as Bytes()
+			assert.Equal(t, v.Bytes(), buf)
+		})
+	}
+}
