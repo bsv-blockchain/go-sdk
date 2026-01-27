@@ -53,7 +53,7 @@ func TestSPVVerifyWithInsufficientFee(t *testing.T) {
 	require.NoError(t, err)
 
 	feeModel := &feemodel.SatoshisPerKilobyte{
-		Satoshis: 1,
+		Satoshis: 100,
 	}
 
 	ctx := t.Context()

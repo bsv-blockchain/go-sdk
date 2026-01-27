@@ -382,51 +382,102 @@ func (tx *Transaction) ShallowClone() *Transaction {
 }
 
 func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended bool) []byte {
-	h := make([]byte, 0)
-
-	h = append(h, util.LittleEndianBytes(tx.Version, 4)...)
-
+	// First pass: calculate total size
+	totalLen := 4 // version
 	if extended {
-		h = append(h, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0xEF}...)
+		totalLen += 6 // extended header
 	}
+	totalLen += util.VarInt(uint64(len(tx.Inputs))).Length()
 
-	h = append(h, util.VarInt(uint64(len(tx.Inputs))).Bytes()...)
-
+	// Pre-calculate input sizes
+	inputBytes := make([][]byte, len(tx.Inputs))
 	for i, in := range tx.Inputs {
-		s := in.Bytes(lockingScript != nil)
+		inputBytes[i] = in.Bytes(lockingScript != nil)
 		if i == index && lockingScript != nil {
-			h = append(h, util.VarInt(uint64(len(lockingScript))).Bytes()...)
-			h = append(h, lockingScript...)
+			totalLen += util.VarInt(uint64(len(lockingScript))).Length() + len(lockingScript)
 		} else {
-			h = append(h, s...)
+			totalLen += len(inputBytes[i])
 		}
-
 		if extended {
-			b := make([]byte, 8)
+			totalLen += 8 // satoshis
 			sourceTxOut := in.SourceTxOutput()
 			if sourceTxOut != nil {
-				binary.LittleEndian.PutUint64(b, sourceTxOut.Satoshis)
-				h = append(h, b...)
-				l := uint64(len(*sourceTxOut.LockingScript))
-				h = append(h, util.VarInt(l).Bytes()...)
-				h = append(h, *sourceTxOut.LockingScript...)
+				scriptLen := len(*sourceTxOut.LockingScript)
+				totalLen += util.VarInt(uint64(scriptLen)).Length() + scriptLen
 			} else {
-				binary.LittleEndian.PutUint64(b, 0)
-				h = append(h, b...)
-				h = append(h, 0x00) // The length of the script is zero
+				totalLen += 1 // zero length varint
 			}
 		}
 	}
 
-	h = append(h, util.VarInt(uint64(len(tx.Outputs))).Bytes()...)
+	totalLen += util.VarInt(uint64(len(tx.Outputs))).Length()
 	for _, out := range tx.Outputs {
-		h = append(h, out.Bytes()...)
+		scriptLen := len(*out.LockingScript)
+		totalLen += 8 + util.VarInt(uint64(scriptLen)).Length() + scriptLen
+	}
+	totalLen += 4 // locktime
+
+	// Second pass: write data
+	h := make([]byte, totalLen)
+	offset := 0
+
+	binary.LittleEndian.PutUint32(h[offset:], tx.Version)
+	offset += 4
+
+	if extended {
+		copy(h[offset:], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0xEF})
+		offset += 6
 	}
 
-	lt := make([]byte, 4)
-	binary.LittleEndian.PutUint32(lt, tx.LockTime)
+	inputCountBytes := util.VarInt(uint64(len(tx.Inputs))).Bytes()
+	copy(h[offset:], inputCountBytes)
+	offset += len(inputCountBytes)
 
-	return append(h, lt...)
+	for i, in := range tx.Inputs {
+		if i == index && lockingScript != nil {
+			scriptLenBytes := util.VarInt(uint64(len(lockingScript))).Bytes()
+			copy(h[offset:], scriptLenBytes)
+			offset += len(scriptLenBytes)
+			copy(h[offset:], lockingScript)
+			offset += len(lockingScript)
+		} else {
+			copy(h[offset:], inputBytes[i])
+			offset += len(inputBytes[i])
+		}
+
+		if extended {
+			sourceTxOut := in.SourceTxOutput()
+			if sourceTxOut != nil {
+				binary.LittleEndian.PutUint64(h[offset:], sourceTxOut.Satoshis)
+				offset += 8
+				scriptLen := uint64(len(*sourceTxOut.LockingScript))
+				scriptLenBytes := util.VarInt(scriptLen).Bytes()
+				copy(h[offset:], scriptLenBytes)
+				offset += len(scriptLenBytes)
+				copy(h[offset:], *sourceTxOut.LockingScript)
+				offset += int(scriptLen)
+			} else {
+				binary.LittleEndian.PutUint64(h[offset:], 0)
+				offset += 8
+				h[offset] = 0x00
+				offset++
+			}
+		}
+	}
+
+	outputCountBytes := util.VarInt(uint64(len(tx.Outputs))).Bytes()
+	copy(h[offset:], outputCountBytes)
+	offset += len(outputCountBytes)
+
+	for _, out := range tx.Outputs {
+		outBytes := out.Bytes()
+		copy(h[offset:], outBytes)
+		offset += len(outBytes)
+	}
+
+	binary.LittleEndian.PutUint32(h[offset:], tx.LockTime)
+
+	return h
 }
 
 // Size will return the size of tx in bytes.

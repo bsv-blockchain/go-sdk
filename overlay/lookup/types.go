@@ -29,7 +29,7 @@ type LookupQuestion struct {
 // LookupFormula represents a formula for computing lookup results
 type LookupFormula struct {
 	Outpoint *transaction.Outpoint
-	History  func(beef []byte, outputIndex uint32, currentDepth uint32) bool
+	History  func(beef *transaction.Beef, outputIndex uint32, currentDepth uint32) bool
 	// HistoryDepth uint32
 }
 

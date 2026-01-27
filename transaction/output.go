@@ -77,13 +77,15 @@ script:    %s
 
 // Bytes encodes the Output into a byte array.
 func (o *TransactionOutput) Bytes() []byte {
-	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, o.Satoshis)
+	scriptLen := len(*o.LockingScript)
+	varInt := util.VarInt(uint64(scriptLen))
+	varIntLen := varInt.Length()
+	totalLen := 8 + varIntLen + scriptLen
 
-	h := make([]byte, 0)
-	h = append(h, b...)
-	h = append(h, util.VarInt(uint64(len(*o.LockingScript))).Bytes()...)
-	h = append(h, *o.LockingScript...)
+	h := make([]byte, totalLen)
+	binary.LittleEndian.PutUint64(h[0:8], o.Satoshis)
+	varInt.PutBytes(h[8:])
+	copy(h[8+varIntLen:], *o.LockingScript)
 
 	return h
 }

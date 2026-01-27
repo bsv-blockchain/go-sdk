@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.15 - 2026-01-27](#1215---2026-01-27)
 - [1.2.14 - 2025-12-19](#1214---2025-12-19)
 - [1.2.13 - 2025-12-05](#1213---2025-12-05)
 - [1.2.12 - 2025-11-12](#1212---2025-11-12)
@@ -48,6 +49,21 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.15] - 2026-01-27
+
+### Fixed
+- SPV fee validation now only validates fees on the root transaction, not ancestor transactions in the BEEF chain. Previously, historical ancestors with different fee rates could incorrectly fail validation.
+
+### Added
+- `VarInt.PutBytes()` method for direct buffer writing without allocation
+- `Beef.MergeTransactionWithTxid()` and `Beef.MergeBeefTxWithTxid()` methods to merge transactions without recomputing TxID
+- Test coverage for `VarInt.PutBytes()` method
+
+### Changed
+- Optimized `Transaction.Bytes()`, `Input.Bytes()`, and `Output.Bytes()` methods with pre-calculated size and pre-allocated buffers
+- Optimized BEEF serialization with pre-allocated buffers
+- `LookupFormula.History` now uses `*Beef` type instead of `[]byte`
 
 ## [1.2.14] - 2025-12-19
 
