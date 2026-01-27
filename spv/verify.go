@@ -18,6 +18,21 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 		chainTracker = chaintracker.NewWhatsOnChain(chaintracker.MainNet, "")
 	}
 
+	// Validate fees only on the root transaction, not ancestors
+	if feeModel != nil {
+		txFee, err := t.GetFee()
+		if err != nil {
+			return false, err
+		}
+		requiredFee, err := feeModel.ComputeFee(t)
+		if err != nil {
+			return false, err
+		}
+		if txFee < requiredFee {
+			return false, fmt.Errorf("fee is too low: paid %d, required %d", txFee, requiredFee)
+		}
+	}
+
 	for len(txQueue) > 0 {
 		tx := txQueue[0]
 		txQueue = txQueue[1:]
@@ -36,22 +51,6 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 				continue
 			} else {
 				return false, fmt.Errorf("invalid merkle path for transaction %s", txidStr)
-			}
-		}
-
-		if feeModel != nil {
-			clone := tx.ShallowClone()
-			clone.Outputs[0].Change = true
-			if err := clone.Fee(feeModel, transaction.ChangeDistributionEqual); err != nil {
-				return false, err
-			}
-			tx.TotalOutputSatoshis()
-			if txFee, err := tx.GetFee(); err != nil {
-				return false, err
-			} else if requiredFee, err := clone.GetFee(); err != nil {
-				return false, err
-			} else if txFee < requiredFee {
-				return false, fmt.Errorf("fee is too low: paid %d, required %d", txFee, requiredFee)
 			}
 		}
 
