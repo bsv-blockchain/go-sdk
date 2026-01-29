@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bsv-blockchain/go-sdk/auth"
@@ -135,12 +136,19 @@ func WithHttpClientTransport(transport http.RoundTripper) func(*AuthFetchOptions
 type AuthFetch struct {
 	sessionManager        auth.SessionManager
 	wallet                wallet.Interface
-	callbacks             map[string]struct{ resolve, reject func(interface{}) }
+	callbacks             sync.Map // map[string]authCallback
 	certificatesReceived  []*certificates.VerifiableCertificate
 	requestedCertificates *utils.RequestedCertificateSet
-	peers                 map[string]*AuthPeer
-	logger                *slog.Logger // Logger for debug/warning messages
+	peers                 sync.Map // map[string]*AuthPeer
+	logger                *slog.Logger
 	client                *http.Client
+	certsMu               sync.Mutex // Protects certificatesReceived only
+}
+
+// authCallback holds resolve/reject functions for a pending request.
+type authCallback struct {
+	resolve func(interface{})
+	reject  func(interface{})
 }
 
 // New constructs a new AuthFetch instance.
@@ -166,9 +174,7 @@ func New(w wallet.Interface, opts ...func(*AuthFetchOptions)) *AuthFetch {
 		wallet:                w,
 		sessionManager:        options.SessionManager,
 		requestedCertificates: options.CertificatesToRequest,
-		callbacks:             make(map[string]struct{ resolve, reject func(interface{}) }),
 		certificatesReceived:  []*certificates.VerifiableCertificate{},
-		peers:                 make(map[string]*AuthPeer),
 		client:                options.HttpClient,
 	}
 }
@@ -224,8 +230,10 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 
 		// Create new transport for this base URL if needed
 		var peerToUse *AuthPeer
-		if _, exists := a.peers[baseURL]; !exists {
-			// Create a peer for the request
+		var isNew bool
+		if existing, ok := a.peers.Load(baseURL); ok {
+			peerToUse = existing.(*AuthPeer)
+		} else {
 			transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
 				BaseURL: baseURL,
 				Client:  a.client,
@@ -246,21 +254,35 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 				Logger:                a.logger,
 			}
 
-			peerToUse = &AuthPeer{
+			newPeer := &AuthPeer{
 				Peer:                       auth.NewPeer(peerOpts),
 				PendingCertificateRequests: []bool{},
 			}
-			a.peers[baseURL] = peerToUse
+			// Use LoadOrStore to handle race conditions
+			actual, loaded := a.peers.LoadOrStore(baseURL, newPeer)
+			if loaded {
+				peerToUse = actual.(*AuthPeer)
+			} else {
+				peerToUse = newPeer
+				isNew = true
+			}
+		}
 
+		if isNew {
 			// Set up certificate received listener
 			peerToUse.Peer.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
+				a.certsMu.Lock()
 				a.certificatesReceived = append(a.certificatesReceived, certs...)
+				a.certsMu.Unlock()
 				return nil
 			})
 
 			// Set up certificate requested listener
 			peerToUse.Peer.ListenForCertificatesRequested(func(_ context.Context, verifier *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
-				a.peers[baseURL].PendingCertificateRequests = append(a.peers[baseURL].PendingCertificateRequests, true)
+				if p, ok := a.peers.Load(baseURL); ok {
+					peer := p.(*AuthPeer)
+					peer.PendingCertificateRequests = append(peer.PendingCertificateRequests, true)
+				}
 
 				certificatesToInclude, err := utils.GetVerifiableCertificates(
 					ctx,
@@ -274,33 +296,37 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					return err
 				}
 
-				err = a.peers[baseURL].Peer.SendCertificateResponse(ctx, verifier, certificatesToInclude)
-				if err != nil {
-					return err
+				if p, ok := a.peers.Load(baseURL); ok {
+					peer := p.(*AuthPeer)
+					err = peer.Peer.SendCertificateResponse(ctx, verifier, certificatesToInclude)
+					if err != nil {
+						return err
+					}
 				}
 
 				// Give the backend time to process certificates
 				go func() {
 					time.Sleep(500 * time.Millisecond)
-					if len(a.peers[baseURL].PendingCertificateRequests) > 0 {
-						a.peers[baseURL].PendingCertificateRequests = a.peers[baseURL].PendingCertificateRequests[1:]
+					if p, ok := a.peers.Load(baseURL); ok {
+						peer := p.(*AuthPeer)
+						if len(peer.PendingCertificateRequests) > 0 {
+							peer.PendingCertificateRequests = peer.PendingCertificateRequests[1:]
+						}
 					}
 				}()
 				return nil
 			})
 		} else {
 			// Check if there's a session associated with this baseURL
-			supportsMutualAuth := a.peers[baseURL].SupportsMutualAuth
-			if supportsMutualAuth != nil && !*supportsMutualAuth {
+			if peerToUse.SupportsMutualAuth != nil && !*peerToUse.SupportsMutualAuth {
 				// Use standard fetch if mutual authentication is not supported
-				resp, err := a.handleFetchAndValidate(urlStr, config, a.peers[baseURL])
+				resp, err := a.handleFetchAndValidate(urlStr, config, peerToUse)
 				responseChan <- struct {
 					resp *http.Response
 					err  error
 				}{resp, err}
 				return
 			}
-			peerToUse = a.peers[baseURL]
 		}
 
 		// Generate request nonce
@@ -325,11 +351,8 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		}
 
 		// Setup callback for this request
-		a.callbacks[requestNonceBase64] = struct {
-			resolve func(any)
-			reject  func(any)
-		}{
-			resolve: func(resp any) {
+		a.callbacks.Store(requestNonceBase64, authCallback{
+			resolve: func(resp interface{}) {
 				if httpResp, ok := resp.(*http.Response); ok {
 					responseChan <- struct {
 						resp *http.Response
@@ -342,7 +365,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					}{nil, fmt.Errorf("invalid response type")}
 				}
 			},
-			reject: func(err any) {
+			reject: func(err interface{}) {
 				if errStr, ok := err.(string); ok {
 					responseChan <- struct {
 						resp *http.Response
@@ -360,7 +383,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					}{nil, fmt.Errorf("%v", err)}
 				}
 			},
-		}
+		})
 
 		// Set up listener for response
 		var listenerID int32
@@ -368,9 +391,12 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			peerToUse.Peer.StopListeningForGeneralMessages(listenerID)
 
 			if senderPublicKey != nil {
-				a.peers[baseURL].IdentityKey = senderPublicKey.ToDERHex()
-				supportsMutualAuth := true
-				a.peers[baseURL].SupportsMutualAuth = &supportsMutualAuth
+				if p, ok := a.peers.Load(baseURL); ok {
+					peer := p.(*AuthPeer)
+					peer.IdentityKey = senderPublicKey.ToDERHex()
+					supportsMutualAuth := true
+					peer.SupportsMutualAuth = &supportsMutualAuth
+				}
 			}
 
 			requestIDFromResponse, response, err := authpayload.ToHTTPResponse(payload, authpayload.WithSenderPublicKey(senderPublicKey))
@@ -384,29 +410,37 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			}
 
 			// Resolve with the response
-			if callback, ok := a.callbacks[requestNonceBase64]; ok {
-				callback.resolve(response)
-				delete(a.callbacks, requestNonceBase64)
+			if cb, ok := a.callbacks.LoadAndDelete(requestNonceBase64); ok {
+				cb.(authCallback).resolve(response)
 			}
 
 			return nil
 		})
 
 		// Make sure no certificate requests are pending
-		if len(peerToUse.PendingCertificateRequests) > 0 {
+		hasPending := func() bool {
+			if p, ok := a.peers.Load(baseURL); ok {
+				return len(p.(*AuthPeer).PendingCertificateRequests) > 0
+			}
+			return false
+		}
+		if hasPending() {
 			ticker := time.NewTicker(100 * time.Millisecond)
 			defer ticker.Stop()
 
 			for {
 				<-ticker.C
-				if len(peerToUse.PendingCertificateRequests) == 0 {
+				if !hasPending() {
 					break
 				}
 			}
 		}
 
 		// Send the request
-		identityKey := a.peers[baseURL].IdentityKey
+		var identityKey string
+		if p, ok := a.peers.Load(baseURL); ok {
+			identityKey = p.(*AuthPeer).IdentityKey
+		}
 		var idKeyObject *ec.PublicKey
 		var toPublicKeyError error
 		if identityKey != "" {
@@ -420,7 +454,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		if err != nil {
 			if strings.Contains(err.Error(), "Session not found for nonce") {
 				// Session expired, retry with a new session
-				delete(a.peers, baseURL)
+				a.peers.Delete(baseURL)
 
 				// Set up retry counter if not set
 				if config.RetryCounter == nil {
@@ -484,10 +518,9 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 
 	// Get or create a peer for this base URL
 	var peerToUse *AuthPeer
-	if peer, exists := a.peers[baseURLStr]; exists {
-		peerToUse = peer
+	if existing, ok := a.peers.Load(baseURLStr); ok {
+		peerToUse = existing.(*AuthPeer)
 	} else {
-		// Create a new transport for this base URL
 		transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
 			BaseURL: baseURLStr,
 		})
@@ -495,7 +528,6 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 			return nil, fmt.Errorf("failed to create transport: %w", err)
 		}
 
-		// Create a new peer with the transport
 		peerOpts := &auth.PeerOptions{
 			Wallet:                a.wallet,
 			Transport:             transport,
@@ -503,11 +535,16 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 			SessionManager:        a.sessionManager,
 		}
 
-		peerToUse = &AuthPeer{
+		newPeer := &AuthPeer{
 			Peer:                       auth.NewPeer(peerOpts),
 			PendingCertificateRequests: []bool{},
 		}
-		a.peers[baseURLStr] = peerToUse
+		actual, loaded := a.peers.LoadOrStore(baseURLStr, newPeer)
+		if loaded {
+			peerToUse = actual.(*AuthPeer)
+		} else {
+			peerToUse = newPeer
+		}
 	}
 
 	// Create a channel for waiting for certificates
@@ -520,7 +557,9 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 	var callbackID int32
 	callbackID = peerToUse.Peer.ListenForCertificatesReceived(func(_ context.Context, senderPublicKey *ec.PublicKey, certs []*certificates.VerifiableCertificate) error {
 		peerToUse.Peer.StopListeningForCertificatesReceived(callbackID)
+		a.certsMu.Lock()
 		a.certificatesReceived = append(a.certificatesReceived, certs...)
+		a.certsMu.Unlock()
 		certChan <- struct {
 			certs []*certificates.VerifiableCertificate
 			err   error
@@ -561,6 +600,8 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 
 // ConsumeReceivedCertificates returns any certificates collected thus far, then clears them out.
 func (a *AuthFetch) ConsumeReceivedCertificates() []*certificates.VerifiableCertificate {
+	a.certsMu.Lock()
+	defer a.certsMu.Unlock()
 	certs := a.certificatesReceived
 	a.certificatesReceived = []*certificates.VerifiableCertificate{}
 	return certs
