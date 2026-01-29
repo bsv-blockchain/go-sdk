@@ -29,7 +29,7 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 			return false, err
 		}
 		if txFee < requiredFee {
-			return false, fmt.Errorf("fee is too low: paid %d, required %d", txFee, requiredFee)
+			return false, fmt.Errorf("%w: paid %d, required %d", ErrFeeTooLow, txFee, requiredFee)
 		}
 	}
 
@@ -50,7 +50,7 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 				verifiedTxids[txidStr] = struct{}{}
 				continue
 			} else {
-				return false, fmt.Errorf("invalid merkle path for transaction %s", txidStr)
+				return false, fmt.Errorf("%w for transaction %s", ErrInvalidMerklePath, txidStr)
 			}
 		}
 
@@ -58,7 +58,7 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 		for vin, input := range tx.Inputs {
 			sourceOutput := input.SourceTxOutput()
 			if sourceOutput == nil {
-				return false, fmt.Errorf("input %d has no source transaction", vin)
+				return false, fmt.Errorf("%w: input %d", ErrMissingSourceTransaction, vin)
 			}
 			inputTotal += sourceOutput.Satoshis
 
@@ -73,8 +73,7 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 				interpreter.WithForkID(),
 				interpreter.WithAfterGenesis(),
 			); err != nil {
-				fmt.Println(err)
-				return false, err
+				return false, fmt.Errorf("%w: %w", ErrScriptVerificationFailed, err)
 			}
 		}
 	}

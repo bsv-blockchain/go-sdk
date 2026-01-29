@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.16 - 2026-01-29](#1216---2026-01-29)
 - [1.2.15 - 2026-01-27](#1215---2026-01-27)
 - [1.2.14 - 2025-12-19](#1214---2025-12-19)
 - [1.2.13 - 2025-12-05](#1213---2025-12-05)
@@ -49,6 +50,17 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.16] - 2026-01-29
+
+### Added
+- Typed sentinel errors for SPV package: `ErrFeeTooLow`, `ErrInvalidMerklePath`, `ErrMissingSourceTransaction`, `ErrScriptVerificationFailed`
+- Typed sentinel error for certificates package: `ErrFieldDecryption`
+
+### Changed
+- SPV errors now wrap sentinel errors with context, enabling `errors.Is()` checking instead of string matching
+- Certificate field decryption errors now wrap `ErrFieldDecryption` sentinel
+- Updated tests to use `errors.Is()` instead of `strings.Contains()`
 
 ## [1.2.15] - 2026-01-27
 

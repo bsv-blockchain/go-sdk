@@ -202,9 +202,8 @@ func TestMasterCertificate(t *testing.T) {
 			if err == nil {
 				t.Fatal("Expected error for empty masterKeyring, got nil")
 			}
-			// Check if the error message contains the expected substring for missing key
-			if !strings.Contains(err.Error(), certificates.ErrMissingMasterKeyring.Error()) {
-				t.Errorf("Expected error containing 'key not found in keyring', got %v", err)
+			if !errors.Is(err, certificates.ErrMissingMasterKeyring) {
+				t.Errorf("Expected ErrMissingMasterKeyring, got %v", err)
 			}
 		})
 

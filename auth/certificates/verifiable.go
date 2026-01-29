@@ -104,8 +104,7 @@ func (vc *VerifiableCertificate) DecryptFields(
 		// 1. Decrypt the field revelation key using the verifier's wallet.
 		encryptedKeyBytes, err := base64.StdEncoding.DecodeString(string(encryptedKeyBase64))
 		if err != nil {
-			// Wrap error to provide context, matching TS error style
-			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: failed to decode base64 key for field '%s': %w", fieldName, err)
+			return nil, fmt.Errorf("%w: failed to decode base64 key for field '%s': %w", ErrFieldDecryption, fieldName, err)
 		}
 
 		// Get encryption details (ProtocolID and KeyID) for this specific field.
@@ -124,11 +123,10 @@ func (vc *VerifiableCertificate) DecryptFields(
 			Ciphertext:     encryptedKeyBytes,
 		}, "")
 		if err != nil {
-			// Wrap error from the wallet's Decrypt method, matching TS error style
-			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: wallet decryption failed for field '%s': %w", fieldName, err)
+			return nil, fmt.Errorf("%w: wallet decryption failed for field '%s': %w", ErrFieldDecryption, fieldName, err)
 		}
 		if decryptResult == nil {
-			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: wallet decryption returned nil for field '%s'", fieldName)
+			return nil, fmt.Errorf("%w: wallet decryption returned nil for field '%s'", ErrFieldDecryption, fieldName)
 		}
 		fieldRevelationKey := decryptResult.Plaintext
 
@@ -137,18 +135,17 @@ func (vc *VerifiableCertificate) DecryptFields(
 		if !exists {
 			// This case should ideally not happen if the keyring is consistent with fields,
 			// but handle it defensively.
-			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: field '%s' not found in certificate fields", fieldName)
+			return nil, fmt.Errorf("%w: field '%s' not found in certificate fields", ErrFieldDecryption, fieldName)
 		}
 		encryptedFieldValueBytes, err := base64.StdEncoding.DecodeString(string(encryptedFieldValueBase64))
 		if err != nil {
-			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: failed to decode base64 field value for '%s': %w", fieldName, err)
+			return nil, fmt.Errorf("%w: failed to decode base64 field value for '%s': %w", ErrFieldDecryption, fieldName, err)
 		}
 
 		symmetricKey := primitives.NewSymmetricKey(fieldRevelationKey)
 		decryptedFieldBytes, err := symmetricKey.Decrypt(encryptedFieldValueBytes)
 		if err != nil {
-			// Wrap error from symmetric decryption, matching TS error style
-			return nil, fmt.Errorf("failed to decrypt selectively revealed certificate fields using keyring: symmetric decryption failed for field '%s': %w", fieldName, err)
+			return nil, fmt.Errorf("%w: symmetric decryption failed for field '%s': %w", ErrFieldDecryption, fieldName, err)
 		}
 
 		// Store the successfully decrypted plaintext value.
