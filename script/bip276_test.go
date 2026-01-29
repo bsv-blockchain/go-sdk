@@ -33,8 +33,9 @@ func TestEncodeBIP276(t *testing.T) {
 				Data:    []byte("fake script"),
 			},
 		)
-
-		require.Equal(t, "bitcoin-script:020166616b65207363726970742577a444", s)
+		// BIP276 format: <prefix>:<version><network><data><checksum>
+		// version=01, network=02, data=66616b6520736372697074
+		require.Equal(t, "bitcoin-script:010266616b652073637269707494becee6", s)
 	})
 
 	t.Run("invalid version = 0", func(t *testing.T) {
@@ -148,8 +149,7 @@ func TestDecodeBIP276(t *testing.T) {
 	})
 
 	t.Run("decode network and version field order", func(t *testing.T) {
-		// Bug #286: Network and Version fields are swapped during decode
-		// Encode format is: prefix:network(2hex)version(2hex)data...checksum
+		// BIP276 format: prefix:version(2hex)network(2hex)data...checksum
 		original := script.BIP276{
 			Prefix:  script.PrefixScript,
 			Version: 1,

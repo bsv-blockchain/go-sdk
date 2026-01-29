@@ -54,7 +54,8 @@ func EncodeBIP276(script BIP276) string {
 }
 
 func createBIP276(script BIP276) (string, string) {
-	payload := fmt.Sprintf("%s:%.2x%.2x%x", script.Prefix, script.Network, script.Version, script.Data)
+	// BIP276 format: <prefix>:<version hex><network hex><data hex><checksum hex>
+	payload := fmt.Sprintf("%s:%.2x%.2x%x", script.Prefix, script.Version, script.Network, script.Data)
 	return payload, hex.EncodeToString(crypto.Sha256d([]byte(payload))[:4])
 }
 
@@ -73,16 +74,17 @@ func DecodeBIP276(text string) (*BIP276, error) {
 		Prefix: res[1],
 	}
 
-	network, err := strconv.ParseUint(res[2], 16, 8)
-	if err != nil {
-		return nil, err
-	}
-	s.Network = int(network)
-	version, err := strconv.ParseUint(res[3], 16, 8)
+	// BIP276 format: <prefix>:<version hex><network hex><data hex><checksum hex>
+	version, err := strconv.ParseUint(res[2], 16, 8)
 	if err != nil {
 		return nil, err
 	}
 	s.Version = int(version)
+	network, err := strconv.ParseUint(res[3], 16, 8)
+	if err != nil {
+		return nil, err
+	}
+	s.Network = int(network)
 	data, err := hex.DecodeString(res[4])
 	if err != nil {
 		return nil, err
