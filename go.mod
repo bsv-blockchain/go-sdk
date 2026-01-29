@@ -9,7 +9,7 @@ require (
 	golang.org/x/sync v0.19.0
 )
 
-require golang.org/x/net v0.48.0
+require golang.org/x/net v0.49.0
 
 require (
 	github.com/pkg/errors v0.9.1
