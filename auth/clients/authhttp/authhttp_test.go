@@ -185,3 +185,101 @@ func TestFetchWithRetryCounterAtZero(t *testing.T) {
 	require.Nil(t, resp)
 	require.Contains(t, err.Error(), "maximum number of retries")
 }
+
+// TestAuthFetchConcurrentMapAccess tests for data races in concurrent map access
+// Run with: go test -race -run TestAuthFetchConcurrentMapAccess
+func TestAuthFetchConcurrentMapAccess(t *testing.T) {
+	// Set up dependencies
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
+
+	// Create AuthFetch instance
+	authFetch := New(mockWallet)
+
+	// Test concurrent access to peers map
+	t.Run("concurrent peers map access", func(t *testing.T) {
+		done := make(chan bool)
+		const numGoroutines = 10
+
+		// Spawn goroutines that read/write the peers map concurrently
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer func() { done <- true }()
+				baseURL := fmt.Sprintf("https://example%d.com", id%3) // Use 3 URLs to force contention
+
+				// Simulate the pattern from Fetch(): check if exists, then write
+				for j := 0; j < 100; j++ {
+					// Read operation (like line 227: if _, exists := a.peers[baseURL]; !exists)
+					_ = authFetch.GetPeer(baseURL)
+
+					// Write operation (like line 253: a.peers[baseURL] = peerToUse)
+					authFetch.SetPeer(baseURL, &AuthPeer{
+						IdentityKey: fmt.Sprintf("key-%d-%d", id, j),
+					})
+
+					// Another read (like line 371: a.peers[baseURL].IdentityKey)
+					if peer := authFetch.GetPeer(baseURL); peer != nil {
+						_ = peer.IdentityKey
+					}
+				}
+			}(i)
+		}
+
+		// Wait for all goroutines
+		for i := 0; i < numGoroutines; i++ {
+			<-done
+		}
+	})
+
+	// Test concurrent access to callbacks map
+	t.Run("concurrent callbacks map access", func(t *testing.T) {
+		done := make(chan bool)
+		const numGoroutines = 10
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer func() { done <- true }()
+
+				for j := 0; j < 100; j++ {
+					key := fmt.Sprintf("nonce-%d-%d", id, j%5) // Use 5 keys to force contention
+
+					// Write operation (like line 328)
+					authFetch.SetCallback(key, func(resp interface{}) {}, func(err interface{}) {})
+
+					// Read operation (like line 387)
+					authFetch.GetCallback(key)
+
+					// Delete operation (like line 389)
+					authFetch.DeleteCallback(key)
+				}
+			}(i)
+		}
+
+		for i := 0; i < numGoroutines; i++ {
+			<-done
+		}
+	})
+
+	// Test concurrent access to certificatesReceived slice
+	t.Run("concurrent certificatesReceived access", func(t *testing.T) {
+		done := make(chan bool)
+		const numGoroutines = 10
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer func() { done <- true }()
+
+				for j := 0; j < 100; j++ {
+					// Append operation (like line 257)
+					authFetch.AppendCertificatesReceived(&certificates.VerifiableCertificate{})
+
+					// Read and clear operation (like ConsumeReceivedCertificates)
+					_ = authFetch.ConsumeReceivedCertificates()
+				}
+			}(i)
+		}
+
+		for i := 0; i < numGoroutines; i++ {
+			<-done
+		}
+	})
+}
