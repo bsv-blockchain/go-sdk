@@ -73,12 +73,12 @@ func DecodeBIP276(text string) (*BIP276, error) {
 		Prefix: res[1],
 	}
 
-	network, err := strconv.ParseInt(res[2], 16, 64)
+	network, err := strconv.ParseUint(res[2], 16, 8)
 	if err != nil {
 		return nil, err
 	}
 	s.Network = int(network)
-	version, err := strconv.ParseInt(res[3], 16, 64)
+	version, err := strconv.ParseUint(res[3], 16, 8)
 	if err != nil {
 		return nil, err
 	}
