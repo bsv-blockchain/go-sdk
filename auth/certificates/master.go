@@ -19,6 +19,7 @@ var (
 	ErrKeyNotFoundInKeyring     = errors.New("key not found in keyring")
 	ErrDecryptionFailed         = errors.New("decryption failed")
 	ErrEncryptionFailed         = errors.New("encryption failed")
+	ErrFieldDecryption          = errors.New("failed to decrypt certificate fields")
 )
 
 // MasterCertificate extends the Certificate struct to include a master keyring

@@ -3,7 +3,7 @@ package certificates
 import (
 	"bytes"
 	"encoding/base64"
-	"strings"
+	"errors"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -256,8 +256,8 @@ func TestVerifiableCertificate(t *testing.T) {
 			if err == nil {
 				t.Fatal("Expected DecryptFields to fail with wrong wallet, but it succeeded")
 			}
-			if !strings.Contains(err.Error(), "failed to decrypt selectively revealed certificate fields using keyring") {
-				t.Errorf("Expected error to contain failure message, got: %v", err)
+			if !errors.Is(err, ErrFieldDecryption) {
+				t.Errorf("Expected ErrFieldDecryption, got: %v", err)
 			}
 		})
 
@@ -321,8 +321,8 @@ func TestVerifiableCertificate(t *testing.T) {
 			if err == nil {
 				t.Fatal("Expected DecryptFields to fail with tampered keyring, but it succeeded")
 			}
-			if !strings.Contains(err.Error(), "failed to decrypt selectively revealed certificate fields using keyring") {
-				t.Errorf("Expected error to contain failure message, got: %v", err)
+			if !errors.Is(err, ErrFieldDecryption) {
+				t.Errorf("Expected ErrFieldDecryption, got: %v", err)
 			}
 			require.Error(t, err)
 		})
