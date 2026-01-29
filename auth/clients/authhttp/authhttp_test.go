@@ -208,17 +208,17 @@ func TestAuthFetchConcurrentMapAccess(t *testing.T) {
 
 				// Simulate the pattern from Fetch(): check if exists, then write
 				for j := 0; j < 100; j++ {
-					// Read operation (like line 227: if _, exists := a.peers[baseURL]; !exists)
-					_ = authFetch.GetPeer(baseURL)
+					// Read operation
+					authFetch.peers.Load(baseURL)
 
-					// Write operation (like line 253: a.peers[baseURL] = peerToUse)
-					authFetch.SetPeer(baseURL, &AuthPeer{
+					// Write operation
+					authFetch.peers.Store(baseURL, &AuthPeer{
 						IdentityKey: fmt.Sprintf("key-%d-%d", id, j),
 					})
 
-					// Another read (like line 371: a.peers[baseURL].IdentityKey)
-					if peer := authFetch.GetPeer(baseURL); peer != nil {
-						_ = peer.IdentityKey
+					// Another read
+					if peer, ok := authFetch.peers.Load(baseURL); ok {
+						_ = peer.(*AuthPeer).IdentityKey
 					}
 				}
 			}(i)
@@ -242,14 +242,17 @@ func TestAuthFetchConcurrentMapAccess(t *testing.T) {
 				for j := 0; j < 100; j++ {
 					key := fmt.Sprintf("nonce-%d-%d", id, j%5) // Use 5 keys to force contention
 
-					// Write operation (like line 328)
-					authFetch.SetCallback(key, func(resp interface{}) {}, func(err interface{}) {})
+					// Write operation
+					authFetch.callbacks.Store(key, authCallback{
+						resolve: func(resp interface{}) {},
+						reject:  func(err interface{}) {},
+					})
 
-					// Read operation (like line 387)
-					authFetch.GetCallback(key)
+					// Read operation
+					authFetch.callbacks.Load(key)
 
-					// Delete operation (like line 389)
-					authFetch.DeleteCallback(key)
+					// Delete operation
+					authFetch.callbacks.Delete(key)
 				}
 			}(i)
 		}
@@ -269,8 +272,10 @@ func TestAuthFetchConcurrentMapAccess(t *testing.T) {
 				defer func() { done <- true }()
 
 				for j := 0; j < 100; j++ {
-					// Append operation (like line 257)
-					authFetch.AppendCertificatesReceived(&certificates.VerifiableCertificate{})
+					// Append operation
+					authFetch.certsMu.Lock()
+					authFetch.certificatesReceived = append(authFetch.certificatesReceived, &certificates.VerifiableCertificate{})
+					authFetch.certsMu.Unlock()
 
 					// Read and clear operation (like ConsumeReceivedCertificates)
 					_ = authFetch.ConsumeReceivedCertificates()
