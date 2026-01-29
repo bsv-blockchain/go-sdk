@@ -69,7 +69,10 @@ func TestNew(t *testing.T) {
 	require.Equal(t, mockWallet, authFetch.wallet)
 	require.Equal(t, mockSessionManager, authFetch.sessionManager)
 	require.Equal(t, requestedCerts, authFetch.requestedCertificates)
-	require.Empty(t, authFetch.peers)
+	// sync.Map is empty by default, verify by checking no items exist
+	var peersCount int
+	authFetch.peers.Range(func(_, _ interface{}) bool { peersCount++; return true })
+	require.Zero(t, peersCount, "peers map should be empty")
 	require.Empty(t, authFetch.certificatesReceived)
 }
 
