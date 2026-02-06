@@ -25,6 +25,19 @@ const (
 
 	ForkID Flag = 0x40
 
+	// Chronicle is the flag that enables the Original Transaction Digest Algorithm (OTDA).
+	// When set, signatures use the legacy (pre-UAHF) digest algorithm.
+	// This is part of the Chronicle protocol upgrade.
+
+	Chronicle Flag = 0x20
+
+	// Chronicle combined flags
+
+	AllChronicle          Flag = 0x1 | 0x20
+	NoneChronicle         Flag = 0x2 | 0x20
+	SingleChronicle       Flag = 0x3 | 0x20
+	AnyOneCanPayChronicle Flag = 0x80 | 0x20
+
 	// Mask defines the number of bits of the hash type which is used
 	// to identify which outputs are signed.
 	Mask = 0x1f
@@ -66,6 +79,18 @@ func (f Flag) String() string {
 		return "NONE|FORKID|ANYONECANPAY"
 	case SingleForkID | AnyOneCanPay:
 		return "SINGLE|FORKID|ANYONECANPAY"
+	case AllChronicle:
+		return "ALL|CHRONICLE"
+	case NoneChronicle:
+		return "NONE|CHRONICLE"
+	case SingleChronicle:
+		return "SINGLE|CHRONICLE"
+	case AllChronicle | AnyOneCanPay:
+		return "ALL|CHRONICLE|ANYONECANPAY"
+	case NoneChronicle | AnyOneCanPay:
+		return "NONE|CHRONICLE|ANYONECANPAY"
+	case SingleChronicle | AnyOneCanPay:
+		return "SINGLE|CHRONICLE|ANYONECANPAY"
 	}
 
 	return "ALL"

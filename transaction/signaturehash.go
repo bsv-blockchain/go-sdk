@@ -20,7 +20,13 @@ type sigHashFunc func(inputIdx uint32, shf sighash.Flag) ([]byte, error)
 // The legacy serialization will be used for txs pre-fork
 // whereas the new serialization will be used for post-fork
 // txs (and they should include the sighash_forkid flag).
+// Chronicle flag enables the Original Transaction Digest Algorithm (OTDA)
+// which uses the legacy serialization format.
 func (tx *Transaction) sigStrat(shf sighash.Flag) sigHashFunc {
+	if shf.Has(sighash.Chronicle) {
+		// OTDA uses legacy format
+		return tx.CalcInputPreimageLegacy
+	}
 	if shf.Has(sighash.ForkID) {
 		return tx.CalcInputPreimage
 	}

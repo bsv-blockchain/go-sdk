@@ -196,6 +196,17 @@ const (
 	OpNOP8                byte = 0xb7 // 183
 	OpNOP9                byte = 0xb8 // 184
 	OpNOP10               byte = 0xb9 // 185
+
+	// Chronicle restored opcodes - aliases for NOP4-NOP8
+	// These share byte values with the NOP opcodes above.
+	// The interpreter behavior depends on the UTXOAfterChronicle flag.
+	// Note: OpLEFTSTR/OpRIGHTSTR names avoid conflict with existing OP_LEFT/OP_RIGHT
+	// aliases for OpNUM2BIN/OpBIN2NUM.
+	OpSUBSTR    byte = 0xb3 // 179 - same as OpNOP4
+	OpLEFTSTR   byte = 0xb4 // 180 - same as OpNOP5
+	OpRIGHTSTR  byte = 0xb5 // 181 - same as OpNOP6
+	OpLSHIFTNUM byte = 0xb6 // 182 - same as OpNOP7
+	OpRSHIFTNUM byte = 0xb7 // 183 - same as OpNOP8
 	OpUNKNOWN186          byte = 0xba // 186
 	OpUNKNOWN187          byte = 0xbb // 187
 	OpUNKNOWN188          byte = 0xbc // 188
@@ -462,6 +473,12 @@ var OpCodeStrings = map[string]byte{
 	"OP_NOP8":                OpNOP8,
 	"OP_NOP9":                OpNOP9,
 	"OP_NOP10":               OpNOP10,
+	// Chronicle restored opcodes (use SUBSTR/LEFTSTR/RIGHTSTR to avoid conflict with existing OP_LEFT/OP_RIGHT aliases)
+	"OP_SUBSTR":              OpSUBSTR,
+	"OP_LEFTSTR":             OpLEFTSTR,
+	"OP_RIGHTSTR":            OpRIGHTSTR,
+	"OP_LSHIFTNUM":           OpLSHIFTNUM,
+	"OP_RSHIFTNUM":           OpRSHIFTNUM,
 	"OP_UNKNOWN186":          OpUNKNOWN186,
 	"OP_UNKNOWN187":          OpUNKNOWN187,
 	"OP_UNKNOWN188":          OpUNKNOWN188,

@@ -38,6 +38,12 @@ func init() {
 	opcodeByName["OP_CHECKSEQUENCEVERIFY"] = script.OpCHECKSEQUENCEVERIFY
 	opcodeByName["OP_RESERVED"] = script.OpRESERVED
 
+	// Chronicle opcode aliases for test compatibility
+	opcodeByName["OP_SUBSTR"] = script.OpSUBSTR
+	opcodeByName["OP_LEFTSTR"] = script.OpLEFTSTR
+	opcodeByName["OP_RIGHTSTR"] = script.OpRIGHTSTR
+	opcodeByName["OP_LSHIFTNUM"] = script.OpLSHIFTNUM
+	opcodeByName["OP_RSHIFTNUM"] = script.OpRSHIFTNUM
 }
 
 // parseShortForm parses a string as as used in the Bitcoin Core reference tests
@@ -191,6 +197,8 @@ func parseScriptFlags(flagStr string) (scriptflag.Flag, error) {
 			flags |= scriptflag.VerifyStrictEncoding
 		case "UTXO_AFTER_GENESIS":
 			flags |= scriptflag.UTXOAfterGenesis
+		case "UTXO_AFTER_CHRONICLE":
+			flags |= scriptflag.UTXOAfterChronicle
 		case "MINIMALIF":
 			flags |= scriptflag.VerifyMinimalIf
 		case "SIGHASH_FORKID":

@@ -78,6 +78,11 @@ const (
 	// VerifyMinimalIf defines the enforcement of any conditional statement using the
 	// minimum required data.
 	VerifyMinimalIf
+
+	// UTXOAfterChronicle defines that the utxo was created after
+	// the Chronicle upgrade. This enables restored opcodes like OP_VER,
+	// OP_SUBSTR, OP_LEFT, OP_RIGHT, OP_2MUL, OP_2DIV, etc.
+	UTXOAfterChronicle
 )
 
 // HasFlag returns whether the Flags has the passed flag set.

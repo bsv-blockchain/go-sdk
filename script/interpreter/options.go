@@ -33,6 +33,14 @@ func WithAfterGenesis() ExecutionOptionFunc {
 	}
 }
 
+// WithAfterChronicle configures execution for post-Chronicle UTXOs.
+// This implies WithAfterGenesis() since Chronicle activates after Genesis.
+func WithAfterChronicle() ExecutionOptionFunc {
+	return func(p *execOpts) {
+		p.flags.AddFlag(scriptflag.UTXOAfterGenesis | scriptflag.UTXOAfterChronicle)
+	}
+}
+
 // WithForkID configure the execution to allow a tx with a fork id.
 func WithForkID() ExecutionOptionFunc {
 	return func(p *execOpts) {

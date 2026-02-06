@@ -58,7 +58,7 @@ func (b *beforeGenesisConfig) MaxScriptElementSize() int {
 }
 
 func (a *afterGenesisConfig) MaxScriptNumberLength() int {
-	return 750 * 1000 // 750 * 1Kb
+	return 32 * 1024 * 1024 // 32MB (Chronicle upgrade)
 }
 
 func (b *beforeGenesisConfig) MaxScriptNumberLength() int {

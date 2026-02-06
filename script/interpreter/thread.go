@@ -14,6 +14,19 @@ import (
 // halfOrder is used to tame ECDSA malleability (see BIP0062).
 var halfOrder = new(big.Int).Rsh(ec.S256().N, 1)
 
+// ChronicleVersionThreshold is the minimum transaction version that opts out of
+// malleability restrictions. Transactions with Version > ChronicleVersionThreshold
+// disable: CleanStack, LowS, NullFail, MinimalIf, MinimalData, and SigPushOnly.
+const ChronicleVersionThreshold uint32 = 0x01000000
+
+// chronicleMalleabilityFlags are the flags that Chronicle transactions opt out of.
+var chronicleMalleabilityFlags = scriptflag.VerifyCleanStack |
+	scriptflag.VerifyLowS |
+	scriptflag.VerifyNullFail |
+	scriptflag.VerifyMinimalIf |
+	scriptflag.VerifyMinimalData |
+	scriptflag.VerifySigPushOnly
+
 type thread struct {
 	dstack stack // data stack
 	astack stack // alt stack
@@ -127,6 +140,12 @@ func (o execOpts) validate() error {
 
 // hasFlag returns whether the script engine instance has the passed flag set.
 func (t *thread) hasFlag(flag scriptflag.Flag) bool {
+	// Chronicle transactions opt out of malleability flags
+	if t.tx != nil && t.tx.Version > ChronicleVersionThreshold {
+		if flag&chronicleMalleabilityFlags != 0 {
+			return false
+		}
+	}
 	return t.flags.HasFlag(flag)
 }
 
