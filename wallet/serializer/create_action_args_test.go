@@ -135,6 +135,19 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with reference",
+			args: &wallet.CreateActionArgs{
+				Description: "transaction with reference",
+				Reference:   ptr("custom-reference-123"),
+				Outputs: []wallet.CreateActionOutput{
+					{
+						LockingScript: lockingScript,
+						Satoshis:      500,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -210,4 +223,8 @@ func TestDeserializeCreateActionArgsErrors(t *testing.T) {
 			require.Contains(t, err.Error(), tt.err, "error message should contain expected substring")
 		})
 	}
+}
+
+func ptr(s string) *string {
+	return &s
 }

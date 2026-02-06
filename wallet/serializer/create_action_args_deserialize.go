@@ -3,6 +3,7 @@ package serializer
 import (
 	"errors"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -46,6 +47,14 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 		return nil, fmt.Errorf("error deserializing options: %w", err)
 	}
 	args.Options = options
+
+	// Read reference (optional - only if data is available for backward ts compatibility)
+	if !messageReader.IsComplete() {
+		ref := messageReader.ReadOptionalString()
+		if ref != "" {
+			args.Reference = &ref
+		}
+	}
 
 	messageReader.CheckComplete()
 	if messageReader.Err != nil {
