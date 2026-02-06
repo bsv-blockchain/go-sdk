@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.17 - 2026-02-06](#1217---2026-02-06)
 - [1.2.16 - 2026-01-29](#1216---2026-01-29)
 - [1.2.15 - 2026-01-27](#1215---2026-01-27)
 - [1.2.14 - 2025-12-19](#1214---2025-12-19)
@@ -50,6 +51,12 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.17] - 2026-02-06
+
+### Added
+- Optional `Reference` field on `CreateActionArgs` and `ListActionsArgs` for associating custom reference identifiers with wallet actions (#289)
+- `ReadOptionalString` method on `ReaderHoldError` for deserializing optional string fields
 
 ## [1.2.16] - 2026-01-29
 
