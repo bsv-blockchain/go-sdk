@@ -69,7 +69,10 @@ func TestNew(t *testing.T) {
 	require.Equal(t, mockWallet, authFetch.wallet)
 	require.Equal(t, mockSessionManager, authFetch.sessionManager)
 	require.Equal(t, requestedCerts, authFetch.requestedCertificates)
-	require.Empty(t, authFetch.peers)
+	// sync.Map is empty by default, verify by checking no items exist
+	var peersCount int
+	authFetch.peers.Range(func(_, _ interface{}) bool { peersCount++; return true })
+	require.Zero(t, peersCount, "peers map should be empty")
 	require.Empty(t, authFetch.certificatesReceived)
 }
 
@@ -184,4 +187,107 @@ func TestFetchWithRetryCounterAtZero(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, resp)
 	require.Contains(t, err.Error(), "maximum number of retries")
+}
+
+// TestAuthFetchConcurrentMapAccess tests for data races in concurrent map access
+// Run with: go test -race -run TestAuthFetchConcurrentMapAccess
+func TestAuthFetchConcurrentMapAccess(t *testing.T) {
+	// Set up dependencies
+	mockWallet := wallet.NewTestWalletForRandomKey(t)
+
+	// Create AuthFetch instance
+	authFetch := New(mockWallet)
+
+	// Test concurrent access to peers map
+	t.Run("concurrent peers map access", func(t *testing.T) {
+		done := make(chan bool)
+		const numGoroutines = 10
+
+		// Spawn goroutines that read/write the peers map concurrently
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer func() { done <- true }()
+				baseURL := fmt.Sprintf("https://example%d.com", id%3) // Use 3 URLs to force contention
+
+				// Simulate the pattern from Fetch(): check if exists, then write
+				for j := 0; j < 100; j++ {
+					// Read operation
+					authFetch.peers.Load(baseURL)
+
+					// Write operation
+					authFetch.peers.Store(baseURL, &AuthPeer{
+						IdentityKey: fmt.Sprintf("key-%d-%d", id, j),
+					})
+
+					// Another read
+					if peer, ok := authFetch.peers.Load(baseURL); ok {
+						_ = peer.(*AuthPeer).IdentityKey
+					}
+				}
+			}(i)
+		}
+
+		// Wait for all goroutines
+		for i := 0; i < numGoroutines; i++ {
+			<-done
+		}
+	})
+
+	// Test concurrent access to callbacks map
+	t.Run("concurrent callbacks map access", func(t *testing.T) {
+		done := make(chan bool)
+		const numGoroutines = 10
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer func() { done <- true }()
+
+				for j := 0; j < 100; j++ {
+					key := fmt.Sprintf("nonce-%d-%d", id, j%5) // Use 5 keys to force contention
+
+					// Write operation
+					authFetch.callbacks.Store(key, authCallback{
+						resolve: func(resp interface{}) {},
+						reject:  func(err interface{}) {},
+					})
+
+					// Read operation
+					authFetch.callbacks.Load(key)
+
+					// Delete operation
+					authFetch.callbacks.Delete(key)
+				}
+			}(i)
+		}
+
+		for i := 0; i < numGoroutines; i++ {
+			<-done
+		}
+	})
+
+	// Test concurrent access to certificatesReceived slice
+	t.Run("concurrent certificatesReceived access", func(t *testing.T) {
+		done := make(chan bool)
+		const numGoroutines = 10
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer func() { done <- true }()
+
+				for j := 0; j < 100; j++ {
+					// Append operation
+					authFetch.certsMu.Lock()
+					authFetch.certificatesReceived = append(authFetch.certificatesReceived, &certificates.VerifiableCertificate{})
+					authFetch.certsMu.Unlock()
+
+					// Read and clear operation (like ConsumeReceivedCertificates)
+					_ = authFetch.ConsumeReceivedCertificates()
+				}
+			}(i)
+		}
+
+		for i := 0; i < numGoroutines; i++ {
+			<-done
+		}
+	})
 }
