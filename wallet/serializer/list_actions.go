@@ -48,6 +48,11 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	w.WriteOptionalUint32(args.Offset)
 	w.WriteOptionalBool(args.SeekPermission)
 
+	// Serialize reference (only if non-nil for backward ts compatibility)
+	if args.Reference != nil {
+		w.WriteOptionalString(*args.Reference)
+	}
+
 	return w.Buf, nil
 }
 
@@ -82,6 +87,14 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	args.Limit = r.ReadOptionalUint32()
 	args.Offset = r.ReadOptionalUint32()
 	args.SeekPermission = r.ReadOptionalBool()
+
+	// Deserialize reference (optional - only if data is available for backward ts compatibility)
+	if !r.IsComplete() {
+		ref := r.ReadOptionalString()
+		if ref != "" {
+			args.Reference = &ref
+		}
+	}
 
 	r.CheckComplete()
 	if r.Err != nil {

@@ -2,6 +2,8 @@ package serializer
 
 import (
 	"encoding/hex"
+	"testing"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -9,7 +11,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 type ListActionArgsSerializeTest struct {
@@ -61,6 +62,13 @@ func TestListActionArgsSerializeAndDeserialize(t *testing.T) {
 				Limit:                            nil,
 				Offset:                           nil,
 				SeekPermission:                   nil,
+			},
+		},
+		{
+			name: "with reference",
+			args: wallet.ListActionsArgs{
+				Labels:    []string{"label1"},
+				Reference: ptr("custom-action-reference-456"),
 			},
 		},
 	}
