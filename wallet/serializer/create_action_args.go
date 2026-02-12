@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -36,6 +37,11 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 	// Serialize options
 	if err := serializeCreateActionOptions(paramWriter, args.Options); err != nil {
 		return nil, fmt.Errorf("failed to serialize create action options: %w", err)
+	}
+
+	// Serialize reference (only if non-nil for backward ts compatibility)
+	if args.Reference != nil {
+		paramWriter.WriteOptionalString(*args.Reference)
 	}
 
 	return paramWriter.Buf, nil

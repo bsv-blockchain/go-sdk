@@ -172,6 +172,7 @@ type CreateActionArgs struct {
 	Version     *uint32              `json:"version,omitempty"`
 	Labels      []string             `json:"labels,omitempty"`
 	Options     *CreateActionOptions `json:"options,omitempty"`
+	Reference   *string              `json:"reference,omitempty"`
 }
 
 // CreateActionResult contains the results of creating a transaction
@@ -315,6 +316,7 @@ type ListActionsArgs struct {
 	Limit                            *uint32   `json:"limit,omitempty"` // Default 10, max 10000
 	Offset                           *uint32   `json:"offset,omitempty"`
 	SeekPermission                   *bool     `json:"seekPermission,omitempty"` // Default true
+	Reference                        *string   `json:"reference,omitempty"`
 }
 
 // ListActionsResult contains a paginated list of wallet transactions matching the query.
