@@ -6,6 +6,7 @@ package interpreter
 
 import (
 	"errors"
+	"math/big"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/script"
@@ -982,6 +983,137 @@ func TestExecute(t *testing.T) {
 			require.Equal(t, beforeScript, afterScript)
 
 			require.NoError(t, err)
+		})
+	}
+}
+
+// TestLargeStackDataNUM2BIN tests that large data items can be created on the stack
+// using NUM2BIN when AfterGenesis is enabled. This is a regression test for issue #261.
+// See: https://github.com/bsv-blockchain/go-sdk/issues/261
+func TestLargeStackDataNUM2BIN(t *testing.T) {
+	t.Parallel()
+
+	// Script template from issue #261:
+	// Locking: 0x4d656d6f727920486f67 DROP DUP TOALTSTACK NUM2BIN RIPEMD160 FROMALTSTACK DUP TOALTSTACK NUM2BIN SHA1 FROMALTSTACK NUM2BIN SHA256 4 SPLIT DROP 0NOTEQUAL
+	// Unlocking: [parent_txid] 10000000
+	//
+	// This script:
+	// 1. Pushes "Memory Hog" then drops it
+	// 2. Duplicates the size (10000000) and moves one copy to alt stack
+	// 3. Uses NUM2BIN to expand the txid to 10MB
+	// 4. Hashes with RIPEMD160, then expands again, hashes with SHA1, expands again, hashes with SHA256
+	// 5. Takes first 4 bytes and checks if non-zero
+
+	tests := []struct {
+		name           string
+		size           int64
+		withAfterGen   bool
+		expectError    bool
+		errorContains  string
+	}{
+		{
+			name:         "100KB with AfterGenesis succeeds",
+			size:         100000,
+			withAfterGen: true,
+			expectError:  false,
+		},
+		{
+			name:          "100KB without AfterGenesis fails with element size limit",
+			size:          100000,
+			withAfterGen:  false,
+			expectError:   true,
+			errorContains: "n is larger than the max of 520",
+		},
+		{
+			name:         "10MB with AfterGenesis succeeds",
+			size:         10000000,
+			withAfterGen: true,
+			expectError:  false,
+		},
+		{
+			name:          "10MB without AfterGenesis fails with element size limit",
+			size:          10000000,
+			withAfterGen:  false,
+			expectError:   true,
+			errorContains: "n is larger than the max of 520",
+		},
+		{
+			// This test documents the "cannot fit it into n sized array" error.
+			// It occurs when the target size is smaller than the minimal encoding
+			// of the input data. A 32-byte txid interpreted as a number requires
+			// ~32 bytes to encode, so trying to fit it into 4 bytes fails.
+			name:          "target size smaller than input encoding fails with cannot fit error",
+			size:          4,
+			withAfterGen:  true,
+			expectError:   true,
+			errorContains: "cannot fit it into n sized array",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Build the locking script from issue #261
+			// 0x4d656d6f727920486f67 = "Memory Hog"
+			// Script: "Memory Hog" DROP DUP TOALTSTACK NUM2BIN RIPEMD160 FROMALTSTACK DUP TOALTSTACK NUM2BIN SHA1 FROMALTSTACK NUM2BIN SHA256 4 SPLIT DROP 0NOTEQUAL
+			lockingScript, err := script.NewFromASM("4d656d6f727920486f67 OP_DROP OP_DUP OP_TOALTSTACK OP_NUM2BIN OP_RIPEMD160 OP_FROMALTSTACK OP_DUP OP_TOALTSTACK OP_NUM2BIN OP_SHA1 OP_FROMALTSTACK OP_NUM2BIN OP_SHA256 OP_4 OP_SPLIT OP_DROP OP_0NOTEQUAL")
+			require.NoError(t, err)
+
+			// Build the unlocking script: [32-byte data] [size]
+			// We use a simple 32-byte value as the "parent txid"
+			unlockingScript := &script.Script{}
+			testData := make([]byte, 32)
+			for i := range testData {
+				testData[i] = byte(i + 1) // Non-zero data so final result is non-zero
+			}
+			err = unlockingScript.AppendPushData(testData)
+			require.NoError(t, err)
+
+			// Push the size as a script number
+			sizeNum := &ScriptNumber{Val: big.NewInt(tt.size), AfterGenesis: true}
+			err = unlockingScript.AppendPushData(sizeNum.Bytes())
+			require.NoError(t, err)
+
+			// Create a minimal transaction
+			tx := &transaction.Transaction{
+				Version: 1,
+				Inputs: []*transaction.TransactionInput{{
+					SourceTxOutIndex: 0,
+					UnlockingScript:  unlockingScript,
+					SequenceNumber:   0xffffffff,
+				}},
+				Outputs: []*transaction.TransactionOutput{{
+					Satoshis:      1000,
+					LockingScript: lockingScript,
+				}},
+				LockTime: 0,
+			}
+
+			prevOutput := &transaction.TransactionOutput{
+				Satoshis:      2000,
+				LockingScript: lockingScript,
+			}
+
+			// Execute with appropriate flags
+			var execErr error
+			if tt.withAfterGen {
+				execErr = NewEngine().Execute(
+					WithTx(tx, 0, prevOutput),
+					WithForkID(),
+					WithAfterGenesis(),
+				)
+			} else {
+				execErr = NewEngine().Execute(
+					WithTx(tx, 0, prevOutput),
+					WithForkID(),
+				)
+			}
+
+			if tt.expectError {
+				require.Error(t, execErr)
+				require.Contains(t, execErr.Error(), tt.errorContains)
+			} else {
+				require.NoError(t, execErr)
+			}
 		})
 	}
 }

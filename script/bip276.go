@@ -39,7 +39,7 @@ const NetworkMainnet = 1
 // valid for use on the test network.
 const NetworkTestnet = 2
 
-var validBIP276 = regexp.MustCompile(`^(.+?):(\d{2})(\d{2})([0-9A-Fa-f]+)([0-9A-Fa-f]{8})$`)
+var validBIP276 = regexp.MustCompile(`^(.+?):([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]*)([0-9A-Fa-f]{8})$`)
 
 // EncodeBIP276 is used to encode specific (non-standard) scripts in BIP276 format.
 // See https://github.com/moneybutton/bips/blob/master/bip-0276.mediawiki
@@ -54,7 +54,8 @@ func EncodeBIP276(script BIP276) string {
 }
 
 func createBIP276(script BIP276) (string, string) {
-	payload := fmt.Sprintf("%s:%.2x%.2x%x", script.Prefix, script.Network, script.Version, script.Data)
+	// BIP276 format: <prefix>:<version hex><network hex><data hex><checksum hex>
+	payload := fmt.Sprintf("%s:%.2x%.2x%x", script.Prefix, script.Version, script.Network, script.Data)
 	return payload, hex.EncodeToString(crypto.Sha256d([]byte(payload))[:4])
 }
 
@@ -73,16 +74,17 @@ func DecodeBIP276(text string) (*BIP276, error) {
 		Prefix: res[1],
 	}
 
-	version, err := strconv.Atoi(res[2])
+	// BIP276 format: <prefix>:<version hex><network hex><data hex><checksum hex>
+	version, err := strconv.ParseUint(res[2], 16, 8)
 	if err != nil {
 		return nil, err
 	}
-	s.Version = version
-	network, err := strconv.Atoi(res[3])
+	s.Version = int(version)
+	network, err := strconv.ParseUint(res[3], 16, 8)
 	if err != nil {
 		return nil, err
 	}
-	s.Network = network
+	s.Network = int(network)
 	data, err := hex.DecodeString(res[4])
 	if err != nil {
 		return nil, err
