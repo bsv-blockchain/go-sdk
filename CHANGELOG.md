@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.18 - 2026-02-12](#1218---2026-02-12)
 - [1.2.17 - 2026-02-06](#1217---2026-02-06)
 - [1.2.16 - 2026-01-29](#1216---2026-01-29)
 - [1.2.15 - 2026-01-27](#1215---2026-01-27)
@@ -51,6 +52,16 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.18] - 2026-02-12
+
+### Fixed
+- BIP276 decoding: corrected field order to match spec, fixed prefix validation and network byte parsing (#286)
+- AuthFetch data race: replaced plain map with `sync.Map` for thread-safe nonce tracking (#262)
+- CodeQL integer conversion security alerts in BIP276 (#286)
+
+### Added
+- Test for large stack data NUM2BIN operations (#261)
 
 ## [1.2.17] - 2026-02-06
 
