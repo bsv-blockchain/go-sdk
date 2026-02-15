@@ -159,6 +159,7 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 	wg.Wait()
 
 	successfulHosts := make([]*Response, 0, len(interestedHosts))
+	close(results) // CHANGE. Must close results channel before ranging. Will cause broadcast() to hang indefinitely.
 	for result := range results {
 		if result != nil {
 			successfulHosts = append(successfulHosts, result)
