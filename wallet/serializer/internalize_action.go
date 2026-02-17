@@ -50,6 +50,11 @@ func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte,
 	w.WriteString(args.Description)
 	w.WriteOptionalBool(args.SeekPermission)
 
+	// Serialize reference (only if non-nil for backward ts compatibility)
+	if args.Reference != nil {
+		w.WriteOptionalString(*args.Reference)
+	}
+
 	return w.Buf, nil
 }
 
@@ -108,6 +113,14 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	args.Labels = r.ReadStringSlice()
 	args.Description = r.ReadString()
 	args.SeekPermission = r.ReadOptionalBool()
+
+	// Deserialize reference (optional - only if data is available for backward ts compatibility)
+	if !r.IsComplete() {
+		ref := r.ReadOptionalString()
+		if ref != "" {
+			args.Reference = &ref
+		}
+	}
 
 	r.CheckComplete()
 	if r.Err != nil {

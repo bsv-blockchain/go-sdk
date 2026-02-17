@@ -1,17 +1,19 @@
 package serializer
 
 import (
+	"testing"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestInternalizeActionArgs(t *testing.T) {
 	pk, err := ec.NewPrivateKey()
 	require.NoError(t, err, "creating new private key should not error")
 	senderKey := pk.PubKey()
+	testRef := "test-reference-123"
 	tests := []struct {
 		name string
 		args *wallet.InternalizeActionArgs
@@ -42,6 +44,26 @@ func TestInternalizeActionArgs(t *testing.T) {
 			Description:    "test description",
 			Labels:         []string{"label1", "label2"},
 			SeekPermission: util.BoolPtr(true),
+		},
+	}, {
+		name: "full args with reference",
+		args: &wallet.InternalizeActionArgs{
+			Tx: []byte{1, 2, 3, 4},
+			Outputs: []wallet.InternalizeOutput{
+				{
+					OutputIndex: 0,
+					Protocol:    wallet.InternalizeProtocolWalletPayment,
+					PaymentRemittance: &wallet.Payment{
+						DerivationPrefix:  []byte("prefix"),
+						DerivationSuffix:  []byte("suffix"),
+						SenderIdentityKey: senderKey,
+					},
+				},
+			},
+			Description:    "test description with reference",
+			Labels:         []string{"label1"},
+			SeekPermission: util.BoolPtr(true),
+			Reference:      &testRef,
 		},
 	}, {
 		name: "minimal args",
