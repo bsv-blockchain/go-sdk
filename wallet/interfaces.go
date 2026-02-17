@@ -434,6 +434,7 @@ type InternalizeActionArgs struct {
 	Labels         []string            `json:"labels"`
 	SeekPermission *bool               `json:"seekPermission,omitempty"`
 	Outputs        []InternalizeOutput `json:"outputs"`
+	Reference      *string             `json:"reference,omitempty"`
 }
 
 // InternalizeActionResult confirms whether a transaction was successfully internalized.
