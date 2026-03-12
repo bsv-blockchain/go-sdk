@@ -59,6 +59,12 @@ All notable changes to this project will be documented in this file. The format 
 ### Fixed
 - `ComputeMissingHashes` now handles odd node counts at intermediate Merkle tree levels by adding duplicate markers, matching Bitcoin's Merkle tree behavior where unpaired nodes are hashed with themselves (#298)
 
+### Changed
+- Bump `golang.org/x/crypto` from v0.47.0 to v0.48.0 (#292)
+- Bump `golang.org/x/net` from v0.49.0 to v0.51.0 (#296)
+- Bump `golang.org/x/sync` from v0.19.0 to v0.20.0 (#299)
+- Bump `actions/upload-artifact` from v6 to v7 (#297)
+
 ## [1.2.18] - 2026-02-12
 
 ### Fixed
