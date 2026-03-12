@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.19 - 2026-03-11](#1219---2026-03-11)
 - [1.2.18 - 2026-02-12](#1218---2026-02-12)
 - [1.2.17 - 2026-02-06](#1217---2026-02-06)
 - [1.2.16 - 2026-01-29](#1216---2026-01-29)
@@ -52,6 +53,11 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.19] - 2026-03-11
+
+### Fixed
+- `ComputeMissingHashes` now handles odd node counts at intermediate Merkle tree levels by adding duplicate markers, matching Bitcoin's Merkle tree behavior where unpaired nodes are hashed with themselves (#298)
 
 ## [1.2.18] - 2026-02-12
 
