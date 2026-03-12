@@ -397,6 +397,51 @@ func TestMerklePathAddLeafAndComputeMissingHashes(t *testing.T) {
 		require.Equal(t, h23.String(), found23.Hash.String())
 	})
 
+	t.Run("handles odd count at intermediate levels", func(t *testing.T) {
+		// 5 leaves: after level 0 duplicate we get 3 nodes at level 1 (odd),
+		// which should propagate correctly to the root
+		leaf0, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000001")
+		leaf1, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000002")
+		leaf2, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000003")
+		leaf3, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000004")
+		leaf4, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000005")
+
+		mp := &MerklePath{BlockHeight: 1000, Path: make([][]*PathElement, 4)}
+
+		dupFlag := true
+		mp.AddLeaf(0, &PathElement{Offset: 0, Hash: leaf0})
+		mp.AddLeaf(0, &PathElement{Offset: 1, Hash: leaf1})
+		mp.AddLeaf(0, &PathElement{Offset: 2, Hash: leaf2})
+		mp.AddLeaf(0, &PathElement{Offset: 3, Hash: leaf3})
+		mp.AddLeaf(0, &PathElement{Offset: 4, Hash: leaf4})
+		mp.AddLeaf(0, &PathElement{Offset: 5, Duplicate: &dupFlag})
+
+		mp.ComputeMissingHashes()
+
+		// Level 1: 3 computed hashes + 1 duplicate marker (odd count)
+		h01 := MerkleTreeParent(leaf0, leaf1)
+		h23 := MerkleTreeParent(leaf2, leaf3)
+		h45 := MerkleTreeParent(leaf4, leaf4) // leaf4 duplicated
+
+		require.Equal(t, h01.String(), mp.FindLeafByOffset(1, 0).Hash.String())
+		require.Equal(t, h23.String(), mp.FindLeafByOffset(1, 1).Hash.String())
+		require.Equal(t, h45.String(), mp.FindLeafByOffset(1, 2).Hash.String())
+		dupLeaf := mp.FindLeafByOffset(1, 3)
+		require.NotNil(t, dupLeaf, "Level 1 should have duplicate marker at offset 3")
+		require.True(t, *dupLeaf.Duplicate)
+
+		// Level 2: 2 nodes (h01_23, h45_45) — h45 duplicated at level 1
+		h0123 := MerkleTreeParent(h01, h23)
+		h4545 := MerkleTreeParent(h45, h45)
+
+		require.Equal(t, h0123.String(), mp.FindLeafByOffset(2, 0).Hash.String())
+		require.Equal(t, h4545.String(), mp.FindLeafByOffset(2, 1).Hash.String())
+
+		// Level 3: root
+		root := MerkleTreeParent(h0123, h4545)
+		require.Equal(t, root.String(), mp.FindLeafByOffset(3, 0).Hash.String())
+	})
+
 	t.Run("AddLeaf grows path slice as needed", func(t *testing.T) {
 		mp := &MerklePath{BlockHeight: 1000}
 

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.19 - 2026-03-11](#1219---2026-03-11)
 - [1.2.18 - 2026-02-12](#1218---2026-02-12)
 - [1.2.17 - 2026-02-06](#1217---2026-02-06)
 - [1.2.16 - 2026-01-29](#1216---2026-01-29)
@@ -52,6 +53,21 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.19] - 2026-03-11
+
+### Fixed
+- `ComputeMissingHashes` now handles odd node counts at intermediate Merkle tree levels by adding duplicate markers, matching Bitcoin's Merkle tree behavior where unpaired nodes are hashed with themselves (#298)
+- Overlay broadcaster: fixed distinction between `RequireAckAll` and `RequireNone` based on empty topic array (#302)
+- Overlay broadcaster: error responses no longer trigger admittance checks — only 200 OK responses are evaluated (#302)
+- Increased default SHIP query timeout from 1s to 5s to allow successful responses (#302)
+- Added three BSVA cluster SLAP trackers as defaults, removing single point of failure (#302)
+
+### Changed
+- Bump `golang.org/x/crypto` from v0.47.0 to v0.48.0 (#292)
+- Bump `golang.org/x/net` from v0.49.0 to v0.51.0 (#296)
+- Bump `golang.org/x/sync` from v0.19.0 to v0.20.0 (#299)
+- Bump `actions/upload-artifact` from v6 to v7 (#297)
 
 ## [1.2.18] - 2026-02-12
 

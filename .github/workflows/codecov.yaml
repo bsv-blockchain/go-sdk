@@ -9,7 +9,7 @@ on:
       - "master"
 
 env:
-  GO_VERSION: '1.24'
+  GO_VERSION: '1.25'
 
 jobs:
   test-coverage:
@@ -44,7 +44,7 @@ jobs:
           verbose: true
 
       - name: Upload coverage reports as artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage.out

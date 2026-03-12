@@ -403,12 +403,35 @@ func (mp *MerklePath) ComputeMissingHashes() {
 					Hash:   parentHash,
 				})
 			} else if rightLeaf != nil && rightLeaf.Duplicate != nil && *rightLeaf.Duplicate {
-				// Handle duplicate case
 				parentHash := MerkleTreeParent(leftLeaf.Hash, leftLeaf.Hash)
 				mp.Path[level] = append(mp.Path[level], &PathElement{
 					Offset: parentOffset,
 					Hash:   parentHash,
 				})
+			}
+		}
+
+		// If this level has an odd number of computed nodes and the leaves
+		// form a contiguous set, add a duplicate marker for the last node.
+		// This mirrors Bitcoin's Merkle tree behavior where an unpaired
+		// node is hashed with itself.
+		if len(mp.Path[level]) > 0 {
+			var maxOffset uint64
+			for _, leaf := range mp.Path[level] {
+				if leaf.Offset > maxOffset {
+					maxOffset = leaf.Offset
+				}
+			}
+			if maxOffset&1 == 0 && maxOffset > 0 {
+				// Even max offset with more than one node means odd count.
+				// Verify it's contiguous by checking the previous offset exists.
+				if mp.FindLeafByOffset(level, maxOffset-1) != nil {
+					dup := true
+					mp.Path[level] = append(mp.Path[level], &PathElement{
+						Offset:    maxOffset + 1,
+						Duplicate: &dup,
+					})
+				}
 			}
 		}
 	}

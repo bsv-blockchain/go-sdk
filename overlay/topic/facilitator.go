@@ -12,7 +12,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
-const MAX_SHIP_QUERY_TIMEOUT = time.Second
+const MAX_SHIP_QUERY_TIMEOUT = 5 * time.Second
 
 // Facilitator defines the interface for overlay broadcast facilitators that can send tagged BEEF to overlay services
 type Facilitator interface {
