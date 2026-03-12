@@ -157,10 +157,11 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 		}(host)
 	}
 	wg.Wait()
+	close(results)
 
 	successfulHosts := make([]*Response, 0, len(interestedHosts))
 	for result := range results {
-		if result != nil {
+		if result != nil && result.Success {
 			successfulHosts = append(successfulHosts, result)
 		}
 	}
@@ -190,9 +191,12 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 	case RequireAckSome:
 		requireTopics = b.AckFromAll.Topics
 		requireHosts = RequireAckAll
-	default:
+	case RequireAckAll:
 		requireTopics = b.Topics
 		requireHosts = RequireAckAll
+	default:
+		requireTopics = []string{}
+		requireHosts = RequireAckNone
 	}
 	if len(requireTopics) > 0 {
 		if !b.checkAcknowledgmentFromAllHosts(hostAcks, requireTopics, requireHosts) {
@@ -210,9 +214,12 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 	case RequireAckSome:
 		requireTopics = b.AckFromAny.Topics
 		requireHosts = RequireAckAll
-	default:
+	case RequireAckAll:
 		requireTopics = b.Topics
 		requireHosts = RequireAckAll
+	default:
+		requireTopics = []string{}
+		requireHosts = RequireAckNone
 	}
 	if len(requireTopics) > 0 {
 		if !b.checkAcknowledgmentFromAnyHost(hostAcks, requireTopics, requireHosts) {
