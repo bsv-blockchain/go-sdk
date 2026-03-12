@@ -17,7 +17,14 @@ import (
 
 const MAX_TRACKER_WAIT_TIME = time.Second
 
-var DEFAULT_SLAP_TRACKERS = []string{"https://users.bapp.dev"}
+var DEFAULT_SLAP_TRACKERS = []string{
+	// BSVA clusters
+	"https://overlay-us-1.bsvb.tech",
+	"https://overlay-eu-1.bsvb.tech",
+	"https://overlay-ap-1.bsvb.tech",
+	// Babbage primary overlay service
+	"https://users.bapp.dev",
+}
 var DEFAULT_TESTNET_SLAP_TRACKERS = []string{"https://testnet-users.bapp.dev"}
 
 // LookupResolver resolves overlay service hosts and executes lookup queries with resiliency across multiple services
