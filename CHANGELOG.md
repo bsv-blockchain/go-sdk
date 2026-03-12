@@ -58,6 +58,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Fixed
 - `ComputeMissingHashes` now handles odd node counts at intermediate Merkle tree levels by adding duplicate markers, matching Bitcoin's Merkle tree behavior where unpaired nodes are hashed with themselves (#298)
+- Overlay broadcaster: fixed distinction between `RequireAckAll` and `RequireNone` based on empty topic array (#302)
+- Overlay broadcaster: error responses no longer trigger admittance checks — only 200 OK responses are evaluated (#302)
+- Increased default SHIP query timeout from 1s to 5s to allow successful responses (#302)
+- Added three BSVA cluster SLAP trackers as defaults, removing single point of failure (#302)
 
 ### Changed
 - Bump `golang.org/x/crypto` from v0.47.0 to v0.48.0 (#292)
