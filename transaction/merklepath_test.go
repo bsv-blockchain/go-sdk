@@ -319,6 +319,76 @@ func TestMerklePathClone(t *testing.T) {
 	})
 }
 
+func TestMerklePathSingleLevelCompound(t *testing.T) {
+	t.Parallel()
+
+	t.Run("single-level compound path computes correct root", func(t *testing.T) {
+		leaf0, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000001")
+		leaf1, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000002")
+		leaf2, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000003")
+		leaf3, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000004")
+
+		h01 := MerkleTreeParent(leaf0, leaf1)
+		h23 := MerkleTreeParent(leaf2, leaf3)
+		expectedRoot := MerkleTreeParent(h01, h23)
+
+		txid := true
+		mp := &MerklePath{
+			BlockHeight: 1000,
+			Path: [][]*PathElement{
+				{
+					{Offset: 0, Hash: leaf0, Txid: &txid},
+					{Offset: 1, Hash: leaf1, Txid: &txid},
+					{Offset: 2, Hash: leaf2, Txid: &txid},
+					{Offset: 3, Hash: leaf3, Txid: &txid},
+				},
+			},
+		}
+
+		for _, leaf := range mp.Path[0] {
+			root, err := mp.ComputeRoot(leaf.Hash)
+			require.NoError(t, err)
+			require.Equal(t, expectedRoot.String(), root.String(), "root mismatch for offset %d", leaf.Offset)
+		}
+	})
+}
+
+func TestMerklePathCombineRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	t.Run("combine serialize deserialize verify", func(t *testing.T) {
+		path0A := BRC74JSON.Path[0][:2]
+		path0B := BRC74JSON.Path[0][2:]
+		path1A := BRC74JSON.Path[1][1:]
+		path1B := BRC74JSON.Path[1][:1]
+		pathRest := BRC74JSON.Path[2:]
+
+		pathA := MerklePath{
+			BlockHeight: BRC74JSON.BlockHeight,
+			Path:        append([][]*PathElement{path0A, path1A}, pathRest...),
+		}
+		pathB := MerklePath{
+			BlockHeight: BRC74JSON.BlockHeight,
+			Path:        append([][]*PathElement{path0B, path1B}, pathRest...),
+		}
+
+		err := pathA.Combine(&pathB)
+		require.NoError(t, err)
+
+		hexStr := pathA.Hex()
+		decoded, err := NewMerklePathFromHex(hexStr)
+		require.NoError(t, err)
+
+		root, err := decoded.ComputeRootHex(&BRC74TXID2)
+		require.NoError(t, err)
+		require.Equal(t, BRC74Root, root)
+
+		root, err = decoded.ComputeRootHex(&BRC74TXID3)
+		require.NoError(t, err)
+		require.Equal(t, BRC74Root, root)
+	})
+}
+
 func TestMerklePathAddLeafAndComputeMissingHashes(t *testing.T) {
 	t.Run("builds path from leaves and computes intermediate hashes", func(t *testing.T) {
 		// Create 4 leaf hashes

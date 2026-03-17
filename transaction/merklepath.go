@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/bits"
 	"slices"
 	"sort"
 
@@ -31,8 +32,11 @@ type MerklePath struct {
 type IndexedPath []map[uint64]*PathElement
 
 func (ip IndexedPath) GetOffsetLeaf(layer int, offset uint64) *PathElement {
-	if leaf, ok := ip[layer][offset]; ok {
-		return leaf
+	// Guard: layer may exceed stored levels for single-level compound paths
+	if layer < len(ip) {
+		if leaf, ok := ip[layer][offset]; ok {
+			return leaf
+		}
 	}
 	if layer == 0 {
 		return nil
@@ -251,7 +255,19 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 	workingHash := txLeaf.Hash
 	index := txLeaf.Offset
 
-	for height := range mp.Path {
+	// Compute effective tree height from max offset (handles single-level compound paths)
+	var maxOffset uint64
+	for _, l := range mp.Path[0] {
+		if l.Offset > maxOffset {
+			maxOffset = l.Offset
+		}
+	}
+	effectiveHeight := len(mp.Path)
+	if bitsNeeded := bits.Len64(maxOffset); bitsNeeded > effectiveHeight {
+		effectiveHeight = bitsNeeded
+	}
+
+	for height := 0; height < effectiveHeight; height++ {
 		offset := (index >> height) ^ 1
 		leaf := indexedPath.GetOffsetLeaf(height, offset)
 		if leaf == nil {
