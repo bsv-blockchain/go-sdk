@@ -224,42 +224,42 @@ func TestGhash(t *testing.T) {
 func TestAES(t *testing.T) {
 	t.Run("AES-128", func(t *testing.T) {
 		plaintext, _ := hex.DecodeString("00112233445566778899aabbccddeeff")
-		key, _ := hex.DecodeString("000102030405060708090a0b0c0d0e0f")
+		key, _ := hex.DecodeString("000102030405060708090a0b0c0d0e0f") //NOSONAR test vector, not a real credential
 		expected, _ := hex.DecodeString("69c4e0d86a7b0430d8cdb78070b4c55a")
 
 		block, err := aes.NewCipher(key)
 		require.NoError(t, err)
 
 		result := make([]byte, len(plaintext))
-		block.Encrypt(result, plaintext)
+		block.Encrypt(result, plaintext) //NOSONAR test verification of AES block cipher
 
 		require.Equal(t, expected, result)
 	})
 
 	t.Run("AES-192", func(t *testing.T) {
 		plaintext, _ := hex.DecodeString("00112233445566778899aabbccddeeff")
-		key, _ := hex.DecodeString("000102030405060708090a0b0c0d0e0f1011121314151617")
+		key, _ := hex.DecodeString("000102030405060708090a0b0c0d0e0f1011121314151617") //NOSONAR test vector, not a real credential
 		expected, _ := hex.DecodeString("dda97ca4864cdfe06eaf70a0ec0d7191")
 
 		block, err := aes.NewCipher(key)
 		require.NoError(t, err)
 
 		result := make([]byte, len(plaintext))
-		block.Encrypt(result, plaintext)
+		block.Encrypt(result, plaintext) //NOSONAR test verification of AES block cipher
 
 		require.Equal(t, expected, result)
 	})
 
 	t.Run("AES-256", func(t *testing.T) {
 		plaintext, _ := hex.DecodeString("00112233445566778899aabbccddeeff")
-		key, _ := hex.DecodeString("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+		key, _ := hex.DecodeString("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f") //NOSONAR test vector, not a real credential
 		expected, _ := hex.DecodeString("8ea2b7ca516745bfeafc49904b496089")
 
 		block, err := aes.NewCipher(key)
 		require.NoError(t, err)
 
 		result := make([]byte, len(plaintext))
-		block.Encrypt(result, plaintext)
+		block.Encrypt(result, plaintext) //NOSONAR test verification of AES block cipher
 
 		require.Equal(t, expected, result)
 	})
@@ -284,7 +284,7 @@ func TestAES(t *testing.T) {
 			require.NoError(t, err)
 
 			result := make([]byte, len(plaintext))
-			block.Encrypt(result, plaintext)
+			block.Encrypt(result, plaintext) //NOSONAR test verification of AES block cipher
 
 			require.Equal(t, expected, result)
 		}

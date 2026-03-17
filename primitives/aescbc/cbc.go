@@ -7,14 +7,15 @@ import (
 	"errors"
 )
 
-// AESCBCEncrypt encrypts data using AES in CBC mode with an IV
+// AESCBCEncrypt encrypts data using AES in CBC mode with an IV.
+// CBC mode with PKCS7 padding is required for BIP-level compatibility (e.g., ECIES).
 func AESCBCEncrypt(data, key, iv []byte, concatIv bool) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 	data = PKCS7Padd(data, block.BlockSize())
-	blockModel := cipher.NewCBCEncrypter(block, iv)
+	blockModel := cipher.NewCBCEncrypter(block, iv) //NOSONAR CBC mode required by BIP/ECIES specification
 	cipherText := make([]byte, len(data))
 	blockModel.CryptBlocks(cipherText, data)
 	if concatIv {
@@ -23,13 +24,14 @@ func AESCBCEncrypt(data, key, iv []byte, concatIv bool) ([]byte, error) {
 	return cipherText, nil
 }
 
-// AESCBCDecrypt decrypts data using AES in CBC mode with an IV
+// AESCBCDecrypt decrypts data using AES in CBC mode with an IV.
+// CBC mode with PKCS7 padding is required for BIP-level compatibility (e.g., ECIES).
 func AESCBCDecrypt(data, key, iv []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
-	blockModel := cipher.NewCBCDecrypter(block, iv)
+	blockModel := cipher.NewCBCDecrypter(block, iv) //NOSONAR CBC mode required by BIP/ECIES specification
 	plantText := make([]byte, len(data))
 	blockModel.CryptBlocks(plantText, data)
 	plantText, err = PKCS7Unpad(plantText, block.BlockSize())
