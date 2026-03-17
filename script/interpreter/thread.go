@@ -283,6 +283,9 @@ func (t *thread) apply(opts *execOpts) error {
 		t.cfg = &afterGenesisConfig{}
 	}
 	if t.hasFlag(scriptflag.UTXOAfterChronicle) {
+		if !t.hasFlag(scriptflag.UTXOAfterGenesis) {
+			return errs.NewError(errs.ErrInvalidFlags, "UTXOAfterChronicle requires UTXOAfterGenesis")
+		}
 		t.afterChronicle = true
 		t.cfg = &afterChronicleConfig{}
 	}
