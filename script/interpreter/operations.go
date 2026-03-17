@@ -2479,25 +2479,7 @@ func opcodeLeft(op *ParsedOpcode, t *thread) error {
 		}
 		return nil
 	}
-
-	length, err := t.dstack.PopInt()
-	if err != nil {
-		return err
-	}
-	data, err := t.dstack.PopByteArray()
-	if err != nil {
-		return err
-	}
-
-	ln64 := length.Int64()
-	size := int64(len(data))
-	if ln64 < 0 || ln64 > size {
-		return errs.NewError(errs.ErrNumberTooBig, "OP_LEFT: invalid length %d for size %d", ln64, size)
-	}
-
-	ln := int(ln64)
-	t.dstack.PushByteArray(data[:ln])
-	return nil
+	return opcodeSliceBytes(t, "OP_LEFT", false)
 }
 
 // opcodeRight returns the right n bytes of a byte array.
@@ -2511,7 +2493,12 @@ func opcodeRight(op *ParsedOpcode, t *thread) error {
 		}
 		return nil
 	}
+	return opcodeSliceBytes(t, "OP_RIGHT", true)
+}
 
+// opcodeSliceBytes implements the shared logic for OP_LEFT and OP_RIGHT.
+// fromRight=false slices from the start (OP_LEFT); fromRight=true slices from the end (OP_RIGHT).
+func opcodeSliceBytes(t *thread, name string, fromRight bool) error {
 	length, err := t.dstack.PopInt()
 	if err != nil {
 		return err
@@ -2524,11 +2511,15 @@ func opcodeRight(op *ParsedOpcode, t *thread) error {
 	ln64 := length.Int64()
 	size := int64(len(data))
 	if ln64 < 0 || ln64 > size {
-		return errs.NewError(errs.ErrNumberTooBig, "OP_RIGHT: invalid length %d for size %d", ln64, size)
+		return errs.NewError(errs.ErrNumberTooBig, "%s: invalid length %d for size %d", name, ln64, size)
 	}
 
 	ln := int(ln64)
-	t.dstack.PushByteArray(data[int(size)-ln:])
+	if fromRight {
+		t.dstack.PushByteArray(data[int(size)-ln:])
+	} else {
+		t.dstack.PushByteArray(data[:ln])
+	}
 	return nil
 }
 
@@ -2543,34 +2534,7 @@ func opcodeLShiftNum(op *ParsedOpcode, t *thread) error {
 		}
 		return nil
 	}
-
-	n, err := t.dstack.PopInt()
-	if err != nil {
-		return err
-	}
-	if n.LessThanInt(0) {
-		return errs.NewError(errs.ErrNumberTooSmall, "OP_LSHIFTNUM: negative shift amount")
-	}
-
-	val, err := t.dstack.PopInt()
-	if err != nil {
-		return err
-	}
-
-	// Cap shift to max possible meaningful bits to prevent huge memory allocation.
-	// Any left shift larger than this will produce a result exceeding the size limit anyway.
-	const maxShiftBits = MaxScriptNumberLengthAfterChronicle * 8
-	shift64 := n.Int64()
-	if shift64 > maxShiftBits {
-		shift64 = maxShiftBits
-	}
-	shiftAmt := uint(shift64)
-	result := &ScriptNumber{
-		Val:          new(big.Int).Lsh(val.Val, shiftAmt),
-		AfterGenesis: t.afterGenesis,
-	}
-	t.dstack.PushInt(result)
-	return nil
+	return opcodeShiftNum(t, "OP_LSHIFTNUM", false)
 }
 
 // opcodeRShiftNum performs an arithmetic right shift on a script number.
@@ -2584,13 +2548,18 @@ func opcodeRShiftNum(op *ParsedOpcode, t *thread) error {
 		}
 		return nil
 	}
+	return opcodeShiftNum(t, "OP_RSHIFTNUM", true)
+}
 
+// opcodeShiftNum implements the shared logic for OP_LSHIFTNUM and OP_RSHIFTNUM.
+// rightShift=false performs a left shift; rightShift=true performs a right shift.
+func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 	n, err := t.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 	if n.LessThanInt(0) {
-		return errs.NewError(errs.ErrNumberTooSmall, "OP_RSHIFTNUM: negative shift amount")
+		return errs.NewError(errs.ErrNumberTooSmall, "%s: negative shift amount", name)
 	}
 
 	val, err := t.dstack.PopInt()
@@ -2598,18 +2567,20 @@ func opcodeRShiftNum(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	// Cap shift to max possible meaningful bits to prevent huge memory allocation.
-	// Any right shift larger than the value's bit length produces 0.
+	// Cap shift to avoid huge memory allocation; any shift beyond this saturates.
 	const maxShiftBits = MaxScriptNumberLengthAfterChronicle * 8
 	shift64 := n.Int64()
 	if shift64 > maxShiftBits {
 		shift64 = maxShiftBits
 	}
 	shiftAmt := uint(shift64)
-	result := &ScriptNumber{
-		Val:          new(big.Int).Rsh(val.Val, shiftAmt),
-		AfterGenesis: t.afterGenesis,
+
+	var shifted *big.Int
+	if rightShift {
+		shifted = new(big.Int).Rsh(val.Val, shiftAmt)
+	} else {
+		shifted = new(big.Int).Lsh(val.Val, shiftAmt)
 	}
-	t.dstack.PushInt(result)
+	t.dstack.PushInt(&ScriptNumber{Val: shifted, AfterGenesis: t.afterGenesis})
 	return nil
 }
