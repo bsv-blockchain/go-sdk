@@ -255,9 +255,6 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 	hello := []byte("Hello")
 	world := []byte("World")
 
-	// verTx is a version-1 transaction; OP_VER / VERIF / VERNOTIF all read t.tx.Version.
-	verTx := chronicleVersionTx(1)
-
 	tests := []struct {
 		name      string
 		locking   func() *script.Script
@@ -393,7 +390,7 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 			if tc.needTx {
 				prevOut := &transaction.TransactionOutput{LockingScript: locking}
 				opts = []ExecutionOptionFunc{
-					WithTx(verTx, 0, prevOut),
+					WithTx(chronicleVersionTx(1), 0, prevOut),
 					WithAfterChronicle(),
 				}
 			} else {
