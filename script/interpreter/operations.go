@@ -2360,35 +2360,45 @@ func opcodeVerConditional(op *ParsedOpcode, t *thread) error {
 		return opcodeReserved(op, t)
 	}
 
-	// Post-Chronicle: version-based conditional (like IF/NOTIF with version comparison).
-	condVal := opCondFalse
-	if t.shouldExec(*op) {
-		if t.isBranchExecuting() {
-			top, err := t.dstack.PopByteArray()
-			if err != nil {
-				return errs.NewError(errs.ErrUnbalancedConditional,
-					"empty stack for %s", op.Name())
-			}
-			fValue := false
-			if len(top) == 4 && t.tx != nil {
-				v := t.tx.Version
-				versionBytes := []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
-				fValue = bytes.Equal(versionBytes, top)
-			}
-			if op.op.val == script.OpVERNOTIF {
-				fValue = !fValue
-			}
-			if fValue {
-				condVal = opCondTrue
-			}
-		} else {
-			condVal = opCondSkip
-		}
+	condVal, err := resolveVerCondition(op, t)
+	if err != nil {
+		return err
 	}
-
 	t.condStack = append(t.condStack, condVal)
 	t.elseStack.PushBool(false)
 	return nil
+}
+
+// resolveVerCondition evaluates the post-Chronicle OP_VERIF/OP_VERNOTIF condition.
+func resolveVerCondition(op *ParsedOpcode, t *thread) (int, error) {
+	if !t.shouldExec(*op) {
+		return opCondFalse, nil
+	}
+	if !t.isBranchExecuting() {
+		return opCondSkip, nil
+	}
+	top, err := t.dstack.PopByteArray()
+	if err != nil {
+		return 0, errs.NewError(errs.ErrUnbalancedConditional, "empty stack for %s", op.Name())
+	}
+	match := txVersionMatchesBytes(t.tx, top)
+	if op.op.val == script.OpVERNOTIF {
+		match = !match
+	}
+	if match {
+		return opCondTrue, nil
+	}
+	return opCondFalse, nil
+}
+
+// txVersionMatchesBytes reports whether data is exactly the 4-byte little-endian
+// encoding of tx.Version.
+func txVersionMatchesBytes(tx *transaction.Transaction, data []byte) bool {
+	if len(data) != 4 || tx == nil {
+		return false
+	}
+	v := tx.Version
+	return bytes.Equal([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}, data)
 }
 
 // opcode2Mul treats the top item on the data stack as an integer and replaces
@@ -2444,14 +2454,16 @@ func opcodeSubstr(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	offset := begin.Int()
-	ln := length.Int()
-	size := len(data)
-	if offset < 0 || offset >= size || ln < 0 || ln > size-offset {
+	offset64 := begin.Int64()
+	ln64 := length.Int64()
+	size := int64(len(data))
+	if offset64 < 0 || offset64 >= size || ln64 < 0 || ln64 > size-offset64 {
 		return errs.NewError(errs.ErrNumberTooBig, "OP_SUBSTR: invalid range offset=%d len=%d size=%d",
-			offset, ln, size)
+			offset64, ln64, size)
 	}
 
+	offset := int(offset64)
+	ln := int(ln64)
 	t.dstack.PushByteArray(data[offset : offset+ln])
 	return nil
 }
@@ -2477,12 +2489,13 @@ func opcodeLeft(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	ln := length.Int()
-	size := len(data)
-	if ln < 0 || ln > size {
-		return errs.NewError(errs.ErrNumberTooBig, "OP_LEFT: invalid length %d for size %d", ln, size)
+	ln64 := length.Int64()
+	size := int64(len(data))
+	if ln64 < 0 || ln64 > size {
+		return errs.NewError(errs.ErrNumberTooBig, "OP_LEFT: invalid length %d for size %d", ln64, size)
 	}
 
+	ln := int(ln64)
 	t.dstack.PushByteArray(data[:ln])
 	return nil
 }
@@ -2508,13 +2521,14 @@ func opcodeRight(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	ln := length.Int()
-	size := len(data)
-	if ln < 0 || ln > size {
-		return errs.NewError(errs.ErrNumberTooBig, "OP_RIGHT: invalid length %d for size %d", ln, size)
+	ln64 := length.Int64()
+	size := int64(len(data))
+	if ln64 < 0 || ln64 > size {
+		return errs.NewError(errs.ErrNumberTooBig, "OP_RIGHT: invalid length %d for size %d", ln64, size)
 	}
 
-	t.dstack.PushByteArray(data[size-ln:])
+	ln := int(ln64)
+	t.dstack.PushByteArray(data[int(size)-ln:])
 	return nil
 }
 
@@ -2543,7 +2557,14 @@ func opcodeLShiftNum(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	shiftAmt := uint(n.Int())
+	// Cap shift to max possible meaningful bits to prevent huge memory allocation.
+	// Any left shift larger than this will produce a result exceeding the size limit anyway.
+	const maxShiftBits = MaxScriptNumberLengthAfterChronicle * 8
+	shift64 := n.Int64()
+	if shift64 > maxShiftBits {
+		shift64 = maxShiftBits
+	}
+	shiftAmt := uint(shift64)
 	result := &ScriptNumber{
 		Val:          new(big.Int).Lsh(val.Val, shiftAmt),
 		AfterGenesis: t.afterGenesis,
@@ -2577,7 +2598,14 @@ func opcodeRShiftNum(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	shiftAmt := uint(n.Int())
+	// Cap shift to max possible meaningful bits to prevent huge memory allocation.
+	// Any right shift larger than the value's bit length produces 0.
+	const maxShiftBits = MaxScriptNumberLengthAfterChronicle * 8
+	shift64 := n.Int64()
+	if shift64 > maxShiftBits {
+		shift64 = maxShiftBits
+	}
+	shiftAmt := uint(shift64)
 	result := &ScriptNumber{
 		Val:          new(big.Int).Rsh(val.Val, shiftAmt),
 		AfterGenesis: t.afterGenesis,

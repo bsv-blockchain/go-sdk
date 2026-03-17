@@ -722,11 +722,11 @@ var OpCodeValues = map[byte]string{
 	OpNOP1:                "OP_NOP1",
 	OpNOP2:                "OP_NOP2",
 	OpNOP3:                "OP_NOP3",
-	OpNOP4:                "OP_NOP4",
-	OpNOP5:                "OP_NOP5",
-	OpNOP6:                "OP_NOP6",
-	OpNOP7:                "OP_NOP7",
-	OpNOP8:                "OP_NOP8",
+	OpSUBSTR:              "OP_SUBSTR",   // 0xb3 – Chronicle name takes precedence over OP_NOP4
+	OpLEFT:                "OP_LEFT",     // 0xb4 – Chronicle name takes precedence over OP_NOP5
+	OpRIGHT:               "OP_RIGHT",    // 0xb5 – Chronicle name takes precedence over OP_NOP6
+	OpLSHIFTNUM:           "OP_LSHIFTNUM", // 0xb6 – Chronicle name takes precedence over OP_NOP7
+	OpRSHIFTNUM:           "OP_RSHIFTNUM", // 0xb7 – Chronicle name takes precedence over OP_NOP8
 	OpNOP9:                "OP_NOP9",
 	OpNOP10:               "OP_NOP10",
 	OpUNKNOWN186:          "OP_UNKNOWN186",
