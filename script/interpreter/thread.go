@@ -44,6 +44,7 @@ type thread struct {
 	bip16 bool // treat execution as pay-to-script-hash
 
 	afterGenesis            bool
+	afterChronicle          bool
 	earlyReturnAfterGenesis bool
 }
 
@@ -158,7 +159,8 @@ func (t *thread) executeOpcode(pop ParsedOpcode) error {
 	exec := t.shouldExec(pop)
 
 	// Disabled opcodes are fail on program counter.
-	if pop.IsDisabled() && (!t.afterGenesis || exec) {
+	// OP_2MUL and OP_2DIV are re-enabled post-Chronicle.
+	if pop.IsDisabled() && (!t.afterGenesis || exec) && !t.afterChronicle {
 		return errs.NewError(errs.ErrDisabledOpcode, "attempt to execute disabled opcode %s", pop.Name())
 	}
 
@@ -279,6 +281,10 @@ func (t *thread) apply(opts *execOpts) error {
 		t.elseStack = &stack{debug: &nopDebugger{}, sh: &nopStateHandler{}}
 		t.afterGenesis = true
 		t.cfg = &afterGenesisConfig{}
+	}
+	if t.hasFlag(scriptflag.UTXOAfterChronicle) {
+		t.afterChronicle = true
+		t.cfg = &afterChronicleConfig{}
 	}
 
 	uscript := opts.unlockingScript

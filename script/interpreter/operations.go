@@ -148,7 +148,7 @@ var opcodeArray = [256]opcode{
 
 	// Control opcodes.
 	script.OpNOP:                 {script.OpNOP, "OP_NOP", 1, opcodeNop},
-	script.OpVER:                 {script.OpVER, "OP_VER", 1, opcodeReserved},
+	script.OpVER:                 {script.OpVER, "OP_VER", 1, opcodeVer},
 	script.OpIF:                  {script.OpIF, "OP_IF", 1, opcodeIf},
 	script.OpNOTIF:               {script.OpNOTIF, "OP_NOTIF", 1, opcodeNotIf},
 	script.OpVERIF:               {script.OpVERIF, "OP_VERIF", 1, opcodeVerConditional},
@@ -201,8 +201,8 @@ var opcodeArray = [256]opcode{
 	// Numeric related opcodes.
 	script.Op1ADD:               {script.Op1ADD, "OP_1ADD", 1, opcode1Add},
 	script.Op1SUB:               {script.Op1SUB, "OP_1SUB", 1, opcode1Sub},
-	script.Op2MUL:               {script.Op2MUL, "OP_2MUL", 1, opcodeDisabled},
-	script.Op2DIV:               {script.Op2DIV, "OP_2DIV", 1, opcodeDisabled},
+	script.Op2MUL:               {script.Op2MUL, "OP_2MUL", 1, opcode2Mul},
+	script.Op2DIV:               {script.Op2DIV, "OP_2DIV", 1, opcode2Div},
 	script.OpNEGATE:             {script.OpNEGATE, "OP_NEGATE", 1, opcodeNegate},
 	script.OpABS:                {script.OpABS, "OP_ABS", 1, opcodeAbs},
 	script.OpNOT:                {script.OpNOT, "OP_NOT", 1, opcodeNot},
@@ -239,15 +239,15 @@ var opcodeArray = [256]opcode{
 	script.OpCHECKMULTISIG:       {script.OpCHECKMULTISIG, "OP_CHECKMULTISIG", 1, opcodeCheckMultiSig},
 	script.OpCHECKMULTISIGVERIFY: {script.OpCHECKMULTISIGVERIFY, "OP_CHECKMULTISIGVERIFY", 1, opcodeCheckMultiSigVerify},
 
-	// Reserved opcodes.
-	script.OpNOP1:  {script.OpNOP1, "OP_NOP1", 1, opcodeNop},
-	script.OpNOP4:  {script.OpNOP4, "OP_NOP4", 1, opcodeNop},
-	script.OpNOP5:  {script.OpNOP5, "OP_NOP5", 1, opcodeNop},
-	script.OpNOP6:  {script.OpNOP6, "OP_NOP6", 1, opcodeNop},
-	script.OpNOP7:  {script.OpNOP7, "OP_NOP7", 1, opcodeNop},
-	script.OpNOP8:  {script.OpNOP8, "OP_NOP8", 1, opcodeNop},
-	script.OpNOP9:  {script.OpNOP9, "OP_NOP9", 1, opcodeNop},
-	script.OpNOP10: {script.OpNOP10, "OP_NOP10", 1, opcodeNop},
+	// Reserved opcodes. NOP4-NOP8 are repurposed as Chronicle opcodes.
+	script.OpNOP1:    {script.OpNOP1, "OP_NOP1", 1, opcodeNop},
+	script.OpSUBSTR:  {script.OpSUBSTR, "OP_SUBSTR", 1, opcodeSubstr},
+	script.OpLEFT:    {script.OpLEFT, "OP_LEFT", 1, opcodeLeft},
+	script.OpRIGHT:   {script.OpRIGHT, "OP_RIGHT", 1, opcodeRight},
+	script.OpLSHIFTNUM: {script.OpLSHIFTNUM, "OP_LSHIFTNUM", 1, opcodeLShiftNum},
+	script.OpRSHIFTNUM: {script.OpRSHIFTNUM, "OP_RSHIFTNUM", 1, opcodeRShiftNum},
+	script.OpNOP9:    {script.OpNOP9, "OP_NOP9", 1, opcodeNop},
+	script.OpNOP10:   {script.OpNOP10, "OP_NOP10", 1, opcodeNop},
 
 	// Undefined opcodes.
 	script.OpUNKNOWN186: {script.OpUNKNOWN186, "OP_UNKNOWN186", 1, opcodeInvalid},
@@ -339,12 +339,6 @@ func opcodeDisabled(op *ParsedOpcode, t *thread) error {
 	return errs.NewError(errs.ErrDisabledOpcode, "attempt to execute disabled opcode %s", op.Name())
 }
 
-func opcodeVerConditional(op *ParsedOpcode, t *thread) error {
-	if t.afterGenesis && !t.shouldExec(*op) {
-		return nil
-	}
-	return opcodeReserved(op, t)
-}
 
 // opcodeReserved is a common handler for all reserved opcodes.  It returns an
 // appropriate error indicating the opcode is reserved.
@@ -2196,9 +2190,17 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 	// Get script starting from the most recent script.OpCODESEPARATOR.
 	scr := t.subScript()
 
+	// Remove signatures and code separators from subscript, mirroring opcodeCheckSig.
+	// When ForkID is enabled, ForkID signatures use BIP143 digest and don't need cleanup.
 	for _, sigInfo := range signatures {
-		scr = scr.removeOpcodeByData(sigInfo.signature)
-		scr = scr.removeOpcode(script.OpCODESEPARATOR)
+		shf := sighash.Flag(0)
+		if len(sigInfo.signature) > 0 {
+			shf = sighash.Flag(sigInfo.signature[len(sigInfo.signature)-1])
+		}
+		if !t.hasFlag(scriptflag.EnableSighashForkID) || !shf.Has(sighash.ForkID) {
+			scr = scr.removeOpcodeByData(sigInfo.signature)
+			scr = scr.removeOpcode(script.OpCODESEPARATOR)
+		}
 	}
 
 	success := true
@@ -2330,4 +2332,256 @@ func opcodeCheckMultiSigVerify(op *ParsedOpcode, t *thread) error {
 
 func success() errs.Error {
 	return errs.NewError(errs.ErrOK, "success")
+}
+
+// opcodeVer pushes the transaction version as a 4-byte little-endian value.
+// Pre-Chronicle this opcode is reserved and returns an error.
+// Post-Chronicle (BSV v1.2.0) it pushes the tx version onto the stack.
+func opcodeVer(op *ParsedOpcode, t *thread) error {
+	if !t.afterChronicle {
+		return opcodeReserved(op, t)
+	}
+	if t.tx == nil {
+		return errs.NewError(errs.ErrInvalidParams, "OP_VER requires a transaction")
+	}
+	v := t.tx.Version
+	t.dstack.PushByteArray([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)})
+	return nil
+}
+
+// opcodeVerConditional handles OP_VERIF and OP_VERNOTIF.
+// Pre-Chronicle: fails unless post-genesis in a non-executing branch (where it's a NOP).
+// Post-Chronicle: works like OP_IF/OP_NOTIF but compares top stack value against tx version.
+func opcodeVerConditional(op *ParsedOpcode, t *thread) error {
+	if !t.afterChronicle {
+		if t.afterGenesis && !t.shouldExec(*op) {
+			return nil
+		}
+		return opcodeReserved(op, t)
+	}
+
+	// Post-Chronicle: version-based conditional (like IF/NOTIF with version comparison).
+	condVal := opCondFalse
+	if t.shouldExec(*op) {
+		if t.isBranchExecuting() {
+			top, err := t.dstack.PopByteArray()
+			if err != nil {
+				return errs.NewError(errs.ErrUnbalancedConditional,
+					"empty stack for %s", op.Name())
+			}
+			fValue := false
+			if len(top) == 4 && t.tx != nil {
+				v := t.tx.Version
+				versionBytes := []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
+				fValue = bytes.Equal(versionBytes, top)
+			}
+			if op.op.val == script.OpVERNOTIF {
+				fValue = !fValue
+			}
+			if fValue {
+				condVal = opCondTrue
+			}
+		} else {
+			condVal = opCondSkip
+		}
+	}
+
+	t.condStack = append(t.condStack, condVal)
+	t.elseStack.PushBool(false)
+	return nil
+}
+
+// opcode2Mul treats the top item on the data stack as an integer and replaces
+// it with its value multiplied by 2.
+// This opcode was disabled before the Chronicle upgrade.
+func opcode2Mul(op *ParsedOpcode, t *thread) error {
+	m, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+
+	two := &ScriptNumber{Val: big.NewInt(2), AfterGenesis: t.afterGenesis}
+	t.dstack.PushInt(m.Mul(two))
+	return nil
+}
+
+// opcode2Div treats the top item on the data stack as an integer and replaces
+// it with its value divided by 2, truncating towards zero.
+// This opcode was disabled before the Chronicle upgrade.
+func opcode2Div(op *ParsedOpcode, t *thread) error {
+	m, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+
+	two := &ScriptNumber{Val: big.NewInt(2), AfterGenesis: t.afterGenesis}
+	t.dstack.PushInt(m.Div(two))
+	return nil
+}
+
+// opcodeSubstr extracts a substring from a byte array.
+// Pre-Chronicle: behaves as a NOP (with possible DiscourageUpgradableNops error).
+// Post-Chronicle: stack: [data begin len] -> [data[begin:begin+len]]
+func opcodeSubstr(op *ParsedOpcode, t *thread) error {
+	if !t.afterChronicle {
+		if t.hasFlag(scriptflag.DiscourageUpgradableNops) {
+			return errs.NewError(errs.ErrDiscourageUpgradableNOPs,
+				"OP_SUBSTR reserved for Chronicle upgrade")
+		}
+		return nil
+	}
+
+	length, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	begin, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	data, err := t.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	offset := begin.Int()
+	ln := length.Int()
+	size := len(data)
+	if offset < 0 || offset >= size || ln < 0 || ln > size-offset {
+		return errs.NewError(errs.ErrNumberTooBig, "OP_SUBSTR: invalid range offset=%d len=%d size=%d",
+			offset, ln, size)
+	}
+
+	t.dstack.PushByteArray(data[offset : offset+ln])
+	return nil
+}
+
+// opcodeLeft returns the left n bytes of a byte array.
+// Pre-Chronicle: behaves as a NOP (with possible DiscourageUpgradableNops error).
+// Post-Chronicle: stack: [data len] -> [data[:len]]
+func opcodeLeft(op *ParsedOpcode, t *thread) error {
+	if !t.afterChronicle {
+		if t.hasFlag(scriptflag.DiscourageUpgradableNops) {
+			return errs.NewError(errs.ErrDiscourageUpgradableNOPs,
+				"OP_LEFT reserved for Chronicle upgrade")
+		}
+		return nil
+	}
+
+	length, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	data, err := t.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	ln := length.Int()
+	size := len(data)
+	if ln < 0 || ln > size {
+		return errs.NewError(errs.ErrNumberTooBig, "OP_LEFT: invalid length %d for size %d", ln, size)
+	}
+
+	t.dstack.PushByteArray(data[:ln])
+	return nil
+}
+
+// opcodeRight returns the right n bytes of a byte array.
+// Pre-Chronicle: behaves as a NOP (with possible DiscourageUpgradableNops error).
+// Post-Chronicle: stack: [data len] -> [data[size-len:]]
+func opcodeRight(op *ParsedOpcode, t *thread) error {
+	if !t.afterChronicle {
+		if t.hasFlag(scriptflag.DiscourageUpgradableNops) {
+			return errs.NewError(errs.ErrDiscourageUpgradableNOPs,
+				"OP_RIGHT reserved for Chronicle upgrade")
+		}
+		return nil
+	}
+
+	length, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	data, err := t.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	ln := length.Int()
+	size := len(data)
+	if ln < 0 || ln > size {
+		return errs.NewError(errs.ErrNumberTooBig, "OP_RIGHT: invalid length %d for size %d", ln, size)
+	}
+
+	t.dstack.PushByteArray(data[size-ln:])
+	return nil
+}
+
+// opcodeLShiftNum performs an arithmetic left shift on a script number.
+// Pre-Chronicle: behaves as a NOP (with possible DiscourageUpgradableNops error).
+// Post-Chronicle: stack: [value n] -> [value << n]
+func opcodeLShiftNum(op *ParsedOpcode, t *thread) error {
+	if !t.afterChronicle {
+		if t.hasFlag(scriptflag.DiscourageUpgradableNops) {
+			return errs.NewError(errs.ErrDiscourageUpgradableNOPs,
+				"OP_LSHIFTNUM reserved for Chronicle upgrade")
+		}
+		return nil
+	}
+
+	n, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	if n.LessThanInt(0) {
+		return errs.NewError(errs.ErrNumberTooSmall, "OP_LSHIFTNUM: negative shift amount")
+	}
+
+	val, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+
+	shiftAmt := uint(n.Int())
+	result := &ScriptNumber{
+		Val:          new(big.Int).Lsh(val.Val, shiftAmt),
+		AfterGenesis: t.afterGenesis,
+	}
+	t.dstack.PushInt(result)
+	return nil
+}
+
+// opcodeRShiftNum performs an arithmetic right shift on a script number.
+// Pre-Chronicle: behaves as a NOP (with possible DiscourageUpgradableNops error).
+// Post-Chronicle: stack: [value n] -> [value >> n]
+func opcodeRShiftNum(op *ParsedOpcode, t *thread) error {
+	if !t.afterChronicle {
+		if t.hasFlag(scriptflag.DiscourageUpgradableNops) {
+			return errs.NewError(errs.ErrDiscourageUpgradableNOPs,
+				"OP_RSHIFTNUM reserved for Chronicle upgrade")
+		}
+		return nil
+	}
+
+	n, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	if n.LessThanInt(0) {
+		return errs.NewError(errs.ErrNumberTooSmall, "OP_RSHIFTNUM: negative shift amount")
+	}
+
+	val, err := t.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+
+	shiftAmt := uint(n.Int())
+	result := &ScriptNumber{
+		Val:          new(big.Int).Rsh(val.Val, shiftAmt),
+		AfterGenesis: t.afterGenesis,
+	}
+	t.dstack.PushInt(result)
+	return nil
 }
