@@ -1010,6 +1010,8 @@ func TestScriptPubKey(t *testing.T) {
 func TestChronicleOpcodeASMRoundTrip(t *testing.T) {
 	t.Parallel()
 
+	const rshiftnumCompoundASM = "OP_16 OP_2 OP_RSHIFTNUM OP_4 OP_EQUAL"
+
 	// toASM: single-opcode scripts must use Chronicle names, not NOP aliases.
 	toASMTests := []struct {
 		name   string
@@ -1033,7 +1035,7 @@ func TestChronicleOpcodeASMRoundTrip(t *testing.T) {
 		// Compound: 0x51 0x52 0xb6 0x54 0x87  (ts-sdk: '1 << 2 = 4')
 		{"OP_LSHIFTNUM compound 2", "5152b65487", "OP_TRUE OP_2 OP_LSHIFTNUM OP_4 OP_EQUAL"},
 		// Compound: 0x60 0x52 0xb7 0x54 0x87  (ts-sdk: '16 >> 2 = 4')
-		{"OP_RSHIFTNUM compound", "6052b75487", "OP_16 OP_2 OP_RSHIFTNUM OP_4 OP_EQUAL"},
+		{"OP_RSHIFTNUM compound", "6052b75487", rshiftnumCompoundASM},
 		// Compound: 0x54 0x52 0xb7 0x51 0x87  (ts-sdk: '4 >> 2 = 1')
 		{"OP_RSHIFTNUM compound 2", "5452b75187", "OP_4 OP_2 OP_RSHIFTNUM OP_TRUE OP_EQUAL"},
 	}
@@ -1067,7 +1069,7 @@ func TestChronicleOpcodeASMRoundTrip(t *testing.T) {
 		// ts-sdk uses "OP_1" which go-sdk's OpCodeStrings also accepts.
 		{"LSHIFTNUM asm OP_1 alias", "OP_1 OP_1 OP_LSHIFTNUM OP_2 OP_EQUAL", "5151b65287"},
 		// Using go-sdk canonical names for the round-trip.
-		{"RSHIFTNUM compound asm", "OP_16 OP_2 OP_RSHIFTNUM OP_4 OP_EQUAL", "6052b75487"},
+		{"RSHIFTNUM compound asm", rshiftnumCompoundASM, "6052b75487"},
 	}
 
 	for _, tc := range fromASMTests {
@@ -1089,7 +1091,7 @@ func TestChronicleOpcodeASMRoundTrip(t *testing.T) {
 		"OP_RSHIFTNUM",
 		"OP_TRUE OP_TRUE OP_LSHIFTNUM OP_2 OP_EQUAL",
 		"OP_TRUE OP_2 OP_LSHIFTNUM OP_4 OP_EQUAL",
-		"OP_16 OP_2 OP_RSHIFTNUM OP_4 OP_EQUAL",
+		rshiftnumCompoundASM,
 		"OP_4 OP_2 OP_RSHIFTNUM OP_TRUE OP_EQUAL",
 		"OP_2 OP_TRUE OP_RSHIFTNUM OP_TRUE OP_EQUAL",
 	}

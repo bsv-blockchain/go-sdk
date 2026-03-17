@@ -59,7 +59,7 @@ func versionLE(v uint32) []byte {
 // TestChronicleOpcodes_PreChronicle verifies that every Chronicle-reactivated opcode
 // is rejected with the correct error when executed in the pre-Chronicle era.
 // Mirrors the PRE_CHRONICLE phase in opcodes.py.
-func TestChronicleOpcodes_PreChronicle(t *testing.T) {
+func TestChronicleOpcodesPreChronicle(t *testing.T) {
 	t.Parallel()
 
 	helloWorld := []byte("HelloWorld")
@@ -247,7 +247,7 @@ func TestChronicleOpcodes_PreChronicle(t *testing.T) {
 // TestChronicleOpcodes_PostChronicle verifies that every Chronicle-reactivated opcode
 // executes correctly in the post-Chronicle era.
 // Mirrors the POST_CHRONICLE phase in opcodes.py.
-func TestChronicleOpcodes_PostChronicle(t *testing.T) {
+func TestChronicleOpcodesPostChronicle(t *testing.T) {
 	t.Parallel()
 
 	helloWorld := []byte("HelloWorld")
@@ -410,7 +410,7 @@ func TestChronicleOpcodes_PostChronicle(t *testing.T) {
 }
 
 // TestChronicleOpcodes_EdgeCases covers boundary conditions for Chronicle opcodes.
-func TestChronicleOpcodes_EdgeCases(t *testing.T) {
+func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Parallel()
 
 	t.Run("OP_VER without tx returns error post-Chronicle", func(t *testing.T) {
@@ -583,7 +583,7 @@ func TestChronicleOpcodes_EdgeCases(t *testing.T) {
 // TestChronicleNopBehavior_WithoutDiscourageFlag verifies that the Chronicle NOP-type
 // opcodes (SUBSTR/LEFT/RIGHT/LSHIFTNUM/RSHIFTNUM) are silent NOPs pre-Chronicle when
 // the DiscourageUpgradableNops flag is absent, leaving extra items on the stack.
-func TestChronicleNopBehavior_WithoutDiscourageFlag(t *testing.T) {
+func TestChronicleNopBehaviorWithoutDiscourageFlag(t *testing.T) {
 	t.Parallel()
 
 	// Pre-Chronicle: OP_SUBSTR is a NOP, so stack ends up with extra items.
