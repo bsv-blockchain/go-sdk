@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testWalletErrMsg = "wallet error"
+
 // buildPairWithWalletError creates a transceiver pair where all wallet calls return an error.
 func buildPairWithWalletError(t *testing.T, errMsg string) (*wallet.TestWallet, *substrates.WalletWireTransceiver) {
 	t.Helper()
@@ -52,92 +54,92 @@ func buildPairWithWalletError(t *testing.T, errMsg string) (*wallet.TestWallet, 
 }
 
 func TestTransceiverWalletErrorCreateAction(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.CreateAction(context.Background(), wallet.CreateActionArgs{Description: "test"}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorSignAction(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.SignAction(context.Background(), wallet.SignActionArgs{Reference: []byte("r")}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorAbortAction(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.AbortAction(context.Background(), wallet.AbortActionArgs{Reference: []byte("r")}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorListActions(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.ListActions(context.Background(), wallet.ListActionsArgs{}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorInternalizeAction(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.InternalizeAction(context.Background(), wallet.InternalizeActionArgs{Tx: []byte{1}, Description: "d"}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorListOutputs(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.ListOutputs(context.Background(), wallet.ListOutputsArgs{Basket: "b"}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorRelinquishOutput(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.RelinquishOutput(context.Background(), wallet.RelinquishOutputArgs{Basket: "b"}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorGetPublicKey(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.GetPublicKey(context.Background(), wallet.GetPublicKeyArgs{IdentityKey: true}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorListCertificates(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.ListCertificates(context.Background(), wallet.ListCertificatesArgs{}, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorIsAuthenticated(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.IsAuthenticated(context.Background(), nil, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorGetHeight(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.GetHeight(context.Background(), nil, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorGetNetwork(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.GetNetwork(context.Background(), nil, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }
 
 func TestTransceiverWalletErrorGetVersion(t *testing.T) {
-	_, transceiver := buildPairWithWalletError(t, "wallet error")
+	_, transceiver := buildPairWithWalletError(t, testWalletErrMsg)
 	_, err := transceiver.GetVersion(context.Background(), nil, "app")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wallet error")
+	assert.Contains(t, err.Error(), testWalletErrMsg)
 }

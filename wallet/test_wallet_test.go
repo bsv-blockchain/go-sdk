@@ -11,6 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testKeyID = "test-key"
+	testAppID = "my-app"
+)
+
+
 func TestNewTestWalletForRandomKey(t *testing.T) {
 	tw := wallet.NewTestWalletForRandomKey(t)
 	assert.NotNil(t, tw)
@@ -274,7 +280,7 @@ func TestTestWalletRevealSpecificKeyLinkageOverride(t *testing.T) {
 	ctx := context.Background()
 
 	tw.OnRevealSpecificKeyLinkage().ReturnSuccess(&wallet.RevealSpecificKeyLinkageResult{
-		KeyID: "test-key",
+		KeyID: testKeyID,
 	})
 
 	privKey, _ := ec.NewPrivateKey()
@@ -285,10 +291,10 @@ func TestTestWalletRevealSpecificKeyLinkageOverride(t *testing.T) {
 			Counterparty: privKey.PubKey(),
 		},
 		ProtocolID: wallet.Protocol{SecurityLevel: 0, Protocol: "testprotocol"},
-		KeyID:      "test-key",
+		KeyID:      testKeyID,
 	}, "test")
 	require.NoError(t, err)
-	assert.Equal(t, "test-key", result.KeyID)
+	assert.Equal(t, testKeyID, result.KeyID)
 }
 
 func TestTestWalletAcquireCertificateOverride(t *testing.T) {
@@ -477,9 +483,9 @@ func TestTestWalletExpect(t *testing.T) {
 		}).
 		ReturnSuccess(&wallet.GetPublicKeyResult{})
 
-	_, err := tw.GetPublicKey(ctx, wallet.GetPublicKeyArgs{}, "my-app")
+	_, err := tw.GetPublicKey(ctx, wallet.GetPublicKeyArgs{}, testAppID)
 	require.NoError(t, err)
-	assert.Equal(t, "my-app", gotOriginator)
+	assert.Equal(t, testAppID, gotOriginator)
 }
 
 func TestTestWalletExpectOriginatorMethod(t *testing.T) {
@@ -489,10 +495,10 @@ func TestTestWalletExpectOriginatorMethod(t *testing.T) {
 	// ExpectOriginator on MockWalletMethods
 	privKey, _ := ec.NewPrivateKey()
 	tw.OnGetPublicKey().
-		ExpectOriginator("my-app").
+		ExpectOriginator(testAppID).
 		ReturnSuccess(&wallet.GetPublicKeyResult{PublicKey: privKey.PubKey()})
 
-	result, err := tw.GetPublicKey(ctx, wallet.GetPublicKeyArgs{}, "my-app")
+	result, err := tw.GetPublicKey(ctx, wallet.GetPublicKeyArgs{}, testAppID)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 }

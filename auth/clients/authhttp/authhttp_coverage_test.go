@@ -215,8 +215,15 @@ func buildGeneralMessageHandler(
 			return
 		}
 
-		writeSignedResponse(w, r, serverWallet, identityKey, requestIDBase64, requestIDBytes,
-			serverSessionNonce, clientSessionNonce, responseStatusCode)
+		writeSignedResponse(w, r, signedResponseArgs{
+			serverWallet:       serverWallet,
+			identityKey:        identityKey,
+			requestIDBase64:    requestIDBase64,
+			requestIDBytes:     requestIDBytes,
+			serverSessionNonce: serverSessionNonce,
+			clientSessionNonce: clientSessionNonce,
+			responseStatusCode: responseStatusCode,
+		})
 	}
 }
 
@@ -258,18 +265,26 @@ func lookupClientNonce(w http.ResponseWriter, serverSM *auth.DefaultSessionManag
 	return serverSession.PeerNonce, true
 }
 
+// signedResponseArgs bundles parameters for writeSignedResponse.
+type signedResponseArgs struct {
+	serverWallet       *wallet.TestWallet
+	identityKey        *ec.PublicKey
+	requestIDBase64    string
+	requestIDBytes     []byte
+	serverSessionNonce string
+	clientSessionNonce string
+	responseStatusCode int
+}
+
 // writeSignedResponse signs the response payload and writes BRC-104 response headers.
-func writeSignedResponse(
-	w http.ResponseWriter,
-	r *http.Request,
-	serverWallet *wallet.TestWallet,
-	identityKey *ec.PublicKey,
-	requestIDBase64 string,
-	requestIDBytes []byte,
-	serverSessionNonce string,
-	clientSessionNonce string,
-	responseStatusCode int,
-) {
+func writeSignedResponse(w http.ResponseWriter, r *http.Request, args signedResponseArgs) {
+	serverWallet := args.serverWallet
+	identityKey := args.identityKey
+	requestIDBase64 := args.requestIDBase64
+	requestIDBytes := args.requestIDBytes
+	serverSessionNonce := args.serverSessionNonce
+	clientSessionNonce := args.clientSessionNonce
+	responseStatusCode := args.responseStatusCode
 	_ = serverSessionNonce // kept for clarity; clientSessionNonce is derived from it
 
 	ctx := r.Context()
