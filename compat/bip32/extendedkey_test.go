@@ -17,7 +17,7 @@ func getTestKey(t *testing.T) *compat.ExtendedKey {
 	return k
 }
 
-func TestExtendedKey_IsPrivate(t *testing.T) {
+func TestExtendedKeyIsPrivate(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns true for private key", func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestExtendedKey_IsPrivate(t *testing.T) {
 	})
 }
 
-func TestExtendedKey_Depth(t *testing.T) {
+func TestExtendedKeyDepth(t *testing.T) {
 	t.Parallel()
 
 	t.Run("root key has depth zero", func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestExtendedKey_Depth(t *testing.T) {
 	})
 }
 
-func TestExtendedKey_ParentFingerprint(t *testing.T) {
+func TestExtendedKeyParentFingerprint(t *testing.T) {
 	t.Parallel()
 
 	t.Run("root key has zero fingerprint", func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestExtendedKey_ParentFingerprint(t *testing.T) {
 	})
 }
 
-func TestExtendedKey_Address(t *testing.T) {
+func TestExtendedKeyAddress(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns mainnet address for private key", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestExtendedKey_Address(t *testing.T) {
 	})
 }
 
-func TestExtendedKey_IsForNet(t *testing.T) {
+func TestExtendedKeyIsForNet(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns true for mainnet key on mainnet", func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestExtendedKey_IsForNet(t *testing.T) {
 	})
 }
 
-func TestExtendedKey_SetNet(t *testing.T) {
+func TestExtendedKeySetNet(t *testing.T) {
 	t.Parallel()
 
 	t.Run("sets network for private key", func(t *testing.T) {
@@ -142,7 +142,7 @@ func TestExtendedKey_SetNet(t *testing.T) {
 	})
 }
 
-func TestExtendedKey_Zero(t *testing.T) {
+func TestExtendedKeyZero(t *testing.T) {
 	t.Parallel()
 
 	t.Run("zeroed key returns sentinel string", func(t *testing.T) {
@@ -186,7 +186,7 @@ func TestNewMaster(t *testing.T) {
 	})
 }
 
-func TestNewKeyFromString_Errors(t *testing.T) {
+func TestNewKeyFromStringErrors(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns error for empty string", func(t *testing.T) {
@@ -206,7 +206,7 @@ func TestNewKeyFromString_Errors(t *testing.T) {
 	})
 }
 
-func TestExtendedKey_Child_Errors(t *testing.T) {
+func TestExtendedKeyChildErrors(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns error when deriving hardened key from public key", func(t *testing.T) {
@@ -280,7 +280,7 @@ func TestGetPrivateKeyByPathPublicKeyError(t *testing.T) {
 	})
 }
 
-func TestDeriveChildFromPath_EmptyPath(t *testing.T) {
+func TestDeriveChildFromPathEmptyPath(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty path returns same key", func(t *testing.T) {

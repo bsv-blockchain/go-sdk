@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestScript_Bytes verifies that Bytes returns the underlying byte slice.
-func TestScript_Bytes(t *testing.T) {
+// TestScriptBytes verifies that Bytes returns the underlying byte slice.
+func TestScriptBytes(t *testing.T) {
 	t.Parallel()
 
 	t.Run("non-empty script", func(t *testing.T) {
@@ -37,8 +37,8 @@ func TestScript_Bytes(t *testing.T) {
 	})
 }
 
-// TestScript_Slice verifies that Slice returns the correct sub-slice.
-func TestScript_Slice(t *testing.T) {
+// TestScriptSlice verifies that Slice returns the correct sub-slice.
+func TestScriptSlice(t *testing.T) {
 	t.Parallel()
 
 	t.Run("slice full range", func(t *testing.T) {
@@ -73,8 +73,8 @@ func TestScript_Slice(t *testing.T) {
 	})
 }
 
-// TestScript_Address verifies Address extraction from P2PKH scripts.
-func TestScript_Address(t *testing.T) {
+// TestScriptAddress verifies Address extraction from P2PKH scripts.
+func TestScriptAddress(t *testing.T) {
 	t.Parallel()
 
 	t.Run("valid P2PKH returns address", func(t *testing.T) {
@@ -116,8 +116,8 @@ func TestScript_Address(t *testing.T) {
 	})
 }
 
-// TestScript_IsMultiSigOut verifies multisig output detection.
-func TestScript_IsMultiSigOut(t *testing.T) {
+// TestScriptIsMultiSigOut verifies multisig output detection.
+func TestScriptIsMultiSigOut(t *testing.T) {
 	t.Parallel()
 
 	// Build a valid 1-of-2 multisig output script: OP_1 <pubkey1> <pubkey2> OP_2 OP_CHECKMULTISIG
@@ -189,8 +189,8 @@ func TestScript_IsMultiSigOut(t *testing.T) {
 	})
 }
 
-// TestReadOp_ExtraCases exercises the uncovered branches of ReadOp.
-func TestReadOp_ExtraCases(t *testing.T) {
+// TestReadOpExtraCases exercises the uncovered branches of ReadOp.
+func TestReadOpExtraCases(t *testing.T) {
 	t.Parallel()
 
 	t.Run("OpPUSHDATA1 valid", func(t *testing.T) {

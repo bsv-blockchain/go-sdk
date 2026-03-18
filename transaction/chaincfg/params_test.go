@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHDPrivateKeyToPublicKeyID_MainNet(t *testing.T) {
+func TestHDPrivateKeyToPublicKeyIDMainNet(t *testing.T) {
 	// MainNet HDPrivateKeyID: {0x04, 0x88, 0xad, 0xe4} -> HDPublicKeyID: {0x04, 0x88, 0xb2, 0x1e}
 	privID := MainNet.HDPrivateKeyID[:]
 	pubID, err := HDPrivateKeyToPublicKeyID(privID)
@@ -14,7 +14,7 @@ func TestHDPrivateKeyToPublicKeyID_MainNet(t *testing.T) {
 	require.Equal(t, MainNet.HDPublicKeyID[:], pubID)
 }
 
-func TestHDPrivateKeyToPublicKeyID_TestNet(t *testing.T) {
+func TestHDPrivateKeyToPublicKeyIDTestNet(t *testing.T) {
 	// TestNet HDPrivateKeyID: {0x04, 0x35, 0x83, 0x94} -> HDPublicKeyID: {0x04, 0x35, 0x87, 0xcf}
 	privID := TestNet.HDPrivateKeyID[:]
 	pubID, err := HDPrivateKeyToPublicKeyID(privID)
@@ -22,29 +22,29 @@ func TestHDPrivateKeyToPublicKeyID_TestNet(t *testing.T) {
 	require.Equal(t, TestNet.HDPublicKeyID[:], pubID)
 }
 
-func TestHDPrivateKeyToPublicKeyID_WrongLength(t *testing.T) {
+func TestHDPrivateKeyToPublicKeyIDWrongLength(t *testing.T) {
 	// ID must be exactly 4 bytes.
 	_, err := HDPrivateKeyToPublicKeyID([]byte{0x01, 0x02, 0x03})
 	require.ErrorIs(t, err, ErrUnknownHDKeyID)
 }
 
-func TestHDPrivateKeyToPublicKeyID_TooLong(t *testing.T) {
+func TestHDPrivateKeyToPublicKeyIDTooLong(t *testing.T) {
 	_, err := HDPrivateKeyToPublicKeyID([]byte{0x01, 0x02, 0x03, 0x04, 0x05})
 	require.ErrorIs(t, err, ErrUnknownHDKeyID)
 }
 
-func TestHDPrivateKeyToPublicKeyID_Empty(t *testing.T) {
+func TestHDPrivateKeyToPublicKeyIDEmpty(t *testing.T) {
 	_, err := HDPrivateKeyToPublicKeyID([]byte{})
 	require.ErrorIs(t, err, ErrUnknownHDKeyID)
 }
 
-func TestHDPrivateKeyToPublicKeyID_UnknownKey(t *testing.T) {
+func TestHDPrivateKeyToPublicKeyIDUnknownKey(t *testing.T) {
 	// A 4-byte key that is not registered.
 	_, err := HDPrivateKeyToPublicKeyID([]byte{0xFF, 0xFF, 0xFF, 0xFF})
 	require.ErrorIs(t, err, ErrUnknownHDKeyID)
 }
 
-func TestRegister_NewNetwork(t *testing.T) {
+func TestRegisterNewNetwork(t *testing.T) {
 	customParams := &Params{
 		Name:                   "custom",
 		LegacyPubKeyHashAddrID: 0x42,
@@ -63,7 +63,7 @@ func TestRegister_NewNetwork(t *testing.T) {
 	require.Equal(t, customParams.HDPublicKeyID[:], pubID)
 }
 
-func TestRegister_ReturnsNilError(t *testing.T) {
+func TestRegisterReturnsNilError(t *testing.T) {
 	// Register always returns nil; verify that contract holds.
 	err := Register(&MainNet)
 	require.NoError(t, err)

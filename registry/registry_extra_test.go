@@ -29,6 +29,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	errBroadcasterCreationFailed = "broadcaster creation failed"
+	testCertType                 = "cert-type"
+	testBasketID                 = "basket-id"
+	testProtoName                = "Proto Name"
+	testCertName                 = "Cert Name"
+	testSomeScript               = "some-script"
+)
+
 // ---- shared helpers ---------------------------------------------------------
 
 const validBeefHex = "0100beef01fe636d0c0007021400fe507c0c7aa754cef1f7889d5fd395cf1f785dd7de98eed895dbedfe4e5bc70d1502ac4e164f5bc16746bb0868404292ac8318bbac3800e4aad13a014da427adce3e010b00bc4ff395efd11719b277694cface5aa50d085a0bb81f613f70313acd28cf4557010400574b2d9142b8d28b61d88e3b2c3f44d858411356b49a28a4643b6d1a6a092a5201030051a05fc84d531b5d250c23f4f886f6812f9fe3f402d61607f977b4ecd2701c19010000fd781529d58fc2523cf396a7f25440b409857e7e221766c57214b1d38c7b481f01010062f542f45ea3660f86c013ced80534cb5fd4c19d66c56e7e8c5d4bf2d40acc5e010100b121e91836fd7cd5102b654e9f72f3cf6fdbfd0b161c53a9c54b12c841126331020100000001cd4e4cac3c7b56920d1e7655e7e260d31f29d9a388d04910f1bbd72304a79029010000006b483045022100e75279a205a547c445719420aa3138bf14743e3f42618e5f86a19bde14bb95f7022064777d34776b05d816daf1699493fcdf2ef5a5ab1ad710d9c97bfb5b8f7cef3641210263e2dee22b1ddc5e11f6fab8bcd2378bdd19580d640501ea956ec0e786f93e76ffffffff013e660000000000001976a9146bfd5c7fbe21529d45803dbcf0c87dd3c71efbc288ac0000000001000100000001ac4e164f5bc16746bb0868404292ac8318bbac3800e4aad13a014da427adce3e000000006a47304402203a61a2e931612b4bda08d541cfb980885173b8dcf64a3471238ae7abcd368d6402204cbf24f04b9aa2256d8901f0ed97866603d2be8324c2bfb7a37bf8fc90edd5b441210263e2dee22b1ddc5e11f6fab8bcd2378bdd19580d640501ea956ec0e786f93e76ffffffff013c660000000000001976a9146bfd5c7fbe21529d45803dbcf0c87dd3c71efbc288ac0000000000"
@@ -64,7 +73,7 @@ func successBroadcasterFactory(txid string) BroadcasterFactory {
 
 func errorBroadcasterFactory() BroadcasterFactory {
 	return func(_ []string, _ *topic.BroadcasterConfig) (transaction.Broadcaster, error) {
-		return nil, errors.New("broadcaster creation failed")
+		return nil, errors.New(errBroadcasterCreationFailed)
 	}
 }
 
@@ -134,7 +143,7 @@ func mockTxid(t *testing.T) *chainhash.Hash {
 
 // ---- DefaultBroadcasterFactory ----------------------------------------------
 
-func TestDefaultBroadcasterFactory_ReturnsValue(t *testing.T) {
+func TestDefaultBroadcasterFactoryReturnsValue(t *testing.T) {
 	// Just call DefaultBroadcasterFactory; a successful or errored result both cover it.
 	_, _ = DefaultBroadcasterFactory([]string{"tm_basketmap"}, &topic.BroadcasterConfig{
 		NetworkPreset: overlay.NetworkLocal,
@@ -143,7 +152,7 @@ func TestDefaultBroadcasterFactory_ReturnsValue(t *testing.T) {
 
 // ---- NewRegistryClient lookupFactory branch ---------------------------------
 
-func TestNewRegistryClient_LookupFactoryReturnsResolver(t *testing.T) {
+func TestNewRegistryClientLookupFactoryReturnsResolver(t *testing.T) {
 	client := NewRegistryClient(NewMockRegistry(t), "originator")
 	resolver := client.lookupFactory()
 	assert.NotNil(t, resolver)
@@ -151,7 +160,7 @@ func TestNewRegistryClient_LookupFactoryReturnsResolver(t *testing.T) {
 
 // ---- RegisterDefinition error paths -----------------------------------------
 
-func TestRegisterDefinition_GetPublicKeyError(t *testing.T) {
+func TestRegisterDefinitionGetPublicKeyError(t *testing.T) {
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyError = errors.New("key unavailable")
 
@@ -165,7 +174,7 @@ func TestRegisterDefinition_GetPublicKeyError(t *testing.T) {
 	assert.Contains(t, err.Error(), "key unavailable")
 }
 
-func TestRegisterDefinition_NilTxInCreateActionResult(t *testing.T) {
+func TestRegisterDefinitionNilTxInCreateActionResult(t *testing.T) {
 	// CreateAction returns a non-nil result but with nil Tx → "failed to create registration transaction"
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
@@ -186,7 +195,7 @@ func TestRegisterDefinition_NilTxInCreateActionResult(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to create")
 }
 
-func TestRegisterDefinition_BroadcasterFactoryError(t *testing.T) {
+func TestRegisterDefinitionBroadcasterFactoryError(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
@@ -203,10 +212,10 @@ func TestRegisterDefinition_BroadcasterFactoryError(t *testing.T) {
 		DefinitionType: DefinitionTypeBasket, BasketID: "b1", Name: "N",
 	})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "broadcaster creation failed")
+	assert.Contains(t, err.Error(), errBroadcasterCreationFailed)
 }
 
-func TestRegisterDefinition_ProtocolType(t *testing.T) {
+func TestRegisterDefinitionProtocolType(t *testing.T) {
 	beef := decodeValidBeef(t)
 	txID := mockTxid(t)
 	mw := NewMockRegistry(t)
@@ -233,7 +242,7 @@ func TestRegisterDefinition_ProtocolType(t *testing.T) {
 	require.NotNil(t, result)
 }
 
-func TestRegisterDefinition_CertificateType(t *testing.T) {
+func TestRegisterDefinitionCertificateType(t *testing.T) {
 	beef := decodeValidBeef(t)
 	txID := mockTxid(t)
 	mw := NewMockRegistry(t)
@@ -250,7 +259,7 @@ func TestRegisterDefinition_CertificateType(t *testing.T) {
 
 	result, err := client.RegisterDefinition(context.Background(), &CertificateDefinitionData{
 		DefinitionType:   DefinitionTypeCertificate,
-		Type:             "cert-type",
+		Type:             testCertType,
 		Name:             "Test Cert",
 		IconURL:          "https://example.com/icon.png",
 		Description:      "desc",
@@ -279,7 +288,7 @@ func (m *mockWalletNetwork) GetNetwork(_ context.Context, _ any, _ string) (*wal
 	return &wallet.GetNetworkResult{Network: wallet.Network(m.resp)}, nil
 }
 
-func TestRegisterDefinition_NetworkDetectTestnet(t *testing.T) {
+func TestRegisterDefinitionNetworkDetectTestnet(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), resp: "testnet"}
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
@@ -296,7 +305,7 @@ func TestRegisterDefinition_NetworkDetectTestnet(t *testing.T) {
 	})
 }
 
-func TestRegisterDefinition_NetworkDetectMainnet(t *testing.T) {
+func TestRegisterDefinitionNetworkDetectMainnet(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), resp: "mainnet"}
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
@@ -312,7 +321,7 @@ func TestRegisterDefinition_NetworkDetectMainnet(t *testing.T) {
 	})
 }
 
-func TestRegisterDefinition_NetworkDetectUnknown(t *testing.T) {
+func TestRegisterDefinitionNetworkDetectUnknown(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), resp: "local"}
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
@@ -328,7 +337,7 @@ func TestRegisterDefinition_NetworkDetectUnknown(t *testing.T) {
 	})
 }
 
-func TestRegisterDefinition_GetNetworkError(t *testing.T) {
+func TestRegisterDefinitionGetNetworkError(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), err: errors.New("no network")}
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
@@ -349,7 +358,7 @@ func TestRegisterDefinition_GetNetworkError(t *testing.T) {
 
 // ---- ListOwnRegistryEntries additional paths --------------------------------
 
-func TestListOwnRegistryEntries_NonSpendableSkipped(t *testing.T) {
+func TestListOwnRegistryEntriesNonSpendableSkipped(t *testing.T) {
 	mw := NewMockRegistry(t)
 	mw.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
@@ -364,7 +373,7 @@ func TestListOwnRegistryEntries_NonSpendableSkipped(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestListOwnRegistryEntries_InvalidBEEFSkipped(t *testing.T) {
+func TestListOwnRegistryEntriesInvalidBEEFSkipped(t *testing.T) {
 	mw := NewMockRegistry(t)
 	mw.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
@@ -379,9 +388,9 @@ func TestListOwnRegistryEntries_InvalidBEEFSkipped(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestListOwnRegistryEntries_OutOfBoundsIndexSkipped(t *testing.T) {
+func TestListOwnRegistryEntriesOutOfBoundsIndexSkipped(t *testing.T) {
 	ls := buildPushDropScript(t, [][]byte{
-		[]byte("basket-id"), []byte("name"), []byte("icon"),
+		[]byte(testBasketID), []byte("name"), []byte("icon"),
 		[]byte("desc"), []byte("doc"), []byte("operator"),
 	})
 	beef, tx := beefWithScript(t, ls)
@@ -403,7 +412,7 @@ func TestListOwnRegistryEntries_OutOfBoundsIndexSkipped(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestListOwnRegistryEntries_InvalidLockingScriptSkipped(t *testing.T) {
+func TestListOwnRegistryEntriesInvalidLockingScriptSkipped(t *testing.T) {
 	emptyScript := &script.Script{}
 	beef, tx := beefWithScript(t, emptyScript)
 
@@ -423,7 +432,7 @@ func TestListOwnRegistryEntries_InvalidLockingScriptSkipped(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestListOwnRegistryEntries_ProtocolType(t *testing.T) {
+func TestListOwnRegistryEntriesProtocolType(t *testing.T) {
 	pubKeyBytes := []byte{
 		0x02,
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -432,7 +441,7 @@ func TestListOwnRegistryEntries_ProtocolType(t *testing.T) {
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 	}
 	ls := buildPushDropScript(t, [][]byte{
-		[]byte(`[2,"myprotocol"]`), []byte("Proto Name"), []byte("icon"),
+		[]byte(`[2,"myprotocol"]`), []byte(testProtoName), []byte("icon"),
 		[]byte("desc"), []byte("doc"), pubKeyBytes,
 	})
 	beef, tx := beefWithScript(t, ls)
@@ -452,7 +461,7 @@ func TestListOwnRegistryEntries_ProtocolType(t *testing.T) {
 	require.Len(t, results, 1)
 }
 
-func TestListOwnRegistryEntries_CertificateType(t *testing.T) {
+func TestListOwnRegistryEntriesCertificateType(t *testing.T) {
 	pubKeyBytes := []byte{
 		0x02,
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -461,7 +470,7 @@ func TestListOwnRegistryEntries_CertificateType(t *testing.T) {
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 	}
 	ls := buildPushDropScript(t, [][]byte{
-		[]byte("cert-type"), []byte("Cert Name"), []byte("icon"),
+		[]byte(testCertType), []byte(testCertName), []byte("icon"),
 		[]byte("desc"), []byte("doc"),
 		[]byte(`{"name":{"friendlyName":"N","type":"text","description":"","fieldIcon":""}}`),
 		pubKeyBytes,
@@ -483,7 +492,7 @@ func TestListOwnRegistryEntries_CertificateType(t *testing.T) {
 	require.Len(t, results, 1)
 }
 
-func TestListOwnRegistryEntries_ListOutputsError(t *testing.T) {
+func TestListOwnRegistryEntriesListOutputsError(t *testing.T) {
 	mw := &walletWithListError{MockRegistry: NewMockRegistry(t), err: errors.New("db offline")}
 	client := NewRegistryClient(mw, "originator")
 	_, err := client.ListOwnRegistryEntries(context.Background(), DefinitionTypeBasket)
@@ -502,9 +511,9 @@ func (m *walletWithListError) ListOutputs(_ context.Context, _ wallet.ListOutput
 }
 
 // logCapture satisfies the testLogger context interface.
-type logCapture struct{}
+type logCapture struct{} // intentionally empty; implements Logf interface
 
-func (logCapture) Logf(_ string, _ ...interface{}) {}
+func (logCapture) Logf(_ string, _ ...interface{}) { /* no-op: discard log output in tests */ }
 
 // ---- parseLockingScript – success paths -------------------------------------
 
@@ -518,21 +527,21 @@ func testPubKeyBytes() []byte {
 	}
 }
 
-func TestParseLockingScript_BasketSuccess(t *testing.T) {
+func TestParseLockingScriptBasketSuccess(t *testing.T) {
 	s := buildPushDropScript(t, [][]byte{
-		[]byte("basket-id"), []byte("Basket Name"), []byte("icon"),
+		[]byte(testBasketID), []byte("Basket Name"), []byte("icon"),
 		[]byte("desc"), []byte("doc"), testPubKeyBytes(),
 	})
 	data, err := parseLockingScript(DefinitionTypeBasket, s)
 	require.NoError(t, err)
 	basket, ok := data.(*BasketDefinitionData)
 	require.True(t, ok)
-	assert.Equal(t, "basket-id", basket.BasketID)
+	assert.Equal(t, testBasketID, basket.BasketID)
 }
 
-func TestParseLockingScript_ProtocolSuccess(t *testing.T) {
+func TestParseLockingScriptProtocolSuccess(t *testing.T) {
 	s := buildPushDropScript(t, [][]byte{
-		[]byte(`[2,"myprotocol"]`), []byte("Proto Name"), []byte("icon"),
+		[]byte(`[2,"myprotocol"]`), []byte(testProtoName), []byte("icon"),
 		[]byte("desc"), []byte("doc"), testPubKeyBytes(),
 	})
 	data, err := parseLockingScript(DefinitionTypeProtocol, s)
@@ -542,24 +551,24 @@ func TestParseLockingScript_ProtocolSuccess(t *testing.T) {
 	assert.Equal(t, "myprotocol", proto.ProtocolID.Protocol)
 }
 
-func TestParseLockingScript_ProtocolBadJSON(t *testing.T) {
+func TestParseLockingScriptProtocolBadJSON(t *testing.T) {
 	s := buildPushDropScript(t, [][]byte{
-		[]byte("not-valid-json"), []byte("Proto Name"), []byte("icon"),
+		[]byte("not-valid-json"), []byte(testProtoName), []byte("icon"),
 		[]byte("desc"), []byte("doc"), testPubKeyBytes(),
 	})
 	_, err := parseLockingScript(DefinitionTypeProtocol, s)
 	require.Error(t, err)
 }
 
-func TestParseLockingScript_ProtocolWrongFieldCount(t *testing.T) {
+func TestParseLockingScriptProtocolWrongFieldCount(t *testing.T) {
 	s := buildPushDropScript(t, [][]byte{[]byte("a"), []byte("b"), []byte("c")})
 	_, err := parseLockingScript(DefinitionTypeProtocol, s)
 	require.Error(t, err)
 }
 
-func TestParseLockingScript_CertificateSuccess(t *testing.T) {
+func TestParseLockingScriptCertificateSuccess(t *testing.T) {
 	s := buildPushDropScript(t, [][]byte{
-		[]byte("cert-type"), []byte("Cert Name"), []byte("icon"),
+		[]byte(testCertType), []byte(testCertName), []byte("icon"),
 		[]byte("desc"), []byte("doc"),
 		[]byte(`{"name":{"friendlyName":"Name","type":"text","description":"","fieldIcon":""}}`),
 		testPubKeyBytes(),
@@ -568,13 +577,13 @@ func TestParseLockingScript_CertificateSuccess(t *testing.T) {
 	require.NoError(t, err)
 	cert, ok := data.(*CertificateDefinitionData)
 	require.True(t, ok)
-	assert.Equal(t, "cert-type", cert.Type)
+	assert.Equal(t, testCertType, cert.Type)
 }
 
-func TestParseLockingScript_CertificateInvalidFieldsJSON(t *testing.T) {
+func TestParseLockingScriptCertificateInvalidFieldsJSON(t *testing.T) {
 	// Invalid fields JSON → results in empty map (no error)
 	s := buildPushDropScript(t, [][]byte{
-		[]byte("cert-type"), []byte("Cert Name"), []byte("icon"),
+		[]byte(testCertType), []byte(testCertName), []byte("icon"),
 		[]byte("desc"), []byte("doc"), []byte("invalid-json"), testPubKeyBytes(),
 	})
 	data, err := parseLockingScript(DefinitionTypeCertificate, s)
@@ -584,7 +593,7 @@ func TestParseLockingScript_CertificateInvalidFieldsJSON(t *testing.T) {
 	assert.Empty(t, cert.Fields)
 }
 
-func TestParseLockingScript_CertificateWrongFieldCount(t *testing.T) {
+func TestParseLockingScriptCertificateWrongFieldCount(t *testing.T) {
 	s := buildPushDropScript(t, [][]byte{[]byte("a"), []byte("b")})
 	_, err := parseLockingScript(DefinitionTypeCertificate, s)
 	require.Error(t, err)
@@ -592,7 +601,7 @@ func TestParseLockingScript_CertificateWrongFieldCount(t *testing.T) {
 
 // ---- RevokeOwnRegistryEntry additional paths --------------------------------
 
-func TestRevokeOwnRegistryEntry_WrongOwner(t *testing.T) {
+func TestRevokeOwnRegistryEntryWrongOwner(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -604,7 +613,7 @@ func TestRevokeOwnRegistryEntry_WrongOwner(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 
@@ -614,7 +623,7 @@ func TestRevokeOwnRegistryEntry_WrongOwner(t *testing.T) {
 	assert.Contains(t, err.Error(), "does not belong to the current wallet")
 }
 
-func TestRevokeOwnRegistryEntry_InvalidOutpoint(t *testing.T) {
+func TestRevokeOwnRegistryEntryInvalidOutpoint(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -626,7 +635,7 @@ func TestRevokeOwnRegistryEntry_InvalidOutpoint(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "NOTHEX",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -635,7 +644,7 @@ func TestRevokeOwnRegistryEntry_InvalidOutpoint(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse outpoint")
 }
 
-func TestRevokeOwnRegistryEntry_CreateActionError(t *testing.T) {
+func TestRevokeOwnRegistryEntryCreateActionError(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := &walletWithCreateActionError{MockRegistry: NewMockRegistry(t), err: errors.New("wallet busy")}
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -647,7 +656,7 @@ func TestRevokeOwnRegistryEntry_CreateActionError(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -656,7 +665,7 @@ func TestRevokeOwnRegistryEntry_CreateActionError(t *testing.T) {
 	assert.Contains(t, err.Error(), "wallet busy")
 }
 
-func TestRevokeOwnRegistryEntry_NilSignableTransaction(t *testing.T) {
+func TestRevokeOwnRegistryEntryNilSignableTransaction(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -669,7 +678,7 @@ func TestRevokeOwnRegistryEntry_NilSignableTransaction(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -678,7 +687,7 @@ func TestRevokeOwnRegistryEntry_NilSignableTransaction(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to create signable transaction")
 }
 
-func TestRevokeOwnRegistryEntry_InvalidPartialBeef(t *testing.T) {
+func TestRevokeOwnRegistryEntryInvalidPartialBeef(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -696,7 +705,7 @@ func TestRevokeOwnRegistryEntry_InvalidPartialBeef(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -705,7 +714,7 @@ func TestRevokeOwnRegistryEntry_InvalidPartialBeef(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse partial transaction")
 }
 
-func TestRevokeOwnRegistryEntry_SignActionError(t *testing.T) {
+func TestRevokeOwnRegistryEntrySignActionError(t *testing.T) {
 	key := makeTestPubKey(t)
 	beef := decodeValidBeef(t)
 	mw := &walletWithSignActionError{MockRegistry: NewMockRegistry(t), err: errors.New("sign failed")}
@@ -724,7 +733,7 @@ func TestRevokeOwnRegistryEntry_SignActionError(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script", BEEF: beef,
+			LockingScript: testSomeScript, BEEF: beef,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -733,7 +742,7 @@ func TestRevokeOwnRegistryEntry_SignActionError(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestRevokeOwnRegistryEntry_SignResultNilTx(t *testing.T) {
+func TestRevokeOwnRegistryEntrySignResultNilTx(t *testing.T) {
 	key := makeTestPubKey(t)
 	beef := decodeValidBeef(t)
 	txID := mockTxid(t)
@@ -754,7 +763,7 @@ func TestRevokeOwnRegistryEntry_SignResultNilTx(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script", BEEF: beef,
+			LockingScript: testSomeScript, BEEF: beef,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -764,7 +773,7 @@ func TestRevokeOwnRegistryEntry_SignResultNilTx(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get signed transaction")
 }
 
-func TestRevokeOwnRegistryEntry_BroadcasterFactoryError(t *testing.T) {
+func TestRevokeOwnRegistryEntryBroadcasterFactoryError(t *testing.T) {
 	key := makeTestPubKey(t)
 	beef := decodeValidBeef(t)
 	txID := mockTxid(t)
@@ -785,7 +794,7 @@ func TestRevokeOwnRegistryEntry_BroadcasterFactoryError(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script", BEEF: beef,
+			LockingScript: testSomeScript, BEEF: beef,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -794,10 +803,10 @@ func TestRevokeOwnRegistryEntry_BroadcasterFactoryError(t *testing.T) {
 
 	_, err := client.RevokeOwnRegistryEntry(context.Background(), record)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "broadcaster creation failed")
+	assert.Contains(t, err.Error(), errBroadcasterCreationFailed)
 }
 
-func TestRevokeOwnRegistryEntry_InvalidSignedTxBeef(t *testing.T) {
+func TestRevokeOwnRegistryEntryInvalidSignedTxBeef(t *testing.T) {
 	key := makeTestPubKey(t)
 	beef := decodeValidBeef(t)
 	txID := mockTxid(t)
@@ -819,7 +828,7 @@ func TestRevokeOwnRegistryEntry_InvalidSignedTxBeef(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script", BEEF: beef,
+			LockingScript: testSomeScript, BEEF: beef,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -831,7 +840,7 @@ func TestRevokeOwnRegistryEntry_InvalidSignedTxBeef(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to create transaction from BEEF")
 }
 
-func TestRevokeOwnRegistryEntry_ProtocolItemIdentifier(t *testing.T) {
+func TestRevokeOwnRegistryEntryProtocolItemIdentifier(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -840,12 +849,12 @@ func TestRevokeOwnRegistryEntry_ProtocolItemIdentifier(t *testing.T) {
 	record := &RegistryRecord{
 		DefinitionData: &ProtocolDefinitionData{
 			DefinitionType:   DefinitionTypeProtocol,
-			Name:             "Proto Name",
+			Name:             testProtoName,
 			RegistryOperator: key.ToDERHex(),
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -853,7 +862,7 @@ func TestRevokeOwnRegistryEntry_ProtocolItemIdentifier(t *testing.T) {
 	require.Error(t, err) // Fails on nil signable tx — but exercises Protocol branch
 }
 
-func TestRevokeOwnRegistryEntry_CertNameBranch(t *testing.T) {
+func TestRevokeOwnRegistryEntryCertNameBranch(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -867,7 +876,7 @@ func TestRevokeOwnRegistryEntry_CertNameBranch(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -875,7 +884,7 @@ func TestRevokeOwnRegistryEntry_CertNameBranch(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestRevokeOwnRegistryEntry_CertTypeBranch(t *testing.T) {
+func TestRevokeOwnRegistryEntryCertTypeBranch(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -890,7 +899,7 @@ func TestRevokeOwnRegistryEntry_CertTypeBranch(t *testing.T) {
 		},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -898,7 +907,7 @@ func TestRevokeOwnRegistryEntry_CertTypeBranch(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestRevokeOwnRegistryEntry_UnknownDefinitionDataBranch(t *testing.T) {
+func TestRevokeOwnRegistryEntryUnknownDefinitionDataBranch(t *testing.T) {
 	key := makeTestPubKey(t)
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: key}
@@ -908,7 +917,7 @@ func TestRevokeOwnRegistryEntry_UnknownDefinitionDataBranch(t *testing.T) {
 		DefinitionData: &customDefinitionData{operator: key.ToDERHex()},
 		TokenData: TokenData{
 			TxID:          "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-			LockingScript: "some-script",
+			LockingScript: testSomeScript,
 		},
 	}
 	client := NewRegistryClient(mw, "originator")
@@ -944,9 +953,9 @@ func (m *walletWithSignActionError) SignAction(_ context.Context, _ wallet.SignA
 
 // ---- Resolve* with valid BEEF – output-index out of range -------------------
 
-func TestResolveBasket_OutputIndexOutOfRange(t *testing.T) {
+func TestResolveBasketOutputIndexOutOfRange(t *testing.T) {
 	ls := buildPushDropScript(t, [][]byte{
-		[]byte("basket-id"), []byte("name"), []byte("icon"),
+		[]byte(testBasketID), []byte("name"), []byte("icon"),
 		[]byte("desc"), []byte("doc"), []byte("operator"),
 	})
 	beef, _ := beefWithScript(t, ls)
@@ -970,7 +979,7 @@ func TestResolveBasket_OutputIndexOutOfRange(t *testing.T) {
 
 // ---- Resolve* – invalid locking script in valid BEEF ------------------------
 
-func TestResolveBasket_InvalidLockingScriptSkipped(t *testing.T) {
+func TestResolveBasketInvalidLockingScriptSkipped(t *testing.T) {
 	beef, _ := beefWithScript(t, &script.Script{})
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -984,7 +993,7 @@ func TestResolveBasket_InvalidLockingScriptSkipped(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestResolveProtocol_InvalidLockingScriptSkipped(t *testing.T) {
+func TestResolveProtocolInvalidLockingScriptSkipped(t *testing.T) {
 	beef, _ := beefWithScript(t, &script.Script{})
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -998,7 +1007,7 @@ func TestResolveProtocol_InvalidLockingScriptSkipped(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestResolveCertificate_InvalidLockingScriptSkipped(t *testing.T) {
+func TestResolveCertificateInvalidLockingScriptSkipped(t *testing.T) {
 	beef, _ := beefWithScript(t, &script.Script{})
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -1014,9 +1023,9 @@ func TestResolveCertificate_InvalidLockingScriptSkipped(t *testing.T) {
 
 // ---- Resolve* happy paths with complete matching scripts --------------------
 
-func TestResolveBasket_ValidRecord(t *testing.T) {
+func TestResolveBasketValidRecord(t *testing.T) {
 	ls := buildPushDropScript(t, [][]byte{
-		[]byte("basket-id"), []byte("Basket Name"), []byte("icon"),
+		[]byte(testBasketID), []byte("Basket Name"), []byte("icon"),
 		[]byte("desc"), []byte("doc"), testPubKeyBytes(),
 	})
 	beef, _ := beefWithScript(t, ls)
@@ -1030,12 +1039,12 @@ func TestResolveBasket_ValidRecord(t *testing.T) {
 	results, err := client.ResolveBasket(context.Background(), BasketQuery{})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
-	assert.Equal(t, "basket-id", results[0].BasketID)
+	assert.Equal(t, testBasketID, results[0].BasketID)
 }
 
-func TestResolveProtocol_ValidRecord(t *testing.T) {
+func TestResolveProtocolValidRecord(t *testing.T) {
 	ls := buildPushDropScript(t, [][]byte{
-		[]byte(`[2,"myprotocol"]`), []byte("Proto Name"), []byte("icon"),
+		[]byte(`[2,"myprotocol"]`), []byte(testProtoName), []byte("icon"),
 		[]byte("desc"), []byte("doc"), testPubKeyBytes(),
 	})
 	beef, _ := beefWithScript(t, ls)
@@ -1052,9 +1061,9 @@ func TestResolveProtocol_ValidRecord(t *testing.T) {
 	assert.Equal(t, "myprotocol", results[0].ProtocolID.Protocol)
 }
 
-func TestResolveCertificate_ValidRecord(t *testing.T) {
+func TestResolveCertificateValidRecord(t *testing.T) {
 	ls := buildPushDropScript(t, [][]byte{
-		[]byte("cert-type"), []byte("Cert Name"), []byte("icon"),
+		[]byte(testCertType), []byte(testCertName), []byte("icon"),
 		[]byte("desc"), []byte("doc"), []byte(`{}`), testPubKeyBytes(),
 	})
 	beef, _ := beefWithScript(t, ls)
@@ -1068,12 +1077,12 @@ func TestResolveCertificate_ValidRecord(t *testing.T) {
 	results, err := client.ResolveCertificate(context.Background(), CertificateQuery{})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
-	assert.Equal(t, "cert-type", results[0].Type)
+	assert.Equal(t, testCertType, results[0].Type)
 }
 
 // ---- pushdrop.Lock coverage via mock wallet ---------------------------------
 
-func TestPushDropLock_CoversBuildFieldsProtocol(t *testing.T) {
+func TestPushDropLockCoversBuildFieldsProtocol(t *testing.T) {
 	ctx := context.Background()
 	mw := NewMockRegistry(t)
 	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
@@ -1095,7 +1104,7 @@ func TestPushDropLock_CoversBuildFieldsProtocol(t *testing.T) {
 
 // ---- CreateAction mock – arg-check branches ---------------------------------
 
-func TestMockCreateAction_ArgCheckBranch(t *testing.T) {
+func TestMockCreateActionArgCheckBranch(t *testing.T) {
 	expectedArgs := &wallet.CreateActionArgs{
 		Description: "test action",
 		Outputs:     []wallet.CreateActionOutput{},
@@ -1112,7 +1121,7 @@ func TestMockCreateAction_ArgCheckBranch(t *testing.T) {
 	assert.NotNil(t, result)
 }
 
-func TestMockCreateAction_OriginatorCheckBranch(t *testing.T) {
+func TestMockCreateActionOriginatorCheckBranch(t *testing.T) {
 	mw := NewMockRegistry(t)
 	mw.ExpectedOriginator = "expected-orig"
 	mw.CreateActionResultToReturn = &wallet.CreateActionResult{}
@@ -1124,7 +1133,7 @@ func TestMockCreateAction_OriginatorCheckBranch(t *testing.T) {
 
 // ---- buildPushDropFields – zero-value protocol ID (covers line 163-165) ----
 
-func TestBuildPushDropFields_ZeroValueProtocol(t *testing.T) {
+func TestBuildPushDropFieldsZeroValueProtocol(t *testing.T) {
 	data := &ProtocolDefinitionData{
 		ProtocolID: wallet.Protocol{SecurityLevel: 0, Protocol: ""},
 	}

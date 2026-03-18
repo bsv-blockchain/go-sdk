@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const soloNonce = "solo-nonce"
+
 // newTestPeer creates a Peer with two connected mock transports for testing
 func newTestPeer(t *testing.T, privKeyHex string) (*auth.Peer, *MockTransport, *MockTransport) {
 	t.Helper()
@@ -30,7 +32,7 @@ func newTestPeer(t *testing.T, privKeyHex string) (*auth.Peer, *MockTransport, *
 	return peer, tr, nil
 }
 
-func TestPeer_Stop(t *testing.T) {
+func TestPeerStop(t *testing.T) {
 	t.Run("stop returns nil", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
 		require.NoError(t, err)
@@ -46,7 +48,7 @@ func TestPeer_Stop(t *testing.T) {
 	})
 }
 
-func TestPeer_SetLogger(t *testing.T) {
+func TestPeerSetLogger(t *testing.T) {
 	t.Run("set logger does not panic", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
 		require.NoError(t, err)
@@ -62,7 +64,7 @@ func TestPeer_SetLogger(t *testing.T) {
 	})
 }
 
-func TestPeer_ListenCallbacks(t *testing.T) {
+func TestPeerListenCallbacks(t *testing.T) {
 	pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
 	require.NoError(t, err)
 	w, err := wallet.NewCompletedProtoWallet(pk)
@@ -121,7 +123,7 @@ func TestPeer_ListenCallbacks(t *testing.T) {
 	})
 }
 
-func TestAuthMessage_MarshalJSON(t *testing.T) {
+func TestAuthMessageMarshalJSON(t *testing.T) {
 	t.Run("marshal with valid identity key", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
 		require.NoError(t, err)
@@ -157,7 +159,7 @@ func TestAuthMessage_MarshalJSON(t *testing.T) {
 	})
 }
 
-func TestAuthMessage_UnmarshalJSON(t *testing.T) {
+func TestAuthMessageUnmarshalJSON(t *testing.T) {
 	t.Run("unmarshal roundtrip", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
 		require.NoError(t, err)
@@ -189,7 +191,7 @@ func TestAuthMessage_UnmarshalJSON(t *testing.T) {
 	})
 }
 
-func TestSessionManager_Extra(t *testing.T) {
+func TestSessionManagerExtra(t *testing.T) {
 	t.Run("GetSession by identity key returns authenticated session preferentially", func(t *testing.T) {
 		sm := auth.NewSessionManager()
 
@@ -259,15 +261,15 @@ func TestSessionManager_Extra(t *testing.T) {
 	t.Run("RemoveSession on session without identity key", func(t *testing.T) {
 		sm := auth.NewSessionManager()
 		s := &auth.PeerSession{
-			SessionNonce:    "solo-nonce",
+			SessionNonce:    soloNonce,
 			PeerIdentityKey: nil,
 			IsAuthenticated: false,
 		}
 		err := sm.AddSession(s)
 		require.NoError(t, err)
-		require.True(t, sm.HasSession("solo-nonce"))
+		require.True(t, sm.HasSession(soloNonce))
 
 		sm.RemoveSession(s)
-		require.False(t, sm.HasSession("solo-nonce"))
+		require.False(t, sm.HasSession(soloNonce))
 	})
 }

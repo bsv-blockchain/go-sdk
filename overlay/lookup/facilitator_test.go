@@ -10,7 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHTTPSOverlayLookupFacilitator_Success(t *testing.T) {
+const (
+	contentTypeJSON   = "application/json"
+	headerContentType = "Content-Type"
+)
+
+func TestHTTPSOverlayLookupFacilitatorSuccess(t *testing.T) {
 	expectedAnswer := &LookupAnswer{
 		Type:   AnswerTypeFreeform,
 		Result: "test-result",
@@ -19,7 +24,7 @@ func TestHTTPSOverlayLookupFacilitator_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/lookup", r.URL.Path)
 		require.Equal(t, http.MethodPost, r.Method)
-		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		require.Equal(t, contentTypeJSON, r.Header.Get(headerContentType))
 
 		// Decode the incoming question to verify it was sent correctly.
 		var q LookupQuestion
@@ -27,7 +32,7 @@ func TestHTTPSOverlayLookupFacilitator_Success(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "ls_slap", q.Service)
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(expectedAnswer)
 	}))
@@ -45,7 +50,7 @@ func TestHTTPSOverlayLookupFacilitator_Success(t *testing.T) {
 	require.Equal(t, AnswerTypeFreeform, answer.Type)
 }
 
-func TestHTTPSOverlayLookupFacilitator_NonOKStatus(t *testing.T) {
+func TestHTTPSOverlayLookupFacilitatorNonOKStatus(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -58,7 +63,7 @@ func TestHTTPSOverlayLookupFacilitator_NonOKStatus(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestHTTPSOverlayLookupFacilitator_ServerError(t *testing.T) {
+func TestHTTPSOverlayLookupFacilitatorServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
@@ -71,7 +76,7 @@ func TestHTTPSOverlayLookupFacilitator_ServerError(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestHTTPSOverlayLookupFacilitator_BadURL(t *testing.T) {
+func TestHTTPSOverlayLookupFacilitatorBadURL(t *testing.T) {
 	f := &HTTPSOverlayLookupFacilitator{Client: http.DefaultClient}
 	question := &LookupQuestion{Service: "ls_slap"}
 
@@ -79,7 +84,7 @@ func TestHTTPSOverlayLookupFacilitator_BadURL(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestHTTPSOverlayLookupFacilitator_InvalidResponseBody(t *testing.T) {
+func TestHTTPSOverlayLookupFacilitatorInvalidResponseBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("not-json"))
@@ -93,7 +98,7 @@ func TestHTTPSOverlayLookupFacilitator_InvalidResponseBody(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestHTTPSOverlayLookupFacilitator_OutputListAnswer(t *testing.T) {
+func TestHTTPSOverlayLookupFacilitatorOutputListAnswer(t *testing.T) {
 	expectedAnswer := &LookupAnswer{
 		Type: AnswerTypeOutputList,
 		Outputs: []*OutputListItem{
@@ -102,7 +107,7 @@ func TestHTTPSOverlayLookupFacilitator_OutputListAnswer(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(expectedAnswer)
 	}))
@@ -117,7 +122,7 @@ func TestHTTPSOverlayLookupFacilitator_OutputListAnswer(t *testing.T) {
 	require.Len(t, answer.Outputs, 1)
 }
 
-func TestNewLookupResolver_Defaults(t *testing.T) {
+func TestNewLookupResolverDefaults(t *testing.T) {
 	resolver := NewLookupResolver(&LookupResolver{})
 	require.NotNil(t, resolver)
 	require.NotNil(t, resolver.Facilitator)
@@ -127,7 +132,7 @@ func TestNewLookupResolver_Defaults(t *testing.T) {
 	require.NotNil(t, resolver.AdditionalHosts)
 }
 
-func TestNewLookupResolver_WithCustomFacilitator(t *testing.T) {
+func TestNewLookupResolverWithCustomFacilitator(t *testing.T) {
 	f := &HTTPSOverlayLookupFacilitator{Client: http.DefaultClient}
 	resolver := NewLookupResolver(&LookupResolver{
 		Facilitator: f,
@@ -135,7 +140,7 @@ func TestNewLookupResolver_WithCustomFacilitator(t *testing.T) {
 	require.Equal(t, f, resolver.Facilitator)
 }
 
-func TestNewLookupResolver_WithCustomTrackers(t *testing.T) {
+func TestNewLookupResolverWithCustomTrackers(t *testing.T) {
 	trackers := []string{"https://example.com"}
 	resolver := NewLookupResolver(&LookupResolver{
 		SLAPTrackers: trackers,
@@ -143,7 +148,7 @@ func TestNewLookupResolver_WithCustomTrackers(t *testing.T) {
 	require.Equal(t, trackers, resolver.SLAPTrackers)
 }
 
-func TestNewLookupResolver_WithHostOverrides(t *testing.T) {
+func TestNewLookupResolverWithHostOverrides(t *testing.T) {
 	overrides := map[string][]string{
 		"my_service": {"https://host1.example.com"},
 	}

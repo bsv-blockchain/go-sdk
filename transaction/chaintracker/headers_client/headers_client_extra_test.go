@@ -12,11 +12,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testAPIKey  = "test-key"
+	notJSONBody = "not json"
+)
+
 func TestGetHTTPClientWithCustomClient(t *testing.T) {
 	customClient := &http.Client{}
 	c := &Client{
 		Url:        "http://example.com",
-		ApiKey:     "test-key",
+		ApiKey:     testAPIKey,
 		httpClient: customClient,
 	}
 	got := c.getHTTPClient()
@@ -26,7 +31,7 @@ func TestGetHTTPClientWithCustomClient(t *testing.T) {
 func TestGetHTTPClientWithNilClient(t *testing.T) {
 	c := &Client{
 		Url:    "http://example.com",
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 	got := c.getHTTPClient()
 	require.NotNil(t, got)
@@ -52,7 +57,7 @@ func TestIsValidRootForHeightConfirmed(t *testing.T) {
 	mockHash, _ := chainhash.NewHashFromHex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
 	c := Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 	valid, err := c.IsValidRootForHeight(context.Background(), mockHash, 100)
 	require.NoError(t, err)
@@ -72,7 +77,7 @@ func TestIsValidRootForHeightNotConfirmed(t *testing.T) {
 	mockHash, _ := chainhash.NewHashFromHex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
 	c := Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 	valid, err := c.IsValidRootForHeight(context.Background(), mockHash, 100)
 	require.NoError(t, err)
@@ -82,14 +87,14 @@ func TestIsValidRootForHeightNotConfirmed(t *testing.T) {
 func TestIsValidRootForHeightInvalidJSON(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("not json"))
+		_, _ = w.Write([]byte(notJSONBody))
 	}))
 	defer ts.Close()
 
 	mockHash, _ := chainhash.NewHashFromHex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
 	c := Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 	_, err := c.IsValidRootForHeight(context.Background(), mockHash, 100)
 	require.Error(t, err)
@@ -114,7 +119,7 @@ func TestBlockByHeightLongestChain(t *testing.T) {
 
 	c := &Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 
 	header, err := c.BlockByHeight(context.Background(), 100)
@@ -139,7 +144,7 @@ func TestBlockByHeightNoLongestChainFallback(t *testing.T) {
 
 	c := &Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 
 	header, err := c.BlockByHeight(context.Background(), 100)
@@ -156,7 +161,7 @@ func TestBlockByHeightEmpty(t *testing.T) {
 
 	c := &Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 
 	_, err := c.BlockByHeight(context.Background(), 100)
@@ -166,13 +171,13 @@ func TestBlockByHeightEmpty(t *testing.T) {
 
 func TestBlockByHeightDecodeError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("not json"))
+		_, _ = w.Write([]byte(notJSONBody))
 	}))
 	defer ts.Close()
 
 	c := &Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 
 	_, err := c.BlockByHeight(context.Background(), 100)
@@ -192,7 +197,7 @@ func TestGetBlockState(t *testing.T) {
 
 	c := &Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 
 	state, err := c.GetBlockState(context.Background(), mockHashHex)
@@ -203,13 +208,13 @@ func TestGetBlockState(t *testing.T) {
 
 func TestGetBlockStateDecodeError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("not json"))
+		_, _ = w.Write([]byte(notJSONBody))
 	}))
 	defer ts.Close()
 
 	c := &Client{
 		Url:    ts.URL,
-		ApiKey: "test-key",
+		ApiKey: testAPIKey,
 	}
 
 	_, err := c.GetBlockState(context.Background(), "somehash")
@@ -228,7 +233,7 @@ func TestGetChaintip(t *testing.T) {
 
 	c := &Client{
 		Url:        ts.URL,
-		ApiKey:     "test-key",
+		ApiKey:     testAPIKey,
 		httpClient: ts.Client(),
 	}
 
@@ -240,13 +245,13 @@ func TestGetChaintip(t *testing.T) {
 
 func TestGetChaintipDecodeError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("not json"))
+		_, _ = w.Write([]byte(notJSONBody))
 	}))
 	defer ts.Close()
 
 	c := &Client{
 		Url:        ts.URL,
-		ApiKey:     "test-key",
+		ApiKey:     testAPIKey,
 		httpClient: ts.Client(),
 	}
 
@@ -262,7 +267,7 @@ func TestCurrentHeight(t *testing.T) {
 
 	c := &Client{
 		Url:        ts.URL,
-		ApiKey:     "test-key",
+		ApiKey:     testAPIKey,
 		httpClient: ts.Client(),
 	}
 
@@ -273,13 +278,13 @@ func TestCurrentHeight(t *testing.T) {
 
 func TestCurrentHeightError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("not json"))
+		_, _ = w.Write([]byte(notJSONBody))
 	}))
 	defer ts.Close()
 
 	c := &Client{
 		Url:        ts.URL,
-		ApiKey:     "test-key",
+		ApiKey:     testAPIKey,
 		httpClient: ts.Client(),
 	}
 

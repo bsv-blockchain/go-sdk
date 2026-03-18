@@ -14,11 +14,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testHTTPExampleURL = "http://example.com"
+
 // TestGetRegisteredOnData covers GetRegisteredOnData
 func TestGetRegisteredOnData(t *testing.T) {
 	t.Run("returns error when no handlers are registered", func(t *testing.T) {
 		transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
-			BaseURL: "http://example.com",
+			BaseURL: testHTTPExampleURL,
 		})
 		require.NoError(t, err)
 
@@ -30,7 +32,7 @@ func TestGetRegisteredOnData(t *testing.T) {
 
 	t.Run("returns first registered handler", func(t *testing.T) {
 		transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
-			BaseURL: "http://example.com",
+			BaseURL: testHTTPExampleURL,
 		})
 		require.NoError(t, err)
 
@@ -55,7 +57,7 @@ func TestGetRegisteredOnData(t *testing.T) {
 
 	t.Run("returns first handler even when multiple are registered", func(t *testing.T) {
 		transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
-			BaseURL: "http://example.com",
+			BaseURL: testHTTPExampleURL,
 		})
 		require.NoError(t, err)
 

@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const errCustomKOutOfRange = "customK is out of valid range"
+
 func makeTestPrivKey(t *testing.T) *e.PrivateKey {
 	t.Helper()
 	privKeyInt := new(big.Int)
@@ -24,28 +26,28 @@ func makeTestPrivKey(t *testing.T) *e.PrivateKey {
 	return privateKey
 }
 
-// TestSignWithCustomK_OutOfRangeK covers the error when customK is out of valid range
-func TestSignWithCustomK_OutOfRangeK(t *testing.T) {
+// TestSignWithCustomKOutOfRangeK covers the error when customK is out of valid range
+func TestSignWithCustomKOutOfRangeK(t *testing.T) {
 	msg := []byte("test message hash")
 	privateKey := makeTestPrivKey(t)
 
 	t.Run("customK = 0 is out of range", func(t *testing.T) {
 		_, err := SignWithCustomK(msg, privateKey, false, big.NewInt(0))
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "customK is out of valid range")
+		assert.Contains(t, err.Error(), errCustomKOutOfRange)
 	})
 
 	t.Run("customK = -1 is out of range", func(t *testing.T) {
 		_, err := SignWithCustomK(msg, privateKey, false, big.NewInt(-1))
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "customK is out of valid range")
+		assert.Contains(t, err.Error(), errCustomKOutOfRange)
 	})
 
 	t.Run("customK = N (curve order) is out of range", func(t *testing.T) {
 		N := privateKey.Curve.Params().N
 		_, err := SignWithCustomK(msg, privateKey, false, N)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "customK is out of valid range")
+		assert.Contains(t, err.Error(), errCustomKOutOfRange)
 	})
 
 	t.Run("customK = N+1 is out of range", func(t *testing.T) {
@@ -53,12 +55,12 @@ func TestSignWithCustomK_OutOfRangeK(t *testing.T) {
 		bigK := new(big.Int).Add(N, big.NewInt(1))
 		_, err := SignWithCustomK(msg, privateKey, false, bigK)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "customK is out of valid range")
+		assert.Contains(t, err.Error(), errCustomKOutOfRange)
 	})
 }
 
-// TestSignWithCustomK_ForceLowS covers the high-S to low-S normalization branch
-func TestSignWithCustomK_ForceLowS(t *testing.T) {
+// TestSignWithCustomKForceLowS covers the high-S to low-S normalization branch
+func TestSignWithCustomKForceLowS(t *testing.T) {
 	privateKey := makeTestPrivKey(t)
 	msg := []byte("deadbeef message hash")
 
@@ -91,7 +93,7 @@ func TestSignWithCustomK_ForceLowS(t *testing.T) {
 }
 
 // TestSign_ForceLowS via top-level Sign with customK=nil covers the low-S branch in Sign
-func TestSign_ForceLowSPath(t *testing.T) {
+func TestSignForceLowSPath(t *testing.T) {
 	privateKey := makeTestPrivKey(t)
 
 	// Run many signatures until we get a high-S value in the random path

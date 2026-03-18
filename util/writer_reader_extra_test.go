@@ -12,11 +12,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	subTestNonEmptyString    = "non-empty string"
+	subTestInvalidHexError   = "invalid hex returns error"
+	subTestNilOnPriorError   = "nil on prior error"
+	subTestEmptyOnPriorError = "empty on prior error"
+)
+
 // ---------------------------------------------------------------------------
 // HTTPError
 // ---------------------------------------------------------------------------
 
-func TestHTTPError_Error(t *testing.T) {
+func TestHTTPErrorError(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -50,7 +57,7 @@ func TestWriterWriteBytesReverse(t *testing.T) {
 	require.Equal(t, []byte{0x04, 0x03, 0x02, 0x01}, w.Buf)
 }
 
-func TestWriterWriteBytesReverse_Empty(t *testing.T) {
+func TestWriterWriteBytesReverseEmpty(t *testing.T) {
 	t.Parallel()
 
 	w := util.NewWriter()
@@ -148,7 +155,7 @@ func TestWriterWriteString(t *testing.T) {
 func TestWriterWriteOptionalString(t *testing.T) {
 	t.Parallel()
 
-	t.Run("non-empty string", func(t *testing.T) {
+	t.Run(subTestNonEmptyString, func(t *testing.T) {
 		w := util.NewWriter()
 		w.WriteOptionalString("ab")
 		require.Equal(t, []byte{0x02, 'a', 'b'}, w.Buf)
@@ -180,7 +187,7 @@ func TestWriterWriteOptionalFromHex(t *testing.T) {
 		require.Equal(t, expected, w.Buf)
 	})
 
-	t.Run("invalid hex returns error", func(t *testing.T) {
+	t.Run(subTestInvalidHexError, func(t *testing.T) {
 		w := util.NewWriter()
 		err := w.WriteOptionalFromHex("XY")
 		require.Error(t, err)
@@ -197,7 +204,7 @@ func TestWriterWriteRemainingFromHex(t *testing.T) {
 		require.Equal(t, []byte{0xde, 0xad, 0xbe, 0xef}, w.Buf)
 	})
 
-	t.Run("invalid hex returns error", func(t *testing.T) {
+	t.Run(subTestInvalidHexError, func(t *testing.T) {
 		w := util.NewWriter()
 		err := w.WriteRemainingFromHex("GG")
 		require.Error(t, err)
@@ -215,7 +222,7 @@ func TestWriterWriteIntFromHex(t *testing.T) {
 		require.Equal(t, []byte{0x02, 0xAA, 0xBB}, w.Buf)
 	})
 
-	t.Run("invalid hex returns error", func(t *testing.T) {
+	t.Run(subTestInvalidHexError, func(t *testing.T) {
 		w := util.NewWriter()
 		err := w.WriteIntFromHex("ZZ")
 		require.Error(t, err)
@@ -239,7 +246,7 @@ func TestWriterWriteSizeFromHex(t *testing.T) {
 		require.Contains(t, err.Error(), "bytes long")
 	})
 
-	t.Run("invalid hex returns error", func(t *testing.T) {
+	t.Run(subTestInvalidHexError, func(t *testing.T) {
 		w := util.NewWriter()
 		err := w.WriteSizeFromHex("ZZ", 1)
 		require.Error(t, err)
@@ -513,7 +520,7 @@ func TestReaderReadVarInt32(t *testing.T) {
 	require.Equal(t, uint32(255), v)
 }
 
-func TestReaderRead_IoReader(t *testing.T) {
+func TestReaderReadIoReader(t *testing.T) {
 	t.Parallel()
 
 	t.Run("reads into buffer", func(t *testing.T) {
@@ -533,7 +540,7 @@ func TestReaderRead_IoReader(t *testing.T) {
 	})
 }
 
-func TestReaderReadRemaining_Empty(t *testing.T) {
+func TestReaderReadRemainingEmpty(t *testing.T) {
 	t.Parallel()
 
 	r := util.NewReader([]byte{0x01})
@@ -545,7 +552,7 @@ func TestReaderReadRemaining_Empty(t *testing.T) {
 func TestReaderReadString(t *testing.T) {
 	t.Parallel()
 
-	t.Run("non-empty string", func(t *testing.T) {
+	t.Run(subTestNonEmptyString, func(t *testing.T) {
 		w := util.NewWriter()
 		w.WriteString("hello")
 		r := util.NewReader(w.Buf)
@@ -812,7 +819,7 @@ func TestReaderReadOptionalToHex(t *testing.T) {
 	})
 }
 
-func TestReaderReadBytes_NegativeLength(t *testing.T) {
+func TestReaderReadBytesNegativeLength(t *testing.T) {
 	t.Parallel()
 
 	r := util.NewReader([]byte{0x01, 0x02, 0x03})
@@ -825,7 +832,7 @@ func TestReaderReadBytes_NegativeLength(t *testing.T) {
 // ReaderHoldError
 // ---------------------------------------------------------------------------
 
-func TestReaderHoldError_Basic(t *testing.T) {
+func TestReaderHoldErrorBasic(t *testing.T) {
 	t.Parallel()
 
 	t.Run("IsComplete false then true", func(t *testing.T) {
@@ -858,7 +865,7 @@ func TestReaderHoldError_Basic(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadVarInt(t *testing.T) {
+func TestReaderHoldErrorReadVarInt(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -878,7 +885,7 @@ func TestReaderHoldError_ReadVarInt(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadVarInt32(t *testing.T) {
+func TestReaderHoldErrorReadVarInt32(t *testing.T) {
 	t.Parallel()
 
 	w := util.NewWriter()
@@ -889,7 +896,7 @@ func TestReaderHoldError_ReadVarInt32(t *testing.T) {
 	require.Equal(t, uint32(42), v)
 }
 
-func TestReaderHoldError_ReadOptionalUint32(t *testing.T) {
+func TestReaderHoldErrorReadOptionalUint32(t *testing.T) {
 	t.Parallel()
 
 	t.Run("value", func(t *testing.T) {
@@ -903,7 +910,7 @@ func TestReaderHoldError_ReadOptionalUint32(t *testing.T) {
 		require.Equal(t, uint32(7), *result)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		result := r.ReadOptionalUint32()
@@ -911,7 +918,7 @@ func TestReaderHoldError_ReadOptionalUint32(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadBytes(t *testing.T) {
+func TestReaderHoldErrorReadBytes(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -929,7 +936,7 @@ func TestReaderHoldError_ReadBytes(t *testing.T) {
 		require.Nil(t, b)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		b := r.ReadBytes(2)
@@ -937,7 +944,7 @@ func TestReaderHoldError_ReadBytes(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadBytesReverse(t *testing.T) {
+func TestReaderHoldErrorReadBytesReverse(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success even-length", func(t *testing.T) {
@@ -948,7 +955,7 @@ func TestReaderHoldError_ReadBytesReverse(t *testing.T) {
 		require.Equal(t, []byte{0x04, 0x03, 0x02, 0x01}, b)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		b := r.ReadBytesReverse(3)
@@ -956,7 +963,7 @@ func TestReaderHoldError_ReadBytesReverse(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadBase64Int(t *testing.T) {
+func TestReaderHoldErrorReadBase64Int(t *testing.T) {
 	t.Parallel()
 
 	data := []byte{0x01, 0x02}
@@ -968,7 +975,7 @@ func TestReaderHoldError_ReadBase64Int(t *testing.T) {
 	require.Equal(t, base64.StdEncoding.EncodeToString(data), s)
 }
 
-func TestReaderHoldError_ReadBase64(t *testing.T) {
+func TestReaderHoldErrorReadBase64(t *testing.T) {
 	t.Parallel()
 
 	r := util.NewReaderHoldError([]byte{0xAB, 0xCD})
@@ -977,7 +984,7 @@ func TestReaderHoldError_ReadBase64(t *testing.T) {
 	require.Equal(t, base64.StdEncoding.EncodeToString([]byte{0xAB, 0xCD}), s)
 }
 
-func TestReaderHoldError_ReadHex(t *testing.T) {
+func TestReaderHoldErrorReadHex(t *testing.T) {
 	t.Parallel()
 
 	r := util.NewReaderHoldError([]byte{0xAB, 0xCD})
@@ -986,7 +993,7 @@ func TestReaderHoldError_ReadHex(t *testing.T) {
 	require.Equal(t, "abcd", s)
 }
 
-func TestReaderHoldError_ReadRemainingHex(t *testing.T) {
+func TestReaderHoldErrorReadRemainingHex(t *testing.T) {
 	t.Parallel()
 
 	r := util.NewReaderHoldError([]byte{0xDE, 0xAD, 0xBE, 0xEF})
@@ -994,7 +1001,7 @@ func TestReaderHoldError_ReadRemainingHex(t *testing.T) {
 	require.Equal(t, "deadbeef", s)
 }
 
-func TestReaderHoldError_ReadIntBytes(t *testing.T) {
+func TestReaderHoldErrorReadIntBytes(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -1006,7 +1013,7 @@ func TestReaderHoldError_ReadIntBytes(t *testing.T) {
 		require.Equal(t, []byte{0x01, 0x02}, b)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		b := r.ReadIntBytes()
@@ -1014,7 +1021,7 @@ func TestReaderHoldError_ReadIntBytes(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadIntBytesHex(t *testing.T) {
+func TestReaderHoldErrorReadIntBytesHex(t *testing.T) {
 	t.Parallel()
 
 	w := util.NewWriter()
@@ -1025,7 +1032,7 @@ func TestReaderHoldError_ReadIntBytesHex(t *testing.T) {
 	require.Equal(t, "abcd", s)
 }
 
-func TestReaderHoldError_ReadByte(t *testing.T) {
+func TestReaderHoldErrorReadByte(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -1050,7 +1057,7 @@ func TestReaderHoldError_ReadByte(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadOptionalBool(t *testing.T) {
+func TestReaderHoldErrorReadOptionalBool(t *testing.T) {
 	t.Parallel()
 
 	t.Run("true", func(t *testing.T) {
@@ -1064,7 +1071,7 @@ func TestReaderHoldError_ReadOptionalBool(t *testing.T) {
 		require.True(t, *result)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		result := r.ReadOptionalBool()
@@ -1072,7 +1079,7 @@ func TestReaderHoldError_ReadOptionalBool(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadTxidSlice(t *testing.T) {
+func TestReaderHoldErrorReadTxidSlice(t *testing.T) {
 	t.Parallel()
 
 	txid1, _ := chainhash.NewHashFromHex("0000000000000000000000000000000000000000000000000000000000000001")
@@ -1086,7 +1093,7 @@ func TestReaderHoldError_ReadTxidSlice(t *testing.T) {
 	require.Len(t, result, 1)
 }
 
-func TestReaderHoldError_ReadOptionalBytes(t *testing.T) {
+func TestReaderHoldErrorReadOptionalBytes(t *testing.T) {
 	t.Parallel()
 
 	t.Run("non-empty round-trip", func(t *testing.T) {
@@ -1098,7 +1105,7 @@ func TestReaderHoldError_ReadOptionalBytes(t *testing.T) {
 		require.Equal(t, []byte{0x01}, b)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		b := r.ReadOptionalBytes()
@@ -1106,7 +1113,7 @@ func TestReaderHoldError_ReadOptionalBytes(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadString(t *testing.T) {
+func TestReaderHoldErrorReadString(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -1126,7 +1133,7 @@ func TestReaderHoldError_ReadString(t *testing.T) {
 		require.Equal(t, "", s)
 	})
 
-	t.Run("empty on prior error", func(t *testing.T) {
+	t.Run(subTestEmptyOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		s := r.ReadString()
@@ -1134,10 +1141,10 @@ func TestReaderHoldError_ReadString(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadOptionalString(t *testing.T) {
+func TestReaderHoldErrorReadOptionalString(t *testing.T) {
 	t.Parallel()
 
-	t.Run("non-empty string", func(t *testing.T) {
+	t.Run(subTestNonEmptyString, func(t *testing.T) {
 		w := util.NewWriter()
 		w.WriteOptionalString("test")
 		r := util.NewReaderHoldError(w.Buf)
@@ -1146,7 +1153,7 @@ func TestReaderHoldError_ReadOptionalString(t *testing.T) {
 		require.Equal(t, "test", s)
 	})
 
-	t.Run("empty on prior error", func(t *testing.T) {
+	t.Run(subTestEmptyOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		s := r.ReadOptionalString()
@@ -1154,7 +1161,7 @@ func TestReaderHoldError_ReadOptionalString(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadStringSlice(t *testing.T) {
+func TestReaderHoldErrorReadStringSlice(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -1166,7 +1173,7 @@ func TestReaderHoldError_ReadStringSlice(t *testing.T) {
 		require.Equal(t, []string{"a", "b"}, result)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		result := r.ReadStringSlice()
@@ -1174,7 +1181,7 @@ func TestReaderHoldError_ReadStringSlice(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadOptionalToHex(t *testing.T) {
+func TestReaderHoldErrorReadOptionalToHex(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -1187,7 +1194,7 @@ func TestReaderHoldError_ReadOptionalToHex(t *testing.T) {
 		require.Equal(t, "abcd", s)
 	})
 
-	t.Run("empty on prior error", func(t *testing.T) {
+	t.Run(subTestEmptyOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		s := r.ReadOptionalToHex()
@@ -1195,7 +1202,7 @@ func TestReaderHoldError_ReadOptionalToHex(t *testing.T) {
 	})
 }
 
-func TestReaderHoldError_ReadRemaining(t *testing.T) {
+func TestReaderHoldErrorReadRemaining(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -1204,7 +1211,7 @@ func TestReaderHoldError_ReadRemaining(t *testing.T) {
 		require.Equal(t, []byte{0x01, 0x02, 0x03}, result)
 	})
 
-	t.Run("nil on prior error", func(t *testing.T) {
+	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		result := r.ReadRemaining()
@@ -1251,7 +1258,7 @@ func TestUint32Ptr(t *testing.T) {
 // WriteStringSlice + ReadStringSlice empty slice
 // ---------------------------------------------------------------------------
 
-func TestWriterReadStringSlice_EmptySlice(t *testing.T) {
+func TestWriterReadStringSliceEmptySlice(t *testing.T) {
 	t.Parallel()
 
 	w := util.NewWriter()
@@ -1266,7 +1273,7 @@ func TestWriterReadStringSlice_EmptySlice(t *testing.T) {
 // VarInt ReadFrom edge cases
 // ---------------------------------------------------------------------------
 
-func TestVarIntReadFrom_AllPrefixes(t *testing.T) {
+func TestVarIntReadFromAllPrefixes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -1295,7 +1302,7 @@ func TestVarIntReadFrom_AllPrefixes(t *testing.T) {
 // hex encoding helpers
 // ---------------------------------------------------------------------------
 
-func TestReadOptionalToHex_ZeroLength(t *testing.T) {
+func TestReadOptionalToHexZeroLength(t *testing.T) {
 	t.Parallel()
 
 	w := util.NewWriter()
@@ -1306,7 +1313,7 @@ func TestReadOptionalToHex_ZeroLength(t *testing.T) {
 	require.Equal(t, "", s)
 }
 
-func TestReadOptionalToHex_Content(t *testing.T) {
+func TestReadOptionalToHexContent(t *testing.T) {
 	t.Parallel()
 
 	data, _ := hex.DecodeString("cafebabe")

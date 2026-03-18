@@ -35,6 +35,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const wellKnownAuthPath = "/.well-known/auth"
+
 // ---------------------------------------------------------------------------
 // channelTransport: an auth.Transport that routes messages via Go channels.
 // Used to wire a server-side auth.Peer to an httptest.Server handler.
@@ -122,9 +124,18 @@ func buildInProcessBRC31Server(t *testing.T, responseStatusCode int) (*httptest.
 	})
 
 	mux := http.NewServeMux()
+	mux.HandleFunc(wellKnownAuthPath, buildAuthInitHandler(ct))
+	mux.HandleFunc("/", buildGeneralMessageHandler(ct, serverSM, serverWallet, responseStatusCode))
 
-	// POST /.well-known/auth → initialRequest / certificateRequest
-	mux.HandleFunc("/.well-known/auth", func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+	return ts, serverWallet
+}
+
+// buildAuthInitHandler returns an HTTP handler for POST /.well-known/auth
+// (initialRequest / certificateRequest).
+func buildAuthInitHandler(ct *channelTransport) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		body, readErr := io.ReadAll(r.Body)
 		if readErr != nil {
 			http.Error(w, "read body", http.StatusInternalServerError)
@@ -152,34 +163,26 @@ func buildInProcessBRC31Server(t *testing.T, responseStatusCode int) (*httptest.
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(respBytes)
-	})
+	}
+}
 
-	// All other paths → general messages with BRC-104 headers.
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+// buildGeneralMessageHandler returns an HTTP handler for all non-auth paths.
+// It processes BRC-104 signed general messages and writes signed response headers.
+func buildGeneralMessageHandler(
+	ct *channelTransport,
+	serverSM *auth.DefaultSessionManager,
+	serverWallet *wallet.TestWallet,
+	responseStatusCode int,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		versionHeader := r.Header.Get(brc104.HeaderVersion)
 		if versionHeader == "" {
 			w.WriteHeader(responseStatusCode)
 			return
 		}
 
-		identityKeyHex := r.Header.Get(brc104.HeaderIdentityKey)
-		identityKey, pubKeyErr := ec.PublicKeyFromString(identityKeyHex)
-		if pubKeyErr != nil {
-			http.Error(w, "bad identity key", http.StatusBadRequest)
-			return
-		}
-
-		sigHex := r.Header.Get(brc104.HeaderSignature)
-		sigBytes, sigDecodeErr := hex.DecodeString(sigHex)
-		if sigDecodeErr != nil {
-			http.Error(w, "bad sig", http.StatusBadRequest)
-			return
-		}
-
-		requestIDBase64 := r.Header.Get(brc104.HeaderRequestID)
-		requestIDBytes, idDecodeErr := base64.StdEncoding.DecodeString(requestIDBase64)
-		if idDecodeErr != nil {
-			http.Error(w, "bad request id: "+idDecodeErr.Error(), http.StatusBadRequest)
+		identityKey, requestIDBase64, requestIDBytes, sigBytes, ok := parseIncomingHeaders(w, r)
+		if !ok {
 			return
 		}
 
@@ -189,9 +192,7 @@ func buildInProcessBRC31Server(t *testing.T, responseStatusCode int) (*httptest.
 			return
 		}
 
-		// YourNonce in the incoming request = server's session nonce (client echoes it back).
 		serverSessionNonce := r.Header.Get(brc104.HeaderYourNonce)
-		// Nonce in the incoming request = client's per-request nonce (random).
 		clientRequestNonce := r.Header.Get(brc104.HeaderNonce)
 
 		inMsg := &auth.AuthMessage{
@@ -204,106 +205,142 @@ func buildInProcessBRC31Server(t *testing.T, responseStatusCode int) (*httptest.
 			Payload:     payload,
 		}
 
-		// Deliver to the server peer for signature verification.
 		if deliverErr := ct.deliver(r.Context(), inMsg); deliverErr != nil {
 			http.Error(w, "peer general error: "+deliverErr.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Look up the server's session to get the client's session nonce (PeerNonce).
-		// The client's session nonce must be used as YourNonce in the response so
-		// that the client peer can verify it with VerifyNonce using its own wallet.
-		serverSession, sessionErr := serverSM.GetSession(serverSessionNonce)
-		if sessionErr != nil || serverSession == nil {
-			http.Error(w, "session not found: "+serverSessionNonce, http.StatusInternalServerError)
-			return
-		}
-		clientSessionNonce := serverSession.PeerNonce
-
-		// Serialise the response as an auth payload.
-		responsePayload, respPayloadErr := authpayload.FromResponse(requestIDBytes, authpayload.SimplifiedHttpResponse{
-			StatusCode: responseStatusCode,
-			Header:     make(http.Header),
-			Body:       nil,
-		})
-		if respPayloadErr != nil {
-			http.Error(w, "response payload error: "+respPayloadErr.Error(), http.StatusInternalServerError)
+		clientSessionNonce, ok := lookupClientNonce(w, serverSM, serverSessionNonce)
+		if !ok {
 			return
 		}
 
-		ctx := r.Context()
+		writeSignedResponse(w, r, serverWallet, identityKey, requestIDBase64, requestIDBytes,
+			serverSessionNonce, clientSessionNonce, responseStatusCode)
+	}
+}
 
-		// Get server identity key for the response header.
-		idKeyResult, idKeyErr := serverWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
-			IdentityKey:    true,
-			EncryptionArgs: wallet.EncryptionArgs{},
-		}, "auth-peer")
-		if idKeyErr != nil {
-			http.Error(w, "get pubkey error", http.StatusInternalServerError)
-			return
-		}
+// parseIncomingHeaders validates and decodes the BRC-104 request headers.
+// Returns (identityKey, requestIDBase64, requestIDBytes, sigBytes, ok).
+func parseIncomingHeaders(w http.ResponseWriter, r *http.Request) (*ec.PublicKey, string, []byte, []byte, bool) {
+	identityKeyHex := r.Header.Get(brc104.HeaderIdentityKey)
+	identityKey, pubKeyErr := ec.PublicKeyFromString(identityKeyHex)
+	if pubKeyErr != nil {
+		http.Error(w, "bad identity key", http.StatusBadRequest)
+		return nil, "", nil, nil, false
+	}
 
-		// Create a fresh server response nonce so VerifyNonce succeeds on the client.
-		serverRespNonce, nonceErr := utils.CreateNonce(ctx, serverWallet, wallet.Counterparty{
-			Type: wallet.CounterpartyTypeSelf,
-		})
-		if nonceErr != nil {
-			http.Error(w, "create nonce error: "+nonceErr.Error(), http.StatusInternalServerError)
-			return
-		}
+	sigHex := r.Header.Get(brc104.HeaderSignature)
+	sigBytes, sigDecodeErr := hex.DecodeString(sigHex)
+	if sigDecodeErr != nil {
+		http.Error(w, "bad sig", http.StatusBadRequest)
+		return nil, "", nil, nil, false
+	}
 
-		// Sign the response payload.
-		// The client peer's handleGeneralMessage verifies with:
-		//   KeyID = p.keyID(message.Nonce, session.SessionNonce)
-		//         = "{serverRespNonce} {clientSessionNonce}"
-		// Counterparty = senderPublicKey = identityKey (the client's public key).
-		sigResult, signErr := serverWallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
-			EncryptionArgs: wallet.EncryptionArgs{
-				ProtocolID: wallet.Protocol{
-					SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
-					Protocol:      "auth message signature",
-				},
-				KeyID: fmt.Sprintf("%s %s", serverRespNonce, clientSessionNonce),
-				Counterparty: wallet.Counterparty{
-					Type:         wallet.CounterpartyTypeOther,
-					Counterparty: identityKey,
-				},
-			},
-			Data: responsePayload,
-		}, "")
-		if signErr != nil {
-			http.Error(w, "sign error: "+signErr.Error(), http.StatusInternalServerError)
-			return
-		}
+	requestIDBase64 := r.Header.Get(brc104.HeaderRequestID)
+	requestIDBytes, idDecodeErr := base64.StdEncoding.DecodeString(requestIDBase64)
+	if idDecodeErr != nil {
+		http.Error(w, "bad request id: "+idDecodeErr.Error(), http.StatusBadRequest)
+		return nil, "", nil, nil, false
+	}
 
-		// Write BRC-104 response headers.
-		// YourNonce = clientSessionNonce so the client peer's session lookup succeeds.
-		w.Header().Set(brc104.HeaderVersion, "0.1")
-		w.Header().Set(brc104.HeaderIdentityKey, idKeyResult.PublicKey.ToDERHex())
-		w.Header().Set(brc104.HeaderMessageType, string(auth.MessageTypeGeneral))
-		w.Header().Set(brc104.HeaderNonce, serverRespNonce)
-		w.Header().Set(brc104.HeaderYourNonce, clientSessionNonce)
-		w.Header().Set(brc104.HeaderRequestID, requestIDBase64)
-		w.Header().Set(brc104.HeaderSignature, hex.EncodeToString(sigResult.Signature.Serialize()))
-		w.WriteHeader(responseStatusCode)
+	return identityKey, requestIDBase64, requestIDBytes, sigBytes, true
+}
+
+// lookupClientNonce retrieves the client's session nonce (PeerNonce) from the session
+// manager using the server's session nonce. Returns (clientSessionNonce, ok).
+func lookupClientNonce(w http.ResponseWriter, serverSM *auth.DefaultSessionManager, serverSessionNonce string) (string, bool) {
+	serverSession, sessionErr := serverSM.GetSession(serverSessionNonce)
+	if sessionErr != nil || serverSession == nil {
+		http.Error(w, "session not found: "+serverSessionNonce, http.StatusInternalServerError)
+		return "", false
+	}
+	return serverSession.PeerNonce, true
+}
+
+// writeSignedResponse signs the response payload and writes BRC-104 response headers.
+func writeSignedResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	serverWallet *wallet.TestWallet,
+	identityKey *ec.PublicKey,
+	requestIDBase64 string,
+	requestIDBytes []byte,
+	serverSessionNonce string,
+	clientSessionNonce string,
+	responseStatusCode int,
+) {
+	_ = serverSessionNonce // kept for clarity; clientSessionNonce is derived from it
+
+	ctx := r.Context()
+
+	responsePayload, respPayloadErr := authpayload.FromResponse(requestIDBytes, authpayload.SimplifiedHttpResponse{
+		StatusCode: responseStatusCode,
+		Header:     make(http.Header),
+		Body:       nil,
 	})
+	if respPayloadErr != nil {
+		http.Error(w, "response payload error: "+respPayloadErr.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	ts := httptest.NewServer(mux)
-	t.Cleanup(ts.Close)
-	return ts, serverWallet
+	idKeyResult, idKeyErr := serverWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
+		IdentityKey:    true,
+		EncryptionArgs: wallet.EncryptionArgs{},
+	}, "auth-peer")
+	if idKeyErr != nil {
+		http.Error(w, "get pubkey error", http.StatusInternalServerError)
+		return
+	}
+
+	serverRespNonce, nonceErr := utils.CreateNonce(ctx, serverWallet, wallet.Counterparty{
+		Type: wallet.CounterpartyTypeSelf,
+	})
+	if nonceErr != nil {
+		http.Error(w, "create nonce error: "+nonceErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sigResult, signErr := serverWallet.CreateSignature(ctx, wallet.CreateSignatureArgs{
+		EncryptionArgs: wallet.EncryptionArgs{
+			ProtocolID: wallet.Protocol{
+				SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
+				Protocol:      "auth message signature",
+			},
+			KeyID: fmt.Sprintf("%s %s", serverRespNonce, clientSessionNonce),
+			Counterparty: wallet.Counterparty{
+				Type:         wallet.CounterpartyTypeOther,
+				Counterparty: identityKey,
+			},
+		},
+		Data: responsePayload,
+	}, "")
+	if signErr != nil {
+		http.Error(w, "sign error: "+signErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set(brc104.HeaderVersion, "0.1")
+	w.Header().Set(brc104.HeaderIdentityKey, idKeyResult.PublicKey.ToDERHex())
+	w.Header().Set(brc104.HeaderMessageType, string(auth.MessageTypeGeneral))
+	w.Header().Set(brc104.HeaderNonce, serverRespNonce)
+	w.Header().Set(brc104.HeaderYourNonce, clientSessionNonce)
+	w.Header().Set(brc104.HeaderRequestID, requestIDBase64)
+	w.Header().Set(brc104.HeaderSignature, hex.EncodeToString(sigResult.Signature.Serialize()))
+	w.WriteHeader(responseStatusCode)
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_ErrHTTPServerFailedToAuthenticate_FallsBackToHandleFetchAndValidate
+// TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate
 //
 // The server returns 4xx on /.well-known/auth → transport joins
 // ErrHTTPServerFailedToAuthenticate → Fetch falls back to handleFetchAndValidate
 // (lines 472-479).  The regular endpoint returns 200.
 // ---------------------------------------------------------------------------
 
-func TestFetch_ErrHTTPServerFailedToAuthenticate_FallsBackToHandleFetchAndValidate(t *testing.T) {
+func TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/.well-known/auth" {
+		if r.URL.Path == wellKnownAuthPath {
 			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
 			return
 		}
@@ -323,15 +360,15 @@ func TestFetch_ErrHTTPServerFailedToAuthenticate_FallsBackToHandleFetchAndValida
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_ErrHTTPServerFailedToAuthenticate_WithKnownIdentityKey
+// TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey
 //
 // Same fallback, but the peer already has a valid IdentityKey stored.
 // Exercises the identityKey != "" branch (line 517).
 // ---------------------------------------------------------------------------
 
-func TestFetch_ErrHTTPServerFailedToAuthenticate_WithKnownIdentityKey(t *testing.T) {
+func TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/.well-known/auth" {
+		if r.URL.Path == wellKnownAuthPath {
 			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
 			return
 		}
@@ -372,15 +409,15 @@ func TestFetch_ErrHTTPServerFailedToAuthenticate_WithKnownIdentityKey(t *testing
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_ErrHTTPServerFailedToAuthenticate_WithInvalidIdentityKey
+// TestFetchErrHTTPServerFailedToAuthenticateWithInvalidIdentityKey
 //
 // Stored peer has an invalid identity key → toPublicKeyError != nil →
 // idKeyObject reset to nil (line 519).
 // ---------------------------------------------------------------------------
 
-func TestFetch_ErrHTTPServerFailedToAuthenticate_WithInvalidIdentityKey(t *testing.T) {
+func TestFetchErrHTTPServerFailedToAuthenticateWithInvalidIdentityKey(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/.well-known/auth" {
+		if r.URL.Path == wellKnownAuthPath {
 			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
 			return
 		}
@@ -416,7 +453,7 @@ func TestFetch_ErrHTTPServerFailedToAuthenticate_WithInvalidIdentityKey(t *testi
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_hasPendingCertificateRequests_Ticker
+// TestFetchHasPendingCertificateRequestsTicker
 //
 // Exercises the hasPending() ticker loop (lines 498-505).
 // The peer starts with PendingCertificateRequests populated; a goroutine
@@ -425,9 +462,9 @@ func TestFetch_ErrHTTPServerFailedToAuthenticate_WithInvalidIdentityKey(t *testi
 // ErrHTTPServerFailedToAuthenticate → handleFetchAndValidate → 200.
 // ---------------------------------------------------------------------------
 
-func TestFetch_hasPendingCertificateRequests_Ticker(t *testing.T) {
+func TestFetchHasPendingCertificateRequestsTicker(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/.well-known/auth" {
+		if r.URL.Path == wellKnownAuthPath {
 			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
 			return
 		}
@@ -479,13 +516,13 @@ func TestFetch_hasPendingCertificateRequests_Ticker(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_ExistingPeer_NonMutualAuth_Reused
+// TestFetchExistingPeerNonMutualAuthReused
 //
 // Pre-stores a peer with SupportsMutualAuth=false.  Fetch must reuse it and
 // route through handleFetchAndValidate (lines 321-329).
 // ---------------------------------------------------------------------------
 
-func TestFetch_ExistingPeer_NonMutualAuth_Reused(t *testing.T) {
+func TestFetchExistingPeerNonMutualAuthReused(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -520,14 +557,14 @@ func TestFetch_ExistingPeer_NonMutualAuth_Reused(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestSendCertificateRequest_ExistingPeerLoaded
+// TestSendCertificateRequestExistingPeerLoaded
 //
 // Stores a peer for the target URL before calling SendCertificateRequest.
 // Exercises the peers.Load reuse path (line 592-593).
 // The call will time out (no real server), which is expected.
 // ---------------------------------------------------------------------------
 
-func TestSendCertificateRequest_ExistingPeerLoaded(t *testing.T) {
+func TestSendCertificateRequestExistingPeerLoaded(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -564,7 +601,7 @@ func TestSendCertificateRequest_ExistingPeerLoaded(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_FullBRC31Auth_200Response
+// TestFetchFullBRC31Auth200Response
 //
 // Full BRC-31 handshake exercising:
 //   - ListenForCertificatesReceived callback registration (isNew=true, line 344)
@@ -573,7 +610,7 @@ func TestSendCertificateRequest_ExistingPeerLoaded(t *testing.T) {
 //   - senderPublicKey != nil branch (lines 393-399)
 // ---------------------------------------------------------------------------
 
-func TestFetch_FullBRC31Auth_200Response(t *testing.T) {
+func TestFetchFullBRC31Auth200Response(t *testing.T) {
 	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -588,7 +625,7 @@ func TestFetch_FullBRC31Auth_200Response(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_FullBRC31Auth_402Response_TriggersHandlePaymentAndRetry
+// TestFetchFullBRC31Auth402ResponseTriggersHandlePaymentAndRetry
 //
 // Server responds with 402 to general messages.  The goroutine resolves with
 // status 402 → line 569 dispatches to handlePaymentAndRetry.
@@ -596,7 +633,7 @@ func TestFetch_FullBRC31Auth_200Response(t *testing.T) {
 // x-bsv-payment-version header.
 // ---------------------------------------------------------------------------
 
-func TestFetch_FullBRC31Auth_402Response_TriggersHandlePaymentAndRetry(t *testing.T) {
+func TestFetchFullBRC31Auth402ResponseTriggersHandlePaymentAndRetry(t *testing.T) {
 	ts, _ := buildInProcessBRC31Server(t, http.StatusPaymentRequired)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -611,13 +648,13 @@ func TestFetch_FullBRC31Auth_402Response_TriggersHandlePaymentAndRetry(t *testin
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_FullBRC31Auth_SecondRequest_ReusesPeer
+// TestFetchFullBRC31AuthSecondRequestReusesPeer
 //
 // After a successful first request the peer is cached.  A second request
 // reuses it (identityKey populated → line 517 branch).
 // ---------------------------------------------------------------------------
 
-func TestFetch_FullBRC31Auth_SecondRequest_ReusesPeer(t *testing.T) {
+func TestFetchFullBRC31AuthSecondRequestReusesPeer(t *testing.T) {
 	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -636,14 +673,14 @@ func TestFetch_FullBRC31Auth_SecondRequest_ReusesPeer(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_FullBRC31Auth_SessionNotFoundRetry
+// TestFetchFullBRC31AuthSessionNotFoundRetry
 //
 // After a successful first handshake we wipe the client's session manager
 // so the next ToPeer call returns "Session not found for nonce" →
 // retry path lines 526-537.
 // ---------------------------------------------------------------------------
 
-func TestFetch_FullBRC31Auth_SessionNotFoundRetry(t *testing.T) {
+func TestFetchFullBRC31AuthSessionNotFoundRetry(t *testing.T) {
 	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -668,13 +705,13 @@ func TestFetch_FullBRC31Auth_SessionNotFoundRetry(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_FullBRC31Auth_CertificatesReceivedCallback
+// TestFetchFullBRC31AuthCertificatesReceivedCallback
 //
 // Full handshake verifying that ConsumeReceivedCertificates works after a
 // successful auth exchange (no certs expected, but callback was registered).
 // ---------------------------------------------------------------------------
 
-func TestFetch_FullBRC31Auth_CertificatesReceivedCallback(t *testing.T) {
+func TestFetchFullBRC31AuthCertificatesReceivedCallback(t *testing.T) {
 	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -695,13 +732,13 @@ func TestFetch_FullBRC31Auth_CertificatesReceivedCallback(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestSendCertificateRequest_ExistingPeer_WithIdentityKey
+// TestSendCertificateRequestExistingPeerWithIdentityKey
 //
 // Exercises the IdentityKey != "" branch (lines 643/645) in
 // SendCertificateRequest, where a stored peer has a known valid IdentityKey.
 // ---------------------------------------------------------------------------
 
-func TestSendCertificateRequest_ExistingPeer_WithIdentityKey(t *testing.T) {
+func TestSendCertificateRequestExistingPeerWithIdentityKey(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -743,7 +780,7 @@ func TestSendCertificateRequest_ExistingPeer_WithIdentityKey(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestHandlePaymentAndRetry_RetryCounterNil_SetsDefault
+// TestHandlePaymentAndRetryRetryCounterNilSetsDefault
 //
 // Exercises the config.RetryCounter == nil branch (line 775) in
 // handlePaymentAndRetry, which sets a default retry count of 3.
@@ -752,7 +789,7 @@ func TestSendCertificateRequest_ExistingPeer_WithIdentityKey(t *testing.T) {
 // retries by forcing the retry to a URL that returns max-retries error.
 // ---------------------------------------------------------------------------
 
-func TestHandlePaymentAndRetry_RetryCounterNil_SetsDefault(t *testing.T) {
+func TestHandlePaymentAndRetryRetryCounterNilSetsDefault(t *testing.T) {
 	tw := wallet.NewTestWalletForRandomKey(t)
 
 	serverKey, err := ec.NewPrivateKey()
@@ -791,14 +828,14 @@ func TestHandlePaymentAndRetry_RetryCounterNil_SetsDefault(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestFetch_FullBRC31Auth_MultiplePaths
+// TestFetchFullBRC31AuthMultiplePaths
 //
 // Additional full-auth scenario that exercises multiple Fetch goroutine paths
 // simultaneously by issuing concurrent requests after the first handshake.
 // This helps cover the isNew=false (existing peer, mutual auth) branch.
 // ---------------------------------------------------------------------------
 
-func TestFetch_FullBRC31Auth_MultiplePaths(t *testing.T) {
+func TestFetchFullBRC31AuthMultiplePaths(t *testing.T) {
 	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)

@@ -53,7 +53,7 @@ func buildSignedCert(t *testing.T) *Certificate {
 	return cert
 }
 
-func TestCertificate_NewCertificate(t *testing.T) {
+func TestCertificateNewCertificate(t *testing.T) {
 	typeBytes := bytes.Repeat([]byte{1}, 32)
 	sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(typeBytes))
 	serialBytes := bytes.Repeat([]byte{2}, 32)
@@ -84,7 +84,7 @@ func TestCertificate_NewCertificate(t *testing.T) {
 	require.Equal(t, sig, []byte(cert.Signature))
 }
 
-func TestCertificate_MarshalUnmarshalJSON(t *testing.T) {
+func TestCertificateMarshalUnmarshalJSON(t *testing.T) {
 	t.Run("marshal and unmarshal round-trip", func(t *testing.T) {
 		cert := buildSignedCert(t)
 
@@ -147,7 +147,7 @@ func TestCertificate_MarshalUnmarshalJSON(t *testing.T) {
 	})
 }
 
-func TestCertificate_Verify_Errors(t *testing.T) {
+func TestCertificateVerifyErrors(t *testing.T) {
 	t.Run("verify fails when no signature", func(t *testing.T) {
 		typeBytes := bytes.Repeat([]byte{1}, 32)
 		sampleType := wallet.StringBase64(base64.StdEncoding.EncodeToString(typeBytes))
@@ -200,7 +200,7 @@ func TestCertificate_Verify_Errors(t *testing.T) {
 	})
 }
 
-func TestCertificate_Sign_AlreadySigned(t *testing.T) {
+func TestCertificateSignAlreadySigned(t *testing.T) {
 	t.Run("sign fails if already signed", func(t *testing.T) {
 		cert := buildSignedCert(t)
 		require.NotNil(t, cert.Signature)
@@ -219,7 +219,7 @@ func TestCertificate_Sign_AlreadySigned(t *testing.T) {
 	})
 }
 
-func TestCertificate_ToBinary_WithSignature(t *testing.T) {
+func TestCertificateToBinaryWithSignature(t *testing.T) {
 	t.Run("ToBinary includes signature when requested", func(t *testing.T) {
 		cert := buildSignedCert(t)
 
@@ -234,7 +234,7 @@ func TestCertificate_ToBinary_WithSignature(t *testing.T) {
 	})
 }
 
-func TestCertificateFromBinary_RoundTrip(t *testing.T) {
+func TestCertificateFromBinaryRoundTrip(t *testing.T) {
 	t.Run("serialization round-trip with signature", func(t *testing.T) {
 		cert := buildSignedCert(t)
 

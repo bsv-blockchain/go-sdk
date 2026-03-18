@@ -37,6 +37,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const errUnableToDownload = "unable to download content"
+
 // ---- helpers ----------------------------------------------------------------
 
 // buildMinimalBeef creates a parent→child BEEF with the given locking script.
@@ -119,9 +121,9 @@ func newDownloaderWithFacilitator(facilitator lookup.Facilitator) *StorageDownlo
 
 // ---- Resolve – output processing paths -------------------------------------
 
-// TestResolve_TooFewPushDropFields tests that outputs with < 4 pushdrop fields
+// TestResolveTooFewPushDropFields tests that outputs with < 4 pushdrop fields
 // are silently skipped.
-func TestResolve_TooFewPushDropFields(t *testing.T) {
+func TestResolveTooFewPushDropFields(t *testing.T) {
 	// Build a pushdrop script with only 2 data fields (fewer than required 4).
 	pubKeyBytes := []byte{
 		0x02,
@@ -150,8 +152,8 @@ func TestResolve_TooFewPushDropFields(t *testing.T) {
 	assert.Empty(t, hosts) // skipped due to too few fields
 }
 
-// TestResolve_ExpiredOutput tests that an output with an expired timestamp is skipped.
-func TestResolve_ExpiredOutput(t *testing.T) {
+// TestResolveExpiredOutput tests that an output with an expired timestamp is skipped.
+func TestResolveExpiredOutput(t *testing.T) {
 	content := []byte("test content for expired output")
 	hash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
@@ -174,8 +176,8 @@ func TestResolve_ExpiredOutput(t *testing.T) {
 	assert.Empty(t, hosts) // expired, skipped
 }
 
-// TestResolve_ValidHostURL tests that a valid, non-expired output adds a host URL.
-func TestResolve_ValidHostURL(t *testing.T) {
+// TestResolveValidHostURL tests that a valid, non-expired output adds a host URL.
+func TestResolveValidHostURL(t *testing.T) {
 	content := []byte("test content for valid host url")
 	hash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
@@ -199,8 +201,8 @@ func TestResolve_ValidHostURL(t *testing.T) {
 	assert.Equal(t, hostURL, hosts[0])
 }
 
-// TestResolve_EmptyHostURL tests that a valid output with an empty host URL is skipped.
-func TestResolve_EmptyHostURL(t *testing.T) {
+// TestResolveEmptyHostURL tests that a valid output with an empty host URL is skipped.
+func TestResolveEmptyHostURL(t *testing.T) {
 	content := []byte("test content for empty host url")
 	hash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
@@ -222,9 +224,9 @@ func TestResolve_EmptyHostURL(t *testing.T) {
 	assert.Empty(t, hosts) // empty host URL skipped
 }
 
-// TestResolve_OutputIndexOutOfRange tests that an output with an out-of-bounds
+// TestResolveOutputIndexOutOfRange tests that an output with an out-of-bounds
 // index is silently skipped.
-func TestResolve_OutputIndexOutOfRange(t *testing.T) {
+func TestResolveOutputIndexOutOfRange(t *testing.T) {
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, make([]byte, 32), "url", "http://host", futureExpiry)
 	beef, _ := buildMinimalBeef(t, s)
@@ -241,9 +243,9 @@ func TestResolve_OutputIndexOutOfRange(t *testing.T) {
 	assert.Empty(t, hosts)
 }
 
-// TestResolve_MultipleOutputsMixed tests that valid and invalid outputs in the
+// TestResolveMultipleOutputsMixed tests that valid and invalid outputs in the
 // same answer are handled correctly (valid added, expired skipped).
-func TestResolve_MultipleOutputsMixed(t *testing.T) {
+func TestResolveMultipleOutputsMixed(t *testing.T) {
 	content1 := []byte("content for host 1")
 	hash1 := crypto.Sha256(content1)
 	uhrpURL1, err := GetURLForFile(content1)
@@ -282,9 +284,9 @@ func TestResolve_MultipleOutputsMixed(t *testing.T) {
 
 // ---- Download – full HTTP path tests ----------------------------------------
 
-// TestDownload_SuccessfulHashMatch tests the happy path where download succeeds
+// TestDownloadSuccessfulHashMatch tests the happy path where download succeeds
 // with a matching content hash.
-func TestDownload_SuccessfulHashMatch(t *testing.T) {
+func TestDownloadSuccessfulHashMatch(t *testing.T) {
 	content := []byte("exact content to download and verify")
 	contentHash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
@@ -315,9 +317,9 @@ func TestDownload_SuccessfulHashMatch(t *testing.T) {
 	assert.Equal(t, "application/octet-stream", result.MimeType)
 }
 
-// TestDownload_HTTPErrorStatus tests that a >= 400 HTTP status causes the host
+// TestDownloadHTTPErrorStatus tests that a >= 400 HTTP status causes the host
 // to be skipped and ultimately returns an error.
-func TestDownload_HTTPErrorStatus(t *testing.T) {
+func TestDownloadHTTPErrorStatus(t *testing.T) {
 	content := []byte("content for 404 test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -341,11 +343,11 @@ func TestDownload_HTTPErrorStatus(t *testing.T) {
 	d := newDownloaderWithFacilitator(facilitator)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unable to download content")
+	assert.Contains(t, err.Error(), errUnableToDownload)
 }
 
-// TestDownload_HashMismatch tests that content with mismatched hash is rejected.
-func TestDownload_HashMismatch(t *testing.T) {
+// TestDownloadHashMismatch tests that content with mismatched hash is rejected.
+func TestDownloadHashMismatch(t *testing.T) {
 	content := []byte("content for hash mismatch test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -371,12 +373,12 @@ func TestDownload_HashMismatch(t *testing.T) {
 	d := newDownloaderWithFacilitator(facilitator)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unable to download content")
+	assert.Contains(t, err.Error(), errUnableToDownload)
 }
 
-// TestDownload_AllHostsFail_WithLastErr tests the path where all hosts fail and
+// TestDownloadAllHostsFailWithLastErr tests the path where all hosts fail and
 // lastErr is set (exercises the "unable to download content: %w" branch).
-func TestDownload_AllHostsFail_WithLastErr(t *testing.T) {
+func TestDownloadAllHostsFailWithLastErr(t *testing.T) {
 	content := []byte("content for all-hosts-fail test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -411,12 +413,12 @@ func TestDownload_AllHostsFail_WithLastErr(t *testing.T) {
 	d := newDownloaderWithFacilitator(facilitator)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unable to download content")
+	assert.Contains(t, err.Error(), errUnableToDownload)
 }
 
-// TestDownload_ContextCancelled tests that cancelling the context during download
+// TestDownloadContextCancelled tests that cancelling the context during download
 // triggers the request error path.
-func TestDownload_ContextCancelled(t *testing.T) {
+func TestDownloadContextCancelled(t *testing.T) {
 	content := []byte("content for context cancel test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -452,9 +454,9 @@ func TestDownload_ContextCancelled(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestDownload_BadRequestURL tests the path where http.NewRequestWithContext fails
+// TestDownloadBadRequestURL tests the path where http.NewRequestWithContext fails
 // (invalid URL for host).
-func TestDownload_BadRequestURL(t *testing.T) {
+func TestDownloadBadRequestURL(t *testing.T) {
 	content := []byte("content for bad url test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -477,8 +479,8 @@ func TestDownload_BadRequestURL(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestDownload_ResolveError tests that a Resolve error propagates.
-func TestDownload_ResolveError(t *testing.T) {
+// TestDownloadResolveError tests that a Resolve error propagates.
+func TestDownloadResolveError(t *testing.T) {
 	content := []byte("content for resolve error test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -491,8 +493,8 @@ func TestDownload_ResolveError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to resolve UHRP URL")
 }
 
-// TestDownload_TruncatedBodyError tests the body-read error path.
-func TestDownload_TruncatedBodyError(t *testing.T) {
+// TestDownloadTruncatedBodyError tests the body-read error path.
+func TestDownloadTruncatedBodyError(t *testing.T) {
 	content := []byte("content for truncated body test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -525,7 +527,7 @@ func TestDownload_TruncatedBodyError(t *testing.T) {
 
 // ---- checkAPIError – additional branch (status == "error", empty code/desc) -
 
-func TestCheckAPIError_ErrorStatusEmptyBoth(t *testing.T) {
+func TestCheckAPIErrorErrorStatusEmptyBoth(t *testing.T) {
 	err := checkAPIError(StatusError, "", "", "myOp")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown-code")
@@ -545,7 +547,7 @@ func TestCheckAPIError_ErrorStatusEmptyBoth(t *testing.T) {
 // is outside the scope of unit tests.
 //
 // The following test simply documents the expected failure mode.
-func TestGetUploadInfo_AuthBarrier(t *testing.T) {
+func TestGetUploadInfoAuthBarrier(t *testing.T) {
 	mw := wallet.NewTestWalletForRandomKey(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "http://localhost:0", // guaranteed no server
@@ -573,10 +575,10 @@ func (e *errBodyReader) Read(_ []byte) (n int, err error) {
 
 func (e *errBodyReader) Close() error { return nil }
 
-// TestDownload_ReadBodyError directly exercises the body-read error path by
+// TestDownloadReadBodyError directly exercises the body-read error path by
 // using a custom HTTP transport that returns a response whose body errors on
 // read.
-func TestDownload_ReadBodyError(t *testing.T) {
+func TestDownloadReadBodyError(t *testing.T) {
 	content := []byte("content for read body error test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -605,16 +607,16 @@ func TestDownload_ReadBodyError(t *testing.T) {
 		},
 	}
 	d := newDownloaderWithFacilitator(facilitator)
-	// Body is empty → hash mismatch → error "unable to download content"
+	// Body is empty → hash mismatch → error errUnableToDownload
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
 }
 
 // ---- NoPushdropDecoded – nil pushdrop (not a pushdrop script at all) --------
 
-// TestResolve_NilPushDrop tests that an output with a non-pushdrop script
+// TestResolveNilPushDrop tests that an output with a non-pushdrop script
 // (pd == nil) is skipped. The OP_RETURN script is not a valid pushdrop.
-func TestResolve_NilPushDrop(t *testing.T) {
+func TestResolveNilPushDrop(t *testing.T) {
 	// Build an OP_RETURN script that is not a pushdrop
 	s := &script.Script{}
 	require.NoError(t, s.AppendOpcodes(script.OpFALSE))

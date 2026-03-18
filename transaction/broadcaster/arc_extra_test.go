@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const arcExampleURL = "https://arc.example.com"
+
 // MockArcRejectedClient simulates a rejected transaction response.
 type MockArcRejectedClient struct{}
 
@@ -105,7 +107,7 @@ func TestArcBroadcastRejected(t *testing.T) {
 	require.NoError(t, err)
 
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		ApiKey: "testkey",
 		Client: &MockArcRejectedClient{},
 	}
@@ -123,7 +125,7 @@ func TestArcBroadcastStatus200(t *testing.T) {
 	require.NoError(t, err)
 
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		Client: &MockArcStatus200Client{},
 	}
 
@@ -139,7 +141,7 @@ func TestArcBroadcastNetworkError(t *testing.T) {
 	require.NoError(t, err)
 
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		Client: &MockArcNetworkErrorClient{},
 	}
 
@@ -155,7 +157,7 @@ func TestArcBroadcastBadJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		Client: &MockArcBadJSONClient{},
 	}
 
@@ -172,7 +174,7 @@ func TestArcAllHeaders(t *testing.T) {
 	callbackToken := "mytoken"
 	maxTimeout := 30
 	a := &Arc{
-		ApiUrl:                  "https://arc.example.com",
+		ApiUrl:                  arcExampleURL,
 		ApiKey:                  "testkey",
 		CallbackUrl:             &callbackURL,
 		CallbackToken:           &callbackToken,
@@ -199,7 +201,7 @@ func TestArcVerboseLogging(t *testing.T) {
 	require.NoError(t, err)
 
 	a := &Arc{
-		ApiUrl:  "https://arc.example.com",
+		ApiUrl:  arcExampleURL,
 		Verbose: true,
 		Client:  &MockArcSuccessClient{},
 	}
@@ -222,7 +224,7 @@ func TestArcStatusMethod(t *testing.T) {
 
 	client := &MockArcStatusResponseClient{resp: expectedResp}
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		ApiKey: "testkey",
 		Client: client,
 	}
@@ -249,7 +251,7 @@ func (m *MockArcStatusResponseClient) Do(req *http.Request) (*http.Response, err
 
 func TestArcStatusNetworkError(t *testing.T) {
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		Client: &MockArcNetworkErrorClient{},
 	}
 
@@ -260,7 +262,7 @@ func TestArcStatusNetworkError(t *testing.T) {
 
 func TestArcStatusBadJSON(t *testing.T) {
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		Client: &MockArcBadJSONClient{},
 	}
 
@@ -276,7 +278,7 @@ func TestArcBroadcastFailureNonSuccessStatus(t *testing.T) {
 
 	// Status 500 without REJECTED txStatus (third branch of BroadcastCtx)
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 		Client: &MockArcFailureClient{},
 	}
 
@@ -289,7 +291,7 @@ func TestArcBroadcastFailureNonSuccessStatus(t *testing.T) {
 func TestArcDefaultHTTPClient(t *testing.T) {
 	// When Client is nil, it defaults to http.DefaultClient
 	a := &Arc{
-		ApiUrl: "https://arc.example.com",
+		ApiUrl: arcExampleURL,
 	}
 	// This will fail since we're not calling a real endpoint, but it exercises the nil check
 	tx := &transaction.Transaction{}

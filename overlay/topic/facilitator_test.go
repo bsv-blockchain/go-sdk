@@ -10,7 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHTTPSOverlayBroadcastFacilitator_Success(t *testing.T) {
+const headerContentType = "Content-Type"
+
+func TestHTTPSOverlayBroadcastFacilitatorSuccess(t *testing.T) {
 	expectedSteak := &overlay.Steak{
 		"tm_test": &overlay.AdmittanceInstructions{
 			OutputsToAdmit: []uint32{0},
@@ -20,10 +22,10 @@ func TestHTTPSOverlayBroadcastFacilitator_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/submit", r.URL.Path)
 		require.Equal(t, http.MethodPost, r.Method)
-		require.Equal(t, "application/octet-stream", r.Header.Get("Content-Type"))
+		require.Equal(t, "application/octet-stream", r.Header.Get(headerContentType))
 		require.NotEmpty(t, r.Header.Get("X-Topics"))
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(expectedSteak)
 	}))
@@ -44,7 +46,7 @@ func TestHTTPSOverlayBroadcastFacilitator_Success(t *testing.T) {
 	require.Equal(t, []uint32{0}, admittance.OutputsToAdmit)
 }
 
-func TestHTTPSOverlayBroadcastFacilitator_NonOKStatus(t *testing.T) {
+func TestHTTPSOverlayBroadcastFacilitatorNonOKStatus(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
@@ -60,7 +62,7 @@ func TestHTTPSOverlayBroadcastFacilitator_NonOKStatus(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestHTTPSOverlayBroadcastFacilitator_InvalidURL(t *testing.T) {
+func TestHTTPSOverlayBroadcastFacilitatorInvalidURL(t *testing.T) {
 	f := &HTTPSOverlayBroadcastFacilitator{Client: http.DefaultClient}
 	taggedBEEF := &overlay.TaggedBEEF{
 		Beef:   []byte{0x01},
@@ -71,7 +73,7 @@ func TestHTTPSOverlayBroadcastFacilitator_InvalidURL(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestHTTPSOverlayBroadcastFacilitator_InvalidResponseBody(t *testing.T) {
+func TestHTTPSOverlayBroadcastFacilitatorInvalidResponseBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("not-valid-json"))
@@ -88,11 +90,11 @@ func TestHTTPSOverlayBroadcastFacilitator_InvalidResponseBody(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestHTTPSOverlayBroadcastFacilitator_EmptySteak(t *testing.T) {
+func TestHTTPSOverlayBroadcastFacilitatorEmptySteak(t *testing.T) {
 	emptySteak := &overlay.Steak{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(emptySteak)
 	}))

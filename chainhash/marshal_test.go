@@ -139,9 +139,9 @@ func TestSize(t *testing.T) {
 	})
 }
 
-// TestUnmarshalJSON_ErrorPath verifies that UnmarshalJSON returns an error
+// TestUnmarshalJSONErrorPath verifies that UnmarshalJSON returns an error
 // when given an invalid hex string inside a valid JSON string.
-func TestUnmarshalJSON_ErrorPath(t *testing.T) {
+func TestUnmarshalJSONErrorPath(t *testing.T) {
 	t.Parallel()
 
 	t.Run("invalid hex inside JSON string", func(t *testing.T) {

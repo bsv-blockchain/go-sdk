@@ -7,18 +7,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewTestLogger_ReturnsLogger(t *testing.T) {
+func TestNewTestLoggerReturnsLogger(t *testing.T) {
 	logger := NewTestLogger(t)
 	require.NotNil(t, logger)
 }
 
-func TestNewTestLogger_IsStructuredLogger(t *testing.T) {
+func TestNewTestLoggerIsStructuredLogger(t *testing.T) {
 	logger := NewTestLogger(t)
 	// The returned value must be a *slog.Logger.
 	var _ *slog.Logger = logger
 }
 
-func TestNewTestLogger_CanLog(t *testing.T) {
+func TestNewTestLoggerCanLog(t *testing.T) {
 	logger := NewTestLogger(t)
 	// Calling log methods must not panic.
 	require.NotPanics(t, func() {
@@ -29,7 +29,7 @@ func TestNewTestLogger_CanLog(t *testing.T) {
 	})
 }
 
-func TestNewTestLogger_WithSubtest(t *testing.T) {
+func TestNewTestLoggerWithSubtest(t *testing.T) {
 	t.Run("subtest", func(t *testing.T) {
 		logger := NewTestLogger(t)
 		require.NotNil(t, logger)
@@ -39,7 +39,7 @@ func TestNewTestLogger_WithSubtest(t *testing.T) {
 	})
 }
 
-func TestNewTestLogger_WriterOutputLength(t *testing.T) {
+func TestNewTestLoggerWriterOutputLength(t *testing.T) {
 	// Verify the underlying testLogger.Write returns correct byte count.
 	w := &testLogger{t: t}
 	msg := []byte("hello test logger")

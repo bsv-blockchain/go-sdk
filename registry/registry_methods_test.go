@@ -13,6 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testOriginator            = "test-originator"
+	errLookupQueryError       = "lookup query error"
+	errUnexpectedLookupResult = "unexpected lookup result type"
+)
+
 // Suppress unused import warning - time is used in slowFacilitator
 var _ = time.Second
 
@@ -31,7 +37,7 @@ func (m *mockFacilitator) Lookup(ctx context.Context, url string, question *look
 func buildClientWithMockLookup(t *testing.T, serviceName string, facilitator lookup.Facilitator) *RegistryClient {
 	t.Helper()
 	mockWallet := NewMockRegistry(t)
-	client := NewRegistryClient(mockWallet, "test-originator")
+	client := NewRegistryClient(mockWallet, testOriginator)
 	client.lookupFactory = func() *lookup.LookupResolver {
 		return &lookup.LookupResolver{
 			Facilitator: facilitator,
@@ -46,16 +52,16 @@ func buildClientWithMockLookup(t *testing.T, serviceName string, facilitator loo
 
 // ---- ResolveBasket ----
 
-func TestResolveBasket_LookupError(t *testing.T) {
+func TestResolveBasketLookupError(t *testing.T) {
 	facilitator := &mockFacilitator{err: fmt.Errorf("lookup failed")}
 	client := buildClientWithMockLookup(t, "ls_basketmap", facilitator)
 
 	_, err := client.ResolveBasket(context.Background(), BasketQuery{})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "lookup query error")
+	assert.Contains(t, err.Error(), errLookupQueryError)
 }
 
-func TestResolveBasket_WrongAnswerType(t *testing.T) {
+func TestResolveBasketWrongAnswerType(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{Type: "freeform", Result: "some result"},
 	}
@@ -63,10 +69,10 @@ func TestResolveBasket_WrongAnswerType(t *testing.T) {
 
 	_, err := client.ResolveBasket(context.Background(), BasketQuery{})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected lookup result type")
+	assert.Contains(t, err.Error(), errUnexpectedLookupResult)
 }
 
-func TestResolveBasket_EmptyOutputList(t *testing.T) {
+func TestResolveBasketEmptyOutputList(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type:    lookup.AnswerTypeOutputList,
@@ -80,7 +86,7 @@ func TestResolveBasket_EmptyOutputList(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestResolveBasket_InvalidBEEFSkipped(t *testing.T) {
+func TestResolveBasketInvalidBEEFSkipped(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type: lookup.AnswerTypeOutputList,
@@ -99,16 +105,16 @@ func TestResolveBasket_InvalidBEEFSkipped(t *testing.T) {
 
 // ---- ResolveProtocol ----
 
-func TestResolveProtocol_LookupError(t *testing.T) {
+func TestResolveProtocolLookupError(t *testing.T) {
 	facilitator := &mockFacilitator{err: fmt.Errorf("network error")}
 	client := buildClientWithMockLookup(t, "ls_protomap", facilitator)
 
 	_, err := client.ResolveProtocol(context.Background(), ProtocolQuery{})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "lookup query error")
+	assert.Contains(t, err.Error(), errLookupQueryError)
 }
 
-func TestResolveProtocol_WrongAnswerType(t *testing.T) {
+func TestResolveProtocolWrongAnswerType(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{Type: "freeform"},
 	}
@@ -116,10 +122,10 @@ func TestResolveProtocol_WrongAnswerType(t *testing.T) {
 
 	_, err := client.ResolveProtocol(context.Background(), ProtocolQuery{})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected lookup result type")
+	assert.Contains(t, err.Error(), errUnexpectedLookupResult)
 }
 
-func TestResolveProtocol_EmptyOutputList(t *testing.T) {
+func TestResolveProtocolEmptyOutputList(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type:    lookup.AnswerTypeOutputList,
@@ -133,7 +139,7 @@ func TestResolveProtocol_EmptyOutputList(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestResolveProtocol_InvalidBEEFSkipped(t *testing.T) {
+func TestResolveProtocolInvalidBEEFSkipped(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type: lookup.AnswerTypeOutputList,
@@ -151,16 +157,16 @@ func TestResolveProtocol_InvalidBEEFSkipped(t *testing.T) {
 
 // ---- ResolveCertificate ----
 
-func TestResolveCertificate_LookupError(t *testing.T) {
+func TestResolveCertificateLookupError(t *testing.T) {
 	facilitator := &mockFacilitator{err: fmt.Errorf("no route")}
 	client := buildClientWithMockLookup(t, "ls_certmap", facilitator)
 
 	_, err := client.ResolveCertificate(context.Background(), CertificateQuery{})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "lookup query error")
+	assert.Contains(t, err.Error(), errLookupQueryError)
 }
 
-func TestResolveCertificate_WrongAnswerType(t *testing.T) {
+func TestResolveCertificateWrongAnswerType(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{Type: lookup.AnswerTypeFreeform, Result: "data"},
 	}
@@ -168,10 +174,10 @@ func TestResolveCertificate_WrongAnswerType(t *testing.T) {
 
 	_, err := client.ResolveCertificate(context.Background(), CertificateQuery{})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected lookup result type")
+	assert.Contains(t, err.Error(), errUnexpectedLookupResult)
 }
 
-func TestResolveCertificate_EmptyOutputList(t *testing.T) {
+func TestResolveCertificateEmptyOutputList(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type:    lookup.AnswerTypeOutputList,
@@ -185,7 +191,7 @@ func TestResolveCertificate_EmptyOutputList(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestResolveCertificate_InvalidBEEFSkipped(t *testing.T) {
+func TestResolveCertificateInvalidBEEFSkipped(t *testing.T) {
 	facilitator := &mockFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type: lookup.AnswerTypeOutputList,
@@ -203,7 +209,7 @@ func TestResolveCertificate_InvalidBEEFSkipped(t *testing.T) {
 
 // ---- parseLockingScript ----
 
-func TestParseLockingScript_EmptyScript(t *testing.T) {
+func TestParseLockingScriptEmptyScript(t *testing.T) {
 	// An empty script (not nil) should fail gracefully
 	emptyScript := &script.Script{}
 	_, err := parseLockingScript(DefinitionTypeBasket, emptyScript)
@@ -240,14 +246,14 @@ func buildMockPushDropScript(t *testing.T, fields ...[]byte) *script.Script {
 	return s
 }
 
-func TestParseLockingScript_BasketWrongFieldCount(t *testing.T) {
+func TestParseLockingScriptBasketWrongFieldCount(t *testing.T) {
 	// 4 fields instead of expected 6
 	s := buildMockPushDropScript(t, []byte("a"), []byte("b"), []byte("c"), []byte("d"))
 	_, err := parseLockingScript(DefinitionTypeBasket, s)
 	require.Error(t, err)
 }
 
-func TestParseLockingScript_ProtocolType(t *testing.T) {
+func TestParseLockingScriptProtocolType(t *testing.T) {
 	// 6 fields for protocol - 3rd field is protocol ID JSON
 	protocolIDJSON := `[2, "testprotocol"]`
 	s := buildMockPushDropScript(t,
@@ -263,7 +269,7 @@ func TestParseLockingScript_ProtocolType(t *testing.T) {
 	_ = err
 }
 
-func TestParseLockingScript_CertificateType(t *testing.T) {
+func TestParseLockingScriptCertificateType(t *testing.T) {
 	// 7 fields for certificate
 	fieldsJSON := `{"name":{"friendlyName":"Name","type":"text"}}`
 	s := buildMockPushDropScript(t,
@@ -280,7 +286,7 @@ func TestParseLockingScript_CertificateType(t *testing.T) {
 	_ = err
 }
 
-func TestParseLockingScript_UnknownType(t *testing.T) {
+func TestParseLockingScriptUnknownType(t *testing.T) {
 	s := buildMockPushDropScript(t, []byte("a"), []byte("b"))
 	_, err := parseLockingScript("unknown-type", s)
 	require.Error(t, err)
@@ -288,7 +294,7 @@ func TestParseLockingScript_UnknownType(t *testing.T) {
 
 // ---- ListOwnRegistryEntries error paths ----
 
-func TestListOwnRegistryEntries_ListOutputsNilResult(t *testing.T) {
+func TestListOwnRegistryEntriesListOutputsNilResult(t *testing.T) {
 	mockWallet := NewMockRegistry(t)
 	// ListOutputsResultToReturn is nil, so MockRegistry.ListOutputs calls require.Fail
 	// Instead set a proper empty result
@@ -296,7 +302,7 @@ func TestListOwnRegistryEntries_ListOutputsNilResult(t *testing.T) {
 		TotalOutputs: 0,
 		Outputs:      []wallet.Output{},
 	}
-	client := NewRegistryClient(mockWallet, "test-originator")
+	client := NewRegistryClient(mockWallet, testOriginator)
 
 	results, err := client.ListOwnRegistryEntries(context.Background(), DefinitionTypeBasket)
 	require.NoError(t, err)
@@ -305,9 +311,9 @@ func TestListOwnRegistryEntries_ListOutputsNilResult(t *testing.T) {
 
 // ---- RevokeOwnRegistryEntry error paths ----
 
-func TestRevokeOwnRegistryEntry_MissingTxID(t *testing.T) {
+func TestRevokeOwnRegistryEntryMissingTxID(t *testing.T) {
 	mockWallet := NewMockRegistry(t)
-	client := NewRegistryClient(mockWallet, "test-originator")
+	client := NewRegistryClient(mockWallet, testOriginator)
 
 	// Empty RegistryRecord triggers validation error
 	record := &RegistryRecord{}
@@ -316,10 +322,10 @@ func TestRevokeOwnRegistryEntry_MissingTxID(t *testing.T) {
 	assert.Contains(t, err.Error(), "missing txid")
 }
 
-func TestRevokeOwnRegistryEntry_GetPublicKeyError(t *testing.T) {
+func TestRevokeOwnRegistryEntryGetPublicKeyError(t *testing.T) {
 	mockWallet := NewMockRegistry(t)
 	mockWallet.GetPublicKeyError = fmt.Errorf("no key")
-	client := NewRegistryClient(mockWallet, "test-originator")
+	client := NewRegistryClient(mockWallet, testOriginator)
 
 	// Provide TxID and LockingScript to pass validation, then GetPublicKey fails
 	record := &RegistryRecord{

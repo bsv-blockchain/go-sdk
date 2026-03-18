@@ -212,7 +212,7 @@ func TestAESGCMDecrypt(t *testing.T) {
 	}
 }
 
-func TestAESGCMDecrypt_WrongTag(t *testing.T) {
+func TestAESGCMDecryptWrongTag(t *testing.T) {
 	t.Parallel()
 
 	plaintext, _ := hex.DecodeString("00000000000000000000000000000000")
@@ -233,7 +233,7 @@ func TestAESGCMDecrypt_WrongTag(t *testing.T) {
 	require.Contains(t, err.Error(), "decryption failed")
 }
 
-func TestAESGCMDecrypt_InvalidKey(t *testing.T) {
+func TestAESGCMDecryptInvalidKey(t *testing.T) {
 	t.Parallel()
 
 	ciphertext := []byte{}
@@ -245,7 +245,7 @@ func TestAESGCMDecrypt_InvalidKey(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestAESEncryptDecrypt_KnownValues(t *testing.T) {
+func TestAESEncryptDecryptKnownValues(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {

@@ -31,7 +31,9 @@ func buildIdentityCert(typeStr string, fields map[string]string, certifierName, 
 	}
 }
 
-func TestParseIdentity_AllTypes(t *testing.T) {
+const socialCertNetURL = "https://socialcert.net"
+
+func TestParseIdentityAllTypes(t *testing.T) {
 	t.Run("DiscordCert", func(t *testing.T) {
 		cert := buildIdentityCert(KnownIdentityTypes.DiscordCert,
 			map[string]string{"userName": "discordUser", "profilePhoto": "discordPhoto"},
@@ -40,7 +42,7 @@ func TestParseIdentity_AllTypes(t *testing.T) {
 		require.Equal(t, "discordUser", identity.Name)
 		require.Equal(t, "discordPhoto", identity.AvatarURL)
 		require.Contains(t, identity.BadgeLabel, "Discord account certified by DiscordCertifier")
-		require.Equal(t, "https://socialcert.net", identity.BadgeClickURL)
+		require.Equal(t, socialCertNetURL, identity.BadgeClickURL)
 		require.Equal(t, "discordIcon", identity.BadgeIconURL)
 	})
 
@@ -52,7 +54,7 @@ func TestParseIdentity_AllTypes(t *testing.T) {
 		require.Equal(t, "+1234567890", identity.Name)
 		require.Equal(t, "XUTLxtX3ELNUwRhLwL7kWNGbdnFM8WG2eSLv84J7654oH8HaJWrU", identity.AvatarURL)
 		require.Contains(t, identity.BadgeLabel, "Phone certified by PhoneCertifier")
-		require.Equal(t, "https://socialcert.net", identity.BadgeClickURL)
+		require.Equal(t, socialCertNetURL, identity.BadgeClickURL)
 	})
 
 	t.Run("IdentiCert", func(t *testing.T) {
@@ -122,14 +124,14 @@ func TestParseIdentity_AllTypes(t *testing.T) {
 		identity := ParseIdentity(cert)
 		require.Equal(t, "xuser", identity.Name)
 		require.Equal(t, "xphoto", identity.AvatarURL)
-		require.Equal(t, "https://socialcert.net", identity.BadgeClickURL)
+		require.Equal(t, socialCertNetURL, identity.BadgeClickURL)
 		// Check abbreviated key is correct length
 		require.NotEmpty(t, identity.AbbreviatedKey)
 		require.True(t, len(identity.AbbreviatedKey) > 3)
 	})
 }
 
-func TestNewClient_WithNilWallet(t *testing.T) {
+func TestNewClientWithNilWallet(t *testing.T) {
 	t.Run("nil wallet creates random key wallet", func(t *testing.T) {
 		client, err := NewClient(nil, nil, "")
 		require.NoError(t, err)
@@ -138,7 +140,7 @@ func TestNewClient_WithNilWallet(t *testing.T) {
 	})
 }
 
-func TestNewClient_WithOptions(t *testing.T) {
+func TestNewClientWithOptions(t *testing.T) {
 	t.Run("custom options are applied", func(t *testing.T) {
 		opts := &IdentityClientOptions{
 			ProtocolID: wallet.Protocol{
@@ -167,7 +169,7 @@ func TestDefaultCertificateVerifier(t *testing.T) {
 	})
 }
 
-func TestNewTestableIdentityClient_NilVerifier(t *testing.T) {
+func TestNewTestableIdentityClientNilVerifier(t *testing.T) {
 	t.Run("nil verifier uses default", func(t *testing.T) {
 		client, err := NewTestableIdentityClient(nil, nil, "", nil)
 		require.NoError(t, err)
@@ -187,7 +189,7 @@ func TestWithTransactionCreator(t *testing.T) {
 	})
 }
 
-func TestPubliclyRevealAttributesSimple_NoFieldsError(t *testing.T) {
+func TestPubliclyRevealAttributesSimpleNoFieldsError(t *testing.T) {
 	t.Run("returns error when no fields", func(t *testing.T) {
 		client, err := NewClient(nil, nil, "")
 		require.NoError(t, err)
@@ -202,7 +204,7 @@ func TestPubliclyRevealAttributesSimple_NoFieldsError(t *testing.T) {
 	})
 }
 
-func TestPubliclyRevealAttributesSimple_EmptyFieldsToReveal(t *testing.T) {
+func TestPubliclyRevealAttributesSimpleEmptyFieldsToReveal(t *testing.T) {
 	t.Run("returns error when empty fieldsToReveal", func(t *testing.T) {
 		client, err := NewClient(nil, nil, "")
 		require.NoError(t, err)
@@ -217,7 +219,7 @@ func TestPubliclyRevealAttributesSimple_EmptyFieldsToReveal(t *testing.T) {
 	})
 }
 
-func TestPubliclyRevealAttributes_WithRealCert(t *testing.T) {
+func TestPubliclyRevealAttributesWithRealCert(t *testing.T) {
 	t.Run("fails at ProveCertificate with valid cert (gets past verification)", func(t *testing.T) {
 		// Create a subject wallet
 		subjectPrivKey, err := ec.NewPrivateKey()
@@ -252,7 +254,7 @@ func TestPubliclyRevealAttributes_WithRealCert(t *testing.T) {
 	})
 }
 
-func TestPubliclyRevealAttributes_WithRealCertAndSuccessfulProve(t *testing.T) {
+func TestPubliclyRevealAttributesWithRealCertAndSuccessfulProve(t *testing.T) {
 	t.Run("gets past ProveCertificate and fails at CreateAction", func(t *testing.T) {
 		subjectPrivKey, err := ec.NewPrivateKey()
 		require.NoError(t, err)
@@ -283,7 +285,7 @@ func TestPubliclyRevealAttributes_WithRealCertAndSuccessfulProve(t *testing.T) {
 	})
 }
 
-func TestPubliclyRevealAttributesSimple_WithError(t *testing.T) {
+func TestPubliclyRevealAttributesSimpleWithError(t *testing.T) {
 	t.Run("simple API propagates error from PubliclyRevealAttributes", func(t *testing.T) {
 		client, err := NewClient(nil, nil, "")
 		require.NoError(t, err)
@@ -300,7 +302,7 @@ func TestPubliclyRevealAttributesSimple_WithError(t *testing.T) {
 	})
 }
 
-func TestPubliclyRevealAttributes_ValidationErrors(t *testing.T) {
+func TestPubliclyRevealAttributesValidationErrors(t *testing.T) {
 	client, err := NewClient(nil, nil, "")
 	require.NoError(t, err)
 
@@ -333,7 +335,7 @@ func TestPubliclyRevealAttributes_ValidationErrors(t *testing.T) {
 	})
 }
 
-func TestPubliclyRevealAttributesSimple_ValidationErrors(t *testing.T) {
+func TestPubliclyRevealAttributesSimpleValidationErrors(t *testing.T) {
 	client, err := NewClient(nil, nil, "")
 	require.NoError(t, err)
 
@@ -350,7 +352,7 @@ func TestPubliclyRevealAttributesSimple_ValidationErrors(t *testing.T) {
 	})
 }
 
-func TestTestablePubliclyRevealAttributesSimple_ViaNetwork(t *testing.T) {
+func TestTestablePubliclyRevealAttributesSimpleViaNetwork(t *testing.T) {
 	t.Run("reaches broadcast via simple API (failure path from broadcast)", func(t *testing.T) {
 		privKey, pubKey := privateKeyFromInt(203)
 		mockWallet := wallet.NewTestWallet(t, privKey)
@@ -399,7 +401,7 @@ func TestTestablePubliclyRevealAttributesSimple_ViaNetwork(t *testing.T) {
 	})
 }
 
-func TestResolveByIdentityKey_Error(t *testing.T) {
+func TestResolveByIdentityKeyError(t *testing.T) {
 	t.Run("returns error when wallet fails", func(t *testing.T) {
 		mockWallet := wallet.NewTestWalletForRandomKey(t)
 		client, err := NewClient(mockWallet, nil, "")
@@ -412,7 +414,7 @@ func TestResolveByIdentityKey_Error(t *testing.T) {
 	})
 }
 
-func TestResolveByAttributes_Error(t *testing.T) {
+func TestResolveByAttributesError(t *testing.T) {
 	t.Run("returns error when wallet fails", func(t *testing.T) {
 		mockWallet := wallet.NewTestWalletForRandomKey(t)
 		client, err := NewClient(mockWallet, nil, "")
@@ -425,7 +427,7 @@ func TestResolveByAttributes_Error(t *testing.T) {
 	})
 }
 
-func TestMockCertificateVerifier_NilMockVerify(t *testing.T) {
+func TestMockCertificateVerifierNilMockVerify(t *testing.T) {
 	t.Run("returns nil when MockVerify is nil", func(t *testing.T) {
 		m := &MockCertificateVerifier{}
 		err := m.Verify(nil, nil)
@@ -444,7 +446,7 @@ func TestWithBroadcaster(t *testing.T) {
 	})
 }
 
-func TestTestablePubliclyRevealAttributesSimple_Failure(t *testing.T) {
+func TestTestablePubliclyRevealAttributesSimpleFailure(t *testing.T) {
 	t.Run("simple api returns error when PubliclyRevealAttributes fails", func(t *testing.T) {
 		client, err := NewTestableIdentityClient(nil, nil, "", &MockCertificateVerifier{
 			MockVerify: func(ctx context.Context, cert *wallet.Certificate) error {
@@ -466,7 +468,7 @@ func TestTestablePubliclyRevealAttributesSimple_Failure(t *testing.T) {
 	})
 }
 
-func TestTestablePubliclyRevealAttributes_GetNetworkPath(t *testing.T) {
+func TestTestablePubliclyRevealAttributesGetNetworkPath(t *testing.T) {
 	t.Run("reaches GetNetwork after successful transaction creation", func(t *testing.T) {
 		privKey, pubKey := privateKeyFromInt(200)
 		mockWallet := wallet.NewTestWallet(t, privKey)

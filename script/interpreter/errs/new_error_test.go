@@ -12,20 +12,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestNewError_NoArgs verifies that NewError without format args creates the
+const errInternalDescription = "internal error"
+
+// TestNewErrorNoArgs verifies that NewError without format args creates the
 // correct Error value.
-func TestNewError_NoArgs(t *testing.T) {
+func TestNewErrorNoArgs(t *testing.T) {
 	t.Parallel()
 
-	e := NewError(ErrInternal, "internal error")
+	e := NewError(ErrInternal, errInternalDescription)
 	require.Equal(t, ErrInternal, e.ErrorCode)
-	require.Equal(t, "internal error", e.Description)
-	require.Equal(t, "internal error", e.Error())
+	require.Equal(t, errInternalDescription, e.Description)
+	require.Equal(t, errInternalDescription, e.Error())
 }
 
-// TestNewError_WithFormatArgs verifies that NewError interpolates printf-style
+// TestNewErrorWithFormatArgs verifies that NewError interpolates printf-style
 // format arguments into the description.
-func TestNewError_WithFormatArgs(t *testing.T) {
+func TestNewErrorWithFormatArgs(t *testing.T) {
 	t.Parallel()
 
 	e := NewError(ErrInvalidIndex, "index %d out of range for length %d", 5, 3)
@@ -34,8 +36,8 @@ func TestNewError_WithFormatArgs(t *testing.T) {
 	require.Equal(t, "index 5 out of range for length 3", e.Error())
 }
 
-// TestNewError_StringFormatArg verifies string format args work correctly.
-func TestNewError_StringFormatArg(t *testing.T) {
+// TestNewErrorStringFormatArg verifies string format args work correctly.
+func TestNewErrorStringFormatArg(t *testing.T) {
 	t.Parallel()
 
 	e := NewError(ErrUnsupportedAddress, "unsupported address type: %s", "P2SH")
@@ -43,8 +45,8 @@ func TestNewError_StringFormatArg(t *testing.T) {
 	require.Equal(t, "unsupported address type: P2SH", e.Description)
 }
 
-// TestNewError_ErrOK verifies NewError works with ErrOK.
-func TestNewError_ErrOK(t *testing.T) {
+// TestNewErrorErrOK verifies NewError works with ErrOK.
+func TestNewErrorErrOK(t *testing.T) {
 	t.Parallel()
 
 	e := NewError(ErrOK, "ok")
@@ -52,9 +54,9 @@ func TestNewError_ErrOK(t *testing.T) {
 	require.Equal(t, "ok", e.Description)
 }
 
-// TestNewError_MultipleFormatVerbs verifies multiple format verbs in a single
+// TestNewErrorMultipleFormatVerbs verifies multiple format verbs in a single
 // description string.
-func TestNewError_MultipleFormatVerbs(t *testing.T) {
+func TestNewErrorMultipleFormatVerbs(t *testing.T) {
 	t.Parallel()
 
 	e := NewError(ErrScriptTooBig, "script size %d exceeds limit %d by %d bytes", 1100, 1000, 100)
@@ -62,9 +64,9 @@ func TestNewError_MultipleFormatVerbs(t *testing.T) {
 	require.Equal(t, "script size 1100 exceeds limit 1000 by 100 bytes", e.Description)
 }
 
-// TestNewError_ImplementsError confirms that the Error returned by NewError
+// TestNewErrorImplementsError confirms that the Error returned by NewError
 // satisfies the standard error interface.
-func TestNewError_ImplementsError(t *testing.T) {
+func TestNewErrorImplementsError(t *testing.T) {
 	t.Parallel()
 
 	e := NewError(ErrEvalFalse, "eval false")
@@ -132,9 +134,9 @@ func TestIsErrorCode(t *testing.T) {
 	})
 }
 
-// TestIsErrorCode_CoverageForAllCodes exercises IsErrorCode for every defined
+// TestIsErrorCodeCoverageForAllCodes exercises IsErrorCode for every defined
 // ErrorCode to ensure the function handles all variants.
-func TestIsErrorCode_CoverageForAllCodes(t *testing.T) {
+func TestIsErrorCodeCoverageForAllCodes(t *testing.T) {
 	t.Parallel()
 
 	// Build a slice of (code, Error) pairs using literal-compatible calls.

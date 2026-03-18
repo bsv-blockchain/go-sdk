@@ -11,13 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testMessage = "test message"
+
 func TestVerifyMessage(t *testing.T) {
 	t.Parallel()
 
 	t.Run("verifies a valid compressed message", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex("0499f8239bfe10eb0f5e53d543635a423c96529dd85fa4bad42049a0b435ebdd")
 		require.NoError(t, err)
-		msg := []byte("test message")
+		msg := []byte(testMessage)
 		sig, err := compat.SignMessage(pk, msg)
 		require.NoError(t, err)
 
@@ -31,7 +33,7 @@ func TestVerifyMessage(t *testing.T) {
 	t.Run("fails when address does not match", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex("0499f8239bfe10eb0f5e53d543635a423c96529dd85fa4bad42049a0b435ebdd")
 		require.NoError(t, err)
-		msg := []byte("test message")
+		msg := []byte(testMessage)
 		sig, err := compat.SignMessage(pk, msg)
 		require.NoError(t, err)
 
@@ -53,7 +55,7 @@ func TestVerifyMessage(t *testing.T) {
 	t.Run("verifies uncompressed key signature", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex("0499f8239bfe10eb0f5e53d543635a423c96529dd85fa4bad42049a0b435ebdd")
 		require.NoError(t, err)
-		msg := []byte("test message")
+		msg := []byte(testMessage)
 		sig, err := compat.SignMessageWithCompression(pk, msg, false)
 		require.NoError(t, err)
 
@@ -78,7 +80,7 @@ func TestVerifyMessageDER(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create a hash
-		msg := []byte("test message")
+		msg := []byte(testMessage)
 		hash := sha256.Sum256(msg)
 
 		// Sign with DER format
@@ -99,7 +101,7 @@ func TestVerifyMessageDER(t *testing.T) {
 		pk2, err := ec.PrivateKeyFromHex("ef0b8bad0be285099534277fde328f8f19b3be9cadcd4c08e6ac0b5f863745ac")
 		require.NoError(t, err)
 
-		msg := []byte("test message")
+		msg := []byte(testMessage)
 		hash := sha256.Sum256(msg)
 
 		sig, err := pk.Sign(hash[:])
@@ -153,7 +155,7 @@ func TestPubKeyFromSignature(t *testing.T) {
 	t.Run("recovers compressed public key", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex("0499f8239bfe10eb0f5e53d543635a423c96529dd85fa4bad42049a0b435ebdd")
 		require.NoError(t, err)
-		msg := []byte("test message")
+		msg := []byte(testMessage)
 		sig, err := compat.SignMessage(pk, msg)
 		require.NoError(t, err)
 
@@ -166,7 +168,7 @@ func TestPubKeyFromSignature(t *testing.T) {
 	t.Run("recovers uncompressed public key", func(t *testing.T) {
 		pk, err := ec.PrivateKeyFromHex("0499f8239bfe10eb0f5e53d543635a423c96529dd85fa4bad42049a0b435ebdd")
 		require.NoError(t, err)
-		msg := []byte("test message")
+		msg := []byte(testMessage)
 		sig, err := compat.SignMessageWithCompression(pk, msg, false)
 		require.NoError(t, err)
 

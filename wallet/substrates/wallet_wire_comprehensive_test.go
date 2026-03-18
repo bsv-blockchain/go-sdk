@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testAppOriginator = "test-app"
+
 // buildTransceiverPair creates a processor backed by a TestWallet and a transceiver that talks to it.
 func buildTransceiverPair(t *testing.T) (*wallet.TestWallet, *substrates.WalletWireTransceiver) {
 	t.Helper()
@@ -23,7 +25,7 @@ func buildTransceiverPair(t *testing.T) (*wallet.TestWallet, *substrates.WalletW
 
 // ---- WalletWireProcessor ----
 
-func TestWalletWireProcessor_EmptyMessage(t *testing.T) {
+func TestWalletWireProcessorEmptyMessage(t *testing.T) {
 	tw := wallet.NewTestWalletForRandomKey(t)
 	processor := substrates.NewWalletWireProcessor(tw)
 
@@ -32,7 +34,7 @@ func TestWalletWireProcessor_EmptyMessage(t *testing.T) {
 	assert.Contains(t, err.Error(), "empty message")
 }
 
-func TestWalletWireProcessor_UnknownCallType(t *testing.T) {
+func TestWalletWireProcessorUnknownCallType(t *testing.T) {
 	tw := wallet.NewTestWalletForRandomKey(t)
 	processor := substrates.NewWalletWireProcessor(tw)
 
@@ -44,94 +46,94 @@ func TestWalletWireProcessor_UnknownCallType(t *testing.T) {
 
 // ---- WalletWireTransceiver - all operations ----
 
-func TestTransceiver_GetPublicKey(t *testing.T) {
+func TestTransceiverGetPublicKey(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 	result, err := transceiver.GetPublicKey(context.Background(), wallet.GetPublicKeyArgs{
 		IdentityKey: true,
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result.PublicKey)
 }
 
-func TestTransceiver_CreateAction(t *testing.T) {
+func TestTransceiverCreateAction(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{})
 
 	result, err := transceiver.CreateAction(context.Background(), wallet.CreateActionArgs{
 		Description: "test action",
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 }
 
-func TestTransceiver_SignAction(t *testing.T) {
+func TestTransceiverSignAction(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnSignAction().ReturnSuccess(&wallet.SignActionResult{})
 
 	result, err := transceiver.SignAction(context.Background(), wallet.SignActionArgs{
 		Reference: []byte("ref"),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 }
 
-func TestTransceiver_AbortAction(t *testing.T) {
+func TestTransceiverAbortAction(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnAbortAction().ReturnSuccess(&wallet.AbortActionResult{Aborted: true})
 
 	result, err := transceiver.AbortAction(context.Background(), wallet.AbortActionArgs{
 		Reference: []byte("ref"),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, result.Aborted)
 }
 
-func TestTransceiver_ListActions(t *testing.T) {
+func TestTransceiverListActions(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	// TotalActions must equal len(Actions) for the serializer to accept the result
 	tw.OnListActions().ReturnSuccess(&wallet.ListActionsResult{TotalActions: 0, Actions: []wallet.Action{}})
 
-	result, err := transceiver.ListActions(context.Background(), wallet.ListActionsArgs{}, "test-app")
+	result, err := transceiver.ListActions(context.Background(), wallet.ListActionsArgs{}, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), result.TotalActions)
 }
 
-func TestTransceiver_InternalizeAction(t *testing.T) {
+func TestTransceiverInternalizeAction(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnInternalizeAction().ReturnSuccess(&wallet.InternalizeActionResult{Accepted: true})
 
 	result, err := transceiver.InternalizeAction(context.Background(), wallet.InternalizeActionArgs{
 		Tx:          []byte{0x01, 0x02},
 		Description: "test",
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, result.Accepted)
 }
 
-func TestTransceiver_ListOutputs(t *testing.T) {
+func TestTransceiverListOutputs(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	// TotalOutputs must equal len(Outputs) for the serializer to accept the result
 	tw.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{TotalOutputs: 0, Outputs: []wallet.Output{}})
 
 	result, err := transceiver.ListOutputs(context.Background(), wallet.ListOutputsArgs{
 		Basket: "default",
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), result.TotalOutputs)
 }
 
-func TestTransceiver_RelinquishOutput(t *testing.T) {
+func TestTransceiverRelinquishOutput(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnRelinquishOutput().ReturnSuccess(&wallet.RelinquishOutputResult{Relinquished: true})
 
 	result, err := transceiver.RelinquishOutput(context.Background(), wallet.RelinquishOutputArgs{
 		Basket: "default",
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, result.Relinquished)
 }
 
-func TestTransceiver_Encrypt(t *testing.T) {
+func TestTransceiverEncrypt(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 
 	result, err := transceiver.Encrypt(context.Background(), wallet.EncryptArgs{
@@ -143,12 +145,12 @@ func TestTransceiver_Encrypt(t *testing.T) {
 			KeyID: "k1",
 		},
 		Plaintext: []byte("hello"),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotEmpty(t, result.Ciphertext)
 }
 
-func TestTransceiver_Decrypt(t *testing.T) {
+func TestTransceiverDecrypt(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 	ctx := context.Background()
 
@@ -164,18 +166,18 @@ func TestTransceiver_Decrypt(t *testing.T) {
 	enc, err := transceiver.Encrypt(ctx, wallet.EncryptArgs{
 		EncryptionArgs: args,
 		Plaintext:      plaintext,
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 
 	dec, err := transceiver.Decrypt(ctx, wallet.DecryptArgs{
 		EncryptionArgs: args,
 		Ciphertext:     enc.Ciphertext,
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, plaintext, []byte(dec.Plaintext))
 }
 
-func TestTransceiver_CreateHMAC(t *testing.T) {
+func TestTransceiverCreateHMAC(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 
 	result, err := transceiver.CreateHMAC(context.Background(), wallet.CreateHMACArgs{
@@ -187,12 +189,12 @@ func TestTransceiver_CreateHMAC(t *testing.T) {
 			KeyID: "k1",
 		},
 		Data: []byte("data"),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotEqual(t, [32]byte{}, result.HMAC)
 }
 
-func TestTransceiver_VerifyHMAC(t *testing.T) {
+func TestTransceiverVerifyHMAC(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 	ctx := context.Background()
 
@@ -208,19 +210,19 @@ func TestTransceiver_VerifyHMAC(t *testing.T) {
 	createResult, err := transceiver.CreateHMAC(ctx, wallet.CreateHMACArgs{
 		EncryptionArgs: args,
 		Data:           data,
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 
 	verifyResult, err := transceiver.VerifyHMAC(ctx, wallet.VerifyHMACArgs{
 		EncryptionArgs: args,
 		Data:           data,
 		HMAC:           createResult.HMAC,
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, verifyResult.Valid)
 }
 
-func TestTransceiver_CreateSignature(t *testing.T) {
+func TestTransceiverCreateSignature(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 
 	result, err := transceiver.CreateSignature(context.Background(), wallet.CreateSignatureArgs{
@@ -232,12 +234,12 @@ func TestTransceiver_CreateSignature(t *testing.T) {
 			KeyID: "k1",
 		},
 		Data: []byte("message to sign"),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result.Signature)
 }
 
-func TestTransceiver_VerifySignature(t *testing.T) {
+func TestTransceiverVerifySignature(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 	ctx := context.Background()
 
@@ -253,19 +255,19 @@ func TestTransceiver_VerifySignature(t *testing.T) {
 	createResult, err := transceiver.CreateSignature(ctx, wallet.CreateSignatureArgs{
 		EncryptionArgs: args,
 		Data:           data,
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 
 	verifyResult, err := transceiver.VerifySignature(ctx, wallet.VerifySignatureArgs{
 		EncryptionArgs: args,
 		Signature:      createResult.Signature,
 		Data:           data,
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, verifyResult.Valid)
 }
 
-func TestTransceiver_AcquireCertificate(t *testing.T) {
+func TestTransceiverAcquireCertificate(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	subjectKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
@@ -290,22 +292,22 @@ func TestTransceiver_AcquireCertificate(t *testing.T) {
 		Certifier:           certifierKey.PubKey(),
 		AcquisitionProtocol: wallet.AcquisitionProtocolIssuance,
 		CertifierUrl:        "https://certifier.example.com",
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 }
 
-func TestTransceiver_ListCertificates(t *testing.T) {
+func TestTransceiverListCertificates(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	// TotalCertificates must equal len(Certificates) for the serializer
 	tw.OnListCertificates().ReturnSuccess(&wallet.ListCertificatesResult{TotalCertificates: 0, Certificates: []wallet.CertificateResult{}})
 
-	result, err := transceiver.ListCertificates(context.Background(), wallet.ListCertificatesArgs{}, "test-app")
+	result, err := transceiver.ListCertificates(context.Background(), wallet.ListCertificatesArgs{}, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), result.TotalCertificates)
 }
 
-func TestTransceiver_ProveCertificate(t *testing.T) {
+func TestTransceiverProveCertificate(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
 		KeyringForVerifier: map[string]string{},
@@ -329,12 +331,12 @@ func TestTransceiver_ProveCertificate(t *testing.T) {
 			RevocationOutpoint: &transaction.Outpoint{},
 		},
 		Verifier: verifierKey.PubKey(),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 }
 
-func TestTransceiver_RelinquishCertificate(t *testing.T) {
+func TestTransceiverRelinquishCertificate(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnRelinquishCertificate().ReturnSuccess(&wallet.RelinquishCertificateResult{Relinquished: true})
 
@@ -348,12 +350,12 @@ func TestTransceiver_RelinquishCertificate(t *testing.T) {
 		Type:         ct,
 		SerialNumber: serial,
 		Certifier:    certifierKey.PubKey(),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, result.Relinquished)
 }
 
-func TestTransceiver_DiscoverByIdentityKey(t *testing.T) {
+func TestTransceiverDiscoverByIdentityKey(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	// TotalCertificates must equal len(Certificates) for the serializer
 	tw.OnDiscoverByIdentityKey().ReturnSuccess(&wallet.DiscoverCertificatesResult{
@@ -364,12 +366,12 @@ func TestTransceiver_DiscoverByIdentityKey(t *testing.T) {
 	privKey, _ := ec.NewPrivateKey()
 	result, err := transceiver.DiscoverByIdentityKey(context.Background(), wallet.DiscoverByIdentityKeyArgs{
 		IdentityKey: privKey.PubKey(),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), result.TotalCertificates)
 }
 
-func TestTransceiver_DiscoverByAttributes(t *testing.T) {
+func TestTransceiverDiscoverByAttributes(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	// TotalCertificates must equal len(Certificates) for the serializer
 	tw.OnDiscoverByAttributes().ReturnSuccess(&wallet.DiscoverCertificatesResult{
@@ -379,66 +381,66 @@ func TestTransceiver_DiscoverByAttributes(t *testing.T) {
 
 	result, err := transceiver.DiscoverByAttributes(context.Background(), wallet.DiscoverByAttributesArgs{
 		Attributes: map[string]string{"key": "val"},
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), result.TotalCertificates)
 }
 
-func TestTransceiver_IsAuthenticated(t *testing.T) {
+func TestTransceiverIsAuthenticated(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnIsAuthenticated().ReturnSuccess(&wallet.AuthenticatedResult{Authenticated: true})
 
-	result, err := transceiver.IsAuthenticated(context.Background(), nil, "test-app")
+	result, err := transceiver.IsAuthenticated(context.Background(), nil, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, result.Authenticated)
 }
 
-func TestTransceiver_WaitForAuthentication(t *testing.T) {
+func TestTransceiverWaitForAuthentication(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnWaitForAuthentication().ReturnSuccess(&wallet.AuthenticatedResult{Authenticated: true})
 
-	result, err := transceiver.WaitForAuthentication(context.Background(), nil, "test-app")
+	result, err := transceiver.WaitForAuthentication(context.Background(), nil, testAppOriginator)
 	require.NoError(t, err)
 	assert.True(t, result.Authenticated)
 }
 
-func TestTransceiver_GetHeight(t *testing.T) {
+func TestTransceiverGetHeight(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnGetHeight().ReturnSuccess(&wallet.GetHeightResult{Height: 999})
 
-	result, err := transceiver.GetHeight(context.Background(), nil, "test-app")
+	result, err := transceiver.GetHeight(context.Background(), nil, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(999), result.Height)
 }
 
-func TestTransceiver_GetHeaderForHeight(t *testing.T) {
+func TestTransceiverGetHeaderForHeight(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnGetHeaderForHeight().ReturnSuccess(&wallet.GetHeaderResult{Header: []byte{0xAB, 0xCD}})
 
-	result, err := transceiver.GetHeaderForHeight(context.Background(), wallet.GetHeaderArgs{Height: 100}, "test-app")
+	result, err := transceiver.GetHeaderForHeight(context.Background(), wallet.GetHeaderArgs{Height: 100}, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, []byte{0xAB, 0xCD}, result.Header)
 }
 
-func TestTransceiver_GetNetwork(t *testing.T) {
+func TestTransceiverGetNetwork(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{Network: wallet.NetworkMainnet})
 
-	result, err := transceiver.GetNetwork(context.Background(), nil, "test-app")
+	result, err := transceiver.GetNetwork(context.Background(), nil, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, wallet.NetworkMainnet, result.Network)
 }
 
-func TestTransceiver_GetVersion(t *testing.T) {
+func TestTransceiverGetVersion(t *testing.T) {
 	tw, transceiver := buildTransceiverPair(t)
 	tw.OnGetVersion().ReturnSuccess(&wallet.GetVersionResult{Version: "1.2.3"})
 
-	result, err := transceiver.GetVersion(context.Background(), nil, "test-app")
+	result, err := transceiver.GetVersion(context.Background(), nil, testAppOriginator)
 	require.NoError(t, err)
 	assert.Equal(t, "1.2.3", result.Version)
 }
 
-func TestTransceiver_RevealCounterpartyKeyLinkage(t *testing.T) {
+func TestTransceiverRevealCounterpartyKeyLinkage(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 
 	counterpartyKey, _ := ec.NewPrivateKey()
@@ -447,13 +449,13 @@ func TestTransceiver_RevealCounterpartyKeyLinkage(t *testing.T) {
 	result, err := transceiver.RevealCounterpartyKeyLinkage(context.Background(), wallet.RevealCounterpartyKeyLinkageArgs{
 		Counterparty: counterpartyKey.PubKey(),
 		Verifier:     verifierKey.PubKey(),
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NotEmpty(t, result.EncryptedLinkage)
 }
 
-func TestTransceiver_RevealSpecificKeyLinkage(t *testing.T) {
+func TestTransceiverRevealSpecificKeyLinkage(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 
 	counterpartyKey, _ := ec.NewPrivateKey()
@@ -470,7 +472,7 @@ func TestTransceiver_RevealSpecificKeyLinkage(t *testing.T) {
 			Protocol:      "testprotocol",
 		},
 		KeyID: "k1",
-	}, "test-app")
+	}, testAppOriginator)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 }

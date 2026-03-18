@@ -121,7 +121,7 @@ func buildTxWithNoScript(t *testing.T) *transaction.Transaction {
 	return tx
 }
 
-func TestComputeFee_WithUnlockingScript(t *testing.T) {
+func TestComputeFeeWithUnlockingScript(t *testing.T) {
 	t.Parallel()
 
 	model := &SatoshisPerKilobyte{Satoshis: 100}
@@ -132,7 +132,7 @@ func TestComputeFee_WithUnlockingScript(t *testing.T) {
 	require.Greater(t, fee, uint64(0), "fee should be positive")
 }
 
-func TestComputeFee_WithTemplate(t *testing.T) {
+func TestComputeFeeWithTemplate(t *testing.T) {
 	t.Parallel()
 
 	model := &SatoshisPerKilobyte{Satoshis: 100}
@@ -143,7 +143,7 @@ func TestComputeFee_WithTemplate(t *testing.T) {
 	require.Greater(t, fee, uint64(0), "fee should be positive")
 }
 
-func TestComputeFee_NoScriptReturnsError(t *testing.T) {
+func TestComputeFeeNoScriptReturnsError(t *testing.T) {
 	t.Parallel()
 
 	model := &SatoshisPerKilobyte{Satoshis: 100}
@@ -153,7 +153,7 @@ func TestComputeFee_NoScriptReturnsError(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoUnlockingScript)
 }
 
-func TestComputeFee_ZeroSatoshisPerKB(t *testing.T) {
+func TestComputeFeeZeroSatoshisPerKB(t *testing.T) {
 	t.Parallel()
 
 	model := &SatoshisPerKilobyte{Satoshis: 0}
@@ -164,7 +164,7 @@ func TestComputeFee_ZeroSatoshisPerKB(t *testing.T) {
 	require.Equal(t, uint64(0), fee, "zero rate should produce zero fee")
 }
 
-func TestComputeFee_EmptyUnlockingScriptFallsBackToTemplate(t *testing.T) {
+func TestComputeFeeEmptyUnlockingScriptFallsBackToTemplate(t *testing.T) {
 	t.Parallel()
 
 	// An input with a non-nil but empty unlocking script should fall through
@@ -200,7 +200,7 @@ func TestComputeFee_EmptyUnlockingScriptFallsBackToTemplate(t *testing.T) {
 	require.Greater(t, fee, uint64(0))
 }
 
-func TestComputeFee_MultipleInputs(t *testing.T) {
+func TestComputeFeeMultipleInputs(t *testing.T) {
 	t.Parallel()
 
 	// Build a transaction with two inputs – one with a script, one with a template.
@@ -239,7 +239,7 @@ func TestComputeFee_MultipleInputs(t *testing.T) {
 	require.Greater(t, fee, uint64(0))
 }
 
-func TestComputeFee_FeeScalesWithSize(t *testing.T) {
+func TestComputeFeeFeeScalesWithSize(t *testing.T) {
 	t.Parallel()
 
 	// A template with a larger estimated script should produce a higher fee.

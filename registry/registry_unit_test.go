@@ -8,34 +8,40 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testIconURL        = "https://example.com/icon.png"
+	testDocsURL        = "https://example.com/docs"
+	testUnitOriginator = "test-originator"
+)
+
 // ---- DefinitionData interface implementations ----
 
-func TestBasketDefinitionData_GetDefinitionType(t *testing.T) {
+func TestBasketDefinitionDataGetDefinitionType(t *testing.T) {
 	b := &BasketDefinitionData{DefinitionType: DefinitionTypeBasket}
 	assert.Equal(t, DefinitionTypeBasket, b.GetDefinitionType())
 }
 
-func TestBasketDefinitionData_GetRegistryOperator(t *testing.T) {
+func TestBasketDefinitionDataGetRegistryOperator(t *testing.T) {
 	b := &BasketDefinitionData{RegistryOperator: "operator123"}
 	assert.Equal(t, "operator123", b.GetRegistryOperator())
 }
 
-func TestProtocolDefinitionData_GetDefinitionType(t *testing.T) {
+func TestProtocolDefinitionDataGetDefinitionType(t *testing.T) {
 	p := &ProtocolDefinitionData{DefinitionType: DefinitionTypeProtocol}
 	assert.Equal(t, DefinitionTypeProtocol, p.GetDefinitionType())
 }
 
-func TestProtocolDefinitionData_GetRegistryOperator(t *testing.T) {
+func TestProtocolDefinitionDataGetRegistryOperator(t *testing.T) {
 	p := &ProtocolDefinitionData{RegistryOperator: "operator456"}
 	assert.Equal(t, "operator456", p.GetRegistryOperator())
 }
 
-func TestCertificateDefinitionData_GetDefinitionType(t *testing.T) {
+func TestCertificateDefinitionDataGetDefinitionType(t *testing.T) {
 	c := &CertificateDefinitionData{DefinitionType: DefinitionTypeCertificate}
 	assert.Equal(t, DefinitionTypeCertificate, c.GetDefinitionType())
 }
 
-func TestCertificateDefinitionData_GetRegistryOperator(t *testing.T) {
+func TestCertificateDefinitionDataGetRegistryOperator(t *testing.T) {
 	c := &CertificateDefinitionData{RegistryOperator: "certop"}
 	assert.Equal(t, "certop", c.GetRegistryOperator())
 }
@@ -59,7 +65,7 @@ func TestMapDefinitionTypeToWalletProtocol(t *testing.T) {
 	}
 }
 
-func TestMapDefinitionTypeToWalletProtocol_Panic(t *testing.T) {
+func TestMapDefinitionTypeToWalletProtocolPanic(t *testing.T) {
 	assert.Panics(t, func() {
 		mapDefinitionTypeToWalletProtocol("unknown")
 	})
@@ -83,7 +89,7 @@ func TestMapDefinitionTypeToBasketName(t *testing.T) {
 	}
 }
 
-func TestMapDefinitionTypeToBasketName_Panic(t *testing.T) {
+func TestMapDefinitionTypeToBasketNamePanic(t *testing.T) {
 	assert.Panics(t, func() {
 		mapDefinitionTypeToBasketName("unknown")
 	})
@@ -107,7 +113,7 @@ func TestMapDefinitionTypeToTopic(t *testing.T) {
 	}
 }
 
-func TestMapDefinitionTypeToTopic_Panic(t *testing.T) {
+func TestMapDefinitionTypeToTopicPanic(t *testing.T) {
 	assert.Panics(t, func() {
 		mapDefinitionTypeToTopic("unknown")
 	})
@@ -131,7 +137,7 @@ func TestMapDefinitionTypeToServiceName(t *testing.T) {
 	}
 }
 
-func TestMapDefinitionTypeToServiceName_Panic(t *testing.T) {
+func TestMapDefinitionTypeToServiceNamePanic(t *testing.T) {
 	assert.Panics(t, func() {
 		mapDefinitionTypeToServiceName("unknown")
 	})
@@ -139,13 +145,13 @@ func TestMapDefinitionTypeToServiceName_Panic(t *testing.T) {
 
 // ---- buildPushDropFields ----
 
-func TestBuildPushDropFields_Basket(t *testing.T) {
+func TestBuildPushDropFieldsBasket(t *testing.T) {
 	data := &BasketDefinitionData{
 		BasketID:         "basket1",
 		Name:             "Test Basket",
-		IconURL:          "https://example.com/icon.png",
+		IconURL:          testIconURL,
 		Description:      "A test basket",
-		DocumentationURL: "https://example.com/docs",
+		DocumentationURL: testDocsURL,
 	}
 
 	fields, err := buildPushDropFields(data, "operator123")
@@ -156,16 +162,16 @@ func TestBuildPushDropFields_Basket(t *testing.T) {
 	assert.Equal(t, []byte("operator123"), fields[5])
 }
 
-func TestBuildPushDropFields_Protocol(t *testing.T) {
+func TestBuildPushDropFieldsProtocol(t *testing.T) {
 	data := &ProtocolDefinitionData{
 		ProtocolID: wallet.Protocol{
 			SecurityLevel: wallet.SecurityLevelEveryApp,
 			Protocol:      "testprotocol",
 		},
 		Name:             "Test Protocol",
-		IconURL:          "https://example.com/icon.png",
+		IconURL:          testIconURL,
 		Description:      "A test protocol",
-		DocumentationURL: "https://example.com/docs",
+		DocumentationURL: testDocsURL,
 	}
 
 	fields, err := buildPushDropFields(data, "operator123")
@@ -175,13 +181,13 @@ func TestBuildPushDropFields_Protocol(t *testing.T) {
 	assert.Equal(t, []byte("operator123"), fields[5])
 }
 
-func TestBuildPushDropFields_Certificate(t *testing.T) {
+func TestBuildPushDropFieldsCertificate(t *testing.T) {
 	data := &CertificateDefinitionData{
 		Type:             "cert-type-1",
 		Name:             "Test Cert",
-		IconURL:          "https://example.com/icon.png",
+		IconURL:          testIconURL,
 		Description:      "A test cert",
-		DocumentationURL: "https://example.com/docs",
+		DocumentationURL: testDocsURL,
 		Fields: map[string]CertificateFieldDescriptor{
 			"name": {FriendlyName: "Full Name", Type: "text"},
 		},
@@ -194,7 +200,7 @@ func TestBuildPushDropFields_Certificate(t *testing.T) {
 	assert.Equal(t, []byte("operator123"), fields[6])
 }
 
-func TestBuildPushDropFields_Unsupported(t *testing.T) {
+func TestBuildPushDropFieldsUnsupported(t *testing.T) {
 	// Pass a type that doesn't match any case
 	fields, err := buildPushDropFields(&unsupportedData{}, "operator")
 	assert.Error(t, err)
@@ -269,20 +275,20 @@ func TestDeserializeWalletProtocol(t *testing.T) {
 
 func TestNewRegistryClient(t *testing.T) {
 	mockWallet := NewMockRegistry(t)
-	client := NewRegistryClient(mockWallet, "test-originator")
+	client := NewRegistryClient(mockWallet, testUnitOriginator)
 	assert.NotNil(t, client)
 }
 
-func TestRegistryClient_SetNetwork(t *testing.T) {
+func TestRegistryClientSetNetwork(t *testing.T) {
 	mockWallet := NewMockRegistry(t)
-	client := NewRegistryClient(mockWallet, "test-originator")
+	client := NewRegistryClient(mockWallet, testUnitOriginator)
 	client.SetNetwork(2) // Local
 	// No assertion needed; just verify no panic
 }
 
-func TestRegistryClient_SetBroadcasterFactory(t *testing.T) {
+func TestRegistryClientSetBroadcasterFactory(t *testing.T) {
 	mockWallet := NewMockRegistry(t)
-	client := NewRegistryClient(mockWallet, "test-originator")
+	client := NewRegistryClient(mockWallet, testUnitOriginator)
 	// Verify SetBroadcasterFactory accepts a nil factory without panicking
 	client.SetBroadcasterFactory(nil)
 }

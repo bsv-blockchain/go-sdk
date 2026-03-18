@@ -143,7 +143,7 @@ func TestGetBlockHeaderDecodeError(t *testing.T) {
 	require.Nil(t, header)
 }
 
-func TestGetBlockHeaderSuccess_AuthHeader(t *testing.T) {
+func TestGetBlockHeaderSuccessAuthHeader(t *testing.T) {
 	merkleRoot := chainhash.HashH([]byte("merkle"))
 	hash := chainhash.HashH([]byte("hash"))
 	prevHash := chainhash.HashH([]byte("prev"))

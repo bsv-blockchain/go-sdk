@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestGullibleHeadersClient_CurrentHeight verifies the CurrentHeight method
+// TestGullibleHeadersClientCurrentHeight verifies the CurrentHeight method
 // returns the expected dummy height without error.
-func TestGullibleHeadersClient_CurrentHeight(t *testing.T) {
+func TestGullibleHeadersClientCurrentHeight(t *testing.T) {
 	t.Parallel()
 
 	client := &GullibleHeadersClient{}
@@ -20,9 +20,9 @@ func TestGullibleHeadersClient_CurrentHeight(t *testing.T) {
 	require.Equal(t, uint32(800000), height)
 }
 
-// TestGullibleHeadersClient_IsValidRootForHeight verifies that the gullible
+// TestGullibleHeadersClientIsValidRootForHeight verifies that the gullible
 // client always returns true regardless of arguments.
-func TestGullibleHeadersClient_IsValidRootForHeight(t *testing.T) {
+func TestGullibleHeadersClientIsValidRootForHeight(t *testing.T) {
 	t.Parallel()
 
 	client := &GullibleHeadersClient{}

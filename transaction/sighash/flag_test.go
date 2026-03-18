@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSighashFlag_Has(t *testing.T) {
+func TestSighashFlagHas(t *testing.T) {
 	tests := []struct {
 		name     string
 		flag     Flag
@@ -85,7 +85,7 @@ func TestSighashFlag_Has(t *testing.T) {
 	}
 }
 
-func TestSighashFlag_HasWithMask(t *testing.T) {
+func TestSighashFlagHasWithMask(t *testing.T) {
 	tests := []struct {
 		name     string
 		flag     Flag
@@ -144,7 +144,7 @@ func TestSighashFlag_HasWithMask(t *testing.T) {
 	}
 }
 
-func TestSighashFlag_String(t *testing.T) {
+func TestSighashFlagString(t *testing.T) {
 	tests := []struct {
 		flag     Flag
 		expected string

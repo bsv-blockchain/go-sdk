@@ -16,11 +16,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const errPrepareSpends = "prepare spends"
+
 // ---------------------------------------------------------------------------
 // NewLocalKVStore constructor validation
 // ---------------------------------------------------------------------------
 
-func TestNewLocalKVStore_NilWallet(t *testing.T) {
+func TestNewLocalKVStoreNilWallet(t *testing.T) {
 	t.Parallel()
 
 	store, err := kvstore.NewLocalKVStore(kvstore.KVStoreConfig{
@@ -34,7 +36,7 @@ func TestNewLocalKVStore_NilWallet(t *testing.T) {
 	require.Equal(t, kvstore.ErrInvalidWallet, err)
 }
 
-func TestNewLocalKVStore_Success(t *testing.T) {
+func TestNewLocalKVStoreSuccess(t *testing.T) {
 	t.Parallel()
 
 	mockWallet := wallet.NewTestWalletForRandomKey(t)
@@ -92,7 +94,7 @@ func TestErrorSentinels(t *testing.T) {
 // Get - various error paths
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreGet_EmptyKey(t *testing.T) {
+func TestLocalKVStoreGetEmptyKey(t *testing.T) {
 	t.Parallel()
 
 	store, _ := setupTestKVStore(t)
@@ -102,7 +104,7 @@ func TestLocalKVStoreGet_EmptyKey(t *testing.T) {
 	require.Equal(t, "", result)
 }
 
-func TestLocalKVStoreGet_NoOutputs_ReturnsDefault(t *testing.T) {
+func TestLocalKVStoreGetNoOutputsReturnsDefault(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -116,7 +118,7 @@ func TestLocalKVStoreGet_NoOutputs_ReturnsDefault(t *testing.T) {
 	require.Equal(t, "mydefault", result)
 }
 
-func TestLocalKVStoreGet_ListOutputsError(t *testing.T) {
+func TestLocalKVStoreGetListOutputsError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -130,7 +132,7 @@ func TestLocalKVStoreGet_ListOutputsError(t *testing.T) {
 	require.Equal(t, "default", result)
 }
 
-func TestLocalKVStoreGet_OutputsWithoutBEEF_ReturnsError(t *testing.T) {
+func TestLocalKVStoreGetOutputsWithoutBEEFReturnsError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -154,7 +156,7 @@ func TestLocalKVStoreGet_OutputsWithoutBEEF_ReturnsError(t *testing.T) {
 // Set - various error/success paths
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreSet_EmptyKey(t *testing.T) {
+func TestLocalKVStoreSetEmptyKey(t *testing.T) {
 	t.Parallel()
 
 	store, _ := setupTestKVStore(t)
@@ -163,7 +165,7 @@ func TestLocalKVStoreSet_EmptyKey(t *testing.T) {
 	require.Equal(t, kvstore.ErrInvalidKey, err)
 }
 
-func TestLocalKVStoreSet_EmptyValue(t *testing.T) {
+func TestLocalKVStoreSetEmptyValue(t *testing.T) {
 	t.Parallel()
 
 	store, _ := setupTestKVStore(t)
@@ -172,7 +174,7 @@ func TestLocalKVStoreSet_EmptyValue(t *testing.T) {
 	require.Equal(t, kvstore.ErrInvalidValue, err)
 }
 
-func TestLocalKVStoreSet_ListOutputsFails_WarnsAndContinues(t *testing.T) {
+func TestLocalKVStoreSetListOutputsFailsWarnsAndContinues(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -191,7 +193,7 @@ func TestLocalKVStoreSet_ListOutputsFails_WarnsAndContinues(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestLocalKVStoreSet_CreateActionFails(t *testing.T) {
+func TestLocalKVStoreSetCreateActionFails(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -210,7 +212,7 @@ func TestLocalKVStoreSet_CreateActionFails(t *testing.T) {
 	require.ErrorContains(t, err, createErr.Error())
 }
 
-func TestLocalKVStoreSet_Success_NewKey(t *testing.T) {
+func TestLocalKVStoreSetSuccessNewKey(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -231,7 +233,7 @@ func TestLocalKVStoreSet_Success_NewKey(t *testing.T) {
 	require.Contains(t, outpoint, ".0")
 }
 
-func TestLocalKVStoreSet_CreateAction_NoTxid_NoSignable_ReturnsError(t *testing.T) {
+func TestLocalKVStoreSetCreateActionNoTxidNoSignableReturnsError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -255,7 +257,7 @@ func TestLocalKVStoreSet_CreateAction_NoTxid_NoSignable_ReturnsError(t *testing.
 // Remove - various error/success paths
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreRemove_EmptyKey(t *testing.T) {
+func TestLocalKVStoreRemoveEmptyKey(t *testing.T) {
 	t.Parallel()
 
 	store, _ := setupTestKVStore(t)
@@ -264,7 +266,7 @@ func TestLocalKVStoreRemove_EmptyKey(t *testing.T) {
 	require.Equal(t, kvstore.ErrInvalidKey, err)
 }
 
-func TestLocalKVStoreRemove_NoOutputs_ReturnsEmptySlice(t *testing.T) {
+func TestLocalKVStoreRemoveNoOutputsReturnsEmptySlice(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -279,7 +281,7 @@ func TestLocalKVStoreRemove_NoOutputs_ReturnsEmptySlice(t *testing.T) {
 	require.Empty(t, txids)
 }
 
-func TestLocalKVStoreRemove_ListOutputsError_ReturnPartial(t *testing.T) {
+func TestLocalKVStoreRemoveListOutputsErrorReturnPartial(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -293,7 +295,7 @@ func TestLocalKVStoreRemove_ListOutputsError_ReturnPartial(t *testing.T) {
 	require.Empty(t, txids)
 }
 
-func TestLocalKVStoreRemove_OutputsWithoutBEEF_ReturnsError(t *testing.T) {
+func TestLocalKVStoreRemoveOutputsWithoutBEEFReturnsError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -342,7 +344,7 @@ func buildOutpoint(t *testing.T, txidHex string, index uint32) transaction.Outpo
 	return transaction.Outpoint{Txid: *hash, Index: index}
 }
 
-func TestLocalKVStoreGet_InvalidBEEF_BothParsersFail(t *testing.T) {
+func TestLocalKVStoreGetInvalidBEEFBothParsersFail(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -363,7 +365,7 @@ func TestLocalKVStoreGet_InvalidBEEF_BothParsersFail(t *testing.T) {
 	require.ErrorContains(t, err, "BEEF")
 }
 
-func TestLocalKVStoreGet_ValidBEEF_TxNotFound(t *testing.T) {
+func TestLocalKVStoreGetValidBEEFTxNotFound(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -388,7 +390,7 @@ func TestLocalKVStoreGet_ValidBEEF_TxNotFound(t *testing.T) {
 	require.ErrorContains(t, err, "not found")
 }
 
-func TestLocalKVStoreGet_ValidBEEF_VoutOutOfRange(t *testing.T) {
+func TestLocalKVStoreGetValidBEEFVoutOutOfRange(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -412,7 +414,7 @@ func TestLocalKVStoreGet_ValidBEEF_VoutOutOfRange(t *testing.T) {
 	require.ErrorContains(t, err, "out of range")
 }
 
-func TestLocalKVStoreGet_ValidBEEF_NotPushDrop(t *testing.T) {
+func TestLocalKVStoreGetValidBEEFNotPushDrop(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -437,7 +439,7 @@ func TestLocalKVStoreGet_ValidBEEF_NotPushDrop(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestLocalKVStoreGet_PushDrop_ReturnsValue(t *testing.T) {
+func TestLocalKVStoreGetPushDropReturnsValue(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -462,7 +464,7 @@ func TestLocalKVStoreGet_PushDrop_ReturnsValue(t *testing.T) {
 	require.Equal(t, "testvalue", value)
 }
 
-func TestLocalKVStoreGet_PushDrop_MultipleOutputs(t *testing.T) {
+func TestLocalKVStoreGetPushDropMultipleOutputs(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -490,7 +492,7 @@ func TestLocalKVStoreGet_PushDrop_MultipleOutputs(t *testing.T) {
 	require.Equal(t, "testvalue", value)
 }
 
-func TestLocalKVStoreSet_SameValue_Idempotent(t *testing.T) {
+func TestLocalKVStoreSetSameValueIdempotent(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -516,7 +518,7 @@ func TestLocalKVStoreSet_SameValue_Idempotent(t *testing.T) {
 	require.NotEmpty(t, outpoint)
 }
 
-func TestLocalKVStoreRemove_ValidBEEF_NotPushDrop_Error(t *testing.T) {
+func TestLocalKVStoreRemoveValidBEEFNotPushDropError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -543,7 +545,7 @@ func TestLocalKVStoreRemove_ValidBEEF_NotPushDrop_Error(t *testing.T) {
 // TestLocalKVStoreSet_WithInputs_CreateActionReturnsSignable covers the
 // prepareSpends error path when the CreateAction returns a SignableTransaction
 // but the tx bytes or inputBEEF are invalid.
-func TestLocalKVStoreSet_WithInputs_SignableTx_InvalidBeef(t *testing.T) {
+func TestLocalKVStoreSetWithInputsSignableTxInvalidBeef(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -572,10 +574,10 @@ func TestLocalKVStoreSet_WithInputs_SignableTx_InvalidBeef(t *testing.T) {
 
 	_, err = store.Set(context.Background(), "mykey", "differentvalue")
 	require.Error(t, err)
-	require.ErrorContains(t, err, "prepare spends")
+	require.ErrorContains(t, err, errPrepareSpends)
 }
 
-func TestLocalKVStoreSet_WithInputs_ValidSignableTx_BeefNotFoundForSigning(t *testing.T) {
+func TestLocalKVStoreSetWithInputsValidSignableTxBeefNotFoundForSigning(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -608,10 +610,10 @@ func TestLocalKVStoreSet_WithInputs_ValidSignableTx_BeefNotFoundForSigning(t *te
 	_, err = store.Set(context.Background(), "mykey", "differentvalue")
 	require.Error(t, err)
 	// Error should be about PrepareSpends - signing tx not found in BEEF
-	require.ErrorContains(t, err, "prepare spends")
+	require.ErrorContains(t, err, errPrepareSpends)
 }
 
-func TestLocalKVStoreSet_WithInputs_CreateActionNoSignable_Error(t *testing.T) {
+func TestLocalKVStoreSetWithInputsCreateActionNoSignableError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -640,7 +642,7 @@ func TestLocalKVStoreSet_WithInputs_CreateActionNoSignable_Error(t *testing.T) {
 	require.ErrorContains(t, err, "signable transaction")
 }
 
-func TestLocalKVStoreRemove_WithInputs_CreateActionNoSignable_Error(t *testing.T) {
+func TestLocalKVStoreRemoveWithInputsCreateActionNoSignableError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -670,7 +672,7 @@ func TestLocalKVStoreRemove_WithInputs_CreateActionNoSignable_Error(t *testing.T
 	require.Empty(t, txids)
 }
 
-func TestLocalKVStoreRemove_WithInputs_CreateActionFails(t *testing.T) {
+func TestLocalKVStoreRemoveWithInputsCreateActionFails(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -698,7 +700,7 @@ func TestLocalKVStoreRemove_WithInputs_CreateActionFails(t *testing.T) {
 	require.Empty(t, txids)
 }
 
-func TestLocalKVStoreRemove_WithInputs_PrepareSpendsFails(t *testing.T) {
+func TestLocalKVStoreRemoveWithInputsPrepareSpendsFails(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -727,7 +729,7 @@ func TestLocalKVStoreRemove_WithInputs_PrepareSpendsFails(t *testing.T) {
 
 	txids, err := store.Remove(context.Background(), "mykey")
 	require.Error(t, err)
-	require.ErrorContains(t, err, "prepare spends")
+	require.ErrorContains(t, err, errPrepareSpends)
 	require.Empty(t, txids)
 }
 
@@ -762,7 +764,7 @@ func buildSimpleTx(t *testing.T, sourceTxID string, sourceIdx uint32) []byte {
 	return tx.Bytes()
 }
 
-func TestLocalKVStoreSet_ValidBEEF_LookupWithNotPushDrop_Warning(t *testing.T) {
+func TestLocalKVStoreSetValidBEEFLookupWithNotPushDropWarning(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -837,7 +839,7 @@ func setupTestKVStoreEncrypted(t *testing.T) (*kvstore.LocalKVStore, *wallet.Tes
 	return store, mockWallet
 }
 
-func TestLocalKVStoreSet_EncryptPath_EncryptFails(t *testing.T) {
+func TestLocalKVStoreSetEncryptPathEncryptFails(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStoreEncrypted(t)
@@ -856,7 +858,7 @@ func TestLocalKVStoreSet_EncryptPath_EncryptFails(t *testing.T) {
 	require.ErrorContains(t, err, encryptErr.Error())
 }
 
-func TestLocalKVStoreGet_EncryptPath_DecryptFails(t *testing.T) {
+func TestLocalKVStoreGetEncryptPathDecryptFails(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStoreEncrypted(t)
@@ -884,7 +886,7 @@ func TestLocalKVStoreGet_EncryptPath_DecryptFails(t *testing.T) {
 	require.ErrorContains(t, err, decryptErr.Error())
 }
 
-func TestLocalKVStoreSet_EncryptPath_Success_NewKey(t *testing.T) {
+func TestLocalKVStoreSetEncryptPathSuccessNewKey(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStoreEncrypted(t)
@@ -922,7 +924,7 @@ func TestLocalKVStoreSet_EncryptPath_Success_NewKey(t *testing.T) {
 // KVStoreConfig struct
 // ---------------------------------------------------------------------------
 
-func TestKVStoreConfig_Fields(t *testing.T) {
+func TestKVStoreConfigFields(t *testing.T) {
 	t.Parallel()
 
 	mockWallet := wallet.NewTestWalletForRandomKey(t)
@@ -942,7 +944,7 @@ func TestKVStoreConfig_Fields(t *testing.T) {
 // NewLocalKVStoreOptions struct
 // ---------------------------------------------------------------------------
 
-func TestNewLocalKVStoreOptions_Fields(t *testing.T) {
+func TestNewLocalKVStoreOptionsFields(t *testing.T) {
 	t.Parallel()
 
 	mockWallet := wallet.NewTestWalletForRandomKey(t)
@@ -962,7 +964,7 @@ func TestNewLocalKVStoreOptions_Fields(t *testing.T) {
 	require.True(t, opts.Encrypt)
 }
 
-func TestLocalKVStoreRemove_WithInputs_SignActionFails_Relinquish(t *testing.T) {
+func TestLocalKVStoreRemoveWithInputsSignActionFailsRelinquish(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -1002,7 +1004,7 @@ func TestLocalKVStoreRemove_WithInputs_SignActionFails_Relinquish(t *testing.T) 
 	require.Empty(t, txids)
 }
 
-func TestLocalKVStoreSet_SignActionFails_Relinquish(t *testing.T) {
+func TestLocalKVStoreSetSignActionFailsRelinquish(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -1036,14 +1038,14 @@ func TestLocalKVStoreSet_SignActionFails_Relinquish(t *testing.T) {
 
 	_, err = store.Set(context.Background(), "mykey", "newvalue")
 	require.Error(t, err)
-	require.ErrorContains(t, err, "prepare spends")
+	require.ErrorContains(t, err, errPrepareSpends)
 }
 
 // ---------------------------------------------------------------------------
 // Concurrent Get calls (race detector test)
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStore_ConcurrentGet(t *testing.T) {
+func TestLocalKVStoreConcurrentGet(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -1069,7 +1071,7 @@ func TestLocalKVStore_ConcurrentGet(t *testing.T) {
 // Set concurrent (lock test)
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStore_ConcurrentSet(t *testing.T) {
+func TestLocalKVStoreConcurrentSet(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -1098,7 +1100,7 @@ func TestLocalKVStore_ConcurrentSet(t *testing.T) {
 // ErrCorruptedState path in Set
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreSet_ErrCorruptedState(t *testing.T) {
+func TestLocalKVStoreSetErrCorruptedState(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
@@ -1177,7 +1179,7 @@ func buildSignableBeef(t *testing.T) (combinedBeefBytes []byte, newTxBytes []byt
 // Set with SignAction fails → relinquish path
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreSet_SignAction_Fails_Relinquish(t *testing.T) {
+func TestLocalKVStoreSetSignActionFailsRelinquishV2(t *testing.T) {
 	t.Parallel()
 
 	// Build a BEEF containing source tx + new spending tx
@@ -1232,7 +1234,7 @@ func TestLocalKVStoreSet_SignAction_Fails_Relinquish(t *testing.T) {
 // Set with SignAction succeeds
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreSet_SignAction_Success(t *testing.T) {
+func TestLocalKVStoreSetSignActionSuccess(t *testing.T) {
 	t.Parallel()
 
 	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
@@ -1278,7 +1280,7 @@ func TestLocalKVStoreSet_SignAction_Success(t *testing.T) {
 // Remove with SignAction fails → relinquish path
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreRemove_SignAction_Fails_Relinquish(t *testing.T) {
+func TestLocalKVStoreRemoveSignActionFailsRelinquish(t *testing.T) {
 	t.Parallel()
 
 	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
@@ -1327,7 +1329,7 @@ func TestLocalKVStoreRemove_SignAction_Fails_Relinquish(t *testing.T) {
 // Remove with SignAction succeeds
 // ---------------------------------------------------------------------------
 
-func TestLocalKVStoreRemove_SignAction_Success(t *testing.T) {
+func TestLocalKVStoreRemoveSignActionSuccess(t *testing.T) {
 	t.Parallel()
 
 	combinedBeef, newTxBytes, _ := buildSignableBeef(t)

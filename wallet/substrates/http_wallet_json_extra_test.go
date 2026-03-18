@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHTTPWalletJSON_GetPublicKey(t *testing.T) {
+func TestHTTPWalletJSONGetPublicKey(t *testing.T) {
 	privKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 

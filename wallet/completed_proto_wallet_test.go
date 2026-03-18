@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testData = "test data"
+
 func newTestCompletedProtoWallet(t *testing.T) *wallet.CompletedProtoWallet {
 	t.Helper()
 	privKey, err := ec.NewPrivateKey()
@@ -186,7 +188,7 @@ func TestCompletedProtoWalletCreateHMAC(t *testing.T) {
 			},
 			KeyID: "key1",
 		},
-		Data: []byte("test data"),
+		Data: []byte(testData),
 	}, "test")
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -205,7 +207,7 @@ func TestCompletedProtoWalletVerifyHMAC(t *testing.T) {
 			},
 			KeyID: "key1",
 		},
-		Data: []byte("test data"),
+		Data: []byte(testData),
 	}, "test")
 	require.NoError(t, err)
 
@@ -218,7 +220,7 @@ func TestCompletedProtoWalletVerifyHMAC(t *testing.T) {
 			},
 			KeyID: "key1",
 		},
-		Data: []byte("test data"),
+		Data: []byte(testData),
 		HMAC: createResult.HMAC,
 	}, "test")
 	require.NoError(t, err)
@@ -235,7 +237,7 @@ func TestCompletedProtoWalletCreateSignature(t *testing.T) {
 			},
 			KeyID: "key1",
 		},
-		Data: []byte("test data"),
+		Data: []byte(testData),
 	}, "test")
 	require.NoError(t, err)
 	assert.NotNil(t, result)

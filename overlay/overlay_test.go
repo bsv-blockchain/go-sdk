@@ -6,29 +6,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestProtocolID_SHIP(t *testing.T) {
+func TestProtocolIDSHIP(t *testing.T) {
 	got := ProtocolSHIP.ID()
 	require.Equal(t, ProtocolIDSHIP, got)
 	require.Equal(t, ProtocolID("service host interconnect"), got)
 }
 
-func TestProtocolID_SLAP(t *testing.T) {
+func TestProtocolIDSLAP(t *testing.T) {
 	got := ProtocolSLAP.ID()
 	require.Equal(t, ProtocolIDSLAP, got)
 	require.Equal(t, ProtocolID("service lookup availability"), got)
 }
 
-func TestProtocolID_Unknown(t *testing.T) {
+func TestProtocolIDUnknown(t *testing.T) {
 	got := Protocol("UNKNOWN").ID()
 	require.Equal(t, ProtocolID(""), got)
 }
 
-func TestProtocolID_Empty(t *testing.T) {
+func TestProtocolIDEmpty(t *testing.T) {
 	got := Protocol("").ID()
 	require.Equal(t, ProtocolID(""), got)
 }
 
-func TestProtocol_AllCases(t *testing.T) {
+func TestProtocolAllCases(t *testing.T) {
 	tests := []struct {
 		name     string
 		protocol Protocol

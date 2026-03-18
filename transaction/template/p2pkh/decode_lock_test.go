@@ -18,9 +18,9 @@ const knownP2PKHHex = "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac"
 // knownPubKeyHashHex is the 20-byte hash embedded in knownP2PKHHex.
 const knownPubKeyHashHex = "c0a3c167a28cabb9fbb495affa0761e6e74ac60d"
 
-// TestDecode_ValidP2PKH verifies that a well-formed 25-byte P2PKH script
+// TestDecodeValidP2PKH verifies that a well-formed 25-byte P2PKH script
 // is decoded to a non-nil Address.
-func TestDecode_ValidP2PKH(t *testing.T) {
+func TestDecodeValidP2PKH(t *testing.T) {
 	t.Parallel()
 
 	s, err := script.NewFromHex(knownP2PKHHex)
@@ -31,9 +31,9 @@ func TestDecode_ValidP2PKH(t *testing.T) {
 	require.Len(t, addr.PublicKeyHash, 20)
 }
 
-// TestDecode_Mainnet_vs_Testnet verifies that the mainnet flag affects the
+// TestDecodeMainnetVsTestnet verifies that the mainnet flag affects the
 // resulting address string but not the public-key hash.
-func TestDecode_Mainnet_vs_Testnet(t *testing.T) {
+func TestDecodeMainnetVsTestnet(t *testing.T) {
 	t.Parallel()
 
 	s, err := script.NewFromHex(knownP2PKHHex)
@@ -50,8 +50,8 @@ func TestDecode_Mainnet_vs_Testnet(t *testing.T) {
 		"address strings should differ between mainnet and testnet")
 }
 
-// TestDecode_WrongLength verifies that scripts with length != 25 return nil.
-func TestDecode_WrongLength(t *testing.T) {
+// TestDecodeWrongLength verifies that scripts with length != 25 return nil.
+func TestDecodeWrongLength(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -73,9 +73,9 @@ func TestDecode_WrongLength(t *testing.T) {
 	}
 }
 
-// TestDecode_WrongOpCodes verifies that a 25-byte script whose opcodes don't
+// TestDecodeWrongOpCodes verifies that a 25-byte script whose opcodes don't
 // match P2PKH structure returns nil.
-func TestDecode_WrongOpCodes(t *testing.T) {
+func TestDecodeWrongOpCodes(t *testing.T) {
 	t.Parallel()
 
 	// Build a 25-byte script that is NOT P2PKH by flipping the first opcode.
@@ -93,10 +93,10 @@ func TestDecode_WrongOpCodes(t *testing.T) {
 	require.Nil(t, addr, "wrong opcodes should return nil")
 }
 
-// TestDecode_ChunksError verifies that a malformed 25-byte script (one that
+// TestDecodeChunksError verifies that a malformed 25-byte script (one that
 // causes Chunks() to return an error) is treated as non-P2PKH and nil is
 // returned.
-func TestDecode_ChunksError(t *testing.T) {
+func TestDecodeChunksError(t *testing.T) {
 	t.Parallel()
 
 	// OpPUSHDATA1 (0x4c) at position 0 tells the decoder to read a 1-byte
@@ -114,9 +114,9 @@ func TestDecode_ChunksError(t *testing.T) {
 	require.Nil(t, addr, "malformed script causing Chunks error should return nil")
 }
 
-// TestLock_ValidAddress verifies that Lock produces a 25-byte P2PKH script
+// TestLockValidAddress verifies that Lock produces a 25-byte P2PKH script
 // for a valid 20-byte public key hash.
-func TestLock_ValidAddress(t *testing.T) {
+func TestLockValidAddress(t *testing.T) {
 	t.Parallel()
 
 	addr, err := script.NewAddressFromString("1EXaDXx3f8H3u4BNPBXSb8roFkgJ7CDVMA")
@@ -134,9 +134,9 @@ func TestLock_ValidAddress(t *testing.T) {
 	require.Equal(t, addr.PublicKeyHash, decoded.PublicKeyHash)
 }
 
-// TestLock_BadPublicKeyHash verifies that Lock returns ErrBadPublicKeyHash
+// TestLockBadPublicKeyHash verifies that Lock returns ErrBadPublicKeyHash
 // when the address has a hash that is not exactly 20 bytes.
-func TestLock_BadPublicKeyHash(t *testing.T) {
+func TestLockBadPublicKeyHash(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -159,8 +159,8 @@ func TestLock_BadPublicKeyHash(t *testing.T) {
 	}
 }
 
-// TestLock_RoundTrip verifies that Lock -> Decode is idempotent.
-func TestLock_RoundTrip(t *testing.T) {
+// TestLockRoundTrip verifies that Lock -> Decode is idempotent.
+func TestLockRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	// Derive an address from a known private key.
@@ -179,9 +179,9 @@ func TestLock_RoundTrip(t *testing.T) {
 	require.Equal(t, addr.PublicKeyHash, decoded.PublicKeyHash)
 }
 
-// TestUnlock_NilKey verifies that Unlock returns ErrNoPrivateKey when the
+// TestUnlockNilKey verifies that Unlock returns ErrNoPrivateKey when the
 // supplied key is nil.
-func TestUnlock_NilKey(t *testing.T) {
+func TestUnlockNilKey(t *testing.T) {
 	t.Parallel()
 
 	p, err := p2pkh.Unlock(nil, nil)
@@ -189,9 +189,9 @@ func TestUnlock_NilKey(t *testing.T) {
 	require.ErrorIs(t, err, p2pkh.ErrNoPrivateKey)
 }
 
-// TestUnlock_WithExplicitSigHashFlag verifies that an explicit sighash flag is
+// TestUnlockWithExplicitSigHashFlag verifies that an explicit sighash flag is
 // accepted and preserved.
-func TestUnlock_WithExplicitSigHashFlag(t *testing.T) {
+func TestUnlockWithExplicitSigHashFlag(t *testing.T) {
 	t.Parallel()
 
 	priv, err := ec.PrivateKeyFromWif("cNGwGSc7KRrTmdLUZ54fiSXWbhLNDc2Eg5zNucgQxyQCzuQ5YRDq")
@@ -222,9 +222,9 @@ func TestEstimateLength(t *testing.T) {
 	require.Equal(t, uint32(106), unlocker.EstimateLength(tx, 0))
 }
 
-// TestLock_OutputScriptStructure validates that the bytes of the produced
+// TestLockOutputScriptStructure validates that the bytes of the produced
 // locking script match the expected P2PKH template exactly.
-func TestLock_OutputScriptStructure(t *testing.T) {
+func TestLockOutputScriptStructure(t *testing.T) {
 	t.Parallel()
 
 	hash := make([]byte, 20)

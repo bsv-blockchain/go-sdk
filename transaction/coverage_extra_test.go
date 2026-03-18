@@ -29,6 +29,8 @@ func (m *mockChainTracker) CurrentHeight(_ context.Context) (uint32, error) {
 
 var _ chaintracker.ChainTracker = (*mockChainTracker)(nil)
 
+const contentTypeTextPlain = "text/plain"
+
 // ---- Outpoint tests ----
 
 func TestOutpointEqual(t *testing.T) {
@@ -349,7 +351,7 @@ func TestInscribe(t *testing.T) {
 	lockScript := &script.Script{}
 	_ = lockScript.AppendOpcodes(script.OpTRUE)
 	ia := &script.InscriptionArgs{
-		ContentType:  "text/plain",
+		ContentType:  contentTypeTextPlain,
 		Data:         []byte("hello world"),
 		LockingScript: lockScript,
 	}
@@ -378,7 +380,7 @@ func TestInscribeSpecificOrdinal(t *testing.T) {
 	lockScript := &script.Script{}
 	_ = lockScript.AppendOpcodes(script.OpTRUE)
 	ia := &script.InscriptionArgs{
-		ContentType:  "text/plain",
+		ContentType:  contentTypeTextPlain,
 		Data:         []byte("ordinal"),
 		LockingScript: lockScript,
 	}
@@ -395,7 +397,7 @@ func TestInscribeSpecificOrdinalOutputsNotEmpty(t *testing.T) {
 	tx.AddOutput(&TransactionOutput{Satoshis: 100, LockingScript: &script.Script{}})
 
 	ia := &script.InscriptionArgs{
-		ContentType:   "text/plain",
+		ContentType:   contentTypeTextPlain,
 		Data:          []byte("test"),
 		LockingScript: &script.Script{},
 	}
@@ -767,12 +769,12 @@ func mustDecodeHex(t *testing.T, s string) []byte {
 }
 
 func hexDecode(s string) ([]byte, error) {
-	import_enc := make([]byte, len(s)/2)
-	_, err := hexDecodeToSlice(s, import_enc)
+	buf := make([]byte, len(s)/2)
+	_, err := hexDecodeToSlice(s, buf)
 	if err != nil {
 		return nil, err
 	}
-	return import_enc, nil
+	return buf, nil
 }
 
 func hexDecodeToSlice(s string, dst []byte) (int, error) {

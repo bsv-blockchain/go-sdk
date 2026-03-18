@@ -6,38 +6,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewBroadcaster_NilTopics(t *testing.T) {
+func TestNewBroadcasterNilTopics(t *testing.T) {
 	_, err := NewBroadcaster(nil, &BroadcasterConfig{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "at least 1 topic required")
 }
 
-func TestNewBroadcaster_InvalidTopicPrefix(t *testing.T) {
+func TestNewBroadcasterInvalidTopicPrefix(t *testing.T) {
 	_, err := NewBroadcaster([]string{"bad_topic"}, &BroadcasterConfig{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "must start with 'tm_'")
 }
 
-func TestNewBroadcaster_ValidTopics(t *testing.T) {
+func TestNewBroadcasterValidTopics(t *testing.T) {
 	b, err := NewBroadcaster([]string{"tm_test"}, &BroadcasterConfig{})
 	require.NoError(t, err)
 	require.NotNil(t, b)
 	require.Equal(t, []string{"tm_test"}, b.Topics)
 }
 
-func TestNewBroadcaster_MultipleValidTopics(t *testing.T) {
+func TestNewBroadcasterMultipleValidTopics(t *testing.T) {
 	topics := []string{"tm_foo", "tm_bar", "tm_baz"}
 	b, err := NewBroadcaster(topics, &BroadcasterConfig{})
 	require.NoError(t, err)
 	require.Equal(t, topics, b.Topics)
 }
 
-func TestNewBroadcaster_MixedValidInvalidTopics(t *testing.T) {
+func TestNewBroadcasterMixedValidInvalidTopics(t *testing.T) {
 	_, err := NewBroadcaster([]string{"tm_good", "bad_topic"}, &BroadcasterConfig{})
 	require.Error(t, err)
 }
 
-func TestNewBroadcaster_DefaultAckFromAny(t *testing.T) {
+func TestNewBroadcasterDefaultAckFromAny(t *testing.T) {
 	b, err := NewBroadcaster([]string{"tm_test"}, &BroadcasterConfig{})
 	require.NoError(t, err)
 	// Default AckFromAll should be RequireAckNone, AckFromAny should be RequireAckAll.
@@ -45,7 +45,7 @@ func TestNewBroadcaster_DefaultAckFromAny(t *testing.T) {
 	require.Equal(t, RequireAckAll, b.AckFromAny.RequireAck)
 }
 
-func TestNewBroadcaster_CustomAckFromAll(t *testing.T) {
+func TestNewBroadcasterCustomAckFromAll(t *testing.T) {
 	ack := &AckFrom{RequireAck: RequireAckAny, Topics: []string{"tm_test"}}
 	b, err := NewBroadcaster([]string{"tm_test"}, &BroadcasterConfig{
 		AckFromAll: ack,
@@ -54,7 +54,7 @@ func TestNewBroadcaster_CustomAckFromAll(t *testing.T) {
 	require.Equal(t, RequireAckAny, b.AckFromAll.RequireAck)
 }
 
-func TestNewBroadcaster_CustomAckFromAny(t *testing.T) {
+func TestNewBroadcasterCustomAckFromAny(t *testing.T) {
 	ack := &AckFrom{RequireAck: RequireAckSome, Topics: []string{"tm_test"}}
 	b, err := NewBroadcaster([]string{"tm_test"}, &BroadcasterConfig{
 		AckFromAny: ack,
@@ -63,7 +63,7 @@ func TestNewBroadcaster_CustomAckFromAny(t *testing.T) {
 	require.Equal(t, RequireAckSome, b.AckFromAny.RequireAck)
 }
 
-func TestNewBroadcaster_CustomAckFromHost(t *testing.T) {
+func TestNewBroadcasterCustomAckFromHost(t *testing.T) {
 	hostAck := map[string]AckFrom{
 		"https://host.example.com": {RequireAck: RequireAckAll},
 	}
@@ -74,7 +74,7 @@ func TestNewBroadcaster_CustomAckFromHost(t *testing.T) {
 	require.Equal(t, hostAck, b.AckFromHost)
 }
 
-func TestNewBroadcaster_DefaultHostOverrideMap(t *testing.T) {
+func TestNewBroadcasterDefaultHostOverrideMap(t *testing.T) {
 	b, err := NewBroadcaster([]string{"tm_test"}, &BroadcasterConfig{})
 	require.NoError(t, err)
 	require.NotNil(t, b.AckFromHost)
@@ -82,7 +82,7 @@ func TestNewBroadcaster_DefaultHostOverrideMap(t *testing.T) {
 
 // --- checkAcknowledgmentFromAllHosts ---
 
-func TestCheckAcknowledgmentFromAllHosts_RequireAll_AllPresent(t *testing.T) {
+func TestCheckAcknowledgmentFromAllHostsRequireAllAllPresent(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a", "tm_b"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}, "tm_b": {}},
@@ -91,7 +91,7 @@ func TestCheckAcknowledgmentFromAllHosts_RequireAll_AllPresent(t *testing.T) {
 	require.True(t, b.checkAcknowledgmentFromAllHosts(hostAcks, []string{"tm_a", "tm_b"}, RequireAckAll))
 }
 
-func TestCheckAcknowledgmentFromAllHosts_RequireAll_OneMissing(t *testing.T) {
+func TestCheckAcknowledgmentFromAllHostsRequireAllOneMissing(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}}, // missing tm_b
@@ -99,7 +99,7 @@ func TestCheckAcknowledgmentFromAllHosts_RequireAll_OneMissing(t *testing.T) {
 	require.False(t, b.checkAcknowledgmentFromAllHosts(hostAcks, []string{"tm_a", "tm_b"}, RequireAckAll))
 }
 
-func TestCheckAcknowledgmentFromAllHosts_RequireAny_OnePresent(t *testing.T) {
+func TestCheckAcknowledgmentFromAllHostsRequireAnyOnePresent(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}},
@@ -107,7 +107,7 @@ func TestCheckAcknowledgmentFromAllHosts_RequireAny_OnePresent(t *testing.T) {
 	require.True(t, b.checkAcknowledgmentFromAllHosts(hostAcks, []string{"tm_a", "tm_b"}, RequireAckAny))
 }
 
-func TestCheckAcknowledgmentFromAllHosts_RequireAny_NonePresent(t *testing.T) {
+func TestCheckAcknowledgmentFromAllHostsRequireAnyNonePresent(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_other": {}},
@@ -115,7 +115,7 @@ func TestCheckAcknowledgmentFromAllHosts_RequireAny_NonePresent(t *testing.T) {
 	require.False(t, b.checkAcknowledgmentFromAllHosts(hostAcks, []string{"tm_a", "tm_b"}, RequireAckAny))
 }
 
-func TestCheckAcknowledgmentFromAllHosts_EmptyHosts(t *testing.T) {
+func TestCheckAcknowledgmentFromAllHostsEmptyHosts(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{}
 	// No hosts to iterate; returns true (vacuously satisfied).
@@ -124,7 +124,7 @@ func TestCheckAcknowledgmentFromAllHosts_EmptyHosts(t *testing.T) {
 
 // --- checkAcknowledgmentFromAnyHost ---
 
-func TestCheckAcknowledgmentFromAnyHost_RequireAll_AllPresent(t *testing.T) {
+func TestCheckAcknowledgmentFromAnyHostRequireAllAllPresent(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}, "tm_b": {}},
@@ -132,7 +132,7 @@ func TestCheckAcknowledgmentFromAnyHost_RequireAll_AllPresent(t *testing.T) {
 	require.True(t, b.checkAcknowledgmentFromAnyHost(hostAcks, []string{"tm_a", "tm_b"}, RequireAckAll))
 }
 
-func TestCheckAcknowledgmentFromAnyHost_RequireAll_Missing(t *testing.T) {
+func TestCheckAcknowledgmentFromAnyHostRequireAllMissing(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}}, // tm_b missing
@@ -140,7 +140,7 @@ func TestCheckAcknowledgmentFromAnyHost_RequireAll_Missing(t *testing.T) {
 	require.False(t, b.checkAcknowledgmentFromAnyHost(hostAcks, []string{"tm_a", "tm_b"}, RequireAckAll))
 }
 
-func TestCheckAcknowledgmentFromAnyHost_RequireAny_OnePresent(t *testing.T) {
+func TestCheckAcknowledgmentFromAnyHostRequireAnyOnePresent(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}},
@@ -148,7 +148,7 @@ func TestCheckAcknowledgmentFromAnyHost_RequireAny_OnePresent(t *testing.T) {
 	require.True(t, b.checkAcknowledgmentFromAnyHost(hostAcks, []string{"tm_a", "tm_b"}, RequireAckAny))
 }
 
-func TestCheckAcknowledgmentFromAnyHost_RequireAny_NonePresent(t *testing.T) {
+func TestCheckAcknowledgmentFromAnyHostRequireAnyNonePresent(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_other": {}},
@@ -156,7 +156,7 @@ func TestCheckAcknowledgmentFromAnyHost_RequireAny_NonePresent(t *testing.T) {
 	require.False(t, b.checkAcknowledgmentFromAnyHost(hostAcks, []string{"tm_a"}, RequireAckAny))
 }
 
-func TestCheckAcknowledgmentFromAnyHost_EmptyHosts(t *testing.T) {
+func TestCheckAcknowledgmentFromAnyHostEmptyHosts(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{}
 	// No hosts; no host satisfies any requirement.
@@ -165,7 +165,7 @@ func TestCheckAcknowledgmentFromAnyHost_EmptyHosts(t *testing.T) {
 
 // --- checkAcknowledgmentFromSpecificHosts ---
 
-func TestCheckAcknowledgmentFromSpecificHosts_HostMissing(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsHostMissing(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}},
@@ -176,7 +176,7 @@ func TestCheckAcknowledgmentFromSpecificHosts_HostMissing(t *testing.T) {
 	require.False(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, requirements))
 }
 
-func TestCheckAcknowledgmentFromSpecificHosts_RequireAll_Satisfied(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsRequireAllSatisfied(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a", "tm_b"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}, "tm_b": {}},
@@ -187,7 +187,7 @@ func TestCheckAcknowledgmentFromSpecificHosts_RequireAll_Satisfied(t *testing.T)
 	require.True(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, requirements))
 }
 
-func TestCheckAcknowledgmentFromSpecificHosts_RequireAll_NotSatisfied(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsRequireAllNotSatisfied(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a", "tm_b"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}}, // tm_b missing
@@ -198,7 +198,7 @@ func TestCheckAcknowledgmentFromSpecificHosts_RequireAll_NotSatisfied(t *testing
 	require.False(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, requirements))
 }
 
-func TestCheckAcknowledgmentFromSpecificHosts_RequireAny_Satisfied(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsRequireAnySatisfied(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a", "tm_b"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_a": {}},
@@ -209,7 +209,7 @@ func TestCheckAcknowledgmentFromSpecificHosts_RequireAny_Satisfied(t *testing.T)
 	require.True(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, requirements))
 }
 
-func TestCheckAcknowledgmentFromSpecificHosts_RequireAny_NotSatisfied(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsRequireAnyNotSatisfied(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a", "tm_b"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_other": {}},
@@ -220,7 +220,7 @@ func TestCheckAcknowledgmentFromSpecificHosts_RequireAny_NotSatisfied(t *testing
 	require.False(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, requirements))
 }
 
-func TestCheckAcknowledgmentFromSpecificHosts_RequireSome(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsRequireSome(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {"tm_specific": {}},
@@ -231,7 +231,7 @@ func TestCheckAcknowledgmentFromSpecificHosts_RequireSome(t *testing.T) {
 	require.True(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, requirements))
 }
 
-func TestCheckAcknowledgmentFromSpecificHosts_RequireNone_Skipped(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsRequireNoneSkipped(t *testing.T) {
 	b := &Broadcaster{Topics: []string{"tm_a"}}
 	hostAcks := map[string]map[string]struct{}{
 		"host1": {},
@@ -243,7 +243,7 @@ func TestCheckAcknowledgmentFromSpecificHosts_RequireNone_Skipped(t *testing.T) 
 	require.True(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, requirements))
 }
 
-func TestCheckAcknowledgmentFromSpecificHosts_EmptyRequirements(t *testing.T) {
+func TestCheckAcknowledgmentFromSpecificHostsEmptyRequirements(t *testing.T) {
 	b := &Broadcaster{}
 	hostAcks := map[string]map[string]struct{}{}
 	require.True(t, b.checkAcknowledgmentFromSpecificHosts(hostAcks, map[string]AckFrom{}))

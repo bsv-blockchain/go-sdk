@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testMimeTypeTextPlain = "text/plain"
+
 // TestCheckAPIError tests the checkAPIError helper function.
 func TestCheckAPIError(t *testing.T) {
 	tests := []struct {
@@ -87,13 +89,13 @@ func TestCheckAPIError(t *testing.T) {
 	}
 }
 
-// TestUploadFile_Success tests that uploadFile correctly calls the PUT endpoint.
-func TestUploadFile_Success(t *testing.T) {
+// TestUploadFileSuccess tests that uploadFile correctly calls the PUT endpoint.
+func TestUploadFileSuccess(t *testing.T) {
 	fileData := []byte("hello test content for upload")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "PUT", r.Method)
-		assert.Equal(t, "text/plain", r.Header.Get("Content-Type"))
+		assert.Equal(t, testMimeTypeTextPlain, r.Header.Get("Content-Type"))
 		assert.Equal(t, "val1", r.Header.Get("X-Custom"))
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -108,7 +110,7 @@ func TestUploadFile_Success(t *testing.T) {
 
 	result, err := uploader.uploadFile(context.Background(), ts.URL, UploadableFile{
 		Data: fileData,
-		Type: "text/plain",
+		Type: testMimeTypeTextPlain,
 	}, map[string]string{"X-Custom": "val1"})
 
 	require.NoError(t, err)
@@ -116,8 +118,8 @@ func TestUploadFile_Success(t *testing.T) {
 	assert.NotEmpty(t, result.UhrpURL)
 }
 
-// TestUploadFile_HTTPError tests that uploadFile returns error on HTTP error response.
-func TestUploadFile_HTTPError(t *testing.T) {
+// TestUploadFileHTTPError tests that uploadFile returns error on HTTP error response.
+func TestUploadFileHTTPError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 	}))
@@ -132,15 +134,15 @@ func TestUploadFile_HTTPError(t *testing.T) {
 
 	_, err = uploader.uploadFile(context.Background(), ts.URL, UploadableFile{
 		Data: []byte("data"),
-		Type: "text/plain",
+		Type: testMimeTypeTextPlain,
 	}, nil)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "403")
 }
 
-// TestUploadFile_InvalidURL tests that uploadFile fails with an invalid URL.
-func TestUploadFile_InvalidURL(t *testing.T) {
+// TestUploadFileInvalidURL tests that uploadFile fails with an invalid URL.
+func TestUploadFileInvalidURL(t *testing.T) {
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "http://localhost",
@@ -151,14 +153,14 @@ func TestUploadFile_InvalidURL(t *testing.T) {
 	// Use an invalid URL that will fail at request creation
 	_, err = uploader.uploadFile(context.Background(), "://bad-url", UploadableFile{
 		Data: []byte("data"),
-		Type: "text/plain",
+		Type: testMimeTypeTextPlain,
 	}, nil)
 
 	require.Error(t, err)
 }
 
-// TestGetUploadInfo_ErrorResponse tests getUploadInfo when server returns error status.
-func TestGetUploadInfo_ErrorResponse(t *testing.T) {
+// TestGetUploadInfoErrorResponse tests getUploadInfo when server returns error status.
+func TestGetUploadInfoErrorResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
 			"status": StatusError,

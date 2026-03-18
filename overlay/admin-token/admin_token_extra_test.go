@@ -15,18 +15,20 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-// TestDecode_NullByteFields covers the null-byte normalization branch in Decode
-func TestDecode_NullByteFields(t *testing.T) {
+const testOriginator = "test-originator"
+
+// TestDecodeNullByteFields covers the null-byte normalization branch in Decode
+func TestDecodeNullByteFields(t *testing.T) {
 	testWallet := createTestWallet(t)
 	pushDrop := &pushdrop.PushDrop{
 		Wallet:     testWallet,
-		Originator: "test-originator",
+		Originator: testOriginator,
 	}
 
 	ctx := context.Background()
 
 	// Get public key bytes for identity field
-	pub, err := testWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, "test-originator")
+	pub, err := testWallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{IdentityKey: true}, testOriginator)
 	require.NoError(t, err)
 
 	protocolID := wallet.Protocol{SecurityLevel: 2, Protocol: "service host interconnect"}
@@ -61,17 +63,17 @@ func TestDecode_NullByteFields(t *testing.T) {
 	assert.Equal(t, overlay.ProtocolSHIP, decoded.Protocol)
 }
 
-// TestDecode_NilScript covers Decode when the pushdrop.Decode returns nil (bad script)
-func TestDecode_NilScript(t *testing.T) {
+// TestDecodeNilScript covers Decode when the pushdrop.Decode returns nil (bad script)
+func TestDecodeNilScript(t *testing.T) {
 	emptyScript := &script.Script{}
 	result := admintoken.Decode(emptyScript)
 	assert.Nil(t, result)
 }
 
-// TestLock_InvalidProtocol covers the error path for an invalid/unknown protocol
-func TestLock_InvalidProtocol(t *testing.T) {
+// TestLockInvalidProtocol covers the error path for an invalid/unknown protocol
+func TestLockInvalidProtocol(t *testing.T) {
 	testWallet := createTestWallet(t)
-	template := admintoken.NewOverlayAdminToken(testWallet, "test-originator")
+	template := admintoken.NewOverlayAdminToken(testWallet, testOriginator)
 
 	ctx := context.Background()
 
@@ -82,8 +84,8 @@ func TestLock_InvalidProtocol(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid overlay protocol id")
 }
 
-// TestNewOverlayAdminToken_WithoutOriginator covers creation without originator
-func TestNewOverlayAdminToken_WithoutOriginator(t *testing.T) {
+// TestNewOverlayAdminTokenWithoutOriginator covers creation without originator
+func TestNewOverlayAdminTokenWithoutOriginator(t *testing.T) {
 	privKeyBytes := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 	privKey, _ := ec.PrivateKeyFromBytes(privKeyBytes)
 	testWallet, err := wallet.NewCompletedProtoWallet(privKey)

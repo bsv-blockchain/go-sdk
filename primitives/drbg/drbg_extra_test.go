@@ -117,8 +117,8 @@ func TestReseed(t *testing.T) {
 	})
 }
 
-// TestDRBG_GenerateEdgeCases covers Generate error paths
-func TestDRBG_GenerateEdgeCases(t *testing.T) {
+// TestDRBGGenerateEdgeCases covers Generate error paths
+func TestDRBGGenerateEdgeCases(t *testing.T) {
 	entropy := make([]byte, 32)
 	for i := range entropy {
 		entropy[i] = byte(i + 1)
@@ -155,8 +155,8 @@ func TestDRBG_GenerateEdgeCases(t *testing.T) {
 	})
 }
 
-// TestNewDRBG_InsufficientEntropy covers the error path for NewDRBG
-func TestNewDRBG_InsufficientEntropy(t *testing.T) {
+// TestNewDRBGInsufficientEntropy covers the error path for NewDRBG
+func TestNewDRBGInsufficientEntropy(t *testing.T) {
 	shortEntropy := make([]byte, 16) // less than 32 bytes
 	_, err := NewDRBG(shortEntropy, nil)
 	require.Error(t, err)
