@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 
@@ -38,7 +40,9 @@ func main() {
 			http.Error(w, "Failed to decode request for createAction", http.StatusBadRequest)
 			return
 		}
-		fmt.Printf("Mock Server: Received CreateAction with Description: %s\n", args.Description)
+		// Sanitize user-controlled input before logging to prevent log injection
+		sanitized := strings.ReplaceAll(strings.ReplaceAll(args.Description, "\n", ""), "\r", "")
+		log.Printf("Mock Server: Received CreateAction with Description: %s", sanitized)
 
 		// Use an anonymous struct for the JSON response to send Txid as a string
 		jsonResponse := struct {
