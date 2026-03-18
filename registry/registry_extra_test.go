@@ -141,6 +141,17 @@ func mockTxid(t *testing.T) *chainhash.Hash {
 	return h
 }
 
+// setupMockRegistry configures mw with the standard public key, beef, and signature
+// results needed for most RegisterDefinition tests.
+func setupMockRegistry(t *testing.T, mw *MockRegistry, beef []byte) {
+	t.Helper()
+	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
+	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
+	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
+		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
+	}
+}
+
 // ---- DefaultBroadcasterFactory ----------------------------------------------
 
 func TestDefaultBroadcasterFactoryReturnsValue(t *testing.T) {
@@ -177,12 +188,7 @@ func TestRegisterDefinitionGetPublicKeyError(t *testing.T) {
 func TestRegisterDefinitionNilTxInCreateActionResult(t *testing.T) {
 	// CreateAction returns a non-nil result but with nil Tx → "failed to create registration transaction"
 	mw := NewMockRegistry(t)
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	// Return a result with Tx == nil
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: nil}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
+	setupMockRegistry(t, mw, nil) // nil Tx to trigger the failure path
 
 	client := NewRegistryClient(mw, "originator")
 	client.SetNetwork(overlay.NetworkLocal)
@@ -198,11 +204,7 @@ func TestRegisterDefinitionNilTxInCreateActionResult(t *testing.T) {
 func TestRegisterDefinitionBroadcasterFactoryError(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := NewMockRegistry(t)
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
+	setupMockRegistry(t, mw, beef)
 
 	client := NewRegistryClient(mw, "originator")
 	client.SetNetwork(overlay.NetworkLocal)
@@ -219,12 +221,8 @@ func TestRegisterDefinitionProtocolType(t *testing.T) {
 	beef := decodeValidBeef(t)
 	txID := mockTxid(t)
 	mw := NewMockRegistry(t)
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
+	setupMockRegistry(t, mw, beef)
 	mw.SignActionResultToReturn = &wallet.SignActionResult{Tx: beef, Txid: *txID}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
 
 	client := NewRegistryClient(mw, "originator")
 	client.SetNetwork(overlay.NetworkLocal)
@@ -246,12 +244,8 @@ func TestRegisterDefinitionCertificateType(t *testing.T) {
 	beef := decodeValidBeef(t)
 	txID := mockTxid(t)
 	mw := NewMockRegistry(t)
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
+	setupMockRegistry(t, mw, beef)
 	mw.SignActionResultToReturn = &wallet.SignActionResult{Tx: beef, Txid: *txID}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
 
 	client := NewRegistryClient(mw, "originator")
 	client.SetNetwork(overlay.NetworkLocal)
@@ -291,11 +285,7 @@ func (m *mockWalletNetwork) GetNetwork(_ context.Context, _ any, _ string) (*wal
 func TestRegisterDefinitionNetworkDetectTestnet(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), resp: "testnet"}
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
+	setupMockRegistry(t, mw.MockRegistry, beef)
 	client := NewRegistryClient(mw, "originator")
 	client.network = overlay.Network(-1) // force GetNetwork call
 	client.SetBroadcasterFactory(successBroadcasterFactory("aabb"))
@@ -308,11 +298,7 @@ func TestRegisterDefinitionNetworkDetectTestnet(t *testing.T) {
 func TestRegisterDefinitionNetworkDetectMainnet(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), resp: "mainnet"}
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
+	setupMockRegistry(t, mw.MockRegistry, beef)
 	client := NewRegistryClient(mw, "originator")
 	client.network = overlay.Network(-1)
 	client.SetBroadcasterFactory(successBroadcasterFactory("aabb"))
@@ -324,11 +310,7 @@ func TestRegisterDefinitionNetworkDetectMainnet(t *testing.T) {
 func TestRegisterDefinitionNetworkDetectUnknown(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), resp: "local"}
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
+	setupMockRegistry(t, mw.MockRegistry, beef)
 	client := NewRegistryClient(mw, "originator")
 	client.network = overlay.Network(-1)
 	client.SetBroadcasterFactory(successBroadcasterFactory("aabb"))
@@ -340,11 +322,7 @@ func TestRegisterDefinitionNetworkDetectUnknown(t *testing.T) {
 func TestRegisterDefinitionGetNetworkError(t *testing.T) {
 	beef := decodeValidBeef(t)
 	mw := &mockWalletNetwork{MockRegistry: NewMockRegistry(t), err: errors.New("no network")}
-	mw.GetPublicKeyResult = &wallet.GetPublicKeyResult{PublicKey: makeTestPubKey(t)}
-	mw.CreateActionResultToReturn = &wallet.CreateActionResult{Tx: beef}
-	mw.CreateSignatureResult = &wallet.CreateSignatureResult{
-		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-	}
+	setupMockRegistry(t, mw.MockRegistry, beef)
 	client := NewRegistryClient(mw, "originator")
 	client.network = overlay.Network(-1)
 	client.SetBroadcasterFactory(successBroadcasterFactory("aabb"))
@@ -433,16 +411,9 @@ func TestListOwnRegistryEntriesInvalidLockingScriptSkipped(t *testing.T) {
 }
 
 func TestListOwnRegistryEntriesProtocolType(t *testing.T) {
-	pubKeyBytes := []byte{
-		0x02,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-	}
 	ls := buildPushDropScript(t, [][]byte{
 		[]byte(`[2,"myprotocol"]`), []byte(testProtoName), []byte("icon"),
-		[]byte("desc"), []byte("doc"), pubKeyBytes,
+		[]byte("desc"), []byte("doc"), testPubKeyBytes(),
 	})
 	beef, tx := beefWithScript(t, ls)
 
@@ -462,18 +433,11 @@ func TestListOwnRegistryEntriesProtocolType(t *testing.T) {
 }
 
 func TestListOwnRegistryEntriesCertificateType(t *testing.T) {
-	pubKeyBytes := []byte{
-		0x02,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-	}
 	ls := buildPushDropScript(t, [][]byte{
 		[]byte(testCertType), []byte(testCertName), []byte("icon"),
 		[]byte("desc"), []byte("doc"),
 		[]byte(`{"name":{"friendlyName":"N","type":"text","description":"","fieldIcon":""}}`),
-		pubKeyBytes,
+		testPubKeyBytes(),
 	})
 	beef, tx := beefWithScript(t, ls)
 

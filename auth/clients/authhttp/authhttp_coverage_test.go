@@ -345,6 +345,45 @@ func writeSignedResponse(w http.ResponseWriter, r *http.Request, args signedResp
 	w.WriteHeader(responseStatusCode)
 }
 
+// buildNoAuthServer starts an httptest.Server that returns 501 on /.well-known/auth
+// and the given statusCode on all other paths.  It is the caller's responsibility
+// to close the server (use t.Cleanup or defer ts.Close()).
+func buildNoAuthServer(t *testing.T, statusCode int) *httptest.Server {
+	t.Helper()
+	if statusCode == 0 {
+		statusCode = http.StatusOK
+	}
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == wellKnownAuthPath {
+			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
+			return
+		}
+		w.WriteHeader(statusCode)
+	}))
+}
+
+// buildPreloadedPeer creates a transport pointing at serverURL, wraps it in an
+// AuthPeer backed by clientWallet, stores it in af.peers, and returns the peer.
+// Optional fields (IdentityKey, SupportsMutualAuth, PendingCertificateRequests)
+// can be set on the returned *AuthPeer after the call.
+func buildPreloadedPeer(t *testing.T, af *AuthFetch, clientWallet wallet.Interface, serverURL string) *AuthPeer {
+	t.Helper()
+	transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
+		BaseURL: serverURL,
+		Client:  &http.Client{},
+	})
+	require.NoError(t, err)
+	peer := &AuthPeer{
+		Peer: auth.NewPeer(&auth.PeerOptions{
+			Wallet:    clientWallet,
+			Transport: transport,
+		}),
+		PendingCertificateRequests: []bool{},
+	}
+	af.peers.Store(serverURL, peer)
+	return peer
+}
+
 // ---------------------------------------------------------------------------
 // TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate
 //
@@ -354,13 +393,7 @@ func writeSignedResponse(w http.ResponseWriter, r *http.Request, args signedResp
 // ---------------------------------------------------------------------------
 
 func TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == wellKnownAuthPath {
-			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	}))
+	ts := buildNoAuthServer(t, http.StatusOK)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -382,13 +415,7 @@ func TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate
 // ---------------------------------------------------------------------------
 
 func TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == wellKnownAuthPath {
-			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	}))
+	ts := buildNoAuthServer(t, http.StatusOK)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -399,21 +426,8 @@ func TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey(t *testing.T
 	require.NoError(t, err)
 	validIdentityKey := serverKey.PubKey().ToDERHex()
 
-	transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
-		BaseURL: ts.URL,
-		Client:  &http.Client{},
-	})
-	require.NoError(t, err)
-
-	existingPeer := &AuthPeer{
-		Peer: auth.NewPeer(&auth.PeerOptions{
-			Wallet:    clientWallet,
-			Transport: transport,
-		}),
-		IdentityKey:                validIdentityKey,
-		PendingCertificateRequests: []bool{},
-	}
-	af.peers.Store(ts.URL, existingPeer)
+	existingPeer := buildPreloadedPeer(t, af, clientWallet, ts.URL)
+	existingPeer.IdentityKey = validIdentityKey
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -431,33 +445,14 @@ func TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey(t *testing.T
 // ---------------------------------------------------------------------------
 
 func TestFetchErrHTTPServerFailedToAuthenticateWithInvalidIdentityKey(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == wellKnownAuthPath {
-			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	}))
+	ts := buildNoAuthServer(t, http.StatusOK)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
 
-	transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
-		BaseURL: ts.URL,
-		Client:  &http.Client{},
-	})
-	require.NoError(t, err)
-
-	existingPeer := &AuthPeer{
-		Peer: auth.NewPeer(&auth.PeerOptions{
-			Wallet:    clientWallet,
-			Transport: transport,
-		}),
-		IdentityKey:                "not-a-valid-hex-public-key",
-		PendingCertificateRequests: []bool{},
-	}
-	af.peers.Store(ts.URL, existingPeer)
+	existingPeer := buildPreloadedPeer(t, af, clientWallet, ts.URL)
+	existingPeer.IdentityKey = "not-a-valid-hex-public-key"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -478,31 +473,14 @@ func TestFetchErrHTTPServerFailedToAuthenticateWithInvalidIdentityKey(t *testing
 // ---------------------------------------------------------------------------
 
 func TestFetchHasPendingCertificateRequestsTicker(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == wellKnownAuthPath {
-			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	}))
+	ts := buildNoAuthServer(t, http.StatusOK)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
 
-	transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
-		BaseURL: ts.URL,
-		Client:  &http.Client{},
-	})
-	require.NoError(t, err)
-
-	pendingPeer := &AuthPeer{
-		Peer: auth.NewPeer(&auth.PeerOptions{
-			Wallet:    clientWallet,
-			Transport: transport,
-		}),
-		PendingCertificateRequests: []bool{true},
-	}
+	pendingPeer := buildPreloadedPeer(t, af, clientWallet, ts.URL)
+	pendingPeer.PendingCertificateRequests = []bool{true}
 	af.peers.Store(ts.URL, pendingPeer)
 
 	// Clear the pending entry after 150 ms so the ticker loop exits.
@@ -547,21 +525,8 @@ func TestFetchExistingPeerNonMutualAuthReused(t *testing.T) {
 	af := New(clientWallet, WithoutLogging())
 
 	notSupported := false
-	transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
-		BaseURL: ts.URL,
-		Client:  &http.Client{},
-	})
-	require.NoError(t, err)
-
-	existingPeer := &AuthPeer{
-		Peer: auth.NewPeer(&auth.PeerOptions{
-			Wallet:    clientWallet,
-			Transport: transport,
-		}),
-		SupportsMutualAuth:         &notSupported,
-		PendingCertificateRequests: []bool{},
-	}
-	af.peers.Store(ts.URL, existingPeer)
+	existingPeer := buildPreloadedPeer(t, af, clientWallet, ts.URL)
+	existingPeer.SupportsMutualAuth = &notSupported
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -588,20 +553,7 @@ func TestSendCertificateRequestExistingPeerLoaded(t *testing.T) {
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
 
-	transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
-		BaseURL: ts.URL,
-		Client:  &http.Client{},
-	})
-	require.NoError(t, err)
-
-	existingPeer := &AuthPeer{
-		Peer: auth.NewPeer(&auth.PeerOptions{
-			Wallet:    clientWallet,
-			Transport: transport,
-		}),
-		PendingCertificateRequests: []bool{},
-	}
-	af.peers.Store(ts.URL, existingPeer)
+	buildPreloadedPeer(t, af, clientWallet, ts.URL)
 
 	certSet := utils.RequestedCertificateSet{
 		Certifiers:       []*ec.PublicKey{},
@@ -611,7 +563,7 @@ func TestSendCertificateRequestExistingPeerLoaded(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 
-	_, err = af.SendCertificateRequest(ctx, ts.URL+"/certs", &certSet)
+	_, err := af.SendCertificateRequest(ctx, ts.URL+"/certs", &certSet)
 	require.Error(t, err) // expected: context deadline or transport error
 }
 
@@ -766,21 +718,8 @@ func TestSendCertificateRequestExistingPeerWithIdentityKey(t *testing.T) {
 	require.NoError(t, err)
 	validIdentityKey := serverKey.PubKey().ToDERHex()
 
-	transport, err := transports.NewSimplifiedHTTPTransport(&transports.SimplifiedHTTPTransportOptions{
-		BaseURL: ts.URL,
-		Client:  &http.Client{},
-	})
-	require.NoError(t, err)
-
-	existingPeer := &AuthPeer{
-		Peer: auth.NewPeer(&auth.PeerOptions{
-			Wallet:    clientWallet,
-			Transport: transport,
-		}),
-		IdentityKey:                validIdentityKey, // valid key → identityKey != nil branch
-		PendingCertificateRequests: []bool{},
-	}
-	af.peers.Store(ts.URL, existingPeer)
+	existingPeer := buildPreloadedPeer(t, af, clientWallet, ts.URL)
+	existingPeer.IdentityKey = validIdentityKey // valid key → identityKey != nil branch
 
 	certSet := utils.RequestedCertificateSet{
 		Certifiers:       []*ec.PublicKey{},

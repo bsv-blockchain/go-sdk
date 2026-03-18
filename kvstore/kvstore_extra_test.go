@@ -18,6 +18,29 @@ import (
 
 const errPrepareSpends = "prepare spends"
 
+// decodePushDropBeef decodes pushDropBeefHex and returns the raw bytes.
+func decodePushDropBeef(t *testing.T) []byte {
+	t.Helper()
+	b, err := hex.DecodeString(pushDropBeefHex)
+	require.NoError(t, err)
+	return b
+}
+
+// returnPushDropOutput configures mockWallet to return a single PushDrop output.
+func returnPushDropOutput(t *testing.T, mockWallet *wallet.TestWallet) {
+	t.Helper()
+	beefBytes := decodePushDropBeef(t)
+	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
+		Outputs: []wallet.Output{
+			{
+				Satoshis: 1,
+				Outpoint: buildOutpoint(t, pushDropTxID, 0),
+			},
+		},
+		BEEF: beefBytes,
+	})
+}
+
 // ---------------------------------------------------------------------------
 // NewLocalKVStore constructor validation
 // ---------------------------------------------------------------------------
@@ -443,20 +466,7 @@ func TestLocalKVStoreGetPushDropReturnsValue(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
-	// Return the PushDrop transaction as a valid output
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	value, err := store.Get(context.Background(), "mykey", "default")
 	require.NoError(t, err)
@@ -496,20 +506,8 @@ func TestLocalKVStoreSetSameValueIdempotent(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// lookupValue returns existing value = "testvalue"
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// Set the same value - should return existing outpoint without CreateAction
 	outpoint, err := store.Set(context.Background(), "mykey", "testvalue")
@@ -549,20 +547,8 @@ func TestLocalKVStoreSetWithInputsSignableTxInvalidBeef(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// lookupValue returns an existing value (different from what we're setting)
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// CreateAction with inputs returns a SignableTransaction (invalid tx bytes)
 	mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
@@ -572,7 +558,7 @@ func TestLocalKVStoreSetWithInputsSignableTxInvalidBeef(t *testing.T) {
 		},
 	})
 
-	_, err = store.Set(context.Background(), "mykey", "differentvalue")
+	_, err := store.Set(context.Background(), "mykey", "differentvalue")
 	require.Error(t, err)
 	require.ErrorContains(t, err, errPrepareSpends)
 }
@@ -581,20 +567,8 @@ func TestLocalKVStoreSetWithInputsValidSignableTxBeefNotFoundForSigning(t *testi
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// lookupValue returns an existing value (different from what we're setting)
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// Build a simple valid transaction to use as SignableTransaction.Tx
 	// This creates a new tx that spends pushDropTxID:0
@@ -607,7 +581,7 @@ func TestLocalKVStoreSetWithInputsValidSignableTxBeefNotFoundForSigning(t *testi
 		},
 	})
 
-	_, err = store.Set(context.Background(), "mykey", "differentvalue")
+	_, err := store.Set(context.Background(), "mykey", "differentvalue")
 	require.Error(t, err)
 	// Error should be about PrepareSpends - signing tx not found in BEEF
 	require.ErrorContains(t, err, errPrepareSpends)
@@ -617,27 +591,15 @@ func TestLocalKVStoreSetWithInputsCreateActionNoSignableError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// lookupValue returns an existing value (different from what we're setting)
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// CreateAction returns no SignableTransaction (inputs present but no signable)
 	mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
 		SignableTransaction: nil, // no signable tx
 	})
 
-	_, err = store.Set(context.Background(), "mykey", "differentvalue")
+	_, err := store.Set(context.Background(), "mykey", "differentvalue")
 	require.Error(t, err)
 	require.ErrorContains(t, err, "signable transaction")
 }
@@ -646,20 +608,8 @@ func TestLocalKVStoreRemoveWithInputsCreateActionNoSignableError(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// Return outputs with valid PushDrop
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// CreateAction returns no SignableTransaction
 	mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
@@ -676,20 +626,8 @@ func TestLocalKVStoreRemoveWithInputsCreateActionFails(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// Return outputs with valid PushDrop
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	createErr := errors.New("create action remove failed")
 	mockWallet.OnCreateAction().ReturnError(createErr)
@@ -704,20 +642,8 @@ func TestLocalKVStoreRemoveWithInputsPrepareSpendsFails(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// Return outputs with valid PushDrop
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// CreateAction returns a SignableTransaction with invalid tx bytes
 	mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
@@ -864,24 +790,13 @@ func TestLocalKVStoreGetEncryptPathDecryptFails(t *testing.T) {
 	store, mockWallet := setupTestKVStoreEncrypted(t)
 	decryptErr := errors.New("decrypt failed")
 
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// Return outputs with valid PushDrop
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// Decrypt fails
 	mockWallet.OnDecrypt().ReturnError(decryptErr)
 
-	_, err = store.Get(context.Background(), "mykey", "default")
+	_, err := store.Get(context.Background(), "mykey", "default")
 	require.Error(t, err)
 	require.ErrorContains(t, err, decryptErr.Error())
 }
@@ -968,20 +883,8 @@ func TestLocalKVStoreRemoveWithInputsSignActionFailsRelinquish(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// Return outputs with valid PushDrop
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// Build a valid signable tx that references the pushDrop output
 	validSignableTx := buildSimpleTx(t, pushDropTxID, 0)
@@ -1008,20 +911,8 @@ func TestLocalKVStoreSetSignActionFailsRelinquish(t *testing.T) {
 	t.Parallel()
 
 	store, mockWallet := setupTestKVStore(t)
-
-	beefBytes, err := hex.DecodeString(pushDropBeefHex)
-	require.NoError(t, err)
-
 	// lookupValue finds existing value
-	mockWallet.OnListOutputs().ReturnSuccess(&wallet.ListOutputsResult{
-		Outputs: []wallet.Output{
-			{
-				Satoshis: 1,
-				Outpoint: buildOutpoint(t, pushDropTxID, 0),
-			},
-		},
-		BEEF: beefBytes,
-	})
+	returnPushDropOutput(t, mockWallet)
 
 	// CreateAction returns signable with invalid tx (causes prepareSpends to fail)
 	mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
@@ -1036,7 +927,7 @@ func TestLocalKVStoreSetSignActionFailsRelinquish(t *testing.T) {
 		Relinquished: true,
 	})
 
-	_, err = store.Set(context.Background(), "mykey", "newvalue")
+	_, err := store.Set(context.Background(), "mykey", "newvalue")
 	require.Error(t, err)
 	require.ErrorContains(t, err, errPrepareSpends)
 }

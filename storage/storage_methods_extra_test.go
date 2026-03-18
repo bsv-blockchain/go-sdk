@@ -78,19 +78,11 @@ func buildMinimalBeef(t *testing.T, lockingScript *script.Script) ([]byte, uint3
 // The expiry is encoded using the BSV VarInt format as expected by util.Reader.ReadVarInt.
 func buildUhrpPushDropScript(t *testing.T, hash []byte, uhrpURL string, hostURL string, expiryUnix int64) *script.Script {
 	t.Helper()
-	pubKeyBytes := []byte{
-		0x02,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-	}
-
 	// Encode expiry as a BSV VarInt (used by util.Reader.ReadVarInt)
 	expiryBytes := util.VarInt(uint64(expiryUnix)).Bytes()
 
 	s := &script.Script{}
-	require.NoError(t, s.AppendPushData(pubKeyBytes))
+	require.NoError(t, s.AppendPushData(testPushDropPubKeyBytes))
 	require.NoError(t, s.AppendOpcodes(script.OpCHECKSIG))
 	// Field 0: hash
 	require.NoError(t, s.AppendPushData(hash))
@@ -118,21 +110,23 @@ func newDownloaderWithFacilitator(facilitator lookup.Facilitator) *StorageDownlo
 	return &StorageDownloader{resolver: resolver}
 }
 
+// testPushDropPubKeyBytes is the compressed public key used in pushdrop scripts for tests.
+var testPushDropPubKeyBytes = []byte{
+	0x02,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+}
+
 // ---- Resolve – output processing paths -------------------------------------
 
 // TestResolveTooFewPushDropFields tests that outputs with < 4 pushdrop fields
 // are silently skipped.
 func TestResolveTooFewPushDropFields(t *testing.T) {
 	// Build a pushdrop script with only 2 data fields (fewer than required 4).
-	pubKeyBytes := []byte{
-		0x02,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-	}
 	s := &script.Script{}
-	require.NoError(t, s.AppendPushData(pubKeyBytes))
+	require.NoError(t, s.AppendPushData(testPushDropPubKeyBytes))
 	require.NoError(t, s.AppendOpcodes(script.OpCHECKSIG))
 	require.NoError(t, s.AppendPushData([]byte("field1")))
 	require.NoError(t, s.AppendPushData([]byte("field2")))

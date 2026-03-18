@@ -32,6 +32,21 @@ const (
 	hdrPayment               = "x-bsv-payment"
 )
 
+// newAuthFetch creates a default AuthFetch backed by a fresh random-key wallet.
+func newAuthFetch(t *testing.T) *AuthFetch {
+	t.Helper()
+	return New(wallet.NewTestWalletForRandomKey(t))
+}
+
+// make402Response builds a minimal *http.Response with status 402 and no body.
+func make402Response() *http.Response {
+	return &http.Response{
+		StatusCode: 402,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader("")),
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Option setter tests
 // ---------------------------------------------------------------------------
@@ -149,8 +164,7 @@ func TestNewNilWalletPanics(t *testing.T) {
 
 // TestNewDefaultsCreated verifies that defaults are populated when no opts provided.
 func TestNewDefaultsCreated(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	require.NotNil(t, af)
 	require.NotNil(t, af.sessionManager)
 	require.NotNil(t, af.client)
@@ -196,8 +210,7 @@ func TestNewWithoutLoggingOption(t *testing.T) {
 
 // TestSetLogger sets a new logger on an existing AuthFetch.
 func TestSetLogger(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	newLogger := slog.New(slog.DiscardHandler)
 	af.SetLogger(newLogger)
 	// No public getter – just verify it does not panic and writes no errors
@@ -211,8 +224,7 @@ func TestSetLogger(t *testing.T) {
 // TestConsumeReceivedCertificatesEmpty verifies that an empty slice is returned when
 // no certificates have been received.
 func TestConsumeReceivedCertificatesEmpty(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	certs := af.ConsumeReceivedCertificates()
 	require.NotNil(t, certs)
 	require.Empty(t, certs)
@@ -221,8 +233,7 @@ func TestConsumeReceivedCertificatesEmpty(t *testing.T) {
 // TestConsumeReceivedCertificatesClearsSlice verifies that a second call returns an
 // empty slice after the first consume.
 func TestConsumeReceivedCertificatesClearsSlice(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	af.certsMu.Lock()
 	af.certificatesReceived = append(af.certificatesReceived, nil, nil)
 	af.certsMu.Unlock()
@@ -241,8 +252,7 @@ func TestConsumeReceivedCertificatesClearsSlice(t *testing.T) {
 // TestFetch_NilConfig uses nil config (should default to GET).
 // We use a context that is cancelled immediately to avoid an actual network call.
 func TestFetchNilConfigContextCancelled(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately cancel
@@ -254,8 +264,7 @@ func TestFetchNilConfigContextCancelled(t *testing.T) {
 
 // TestFetchDefaultMethodApplied ensures that empty method defaults to GET without error.
 func TestFetchDefaultMethodApplied(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -268,8 +277,7 @@ func TestFetchDefaultMethodApplied(t *testing.T) {
 
 // TestFetchRetryCounterDecremented verifies that the retry counter is decremented.
 func TestFetchRetryCounterDecremented(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	retryCount := 1
 	config := &SimplifiedFetchRequestOptions{
@@ -290,8 +298,7 @@ func TestFetchRetryCounterDecremented(t *testing.T) {
 
 // TestFetchContextCancellation verifies context cancellation is propagated.
 func TestFetchContextCancellation(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -302,8 +309,7 @@ func TestFetchContextCancellation(t *testing.T) {
 
 // TestFetchAllowedHeaders verifies that whitelisted headers pass validation.
 func TestFetchAllowedHeaders(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -343,8 +349,7 @@ func TestHandleFetchAndValidateSuccessPath(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
 	resp, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
@@ -364,8 +369,7 @@ func TestHandleFetchAndValidateWithBody(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
 	resp, err := af.Fetch(context.Background(), ts.URL+"/echo", &SimplifiedFetchRequestOptions{
@@ -388,8 +392,7 @@ func TestHandleFetchAndValidateServerClaimingAuth(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
 	_, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
@@ -407,8 +410,7 @@ func TestHandleFetchAndValidateServerClaimingBsvAuthHeader(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
 	_, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
@@ -425,8 +427,7 @@ func TestHandleFetchAndValidate4xxError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
 	_, err := af.Fetch(context.Background(), ts.URL+"/notfound", &SimplifiedFetchRequestOptions{
@@ -445,8 +446,7 @@ func TestHandleFetchAndValidateWithHeaders(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
 	_, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
@@ -490,14 +490,8 @@ func TestHandleFetchAndValidateWithHeaders(t *testing.T) {
 
 // TestHandlePaymentAndRetryMissingPaymentVersion exercises the version check.
 func TestHandlePaymentAndRetryMissingPaymentVersion(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	// No x-bsv-payment-version header set → version mismatch
 	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
 	require.Error(t, err)
@@ -506,14 +500,8 @@ func TestHandlePaymentAndRetryMissingPaymentVersion(t *testing.T) {
 
 // TestHandlePaymentAndRetryWrongVersion exercises version mismatch.
 func TestHandlePaymentAndRetryWrongVersion(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, "2.0")
 
 	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
@@ -523,14 +511,8 @@ func TestHandlePaymentAndRetryWrongVersion(t *testing.T) {
 
 // TestHandlePaymentAndRetryMissingSatoshisHeader exercises missing satoshis header.
 func TestHandlePaymentAndRetryMissingSatoshisHeader(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	// No satoshis header
 
@@ -541,14 +523,8 @@ func TestHandlePaymentAndRetryMissingSatoshisHeader(t *testing.T) {
 
 // TestHandlePaymentAndRetryInvalidSatoshisValue exercises bad satoshis header.
 func TestHandlePaymentAndRetryInvalidSatoshisValue(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "not-a-number")
 
@@ -559,14 +535,8 @@ func TestHandlePaymentAndRetryInvalidSatoshisValue(t *testing.T) {
 
 // TestHandlePaymentAndRetryZeroSatoshis exercises zero satoshis (invalid).
 func TestHandlePaymentAndRetryZeroSatoshis(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "0")
 
@@ -577,14 +547,8 @@ func TestHandlePaymentAndRetryZeroSatoshis(t *testing.T) {
 
 // TestHandlePaymentAndRetryMissingIdentityKey exercises missing server identity key.
 func TestHandlePaymentAndRetryMissingIdentityKey(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	// No x-bsv-auth-identity-key
@@ -596,19 +560,13 @@ func TestHandlePaymentAndRetryMissingIdentityKey(t *testing.T) {
 
 // TestHandlePaymentAndRetryMissingDerivationPrefix exercises missing derivation prefix.
 func TestHandlePaymentAndRetryMissingDerivationPrefix(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
 	// Get a real identity key for the server field
 	serverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	serverPubKeyHex := serverKey.PubKey().ToDERHex()
 
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -621,14 +579,8 @@ func TestHandlePaymentAndRetryMissingDerivationPrefix(t *testing.T) {
 
 // TestHandlePaymentAndRetryInvalidIdentityKey exercises invalid identity key format.
 func TestHandlePaymentAndRetryInvalidIdentityKey(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, "not-a-valid-hex-key")
@@ -641,20 +593,13 @@ func TestHandlePaymentAndRetryInvalidIdentityKey(t *testing.T) {
 // TestHandlePaymentAndRetryValidHeadersInvokeWallet tests the full happy path up to
 // wallet interaction (CreateNonce then GetPublicKey), verifying those calls are made.
 func TestHandlePaymentAndRetryValidHeadersInvokeWallet(t *testing.T) {
-	tw := wallet.NewTestWalletForRandomKey(t)
-
 	// Get a real server key to populate headers properly.
 	serverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	serverPubKeyHex := serverKey.PubKey().ToDERHex()
 
-	af := New(tw)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "500")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -681,8 +626,7 @@ func TestHandlePaymentAndRetryValidHeadersInvokeWallet(t *testing.T) {
 
 // TestSendCertificateRequestInvalidURL verifies that a bad URL returns an error.
 func TestSendCertificateRequestInvalidURL(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	certSet := utils.RequestedCertificateSet{
 		Certifiers:       []*ec.PublicKey{},
@@ -696,8 +640,7 @@ func TestSendCertificateRequestInvalidURL(t *testing.T) {
 
 // TestSendCertificateRequestContextCancelled verifies context cancellation is returned.
 func TestSendCertificateRequestContextCancelled(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	certSet := utils.RequestedCertificateSet{
 		Certifiers:       []*ec.PublicKey{},
@@ -714,8 +657,7 @@ func TestSendCertificateRequestContextCancelled(t *testing.T) {
 
 // TestSendCertificateRequestContextTimeout verifies that a timeout propagates.
 func TestSendCertificateRequestContextTimeout(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	certSet := utils.RequestedCertificateSet{
 		Certifiers:       []*ec.PublicKey{},
@@ -735,8 +677,7 @@ func TestSendCertificateRequestContextTimeout(t *testing.T) {
 // We pre-store a real AuthPeer built with a test wallet and transport, then confirm the
 // context-cancellation path is hit (meaning the stored peer was used, not a new one).
 func TestSendCertificateRequestReusesPeer(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	// Build a real transport + peer so that SendCertificateRequest can call
 	// Peer.ListenForCertificatesReceived without panicking on a nil receiver.
@@ -808,9 +749,7 @@ func TestHandleFetchAndValidateDirectCall(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
+	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{
 		Method: "GET",
@@ -832,9 +771,7 @@ func TestHandleFetchAndValidateDirectCallWithBody(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
+	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{
 		Method: "POST",
@@ -852,9 +789,7 @@ func TestHandleFetchAndValidate500Response(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
+	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
 	_, err := af.handleFetchAndValidate(ts.URL+"/fail", config, peer)
@@ -894,8 +829,7 @@ func TestAuthFetchOptionsDefaults(t *testing.T) {
 
 // TestHandleFetchAndValidateBadURL exercises the http.NewRequest error path.
 func TestHandleFetchAndValidateBadURL(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
@@ -911,8 +845,7 @@ func TestHandleFetchAndValidateBadURL(t *testing.T) {
 
 // TestFetchXBSVPaymentHeaderAllowed verifies x-bsv-payment is in the allowed list.
 func TestFetchXBSVPaymentHeaderAllowed(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -934,8 +867,7 @@ func TestFetchXBSVPaymentHeaderAllowed(t *testing.T) {
 
 // TestFetchInvalidScheme tests handling of a URL with an invalid scheme.
 func TestFetchInvalidScheme(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
@@ -967,8 +899,7 @@ func TestNewWithHttpClientTransport(t *testing.T) {
 
 // TestConsumeReceivedCertificatesMutexUnlocks verifies the certsMu is released properly.
 func TestConsumeReceivedCertificatesMutexUnlocks(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	// First consume (empty)
 	c1 := af.ConsumeReceivedCertificates()
@@ -1011,19 +942,12 @@ func TestConsumeReceivedCertificatesMutexUnlocks(t *testing.T) {
 // when config.Headers was nil (the function allocates a new map in that case).
 // We test up to the CreateNonce call – success past the header checks.
 func TestHandlePaymentAndRetryNilHeaders(t *testing.T) {
-	tw := wallet.NewTestWalletForRandomKey(t)
-
 	serverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	serverPubKeyHex := serverKey.PubKey().ToDERHex()
 
-	af := New(tw)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "500")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -1067,8 +991,7 @@ func TestBase64EncodingRoundtrip(t *testing.T) {
 // SendCertificateRequest where the stored peer has a valid IdentityKey.
 // The request will fail (no real server) but the identity key code path is exercised.
 func TestSendCertificateRequestWithIdentityKey(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	// Get a real server key to use as the peer's identity key.
 	serverKey, err := ec.NewPrivateKey()
@@ -1112,8 +1035,7 @@ func TestSendCertificateRequestWithIdentityKey(t *testing.T) {
 // IdentityKey is set but is not a valid public key string (ec.PublicKeyFromString fails),
 // which causes identityKey to remain nil.
 func TestSendCertificateRequestWithInvalidIdentityKey(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -1148,8 +1070,7 @@ func TestSendCertificateRequestWithInvalidIdentityKey(t *testing.T) {
 
 // TestHandleFetchAndValidateUnreachableURL exercises the client.Do error path.
 func TestHandleFetchAndValidateUnreachableURL(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
@@ -1165,19 +1086,12 @@ func TestHandleFetchAndValidateUnreachableURL(t *testing.T) {
 // TestHandlePaymentAndRetryRetryCounterAlreadySet verifies that if RetryCounter
 // is already set, it is not overwritten.
 func TestHandlePaymentAndRetryRetryCounterAlreadySet(t *testing.T) {
-	tw := wallet.NewTestWalletForRandomKey(t)
-
 	serverKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 	serverPubKeyHex := serverKey.PubKey().ToDERHex()
 
-	af := New(tw)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	af := newAuthFetch(t)
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "100")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -1211,8 +1125,7 @@ func TestFetchNewPeerCreation(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
@@ -1228,8 +1141,7 @@ func TestFetchNewPeerCreation(t *testing.T) {
 
 // TestFetchNilConfigDefaultsToGet tests that nil config defaults to GET with no panic.
 func TestFetchNilConfigDefaultsToGet(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
@@ -1250,8 +1162,7 @@ func TestHandleFetchAndValidatePostEmptyBody(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
 	resp, err := af.Fetch(context.Background(), ts.URL+"/post", &SimplifiedFetchRequestOptions{
@@ -1284,8 +1195,7 @@ func TestNewMultipleOptionsAppliedInOrder(t *testing.T) {
 
 // TestConsumeReceivedCertificatesImmediateAfterNew verifies the fresh state.
 func TestConsumeReceivedCertificatesImmediateAfterNew(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 	result := af.ConsumeReceivedCertificates()
 	assert.NotNil(t, result)
 	assert.Len(t, result, 0)
@@ -1305,9 +1215,7 @@ func TestHandleFetchAndValidateNonAuthBSVHeader(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
-
+	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
 	resp, err := af.handleFetchAndValidate(ts.URL+"/test", config, peer)
@@ -1323,8 +1231,7 @@ func TestHandleFetchAndValidateNonAuthBSVHeader(t *testing.T) {
 // An HTTP method containing a space is invalid per the HTTP spec and will
 // cause NewRequestWithContext to return an error (line 215-217 in authhttp.go).
 func TestFetchInvalidMethod(t *testing.T) {
-	w := wallet.NewTestWalletForRandomKey(t)
-	af := New(w)
+	af := newAuthFetch(t)
 
 	// Methods with spaces are invalid and cause NewRequestWithContext to fail.
 	_, err := af.Fetch(context.Background(), testExampleURL, &SimplifiedFetchRequestOptions{
@@ -1350,12 +1257,7 @@ func TestHandlePaymentAndRetryCreateNonceFails(t *testing.T) {
 	tw.OnCreateHMAC().ReturnError(assert.AnError)
 
 	af := New(tw)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -1379,12 +1281,7 @@ func TestHandlePaymentAndRetryGetPublicKeyFails(t *testing.T) {
 	tw.OnGetPublicKey().ReturnError(assert.AnError)
 
 	af := New(tw)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -1407,12 +1304,7 @@ func TestHandlePaymentAndRetryCreateActionFails(t *testing.T) {
 	tw.OnCreateAction().ReturnError(assert.AnError)
 
 	af := New(tw)
-
-	resp402 := &http.Response{
-		StatusCode: 402,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader("")),
-	}
+	resp402 := make402Response()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)

@@ -50,6 +50,13 @@ func TestRandomBase64(t *testing.T) {
 	})
 }
 
+// makeCertTypeBytes returns a [32]byte with the given string copied in.
+func makeCertTypeBytes(s string) [32]byte {
+	var b [32]byte
+	copy(b[:], s)
+	return b
+}
+
 // TestValidateCertificateEncoding covers ValidateCertificateEncoding in certificate_debug.go
 func TestValidateCertificateEncoding(t *testing.T) {
 	t.Run("returns error for empty type", func(t *testing.T) {
@@ -62,10 +69,8 @@ func TestValidateCertificateEncoding(t *testing.T) {
 	})
 
 	t.Run("returns error for empty serial number", func(t *testing.T) {
-		var certType [32]byte
-		copy(certType[:], "some_type")
 		cert := wallet.Certificate{
-			Type: certType,
+			Type: makeCertTypeBytes("some_type"),
 			// SerialNumber is zero-value
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
@@ -80,13 +85,9 @@ func TestValidateCertificateEncoding(t *testing.T) {
 	})
 
 	t.Run("returns error for invalid base64 field value", func(t *testing.T) {
-		var certType [32]byte
-		copy(certType[:], "some_type")
-		var serial [32]byte
-		copy(serial[:], "some_serial")
 		cert := wallet.Certificate{
-			Type:         certType,
-			SerialNumber: serial,
+			Type:         makeCertTypeBytes("some_type"),
+			SerialNumber: makeCertTypeBytes("some_serial"),
 			Fields:       map[string]string{"field1": "not-valid-base64!!!"},
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
@@ -101,13 +102,9 @@ func TestValidateCertificateEncoding(t *testing.T) {
 	})
 
 	t.Run("returns no errors for valid certificate", func(t *testing.T) {
-		var certType [32]byte
-		copy(certType[:], "some_type")
-		var serial [32]byte
-		copy(serial[:], "some_serial")
 		cert := wallet.Certificate{
-			Type:         certType,
-			SerialNumber: serial,
+			Type:         makeCertTypeBytes("some_type"),
+			SerialNumber: makeCertTypeBytes("some_serial"),
 			Fields:       map[string]string{"field1": base64.StdEncoding.EncodeToString([]byte("value"))},
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
@@ -115,13 +112,9 @@ func TestValidateCertificateEncoding(t *testing.T) {
 	})
 
 	t.Run("nil fields does not panic", func(t *testing.T) {
-		var certType [32]byte
-		copy(certType[:], "some_type")
-		var serial [32]byte
-		copy(serial[:], "some_serial")
 		cert := wallet.Certificate{
-			Type:         certType,
-			SerialNumber: serial,
+			Type:         makeCertTypeBytes("some_type"),
+			SerialNumber: makeCertTypeBytes("some_serial"),
 			Fields:       nil,
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
@@ -132,10 +125,8 @@ func TestValidateCertificateEncoding(t *testing.T) {
 // TestGetEncodedCertificateForDebug covers GetEncodedCertificateForDebug in certificate_debug.go
 func TestGetEncodedCertificateForDebug(t *testing.T) {
 	t.Run("encodes plain text field values to base64", func(t *testing.T) {
-		var certType [32]byte
-		copy(certType[:], "some_type")
 		cert := wallet.Certificate{
-			Type:   certType,
+			Type:   makeCertTypeBytes("some_type"),
 			Fields: map[string]string{"name": "plain text value"},
 		}
 		result := utils.GetEncodedCertificateForDebug(cert)
@@ -147,11 +138,9 @@ func TestGetEncodedCertificateForDebug(t *testing.T) {
 	})
 
 	t.Run("leaves already-base64-encoded fields unchanged", func(t *testing.T) {
-		var certType [32]byte
-		copy(certType[:], "some_type")
 		encoded := base64.StdEncoding.EncodeToString([]byte("already encoded"))
 		cert := wallet.Certificate{
-			Type:   certType,
+			Type:   makeCertTypeBytes("some_type"),
 			Fields: map[string]string{"field": encoded},
 		}
 		result := utils.GetEncodedCertificateForDebug(cert)
@@ -176,10 +165,8 @@ func TestSignCertificateForTest(t *testing.T) {
 	certifier, err := ec.NewPrivateKey()
 	require.NoError(t, err)
 
-	var certType [32]byte
-	copy(certType[:], tcu.CertificateTypeName.String())
-	var serial [32]byte
-	copy(serial[:], "test_serial_number_123")
+	certType := makeCertTypeBytes(tcu.CertificateTypeName.String())
+	serial := makeCertTypeBytes("test_serial_number_123")
 
 	revocationOutpoint, err := transaction.OutpointFromString("a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
 	require.NoError(t, err)
@@ -222,10 +209,8 @@ func TestSignCertificateWithWalletForTest(t *testing.T) {
 	signerWallet, err := wallet.NewCompletedProtoWallet(certifier)
 	require.NoError(t, err)
 
-	var certType [32]byte
-	copy(certType[:], tcu.CertificateTypeName.String())
-	var serial [32]byte
-	copy(serial[:], "test_serial_wallet_456")
+	certType := makeCertTypeBytes(tcu.CertificateTypeName.String())
+	serial := makeCertTypeBytes("test_serial_wallet_456")
 
 	revocationOutpoint2, err := transaction.OutpointFromString("a755810c21e17183ff6db6685f0de239fd3a0a3c0d4ba7773b0b0d1748541e2b.0")
 	require.NoError(t, err)
@@ -256,10 +241,8 @@ func TestSignCertificateWithWalletForTest(t *testing.T) {
 // TestRequestedCertificateTypeIDAndFieldListJSON covers MarshalJSON and UnmarshalJSON
 func TestRequestedCertificateTypeIDAndFieldListJSON(t *testing.T) {
 	t.Run("marshal and unmarshal round-trip", func(t *testing.T) {
-		var type1 [32]byte
-		copy(type1[:], "type_one")
-		var type2 [32]byte
-		copy(type2[:], "type_two")
+		type1 := makeCertTypeBytes("type_one")
+		type2 := makeCertTypeBytes("type_two")
 
 		original := utils.RequestedCertificateTypeIDAndFieldList{
 			type1: []string{"fieldA", "fieldB"},
@@ -278,8 +261,7 @@ func TestRequestedCertificateTypeIDAndFieldListJSON(t *testing.T) {
 	})
 
 	t.Run("marshal produces valid JSON with base64 keys", func(t *testing.T) {
-		var certType [32]byte
-		copy(certType[:], "some_type")
+		certType := makeCertTypeBytes("some_type")
 
 		m := utils.RequestedCertificateTypeIDAndFieldList{
 			certType: []string{"field1"},

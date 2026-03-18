@@ -354,39 +354,11 @@ func TestPubliclyRevealAttributesSimpleValidationErrors(t *testing.T) {
 
 func TestTestablePubliclyRevealAttributesSimpleViaNetwork(t *testing.T) {
 	t.Run("reaches broadcast via simple API (failure path from broadcast)", func(t *testing.T) {
-		privKey, pubKey := privateKeyFromInt(203)
-		mockWallet := wallet.NewTestWallet(t, privKey)
-
-		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
-		require.NoError(t, err)
-
-		cert := &wallet.Certificate{
-			Type:    typeXCert,
-			Subject: pubKey,
-			Fields:  map[string]string{"name": "Alice"},
-		}
-		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
-
-		mockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
-			Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-		})
-		mockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{"key": "value"},
-		})
-		mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
-			Tx: []byte{0x01, 0x02, 0x03, 0x04},
-		})
-		mockWallet.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{
-			Network: "testnet",
-		})
-
-		mockVerifier := &MockCertificateVerifier{}
-
-		testableClient, err := NewTestableIdentityClient(mockWallet, nil, "", mockVerifier)
-		require.NoError(t, err)
-		testableClient.WithTransactionCreator(func(data []byte) (*transaction.Transaction, error) {
-			return transaction.NewTransaction(), nil
-		})
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 203,
+			func(mw *wallet.TestWallet) {
+				mw.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{Network: "testnet"})
+			},
+		)
 
 		// Call via Simple API - should reach the broadcast and return a result
 		result, err := testableClient.PubliclyRevealAttributesSimple(context.Background(), cert, fieldsToReveal)
@@ -468,128 +440,84 @@ func TestTestablePubliclyRevealAttributesSimpleFailure(t *testing.T) {
 	})
 }
 
+// setupRevealAttributesClient creates a TestableIdentityClient with mocked wallet and transaction
+// creator for PubliclyRevealAttributes tests. The privKeyInt is used to derive the wallet key.
+// The getNetworkSetup callback is called on mockWallet to configure the GetNetwork response.
+// Returns the client, certificate, and fields to reveal.
+func setupRevealAttributesClient(
+	t *testing.T,
+	privKeyInt int,
+	getNetworkSetup func(mw *wallet.TestWallet),
+) (*TestableIdentityClient, *wallet.Certificate, []CertificateFieldNameUnder50Bytes) {
+	t.Helper()
+	privKey, pubKey := privateKeyFromInt(privKeyInt)
+	mockWallet := wallet.NewTestWallet(t, privKey)
+
+	typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
+	require.NoError(t, err)
+
+	cert := &wallet.Certificate{
+		Type:    typeXCert,
+		Subject: pubKey,
+		Fields:  map[string]string{"name": "Alice"},
+	}
+	fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
+
+	mockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
+		Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
+	})
+	mockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
+		KeyringForVerifier: map[string]string{"key": "value"},
+	})
+	mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
+		Tx: []byte{0x01, 0x02, 0x03, 0x04},
+	})
+	getNetworkSetup(mockWallet)
+
+	testableClient, err := NewTestableIdentityClient(mockWallet, nil, "", &MockCertificateVerifier{})
+	require.NoError(t, err)
+	testableClient.WithTransactionCreator(func(data []byte) (*transaction.Transaction, error) {
+		return transaction.NewTransaction(), nil
+	})
+	return testableClient, cert, fieldsToReveal
+}
+
 func TestTestablePubliclyRevealAttributesGetNetworkPath(t *testing.T) {
 	t.Run("reaches GetNetwork after successful transaction creation", func(t *testing.T) {
-		privKey, pubKey := privateKeyFromInt(200)
-		mockWallet := wallet.NewTestWallet(t, privKey)
-
-		// Setup certificate
-		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
-		require.NoError(t, err)
-
-		cert := &wallet.Certificate{
-			Type:    typeXCert,
-			Subject: pubKey,
-			Fields:  map[string]string{"name": "Alice"},
-		}
-		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
-
-		mockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
-			Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-		})
-		mockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{"key": "value"},
-		})
-		mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
-			Tx: []byte{0x01, 0x02, 0x03, 0x04},
-		})
-		// Mock GetNetwork to return testnet
-		mockWallet.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{
-			Network: "testnet",
-		})
-
-		mockVerifier := &MockCertificateVerifier{}
-
-		testableClient, err := NewTestableIdentityClient(mockWallet, nil, "", mockVerifier)
-		require.NoError(t, err)
-
-		// Inject a valid transaction creator
-		testableClient.WithTransactionCreator(func(data []byte) (*transaction.Transaction, error) {
-			return transaction.NewTransaction(), nil
-		})
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 200,
+			func(mw *wallet.TestWallet) {
+				mw.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{Network: "testnet"})
+			},
+		)
 
 		// Will fail at broadcast but should reach GetNetwork
-		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), cert, fieldsToReveal)
+		_, _, err := testableClient.PubliclyRevealAttributes(context.Background(), cert, fieldsToReveal)
 		// We expect either a broadcast failure or success (network-dependent), not an early error
 		// The important thing is we've executed past GetNetwork
 		_ = err
 	})
 
 	t.Run("fails when GetNetwork returns error", func(t *testing.T) {
-		privKey, pubKey := privateKeyFromInt(201)
-		mockWallet := wallet.NewTestWallet(t, privKey)
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 201,
+			func(mw *wallet.TestWallet) {
+				mw.OnGetNetwork().ReturnError(fmt.Errorf("network error"))
+			},
+		)
 
-		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
-		require.NoError(t, err)
-
-		cert := &wallet.Certificate{
-			Type:    typeXCert,
-			Subject: pubKey,
-			Fields:  map[string]string{"name": "Alice"},
-		}
-		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
-
-		mockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
-			Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-		})
-		mockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{"key": "value"},
-		})
-		mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
-			Tx: []byte{0x01, 0x02, 0x03, 0x04},
-		})
-		mockWallet.OnGetNetwork().ReturnError(fmt.Errorf("network error"))
-
-		mockVerifier := &MockCertificateVerifier{}
-
-		testableClient, err := NewTestableIdentityClient(mockWallet, nil, "", mockVerifier)
-		require.NoError(t, err)
-		testableClient.WithTransactionCreator(func(data []byte) (*transaction.Transaction, error) {
-			return transaction.NewTransaction(), nil
-		})
-
-		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), cert, fieldsToReveal)
+		_, _, err := testableClient.PubliclyRevealAttributes(context.Background(), cert, fieldsToReveal)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to get network")
 	})
 
 	t.Run("mainnet path uses mainnet broadcaster", func(t *testing.T) {
-		privKey, pubKey := privateKeyFromInt(202)
-		mockWallet := wallet.NewTestWallet(t, privKey)
-
-		typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
-		require.NoError(t, err)
-
-		cert := &wallet.Certificate{
-			Type:    typeXCert,
-			Subject: pubKey,
-			Fields:  map[string]string{"name": "Alice"},
-		}
-		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
-
-		mockWallet.OnCreateSignature().ReturnSuccess(&wallet.CreateSignatureResult{
-			Signature: &ec.Signature{R: big.NewInt(1), S: big.NewInt(1)},
-		})
-		mockWallet.OnProveCertificate().ReturnSuccess(&wallet.ProveCertificateResult{
-			KeyringForVerifier: map[string]string{"key": "value"},
-		})
-		mockWallet.OnCreateAction().ReturnSuccess(&wallet.CreateActionResult{
-			Tx: []byte{0x01, 0x02, 0x03, 0x04},
-		})
-		mockWallet.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{
-			Network: "mainnet",
-		})
-
-		mockVerifier := &MockCertificateVerifier{}
-
-		testableClient, err := NewTestableIdentityClient(mockWallet, nil, "", mockVerifier)
-		require.NoError(t, err)
-		testableClient.WithTransactionCreator(func(data []byte) (*transaction.Transaction, error) {
-			return transaction.NewTransaction(), nil
-		})
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 202,
+			func(mw *wallet.TestWallet) {
+				mw.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{Network: "mainnet"})
+			},
+		)
 
 		// Will fail at broadcast since there's no real network, but we reach the mainnet path
-		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), cert, fieldsToReveal)
+		_, _, err := testableClient.PubliclyRevealAttributes(context.Background(), cert, fieldsToReveal)
 		_ = err
 	})
 }
