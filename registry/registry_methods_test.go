@@ -346,14 +346,3 @@ func TestRevokeOwnRegistryEntryGetPublicKeyError(t *testing.T) {
 
 // ---- mock facilitator with timeout ----
 
-// slowFacilitator simulates a slow lookup host for timeout testing.
-type slowFacilitator struct{}
-
-func (s *slowFacilitator) Lookup(ctx context.Context, url string, question *lookup.LookupQuestion) (*lookup.LookupAnswer, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-time.After(10 * time.Second):
-		return &lookup.LookupAnswer{Type: lookup.AnswerTypeOutputList}, nil
-	}
-}

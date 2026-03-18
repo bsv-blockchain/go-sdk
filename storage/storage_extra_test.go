@@ -166,7 +166,7 @@ func TestGetUploadInfoErrorResponse(t *testing.T) {
 			"status": StatusError,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer ts.Close()
 

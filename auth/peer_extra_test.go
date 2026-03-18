@@ -16,21 +16,6 @@ import (
 
 const soloNonce = "solo-nonce"
 
-// newTestPeer creates a Peer with two connected mock transports for testing
-func newTestPeer(t *testing.T, privKeyHex string) (*auth.Peer, *MockTransport, *MockTransport) {
-	t.Helper()
-	pk, err := ec.PrivateKeyFromHex(privKeyHex)
-	require.NoError(t, err)
-	w, err := wallet.NewCompletedProtoWallet(pk)
-	require.NoError(t, err)
-
-	tr := NewMockTransport("peer-" + privKeyHex[:8])
-	peer := auth.NewPeer(&auth.PeerOptions{
-		Wallet:    w,
-		Transport: tr,
-	})
-	return peer, tr, nil
-}
 
 func TestPeerStop(t *testing.T) {
 	t.Run("stop returns nil", func(t *testing.T) {

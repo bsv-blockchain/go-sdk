@@ -164,7 +164,7 @@ func TestNewClientWithOptions(t *testing.T) {
 func TestDefaultCertificateVerifier(t *testing.T) {
 	t.Run("Verify returns nil", func(t *testing.T) {
 		v := &DefaultCertificateVerifier{}
-		err := v.Verify(nil, nil)
+		err := v.Verify(context.TODO(), nil)
 		require.NoError(t, err)
 	})
 }
@@ -198,7 +198,7 @@ func TestPubliclyRevealAttributesSimpleNoFieldsError(t *testing.T) {
 			Fields: make(map[string]string),
 		}
 
-		_, err = client.PubliclyRevealAttributesSimple(nil, cert, []CertificateFieldNameUnder50Bytes{"name"})
+		_, err = client.PubliclyRevealAttributesSimple(context.TODO(), cert, []CertificateFieldNameUnder50Bytes{"name"})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "certificate has no fields to reveal")
 	})
@@ -213,7 +213,7 @@ func TestPubliclyRevealAttributesSimpleEmptyFieldsToReveal(t *testing.T) {
 			Fields: map[string]string{"name": "Alice"},
 		}
 
-		_, err = client.PubliclyRevealAttributesSimple(nil, cert, nil)
+		_, err = client.PubliclyRevealAttributesSimple(context.TODO(), cert, nil)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "you must reveal at least one field")
 	})

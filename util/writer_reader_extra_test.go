@@ -802,7 +802,7 @@ func TestReaderReadOptionalToHex(t *testing.T) {
 
 	t.Run("non-empty data returns hex", func(t *testing.T) {
 		w := util.NewWriter()
-		w.WriteOptionalFromHex("deadbeef")
+		_ = w.WriteOptionalFromHex("deadbeef")
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadOptionalToHex()
 		require.NoError(t, err)

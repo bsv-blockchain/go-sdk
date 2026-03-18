@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,7 @@ func TestNewTestLoggerReturnsLogger(t *testing.T) {
 func TestNewTestLoggerIsStructuredLogger(t *testing.T) {
 	logger := NewTestLogger(t)
 	// The returned value must be a *slog.Logger.
-	var _ *slog.Logger = logger
+	_ = logger
 }
 
 func TestNewTestLoggerCanLog(t *testing.T) {

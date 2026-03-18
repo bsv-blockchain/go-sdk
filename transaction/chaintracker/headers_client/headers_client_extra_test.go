@@ -107,11 +107,11 @@ func TestBlockByHeightLongestChain(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v1/chain/header/byHeight" {
 			// Return a JSON array of headers using raw JSON to avoid chainhash marshaling issues
-			fmt.Fprintf(w, `[{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}]`,
+			_, _ = fmt.Fprintf(w, `[{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}]`,
 				mockHashHex, mockHashHex, mockHashHex)
 		} else {
 			// GetBlockState call
-			fmt.Fprintf(w, `{"state":"LONGEST_CHAIN","height":100,"header":{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}}`,
+			_, _ = fmt.Fprintf(w, `{"state":"LONGEST_CHAIN","height":100,"header":{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}}`,
 				mockHashHex, mockHashHex, mockHashHex)
 		}
 	}))
@@ -133,10 +133,10 @@ func TestBlockByHeightNoLongestChainFallback(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v1/chain/header/byHeight" {
-			fmt.Fprintf(w, `[{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}]`,
+			_, _ = fmt.Fprintf(w, `[{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}]`,
 				mockHashHex, mockHashHex, mockHashHex)
 		} else {
-			fmt.Fprintf(w, `{"state":"STALE","height":100,"header":{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}}`,
+			_, _ = fmt.Fprintf(w, `{"state":"STALE","height":100,"header":{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}}`,
 				mockHashHex, mockHashHex, mockHashHex)
 		}
 	}))
