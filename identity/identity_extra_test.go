@@ -430,7 +430,7 @@ func TestResolveByAttributesError(t *testing.T) {
 func TestMockCertificateVerifierNilMockVerify(t *testing.T) {
 	t.Run("returns nil when MockVerify is nil", func(t *testing.T) {
 		m := &MockCertificateVerifier{}
-		err := m.Verify(nil, nil)
+		err := m.Verify(context.TODO(), nil)
 		require.NoError(t, err)
 	})
 }

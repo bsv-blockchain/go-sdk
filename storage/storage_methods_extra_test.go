@@ -19,7 +19,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -565,15 +564,6 @@ func TestGetUploadInfoAuthBarrier(t *testing.T) {
 
 // We import wallet via uploader_test.go's setupMockWalletForAuth, but we
 // reference wallet.NewTestWalletForRandomKey directly above.
-
-// errBodyReader is an io.ReadCloser that always returns an error on Read.
-type errBodyReader struct{}
-
-func (e *errBodyReader) Read(_ []byte) (n int, err error) {
-	return 0, io.ErrUnexpectedEOF
-}
-
-func (e *errBodyReader) Close() error { return nil }
 
 // TestDownloadReadBodyError directly exercises the body-read error path by
 // using a custom HTTP transport that returns a response whose body errors on

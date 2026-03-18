@@ -190,7 +190,7 @@ func TestGetBlockState(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, http.MethodGet, r.Method)
 		require.Contains(t, r.URL.Path, "/api/v1/chain/header/state/")
-		fmt.Fprintf(w, `{"state":"LONGEST_CHAIN","height":100,"header":{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}}`,
+		_, _ = fmt.Fprintf(w, `{"state":"LONGEST_CHAIN","height":100,"header":{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}}`,
 			mockHashHex, mockHashHex, mockHashHex)
 	}))
 	defer ts.Close()

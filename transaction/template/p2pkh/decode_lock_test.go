@@ -15,8 +15,6 @@ import (
 // Corresponds to address 1EXaDXx3f8H3u4BNPBXSb8roFkgJ7CDVMA (mainnet).
 const knownP2PKHHex = "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac"
 
-// knownPubKeyHashHex is the 20-byte hash embedded in knownP2PKHHex.
-const knownPubKeyHashHex = "c0a3c167a28cabb9fbb495affa0761e6e74ac60d"
 
 // TestDecodeValidP2PKH verifies that a well-formed 25-byte P2PKH script
 // is decoded to a non-nil Address.
