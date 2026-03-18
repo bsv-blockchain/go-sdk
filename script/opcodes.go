@@ -190,10 +190,15 @@ const (
 	OpNOP3                byte = 0xb2 // 178
 	OpCHECKSEQUENCEVERIFY byte = 0xb2 // 178
 	OpNOP4                byte = 0xb3 // 179
+	OpSUBSTR              byte = 0xb3 // 179 - Chronicle: substring operation (was NOP4)
 	OpNOP5                byte = 0xb4 // 180
+	OpLEFT                byte = 0xb4 // 180 - Chronicle: left substring (was NOP5)
 	OpNOP6                byte = 0xb5 // 181
+	OpRIGHT               byte = 0xb5 // 181 - Chronicle: right substring (was NOP6)
 	OpNOP7                byte = 0xb6 // 182
+	OpLSHIFTNUM           byte = 0xb6 // 182 - Chronicle: numeric left shift (was NOP7)
 	OpNOP8                byte = 0xb7 // 183
+	OpRSHIFTNUM           byte = 0xb7 // 183 - Chronicle: numeric right shift (was NOP8)
 	OpNOP9                byte = 0xb8 // 184
 	OpNOP10               byte = 0xb9 // 185
 	OpUNKNOWN186          byte = 0xba // 186
@@ -403,9 +408,7 @@ var OpCodeStrings = map[string]byte{
 	"OP_CAT":                 OpCAT,
 	"OP_SPLIT":               OpSPLIT,
 	"OP_NUM2BIN":             OpNUM2BIN,
-	"OP_LEFT":                OpNUM2BIN,
 	"OP_BIN2NUM":             OpBIN2NUM,
-	"OP_RIGHT":               OpBIN2NUM,
 	"OP_SIZE":                OpSIZE,
 	"OP_INVERT":              OpINVERT,
 	"OP_AND":                 OpAND,
@@ -456,10 +459,15 @@ var OpCodeStrings = map[string]byte{
 	"OP_NOP2":                OpNOP2,
 	"OP_NOP3":                OpNOP3,
 	"OP_NOP4":                OpNOP4,
+	"OP_SUBSTR":              OpSUBSTR,
 	"OP_NOP5":                OpNOP5,
+	"OP_LEFT":                OpLEFT,
 	"OP_NOP6":                OpNOP6,
+	"OP_RIGHT":               OpRIGHT,
 	"OP_NOP7":                OpNOP7,
+	"OP_LSHIFTNUM":           OpLSHIFTNUM,
 	"OP_NOP8":                OpNOP8,
+	"OP_RSHIFTNUM":           OpRSHIFTNUM,
 	"OP_NOP9":                OpNOP9,
 	"OP_NOP10":               OpNOP10,
 	"OP_UNKNOWN186":          OpUNKNOWN186,
@@ -714,11 +722,11 @@ var OpCodeValues = map[byte]string{
 	OpNOP1:                "OP_NOP1",
 	OpNOP2:                "OP_NOP2",
 	OpNOP3:                "OP_NOP3",
-	OpNOP4:                "OP_NOP4",
-	OpNOP5:                "OP_NOP5",
-	OpNOP6:                "OP_NOP6",
-	OpNOP7:                "OP_NOP7",
-	OpNOP8:                "OP_NOP8",
+	OpSUBSTR:              "OP_SUBSTR",   // 0xb3 – Chronicle name takes precedence over OP_NOP4
+	OpLEFT:                "OP_LEFT",     // 0xb4 – Chronicle name takes precedence over OP_NOP5
+	OpRIGHT:               "OP_RIGHT",    // 0xb5 – Chronicle name takes precedence over OP_NOP6
+	OpLSHIFTNUM:           "OP_LSHIFTNUM", // 0xb6 – Chronicle name takes precedence over OP_NOP7
+	OpRSHIFTNUM:           "OP_RSHIFTNUM", // 0xb7 – Chronicle name takes precedence over OP_NOP8
 	OpNOP9:                "OP_NOP9",
 	OpNOP10:               "OP_NOP10",
 	OpUNKNOWN186:          "OP_UNKNOWN186",

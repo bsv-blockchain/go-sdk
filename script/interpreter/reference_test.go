@@ -37,6 +37,15 @@ func init() {
 	opcodeByName["OP_CHECKLOCKTIMEVERIFY"] = script.OpCHECKLOCKTIMEVERIFY
 	opcodeByName["OP_CHECKSEQUENCEVERIFY"] = script.OpCHECKSEQUENCEVERIFY
 	opcodeByName["OP_RESERVED"] = script.OpRESERVED
+	// Bitcoin Core reference tests use NOP4-NOP8 short names. Since Chronicle
+	// repurposed those bytes under Chronicle names (OP_SUBSTR etc.), the NOP
+	// aliases are no longer in opcodeArray. Re-add them so parseShortForm can
+	// strip "OP_" and produce the short forms "NOP4"-"NOP8".
+	opcodeByName["OP_NOP4"] = script.OpNOP4
+	opcodeByName["OP_NOP5"] = script.OpNOP5
+	opcodeByName["OP_NOP6"] = script.OpNOP6
+	opcodeByName["OP_NOP7"] = script.OpNOP7
+	opcodeByName["OP_NOP8"] = script.OpNOP8
 
 }
 

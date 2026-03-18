@@ -1000,3 +1000,108 @@ func TestScriptPubKey(t *testing.T) {
 	require.Contains(t, err.Error(), "invalid square root")
 	require.Nil(t, pubKey)
 }
+
+// TestChronicleOpcodeASMRoundTrip verifies that Chronicle opcodes (OP_SUBSTR, OP_LEFT,
+// OP_RIGHT, OP_LSHIFTNUM, OP_RSHIFTNUM) serialize to their Chronicle names in ToASM
+// and can be parsed back via NewFromASM – matching the canonical ASM used by the ts-sdk.
+//
+// Test cases are derived from the ts-sdk ChronicleOpcodes.test.ts ASM round-trip tests:
+// https://github.com/bsv-blockchain/ts-sdk/blob/main/src/script/__tests/ChronicleOpcodes.test.ts
+func TestChronicleOpcodeASMRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	const rshiftnumCompoundASM = "OP_16 OP_2 OP_RSHIFTNUM OP_4 OP_EQUAL"
+
+	// toASM: single-opcode scripts must use Chronicle names, not NOP aliases.
+	toASMTests := []struct {
+		name   string
+		hex    string
+		expASM string
+	}{
+		// 0xb3 → OP_SUBSTR (not OP_NOP4)
+		{"OP_SUBSTR disasm", "b3", "OP_SUBSTR"},
+		// 0xb4 → OP_LEFT (not OP_NOP5)
+		{"OP_LEFT disasm", "b4", "OP_LEFT"},
+		// 0xb5 → OP_RIGHT (not OP_NOP6)
+		{"OP_RIGHT disasm", "b5", "OP_RIGHT"},
+		// 0xb6 → OP_LSHIFTNUM (not OP_NOP7)
+		{"OP_LSHIFTNUM disasm", "b6", "OP_LSHIFTNUM"},
+		// 0xb7 → OP_RSHIFTNUM (not OP_NOP8)
+		{"OP_RSHIFTNUM disasm", "b7", "OP_RSHIFTNUM"},
+		// Compound scripts use go-sdk canonical names (OP_TRUE for 0x51, not OP_1).
+		// ts-sdk uses OP_1 for 0x51; go-sdk OpCodeValues maps 0x51 → OP_TRUE.
+		// Compound: 0x51 0x51 0xb6 0x52 0x87  (ts-sdk: '1 << 1 = 2')
+		{"OP_LSHIFTNUM compound", "5151b65287", "OP_TRUE OP_TRUE OP_LSHIFTNUM OP_2 OP_EQUAL"},
+		// Compound: 0x51 0x52 0xb6 0x54 0x87  (ts-sdk: '1 << 2 = 4')
+		{"OP_LSHIFTNUM compound 2", "5152b65487", "OP_TRUE OP_2 OP_LSHIFTNUM OP_4 OP_EQUAL"},
+		// Compound: 0x60 0x52 0xb7 0x54 0x87  (ts-sdk: '16 >> 2 = 4')
+		{"OP_RSHIFTNUM compound", "6052b75487", rshiftnumCompoundASM},
+		// Compound: 0x54 0x52 0xb7 0x51 0x87  (ts-sdk: '4 >> 2 = 1')
+		{"OP_RSHIFTNUM compound 2", "5452b75187", "OP_4 OP_2 OP_RSHIFTNUM OP_TRUE OP_EQUAL"},
+	}
+
+	for _, tc := range toASMTests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			s, err := script.NewFromHex(tc.hex)
+			require.NoError(t, err)
+			require.Equal(t, tc.expASM, s.ToASM())
+		})
+	}
+
+	// fromASM → hex: Chronicle names must assemble to the correct bytes.
+	fromASMTests := []struct {
+		name   string
+		asm    string
+		expHex string
+	}{
+		{"OP_SUBSTR asm", "OP_SUBSTR", "b3"},
+		{"OP_LEFT asm", "OP_LEFT", "b4"},
+		{"OP_RIGHT asm", "OP_RIGHT", "b5"},
+		{"OP_LSHIFTNUM asm", "OP_LSHIFTNUM", "b6"},
+		{"OP_RSHIFTNUM asm", "OP_RSHIFTNUM", "b7"},
+		// NOP aliases must still assemble to the same bytes.
+		{"OP_NOP4 asm (→ b3)", "OP_NOP4", "b3"},
+		{"OP_NOP5 asm (→ b4)", "OP_NOP5", "b4"},
+		{"OP_NOP6 asm (→ b5)", "OP_NOP6", "b5"},
+		{"OP_NOP7 asm (→ b6)", "OP_NOP7", "b6"},
+		{"OP_NOP8 asm (→ b7)", "OP_NOP8", "b7"},
+		// ts-sdk uses "OP_1" which go-sdk's OpCodeStrings also accepts.
+		{"LSHIFTNUM asm OP_1 alias", "OP_1 OP_1 OP_LSHIFTNUM OP_2 OP_EQUAL", "5151b65287"},
+		// Using go-sdk canonical names for the round-trip.
+		{"RSHIFTNUM compound asm", rshiftnumCompoundASM, "6052b75487"},
+	}
+
+	for _, tc := range fromASMTests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			s, err := script.NewFromASM(tc.asm)
+			require.NoError(t, err)
+			require.Equal(t, tc.expHex, hex.EncodeToString(*s))
+		})
+	}
+
+	// Full round-trip: ToASM(NewFromASM(asm)) == asm for Chronicle opcodes.
+	// Uses go-sdk canonical names (OP_TRUE for 0x51, etc.) so the round-trip is exact.
+	roundTripTests := []string{
+		"OP_SUBSTR",
+		"OP_LEFT",
+		"OP_RIGHT",
+		"OP_LSHIFTNUM",
+		"OP_RSHIFTNUM",
+		"OP_TRUE OP_TRUE OP_LSHIFTNUM OP_2 OP_EQUAL",
+		"OP_TRUE OP_2 OP_LSHIFTNUM OP_4 OP_EQUAL",
+		rshiftnumCompoundASM,
+		"OP_4 OP_2 OP_RSHIFTNUM OP_TRUE OP_EQUAL",
+		"OP_2 OP_TRUE OP_RSHIFTNUM OP_TRUE OP_EQUAL",
+	}
+
+	for _, asm := range roundTripTests {
+		t.Run("roundtrip "+asm, func(t *testing.T) {
+			t.Parallel()
+			s, err := script.NewFromASM(asm)
+			require.NoError(t, err)
+			require.Equal(t, asm, s.ToASM())
+		})
+	}
+}
