@@ -33,6 +33,15 @@ func WithAfterGenesis() ExecutionOptionFunc {
 	}
 }
 
+// WithAfterChronicle configure the execution to operate in an after-Chronicle context.
+// This also implies after-genesis. Chronicle is the BSV v1.2.0 protocol upgrade.
+func WithAfterChronicle() ExecutionOptionFunc {
+	return func(p *execOpts) {
+		p.flags.AddFlag(scriptflag.UTXOAfterGenesis)
+		p.flags.AddFlag(scriptflag.UTXOAfterChronicle)
+	}
+}
+
 // WithForkID configure the execution to allow a tx with a fork id.
 func WithForkID() ExecutionOptionFunc {
 	return func(p *execOpts) {
