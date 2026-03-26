@@ -1363,3 +1363,31 @@ func TestBeefVerify(t *testing.T) {
 		})
 	}
 }
+
+func TestParseBeefV2ReturnsTxAndTxID(t *testing.T) {
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	beef, tx, txid, err := ParseBeef(beefBytes)
+	require.NoError(t, err)
+	require.NotNil(t, beef)
+	require.NotNil(t, tx, "BEEF_V2 ParseBeef should return the main transaction")
+	require.NotNil(t, txid, "BEEF_V2 ParseBeef should return the main txid")
+	require.Equal(t, txid, tx.TxID(), "returned txid should match tx.TxID()")
+}
+
+func TestParseBeefV2TxIDNoPanic(t *testing.T) {
+	// Regression test for https://github.com/bsv-blockchain/go-sdk/issues/306
+	// Calling TxID() on the transaction returned by ParseBeef should not panic.
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	_, tx, _, err := ParseBeef(beefBytes)
+	require.NoError(t, err)
+	require.NotNil(t, tx)
+	require.NotPanics(t, func() {
+		txid := tx.TxID()
+		require.NotNil(t, txid)
+		t.Log(txid.String())
+	})
+}
