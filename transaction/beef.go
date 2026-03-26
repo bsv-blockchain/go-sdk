@@ -20,6 +20,7 @@ type Beef struct {
 	Version      uint32
 	BUMPs        []*MerklePath
 	Transactions map[chainhash.Hash]*BeefTx
+	NewestTxID   *chainhash.Hash
 }
 
 func NewBeef() *Beef {
@@ -59,68 +60,77 @@ func newEmptyBeef(version uint32) *Beef {
 	}
 }
 
-func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[chainhash.Hash]*BeefTx, error) {
-	var numberOfTransactions util.VarInt
-	_, err := numberOfTransactions.ReadFrom(reader)
-	if err != nil {
+func readBeefTxIDOnly(reader *bytes.Reader, beefTx *BeefTx) (*chainhash.Hash, error) {
+	var txid chainhash.Hash
+	if _, err := reader.Read(txid[:]); err != nil {
+		return nil, err
+	}
+	beefTx.KnownTxID = &txid
+	return &txid, nil
+}
+
+func readBeefTxFull(reader *bytes.Reader, beefTx *BeefTx, BUMPs []*MerklePath, txs map[chainhash.Hash]*BeefTx) (*chainhash.Hash, error) {
+	bump := beefTx.DataFormat == RawTxAndBumpIndex
+	var bumpIndex util.VarInt
+	if bump {
+		if _, err := bumpIndex.ReadFrom(reader); err != nil {
+			return nil, err
+		}
+		beefTx.BumpIndex = int(bumpIndex)
+	}
+
+	if _, err := beefTx.Transaction.ReadFrom(reader); err != nil {
 		return nil, err
 	}
 
+	if bump {
+		beefTx.Transaction.MerklePath = BUMPs[int(bumpIndex)]
+	}
+
+	for _, input := range beefTx.Transaction.Inputs {
+		if sourceObj, ok := txs[*input.SourceTXID]; ok {
+			input.SourceTransaction = sourceObj.Transaction
+		}
+	}
+
+	return beefTx.Transaction.TxID(), nil
+}
+
+func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[chainhash.Hash]*BeefTx, *chainhash.Hash, error) {
+	var numberOfTransactions util.VarInt
+	if _, err := numberOfTransactions.ReadFrom(reader); err != nil {
+		return nil, nil, err
+	}
+
 	txs := make(map[chainhash.Hash]*BeefTx, 0)
+	var lastTxID *chainhash.Hash
 	for i := 0; i < int(numberOfTransactions); i++ {
 		formatByte, err := reader.ReadByte()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		var beefTx BeefTx
-		beefTx.DataFormat = DataFormat(formatByte)
-		beefTx.Transaction = &Transaction{}
-
+		beefTx := BeefTx{
+			DataFormat:  DataFormat(formatByte),
+			Transaction: &Transaction{},
+		}
 		if beefTx.DataFormat > TxIDOnly {
-			return nil, fmt.Errorf("invalid data format: %d", formatByte)
+			return nil, nil, fmt.Errorf("invalid data format: %d", formatByte)
 		}
 
+		var txid *chainhash.Hash
 		if beefTx.DataFormat == TxIDOnly {
-			var txid chainhash.Hash
-			_, err = reader.Read(txid[:])
-			beefTx.KnownTxID = &txid
-			if err != nil {
-				return nil, err
-			}
-			txs[txid] = &beefTx
+			txid, err = readBeefTxIDOnly(reader, &beefTx)
 		} else {
-			bump := beefTx.DataFormat == RawTxAndBumpIndex
-			// read the index of the bump
-			var bumpIndex util.VarInt
-			if bump {
-				_, err := bumpIndex.ReadFrom(reader)
-				if err != nil {
-					return nil, err
-				}
-				beefTx.BumpIndex = int(bumpIndex)
-			}
-			// read the transaction data
-			_, err = beefTx.Transaction.ReadFrom(reader)
-			if err != nil {
-				return nil, err
-			}
-			// attach the bump
-			if bump {
-				beefTx.Transaction.MerklePath = BUMPs[int(bumpIndex)]
-			}
-
-			for _, input := range beefTx.Transaction.Inputs {
-				if sourceObj, ok := txs[*input.SourceTXID]; ok {
-					input.SourceTransaction = sourceObj.Transaction
-				}
-			}
-
-			txs[*beefTx.Transaction.TxID()] = &beefTx
+			txid, err = readBeefTxFull(reader, &beefTx, BUMPs, txs)
 		}
-
+		if err != nil {
+			return nil, nil, err
+		}
+		txs[*txid] = &beefTx
+		lastTxID = txid
 	}
 
-	return &txs, nil
+	return &txs, lastTxID, nil
 }
 
 func NewBeefFromHex(beefHex string) (*Beef, error) {
@@ -149,7 +159,7 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 			return nil, err
 		}
 
-		txs, _, err := readAllTransactions(reader, BUMPs)
+		txs, lastTx, err := readAllTransactions(reader, BUMPs)
 		if err != nil {
 			return nil, err
 		}
@@ -180,10 +190,16 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 			}
 		}
 
+		var newestTxID *chainhash.Hash
+		if lastTx != nil {
+			newestTxID = lastTx.TxID()
+		}
+
 		return &Beef{
 			Version:      version,
 			BUMPs:        BUMPs,
 			Transactions: beefTxs,
+			NewestTxID:   newestTxID,
 		}, nil
 	}
 
@@ -192,7 +208,7 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 		return nil, err
 	}
 
-	txs, err := readBeefTx(reader, BUMPs)
+	txs, lastTxID, err := readBeefTx(reader, BUMPs)
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +217,7 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 		Version:      version,
 		BUMPs:        BUMPs,
 		Transactions: *txs,
+		NewestTxID:   lastTxID,
 	}, nil
 }
 
@@ -247,7 +264,8 @@ func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
 		if beef, err := NewBeefFromBytes(beefBytes); err != nil {
 			return nil, nil, nil, err
 		} else {
-			return beef, nil, nil, nil
+			tx := beef.FindTransactionByHash(beef.NewestTxID)
+			return beef, tx, beef.NewestTxID, nil
 		}
 	default:
 		return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
