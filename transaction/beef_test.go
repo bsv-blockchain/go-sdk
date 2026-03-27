@@ -1363,3 +1363,85 @@ func TestBeefVerify(t *testing.T) {
 		})
 	}
 }
+
+func TestReadBeefTxErrors(t *testing.T) {
+	bumps := []*MerklePath{}
+
+	t.Run("truncated TxIDOnly", func(t *testing.T) {
+		// Format byte = TxIDOnly (2), but no txid bytes follow
+		data := []byte{1} // 1 transaction
+		data = append(data, byte(TxIDOnly))
+		reader := bytes.NewReader(data)
+		_, _, err := readBeefTx(reader, bumps)
+		require.Error(t, err)
+	})
+
+	t.Run("truncated RawTxAndBumpIndex", func(t *testing.T) {
+		// Format byte = RawTxAndBumpIndex (1), but no bump index follows
+		data := []byte{1} // 1 transaction
+		data = append(data, byte(RawTxAndBumpIndex))
+		reader := bytes.NewReader(data)
+		_, _, err := readBeefTx(reader, bumps)
+		require.Error(t, err)
+	})
+
+	t.Run("truncated RawTx", func(t *testing.T) {
+		// Format byte = RawTx (0), but no tx data follows
+		data := []byte{1} // 1 transaction
+		data = append(data, byte(RawTx))
+		reader := bytes.NewReader(data)
+		_, _, err := readBeefTx(reader, bumps)
+		require.Error(t, err)
+	})
+
+	t.Run("truncated format byte", func(t *testing.T) {
+		// Says 1 transaction but no format byte
+		data := []byte{1}
+		reader := bytes.NewReader(data)
+		_, _, err := readBeefTx(reader, bumps)
+		require.Error(t, err)
+	})
+
+	t.Run("empty reader", func(t *testing.T) {
+		// Cannot read numberOfTransactions varint
+		reader := bytes.NewReader([]byte{})
+		_, _, err := readBeefTx(reader, bumps)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid data format", func(t *testing.T) {
+		data := []byte{1}        // 1 transaction
+		data = append(data, 0x03) // invalid format > TxIDOnly
+		reader := bytes.NewReader(data)
+		_, _, err := readBeefTx(reader, bumps)
+		require.Error(t, err)
+	})
+}
+
+func TestParseBeefV2ReturnsTxAndTxID(t *testing.T) {
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	beef, tx, txid, err := ParseBeef(beefBytes)
+	require.NoError(t, err)
+	require.NotNil(t, beef)
+	require.NotNil(t, tx, "BEEF_V2 ParseBeef should return the main transaction")
+	require.NotNil(t, txid, "BEEF_V2 ParseBeef should return the main txid")
+	require.Equal(t, txid, tx.TxID(), "returned txid should match tx.TxID()")
+}
+
+func TestParseBeefV2TxIDNoPanic(t *testing.T) {
+	// Regression test for https://github.com/bsv-blockchain/go-sdk/issues/306
+	// Calling TxID() on the transaction returned by ParseBeef should not panic.
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	_, tx, _, err := ParseBeef(beefBytes)
+	require.NoError(t, err)
+	require.NotNil(t, tx)
+	require.NotPanics(t, func() {
+		txid := tx.TxID()
+		require.NotNil(t, txid)
+		t.Log(txid.String())
+	})
+}
