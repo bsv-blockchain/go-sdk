@@ -426,15 +426,6 @@ func (r *ReaderHoldError) ReadString(errMsg ...string) string {
 	return val
 }
 
-func (r *ReaderHoldError) ReadOptionalString() string {
-	if r.Err != nil {
-		return ""
-	}
-	val, err := r.Reader.ReadOptionalString()
-	r.Err = err
-	return val
-}
-
 func (r *ReaderHoldError) ReadStringSlice() []string {
 	if r.Err != nil {
 		return nil
