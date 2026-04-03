@@ -4,7 +4,6 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
-- [1.2.20 - 2026-04-03](#1220---2026-04-03)
 - [1.2.19 - 2026-03-11](#1219---2026-03-11)
 - [1.2.18 - 2026-02-12](#1218---2026-02-12)
 - [1.2.17 - 2026-02-06](#1217---2026-02-06)
@@ -54,11 +53,6 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
-
-## [1.2.20] - 2026-04-03
-
-### Fixed
-- UHRP URL generation now uses Base58Check encoding with `[0xce, 0x00]` prefix, matching the TypeScript SDK (#310)
 
 ## [1.2.19] - 2026-03-11
 

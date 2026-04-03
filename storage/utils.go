@@ -14,12 +14,7 @@ const (
 	uhrpPrefix    = "uhrp://"
 	webPrefix     = "web+uhrp://"
 	minHashLength = 32
-	prefixLength  = 2
 )
-
-// uhrpBase58CheckPrefix is the 2-byte prefix [0xce, 0x00] used in Base58Check
-// encoding of UHRP URLs, matching the TypeScript SDK's
-var uhrpBase58CheckPrefix = []byte{0xce, 0x00}
 
 var (
 	// ErrInvalidHashLength is returned when a hash length is incorrect
@@ -47,20 +42,19 @@ func NormalizeURL(url string) string {
 	return url
 }
 
-// GetURLForHash generates a UHRP URL from a given SHA-256 hash using Base58Check encoding with a [0xce, 0x00] prefix.
+// GetURLForHash generates a UHRP URL from a given SHA-256 hash
 func GetURLForHash(hash []byte) (string, error) {
 	if len(hash) != minHashLength {
-		return "", ErrInvalidHashLength
+		return "", errors.New("hash must be exactly 32 bytes (SHA-256)")
 	}
 
-	payload := make([]byte, 0, prefixLength+minHashLength+4)
-	payload = append(payload, uhrpBase58CheckPrefix...)
-	payload = append(payload, hash...)
+	// Append checksum (double SHA-256 of the hash, first 4 bytes)
+	checksum := crypto.Sha256d(hash)[:4]
+	data := append(hash, checksum...)
 
-	checksum := crypto.Sha256d(payload)[:4]
-	payload = append(payload, checksum...)
-
-	return base58.Encode(payload), nil
+	// Encode with base58
+	encoded := base58.Encode(data)
+	return uhrpPrefix + encoded, nil
 }
 
 // GetURLForFile generates a UHRP URL for a file
@@ -69,7 +63,7 @@ func GetURLForFile(data []byte) (string, error) {
 	return GetURLForHash(hash)
 }
 
-// GetHashFromURL extracts the SHA-256 hash from a UHRP URL.
+// GetHashFromURL extracts the SHA-256 hash from a UHRP URL
 func GetHashFromURL(uhrpURL string) ([]byte, error) {
 	normalized := NormalizeURL(uhrpURL)
 
@@ -79,25 +73,19 @@ func GetHashFromURL(uhrpURL string) ([]byte, error) {
 		return nil, errors.New("invalid UHRP URL: base58 decode failed")
 	}
 
-	// Check minimum length: prefixLength (2) + hash (32) + checksum (4)
-	if len(decoded) != prefixLength+minHashLength+4 {
+	// Check minimum length (hash + checksum)
+	if len(decoded) < minHashLength+4 {
 		return nil, errors.New("invalid UHRP URL: too short after decoding")
 	}
 
-	// Split into prefix, hash, and checksum
-	prefix := decoded[:prefixLength]
-	hash := decoded[prefixLength : prefixLength+minHashLength]
-	checksum := decoded[prefixLength+minHashLength:]
+	// Split into hash and checksum
+	hash := decoded[:minHashLength]
+	checksum := decoded[minHashLength:]
 
-	// Validate prefix
-	if !bytes.Equal(prefix, uhrpBase58CheckPrefix) {
-		return nil, ErrInvalidURLPrefix
-	}
-
-	// Verify checksum over prefix + hash
-	expectedChecksum := crypto.Sha256d(decoded[:prefixLength+minHashLength])[:4]
+	// Verify checksum
+	expectedChecksum := crypto.Sha256d(hash)[:4]
 	if !bytes.Equal(checksum, expectedChecksum) {
-		return nil, ErrInvalidChecksum
+		return nil, errors.New("invalid UHRP URL: checksum verification failed")
 	}
 
 	return hash, nil
