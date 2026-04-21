@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [1.2.22 - 2026-04-21](#1222---2026-04-21)
 - [1.2.21 - 2026-04-03](#1221---2026-04-03)
 - [1.2.20 - 2026-03-26](#1220---2026-03-26)
 - [1.2.19 - 2026-03-11](#1219---2026-03-11)
@@ -55,6 +56,14 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [1.2.22] - 2026-04-21
+
+### Fixed
+- `overlay/lookup`: `HTTPSOverlayLookupFacilitator.Lookup` now correctly handles `application/octet-stream` binary BEEF responses returned by overlay nodes. Previously, binary responses caused a JSON decode error, which prevented SLAP host discovery and caused all overlay broadcasts to fail silently with `ERR_NO_HOSTS_INTERESTED`.
+
+### Changed
+- `overlay/lookup`: `HTTPSOverlayLookupFacilitator.Lookup` now sends `X-Aggregation: yes` on every lookup request, aligning with the TypeScript SDK behaviour.
 
 ## [1.2.21] - 2026-04-03
 
