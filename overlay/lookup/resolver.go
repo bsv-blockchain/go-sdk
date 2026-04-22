@@ -15,7 +15,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
-const MAX_TRACKER_WAIT_TIME = time.Second
+const MAX_TRACKER_WAIT_TIME = 30 * time.Second
 
 var DEFAULT_SLAP_TRACKERS = []string{
 	// BSVA clusters
@@ -34,6 +34,9 @@ type LookupResolver struct {
 	HostOverrides   map[string][]string
 	AdditionalHosts map[string][]string
 	NetworkPreset   overlay.Network
+	// TrackerTimeout overrides MAX_TRACKER_WAIT_TIME for SLAP tracker queries.
+	// Zero value uses the default.
+	TrackerTimeout time.Duration
 }
 
 // NewLookupResolver creates a new LookupResolver with the provided configuration
@@ -44,6 +47,7 @@ func NewLookupResolver(cfg *LookupResolver) *LookupResolver {
 		HostOverrides:   cfg.HostOverrides,
 		AdditionalHosts: cfg.AdditionalHosts,
 		NetworkPreset:   cfg.NetworkPreset,
+		TrackerTimeout:  cfg.TrackerTimeout,
 	}
 	if resolver.Facilitator == nil {
 		resolver.Facilitator = &HTTPSOverlayLookupFacilitator{
@@ -153,13 +157,18 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 		return nil, fmt.Errorf("error marshalling query: %w", err)
 	}
 
+	trackerTimeout := l.TrackerTimeout
+	if trackerTimeout == 0 {
+		trackerTimeout = MAX_TRACKER_WAIT_TIME
+	}
+
 	responses := make(chan *LookupAnswer, len(l.SLAPTrackers))
 	var wg sync.WaitGroup
 	for _, url := range l.SLAPTrackers {
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			ctxWithTimeout, cancel := context.WithTimeout(ctx, MAX_TRACKER_WAIT_TIME)
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, trackerTimeout)
 			defer cancel()
 
 			if answer, err := l.Facilitator.Lookup(ctxWithTimeout, url, query); err != nil {

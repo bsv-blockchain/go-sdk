@@ -12,7 +12,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
-const MAX_SHIP_QUERY_TIMEOUT = 5 * time.Second
+const MAX_SHIP_QUERY_TIMEOUT = 30 * time.Second
 
 // Facilitator defines the interface for overlay broadcast facilitators that can send tagged BEEF to overlay services
 type Facilitator interface {
@@ -22,11 +22,17 @@ type Facilitator interface {
 // HTTPSOverlayBroadcastFacilitator implements the Facilitator interface using HTTPS requests for broadcasting transactions
 type HTTPSOverlayBroadcastFacilitator struct {
 	Client util.HTTPClient
+	// Timeout overrides MAX_SHIP_QUERY_TIMEOUT for each submit request. Zero value uses the default.
+	Timeout time.Duration
 }
 
 // Send broadcasts a tagged BEEF transaction to the specified overlay service URL and returns the STEAK response
 func (f *HTTPSOverlayBroadcastFacilitator) Send(url string, taggedBEEF *overlay.TaggedBEEF) (*overlay.Steak, error) {
-	timeoutContext, cancel := context.WithTimeout(context.Background(), MAX_SHIP_QUERY_TIMEOUT)
+	timeout := f.Timeout
+	if timeout == 0 {
+		timeout = MAX_SHIP_QUERY_TIMEOUT
+	}
+	timeoutContext, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(timeoutContext, "POST", url+"/submit", bytes.NewBuffer(taggedBEEF.Beef))
