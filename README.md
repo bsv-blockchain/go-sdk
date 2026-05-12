@@ -1,3 +1,5 @@
+> ⚠️ **This repository is being archived.** Development has moved to the [go-stack monorepo](https://github.com/bsv-blockchain/go-stack). Open issues will be migrated there. This repository will be archived in the coming days — please open new issues and PRs in the monorepo going forward.
+
 # BSV BLOCKCHAIN | Software Development Kit for Go
 
 Welcome to the BSV Blockchain Libraries Project, the comprehensive Go SDK designed to provide an updated and unified layer for developing scalable applications on the BSV Blockchain. This SDK addresses the limitations of previous tools by offering a fresh, peer-to-peer approach, adhering to SPV, and ensuring privacy and scalability.
