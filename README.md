@@ -1,4 +1,4 @@
-> ⚠️ **This repository is being archived.** Development has moved to the [go-stack monorepo](https://github.com/bsv-blockchain/go-stack). Open issues will be migrated there. This repository will be archived in the coming days — please open new issues and PRs in the monorepo going forward.
+> 📣 **Notice:** Discussion underway about consolidating this repository into the [go-stack monorepo](https://github.com/bsv-blockchain/go-stack). No archive decision has been made yet — please weigh in at [bsv-blockchain/roadmap discussion #70](https://github.com/bsv-blockchain/roadmap/discussions/70) before any change is made.
 
 # BSV BLOCKCHAIN | Software Development Kit for Go
 
