@@ -700,6 +700,7 @@ func (b *Beef) MergeRawTx(rawTx []byte, bumpIndex *int) (*BeefTx, error) {
 		}
 		beefTx.Transaction.MerklePath = b.BUMPs[*bumpIndex]
 		beefTx.DataFormat = RawTxAndBumpIndex
+		beefTx.BumpIndex = *bumpIndex
 	}
 
 	b.Transactions[*txid] = beefTx
