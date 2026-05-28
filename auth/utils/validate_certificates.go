@@ -91,11 +91,15 @@ func ValidateCertificates(
 		return errors.New("no certificates were provided")
 	}
 
-	// Use a wait group to wait for all certificate validations to complete
-	var wg sync.WaitGroup
-	var cancel func()
-	ctx, cancel = context.WithCancel(ctx)
+	// Respect a context that is already cancelled before starting any work.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	var wg sync.WaitGroup
 
 	workerPoolSize := len(certs)
 	if workerPoolSize > runtime.NumCPU() {
@@ -112,12 +116,11 @@ func ValidateCertificates(
 		go func() {
 			defer wg.Done()
 			for cert := range certChan {
-				err := ValidateCertificate(ctx, verifierWallet, cert, identityKey, certificatesRequested)
-				if err != nil {
-					// ensure the go routine won't block on sending to channel
+				if err := ValidateCertificate(ctx, verifierWallet, cert, identityKey, certificatesRequested); err != nil {
+					// Record the first error and cancel the remaining work.
 					select {
-					case <-ctx.Done():
-					case errCh <- fmt.Errorf("certificate validation failed: %w", err):
+					case errCh <- err:
+						cancel()
 					default:
 					}
 				}
@@ -131,22 +134,21 @@ func ValidateCertificates(
 	}
 	close(certChan)
 
-	done := make(chan struct{})
-	// Wait for all workers to finish
-	go func() {
-		wg.Wait()
-		done <- struct{}{}
-	}()
+	// Wait for all workers to finish before evaluating the result.
+	wg.Wait()
 
-	// Check for any errors
+	// Prefer a validation error; otherwise surface any context error.
 	select {
 	case err := <-errCh:
 		return errors.Join(ErrCertificateValidation, err)
-	case <-done:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
+	default:
 	}
+
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func ValidateCertificate(
