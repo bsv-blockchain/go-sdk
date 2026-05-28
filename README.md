@@ -119,7 +119,7 @@ Our examples are organized by category to help you find what you need. Each exam
 - [Key Shares from Backup](./docs/examples/keyshares_pk_from_backup/) - Recovering private keys from shares
 
 ### Network & Verification
-- [Headers Client](./docs/examples/headers_client/) - Working with blockchain headers
+- [SPV Validation](./docs/examples/validate_spv/) - Validating Simple Payment Verification (SPV) proofs
 - [BEEF Verification](./docs/examples/verify_beef/) - Verifying BEEF proofs
 
 ### Migration Guides
@@ -139,7 +139,7 @@ Check out the [examples folder](https://github.com/bsv-blockchain/go-sdk/tree/ma
 - **Serializable SPV Structures**: Structures and interfaces for full SPV verification.
 - **Secure Encryption and Signed Messages**: Enhanced mechanisms for encryption and digital signatures, replacing outdated methods.
 - **Shamir Key Splitting & Recombining**: Allows private keys to be split into N shares, and recombined by providing M of N shares.
-- **Compatability Packages**: Supports additional / deprecated features like ECIES, Bitcoin Signed Message, and BIP32 style key derivation.
+- **Compatibility Packages**: Supports additional / deprecated features like ECIES, Bitcoin Signed Message, and BIP32 style key derivation.
 
 ## Documentation
 
@@ -182,7 +182,7 @@ We're always looking for contributors to help us improve the SDK. Whether it's b
 
 For more details, check the [contribution guidelines](./CONTRIBUTING.md).
 
-For information on past releases, check out the [changelog](./CHANGELOG.md). For future plans, check the [roadmap](./ROADMAP.md)!
+For information on past releases, check out the [changelog](./CHANGELOG.md).
 
 ## Support & Contacts
 
@@ -194,6 +194,6 @@ For questions, bug reports, or feature requests, please open an issue on GitHub 
 
 ## License
 
-The license for the code in this repository is the Open BSV License. Refer to [LICENSE.txt](./LICENSE.txt) for the license text.
+The license for the code in this repository is the Open BSV License. Refer to [LICENSE](./LICENSE) for the license text.
 
 Thank you for being a part of the BSV Blockchain Libraries Project. Let's build the future of BSV Blockchain together!
