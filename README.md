@@ -1,46 +1,134 @@
-> 📣 **Notice:** Discussion underway about consolidating this repository into the [go-stack monorepo](https://github.com/bsv-blockchain/go-stack). No archive decision has been made yet — please weigh in at [bsv-blockchain/roadmap discussion #70](https://github.com/bsv-blockchain/roadmap/discussions/70) before any change is made.
+> 📣 **Heads-up:** Consolidating this repository into the [go-stack monorepo](https://github.com/bsv-blockchain/go-stack) is under discussion — no archive decision has been made. Please weigh in on [roadmap discussion #70](https://github.com/bsv-blockchain/roadmap/discussions/70) before any change is made.
 
-# BSV BLOCKCHAIN | Software Development Kit for Go
+<div align="center">
 
-Welcome to the BSV Blockchain Libraries Project, the comprehensive Go SDK designed to provide an updated and unified layer for developing scalable applications on the BSV Blockchain. This SDK addresses the limitations of previous tools by offering a fresh, peer-to-peer approach, adhering to SPV, and ensuring privacy and scalability.
+# ⛓️&nbsp;&nbsp;BSV Blockchain | Go SDK
 
-# Status
-[![CodeQL](https://github.com/bsv-blockchain/go-sdk/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/github-code-scanning/codeql)
-[![Dependabot Updates](https://github.com/bsv-blockchain/go-sdk/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/dependabot/dependabot-updates)
-[![golangci-lint](https://github.com/bsv-blockchain/go-sdk/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/golangci-lint.yaml)
-[![pages-build-deployment](https://github.com/bsv-blockchain/go-sdk/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/pages/pages-build-deployment)
-[![sonarcloud-analysis](https://github.com/bsv-blockchain/go-sdk/actions/workflows/sonar.yaml/badge.svg)](https://github.com/bsv-blockchain/go-sdk/actions/workflows/sonar.yaml)
+**A unified, peer-to-peer, SPV-first Software Development Kit for building scalable applications on the BSV Blockchain in Go.**
 
-## Table of Contents
+<br/>
 
-- [BSV BLOCKCHAIN | Software Development Kit for Go](#bsv-blockchain--software-development-kit-for-go)
-  - [Table of Contents](#table-of-contents)
-  - [Objective](#objective)
-  - [Getting Started](#getting-started)
-    - [Installation](#installation)
-    - [Basic Usage](#basic-usage)
-    - [Examples & Usage Guides](#examples--usage-guides)
-  - [Features](#features)
-  - [Documentation](#documentation)
-  - [Contribution Guidelines](#contribution-guidelines)
-  - [Support \& Contacts](#support--contacts)
-  - [License](#license)
+<a href="https://github.com/bsv-blockchain/go-sdk/releases"><img src="https://img.shields.io/github/release-pre/bsv-blockchain/go-sdk?include_prereleases&style=flat-square&logo=github&color=black" alt="Release"></a>
+<a href="https://golang.org/"><img src="https://img.shields.io/github/go-mod/go-version/bsv-blockchain/go-sdk?style=flat-square&logo=go&color=00ADD8" alt="Go Version"></a>
+<a href="https://github.com/bsv-blockchain/go-sdk/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-OpenBSV-blue?style=flat-square" alt="License"></a>
 
-## Objective
+<br/>
 
-The BSV Blockchain Libraries Project aims to structure and maintain a middleware layer of the BSV Blockchain technology stack. By facilitating the development and maintenance of core libraries, it serves as an essential toolkit for developers looking to build on the BSV Blockchain.
+<table align="center" border="0">
+  <tr>
+    <td align="right">
+       <code>CI / CD</code> &nbsp;&nbsp;
+    </td>
+    <td align="left">
+       <a href="https://github.com/bsv-blockchain/go-sdk/actions"><img src="https://img.shields.io/github/actions/workflow/status/bsv-blockchain/go-sdk/fortress.yml?branch=master&label=build&logo=github&style=flat-square" alt="Build"></a>
+       <a href="https://github.com/bsv-blockchain/go-sdk/actions"><img src="https://img.shields.io/github/last-commit/bsv-blockchain/go-sdk?style=flat-square&logo=git&logoColor=white&label=last%20update" alt="Last Commit"></a>
+    </td>
+    <td align="right">
+       &nbsp;&nbsp;&nbsp;&nbsp; <code>Quality</code> &nbsp;&nbsp;
+    </td>
+    <td align="left">
+       <a href="https://codecov.io/gh/bsv-blockchain/go-sdk"><img src="https://codecov.io/gh/bsv-blockchain/go-sdk/branch/master/graph/badge.svg?style=flat-square" alt="Coverage"></a>
+    </td>
+  </tr>
 
-## Getting Started
+  <tr>
+    <td align="right">
+       <code>Security</code> &nbsp;&nbsp;
+    </td>
+    <td align="left">
+       <a href="https://scorecard.dev/viewer/?uri=github.com/bsv-blockchain/go-sdk"><img src="https://api.scorecard.dev/projects/github.com/bsv-blockchain/go-sdk/badge?style=flat-square" alt="Scorecard"></a>
+       <a href=".github/SECURITY.md"><img src="https://img.shields.io/badge/policy-active-success?style=flat-square&logo=security&logoColor=white" alt="Security"></a>
+    </td>
+    <td align="right">
+       &nbsp;&nbsp;&nbsp;&nbsp; <code>Community</code> &nbsp;&nbsp;
+    </td>
+    <td align="left">
+       <a href="https://github.com/bsv-blockchain/go-sdk/graphs/contributors"><img src="https://img.shields.io/github/contributors/bsv-blockchain/go-sdk?style=flat-square&color=orange" alt="Contributors"></a>
+       <a href="https://deepwiki.com/bsv-blockchain/go-sdk"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+    </td>
+  </tr>
+</table>
 
-### Installation
+</div>
 
-To add the SDK to your Go module:
+<br/>
+<br/>
 
-```bash
+<div align="center">
+
+### <code>Project Navigation</code>
+
+</div>
+
+<table align="center">
+  <tr>
+    <td align="center" width="25%">
+       📦&nbsp;<a href="#-installation"><code>Installation</code></a>
+    </td>
+    <td align="center" width="25%">
+       🚀&nbsp;<a href="#-basic-usage"><code>Basic&nbsp;Usage</code></a>
+    </td>
+    <td align="center" width="25%">
+       ✨&nbsp;<a href="#-features"><code>Features</code></a>
+    </td>
+    <td align="center" width="25%">
+       🧪&nbsp;<a href="#-examples"><code>Examples</code></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+       📚&nbsp;<a href="#-documentation"><code>Documentation</code></a>
+    </td>
+    <td align="center">
+       🧰&nbsp;<a href="#-tests"><code>Tests</code></a>
+    </td>
+    <td align="center">
+      🛠️&nbsp;<a href="#-code-standards"><code>Code&nbsp;Standards</code></a>
+    </td>
+    <td align="center">
+      🤖&nbsp;<a href="#-ai-usage--assistant-guidelines"><code>AI&nbsp;Usage</code></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+       🤝&nbsp;<a href="#-contributing"><code>Contributing</code></a>
+    </td>
+    <td align="center">
+       👥&nbsp;<a href="#-maintainers"><code>Maintainers</code></a>
+    </td>
+    <td align="center">
+       ⚖️&nbsp;<a href="#-license"><code>License</code></a>
+    </td>
+    <td align="center">
+       🔗&nbsp;<a href="https://pkg.go.dev/github.com/bsv-blockchain/go-sdk"><code>Go&nbsp;Docs</code></a>
+    </td>
+  </tr>
+</table>
+<br/>
+
+## 🧩 What's Inside
+
+The **BSV Blockchain Libraries Project** provides an updated and unified layer for developing scalable
+applications on the BSV Blockchain. This SDK addresses the limitations of previous tools by offering a
+fresh, peer-to-peer approach, adhering to SPV, and ensuring privacy and scalability.
+
+It is a comprehensive toolkit for the full transaction lifecycle — constructing, signing, verifying, and
+broadcasting transactions — alongside cryptographic primitives, a network-compliant script interpreter,
+a BRC-100 wallet framework, peer authentication, overlay networks, identity, and on-chain storage.
+
+<br/>
+
+## 📦 Installation
+
+**go-sdk** requires a [supported release of Go](https://golang.org/doc/devel/release.html#policy).
+
+```shell script
 go get github.com/bsv-blockchain/go-sdk
 ```
 
-### Basic Usage
+<br/>
+
+## 🚀 Basic Usage
 
 Here's a [simple example](https://goplay.tools/snippet/WotzYGbOSQ6) of using the SDK to create and sign a P2PKH transaction:
 
@@ -84,116 +172,254 @@ func main() {
     }
     log.Printf("tx hex: %s\n", tx.Hex())
 }
-
 ```
 
 See the [Go Doc](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk) for a complete list of available modules and functions.
 
-### Examples & Usage Guides
+<br/>
 
-Our examples are organized by category to help you find what you need. Each example is self-contained and includes detailed comments.
+## ✨ Features
 
-### Transaction Management
-- [Creating a Simple Transaction](./docs/examples/create_simple_tx) - Basic transaction creation and signing
-- [Adding OP_RETURN Data](./docs/examples/create_tx_with_op_return) - How to embed data in transactions
-- [Creating Inscriptions](./docs/examples/create_tx_with_inscription) - Working with inscriptions
-- [Transaction Verification](./docs/examples/verify_transaction) - How to verify transactions
-- [Fee Modeling](./docs/examples/fee_modeling) - Understanding and calculating transaction fees
-- [Broadcasting Transactions](./docs/examples/broadcaster) - How to broadcast transactions to the network
+- **Transaction Construction & Signing** — a comprehensive, versatile transaction builder for secure creation, signing, and serialization.
+- **BEEF & Atomic BEEF** — first-class support for the BEEF (`Background Evaluation Extended Format`) and Atomic BEEF transaction formats.
+- **Script & Interpreter** — Bitcoin script types, BIP-276 serialization, and a full, network-compliant [script interpreter](./script/interpreter/README.md).
+- **Script Templates** — reusable locking/unlocking templates including [`p2pkh`](./transaction/template/p2pkh) and [`pushdrop`](./transaction/template/pushdrop).
+- **Fees, Broadcasters & Chain Trackers** — sats/kb fee modeling plus ready-made broadcasters (ARC, TAAL, WhatsOnChain) and chain trackers.
+- **Cryptographic Primitives** — EC keys, ECDSA, Schnorr, hashing, AES (CBC/GCM), and DRBG for secure key management and signatures.
+- **Type-42 Key Derivation** — private/public key derivation for shared, invoice-numbered key universes.
+- **Shamir Key Splitting** — split a private key into N shares and recombine from any M of N.
+- **SPV & Merkle Proofs** — serializable SPV structures and tools for representing and verifying merkle proofs.
+- **Secure Messaging (BRC-77)** — sign, verify, and encrypt recipient-specific messages.
+- **Wallet Framework** — a complete BRC-100 wallet `Interface`, `ProtoWallet`, wire-protocol serializer, and HTTP substrate.
+- **Peer Authentication (BRC-103/104)** — mutual auth with master/verifiable certificates over HTTP and WebSocket transports.
+- **Overlay Networks** — SHIP/SLAP topic broadcast and lookup/discovery for overlay services.
+- **Identity, Registry & KV Store** — identity resolution, on-chain protocol/basket/certificate definitions, and on-chain key-value storage.
+- **File Storage (UHRP)** — upload and download content addressed by UHRP URLs.
+- **Compatibility Packages** — Base58, BIP32 (HD keys), BIP39 (mnemonics), Bitcoin Signed Message (BSM), and ECIES.
 
-### Key Management & Cryptography
-- [HD Key Generation](./docs/examples/generate_hd_key) - Creating hierarchical deterministic keys
-- [HD Key from Extended Public Key](./docs/examples/hd_key_from_xpub) - Working with xPubs
-- [Child Key Derivation](./docs/examples/derive_child) - Deriving child keys
-- [Address from WIF](./docs/examples/address_from_wif/) - Converting WIF to addresses
-- [AES Encryption](./docs/examples/aes/) - Symmetric encryption examples
+<br/>
 
-### Advanced Cryptography
-- [ECIES Single Key](./docs/examples/ecies_single/) - Elliptic Curve Integrated Encryption Scheme
-- [ECIES Shared Keys](./docs/examples/ecies_shared/) - Working with shared ECIES keys
-- [ECIES Electrum Binary](./docs/examples/ecies_electrum_binary/) - Electrum-compatible ECIES
-- [Encrypted Messages](./docs/examples/encrypted_message/) - Working with encrypted messages
+## 🧪 Examples
 
-### Key Sharing & Backup
-- [Key Shares to Backup](./docs/examples/keyshares_pk_to_backup/) - Backing up private keys using Shamir's Secret Sharing
-- [Key Shares from Backup](./docs/examples/keyshares_pk_from_backup/) - Recovering private keys from shares
+Every example below is self-contained and thoroughly commented. Browse the full set in the
+[examples directory](./docs/examples).
 
-### Network & Verification
-- [SPV Validation](./docs/examples/validate_spv/) - Validating Simple Payment Verification (SPV) proofs
-- [BEEF Verification](./docs/examples/verify_beef/) - Verifying BEEF proofs
+### Transactions
+- [Broadcaster](./docs/examples/broadcaster/) — Broadcast a transaction to the network (ARC/GorillaPool & WhatsOnChain).
+- [Create Simple TX](./docs/examples/create_simple_tx/) — Build and sign a basic P2PKH transaction.
+- [Create TX With Inscription](./docs/examples/create_tx_with_inscription/) — Create a transaction with an Ordinal inscription.
+- [Create TX With OP_RETURN](./docs/examples/create_tx_with_op_return/) — Embed data in a transaction with an OP_RETURN output.
+- [Fee Modeling](./docs/examples/fee_modeling/) — Calculate and model transaction fees.
+- [Set Source TX Output](./docs/examples/set_source_tx_output/) — Provide UTXO data (satoshis + locking script) to enable signing.
+- [Validate SPV](./docs/examples/validate_spv/) — Validate SPV by decoding BEEF and checking merkle roots.
+- [Verify BEEF](./docs/examples/verify_beef/) — Verify a BEEF structure.
+- [Verify Transaction](./docs/examples/verify_transaction/) — Verify a transaction's scripts, merkle path, and fees.
+
+### Keys & Addresses
+- [Address From WIF](./docs/examples/address_from_wif/) — Derive an address from a WIF private key.
+- [Derive Child Key](./docs/examples/derive_child/) — Derive a child key using the BRC-42 method.
+- [Generate HD Key](./docs/examples/generate_hd_key/) — Generate a new hierarchical deterministic (HD) key.
+- [HD Key From XPub](./docs/examples/hd_key_from_xpub/) — Create an HD key from an extended public key (xPub).
+- [Key Shares To Backup](./docs/examples/keyshares_pk_to_backup/) — Split a private key into Shamir key-share backups.
+- [Key Shares From Backup](./docs/examples/keyshares_pk_from_backup/) — Reconstruct a private key from key shares.
+
+### Messaging & Authentication
+- [Authenticated Messaging](./docs/examples/authenticated_messaging/) — Authenticated peer messaging over a transport.
+- [ECIES Single](./docs/examples/ecies_single/) — ECIES encryption/decryption for a single recipient.
+- [ECIES Shared](./docs/examples/ecies_shared/) — ECIES using a shared secret between two parties.
+- [ECIES Electrum Binary](./docs/examples/ecies_electrum_binary/) — Electrum-compatible ECIES (binary format).
+- [Encrypted Message](./docs/examples/encrypted_message/) — Encrypt/decrypt and sign/verify messages.
+- [Identity Client](./docs/examples/identity_client/) — Create an identity client and reveal certificate attributes.
+
+### Wallet
+- [Create Wallet](./docs/examples/create_wallet/) — Generate entropy/mnemonic and create a new wallet.
+- [Get Public Key](./docs/examples/get_public_key/) — Retrieve an identity public key from a wallet.
+- [Create Signature](./docs/examples/create_signature/) — Create a digital signature with a wallet.
+- [Create HMAC](./docs/examples/create_hmac/) — Create and verify an HMAC via a wallet.
+- [Encrypt Data](./docs/examples/encrypt_data/) — Encrypt/decrypt data between wallets.
+- [HTTP Wallet](./docs/examples/http_wallet/) — Interact with a wallet using JSON over HTTP.
+
+### Registry
+- [Registry Register](./docs/examples/registry_register/) — Register a basket definition with the registry.
+- [Registry Resolve](./docs/examples/registry_resolve/) — Resolve a basket definition from the registry.
+
+### Storage
+- [Storage Uploader](./docs/examples/storage_uploader/) — Upload content to a storage service using a wallet.
+- [Storage Downloader](./docs/examples/storage_downloader/) — Download a file via a UHRP URL.
+
+### Networking
+- [WebSocket Peer](./docs/examples/websocket_peer/) — Peer communication over WebSocket.
+
+### Cryptography
+- [AES](./docs/examples/aes/) — Symmetric AES encryption/decryption examples.
 
 ### Migration Guides
-- [Converting from go-bt](./docs/examples/GO_BT.md) - Guide for migrating from go-bt
+- [Converting from go-bt](./docs/examples/GO_BT.md) — Guide for migrating from go-bt.
 
+<br/>
 
-Check out the [examples folder](https://github.com/bsv-blockchain/go-sdk/tree/master/docs/examples) for more examples.
-
-## Features
-
-- **Performance Oriented**: Designed to deliver performant functionality for large scale / high demand systems.
-- **Cryptographic Primitives**: Secure key management, signature computations, and encryption protocols.
-- **Script Level Constructs**: Network-compliant script interpreter with support for custom scripts and serialization formats.
-- **Transaction Construction and Signing**: Comprehensive transaction builder API, ensuring versatile and secure transaction creation.
-- **Transaction Broadcast Management**: Mechanisms to send transactions to both miners and overlays, ensuring extensibility and future-proofing.
-- **Merkle Proof Verification**: Tools for representing and verifying merkle proofs, adhering to various serialization standards.
-- **Serializable SPV Structures**: Structures and interfaces for full SPV verification.
-- **Secure Encryption and Signed Messages**: Enhanced mechanisms for encryption and digital signatures, replacing outdated methods.
-- **Shamir Key Splitting & Recombining**: Allows private keys to be split into N shares, and recombined by providing M of N shares.
-- **Compatibility Packages**: Supports additional / deprecated features like ECIES, Bitcoin Signed Message, and BIP32 style key derivation.
-
-## Documentation
+## 📚 Documentation
 
 This SDK is supported by multiple layers of documentation:
 
-### Core Documentation
-- [Examples](./docs/examples/README.md) - Common usage examples and code samples
-- [Concepts](./docs/concepts/README.md) - High-level concepts and architectural decisions
-- [Low-Level Details](./docs/low-level/README.md) - Implementation details and technical specifications
-- [Go Doc](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk) - Complete API reference
+- **API Reference** — the complete godocs at [pkg.go.dev/github.com/bsv-blockchain/go-sdk](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk).
+- **Examples** — common usage patterns in the [examples directory](./docs/examples/README.md).
+- **Concepts** — high-level concepts and architectural decisions in [docs/concepts](./docs/concepts/README.md).
+- **Low-Level Details** — implementation details and specifications in [docs/low-level](./docs/low-level/README.md).
+- **Script Interpreter** — deep-dive documentation of the [Bitcoin script interpreter](./script/interpreter/README.md), based on the [Bitcoin Script specification](https://wiki.bitcoinsv.io/index.php/Script).
 
-### Component-Specific Documentation
-- [Script Interpreter](./script/interpreter/README.md) - Comprehensive documentation of the Bitcoin script interpreter
-  - Includes extensive test suite
-  - Based on the [Bitcoin Script specification](https://wiki.bitcoinsv.io/index.php/Script)
+<br/>
 
-### Example Categories
-1. Transaction Management
-   - Basic transaction creation and signing
-   - Converting transactions from go-bt
-2. Cryptographic Operations
-   - Standard Pay-to-pubkey-hash operations
-   - Key management and derivation
-3. Script Operations
-   - Custom script creation
-   - Script interpretation and validation
+<details>
+<summary><strong><code>Development Build Commands</code></strong></summary>
+<br/>
 
-For hands-on examples, visit our [examples directory](./docs/examples/).
+Get the [MAGE-X](https://github.com/mrz1836/mage-x) build tool for development:
+```shell script
+go install github.com/mrz1836/mage-x/cmd/magex@latest
+```
 
-## Contribution Guidelines
+View all build commands:
 
-We're always looking for contributors to help us improve the SDK. Whether it's bug reports, feature requests, or pull requests - all contributions are welcome.
+```bash script
+magex help
+```
 
-1. **Fork & Clone**: Fork this repository and clone it to your local machine.
-2. **Set Up**: Run `go get github.com/bsv-blockchain/go-sdk` to get all the modules.
-3. **Make Changes**: Create a new branch and make your changes.
-4. **Test**: Ensure all tests pass by running `go test ./...`.
-5. **Commit**: Commit your changes and push to your fork.
-6. **Pull Request**: Open a pull request from your fork to this repository.
+</details>
 
-For more details, check the [contribution guidelines](.github/CONTRIBUTING.md).
+<details>
+<summary><strong>Repository Features</strong></summary>
+<br/>
 
-For information on past releases, check out the [changelog](./CHANGELOG.md).
+This repository ships with a large set of built-in features covering CI/CD, security, code quality, developer experience, and community tooling.
 
-## Support & Contacts
+**[View the full Repository Features list →](.github/docs/repository-features.md)**
 
-Project Owners: Thomas Giacomo and Darren Kellenschwiler
+</details>
 
-Development Team Lead: Luke Rohenaz
+<details>
+<summary><strong>GitHub Workflows</strong></summary>
+<br/>
 
-For questions, bug reports, or feature requests, please open an issue on GitHub or contact us directly.
+All workflows are driven by modular configuration in [`.github/env/`](.github/env/README.md) — no YAML editing required.
 
-## License
+**[View all workflows and the control center →](.github/docs/workflows.md)**
+
+</details>
+
+<details>
+<summary><strong><code>Pre-commit Hooks</code></strong></summary>
+<br/>
+
+Set up the Go-Pre-commit System to run the same formatting, linting, and tests before every commit:
+
+```bash
+go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+go-pre-commit install
+```
+
+The system is configured via [modular env files](.github/env/README.md) and provides much faster execution than traditional Python-based pre-commit hooks. See the [complete documentation](https://github.com/mrz1836/go-pre-commit) for details.
+
+</details>
+
+<details>
+<summary><strong><code>Library Deployment</code></strong></summary>
+<br/>
+
+This project uses [goreleaser](https://github.com/goreleaser/goreleaser) for streamlined library deployment to GitHub. Install it via:
+
+```bash
+brew install goreleaser
+```
+
+The release process is defined in the [.goreleaser.yml](.goreleaser.yml) configuration file. Create and push a new Git tag using:
+
+```bash
+magex version:bump push=true bump=patch branch=master
+```
+
+This ensures consistent, repeatable releases with properly versioned artifacts.
+
+</details>
+
+<details>
+<summary><strong><code>Updating Dependencies</code></strong></summary>
+<br/>
+
+To update all dependencies (Go modules, linters, and related tools), run:
+
+```bash
+magex deps:update
+```
+
+This brings all dependencies up to date in a single step, keeping your development environment and CI in sync with the latest versions.
+
+</details>
+
+<br/>
+
+## 🧰 Tests
+
+All unit tests run via [GitHub Actions](https://github.com/bsv-blockchain/go-sdk/actions) using the
+[GoFortress](.github/workflows/fortress.yml) workflow suite.
+
+Run all tests (fast):
+
+```bash script
+magex test
+```
+
+Run all tests with the race detector (slower):
+
+```bash script
+magex test:race
+```
+
+<br/>
+
+## 🛠️ Code Standards
+
+Read more about this Go project's [code standards](.github/CODE_STANDARDS.md).
+
+<br/>
+
+## 🤖 AI Usage & Assistant Guidelines
+
+Read the [AI Usage & Assistant Guidelines](.github/tech-conventions/ai-compliance.md) for details on how AI is used in this project and how to interact with AI assistants.
+
+<br/>
+
+## 👥 Maintainers
+
+| [<img src="https://github.com/icellan.png" height="50" alt="Siggi" />](https://github.com/icellan) | [<img src="https://github.com/galt-tr.png" height="50" alt="Dylan" />](https://github.com/galt-tr) | [<img src="https://github.com/deggen.png" height="50" alt="Darren" />](https://github.com/deggen) | [<img src="https://github.com/rohenaz.png" height="50" alt="Luke" />](https://github.com/rohenaz) | [<img src="https://github.com/mrz1836.png" height="50" alt="MrZ" />](https://github.com/mrz1836) |
+|:--------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------:|
+|                                [Siggi](https://github.com/icellan)                                 |                                [Dylan](https://github.com/galt-tr)                                 |                                [Darren](https://github.com/deggen)                                |                                [Luke](https://github.com/rohenaz)                                 |                                [MrZ](https://github.com/mrz1836)                                 |
+
+<br/>
+
+## 🤝 Contributing
+
+We're always looking for contributors to help us improve the SDK. Whether it's bug reports, feature requests, or pull requests — all contributions are welcome.
+
+1. **Fork & Clone** — fork this repository and clone it to your local machine.
+2. **Set Up** — run `go get github.com/bsv-blockchain/go-sdk` to get all the modules.
+3. **Make Changes** — create a new branch and make your changes.
+4. **Test** — ensure all tests pass by running `magex test` (or `go test ./...`).
+5. **Commit** — commit your changes and push to your fork.
+6. **Pull Request** — open a pull request from your fork to this repository.
+
+View the [contributing guidelines](.github/CONTRIBUTING.md) and please follow the [code of conduct](.github/CODE_OF_CONDUCT.md). For information on past releases, check out the [changelog](./CHANGELOG.md).
+
+### How can I help?
+
+All kinds of contributions are welcome :raised_hands:! The most basic way to show your support is to star :star2: the project, or to raise issues :speech_balloon:.
+
+[![Stars](https://img.shields.io/github/stars/bsv-blockchain/go-sdk?label=Please%20like%20us&style=social&v=1)](https://github.com/bsv-blockchain/go-sdk/stargazers)
+
+<br/>
+
+## 📝 License
 
 The license for the code in this repository is the Open BSV License. Refer to [LICENSE](./LICENSE) for the license text.
 
-Thank you for being a part of the BSV Blockchain Libraries Project. Let's build the future of BSV Blockchain together!
+[![License](https://img.shields.io/badge/license-OpenBSV-blue?style=flat&logo=springsecurity&logoColor=white)](LICENSE)
