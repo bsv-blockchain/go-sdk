@@ -38,9 +38,8 @@ Thumbs.db
 coverage.out
 golangci-lint-report.xml
 
-# Ignore any other files or directories specific to your project
+# Fuzz Tests
+testdata
 
 # Ignore files related to AI tools
 CLAUDE.md
-
-coverage.out
