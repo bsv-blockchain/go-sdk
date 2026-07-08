@@ -9,10 +9,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/testdata"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -219,7 +220,7 @@ func TestParseBinaryLookupAnswerZeroOutpoints(t *testing.T) {
 	// but since there are 0 outpoints, BEEF parsing is still attempted).
 	// So just verify the function at least doesn't panic and returns a meaningful error or empty list.
 	buf := make([]byte, 5)
-	buf[0] = 0x00 // VarInt(0) outpoints
+	buf[0] = 0x00                                      // VarInt(0) outpoints
 	binary.LittleEndian.PutUint32(buf[1:], 0xDEADBEEF) // garbage BEEF
 	_, err := parseBinaryLookupAnswer(buf)
 	// Either an empty list (if BEEF version check passes) or an error — no panic either way.

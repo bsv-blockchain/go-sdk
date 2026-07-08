@@ -3,9 +3,10 @@ package feemodel
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/stretchr/testify/require"
 )
 
 // mockUnlockingScriptTemplate implements transaction.UnlockingScriptTemplate
@@ -44,9 +45,9 @@ func buildTxWithUnlockingScript(t *testing.T) *transaction.Transaction {
 	})
 
 	input := &transaction.TransactionInput{
-		SourceTxOutIndex: 0,
+		SourceTxOutIndex:  0,
 		SourceTransaction: prevTx,
-		SequenceNumber:   0xffffffff,
+		SequenceNumber:    0xffffffff,
 	}
 	s := script.NewFromBytes([]byte{0x51}) // OP_1 as a minimal unlocking script
 	input.UnlockingScript = s

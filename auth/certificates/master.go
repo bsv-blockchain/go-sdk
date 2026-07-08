@@ -137,7 +137,6 @@ func IssueCertificateForSubject(
 	getRevocationOutpoint func(string) (*transaction.Outpoint, error), // Optional func
 	serialNumberStr string, // Optional serial number as StringBase64
 ) (*MasterCertificate, error) {
-
 	// 1. Generate a random serialNumber if not provided
 	var serialNumber wallet.StringBase64
 	if serialNumberStr != "" {

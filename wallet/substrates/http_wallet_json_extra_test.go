@@ -6,9 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 func TestHTTPWalletJSONGetPublicKey(t *testing.T) {

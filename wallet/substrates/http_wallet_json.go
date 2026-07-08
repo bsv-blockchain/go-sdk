@@ -19,7 +19,7 @@ type HTTPWalletJSON struct {
 }
 
 // NewHTTPWalletJSON creates a new HTTPWalletJSON instance
-func NewHTTPWalletJSON(originator string, baseURL string, httpClient *http.Client) *HTTPWalletJSON {
+func NewHTTPWalletJSON(originator, baseURL string, httpClient *http.Client) *HTTPWalletJSON {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}

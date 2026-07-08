@@ -7,12 +7,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/kvstore"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 // --- Test Helpers ---

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
@@ -17,7 +19,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 // MockLookupResolver is a mock implementation that satisfies both the LookupResolver and Facilitator interfaces

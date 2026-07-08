@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/primitives/schnorr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/primitives/schnorr"
 )
 
 // TestProtoWallet_BRC2_EncryptionVector tests BRC-2 encryption compliance

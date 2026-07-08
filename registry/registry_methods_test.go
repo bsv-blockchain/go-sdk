@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -256,7 +257,8 @@ func TestParseLockingScriptBasketWrongFieldCount(t *testing.T) {
 func TestParseLockingScriptProtocolType(t *testing.T) {
 	// 6 fields for protocol - 3rd field is protocol ID JSON
 	protocolIDJSON := `[2, "testprotocol"]`
-	s := buildMockPushDropScript(t,
+	s := buildMockPushDropScript(
+		t,
 		[]byte("protocolname"),
 		[]byte("iconurl"),
 		[]byte(protocolIDJSON),
@@ -272,7 +274,8 @@ func TestParseLockingScriptProtocolType(t *testing.T) {
 func TestParseLockingScriptCertificateType(t *testing.T) {
 	// 7 fields for certificate
 	fieldsJSON := `{"name":{"friendlyName":"Name","type":"text"}}`
-	s := buildMockPushDropScript(t,
+	s := buildMockPushDropScript(
+		t,
 		[]byte("cert-type"),
 		[]byte("certname"),
 		[]byte("iconurl"),
@@ -345,4 +348,3 @@ func TestRevokeOwnRegistryEntryGetPublicKeyError(t *testing.T) {
 }
 
 // ---- mock facilitator with timeout ----
-

@@ -9,7 +9,6 @@ import (
 
 // Example of using ECIES to encrypt and decrypt data
 func main() {
-
 	// user 1
 	user1Pk, _ := ec.PrivateKeyFromWif("L211enC224G1kV8pyyq7bjVd9SxZebnRYEzzM3i7ZHCc1c5E7dQu")
 
@@ -22,5 +21,4 @@ func main() {
 	decryptedData, _ := ecies.ElectrumDecrypt(encryptedData, user1Pk, user2Pk)
 
 	fmt.Printf("decryptedData: %s\n", decryptedData)
-
 }

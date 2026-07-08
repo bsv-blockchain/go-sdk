@@ -91,14 +91,14 @@ func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err er
 	url := fmt.Sprintf("%s/chain/info", w.baseURL)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return
+		return height, err
 	}
 
 	req.Header.Set("Authorization", w.ApiKey)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return
+		return height, err
 	}
 	defer resp.Body.Close()
 

@@ -1,6 +1,6 @@
 {
-  "json": {
-    "authenticated": true
-  },
-  "wire": "0001"
+    "json": {
+        "authenticated": true
+    },
+    "wire": "0001"
 }

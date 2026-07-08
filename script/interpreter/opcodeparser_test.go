@@ -8,9 +8,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
-	"github.com/stretchr/testify/require"
 )
 
 // TestOpcodeDisabled tests the opcodeDisabled function manually because all

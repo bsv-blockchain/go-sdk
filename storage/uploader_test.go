@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // setupMockWalletForAuth creates a mock wallet with the required methods for auth operations

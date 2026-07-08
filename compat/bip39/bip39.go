@@ -14,8 +14,9 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/bsv-blockchain/go-sdk/compat/bip39/wordlists"
 	"golang.org/x/crypto/pbkdf2"
+
+	"github.com/bsv-blockchain/go-sdk/compat/bip39/wordlists"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 	bigTwo          = big.NewInt(2)
 
 	// wordLengthChecksumMasksMapping is used to isolate the checksum bits from
-	//the entropy+checksum byte array.
+	// the entropy+checksum byte array.
 	wordLengthChecksumMasksMapping = map[int]*big.Int{
 		12: big.NewInt(15),
 		15: big.NewInt(31),
@@ -239,7 +240,7 @@ func MnemonicToByteArray(mnemonic string, raw ...bool) ([]byte, error) {
 
 // NewSeedWithErrorChecking creates a hashed seed output given the mnemonic string and a password.
 // An error is returned if the mnemonic is not convertible to a byte array.
-func NewSeedWithErrorChecking(mnemonic string, password string) ([]byte, error) {
+func NewSeedWithErrorChecking(mnemonic, password string) ([]byte, error) {
 	_, err := MnemonicToByteArray(mnemonic)
 	if err != nil {
 		return nil, err
@@ -251,7 +252,7 @@ func NewSeedWithErrorChecking(mnemonic string, password string) ([]byte, error) 
 // NewSeed creates a hashed seed output given a provided string and password.
 // No checking is performed to validate that the string provided is a valid mnemonic.
 // BIP39 specification mandates exactly 2048 PBKDF2 iterations for interoperability.
-func NewSeed(mnemonic string, password string) []byte {
+func NewSeed(mnemonic, password string) []byte {
 	return pbkdf2.Key([]byte(mnemonic), []byte("mnemonic"+password), 2048, 64, sha512.New) //NOSONAR 2048 iterations required by BIP39 specification
 }
 

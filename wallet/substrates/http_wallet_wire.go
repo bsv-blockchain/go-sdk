@@ -16,7 +16,7 @@ type HTTPWalletWire struct {
 }
 
 // NewHTTPWalletWire creates a new HTTPWalletWire instance
-func NewHTTPWalletWire(originator string, baseURL string, httpClient *http.Client) *HTTPWalletWire {
+func NewHTTPWalletWire(originator, baseURL string, httpClient *http.Client) *HTTPWalletWire {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}

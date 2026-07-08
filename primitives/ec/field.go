@@ -93,19 +93,17 @@ const (
 	fieldPrimeWordOne = 0x3ffffbf
 )
 
-var (
-	// fieldQBytes is the value Q = (P+1)/4 for the secp256k1 prime P. This
-	// value is used to efficiently compute the square root of values in the
-	// field via exponentiation. The value of Q in hex is:
-	//
-	//   Q = 3fffffffffffffffffffffffffffffffffffffffffffffffffffffffbfffff0c
-	fieldQBytes = []byte{
-		0x3f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff, 0xbf, 0xff, 0xff, 0x0c,
-	}
-)
+// fieldQBytes is the value Q = (P+1)/4 for the secp256k1 prime P. This
+// value is used to efficiently compute the square root of values in the
+// field via exponentiation. The value of Q in hex is:
+//
+//	Q = 3fffffffffffffffffffffffffffffffffffffffffffffffffffffffbfffff0c
+var fieldQBytes = []byte{
+	0x3f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xbf, 0xff, 0xff, 0x0c,
+}
 
 // fieldVal implements optimized fixed-precision arithmetic over the
 // secp256k1 finite field.  This means all arithmetic is performed modulo
@@ -562,7 +560,7 @@ func (f *fieldVal) Add(val *fieldVal) *fieldVal {
 //
 // The field value is returned to support chaining.  This enables syntax like:
 // f3.Add2(f, f2).AddInt(1) so that f3 = f + f2 + 1.
-func (f *fieldVal) Add2(val *fieldVal, val2 *fieldVal) *fieldVal {
+func (f *fieldVal) Add2(val, val2 *fieldVal) *fieldVal {
 	// Since the field representation intentionally provides overflow bits,
 	// it's ok to use carryless addition as the carry bit is safely part of
 	// each word and will be normalised out.  This could obviously be done

@@ -77,7 +77,8 @@ func main() {
 	} else {
 		fmt.Printf("Found %d uploads:\n", len(uploadsList))
 		for i, upload := range uploadsList {
-			fmt.Printf("  %d. %s (expires: %s)\n",
+			fmt.Printf(
+				"  %d. %s (expires: %s)\n",
 				i+1,
 				upload.UhrpURL,
 				time.Unix(upload.ExpiryTime, 0).Format(time.RFC3339),

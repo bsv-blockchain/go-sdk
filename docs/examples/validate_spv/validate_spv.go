@@ -40,5 +40,4 @@ func main() {
 		return
 	}
 	fmt.Println("Is valid root for height:", valid)
-
 }

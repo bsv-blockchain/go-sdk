@@ -46,7 +46,6 @@ func init() {
 	opcodeByName["OP_NOP6"] = script.OpNOP6
 	opcodeByName["OP_NOP7"] = script.OpNOP7
 	opcodeByName["OP_NOP8"] = script.OpNOP8
-
 }
 
 // parseShortForm parses a string as as used in the Bitcoin Core reference tests
@@ -129,7 +128,6 @@ func parseShortForm(scriptStr string) (*script.Script, error) {
 // scriptTestName returns a descriptive test name for the given reference script
 // test data.
 func scriptTestName(test []any) (string, error) {
-
 	// The test must consist of at least a signature script, public key script,
 	// flags, and expected error.  Finally, it may optionally contain a comment.
 	if len(test) < 4 || 6 < len(test) {
@@ -225,13 +223,15 @@ func parseExpectedResult(expected string) ([]errs.ErrorCode, error) {
 	case "PUBKEYTYPE":
 		return []errs.ErrorCode{errs.ErrPubKeyType}, nil
 	case "SIG_DER":
-		return []errs.ErrorCode{errs.ErrSigTooShort, errs.ErrSigTooLong,
+		return []errs.ErrorCode{
+			errs.ErrSigTooShort, errs.ErrSigTooLong,
 			errs.ErrSigInvalidSeqID, errs.ErrSigInvalidDataLen, errs.ErrSigMissingSTypeID,
 			errs.ErrSigMissingSLen, errs.ErrSigInvalidSLen,
 			errs.ErrSigInvalidRIntID, errs.ErrSigZeroRLen, errs.ErrSigNegativeR,
 			errs.ErrSigTooMuchRPadding, errs.ErrSigInvalidSIntID,
 			errs.ErrSigZeroSLen, errs.ErrSigNegativeS, errs.ErrSigTooMuchSPadding,
-			errs.ErrInvalidSigHashType}, nil
+			errs.ErrInvalidSigHashType,
+		}, nil
 	case "EVAL_FALSE":
 		return []errs.ErrorCode{errs.ErrEvalFalse, errs.ErrEmptyStack}, nil
 	case "EQUALVERIFY":
@@ -251,8 +251,10 @@ func parseExpectedResult(expected string) ([]errs.ErrorCode, error) {
 	case "BAD_OPCODE":
 		return []errs.ErrorCode{errs.ErrReservedOpcode, errs.ErrMalformedPush}, nil
 	case "UNBALANCED_CONDITIONAL":
-		return []errs.ErrorCode{errs.ErrUnbalancedConditional,
-			errs.ErrInvalidStackOperation}, nil
+		return []errs.ErrorCode{
+			errs.ErrUnbalancedConditional,
+			errs.ErrInvalidStackOperation,
+		}, nil
 	case "OP_RETURN":
 		return []errs.ErrorCode{errs.ErrEarlyReturn}, nil
 	case "VERIFY":

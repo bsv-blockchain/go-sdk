@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	// Create a new transaction
 	hexTx := "010000000100"
 	tx, _ := transaction.NewTransactionFromHex(hexTx)

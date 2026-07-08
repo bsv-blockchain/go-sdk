@@ -5,10 +5,11 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/internal/logging"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/internal/logging"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // ensure that TestWallet is implementing wallet.Interface
@@ -73,7 +74,6 @@ func WithTestWalletCertManager(certManager CertificatesManagement) func(*TestWal
 //	        PublicKey: []byte("test-key"),
 //	    })
 type TestWallet struct {
-
 	// Name represents the wallet owner's name.
 	// It is useful for debugging to distinguish between multiple wallets participating in communication.
 	// By default, it is set to the identity key.

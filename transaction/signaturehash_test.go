@@ -4,16 +4,17 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTx_CalcInputPreimage(t *testing.T) {
 	t.Parallel()
 
-	var testVector = []struct {
+	testVector := []struct {
 		name               string
 		unsignedTx         string
 		index              int
@@ -76,7 +77,7 @@ func TestTx_CalcInputPreimage(t *testing.T) {
 func TestTx_CalcInputSignatureHash(t *testing.T) {
 	t.Parallel()
 
-	var testVector = []struct {
+	testVector := []struct {
 		name               string
 		unsignedTx         string
 		index              uint32
@@ -166,7 +167,7 @@ func TestTx_CalcInputSignatureHash(t *testing.T) {
 func TestTx_CalcInputPreimageLegacy(t *testing.T) {
 	t.Parallel()
 
-	var testVector = []struct {
+	testVector := []struct {
 		name               string
 		unsignedTx         string
 		index              int

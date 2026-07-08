@@ -1,9 +1,11 @@
 package serializer
 
 import (
-	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func TestIsAuthenticatedResult(t *testing.T) {

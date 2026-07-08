@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
@@ -12,8 +15,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestValidateCertificates tests the validateCertificates function

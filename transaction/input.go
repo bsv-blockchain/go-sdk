@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/pkg/errors"
 )
 
 /*

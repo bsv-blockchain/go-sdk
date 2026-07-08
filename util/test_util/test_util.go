@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/stretchr/testify/require"
 )
 
 // GetByte32FromString returns a [32]byte from a string

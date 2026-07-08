@@ -6,8 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 func TestNewWhatsOnChain(t *testing.T) {

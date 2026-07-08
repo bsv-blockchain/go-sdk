@@ -51,7 +51,7 @@ func (r *Reader) ReadBytesReverse(n int) ([]byte, error) {
 		return nil, fmt.Errorf("error reading bytes reverse: %w", err)
 	}
 	// Reverse the byte slice
-	var newBytes = make([]byte, len(b))
+	newBytes := make([]byte, len(b))
 	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
 		newBytes[i], newBytes[j] = b[j], b[i]
 	}

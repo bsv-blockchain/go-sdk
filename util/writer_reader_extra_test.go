@@ -7,9 +7,10 @@ import (
 	"math"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/require"
 )
 
 const (

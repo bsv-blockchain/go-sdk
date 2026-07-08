@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/require"
-	// Using testify for assertions similar to JavaScript's expect
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 func TestSignedMessage(t *testing.T) {
@@ -82,7 +82,6 @@ func TestSignedMessage(t *testing.T) {
 		actualRecipientPubHex := fmt.Sprintf("%x", wrongRecipientPriv.PubKey().Compressed())
 		require.Equal(t, fmt.Sprintf("the recipient public key is %s but the signature requires the recipient to have public key %s", actualRecipientPubHex, expectedRecipientPubHex), err.Error())
 	})
-
 }
 
 func TestTamperedMessage_AnyoneCanVerify(t *testing.T) {

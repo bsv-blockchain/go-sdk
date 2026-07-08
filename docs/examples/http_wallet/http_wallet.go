@@ -9,10 +9,9 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
 )
@@ -32,7 +31,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Mock CreateAction
-	var mockCreateActionReference = []byte("mock-tx-reference-123")
+	mockCreateActionReference := []byte("mock-tx-reference-123")
 	mockCreateActionTxId, _ := chainhash.NewHashFromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	mux.HandleFunc("/createAction", func(w http.ResponseWriter, r *http.Request) {
 		var args wallet.CreateActionArgs
@@ -104,5 +103,4 @@ func main() {
 	} else {
 		fmt.Println("CreateAction failed or mock returned nil.")
 	}
-
 }

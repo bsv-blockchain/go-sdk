@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
+
+	script "github.com/bsv-blockchain/go-sdk/script"
 )
 
 func TestDecodeScript(t *testing.T) {
@@ -58,7 +59,6 @@ func TestDecodeScript(t *testing.T) {
 	})
 
 	t.Run("decode using OP_PUSHDATA1", func(t *testing.T) {
-
 		data := "testing"
 		b := make([]byte, 0)
 		b = append(b, script.OpPUSHDATA1)
@@ -71,7 +71,6 @@ func TestDecodeScript(t *testing.T) {
 	})
 
 	t.Run("invalid decode using OP_PUSHDATA1 - missing data payload", func(t *testing.T) {
-
 		b := make([]byte, 0)
 		b = append(b, script.OpPUSHDATA1)
 
@@ -81,7 +80,6 @@ func TestDecodeScript(t *testing.T) {
 	})
 
 	t.Run("invalid decode using OP_PUSHDATA2 - payload too small", func(t *testing.T) {
-
 		data := "testing the code OP_PUSHDATA2"
 		b := make([]byte, 0)
 		b = append(b, script.OpPUSHDATA2)
@@ -94,7 +92,6 @@ func TestDecodeScript(t *testing.T) {
 	})
 
 	t.Run("invalid decode using OP_PUSHDATA2 - missing data payload", func(t *testing.T) {
-
 		b := make([]byte, 0)
 		b = append(b, script.OpPUSHDATA2)
 
@@ -104,7 +101,6 @@ func TestDecodeScript(t *testing.T) {
 	})
 
 	t.Run("invalid decode using OP_PUSHDATA2 - overflow", func(t *testing.T) {
-
 		b := make([]byte, 0)
 		b = append(b, script.OpPUSHDATA2)
 		b = append(b, 0xff)
@@ -129,7 +125,6 @@ func TestDecodeScript(t *testing.T) {
 	})
 
 	t.Run("invalid decode using OP_PUSHDATA4 - payload too small", func(t *testing.T) {
-
 		data := "testing the code OP_PUSHDATA4"
 		b := make([]byte, 0)
 		b = append(b, script.OpPUSHDATA4)
@@ -142,7 +137,6 @@ func TestDecodeScript(t *testing.T) {
 	})
 
 	t.Run("invalid decode using OP_PUSHDATA4 - missing data payload", func(t *testing.T) {
-
 		b := make([]byte, 0)
 		b = append(b, script.OpPUSHDATA4)
 

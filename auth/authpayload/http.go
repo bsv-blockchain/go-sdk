@@ -336,7 +336,8 @@ func extractHeadersToInclude(headers http.Header, headersFilter func(headerName 
 			value = strings.SplitN(value, ";", 2)[0]
 		}
 
-		includedHeaders = append(includedHeaders,
+		includedHeaders = append(
+			includedHeaders,
 			includedHeader{
 				Name:  headerKey,
 				Value: value,

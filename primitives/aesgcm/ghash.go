@@ -44,7 +44,7 @@ func rightShift(block []byte) []byte {
 	return block
 }
 
-func checkBit(block []byte, index int, bit int) bool {
+func checkBit(block []byte, index, bit int) bool {
 	return (block[index]>>bit)&1 == 1
 }
 

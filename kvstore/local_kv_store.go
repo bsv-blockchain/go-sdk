@@ -9,11 +9,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -63,7 +63,7 @@ type lookupValueResult struct {
 }
 
 // lookupValue finds the current value for a key
-func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValue string, limit int) (*lookupValueResult, error) {
+func (kv *LocalKVStore) lookupValue(ctx context.Context, key, defaultValue string, limit int) (*lookupValueResult, error) {
 	outputsResult, err := kv.getOutputs(ctx, key, limit)
 	if err != nil {
 		// Wrap wallet operation error
@@ -189,7 +189,7 @@ func (kv *LocalKVStore) getOutputs(ctx context.Context, key string, limit int) (
 }
 
 // Get retrieves a value for the given key, or returns the defaultValue if not found.
-func (kv *LocalKVStore) Get(ctx context.Context, key string, defaultValue string) (string, error) {
+func (kv *LocalKVStore) Get(ctx context.Context, key, defaultValue string) (string, error) {
 	if key == "" {
 		return "", ErrInvalidKey
 	}
@@ -214,7 +214,7 @@ func (kv *LocalKVStore) Get(ctx context.Context, key string, defaultValue string
 }
 
 // Set stores a value with the given key, returning the outpoint of the transaction output.
-func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (string, error) {
+func (kv *LocalKVStore) Set(ctx context.Context, key, value string) (string, error) {
 	if key == "" {
 		return "", ErrInvalidKey
 	}
@@ -365,7 +365,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 }
 
 // prepareSpends generates the signing instructions for the inputs of a transaction.
-func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []wallet.CreateActionInput, signableTxBytes []byte, inputBeef []byte) (map[uint32]wallet.SignActionSpend, error) {
+func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []wallet.CreateActionInput, signableTxBytes, inputBeef []byte) (map[uint32]wallet.SignActionSpend, error) {
 	spends := make(map[uint32]wallet.SignActionSpend)
 
 	// Parse the input BEEF first to provide context for linking

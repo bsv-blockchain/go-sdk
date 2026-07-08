@@ -330,7 +330,7 @@ func FromWalletCertificate(walletCert *wallet.Certificate) (*Certificate, error)
 // from both the client and the certifier. In this case, the keyID is simply the fieldName.
 // For VerifiableCertificates verifier keyring creation, both the serial number and field name are available,
 // so the keyID is formed by concatenating the serialNumber and fieldName.
-func GetCertificateEncryptionDetails(fieldName string, serialNumber string) (wallet.Protocol, string) {
+func GetCertificateEncryptionDetails(fieldName, serialNumber string) (wallet.Protocol, string) {
 	protocolID := wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
 		Protocol:      "certificate field encryption",

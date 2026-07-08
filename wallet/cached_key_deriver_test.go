@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/assert"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 type MockKeyDeriver struct {
@@ -41,6 +42,7 @@ func (m *MockKeyDeriver) DeriveSymmetricKey(protocolID Protocol, keyID string, c
 	m.symmetricKeyCallCount++
 	return m.symmetricKeyToReturn, m.symmetricKeyErrorToReturn
 }
+
 func (m *MockKeyDeriver) RevealSpecificSecret(counterparty Counterparty, protocol Protocol, keyID string) ([]byte, error) {
 	m.specificSecretCallCount++
 	return m.specificSecretToReturn, nil
@@ -168,7 +170,6 @@ func TestDerivePrivateKey(t *testing.T) {
 		assert.NoError(t, err, "second DerivePrivateKey call with different keyID should not error")
 		assert.Equal(t, privateKey2.Wif(), privKey2.Wif(), "second derived private key should match expected key 2")
 		assert.Equal(t, 2, mockKeyDeriver.privateKeyCallCount, "underlying deriver should be called twice for different key IDs")
-
 	})
 }
 

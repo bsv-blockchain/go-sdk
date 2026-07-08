@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
+
+	script "github.com/bsv-blockchain/go-sdk/script"
 )
 
 func TestEncodeBIP276(t *testing.T) {

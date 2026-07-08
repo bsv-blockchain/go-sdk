@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	priv, _ := ec.PrivateKeyFromWif("Kxfd8ABTYZHBH3y1jToJ2AUJTMVbsNaqQsrkpo9gnnc1JXfBH8mn")
 
 	// Print the private key
@@ -17,5 +16,4 @@ func main() {
 
 	// Print the address, and the pubkey hash
 	println(address.AddressString, address.PublicKeyHash)
-
 }

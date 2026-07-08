@@ -2,6 +2,7 @@ package lookup
 
 import (
 	"encoding/json"
+
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
@@ -29,7 +30,7 @@ type LookupQuestion struct {
 // LookupFormula represents a formula for computing lookup results
 type LookupFormula struct {
 	Outpoint *transaction.Outpoint
-	History  func(beef *transaction.Beef, outputIndex uint32, currentDepth uint32) bool
+	History  func(beef *transaction.Beef, outputIndex, currentDepth uint32) bool
 	// HistoryDepth uint32
 }
 

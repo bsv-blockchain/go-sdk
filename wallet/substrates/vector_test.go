@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -19,7 +21,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
 	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
-	"github.com/stretchr/testify/require"
 )
 
 type VectorTest struct {
@@ -349,10 +350,12 @@ func TestVectors(t *testing.T) {
 		Filename: "createHmac-simple-result",
 		IsResult: true,
 		Object: wallet.CreateHMACResult{
-			HMAC: [32]byte{50, 60, 70, 80, 90, 100, 110, 120,
+			HMAC: [32]byte{
 				50, 60, 70, 80, 90, 100, 110, 120,
 				50, 60, 70, 80, 90, 100, 110, 120,
-				50, 60, 70, 80, 90, 100, 110, 120},
+				50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120,
+			},
 		},
 	}, {
 		Filename: "verifyHmac-simple-args",
@@ -369,10 +372,12 @@ func TestVectors(t *testing.T) {
 				SeekPermission:   true,
 			},
 			Data: []byte{10, 20, 30, 40},
-			HMAC: [32]byte{50, 60, 70, 80, 90, 100, 110, 120,
+			HMAC: [32]byte{
 				50, 60, 70, 80, 90, 100, 110, 120,
 				50, 60, 70, 80, 90, 100, 110, 120,
-				50, 60, 70, 80, 90, 100, 110, 120},
+				50, 60, 70, 80, 90, 100, 110, 120,
+				50, 60, 70, 80, 90, 100, 110, 120,
+			},
 		},
 	}, {
 		Filename: "verifyHmac-simple-result",
@@ -729,7 +734,8 @@ func TestVectors(t *testing.T) {
 
 				// Define a function to check wire serialization and deserialization
 				checkWireSerialize := func(call substrates.Call, obj any,
-					serialized []byte, errSerialize error, deserialized any, errDeserialize error) {
+					serialized []byte, errSerialize error, deserialized any, errDeserialize error,
+				) {
 					require.Equalf(t, frameCall, call, "Frame call mismatch: call=%d", call)
 					require.NoErrorf(t, errSerialize, "Serializing object error: call=%d", call)
 					var serializedWithFrame []byte

@@ -658,7 +658,8 @@ func (t *thread) checkSignatureEncoding(sig []byte) error {
 	// The signature must indicate the correct amount of data for all elements
 	// related to R and S.
 	if int(sig[dataLenOffset]) != sigLen-2 {
-		return errs.NewError(errs.ErrSigInvalidDataLen,
+		return errs.NewError(
+			errs.ErrSigInvalidDataLen,
 			"malformed signature: bad length: %d != %d",
 			sig[dataLenOffset], sigLen-2,
 		)

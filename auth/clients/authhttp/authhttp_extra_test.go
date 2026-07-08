@@ -12,11 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -182,7 +183,8 @@ func TestNewWithAllOptions(t *testing.T) {
 		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 
-	af := New(w,
+	af := New(
+		w,
 		WithSessionManager(sm),
 		WithLogger(logger),
 		WithHttpClient(httpClient),

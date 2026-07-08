@@ -27,7 +27,6 @@ const (
 
 // GenerateHDKey will create a new master node for use in creating a hierarchical deterministic keychain
 func GenerateHDKey(seedLength uint8) (hdKey *ExtendedKey, err error) {
-
 	// Missing or invalid seed length
 	if seedLength == 0 {
 		seedLength = RecommendedSeedLength
@@ -36,7 +35,7 @@ func GenerateHDKey(seedLength uint8) (hdKey *ExtendedKey, err error) {
 	// Generate a new seed (added extra security from 256 to 512 bits for seed length)
 	var seed []byte
 	if seed, err = GenerateSeed(seedLength); err != nil {
-		return
+		return hdKey, err
 	}
 
 	// Generate a new master key
@@ -49,18 +48,17 @@ func GenerateHDKeyFromString(xPriv string) (hdKey *ExtendedKey, err error) {
 	return NewKeyFromString(xPriv)
 }
 
-func GenerateHDKeyFromMnemonic(mnemonic string, password string, net *chaincfg.Params) (hdKey *ExtendedKey, err error) {
+func GenerateHDKeyFromMnemonic(mnemonic, password string, net *chaincfg.Params) (hdKey *ExtendedKey, err error) {
 	seed := bip39.NewSeed(mnemonic, password)
 	return NewMaster(seed, net)
 }
 
 // GenerateHDKeyPair will generate a new xPub HD master node (xPrivateKey & xPublicKey)
 func GenerateHDKeyPair(seedLength uint8) (xPrivateKey, xPublicKey string, err error) {
-
 	// Generate an HD master key
 	var masterKey *ExtendedKey
 	if masterKey, err = GenerateHDKey(seedLength); err != nil {
-		return
+		return xPrivateKey, xPublicKey, err
 	}
 
 	// Set the xPriv (string)
@@ -69,13 +67,12 @@ func GenerateHDKeyPair(seedLength uint8) (xPrivateKey, xPublicKey string, err er
 	// Set the xPub (string)
 	xPublicKey, err = GetExtendedPublicKey(masterKey)
 
-	return
+	return xPrivateKey, xPublicKey, err
 }
 
 // GetHDKeyByPath gets the corresponding HD key from a chain/num path
 // Reference: https://en.bitcoin.it/wiki/BIP_0032#The_default_wallet_layout
 func GetHDKeyByPath(hdKey *ExtendedKey, chain, num uint32) (*ExtendedKey, error) {
-
 	// Derive the child key from the chain path
 	childKeyChain, err := GetHDKeyChild(hdKey, chain)
 	if err != nil {
@@ -98,7 +95,6 @@ func GetHDKeyChild(hdKey *ExtendedKey, num uint32) (*ExtendedKey, error) {
 //
 // Expects hdKey to not be nil (otherwise will panic)
 func GetPrivateKeyByPath(hdKey *ExtendedKey, chain, num uint32) (*ec.PrivateKey, error) {
-
 	// Get the child key from the num & chain
 	childKeyNum, err := GetHDKeyByPath(hdKey, chain, num)
 	if err != nil {
@@ -162,18 +158,17 @@ func GetAddressStringFromHDKey(hdKey *ExtendedKey) (string, error) {
 // Uses the standard m/0/0 (external) and m/0/1 (internal) paths
 // Reference: https://en.bitcoin.it/wiki/BIP_0032#The_default_wallet_layout
 func GetPublicKeysForPath(hdKey *ExtendedKey, num uint32) (pubKeys []*ec.PublicKey, err error) {
-
 	//  m/0/x
 	var childM0x *ExtendedKey
 	if childM0x, err = GetHDKeyByPath(hdKey, DefaultExternalChain, num); err != nil {
-		return
+		return pubKeys, err
 	}
 
 	// Get the external pubKey from m/0/x
 	var pubKey *ec.PublicKey
 	if pubKey, err = childM0x.ECPubKey(); err != nil {
 		// Should never error since the previous method ensures a valid hdKey
-		return
+		return pubKeys, err
 	}
 	pubKeys = append(pubKeys, pubKey)
 
@@ -181,27 +176,26 @@ func GetPublicKeysForPath(hdKey *ExtendedKey, num uint32) (pubKeys []*ec.PublicK
 	var childM1x *ExtendedKey
 	if childM1x, err = GetHDKeyByPath(hdKey, DefaultInternalChain, num); err != nil {
 		// Should never error since the previous method ensures a valid hdKey
-		return
+		return pubKeys, err
 	}
 
 	// Get the internal pubKey from m/1/x
 	if pubKey, err = childM1x.ECPubKey(); err != nil {
 		// Should never error since the previous method ensures a valid hdKey
-		return
+		return pubKeys, err
 	}
 	pubKeys = append(pubKeys, pubKey)
 
-	return
+	return pubKeys, err
 }
 
 // GetAddressesForPath will get the corresponding addresses for the PublicKeys at the given path m/0/x
 // Returns 2 keys, first is internal and second is external
 func GetAddressesForPath(hdKey *ExtendedKey, num uint32) (addresses []string, err error) {
-
 	// Get the public keys for the corresponding chain/num (using default chain)
 	var pubKeys []*ec.PublicKey
 	if pubKeys, err = GetPublicKeysForPath(hdKey, num); err != nil {
-		return
+		return addresses, err
 	}
 
 	// Loop, get address and append to results
@@ -209,17 +203,16 @@ func GetAddressesForPath(hdKey *ExtendedKey, num uint32) (addresses []string, er
 	for _, key := range pubKeys {
 		if address, err = script.NewAddressFromPublicKey(key, true); err != nil {
 			// Should never error if the pubKeys are valid keys
-			return
+			return addresses, err
 		}
 		addresses = append(addresses, address.AddressString)
 	}
 
-	return
+	return addresses, err
 }
 
 // GetExtendedPublicKey will get the extended public key (xPub)
 func GetExtendedPublicKey(hdKey *ExtendedKey) (string, error) {
-
 	// Neuter the extended public key from hd key
 	pub, err := hdKey.Neuter()
 	if err != nil {

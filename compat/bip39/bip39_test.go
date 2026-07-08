@@ -6,8 +6,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/compat/bip39/wordlists"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/compat/bip39/wordlists"
 )
 
 type vector struct {
@@ -117,7 +118,7 @@ func TestNewEntropy(t *testing.T) {
 func TestMnemonicToByteArrayForDifferentArrayLengths(t *testing.T) {
 	max := 1000
 	for i := 0; i < max; i++ {
-		//16, 20, 24, 28, 32
+		// 16, 20, 24, 28, 32
 		length := 16 + (i%5)*4
 		seed := make([]byte, length)
 
@@ -138,6 +139,7 @@ func TestMnemonicToByteArrayForDifferentArrayLengths(t *testing.T) {
 		}
 	}
 }
+
 func TestPadByteSlice(t *testing.T) {
 	assertEqualByteSlices(t, []byte{0}, padByteSlice([]byte{}, 1))
 	assertEqualByteSlices(t, []byte{0, 1}, padByteSlice([]byte{1}, 2))
@@ -206,6 +208,7 @@ func TestMnemonicToByteArrayForZeroLeadingSeeds(t *testing.T) {
 		}
 	}
 }
+
 func TestEntropyFromMnemonic128(t *testing.T) {
 	testEntropyFromMnemonic(t, 128)
 }

@@ -4,9 +4,10 @@ import (
 	"math/big"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 func TestSchnorr_GenerateAndVerifyProof(t *testing.T) {

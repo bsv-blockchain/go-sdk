@@ -15,14 +15,14 @@ type KVStoreInterface interface {
 	// Returns ErrKeyNotFound if the key is not found and no defaultValue is provided (or behavior adjusted based on defaultValue).
 	// Returns ErrCorruptedState if the data associated with the key is unreadable or invalid.
 	// May return other errors related to wallet operations or context cancellation.
-	Get(ctx context.Context, key string, defaultValue string) (string, error)
+	Get(ctx context.Context, key, defaultValue string) (string, error)
 
 	// Set stores a value with the given key, returning the outpoint of the transaction output.
 	// If the key already exists, the existing outputs are spent and a new one is created.
 	// If multiple outputs exist with the same key, they are collapsed into a single output.
 	// Returns ErrWalletOperationFailed if creating or signing the transaction fails.
 	// May return other errors related to wallet operations (e.g., encryption) or context cancellation.
-	Set(ctx context.Context, key string, value string) (string, error)
+	Set(ctx context.Context, key, value string) (string, error)
 
 	// Remove deletes all values for the given key by spending the outputs.
 	// Returns the transaction IDs of the removal transactions.

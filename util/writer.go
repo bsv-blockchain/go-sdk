@@ -4,9 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
 	"sort"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 // Writer is a helper for building binary messages
@@ -29,7 +30,7 @@ func (w *Writer) WriteBytes(b []byte) {
 
 func (w *Writer) WriteBytesReverse(b []byte) {
 	// Reverse the byte slice before appending
-	var newBytes = make([]byte, len(b))
+	newBytes := make([]byte, len(b))
 	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
 		newBytes[i], newBytes[j] = b[j], b[i]
 	}

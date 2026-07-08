@@ -157,7 +157,6 @@ func TestMasterCertificate(t *testing.T) {
 				false,
 				"",
 			)
-
 			if err != nil {
 				t.Fatalf("DecryptFields failed unexpectedly: %v", err)
 			}
@@ -275,7 +274,6 @@ func TestMasterCertificate(t *testing.T) {
 				false,
 				"",
 			)
-
 			if err != nil {
 				t.Fatalf("CreateKeyringForVerifier failed unexpectedly: %v", err)
 			}
@@ -448,7 +446,6 @@ func TestMasterCertificate(t *testing.T) {
 				mockRevocationFunc,
 				"",
 			)
-
 			if err != nil {
 				t.Fatalf("IssueCertificateForSubject failed: %v", err)
 			}
@@ -494,7 +491,6 @@ func TestMasterCertificate(t *testing.T) {
 				nil,
 				string(customSerialNumber),
 			)
-
 			if err != nil {
 				t.Fatalf("IssueCertificateForSubject with custom SN failed: %v", err)
 			}
@@ -518,7 +514,6 @@ func TestMasterCertificate(t *testing.T) {
 				nil,
 				"",
 			)
-
 			if err != nil {
 				t.Fatalf("Issuing self-signed certificate failed: %v", err)
 			}
@@ -533,7 +528,6 @@ func TestMasterCertificate(t *testing.T) {
 				false,
 				"",
 			)
-
 			if err != nil {
 				t.Fatalf("Decrypting self-signed certificate failed: %v", err)
 			}

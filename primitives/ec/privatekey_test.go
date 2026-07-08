@@ -14,10 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 func TestPrivKeys(t *testing.T) {
@@ -153,7 +154,6 @@ func TestPrivateKeySerializationAndDeserialization(t *testing.T) {
 		// then:
 		assert.NoError(t, err, "failed to deserialize private key")
 		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
-
 	})
 
 	t.Run("WIF", func(t *testing.T) {
@@ -168,7 +168,6 @@ func TestPrivateKeySerializationAndDeserialization(t *testing.T) {
 		assert.NoError(t, err, "failed to deserialize private key")
 		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
 	})
-
 }
 
 func TestPrivateKeyFromInvalidWif(t *testing.T) {
@@ -247,8 +246,10 @@ func TestStaticKeyShares(t *testing.T) {
 	bigInt4, _ := new(big.Int).SetString("69399200685258027967243383183941157630666642239721524878579037738057870534877", 10)
 	bigInt5, _ := new(big.Int).SetString("57624126407367177448064453473133284173777913145687126926923766367371013747852", 10)
 
-	points := []*keyshares.PointInFiniteField{{
-		X: big.NewInt(1), Y: bigInt1},
+	points := []*keyshares.PointInFiniteField{
+		{
+			X: big.NewInt(1), Y: bigInt1,
+		},
 		{X: big.NewInt(2), Y: bigInt2},
 		{X: big.NewInt(3), Y: bigInt3},
 		{X: big.NewInt(4), Y: bigInt4},
@@ -585,7 +586,6 @@ func TestExampleBackupAndRecovery(t *testing.T) {
 }
 
 func TestExampleFromTypescript(t *testing.T) {
-
 	recoveryShares := []string{
 		"HYkALskEizXkRLHr5Q5fzj9w7ThpdgwqBwjHih9sifVW.6zRqQ7LMKFu7eFSf9eABfuugnvzG9tSiv4uj8zXrX6r7.6.35449bb9",
 		"CnAGiYWrGzKZn5GcAu4FZSnZkNi6pToVRkPfUaCtiDm6.4e3M6FN2R3iUssJwJ8PazCX7fCvx3mgu1M82GREXrptn.6.35449bb9",

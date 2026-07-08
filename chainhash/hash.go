@@ -155,6 +155,7 @@ func Decode(dst *Hash, src string) error {
 
 	return nil
 }
+
 func (hash Hash) Marshal() ([]byte, error) {
 	if len(hash) == 0 {
 		return nil, nil

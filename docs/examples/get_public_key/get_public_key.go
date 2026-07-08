@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"log"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 

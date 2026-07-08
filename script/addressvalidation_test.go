@@ -3,8 +3,9 @@ package script_test
 import (
 	"testing"
 
-	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
+
+	script "github.com/bsv-blockchain/go-sdk/script"
 )
 
 func TestValidateAddress(t *testing.T) {

@@ -4,11 +4,12 @@ import (
 	"crypto/sha256"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // Create test data
@@ -119,11 +120,13 @@ func TestEncryptDecryptMessage(t *testing.T) {
 
 	t.Run("validates BRC-2 encryption compliance vector", func(t *testing.T) {
 		privKey, err := ec.PrivateKeyFromHex(
-			"6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8")
+			"6a2991c9de20e38b31d7ea147bf55f5039e4bbc073160f5e0d541d1f17e321b8",
+		)
 		assert.NoError(t, err, "creating private key from hex should not error")
 
 		counterparty, err := ec.PublicKeyFromString(
-			"0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+			"0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1",
+		)
 		assert.NoError(t, err, "creating public key from string should not error")
 
 		w, err := wallet.NewWallet(privKey)
@@ -323,7 +326,8 @@ func TestCreateVerifySignature(t *testing.T) {
 		assert.NoError(t, err)
 
 		counterparty, err := ec.PublicKeyFromString(
-			"0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1")
+			"0294c479f762f6baa97fbcd4393564c1d7bd8336ebd15928135bbcf575cd1a71a1",
+		)
 		assert.NoError(t, err)
 
 		signature, err := ec.FromDER([]byte{

@@ -6,16 +6,16 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	certpkg "github.com/bsv-blockchain/go-sdk/auth/certificates"
 	utilspkg "github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 const soloNonce = "solo-nonce"
-
 
 func TestPeerStop(t *testing.T) {
 	t.Run("stop returns nil", func(t *testing.T) {

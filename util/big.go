@@ -7,7 +7,7 @@ import (
 
 // Umod returns the unsigned modulus of x and y.
 // It ensures the result is always non-negative.
-func Umod(x *big.Int, y *big.Int) *big.Int {
+func Umod(x, y *big.Int) *big.Int {
 	// Ensure divisor y is not zero
 	if y.Sign() == 0 {
 		panic("division by zero")

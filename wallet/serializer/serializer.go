@@ -8,6 +8,7 @@ package serializer
 import (
 	"errors"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"

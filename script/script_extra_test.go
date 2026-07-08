@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
+
+	script "github.com/bsv-blockchain/go-sdk/script"
 )
 
 // TestScriptBytes verifies that Bytes returns the underlying byte slice.

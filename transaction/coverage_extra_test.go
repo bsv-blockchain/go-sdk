@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
-	"github.com/stretchr/testify/require"
 )
 
 // ---- Mock ChainTracker for testing Beef.Verify ----
@@ -328,8 +329,8 @@ func TestTransactionInputReadFromExtended(t *testing.T) {
 	// 32 bytes prev txid + 4 bytes index + varint script len + script + 4 bytes sequence + 8 bytes satoshis + varint script len + locking script
 	var b bytes.Buffer
 	b.Write(input.SourceTXID[:])
-	b.Write([]byte{0, 0, 0, 0}) // index
-	b.WriteByte(0)               // unlocking script len = 0
+	b.Write([]byte{0, 0, 0, 0})             // index
+	b.WriteByte(0)                          // unlocking script len = 0
 	b.Write([]byte{0xff, 0xff, 0xff, 0xff}) // sequence
 	// satoshis (8 bytes LE)
 	b.Write([]byte{0xe8, 0x03, 0, 0, 0, 0, 0, 0}) // 1000 satoshis
@@ -351,8 +352,8 @@ func TestInscribe(t *testing.T) {
 	lockScript := &script.Script{}
 	_ = lockScript.AppendOpcodes(script.OpTRUE)
 	ia := &script.InscriptionArgs{
-		ContentType:  contentTypeTextPlain,
-		Data:         []byte("hello world"),
+		ContentType:   contentTypeTextPlain,
+		Data:          []byte("hello world"),
 		LockingScript: lockScript,
 	}
 	err := tx.Inscribe(ia)
@@ -380,8 +381,8 @@ func TestInscribeSpecificOrdinal(t *testing.T) {
 	lockScript := &script.Script{}
 	_ = lockScript.AppendOpcodes(script.OpTRUE)
 	ia := &script.InscriptionArgs{
-		ContentType:  contentTypeTextPlain,
-		Data:         []byte("ordinal"),
+		ContentType:   contentTypeTextPlain,
+		Data:          []byte("ordinal"),
 		LockingScript: lockScript,
 	}
 	extraScript := &script.Script{}

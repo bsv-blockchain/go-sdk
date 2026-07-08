@@ -24,6 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/authpayload"
 	"github.com/bsv-blockchain/go-sdk/auth/brc104"
@@ -31,8 +34,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const wellKnownAuthPath = "/.well-known/auth"

@@ -6,12 +6,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/overlay/topic"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/testcertificates"
-	"github.com/stretchr/testify/require"
 )
 
 // buildIdentityCert creates a wallet.IdentityCertificate for testing parseIdentity
@@ -354,7 +355,8 @@ func TestPubliclyRevealAttributesSimpleValidationErrors(t *testing.T) {
 
 func TestTestablePubliclyRevealAttributesSimpleViaNetwork(t *testing.T) {
 	t.Run("reaches broadcast via simple API (failure path from broadcast)", func(t *testing.T) {
-		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 203,
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(
+			t, 203,
 			func(mw *wallet.TestWallet) {
 				mw.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{Network: "testnet"})
 			},
@@ -484,7 +486,8 @@ func setupRevealAttributesClient(
 
 func TestTestablePubliclyRevealAttributesGetNetworkPath(t *testing.T) {
 	t.Run("reaches GetNetwork after successful transaction creation", func(t *testing.T) {
-		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 200,
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(
+			t, 200,
 			func(mw *wallet.TestWallet) {
 				mw.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{Network: "testnet"})
 			},
@@ -498,7 +501,8 @@ func TestTestablePubliclyRevealAttributesGetNetworkPath(t *testing.T) {
 	})
 
 	t.Run("fails when GetNetwork returns error", func(t *testing.T) {
-		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 201,
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(
+			t, 201,
 			func(mw *wallet.TestWallet) {
 				mw.OnGetNetwork().ReturnError(fmt.Errorf("network error"))
 			},
@@ -510,7 +514,8 @@ func TestTestablePubliclyRevealAttributesGetNetworkPath(t *testing.T) {
 	})
 
 	t.Run("mainnet path uses mainnet broadcaster", func(t *testing.T) {
-		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(t, 202,
+		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(
+			t, 202,
 			func(mw *wallet.TestWallet) {
 				mw.OnGetNetwork().ReturnSuccess(&wallet.GetNetworkResult{Network: "mainnet"})
 			},

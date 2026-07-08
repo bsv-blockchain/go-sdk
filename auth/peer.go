@@ -137,7 +137,6 @@ func (p *Peer) Start() error {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to register message handler with transport: %w", err)
 	}
@@ -268,7 +267,6 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 		},
 		Data: message,
 	}, "auth-peer")
-
 	if err != nil {
 		return fmt.Errorf("failed to sign message: %w", err)
 	}
@@ -1051,7 +1049,6 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 		// Sign the certificate request data, as in TypeScript
 		Data: certRequestData,
 	}, "")
-
 	if err != nil {
 		return fmt.Errorf("failed to sign certificate request: %w", err)
 	}
@@ -1132,7 +1129,6 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 		},
 		Data: certData,
 	}, "")
-
 	if err != nil {
 		return fmt.Errorf("failed to sign certificate response: %w", err)
 	}

@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // TestPointInFiniteField verifies the creation and string conversion of points

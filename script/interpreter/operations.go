@@ -25,9 +25,7 @@ const (
 	opCondSkip  = 2
 )
 
-var (
-	externalVerifySignatureFn func(payload, signature, publicKey []byte) bool = nil
-)
+var externalVerifySignatureFn func(payload, signature, publicKey []byte) bool = nil
 
 func InjectExternalVerifySignatureFn(fn func(payload, signature, publicKey []byte) bool) {
 	externalVerifySignatureFn = fn
@@ -240,14 +238,14 @@ var opcodeArray = [256]opcode{
 	script.OpCHECKMULTISIGVERIFY: {script.OpCHECKMULTISIGVERIFY, "OP_CHECKMULTISIGVERIFY", 1, opcodeCheckMultiSigVerify},
 
 	// Reserved opcodes. NOP4-NOP8 are repurposed as Chronicle opcodes.
-	script.OpNOP1:    {script.OpNOP1, "OP_NOP1", 1, opcodeNop},
-	script.OpSUBSTR:  {script.OpSUBSTR, "OP_SUBSTR", 1, opcodeSubstr},
-	script.OpLEFT:    {script.OpLEFT, "OP_LEFT", 1, opcodeLeft},
-	script.OpRIGHT:   {script.OpRIGHT, "OP_RIGHT", 1, opcodeRight},
+	script.OpNOP1:      {script.OpNOP1, "OP_NOP1", 1, opcodeNop},
+	script.OpSUBSTR:    {script.OpSUBSTR, "OP_SUBSTR", 1, opcodeSubstr},
+	script.OpLEFT:      {script.OpLEFT, "OP_LEFT", 1, opcodeLeft},
+	script.OpRIGHT:     {script.OpRIGHT, "OP_RIGHT", 1, opcodeRight},
 	script.OpLSHIFTNUM: {script.OpLSHIFTNUM, "OP_LSHIFTNUM", 1, opcodeLShiftNum},
 	script.OpRSHIFTNUM: {script.OpRSHIFTNUM, "OP_RSHIFTNUM", 1, opcodeRShiftNum},
-	script.OpNOP9:    {script.OpNOP9, "OP_NOP9", 1, opcodeNop},
-	script.OpNOP10:   {script.OpNOP10, "OP_NOP10", 1, opcodeNop},
+	script.OpNOP9:      {script.OpNOP9, "OP_NOP9", 1, opcodeNop},
+	script.OpNOP10:     {script.OpNOP10, "OP_NOP10", 1, opcodeNop},
 
 	// Undefined opcodes.
 	script.OpUNKNOWN186: {script.OpUNKNOWN186, "OP_UNKNOWN186", 1, opcodeInvalid},
@@ -338,7 +336,6 @@ var opcodeArray = [256]opcode{
 func opcodeDisabled(op *ParsedOpcode, t *thread) error {
 	return errs.NewError(errs.ErrDisabledOpcode, "attempt to execute disabled opcode %s", op.Name())
 }
-
 
 // opcodeReserved is a common handler for all reserved opcodes.  It returns an
 // appropriate error indicating the opcode is reserved.

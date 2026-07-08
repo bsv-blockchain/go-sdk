@@ -3,9 +3,10 @@ package serializer
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRelinquishCertificateArgs(t *testing.T) {

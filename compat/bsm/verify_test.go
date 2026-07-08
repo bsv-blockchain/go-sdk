@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	compat "github.com/bsv-blockchain/go-sdk/compat/bsm"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/stretchr/testify/require"
 )
 
 const testMessage = "test message"

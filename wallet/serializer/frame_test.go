@@ -3,8 +3,9 @@ package serializer
 import (
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func TestRequestFrameRoundTrip(t *testing.T) {

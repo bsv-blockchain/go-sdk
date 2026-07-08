@@ -9,11 +9,12 @@ import (
 	"log"
 	"slices"
 
+	"github.com/pkg/errors"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/pkg/errors"
 )
 
 type Transaction struct {
@@ -645,5 +646,4 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 	default:
 		return nil, fmt.Errorf("use NewBeefFromBytes to parse anything which isn't V1 BEEF or AtomicBEEF")
 	}
-
 }

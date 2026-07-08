@@ -3,6 +3,7 @@ package serializer
 import (
 	"errors"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )

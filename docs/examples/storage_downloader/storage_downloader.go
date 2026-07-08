@@ -48,7 +48,7 @@ func main() {
 		}
 	}
 
-	if err := os.WriteFile(outputFilename, result.Data, 0644); err != nil {
+	if err := os.WriteFile(outputFilename, result.Data, 0o644); err != nil {
 		log.Fatalf("Failed to save file: %v", err)
 	}
 

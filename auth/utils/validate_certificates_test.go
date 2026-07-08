@@ -4,14 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	tcu "github.com/bsv-blockchain/go-sdk/util/test_cert_util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestValidateCertificatesFunctionality(t *testing.T) {
@@ -200,7 +201,7 @@ func TestValidateCertificates(t *testing.T) {
 	differentVerifierrKey := differentSubject.PubKey()
 
 	// Create a requested certificate set
-	var requestedType = tcu.CertificateTypeName.ToType(t)
+	requestedType := tcu.CertificateTypeName.ToType(t)
 
 	successTestCases := map[string]struct {
 		requestedCerts *utils.RequestedCertificateSet

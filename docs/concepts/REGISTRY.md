@@ -165,22 +165,22 @@ The registry client manages on-chain registry definitions for all three types:
 type RegistryClientInterface interface {
     // RegisterDefinition publishes a new on-chain definition
     RegisterDefinition(ctx context.Context, data interface{}) (*RegisterDefinitionResult, error)
-    
+
     // Resolve finds registry entries that match the query
     Resolve(ctx context.Context, definitionType DefinitionType, query interface{}) ([]interface{}, error)
-    
+
     // ResolveBasket finds basket registry entries
     ResolveBasket(ctx context.Context, query BasketQuery) ([]*BasketDefinitionData, error)
-    
+
     // ResolveProtocol finds protocol registry entries
     ResolveProtocol(ctx context.Context, query ProtocolQuery) ([]*ProtocolDefinitionData, error)
-    
+
     // ResolveCertificate finds certificate registry entries
     ResolveCertificate(ctx context.Context, query CertificateQuery) ([]*CertificateDefinitionData, error)
-    
+
     // ListOwnRegistryEntries lists the registry operator's published definitions
     ListOwnRegistryEntries(ctx context.Context, definitionType DefinitionType) ([]*RegistryRecord, error)
-    
+
     // RevokeOwnRegistryEntry revokes a registry record by spending its UTXO
     RevokeOwnRegistryEntry(ctx context.Context, record *RegistryRecord) (*RevokeDefinitionResult, error)
 }

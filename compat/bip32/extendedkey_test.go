@@ -3,9 +3,10 @@ package compat_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	compat "github.com/bsv-blockchain/go-sdk/compat/bip32"
 	chaincfg "github.com/bsv-blockchain/go-sdk/transaction/chaincfg"
-	"github.com/stretchr/testify/require"
 )
 
 const testXPriv = "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"

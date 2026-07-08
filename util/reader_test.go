@@ -3,8 +3,9 @@ package util_test
 import (
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 func TestWriterReader(t *testing.T) {

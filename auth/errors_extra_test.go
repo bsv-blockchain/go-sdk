@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/auth"
 )
 
 func TestIsAuthError(t *testing.T) {

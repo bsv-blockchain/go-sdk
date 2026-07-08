@@ -6,10 +6,11 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 // ALIGN THIS W THE TYPESCRIPT IM PLEMENTATION
@@ -414,7 +415,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 					Tx:        nil,
 					Reference: []byte("ref"),
 				},
-			})
+			},
+		)
 
 		// Create a mock certificate verifier that always succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -472,7 +474,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 					Tx:        []byte{1, 2, 3},
 					Reference: []byte("ref"),
 				},
-			})
+			},
+		)
 
 		// Create a mock certificate verifier that always succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -611,7 +614,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 					Tx:        []byte{1, 2, 3, 4},
 					Reference: []byte("ref"),
 				},
-			})
+			},
+		)
 
 		// Create a mock certificate verifier that succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -668,7 +672,8 @@ func TestResolveByIdentityKey(t *testing.T) {
 						},
 					},
 				},
-			})
+			},
+		)
 
 		// Call ResolveByIdentityKey
 		identities, err := client.ResolveByIdentityKey(context.Background(), wallet.DiscoverByIdentityKeyArgs{
@@ -724,7 +729,8 @@ func TestResolveByAttributes(t *testing.T) {
 						},
 					},
 				},
-			})
+			},
+		)
 
 		// Call ResolveByAttributes
 		identities, err := client.ResolveByAttributes(context.Background(), wallet.DiscoverByAttributesArgs{

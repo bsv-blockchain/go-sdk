@@ -1,11 +1,12 @@
 package substrates
 
 import (
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 const TestOriginator = "test.com"

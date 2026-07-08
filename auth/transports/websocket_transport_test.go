@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/auth"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/websocket"
+
+	"github.com/bsv-blockchain/go-sdk/auth"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // testWsServer is a basic WebSocket test server

@@ -14,7 +14,6 @@ func SerializeGetHeaderArgs(args *wallet.GetHeaderArgs) ([]byte, error) {
 }
 
 func DeserializeGetHeaderArgs(data []byte) (*wallet.GetHeaderArgs, error) {
-
 	r := util.NewReaderHoldError(data)
 
 	args := &wallet.GetHeaderArgs{

@@ -230,7 +230,7 @@ type Webhook struct {
 }
 
 // RegisterWebhook registers a webhook URL with the block headers service
-func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authToken string) (*Webhook, error) {
+func (c *Client) RegisterWebhook(ctx context.Context, callbackURL, authToken string) (*Webhook, error) {
 	req := WebhookRequest{
 		URL: callbackURL,
 		RequiredAuth: RequiredAuth{

@@ -3,18 +3,18 @@ package p2pkh_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/stretchr/testify/require"
 )
 
 // knownP2PKHHex is a standard P2PKH locking script for a known address.
 // Corresponds to address 1EXaDXx3f8H3u4BNPBXSb8roFkgJ7CDVMA (mainnet).
 const knownP2PKHHex = "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac"
-
 
 // TestDecodeValidP2PKH verifies that a well-formed 25-byte P2PKH script
 // is decoded to a non-nil Address.

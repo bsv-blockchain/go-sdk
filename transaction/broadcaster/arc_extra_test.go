@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 const arcExampleURL = "https://arc.example.com"
@@ -216,9 +217,9 @@ func TestArcStatusMethod(t *testing.T) {
 	mined := MINED
 	ts := time.Now()
 	expectedResp := &ArcResponse{
-		Txid:     txid,
-		TxStatus: &mined,
-		Status:   200,
+		Txid:      txid,
+		TxStatus:  &mined,
+		Status:    200,
 		Timestamp: ts,
 	}
 

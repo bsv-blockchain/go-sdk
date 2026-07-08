@@ -74,7 +74,6 @@ func NewAddressFromPublicKeyString(pubKey string, mainnet bool) (*Address, error
 // If mainnet parameter is true it will return a mainnet address (starting with a 1).
 // Otherwise, (mainnet is false) it will return a testnet address (starting with an m or n).
 func NewAddressFromPublicKeyHash(hash []byte, mainnet bool) (*Address, error) {
-
 	// regtest := 111
 	// mainnet: 0
 
@@ -98,7 +97,7 @@ func NewAddressFromPublicKey(pubKey *ec.PublicKey, mainnet bool) (*Address, erro
 	return NewAddressFromPublicKeyWithCompression(pubKey, mainnet, true)
 }
 
-func NewAddressFromPublicKeyWithCompression(pubKey *ec.PublicKey, mainnet bool, isCompressed bool) (*Address, error) {
+func NewAddressFromPublicKeyWithCompression(pubKey *ec.PublicKey, mainnet, isCompressed bool) (*Address, error) {
 	var hash []byte
 	if isCompressed {
 		hash = pubKey.Hash()
@@ -135,5 +134,5 @@ func Base58EncodeMissingChecksum(input []byte) string {
 func checksum(input []byte) (ckSum [4]byte) {
 	h := crypto.Sha256d(input)
 	copy(ckSum[:], h[:4])
-	return
+	return ckSum
 }

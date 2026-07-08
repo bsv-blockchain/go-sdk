@@ -19,7 +19,7 @@ func (tx *Transaction) TotalInputSatoshis() (total uint64, err error) {
 		}
 		total += prevSats
 	}
-	return
+	return total, err
 }
 
 func (tx *Transaction) AddInput(input *TransactionInput) {
@@ -32,7 +32,8 @@ func (tx *Transaction) AddInputWithOutput(input *TransactionInput, output *Trans
 }
 
 func (tx *Transaction) AddInputFromTx(sourceTx *Transaction, vout uint32,
-	unlockingScriptTemplate UnlockingScriptTemplate) {
+	unlockingScriptTemplate UnlockingScriptTemplate,
+) {
 	i := &TransactionInput{
 		SourceTXID:              sourceTx.TxID(),
 		SourceTxOutIndex:        vout,
@@ -81,7 +82,8 @@ func (tx *Transaction) SequenceHash() []byte {
 // finalized sequence number (0xFFFFFFFF). If you want a different nSeq, change it manually
 // afterwards.
 func (tx *Transaction) AddInputFrom(prevTxID string, vout uint32, prevTxLockingScript string,
-	satoshis uint64, unlockingScriptTemplate UnlockingScriptTemplate) error {
+	satoshis uint64, unlockingScriptTemplate UnlockingScriptTemplate,
+) error {
 	pts, err := script.NewFromHex(prevTxLockingScript)
 	if err != nil {
 		return err

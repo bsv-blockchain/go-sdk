@@ -5,9 +5,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/require"
 )
 
 // Selected Shamir-related tests moved from privatekey_test.go for cohesion
@@ -75,8 +76,10 @@ func TestStaticKeyShares_Shamir(t *testing.T) {
 	bigInt4, _ := new(big.Int).SetString("69399200685258027967243383183941157630666642239721524878579037738057870534877", 10)
 	bigInt5, _ := new(big.Int).SetString("57624126407367177448064453473133284173777913145687126926923766367371013747852", 10)
 
-	points := []*keyshares.PointInFiniteField{{
-		X: big.NewInt(1), Y: bigInt1},
+	points := []*keyshares.PointInFiniteField{
+		{
+			X: big.NewInt(1), Y: bigInt1,
+		},
 		{X: big.NewInt(2), Y: bigInt2},
 		{X: big.NewInt(3), Y: bigInt3},
 		{X: big.NewInt(4), Y: bigInt4},

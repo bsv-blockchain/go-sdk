@@ -11,10 +11,11 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/pkg/errors"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/pkg/errors"
 )
 
 type PathElement struct {
@@ -357,7 +358,7 @@ func (m *MerklePath) Combine(other *MerklePath) (err error) {
 		})
 	}
 
-	return
+	return err
 }
 
 // FindLeafByOffset finds a PathElement at the given offset in the specified level.

@@ -3,12 +3,13 @@ package p2pkh_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/stretchr/testify/require"
 )
 
 func TestLocalUnlocker_UnlockAllInputs(t *testing.T) {

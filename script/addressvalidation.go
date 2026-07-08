@@ -12,14 +12,14 @@ type a25 [25]byte
 
 func (a *a25) embeddedChecksum() (c [4]byte) {
 	copy(c[:], a[21:])
-	return
+	return c
 }
 
 // computeChecksum returns a four byte checksum computed from the first 21
 // bytes of the address.  The embedded checksum is not updated.
 func (a *a25) computeChecksum() (c [4]byte) {
 	copy(c[:], crypto.Sha256d(a[:21]))
-	return
+	return c
 }
 
 // Tmpl and set58 are adapted from the C solution.

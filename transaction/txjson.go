@@ -3,9 +3,10 @@ package transaction
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	script "github.com/bsv-blockchain/go-sdk/script"
-	"github.com/pkg/errors"
 )
 
 type txJSON struct {

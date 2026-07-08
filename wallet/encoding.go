@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 

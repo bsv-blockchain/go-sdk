@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-
 	"github.com/stretchr/testify/assert"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 func TestKeyDeriver(t *testing.T) {

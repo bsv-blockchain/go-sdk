@@ -31,9 +31,11 @@ func NewBeef() *Beef {
 	}
 }
 
-const BEEF_V1 = uint32(4022206465)     // BRC-64
-const BEEF_V2 = uint32(4022206466)     // BRC-96
-const ATOMIC_BEEF = uint32(0x01010101) // BRC-95
+const (
+	BEEF_V1     = uint32(4022206465) // BRC-64
+	BEEF_V2     = uint32(4022206466) // BRC-96
+	ATOMIC_BEEF = uint32(0x01010101) // BRC-95
+)
 
 func (t *Transaction) FromBEEF(beef []byte) error {
 	tx, err := NewTransactionFromBEEF(beef)

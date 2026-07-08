@@ -300,7 +300,6 @@ func main() {
 
 	// Set up message handlers
 	alicePeer.ListenForGeneralMessages(func(_ context.Context, senderPubKey *ec.PublicKey, payload []byte) error {
-
 		fmt.Printf("Alice received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
 		return nil
 	})

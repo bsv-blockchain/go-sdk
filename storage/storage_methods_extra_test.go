@@ -25,6 +25,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
@@ -32,8 +35,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const errUnableToDownload = "unable to download content"
@@ -76,7 +77,7 @@ func buildMinimalBeef(t *testing.T, lockingScript *script.Script) ([]byte, uint3
 // buildUhrpPushDropScript creates a pushdrop script matching the UHRP format
 // (fields: hash, uhrpURL, hostURL, expiryVarInt).
 // The expiry is encoded using the BSV VarInt format as expected by util.Reader.ReadVarInt.
-func buildUhrpPushDropScript(t *testing.T, hash []byte, uhrpURL string, hostURL string, expiryUnix int64) *script.Script {
+func buildUhrpPushDropScript(t *testing.T, hash []byte, uhrpURL, hostURL string, expiryUnix int64) *script.Script {
 	t.Helper()
 	// Encode expiry as a BSV VarInt (used by util.Reader.ReadVarInt)
 	expiryBytes := util.VarInt(uint64(expiryUnix)).Bytes()

@@ -11,6 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/transports"
@@ -21,8 +24,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/testcertificates"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -134,31 +135,36 @@ func (t *LoggingMockTransport) Send(ctx context.Context, message *auth.AuthMessa
 			logger.InfoContext(ctx, "Requiring Certificates from peer", slog.Group("requested", t.requestedCertificatesLoggingArgs(message)...))
 		}
 	case auth.MessageTypeInitialResponse:
-		logger.InfoContext(ctx,
+		logger.InfoContext(
+			ctx,
 			"Initial Response",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 			slog.Int("received.certificates.count", len(message.Certificates)),
 		)
 		if len(message.Certificates) > 0 {
-			logger.InfoContext(ctx, "Initial Response included certificates",
+			logger.InfoContext(
+				ctx, "Initial Response included certificates",
 				slog.Group("received.certs", t.receivedCertificatesLoggingArgs(message)...),
 			)
 		}
 	case auth.MessageTypeCertificateRequest:
-		logger.InfoContext(ctx, "Certificate Request",
+		logger.InfoContext(
+			ctx, "Certificate Request",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 			slog.Group("requested", t.requestedCertificatesLoggingArgs(message)...),
 		)
 	case auth.MessageTypeCertificateResponse:
-		logger.InfoContext(ctx, "Certificate Response",
+		logger.InfoContext(
+			ctx, "Certificate Response",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 			slog.Group("received.certs", t.receivedCertificatesLoggingArgs(message)...),
 		)
 	case auth.MessageTypeGeneral:
-		logger.InfoContext(ctx, "General Message",
+		logger.InfoContext(
+			ctx, "General Message",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 		)
@@ -168,7 +174,8 @@ func (t *LoggingMockTransport) Send(ctx context.Context, message *auth.AuthMessa
 
 func (t *LoggingMockTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
 	wrappedCallback := func(ctx context.Context, message *auth.AuthMessage) error {
-		t.logger.InfoContext(ctx, "Received message",
+		t.logger.InfoContext(
+			ctx, "Received message",
 			slog.String("direction", "RECEIVE"),
 			slog.String("messageType", string(message.MessageType)),
 			slog.String("initialNonce", message.InitialNonce),
@@ -188,7 +195,7 @@ func (t *LoggingMockTransport) receivedCertificatesLoggingArgs(message *auth.Aut
 		}
 	}
 
-	var args = make([]any, 0)
+	args := make([]any, 0)
 	for _, certificate := range message.Certificates {
 		fields := fmt.Sprintf("%v", slices.Collect(maps.Keys(certificate.Fields)))
 
@@ -200,7 +207,8 @@ func (t *LoggingMockTransport) receivedCertificatesLoggingArgs(message *auth.Aut
 			certType = string(certTypeArray[:])
 		}
 
-		args = append(args, slog.Group(certType,
+		args = append(args, slog.Group(
+			certType,
 			slog.String("fields", fields),
 			slog.String("certifier", certificate.Certifier.ToDERHex()),
 		))
@@ -934,7 +942,6 @@ func TestCertificateExchangeWithCustomFlow(t *testing.T) {
 	// when: Bob receives message about book, he requires sender to give him a library card
 	certReceived := make(chan struct{}, 1)
 	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
-
 		// Bob will make a dedicated request for certificates
 		err := bob.RequestCertificates(t.Context(), senderPublicKey, utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{bob.IdentityKey},

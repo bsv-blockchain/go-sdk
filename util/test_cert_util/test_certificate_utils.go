@@ -3,16 +3,19 @@ package tcu
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/testcertificates"
-	"github.com/stretchr/testify/require"
 )
 
-const CertificateFieldName = "field1"
-const CertificateFieldValue = "test value"
-const CertificateTypeName testCertificateTypeName = "requested_type"
+const (
+	CertificateFieldName                          = "field1"
+	CertificateFieldValue                         = "test value"
+	CertificateTypeName   testCertificateTypeName = "requested_type"
+)
 
 type testCertificateTypeName string
 
@@ -26,7 +29,7 @@ func (ct testCertificateTypeName) ToType(t testing.TB) wallet.CertificateType {
 	return certType
 }
 
-func CreateValidCertificate(t testing.TB, subject *ec.PrivateKey, certifier *ec.PrivateKey, verifierKey *ec.PublicKey) *certificates.VerifiableCertificate {
+func CreateValidCertificate(t testing.TB, subject, certifier *ec.PrivateKey, verifierKey *ec.PublicKey) *certificates.VerifiableCertificate {
 	subjectWallet := wallet.NewTestWallet(t, subject)
 
 	certManager := testcertificates.NewManager(t, subjectWallet)

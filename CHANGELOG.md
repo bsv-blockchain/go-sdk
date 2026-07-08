@@ -541,22 +541,22 @@ This is a major release introducing comprehensive new modules for authentication
 ## [1.1.12] - 2024-10-31
   ### Fixed
   - fix `spv.Verify()` to work with source output (separate fix from 1.1.11)
-  
+
 ## [1.1.11] - 2024-10-23
   ### Fixed
-  - fix `spv.Verify()` to work with source output 
-  
+  - fix `spv.Verify()` to work with source output
+
 ## [1.1.10] - 2024-10-20
   Big thanks for contributions from @wregulski
 
   ### Changed
   - `pubKey.ToDER()` now returns bytes
-  - `pubKey.ToHash()` is now `pubKey.Hash()` 
+  - `pubKey.ToHash()` is now `pubKey.Hash()`
   - `pubKey.SerializeCompressed()` is now `pubKey.Compressed()`
   - `pubKey.SerializeUncompressed()` is now `pubKey.Uncompressed()`
   - `pubKey.SerializeHybrid()` is now `pubKey.Hybrid()`
   - updated `merklepath.go` to use new helper functions from `transaction.merkletreeparent.go`
-  
+
   ### Added
   - files `spv/verify.go`, `spv/verify_test.go` - chain tracker for whatsonchain.com
     - `spv.Verify()` ensures transaction scripts, merkle paths and fees are valid
@@ -609,7 +609,7 @@ This is a major release introducing comprehensive new modules for authentication
 
 ### Added
   - New method `TransactionInput.SourceTxOutput()`
-  
+
 ### Changed
   - `SetSourceTxFromOutput` changed to be `SetSourceTxOutput`
   - Default behavior of `EncryptSingle` uses ephemeral key. Updated test.
@@ -640,7 +640,7 @@ This is a major release introducing comprehensive new modules for authentication
   - Previous ecies implementation
   - Outdated ecies example
   - encryption.go for vanilla AES encryption (to align with typescript library)
-  
+
   ### Changed
   - Renamed `message` example to `encrypt_message` for clarity
   - Change vanilla `aes` example to use existing encrypt/decrypt functions from `aesgcm` directory
@@ -741,22 +741,22 @@ Replace `X.X.X` with the new version number and `YYYY-MM-DD` with the release da
 ## [X.X.X] - YYYY-MM-DD
 
 ### Added
-- 
+-
 
 ### Changed
-- 
+-
 
 ### Deprecated
-- 
+-
 
 ### Removed
-- 
+-
 
 ### Fixed
-- 
+-
 
 ### Security
-- 
+-
 ```
 
 Use this template as the starting point for each new version. Always update the "Unreleased" section with changes as they're implemented, and then move them under the new version header when that version is released.

@@ -23,10 +23,11 @@ import (
 	"testing"
 	"unsafe"
 
-	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 const (

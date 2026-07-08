@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
+
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/pkg/errors"
 )
 
 /*

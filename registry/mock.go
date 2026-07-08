@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // MockRegistry implements the wallet.Wallet interface for testing purposes

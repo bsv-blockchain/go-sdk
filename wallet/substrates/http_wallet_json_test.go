@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewHTTPWalletJSON(t *testing.T) {
@@ -190,8 +191,8 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_SignAction(t *testing.T) {
-	var testRef = []byte("test-ref")
-	var testScript = []byte("test-script")
+	testRef := []byte("test-ref")
+	testScript := []byte("test-script")
 	testTxId := tu.GetByte32FromString("signed-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/signAction", r.URL.Path)
@@ -562,10 +563,12 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 
 		result := wallet.DiscoverCertificatesResult{
 			TotalCertificates: 1,
-			Certificates: []wallet.IdentityCertificate{{
-				Certificate: wallet.Certificate{
-					Type: typeDiscovered,
-				}},
+			Certificates: []wallet.IdentityCertificate{
+				{
+					Certificate: wallet.Certificate{
+						Type: typeDiscovered,
+					},
+				},
 			},
 		}
 		writeJSONResponse(t, w, result)

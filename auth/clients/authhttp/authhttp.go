@@ -711,7 +711,6 @@ func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, co
 			},
 		},
 	}, "auth-payment")
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive payment key: %w", err)
 	}
@@ -749,7 +748,6 @@ func (a *AuthFetch) handlePaymentAndRetry(ctx context.Context, urlStr string, co
 			RandomizeOutputs: &randomizeOutputs,
 		},
 	}, "auth-payment")
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to create payment transaction: %w", err)
 	}

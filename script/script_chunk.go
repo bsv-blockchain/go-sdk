@@ -26,13 +26,13 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 	b := *s
 	if len(b) <= *pos {
 		err = ErrScriptIndexOutOfRange
-		return
+		return op, err
 	}
 	switch b[*pos] {
 	case OpPUSHDATA1:
 		if len(b) < *pos+2 {
 			err = ErrDataTooSmall
-			return
+			return op, err
 		}
 
 		l := int(b[*pos+1])
@@ -40,7 +40,7 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 
 		if len(b) < *pos+l {
 			err = ErrDataTooSmall
-			return
+			return op, err
 		}
 
 		op = &ScriptChunk{Op: OpPUSHDATA1, Data: b[*pos : *pos+l]}
@@ -49,7 +49,7 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 	case OpPUSHDATA2:
 		if len(b) < *pos+3 {
 			err = ErrDataTooSmall
-			return
+			return op, err
 		}
 
 		l := int(binary.LittleEndian.Uint16(b[*pos+1:]))
@@ -57,7 +57,7 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 
 		if len(b) < *pos+l {
 			err = ErrDataTooSmall
-			return
+			return op, err
 		}
 
 		op = &ScriptChunk{Op: OpPUSHDATA2, Data: b[*pos : *pos+l]}
@@ -66,7 +66,7 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 	case OpPUSHDATA4:
 		if len(b) < *pos+5 {
 			err = ErrDataTooSmall
-			return
+			return op, err
 		}
 
 		l := int(binary.LittleEndian.Uint32(b[*pos+1:]))
@@ -74,7 +74,7 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 
 		if len(b) < *pos+l {
 			err = ErrDataTooSmall
-			return
+			return op, err
 		}
 
 		op = &ScriptChunk{Op: OpPUSHDATA4, Data: b[*pos : *pos+l]}
@@ -85,7 +85,7 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 			l := b[*pos]
 			if len(b) < *pos+int(1+l) {
 				err = ErrDataTooSmall
-				return
+				return op, err
 			}
 			op = &ScriptChunk{Op: b[*pos], Data: b[*pos+1 : *pos+int(l+1)]}
 			*pos += int(1 + l)
@@ -95,7 +95,7 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 		}
 	}
 
-	return
+	return op, err
 }
 
 // ParseOps parses the script and returns a slice of ScriptOp objects.
@@ -110,7 +110,7 @@ func (s *Script) ParseOps() (ops []*ScriptChunk, err error) {
 		ops = append(ops, op)
 	}
 
-	return
+	return ops, err
 }
 
 // NewScriptFromScriptOps creates a new Script from a slice of ScriptOps.
@@ -198,7 +198,6 @@ func PushDataPrefix(data []byte) ([]byte, error) {
 
 	if l <= 75 {
 		b = append(b, byte(l))
-
 	} else if l <= 0xFF {
 		b = append(b, OpPUSHDATA1)
 		b = append(b, byte(len(data)))
@@ -256,7 +255,7 @@ func DecodeScript(b []byte, options ...DecodeOptions) ([]*ScriptChunk, error) {
 			conditionalBlock--
 			b = b[1:]
 		case OpRETURN:
-			if (slices.Contains(options, DecodeOptionsParseOpReturn)) || conditionalBlock > 0 {
+			if slices.Contains(options, DecodeOptionsParseOpReturn) || conditionalBlock > 0 {
 				b = b[1:]
 			} else {
 				op.Data = b

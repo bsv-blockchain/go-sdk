@@ -49,7 +49,7 @@ func flipTwoArrays(a, b []byte) []byte {
 
 // MerkleTreeParent returns the Merkle Tree parent of two Merkle Tree children.
 // The expectation is that the bytes are not reversed.
-func MerkleTreeParent(l *chainhash.Hash, r *chainhash.Hash) *chainhash.Hash {
+func MerkleTreeParent(l, r *chainhash.Hash) *chainhash.Hash {
 	concatenated := make([]byte, len(l)+len(r))
 	copy(concatenated, l[:])
 	copy(concatenated[len(l):], r[:])

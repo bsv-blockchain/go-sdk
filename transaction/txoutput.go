@@ -39,7 +39,7 @@ func (tx *Transaction) TotalOutputSatoshis() (total uint64) {
 	for _, o := range tx.Outputs {
 		total += o.Satoshis
 	}
-	return
+	return total
 }
 
 // AddHashPuzzleOutput makes an output to a hash puzzle + PKH with a value.

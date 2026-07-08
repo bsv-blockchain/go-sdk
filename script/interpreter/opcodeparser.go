@@ -423,7 +423,8 @@ func (o *ParsedOpcode) bytes() ([]byte, error) {
 	retbytes = append(retbytes, o.Data...)
 
 	if len(retbytes) != nbytes {
-		return nil, errs.NewError(errs.ErrInternal,
+		return nil, errs.NewError(
+			errs.ErrInternal,
 			"internal consistency error - parsed opcode %s has data length %d when %d was expected",
 			o.Name(), len(retbytes), nbytes,
 		)

@@ -13,7 +13,6 @@ import (
 
 // PubKeyFromSignature gets a publickey for a signature and tells you whether is was compressed
 func PubKeyFromSignature(sig, data []byte) (pubKey *ec.PublicKey, wasCompressed bool, err error) {
-
 	// Validate the signature - this just shows that it was valid at all
 	// we will compare it with the key next
 	var buf bytes.Buffer
@@ -68,33 +67,32 @@ func VerifyMessage(address string, sig, data []byte) error {
 
 // VerifyMessageDER will take a message string, a public key string and a signature string
 // (in strict DER format) and verify that the message was signed by the public key.
-func VerifyMessageDER(hash [32]byte, pubKey string, signature string) (verified bool, err error) {
-
+func VerifyMessageDER(hash [32]byte, pubKey, signature string) (verified bool, err error) {
 	// Decode the signature string
 	var sigBytes []byte
 	if sigBytes, err = hex.DecodeString(signature); err != nil {
-		return
+		return verified, err
 	}
 
 	// Parse the signature
 	var sig *ec.Signature
 	if sig, err = ec.ParseDERSignature(sigBytes); err != nil {
-		return
+		return verified, err
 	}
 
 	// Decode the pubKey
 	var pubKeyBytes []byte
 	if pubKeyBytes, err = hex.DecodeString(pubKey); err != nil {
-		return
+		return verified, err
 	}
 
 	// Parse the pubKey
 	var rawPubKey *ec.PublicKey
 	if rawPubKey, err = ec.ParsePubKey(pubKeyBytes); err != nil {
-		return
+		return verified, err
 	}
 
 	// Verify the signature against the pubKey
 	verified = sig.Verify(hash[:], rawPubKey)
-	return
+	return verified, err
 }

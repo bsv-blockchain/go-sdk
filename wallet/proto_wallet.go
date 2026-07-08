@@ -106,7 +106,6 @@ func (p *ProtoWallet) Encrypt(
 	args EncryptArgs,
 	originator string,
 ) (*EncryptResult, error) {
-
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
@@ -145,7 +144,6 @@ func (p *ProtoWallet) Decrypt(
 	args DecryptArgs,
 	originator string,
 ) (*DecryptResult, error) {
-
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}

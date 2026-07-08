@@ -26,6 +26,7 @@ func ReadDRBGVectors(filename string) ([]DRBGVector, error) {
 	err = json.Unmarshal(file, &vectors)
 	return vectors, err
 }
+
 func TestHmacDRBG(t *testing.T) {
 	vectors, err := ReadDRBGVectors("testdata/vectors.json")
 	if err != nil {

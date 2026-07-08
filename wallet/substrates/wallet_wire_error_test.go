@@ -5,10 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
 )
 
 const testWalletErrMsg = "wallet error"

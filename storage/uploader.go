@@ -72,7 +72,7 @@ type uploadInfo struct {
 }
 
 // getUploadInfo requests information from the server to upload a file
-func (u *Uploader) getUploadInfo(ctx context.Context, fileSize int, retentionPeriod int) (*uploadInfo, error) {
+func (u *Uploader) getUploadInfo(ctx context.Context, fileSize, retentionPeriod int) (*uploadInfo, error) {
 	uploadUrl := fmt.Sprintf("%s/upload", u.baseURL)
 	requestBody := map[string]interface{}{
 		"fileSize":        fileSize,

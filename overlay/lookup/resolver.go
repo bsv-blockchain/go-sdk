@@ -205,5 +205,5 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 		}
 	}
 
-	return
+	return competentHosts, err
 }
