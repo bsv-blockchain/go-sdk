@@ -180,7 +180,7 @@ We're always looking for contributors to help us improve the SDK. Whether it's b
 5. **Commit**: Commit your changes and push to your fork.
 6. **Pull Request**: Open a pull request from your fork to this repository.
 
-For more details, check the [contribution guidelines](./CONTRIBUTING.md).
+For more details, check the [contribution guidelines](.github/CONTRIBUTING.md).
 
 For information on past releases, check out the [changelog](./CHANGELOG.md).
 
