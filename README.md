@@ -94,17 +94,17 @@ See the [Go Doc](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk) for a comp
 Our examples are organized by category to help you find what you need. Each example is self-contained and includes detailed comments.
 
 ### Transaction Management
-- [Creating a Simple Transaction](./docs/examples/create_simple_tx/) - Basic transaction creation and signing
-- [Adding OP_RETURN Data](./docs/examples/create_tx_with_op_return/) - How to embed data in transactions
-- [Creating Inscriptions](./docs/examples/create_tx_with_inscription/) - Working with inscriptions
-- [Transaction Verification](./docs/examples/verify_transaction/) - How to verify transactions
-- [Fee Modeling](./docs/examples/fee_modeling/) - Understanding and calculating transaction fees
-- [Broadcasting Transactions](./docs/examples/broadcaster/) - How to broadcast transactions to the network
+- [Creating a Simple Transaction](./docs/examples/create_simple_tx) - Basic transaction creation and signing
+- [Adding OP_RETURN Data](./docs/examples/create_tx_with_op_return) - How to embed data in transactions
+- [Creating Inscriptions](./docs/examples/create_tx_with_inscription) - Working with inscriptions
+- [Transaction Verification](./docs/examples/verify_transaction) - How to verify transactions
+- [Fee Modeling](./docs/examples/fee_modeling) - Understanding and calculating transaction fees
+- [Broadcasting Transactions](./docs/examples/broadcaster) - How to broadcast transactions to the network
 
 ### Key Management & Cryptography
-- [HD Key Generation](./docs/examples/generate_hd_key/) - Creating hierarchical deterministic keys
-- [HD Key from Extended Public Key](./docs/examples/hd_key_from_xpub/) - Working with xPubs
-- [Child Key Derivation](./docs/examples/derive_child/) - Deriving child keys
+- [HD Key Generation](./docs/examples/generate_hd_key) - Creating hierarchical deterministic keys
+- [HD Key from Extended Public Key](./docs/examples/hd_key_from_xpub) - Working with xPubs
+- [Child Key Derivation](./docs/examples/derive_child) - Deriving child keys
 - [Address from WIF](./docs/examples/address_from_wif/) - Converting WIF to addresses
 - [AES Encryption](./docs/examples/aes/) - Symmetric encryption examples
 
