@@ -111,6 +111,17 @@
             "wastedassign",
             "zerologlint"
         ],
+        "exclusions": {
+            "rules": [
+                {
+                    "linters": [
+                        "misspell",
+                        "gosmopolitan"
+                    ],
+                    "path": "compat/bip39/wordlists/.*\\.go$"
+                }
+            ]
+        },
         "settings": {
             "dogsled": {
                 "max-blank-identifiers": 2
