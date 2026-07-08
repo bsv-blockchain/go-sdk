@@ -254,7 +254,8 @@ func (kv *LocalKVStore) Set(ctx context.Context, key, value string) (string, err
 			},
 			Plaintext: valueBytes,
 		}
-		encryptResult, err := kv.wallet.Encrypt(ctx, encryptArgs, kv.originator)
+		var encryptResult *wallet.EncryptResult
+		encryptResult, err = kv.wallet.Encrypt(ctx, encryptArgs, kv.originator)
 		if err != nil {
 			return "", fmt.Errorf("for key %s: %w", key, err)
 		}

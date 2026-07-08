@@ -136,12 +136,13 @@ func ToHTTPRequest(payload []byte, opts ...func(*HttpRequestDeserializationOptio
 	}
 
 	for i := range numHeaders {
-		headerName, err := reader.ReadString()
+		var headerName, headerValue string
+		headerName, err = reader.ReadString()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to read header[%d] name from payload to create http request: %w", i, err)
 		}
 
-		headerValue, err := reader.ReadString()
+		headerValue, err = reader.ReadString()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to read header[%d] %s value from payload to create http request: %w", i, headerName, err)
 		}
@@ -274,12 +275,13 @@ func ToSimplifiedHttpResponse(payload []byte, opts ...func(*HttpResponseDeserial
 	}
 	responseHeaders := make(http.Header, nHeaders)
 	for i := range nHeaders {
-		headerKey, err := responseReader.ReadString()
+		var headerKey, headerValue string
+		headerKey, err = responseReader.ReadString()
 		if err != nil {
 			return nil, res, fmt.Errorf("failed to read header[%d] key to create http response: %w", i, err)
 		}
 
-		headerValue, err := responseReader.ReadString()
+		headerValue, err = responseReader.ReadString()
 		if err != nil {
 			return nil, res, fmt.Errorf("failed to read header[%d] value to create http response: %w", i, err)
 		}

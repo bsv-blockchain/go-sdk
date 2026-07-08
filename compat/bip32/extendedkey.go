@@ -392,11 +392,10 @@ func (k *ExtendedKey) addressFromPublicKeyHash(hash []byte, mainnet bool) string
 	// regtest := 111
 	// mainnet: 0
 
-	bb := make([]byte, 1)
+	bb := make([]byte, 1, 1+len(hash))
 	if !mainnet {
 		bb[0] = 111
 	}
-	//nolint:makezero // ignore
 	bb = append(bb, hash...)
 	b := make([]byte, 0, len(bb)+4)
 	b = append(b, bb[:]...)

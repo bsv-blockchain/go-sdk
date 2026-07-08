@@ -13,7 +13,7 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 
 	// Serialize spends map
 	w.WriteVarInt(uint64(len(args.Spends)))
-	var keys []uint32
+	keys := make([]uint32, 0, len(args.Spends))
 	for key := range args.Spends {
 		keys = append(keys, key)
 	}

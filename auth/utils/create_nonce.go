@@ -39,7 +39,9 @@ func CreateNonce(ctx context.Context, w wallet.KeyOperations, counterparty walle
 	}
 
 	// Combine the random data and the HMAC
-	combined := append(randomBytes, hmac.HMAC[:]...)
+	combined := make([]byte, 0, len(randomBytes)+len(hmac.HMAC))
+	combined = append(combined, randomBytes...)
+	combined = append(combined, hmac.HMAC[:]...)
 
 	// Encode as base64
 	nonce := base64.StdEncoding.EncodeToString(combined)

@@ -84,7 +84,8 @@ func (c *RegistryClient) RegisterDefinition(ctx context.Context, data Definition
 
 	// Get the network if not already set
 	if c.network < overlay.NetworkMainnet || c.network > overlay.NetworkLocal {
-		networkResult, err := c.wallet.GetNetwork(ctx, struct{}{}, c.originator)
+		var networkResult *wallet.GetNetworkResult
+		networkResult, err = c.wallet.GetNetwork(ctx, struct{}{}, c.originator)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get network: %w", err)
 		}

@@ -89,7 +89,7 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Verify the certificate
-	if err := masterCert.Verify(ctx); err != nil {
+	if err = masterCert.Verify(ctx); err != nil {
 		return nil, nil, errors.New("certificate verification failed")
 	}
 

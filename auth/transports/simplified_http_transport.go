@@ -102,7 +102,13 @@ func (t *SimplifiedHTTPTransport) sendNonGeneralMessage(ctx context.Context, mes
 		requestURL = t.baseUrl + "/.well-known/auth"
 	}
 
-	resp, err := t.client.Post(requestURL, "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := t.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
 	}

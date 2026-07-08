@@ -2,6 +2,7 @@ package substrates
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -31,7 +32,7 @@ func NewHTTPWalletWire(originator, baseURL string, httpClient *http.Client) *HTT
 }
 
 // TransmitToWallet sends a binary message to the wallet and returns the response
-func (h *HTTPWalletWire) TransmitToWallet(message []byte) ([]byte, error) {
+func (h *HTTPWalletWire) TransmitToWallet(ctx context.Context, message []byte) ([]byte, error) {
 	// Create reader for the message
 	reader := bytes.NewReader(message)
 
@@ -72,7 +73,7 @@ func (h *HTTPWalletWire) TransmitToWallet(message []byte) ([]byte, error) {
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequest("POST", h.baseURL+"/"+callName, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, h.baseURL+"/"+callName, bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

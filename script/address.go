@@ -77,11 +77,10 @@ func NewAddressFromPublicKeyHash(hash []byte, mainnet bool) (*Address, error) {
 	// regtest := 111
 	// mainnet: 0
 
-	bb := make([]byte, 1)
+	bb := make([]byte, 1, 1+len(hash))
 	if !mainnet {
 		bb[0] = 111
 	}
-	//nolint: makezero // we need to set up the array with 1
 	bb = append(bb, hash...)
 
 	return &Address{
@@ -108,11 +107,10 @@ func NewAddressFromPublicKeyWithCompression(pubKey *ec.PublicKey, mainnet, isCom
 	// regtest := 111
 	// mainnet: 0
 
-	bb := make([]byte, 1)
+	bb := make([]byte, 1, 1+len(hash))
 	if !mainnet {
 		bb[0] = 111
 	}
-	//nolint: makezero // we need to set up the array with 1
 	bb = append(bb, hash...)
 
 	return &Address{

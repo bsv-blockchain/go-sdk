@@ -95,7 +95,7 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 	headers := []Header{}
 	client := &http.Client{}
 	url := fmt.Sprintf("%s/api/v1/chain/header/byHeight?height=%d", c.Url, height)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

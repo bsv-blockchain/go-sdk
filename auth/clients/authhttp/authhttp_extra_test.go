@@ -756,7 +756,7 @@ func TestHandleFetchAndValidateDirectCall(t *testing.T) {
 	config := &SimplifiedFetchRequestOptions{
 		Method: "GET",
 	}
-	resp, err := af.handleFetchAndValidate(ts.URL+"/test", config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/test", config, peer)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	// SupportsMutualAuth should now be set to false
@@ -779,7 +779,7 @@ func TestHandleFetchAndValidateDirectCallWithBody(t *testing.T) {
 		Method: "POST",
 		Body:   []byte("hello"),
 	}
-	_, err := af.handleFetchAndValidate(ts.URL+"/test", config, peer)
+	_, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/test", config, peer)
 	require.NoError(t, err)
 	assert.Equal(t, "hello", string(receivedBody))
 }
@@ -794,7 +794,7 @@ func TestHandleFetchAndValidate500Response(t *testing.T) {
 	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
-	_, err := af.handleFetchAndValidate(ts.URL+"/fail", config, peer)
+	_, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/fail", config, peer)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
 }
@@ -837,7 +837,7 @@ func TestHandleFetchAndValidateBadURL(t *testing.T) {
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
 	// A malformed method causes NewRequest to fail
 	config.Method = "INVALID METHOD WITH SPACES"
-	_, err := af.handleFetchAndValidate(testExampleURL, config, peer)
+	_, err := af.handleFetchAndValidate(t.Context(), testExampleURL, config, peer)
 	require.Error(t, err)
 }
 
@@ -1076,7 +1076,7 @@ func TestHandleFetchAndValidateUnreachableURL(t *testing.T) {
 
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
-	_, err := af.handleFetchAndValidate("http://localhost:0/unreachable", config, peer)
+	_, err := af.handleFetchAndValidate(t.Context(), "http://localhost:0/unreachable", config, peer)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "request failed")
 }
@@ -1220,7 +1220,7 @@ func TestHandleFetchAndValidateNonAuthBSVHeader(t *testing.T) {
 	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
-	resp, err := af.handleFetchAndValidate(ts.URL+"/test", config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/test", config, peer)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

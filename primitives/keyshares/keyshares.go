@@ -72,7 +72,7 @@ func NewKeySharesFromBackupFormat(shares []string) (keyShares *KeyShares, err er
  * @returns shares in backup format
  */
 func (k *KeyShares) ToBackupFormat() ([]string, error) {
-	backupShares := make([]string, 0)
+	backupShares := make([]string, 0, len(k.Points))
 	for _, share := range k.Points {
 		backupShares = append(backupShares, share.String()+"."+strconv.Itoa(k.Threshold)+"."+k.Integrity)
 	}

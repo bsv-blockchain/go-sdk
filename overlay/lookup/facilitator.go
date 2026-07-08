@@ -96,18 +96,21 @@ func parseBinaryLookupAnswer(data []byte) (*LookupAnswer, error) {
 	metas := make([]outpointMeta, 0, nOutpoints)
 
 	for i := uint64(0); i < nOutpoints; i++ {
-		txidBytes, err := r.ReadBytes(32)
+		var txidBytes []byte
+		txidBytes, err = r.ReadBytes(32)
 		if err != nil {
 			return nil, fmt.Errorf("binary lookup: reading txid[%d]: %w", i, err)
 		}
 		txid := hex.EncodeToString(txidBytes)
 
-		outputIndex, err := r.ReadVarInt()
+		var outputIndex uint64
+		outputIndex, err = r.ReadVarInt()
 		if err != nil {
 			return nil, fmt.Errorf("binary lookup: reading outputIndex[%d]: %w", i, err)
 		}
 
-		contextLen, err := r.ReadVarInt()
+		var contextLen uint64
+		contextLen, err = r.ReadVarInt()
 		if err != nil {
 			return nil, fmt.Errorf("binary lookup: reading contextLen[%d]: %w", i, err)
 		}

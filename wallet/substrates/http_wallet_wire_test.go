@@ -81,7 +81,7 @@ func TestTransmitToWallet(t *testing.T) {
 	}
 
 	wire := NewHTTPWalletWire(TestOriginator, ts.URL, nil)
-	response, err := wire.TransmitToWallet(message)
+	response, err := wire.TransmitToWallet(t.Context(), message)
 	require.NoError(t, err, "TransmitToWallet failed")
 	require.Equal(t, []byte("response"), response, "unexpected response")
 }
@@ -112,7 +112,7 @@ func TestTransmitToWallet_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wire := NewHTTPWalletWire(TestOriginator, "http://localhost", &http.Client{})
-			_, err := wire.TransmitToWallet(tt.message)
+			_, err := wire.TransmitToWallet(t.Context(), tt.message)
 			require.Error(t, err, "expected error")
 			require.ErrorContains(t, err, tt.wantErr, "error message mismatch")
 		})
@@ -135,7 +135,7 @@ func TestTransmitToWallet_HTTPErrors(t *testing.T) {
 	}
 
 	wire := NewHTTPWalletWire("", ts.URL, nil)
-	_, err := wire.TransmitToWallet(message)
+	_, err := wire.TransmitToWallet(t.Context(), message)
 	require.Error(t, err, "expected HTTP error")
 	require.EqualError(t, err, "HTTP request failed with status: 500 Internal Server Error", "error message mismatch")
 }

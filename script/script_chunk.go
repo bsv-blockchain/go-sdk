@@ -103,7 +103,8 @@ func (s *Script) ReadOp(pos *int) (op *ScriptChunk, err error) {
 func (s *Script) ParseOps() (ops []*ScriptChunk, err error) {
 	pos := 0
 	for pos < len(*s) {
-		op, err := s.ReadOp(&pos)
+		var op *ScriptChunk
+		op, err = s.ReadOp(&pos)
 		if err != nil {
 			return nil, err
 		}

@@ -320,7 +320,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			// Check if there's a session associated with this baseURL
 			if peerToUse.SupportsMutualAuth != nil && !*peerToUse.SupportsMutualAuth {
 				// Use standard fetch if mutual authentication is not supported
-				resp, err := a.handleFetchAndValidate(urlStr, config, peerToUse)
+				resp, err := a.handleFetchAndValidate(ctx, urlStr, config, peerToUse)
 				responseChan <- struct {
 					resp *http.Response
 					err  error
@@ -471,7 +471,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 				return
 			} else if errors.Is(err, transports.ErrHTTPServerFailedToAuthenticate) {
 				// Fall back to regular HTTP request
-				resp, fallbackErr := a.handleFetchAndValidate(urlStr, config, peerToUse)
+				resp, fallbackErr := a.handleFetchAndValidate(ctx, urlStr, config, peerToUse)
 				responseChan <- struct {
 					resp *http.Response
 					err  error
@@ -608,7 +608,7 @@ func (a *AuthFetch) ConsumeReceivedCertificates() []*certificates.VerifiableCert
 }
 
 // handleFetchAndValidate handles a non-authenticated fetch requests and validates that the server is not claiming to be authenticated.
-func (a *AuthFetch) handleFetchAndValidate(urlStr string, config *SimplifiedFetchRequestOptions, peerToUse *AuthPeer) (*http.Response, error) {
+func (a *AuthFetch) handleFetchAndValidate(ctx context.Context, urlStr string, config *SimplifiedFetchRequestOptions, peerToUse *AuthPeer) (*http.Response, error) {
 	// Create HTTP client
 	client := &http.Client{}
 
@@ -618,7 +618,7 @@ func (a *AuthFetch) handleFetchAndValidate(urlStr string, config *SimplifiedFetc
 		reqBody = bytes.NewReader(config.Body)
 	}
 
-	req, err := http.NewRequest(config.Method, urlStr, reqBody)
+	req, err := http.NewRequestWithContext(ctx, config.Method, urlStr, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

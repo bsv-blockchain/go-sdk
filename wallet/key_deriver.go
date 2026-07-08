@@ -92,7 +92,8 @@ func (kd *KeyDeriver) DerivePublicKey(protocol Protocol, keyID string, counterpa
 	}
 
 	if forSelf {
-		privKey, err := kd.rootKey.DeriveChild(counterpartyKey, invoiceNumber)
+		var privKey *ec.PrivateKey
+		privKey, err = kd.rootKey.DeriveChild(counterpartyKey, invoiceNumber)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive child private key: %w", err)
 		}

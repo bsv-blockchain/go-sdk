@@ -635,7 +635,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		utilsRequestedCerts.CertificateTypes = certTypes
 
 		// Call ValidateCertificates with proper types
-		err := ValidateCertificates(
+		err = ValidateCertificates(
 			ctx,
 			p.wallet,
 			utilsMessage,
@@ -656,9 +656,9 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		p.callbacksMu.RUnlock()
 
 		for _, callback := range callbacks {
-			err := callback(ctx, senderPublicKey, message.Certificates)
-			if err != nil {
-				return NewAuthError("certificate received callback error", err)
+			callbackErr := callback(ctx, senderPublicKey, message.Certificates)
+			if callbackErr != nil {
+				return NewAuthError("certificate received callback error", callbackErr)
 			}
 		}
 	} else {
@@ -673,10 +673,10 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 	for id, callback := range p.getInitialResponseCallbacks() {
 		if callback.SessionNonce == session.SessionNonce {
 			// Call the initial response callback with the peer's nonce
-			err := callback.Callback(session.SessionNonce)
+			callbackErr := callback.Callback(session.SessionNonce)
 			p.StopListeningForInitialResponse(id)
-			if err != nil {
-				return NewAuthError("initial response received callback error", err)
+			if callbackErr != nil {
+				return NewAuthError("initial response received callback error", callbackErr)
 			}
 		}
 	}

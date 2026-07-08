@@ -11,7 +11,7 @@ const OrdinalsPrefix = "ord"
 
 // Inscribe adds an output to the transaction with an inscription.
 func (tx *Transaction) Inscribe(ia *script.InscriptionArgs) error {
-	ins := script.Script{} // deep copy
+	ins := make(script.Script, 0, len(*ia.LockingScript)) // deep copy
 
 	// add Inscription data
 	// (Example: 	OP_FALSE
