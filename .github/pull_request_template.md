@@ -1,25 +1,14 @@
-## Description of Changes
+## What Changed
+-
 
-Provide a brief description of the changes you've made.
+## Why It Was Necessary
+-
 
-## Linked Issues / Tickets
+## Testing Performed
+-
 
-Reference any related issues or tickets, e.g. "Closes #123".
+## Impact / Risk
+-
 
-## Testing Procedure
-
-Describe the tests you've added or any testing steps you've taken.
-
-- [ ] I have added new unit tests
-- [ ] All tests pass locally
-- [ ] I have tested manually in my local environment
-- [ ] All tests pass when using `go test ./...`
-
-## Checklist:
-
-- [ ] I have performed a self-review of my own code
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have updated `CHANGELOG.md` with my changes
-- [ ] I ran `golangci-lint run`
-- [ ] I have run `go fmt` and `go vet` one final time before requesting a review
+## Notifications
+- @username
