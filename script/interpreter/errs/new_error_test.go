@@ -210,7 +210,6 @@ func TestIsErrorCodeCoverageForAllCodes(t *testing.T) {
 	}
 
 	for _, p := range pairs {
-		p := p
 		t.Run(p.code.String(), func(t *testing.T) {
 			require.True(t, IsErrorCode(p.err, p.code),
 				"IsErrorCode should return true for matching code")

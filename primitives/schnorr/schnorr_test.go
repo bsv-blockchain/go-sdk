@@ -221,5 +221,5 @@ func TestSchnorr_ProofComponentsNotNil(t *testing.T) {
 	assert.NotNil(t, proof.SPrime.X)
 	assert.NotNil(t, proof.SPrime.Y)
 	assert.NotNil(t, proof.Z)
-	assert.Greater(t, proof.Z.BitLen(), 0, "Z should not be zero")
+	assert.Positive(t, proof.Z.BitLen(), "Z should not be zero")
 }

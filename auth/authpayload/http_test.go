@@ -125,7 +125,7 @@ func TestHTTPRequestPayloadSuccessfulSerializationAndDeserialization(t *testing.
 				require.NoError(t, err, "failed to read deserialized body")
 			}
 
-			assert.EqualValues(t, originalBody, deserializedBody)
+			assert.Equal(t, originalBody, deserializedBody)
 		})
 	}
 }
@@ -231,7 +231,7 @@ func TestHTTPRequestPayloadSerializationAndDeserializationErrors(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			serializedPayload, err := authpayload.FromHTTPRequest(tc.requestID, tc.request)
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errMsg)
 			assert.Nil(t, serializedPayload)
 		})
@@ -256,7 +256,7 @@ func TestHTTPRequestPayloadSerializationAndDeserializationErrors(t *testing.T) {
 	for name, tc := range deserializationTests {
 		t.Run(name, func(t *testing.T) {
 			requestID, req, err := authpayload.ToHTTPRequest(tc.payload)
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errMsg)
 			assert.Nil(t, requestID)
 			assert.Nil(t, req)
@@ -448,7 +448,7 @@ func TestHTTPResponsePayloadSerializationAndDeserializationErrors(t *testing.T) 
 	for name, tc := range serializationTests {
 		t.Run(name, func(t *testing.T) {
 			serializedPayload, err := authpayload.FromHTTPResponse(tc.requestID, tc.response)
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errMsg)
 			assert.Nil(t, serializedPayload)
 		})
@@ -480,7 +480,7 @@ func TestHTTPResponsePayloadSerializationAndDeserializationErrors(t *testing.T) 
 	for name, tc := range deserializationTests {
 		t.Run(name, func(t *testing.T) {
 			requestID, res, err := authpayload.ToHTTPResponse(tc.payload)
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errMsg)
 			assert.Nil(t, requestID)
 			assert.Nil(t, res)

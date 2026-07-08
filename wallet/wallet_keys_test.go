@@ -57,7 +57,7 @@ func TestToPrivateKey(t *testing.T) {
 		privKey, err := wallet.ToPrivateKey(nilPrivKey)
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, privKey)
 		assert.Contains(t, err.Error(), "cannot be nil")
 	})
@@ -67,7 +67,7 @@ func TestToPrivateKey(t *testing.T) {
 		privKey, err := wallet.ToPrivateKey(wallet.PrivHex("not a valid hex string"))
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, privKey)
 		assert.Contains(t, err.Error(), "failed to parse private key from string hex")
 	})
@@ -77,7 +77,7 @@ func TestToPrivateKey(t *testing.T) {
 		privKey, err := wallet.ToPrivateKey(wallet.WIF("invalid wif"))
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, privKey)
 		assert.Contains(t, err.Error(), "failed to parse private key from string containing WIF")
 	})
@@ -131,7 +131,7 @@ func TestToKeyDeriver(t *testing.T) {
 		keyDeriver, err := wallet.ToKeyDeriver(nilPrivKey)
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, keyDeriver)
 		assert.Contains(t, err.Error(), "cannot be nil")
 	})
@@ -142,7 +142,7 @@ func TestToKeyDeriver(t *testing.T) {
 		keyDeriver, err := wallet.ToKeyDeriver(nilKeyDeriver)
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, keyDeriver)
 		assert.Contains(t, err.Error(), "cannot be nil")
 	})
@@ -152,7 +152,7 @@ func TestToKeyDeriver(t *testing.T) {
 		keyDeriver, err := wallet.ToKeyDeriver(wallet.PrivHex("not a valid hex string"))
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, keyDeriver)
 		assert.Contains(t, err.Error(), "failed to parse private key from string hex")
 	})
@@ -162,7 +162,7 @@ func TestToKeyDeriver(t *testing.T) {
 		keyDeriver, err := wallet.ToKeyDeriver(wallet.WIF("invalid wif"))
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, keyDeriver)
 		assert.Contains(t, err.Error(), "failed to parse private key from string containing WIF")
 	})
@@ -215,7 +215,7 @@ func TestToIdentityKey(t *testing.T) {
 		pubKey, err := wallet.ToIdentityKey(nilKeyDeriver)
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, pubKey)
 		assert.Contains(t, err.Error(), "key deriver cannot be nil")
 	})
@@ -226,7 +226,7 @@ func TestToIdentityKey(t *testing.T) {
 		pubKey, err := wallet.ToIdentityKey(nilPubKey)
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, pubKey)
 		assert.Contains(t, err.Error(), "public key cannot be nil")
 	})
@@ -236,7 +236,7 @@ func TestToIdentityKey(t *testing.T) {
 		pubKey, err := wallet.ToIdentityKey(wallet.PubHex("not a valid public key string"))
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, pubKey)
 		assert.Contains(t, err.Error(), "failed to parse public key from string")
 	})
@@ -246,7 +246,7 @@ func TestToIdentityKey(t *testing.T) {
 		pubKey, err := wallet.ToIdentityKey(wallet.WIF("invalid wif"))
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, pubKey)
 		assert.Contains(t, err.Error(), "failed to get public key from WIF")
 	})
@@ -256,7 +256,7 @@ func TestToIdentityKey(t *testing.T) {
 		pubKey, err := wallet.ToIdentityKey(wallet.PrivHex("invalid private key hex"))
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, pubKey)
 		assert.Contains(t, err.Error(), "failed to get public key from private key hex")
 	})

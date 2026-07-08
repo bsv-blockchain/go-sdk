@@ -133,7 +133,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			},
 		}
 		err := utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "certifiers list is empty")
 
 		// Test empty types
@@ -142,7 +142,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{},
 		}
 		err = utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "certificate types map is empty")
 
 		// Test empty type name
@@ -153,7 +153,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			},
 		}
 		err = utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "empty certificate type specified")
 
 		// Test empty fields
@@ -164,7 +164,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			},
 		}
 		err = utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no fields specified for certificate type")
 
 		// Test valid request
@@ -345,7 +345,7 @@ func TestValidateCertificates(t *testing.T) {
 			err := utils.ValidateCertificates(context.Background(), verifierWallet, test.certs(), subjectKey, test.requestedCerts)
 
 			// then:
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), test.expectedError)
 		})
 	}
@@ -363,7 +363,7 @@ func TestValidateCertificates(t *testing.T) {
 		err := utils.ValidateCertificates(ctx, verifierWallet, certs, subjectKey, certificatesRequested)
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Equal(t, context.Canceled, err)
 	})
 }

@@ -142,6 +142,6 @@ func TestEdgeCases(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, signatureSerialized, signatureDER)
-		require.Equal(t, len(signatureSerialized), len(signatureDER))
+		require.Len(t, signatureDER, len(signatureSerialized))
 	}
 }

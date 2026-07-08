@@ -128,7 +128,7 @@ func TestParseIdentityAllTypes(t *testing.T) {
 		require.Equal(t, socialCertNetURL, identity.BadgeClickURL)
 		// Check abbreviated key is correct length
 		require.NotEmpty(t, identity.AbbreviatedKey)
-		require.True(t, len(identity.AbbreviatedKey) > 3)
+		require.Greater(t, len(identity.AbbreviatedKey), 3)
 	})
 }
 
@@ -249,9 +249,8 @@ func TestPubliclyRevealAttributesWithRealCert(t *testing.T) {
 		// Call PubliclyRevealAttributes - should pass verification and fail at ProveCertificate
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"userName"}
 		_, _, err = client.PubliclyRevealAttributes(context.Background(), walletCert, fieldsToReveal)
-		require.Error(t, err)
 		// Either verify fails or ProveCertificate fails
-		require.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -279,10 +278,9 @@ func TestPubliclyRevealAttributesWithRealCertAndSuccessfulProve(t *testing.T) {
 
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"userName"}
 		_, _, err = client.PubliclyRevealAttributes(context.Background(), walletCert, fieldsToReveal)
-		require.Error(t, err)
 		// Should fail at CreateAction or before (ProveCertificate succeeds)
 		// The error message could be either "certificate verification failed" or something later
-		require.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 

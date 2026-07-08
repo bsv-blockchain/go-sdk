@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -31,16 +32,16 @@ func TestGetMerkleRootsSuccess(t *testing.T) {
 	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request method and path
-		require.Equal(t, http.MethodGet, r.Method)
-		require.Equal(t, "/api/v1/chain/merkleroot", r.URL.Path)
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/v1/chain/merkleroot", r.URL.Path)
 
 		// Verify query parameters
 		batchSize := r.URL.Query().Get("batchSize")
-		require.Equal(t, "10", batchSize)
+		assert.Equal(t, "10", batchSize)
 
 		// Verify Authorization header
 		auth := r.Header.Get("Authorization")
-		require.Equal(t, "Bearer test-api-key", auth)
+		assert.Equal(t, "Bearer test-api-key", auth)
 
 		// Write mock response
 		w.WriteHeader(http.StatusOK)

@@ -682,7 +682,7 @@ func TestVectors(t *testing.T) {
 			if err := json.Unmarshal(data, &vectorFile); err != nil {
 				t.Fatalf("Failed to parse test vector file: %v", err)
 			} else if len(vectorFile["json"]) == 0 || len(vectorFile["wire"]) == 0 {
-				t.Fatalf("Both json and wire format requried in test vector file")
+				t.Fatalf("Both json and wire format required in test vector file")
 			}
 
 			// Test JSON marshaling
@@ -728,7 +728,7 @@ func TestVectors(t *testing.T) {
 					frame, err := serializer.ReadRequestFrame(wire)
 					require.NoError(t, err)
 					frameCall = substrates.Call(frame.Call)
-					require.Equal(t, frame.Originator, "")
+					require.Empty(t, frame.Originator)
 					frameParams = frame.Params
 				}
 

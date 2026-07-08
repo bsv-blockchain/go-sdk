@@ -31,7 +31,7 @@ func TestIsAuthenticatedResult(t *testing.T) {
 			// Test serialization
 			data, err := SerializeIsAuthenticatedResult(tt.input)
 			require.NoError(t, err)
-			require.Equal(t, 1, len(data)) // auth byte
+			require.Len(t, data, 1) // auth byte
 
 			// Test deserialization
 			result, err := DeserializeIsAuthenticatedResult(data)

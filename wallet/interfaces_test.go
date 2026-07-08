@@ -54,7 +54,7 @@ func TestCertificateTypeFromBase64Invalid(t *testing.T) {
 func TestCertificateTypeBytes(t *testing.T) {
 	ct, _ := wallet.CertificateTypeFromString("hello")
 	b := ct.Bytes()
-	assert.Equal(t, 32, len(b))
+	assert.Len(t, b, 32)
 	assert.Equal(t, byte('h'), b[0])
 }
 

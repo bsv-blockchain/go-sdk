@@ -14,7 +14,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
@@ -152,7 +151,7 @@ func TestPrivateKeySerializationAndDeserialization(t *testing.T) {
 		deserialized, err := PrivateKeyFromHex(serialized)
 
 		// then:
-		assert.NoError(t, err, "failed to deserialize private key")
+		require.NoError(t, err, "failed to deserialize private key")
 		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
 	})
 
@@ -165,7 +164,7 @@ func TestPrivateKeySerializationAndDeserialization(t *testing.T) {
 		deserialized, err := PrivateKeyFromWif(serialized)
 
 		// then:
-		assert.NoError(t, err, "failed to deserialize private key")
+		require.NoError(t, err, "failed to deserialize private key")
 		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
 	})
 }

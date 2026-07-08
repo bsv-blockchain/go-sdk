@@ -221,7 +221,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 	// We can now implement this test using our MockRegistry
 	ctx := context.Background()
 	// Add the test logger to the context
-	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck
+	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 
 	mockRegistry := NewMockRegistry(t)
 
@@ -504,7 +504,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck
+	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 
 	mockRegistry := NewMockRegistry(t)
 

@@ -23,7 +23,7 @@ func TestNewSimplifiedHTTPTransport(t *testing.T) {
 		BaseURL: "http://example.com",
 	})
 
-	assert.NoError(t, err, "Expected no error")
+	require.NoError(t, err, "Expected no error")
 	require.NotNil(t, transport, "Expected transport to be created")
 	assert.Equal(t, "http://example.com", transport.baseUrl, "Expected URL to be 'http://example.com'")
 
@@ -61,7 +61,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err, "Failed to read request body")
-		assert.Equal(t, `{"foo":"bar"}`, string(body), "Expected body '{\"foo\":\"bar\"}'")
+		assert.JSONEq(t, `{"foo":"bar"}`, string(body), "Expected body '{\"foo\":\"bar\"}'")
 
 		receivedRequest = r
 
@@ -103,7 +103,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 		reqIDFromResponse, res, err := authpayload.ToSimplifiedHttpResponse(msg.Payload)
 		assert.NoError(t, err, "Payload should be deserializable to response")
 
-		assert.EqualValuesf(t, requestID, reqIDFromResponse, "Request ID from response should match this from request")
+		assert.Equalf(t, requestID, reqIDFromResponse, "Request ID from response should match this from request")
 
 		assert.Equal(t, http.StatusOK, res.StatusCode, "Expected status code 200")
 

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -40,10 +41,10 @@ func TestGetHTTPClientWithNilClient(t *testing.T) {
 
 func TestIsValidRootForHeightConfirmed(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, http.MethodPost, r.Method)
-		require.Equal(t, "/api/v1/chain/merkleroot/verify", r.URL.Path)
-		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		require.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/api/v1/chain/merkleroot/verify", r.URL.Path)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
 
 		w.WriteHeader(http.StatusOK)
 		resp := struct {
@@ -189,8 +190,8 @@ func TestGetBlockState(t *testing.T) {
 	mockHashHex := "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, http.MethodGet, r.Method)
-		require.Contains(t, r.URL.Path, "/api/v1/chain/header/state/")
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Contains(t, r.URL.Path, "/api/v1/chain/header/state/")
 		_, _ = fmt.Fprintf(w, `{"state":"LONGEST_CHAIN","height":100,"header":{"height":0,"hash":%q,"version":1,"merkleRoot":%q,"creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":%q}}`,
 			mockHashHex, mockHashHex, mockHashHex)
 	}))
@@ -224,9 +225,9 @@ func TestGetBlockStateDecodeError(t *testing.T) {
 
 func TestGetChaintip(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, http.MethodGet, r.Method)
-		require.Equal(t, "/api/v1/chain/tip/longest", r.URL.Path)
-		require.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/v1/chain/tip/longest", r.URL.Path)
+		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
 		// State has nested Header with chainhash fields; send raw JSON
 		_, _ = w.Write([]byte(`{"state":"LONGEST_CHAIN","height":800000,"header":{"height":0,"hash":"0000000000000000000000000000000000000000000000000000000000000000","version":0,"merkleRoot":"0000000000000000000000000000000000000000000000000000000000000000","creationTimestamp":0,"difficultyTarget":0,"nonce":0,"prevBlockHash":"0000000000000000000000000000000000000000000000000000000000000000"}}`))
 	}))

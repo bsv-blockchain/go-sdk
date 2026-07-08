@@ -204,7 +204,7 @@ func TestBuildPushDropFieldsCertificate(t *testing.T) {
 func TestBuildPushDropFieldsUnsupported(t *testing.T) {
 	// Pass a type that doesn't match any case
 	fields, err := buildPushDropFields(&unsupportedData{}, "operator")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, fields)
 }
 

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -28,15 +29,15 @@ func TestHTTPSOverlayLookupFacilitatorSuccess(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/lookup", r.URL.Path)
-		require.Equal(t, http.MethodPost, r.Method)
-		require.Equal(t, contentTypeJSON, r.Header.Get(headerContentType))
+		assert.Equal(t, "/lookup", r.URL.Path)
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, contentTypeJSON, r.Header.Get(headerContentType)) //nolint:testifylint // contentTypeJSON is a MIME type string, not JSON; JSONEq would fail to parse it
 
 		// Decode the incoming question to verify it was sent correctly.
 		var q LookupQuestion
 		err := json.NewDecoder(r.Body).Decode(&q)
-		require.NoError(t, err)
-		require.Equal(t, "ls_slap", q.Service)
+		assert.NoError(t, err)
+		assert.Equal(t, "ls_slap", q.Service)
 
 		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
@@ -157,7 +158,7 @@ func buildBinaryLookupResponse(t *testing.T, outputIndex uint32, contextData []b
 
 func TestHTTPSOverlayLookupFacilitatorXAggregationHeader(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "yes", r.Header.Get("X-Aggregation"))
+		assert.Equal(t, "yes", r.Header.Get("X-Aggregation"))
 		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(&LookupAnswer{Type: AnswerTypeFreeform})

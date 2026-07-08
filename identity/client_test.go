@@ -541,7 +541,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		specificMockWallet.OnCreateAction().Do(func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 			// Verify the action is created with expected parameters
 			require.Equal(t, "Create a new Identity Token", args.Description)
-			require.Equal(t, 1, len(args.Outputs))
+			require.Len(t, args.Outputs, 1)
 			require.Equal(t, "Identity Token", args.Outputs[0].OutputDescription)
 			createActionCalled = true
 

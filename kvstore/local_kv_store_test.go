@@ -149,7 +149,7 @@ func TestLocalKVStoreGet_WalletError(t *testing.T) {
 	// Perform the Get operation
 	result, err := store.Get(context.Background(), key, "")
 	require.Error(t, err)
-	require.Equal(t, "", result)
+	require.Empty(t, result)
 	require.ErrorContains(t, err, expectedError.Error())
 }
 
@@ -340,7 +340,7 @@ func TestLocalKVStore_EmptyKey(t *testing.T) {
 	// Test empty key for Get
 	result, err := store.Get(context.Background(), "", "")
 	require.Error(t, err)
-	require.Equal(t, "", result)
+	require.Empty(t, result)
 	require.Equal(t, kvstore.ErrInvalidKey, err)
 
 	// Test empty key for Set

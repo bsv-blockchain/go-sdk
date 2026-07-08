@@ -334,7 +334,7 @@ func TestRenewFileSuccess(t *testing.T) {
 		var body map[string]interface{}
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "uhrp://myfile", body["uhrpUrl"])
-		assert.Equal(t, float64(120), body["additionalMinutes"])
+		assert.InDelta(t, float64(120), body["additionalMinutes"], 0.0001)
 
 		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)

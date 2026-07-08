@@ -1037,7 +1037,7 @@ func TestScriptAppendPushDataArray(t *testing.T) {
 	err = s.AppendPushDataArray([][]byte{})
 	require.NoError(t, err)
 	// Script should be empty
-	require.Equal(t, "", s.String())
+	require.Empty(t, s.String())
 
 	// Test with data that requires PUSHDATA1
 	longData := []byte(strings.Repeat("a", 80)) // 80 bytes
@@ -1121,7 +1121,7 @@ func TestScriptAppendPushDataStrings(t *testing.T) {
 	err = s.AppendPushDataStrings([]string{})
 	require.NoError(t, err)
 	// Script should be empty
-	require.Equal(t, "", s.String())
+	require.Empty(t, s.String())
 
 	// Test with strings that require PUSHDATA1
 	longStrings := []string{strings.Repeat("a", 80), strings.Repeat("b", 80)}

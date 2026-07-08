@@ -52,7 +52,7 @@ func chronicleVersionTx(ver uint32) *transaction.Transaction {
 	}
 }
 
-// versionLE serialises a uint32 as 4-byte little-endian – the format OP_VER pushes.
+// versionLE serializes a uint32 as 4-byte little-endian – the format OP_VER pushes.
 func versionLE(v uint32) []byte {
 	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
 }
@@ -216,7 +216,6 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -392,7 +391,6 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

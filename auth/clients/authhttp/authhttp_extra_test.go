@@ -382,7 +382,7 @@ func TestHandleFetchAndValidateWithBody(t *testing.T) {
 	require.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	respBody, _ := io.ReadAll(resp.Body)
-	assert.Equal(t, `{"key":"value"}`, string(respBody))
+	assert.JSONEq(t, `{"key":"value"}`, string(respBody))
 }
 
 // TestHandleFetchAndValidateServerClaimingAuth tests the security check: if the server
@@ -806,7 +806,7 @@ func TestHandleFetchAndValidate500Response(t *testing.T) {
 // TestSimplifiedFetchRequestOptionsDefaults checks zero-value struct fields.
 func TestSimplifiedFetchRequestOptionsDefaults(t *testing.T) {
 	opts := &SimplifiedFetchRequestOptions{}
-	assert.Equal(t, "", opts.Method)
+	assert.Empty(t, opts.Method)
 	assert.Nil(t, opts.Headers)
 	assert.Nil(t, opts.Body)
 	assert.Nil(t, opts.RetryCounter)
@@ -1200,7 +1200,7 @@ func TestConsumeReceivedCertificatesImmediateAfterNew(t *testing.T) {
 	af := newAuthFetch(t)
 	result := af.ConsumeReceivedCertificates()
 	assert.NotNil(t, result)
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 // ---------------------------------------------------------------------------

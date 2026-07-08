@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
@@ -129,7 +129,7 @@ func TestWhatsOnChainIsValidRootForHeightSuccess(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		err := json.NewEncoder(w).Encode(expectedHeader)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -162,7 +162,7 @@ func TestWhatsOnChainIsValidRootForHeightInvalidRoot(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		err := json.NewEncoder(w).Encode(expectedHeader)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -192,7 +192,7 @@ func TestWhatsOnChainCurrentHeight(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		info := &ChainInfo{Blocks: expectedBlocks}
 		err := json.NewEncoder(w).Encode(info)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 

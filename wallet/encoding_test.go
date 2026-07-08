@@ -74,7 +74,7 @@ func TestBytes32Base64MarshalJSON(t *testing.T) {
 	require.NoError(t, err)
 	decoded, err := base64.StdEncoding.DecodeString(str)
 	require.NoError(t, err)
-	assert.Equal(t, 32, len(decoded))
+	assert.Len(t, decoded, 32)
 }
 
 func TestBytes32Base64UnmarshalJSON(t *testing.T) {
@@ -111,7 +111,7 @@ func TestBytes33HexMarshalJSON(t *testing.T) {
 	var str string
 	err = json.Unmarshal(data, &str)
 	require.NoError(t, err)
-	assert.Equal(t, 66, len(str)) // 33 bytes = 66 hex chars
+	assert.Len(t, str, 66) // 33 bytes = 66 hex chars
 }
 
 func TestBytes33HexUnmarshalJSON(t *testing.T) {

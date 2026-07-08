@@ -82,7 +82,7 @@ func TestSignWithCustomKForceLowS(t *testing.T) {
 			// Found a k that produces high-S; now verify forceLowS normalises it
 			sigForce, err := SignWithCustomK(msg, privateKey, true, customK)
 			require.NoError(t, err)
-			assert.True(t, sigForce.S.Cmp(halfOrder) <= 0, "forceLowS should produce a low-S value")
+			assert.LessOrEqual(t, sigForce.S.Cmp(halfOrder), 0, "forceLowS should produce a low-S value")
 			// The two signatures should differ
 			assert.NotEqual(t, sigNoForce.S, sigForce.S)
 			return
@@ -108,7 +108,7 @@ func TestSignForceLowSPath(t *testing.T) {
 			// Now sign same message with forceLowS and verify it's low-S
 			sigLow, err := Sign(msg, privateKey, true, nil)
 			require.NoError(t, err)
-			assert.True(t, sigLow.S.Cmp(halfOrder) <= 0)
+			assert.LessOrEqual(t, sigLow.S.Cmp(halfOrder), 0)
 			return
 		}
 	}

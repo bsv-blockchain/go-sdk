@@ -64,7 +64,7 @@ func TestPeerListenCallbacks(t *testing.T) {
 		id := peer.ListenForGeneralMessages(func(ctx context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 			return nil
 		})
-		require.Greater(t, id, int32(0))
+		require.Positive(t, id)
 	})
 
 	t.Run("StopListeningForGeneralMessages does not panic", func(t *testing.T) {
@@ -78,7 +78,7 @@ func TestPeerListenCallbacks(t *testing.T) {
 		id := peer.ListenForCertificatesReceived(func(ctx context.Context, senderPublicKey *ec.PublicKey, certs []*certpkg.VerifiableCertificate) error {
 			return nil
 		})
-		require.Greater(t, id, int32(0))
+		require.Positive(t, id)
 	})
 
 	t.Run("StopListeningForCertificatesReceived does not panic", func(t *testing.T) {
@@ -92,7 +92,7 @@ func TestPeerListenCallbacks(t *testing.T) {
 		id := peer.ListenForCertificatesRequested(func(ctx context.Context, senderPublicKey *ec.PublicKey, req utilspkg.RequestedCertificateSet) error {
 			return nil
 		})
-		require.Greater(t, id, int32(0))
+		require.Positive(t, id)
 	})
 
 	t.Run("StopListeningForCertificatesRequested does not panic", func(t *testing.T) {

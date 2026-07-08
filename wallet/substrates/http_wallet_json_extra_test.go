@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -17,13 +18,13 @@ func TestHTTPWalletJSONGetPublicKey(t *testing.T) {
 	require.NoError(t, err)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/getPublicKey", r.URL.Path)
+		assert.Equal(t, "/getPublicKey", r.URL.Path)
 
 		// Don't decode args - EncryptionArgs has a custom protocolID format
 		resp := wallet.GetPublicKeyResult{PublicKey: privKey.PubKey()}
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).Encode(&resp)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 

@@ -102,13 +102,13 @@ func TestErrorSentinels(t *testing.T) {
 	}
 
 	for i, e := range errs {
-		require.NotNil(t, e, "error at index %d should not be nil", i)
+		require.Error(t, e, "error at index %d should not be nil", i)
 	}
 
 	// Check errors are all distinct
 	for i := 0; i < len(errs); i++ {
 		for j := i + 1; j < len(errs); j++ {
-			require.False(t, errors.Is(errs[i], errs[j]),
+			require.NotErrorIs(t, errs[i], errs[j],
 				"errors at index %d and %d should be distinct", i, j)
 		}
 	}
@@ -125,7 +125,7 @@ func TestLocalKVStoreGetEmptyKey(t *testing.T) {
 	result, err := store.Get(context.Background(), "", "default")
 	require.Error(t, err)
 	require.Equal(t, kvstore.ErrInvalidKey, err)
-	require.Equal(t, "", result)
+	require.Empty(t, result)
 }
 
 func TestLocalKVStoreGetNoOutputsReturnsDefault(t *testing.T) {
@@ -465,7 +465,7 @@ func TestLocalKVStoreGetValidBEEFNotPushDrop(t *testing.T) {
 	_, err = store.Get(context.Background(), "mykey", "default")
 	require.Error(t, err)
 	// The error may be about pushdrop token format or invalid format
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestLocalKVStoreGetPushDropReturnsValue(t *testing.T) {

@@ -53,11 +53,11 @@ func TestFromBEEF(t *testing.T) {
 
 	_, txid, err = NewBeefFromAtomicBytes(atomic)
 	require.NoError(t, err, "NewBeefFromAtomicBytes method failed")
-	require.Equal(t, txid.String(), expectedTxID, "Transaction ID does not match")
+	require.Equal(t, expectedTxID, txid.String(), "Transaction ID does not match")
 
 	_, txFromBeef, _, err := ParseBeef(beefBytes)
 	require.NoError(t, err, "ParseBeef method failed")
-	require.Equal(t, txFromBeef.TxID().String(), expectedTxID, "Transaction ID does not match")
+	require.Equal(t, expectedTxID, txFromBeef.TxID().String(), "Transaction ID does not match")
 
 	_, err = NewBeefFromTransaction(tx)
 	require.NoError(t, err, "NewBeefFromTransaction method failed")
@@ -294,17 +294,17 @@ func TestBeefClone(t *testing.T) {
 
 	// Verify basic properties match
 	require.Equal(t, original.Version, clone.Version, "Version should match")
-	require.Equal(t, len(original.BUMPs), len(clone.BUMPs), "Number of BUMPs should match")
-	require.Equal(t, len(original.Transactions), len(clone.Transactions), "Number of transactions should match")
+	require.Len(t, clone.BUMPs, len(original.BUMPs), "Number of BUMPs should match")
+	require.Len(t, clone.Transactions, len(original.Transactions), "Number of transactions should match")
 
 	// Verify BUMPs are copied (not just referenced)
 	for i, bump := range original.BUMPs {
 		require.Equal(t, bump.BlockHeight, clone.BUMPs[i].BlockHeight, "BUMP BlockHeight should match")
-		require.Equal(t, len(bump.Path), len(clone.BUMPs[i].Path), "BUMP Path length should match")
+		require.Len(t, clone.BUMPs[i].Path, len(bump.Path), "BUMP Path length should match")
 
 		// Verify each level of the path
 		for j := range bump.Path {
-			require.Equal(t, len(bump.Path[j]), len(clone.BUMPs[i].Path[j]), "Path level length should match")
+			require.Len(t, clone.BUMPs[i].Path[j], len(bump.Path[j]), "Path level length should match")
 
 			// Verify each PathElement
 			for k := range bump.Path[j] {
@@ -615,9 +615,9 @@ func TestBeefMergeBump(t *testing.T) {
 	require.Equal(t, bumpToMerge.BlockHeight, beef1.BUMPs[len(beef1.BUMPs)-1].BlockHeight, "Merged BUMP should have same block height")
 
 	// Verify the paths are equal but not the same instance
-	require.Equal(t, len(bumpToMerge.Path), len(beef1.BUMPs[len(beef1.BUMPs)-1].Path), "Path lengths should match")
+	require.Len(t, beef1.BUMPs[len(beef1.BUMPs)-1].Path, len(bumpToMerge.Path), "Path lengths should match")
 	for i := range bumpToMerge.Path {
-		require.Equal(t, len(bumpToMerge.Path[i]), len(beef1.BUMPs[len(beef1.BUMPs)-1].Path[i]), "Path element lengths should match")
+		require.Len(t, beef1.BUMPs[len(beef1.BUMPs)-1].Path[i], len(bumpToMerge.Path[i]), "Path element lengths should match")
 		for j := range bumpToMerge.Path[i] {
 			require.Equal(t, bumpToMerge.Path[i][j].Offset, beef1.BUMPs[len(beef1.BUMPs)-1].Path[i][j].Offset, "Path element offset should match")
 			if bumpToMerge.Path[i][j].Hash != nil {
@@ -1096,8 +1096,8 @@ func TestBeefBytes(t *testing.T) {
 		beef2, err := NewBeefFromBytes(bytes)
 		require.NoError(t, err)
 		require.Equal(t, beef.Version, beef2.Version)
-		require.Equal(t, len(beef.BUMPs), len(beef2.BUMPs))
-		require.Equal(t, len(beef.Transactions), len(beef2.Transactions))
+		require.Len(t, beef2.BUMPs, len(beef.BUMPs))
+		require.Len(t, beef2.Transactions, len(beef.Transactions))
 
 		// Verify transactions maintained their format
 		for txid, tx := range beef.Transactions {

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -57,24 +58,24 @@ func TestHTTPWalletJSON_API(t *testing.T) {
 	// Test server that validates requests and returns mock responses
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Validate headers
-		require.Equal(t, r.Header.Get("Accept"), "application/json")
-		require.Equal(t, r.Header.Get("Content-Type"), "application/json")
-		require.Equal(t, r.Header.Get("Originator"), TestOriginator)
-		require.Equal(t, r.URL.Path, "/testEndpoint")
+		assert.Equal(t, "application/json", r.Header.Get("Accept"))
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, TestOriginator, r.Header.Get("Originator"))
+		assert.Equal(t, "/testEndpoint", r.URL.Path)
 
 		// Validate body
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		var req map[string]any
 		err = json.Unmarshal(body, &req)
-		require.NoError(t, err)
-		require.Equal(t, "testValue", req["testKey"])
+		assert.NoError(t, err)
+		assert.Equal(t, "testValue", req["testKey"])
 
 		// Return test response
 		resp := map[string]string{"result": "success"}
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(resp)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -359,17 +360,17 @@ func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 		if r.URL.Path == "/createHmac" {
 			var args wallet.CreateHMACArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
+			assert.NoError(t, err)
+			assert.Equal(t, testData, []byte(args.Data))
 
 			resp := wallet.CreateHMACResult{HMAC: testHMAC}
 			writeJSONResponse(t, w, &resp)
 		} else {
 			var args wallet.VerifyHMACArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testHMAC, args.HMAC)
+			assert.NoError(t, err)
+			assert.Equal(t, testData, args.Data)
+			assert.Equal(t, testHMAC, args.HMAC)
 
 			resp := wallet.VerifyHMACResult{Valid: true}
 			writeJSONResponse(t, w, &resp)
@@ -404,17 +405,17 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 		if r.URL.Path == "/createSignature" {
 			var args wallet.CreateSignatureArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
+			assert.NoError(t, err)
+			assert.Equal(t, testData, []byte(args.Data))
 
 			resp := wallet.CreateSignatureResult{Signature: testSig}
 			writeJSONResponse(t, w, &resp)
 		} else {
 			var args wallet.VerifySignatureArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testSig.Serialize(), args.Signature.Serialize())
+			assert.NoError(t, err)
+			assert.Equal(t, testData, args.Data)
+			assert.Equal(t, testSig.Serialize(), args.Signature.Serialize())
 
 			resp := wallet.VerifySignatureResult{Valid: true}
 			writeJSONResponse(t, w, &resp)

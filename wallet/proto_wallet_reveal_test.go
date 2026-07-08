@@ -86,7 +86,7 @@ func TestProtoWallet_RevealCounterpartyKeyLinkage(t *testing.T) {
 	}, "test")
 	require.NoError(t, err)
 	// Verify proof format (should be 98 bytes: 33 + 33 + 32)
-	assert.Equal(t, 98, len(decryptProofResult.Plaintext))
+	assert.Len(t, decryptProofResult.Plaintext, 98)
 
 	// Proof components: R compressed (33 bytes) || S' compressed (33 bytes) || z (32 bytes)
 }

@@ -269,7 +269,7 @@ func TestInternalizeActionArgsMarshalUnmarshalJSON(t *testing.T) {
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
 	assert.Equal(t, args.Description, decoded.Description)
-	assert.Equal(t, args.Tx, []byte(decoded.Tx))
+	assert.Equal(t, args.Tx, decoded.Tx)
 }
 
 // ---- Output JSON ----
@@ -379,8 +379,8 @@ func TestRevealCounterpartyKeyLinkageResultMarshalUnmarshalJSON(t *testing.T) {
 	var decoded wallet.RevealCounterpartyKeyLinkageResult
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
-	assert.Equal(t, result.EncryptedLinkage, []byte(decoded.EncryptedLinkage))
-	assert.Equal(t, result.EncryptedLinkageProof, []byte(decoded.EncryptedLinkageProof))
+	assert.Equal(t, result.EncryptedLinkage, decoded.EncryptedLinkage)
+	assert.Equal(t, result.EncryptedLinkageProof, decoded.EncryptedLinkageProof)
 }
 
 // ---- RevealSpecificKeyLinkageResult JSON ----
@@ -397,8 +397,8 @@ func TestRevealSpecificKeyLinkageResultMarshalUnmarshalJSON(t *testing.T) {
 	var decoded wallet.RevealSpecificKeyLinkageResult
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
-	assert.Equal(t, result.EncryptedLinkage, []byte(decoded.EncryptedLinkage))
-	assert.Equal(t, result.EncryptedLinkageProof, []byte(decoded.EncryptedLinkageProof))
+	assert.Equal(t, result.EncryptedLinkage, decoded.EncryptedLinkage)
+	assert.Equal(t, result.EncryptedLinkageProof, decoded.EncryptedLinkageProof)
 }
 
 // ---- KeyringRevealer JSON ----
@@ -511,7 +511,7 @@ func TestVerifyHMACArgsMarshalUnmarshalJSON(t *testing.T) {
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
 	assert.Equal(t, args.HMAC, decoded.HMAC)
-	assert.Equal(t, args.Data, []byte(decoded.Data))
+	assert.Equal(t, args.Data, decoded.Data)
 }
 
 func TestVerifyHMACArgsUnmarshalWrongHMACLength(t *testing.T) {

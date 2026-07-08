@@ -10,9 +10,9 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
-func convertIntToBytes(int uint64) []byte {
+func convertIntToBytes(value uint64) []byte {
 	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.LittleEndian, int); err != nil {
+	if err := binary.Write(buf, binary.LittleEndian, value); err != nil {
 		return nil
 	}
 	return buf.Bytes()

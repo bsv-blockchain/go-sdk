@@ -175,7 +175,7 @@ func TestCertificate(t *testing.T) {
 
 		// Verify the signature
 		err = certificate.Verify(t.Context())
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("should fail verification if the signature is missing", func(t *testing.T) {
@@ -191,7 +191,7 @@ func TestCertificate(t *testing.T) {
 
 		// Verify the signature
 		err = certificate.Verify(t.Context())
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("should fail verification if the signature is incorrect", func(t *testing.T) {
@@ -210,7 +210,7 @@ func TestCertificate(t *testing.T) {
 
 		// Verify the signature
 		err = certificate.Verify(t.Context())
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("should handle certificates with empty fields", func(t *testing.T) {
@@ -350,7 +350,7 @@ func TestCertificate(t *testing.T) {
 
 		// Trying to sign again should error
 		err = preSignedCertificate.Sign(t.Context(), certifierProtoWallet)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "certificate has already been signed")
 
 		// Scenario 2: The certifier property is set to something different from the wallet's public key
@@ -411,7 +411,7 @@ func TestCertificate(t *testing.T) {
 		assert.Equal(t, sampleSerialNumber, convertedSerial)
 
 		// Check fields conversion
-		assert.Equal(t, len(sampleFields), len(walletCert.Fields))
+		assert.Len(t, walletCert.Fields, len(sampleFields))
 		for fieldName, fieldValue := range sampleFields {
 			assert.Equal(t, string(fieldValue), walletCert.Fields[string(fieldName)])
 		}
@@ -483,7 +483,7 @@ func TestCertificate(t *testing.T) {
 		assert.Equal(t, expectedSerial, certificate.SerialNumber)
 
 		// Check fields conversion
-		assert.Equal(t, len(walletCert.Fields), len(certificate.Fields))
+		assert.Len(t, certificate.Fields, len(walletCert.Fields))
 		for fieldName, fieldValue := range walletCert.Fields {
 			certFieldValue := certificate.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)]
 			assert.Equal(t, fieldValue, string(certFieldValue))
@@ -525,7 +525,7 @@ func TestCertificate(t *testing.T) {
 
 	t.Run("FromWalletCertificate should handle nil input", func(t *testing.T) {
 		certificate, err := FromWalletCertificate(nil)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, certificate)
 		assert.Contains(t, err.Error(), "wallet certificate cannot be nil")
 	})
@@ -542,7 +542,7 @@ func TestCertificate(t *testing.T) {
 		}
 
 		walletCert, err := certificate.ToWalletCertificate()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, walletCert)
 		assert.Contains(t, err.Error(), "invalid certificate type")
 	})
@@ -559,7 +559,7 @@ func TestCertificate(t *testing.T) {
 		}
 
 		walletCert, err := certificate.ToWalletCertificate()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, walletCert)
 		assert.Contains(t, err.Error(), "invalid serial number")
 	})

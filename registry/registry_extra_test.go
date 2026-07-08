@@ -386,7 +386,7 @@ func TestListOwnRegistryEntriesOutOfBoundsIndexSkipped(t *testing.T) {
 		BEEF: beef,
 	}
 	// Use testLogger context to cover the debug branch
-	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck
+	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 	client := NewRegistryClient(mw, "originator")
 	results, err := client.ListOwnRegistryEntries(ctx, DefinitionTypeBasket)
 	require.NoError(t, err)
@@ -408,7 +408,7 @@ func TestListOwnRegistryEntriesInvalidLockingScriptSkipped(t *testing.T) {
 		},
 		BEEF: beef,
 	}
-	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck
+	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 	client := NewRegistryClient(mw, "originator")
 	results, err := client.ListOwnRegistryEntries(ctx, DefinitionTypeBasket)
 	require.NoError(t, err)

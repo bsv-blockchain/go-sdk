@@ -332,14 +332,14 @@ func TestPeerAuthentication(t *testing.T) {
 
 	// Get Bob's session with Alice
 	bobSession, err := bob.SessionManager.GetSession(alice.IdentityKey.ToDERHex())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if assert.NotNil(t, bobSession) {
 		assert.True(t, bobSession.IsAuthenticated, "Bob should have an authenticated session with Alice")
 	}
 
 	// Get Alice's session with Bob
 	aliceSession, err := alice.SessionManager.GetSession(bob.IdentityKey.ToDERHex())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if assert.NotNil(t, aliceSession) {
 		assert.True(t, aliceSession.IsAuthenticated, "Alice should have an authenticated session with Bob")
 	}

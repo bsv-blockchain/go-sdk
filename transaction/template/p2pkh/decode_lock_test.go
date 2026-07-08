@@ -236,10 +236,10 @@ func TestLockOutputScriptStructure(t *testing.T) {
 
 	raw := []byte(*s)
 	require.Len(t, raw, 25)
-	require.Equal(t, byte(script.OpDUP), raw[0])
-	require.Equal(t, byte(script.OpHASH160), raw[1])
-	require.Equal(t, byte(script.OpDATA20), raw[2])
+	require.Equal(t, script.OpDUP, raw[0])
+	require.Equal(t, script.OpHASH160, raw[1])
+	require.Equal(t, script.OpDATA20, raw[2])
 	require.Equal(t, hash, raw[3:23])
-	require.Equal(t, byte(script.OpEQUALVERIFY), raw[23])
-	require.Equal(t, byte(script.OpCHECKSIG), raw[24])
+	require.Equal(t, script.OpEQUALVERIFY, raw[23])
+	require.Equal(t, script.OpCHECKSIG, raw[24])
 }

@@ -314,7 +314,7 @@ func TestMerklePathClone(t *testing.T) {
 		clone := original.Clone()
 		require.NotNil(t, clone)
 		require.Equal(t, original.BlockHeight, clone.BlockHeight)
-		require.Equal(t, len(original.Path), len(clone.Path))
+		require.Len(t, clone.Path, len(original.Path))
 
 		// Verify modifying clone doesn't affect original
 		clone.BlockHeight = 999999

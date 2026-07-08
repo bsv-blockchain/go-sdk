@@ -18,7 +18,7 @@ func TestCrossCompatibility31ByteKey(t *testing.T) {
 	keyBytes := pubKey.X.Bytes()
 
 	// Verify this is a 31-byte key
-	require.Equal(t, 31, len(keyBytes), "Expected 31-byte key")
+	require.Len(t, keyBytes, 31, "Expected 31-byte key")
 
 	symmetricKey := NewSymmetricKey(keyBytes)
 	expectedPlaintext := []byte("cross-sdk test message")
@@ -78,7 +78,7 @@ func TestCrossCompatibility32ByteKey(t *testing.T) {
 	keyBytes := pubKey.X.Bytes()
 
 	// Verify this is a 32-byte key
-	require.Equal(t, 32, len(keyBytes), "Expected 32-byte key")
+	require.Len(t, keyBytes, 32, "Expected 32-byte key")
 
 	symmetricKey := NewSymmetricKey(keyBytes)
 	expectedPlaintext := []byte("cross-sdk test message")
@@ -159,7 +159,7 @@ func TestBidirectionalCrossCompatibility(t *testing.T) {
 			require.NoError(t, err, "Failed to create private key")
 
 			keyBytes := privKey.PubKey().X.Bytes()
-			require.Equal(t, tc.expectedKeyLength, len(keyBytes), "Unexpected key length")
+			require.Len(t, keyBytes, tc.expectedKeyLength, "Unexpected key length")
 
 			symmetricKey := NewSymmetricKey(keyBytes)
 			expectedPlaintext := []byte("cross-sdk test message")

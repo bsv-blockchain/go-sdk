@@ -161,7 +161,7 @@ func TestSighashFlagString(t *testing.T) {
 		{AllForkID | AnyOneCanPay, "ALL|FORKID|ANYONECANPAY"},
 		{NoneForkID | AnyOneCanPay, "NONE|FORKID|ANYONECANPAY"},
 		{SingleForkID | AnyOneCanPay, "SINGLE|FORKID|ANYONECANPAY"},
-		// Unrecognised flags fall back to "ALL"
+		// Unrecognized flags fall back to "ALL"
 		{Flag(0xFF), "ALL"},
 		{Old, "ALL"},
 	}
@@ -176,8 +176,8 @@ func TestSighashFlagString(t *testing.T) {
 
 func TestSighashForkIDComposition(t *testing.T) {
 	// Verify the ForkID compound constants are composed correctly.
-	require.Equal(t, Flag(0x41), AllForkID)
-	require.Equal(t, Flag(0x42), NoneForkID)
-	require.Equal(t, Flag(0x43), SingleForkID)
-	require.Equal(t, Flag(0xC0), AnyOneCanPayForkID)
+	require.Equal(t, AllForkID, Flag(0x41))
+	require.Equal(t, NoneForkID, Flag(0x42))
+	require.Equal(t, SingleForkID, Flag(0x43))
+	require.Equal(t, AnyOneCanPayForkID, Flag(0xC0))
 }

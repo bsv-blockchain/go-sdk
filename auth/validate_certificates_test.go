@@ -27,7 +27,7 @@ func TestValidateCertificates(t *testing.T) {
 
 		err := auth.ValidateCertificates(t.Context(), mockWallet, message, nil)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no certificates were provided")
 	})
 
@@ -127,7 +127,7 @@ func TestValidateCertificates(t *testing.T) {
 		// Convert keyring to expected format
 		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		for k, v := range keyringForVerifier {
-			keyringMap[k] = wallet.StringBase64(v)
+			keyringMap[k] = v
 		}
 
 		// Create VerifiableCertificate
@@ -314,7 +314,7 @@ func TestValidateCertificates(t *testing.T) {
 		// Validate should fail due to invalid signature
 		anyoneWallet, _ := wallet.NewCompletedProtoWallet(nil)
 		err := auth.ValidateCertificates(t.Context(), anyoneWallet, message, nil)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "signature")
 	})
 }

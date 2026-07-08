@@ -568,7 +568,7 @@ func TestReaderReadString(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadString()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run("MaxUint64 length returns empty", func(t *testing.T) {
@@ -577,7 +577,7 @@ func TestReaderReadString(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadString()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run("truncated bytes returns error", func(t *testing.T) {
@@ -598,7 +598,7 @@ func TestReaderReadOptionalString(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadOptionalString()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run("non-empty string round-trip", func(t *testing.T) {
@@ -816,7 +816,7 @@ func TestReaderReadOptionalToHex(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadOptionalToHex()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -1131,14 +1131,14 @@ func TestReaderHoldErrorReadString(t *testing.T) {
 		s := r.ReadString("my error")
 		require.Error(t, r.Err)
 		require.Contains(t, r.Err.Error(), "my error")
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run(subTestEmptyOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		s := r.ReadString()
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -1158,7 +1158,7 @@ func TestReaderHoldErrorReadOptionalString(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		s := r.ReadOptionalString()
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -1199,7 +1199,7 @@ func TestReaderHoldErrorReadOptionalToHex(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
 		r.ReadByte()
 		s := r.ReadOptionalToHex()
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -1311,7 +1311,7 @@ func TestReadOptionalToHexZeroLength(t *testing.T) {
 	r := util.NewReader(w.Buf)
 	s, err := r.ReadOptionalToHex()
 	require.NoError(t, err)
-	require.Equal(t, "", s)
+	require.Empty(t, s)
 }
 
 func TestReadOptionalToHexContent(t *testing.T) {

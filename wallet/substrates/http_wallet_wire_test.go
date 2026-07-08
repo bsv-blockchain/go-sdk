@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,21 +54,21 @@ func TestTransmitToWallet(t *testing.T) {
 	// Test server that validates requests and returns mock responses
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Validate headers
-		require.Equal(t, r.Header.Get("Content-Type"), "application/octet-stream")
-		require.Equal(t, r.Header.Get("Origin"), TestOriginator)
-		require.Equal(t, r.URL.Path, "/createAction")
+		assert.Equal(t, "application/octet-stream", r.Header.Get("Content-Type"))
+		assert.Equal(t, TestOriginator, r.Header.Get("Origin"))
+		assert.Equal(t, "/createAction", r.URL.Path)
 
 		// Validate body
 		body := make([]byte, r.ContentLength)
 		_, err := r.Body.Read(body)
 		if err != nil && err != io.EOF {
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		}
-		require.Equal(t, body, []byte("payload"))
+		assert.Equal(t, body, []byte("payload"))
 
 		// Return test response
 		_, err = w.Write([]byte("response"))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 

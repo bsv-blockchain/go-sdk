@@ -4,7 +4,6 @@ package spv
 
 import (
 	"encoding/base64"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -63,6 +62,6 @@ func TestSPVVerifyWithInsufficientFee(t *testing.T) {
 	ctx := t.Context()
 	verified, err := Verify(ctx, tx, &GullibleHeadersClient{}, feeModel)
 	require.Error(t, err)
-	require.True(t, errors.Is(err, ErrFeeTooLow))
+	require.ErrorIs(t, err, ErrFeeTooLow)
 	require.False(t, verified)
 }

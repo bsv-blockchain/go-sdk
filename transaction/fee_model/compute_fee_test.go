@@ -130,7 +130,7 @@ func TestComputeFeeWithUnlockingScript(t *testing.T) {
 
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0), "fee should be positive")
+	require.Positive(t, fee, "fee should be positive")
 }
 
 func TestComputeFeeWithTemplate(t *testing.T) {
@@ -141,7 +141,7 @@ func TestComputeFeeWithTemplate(t *testing.T) {
 
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0), "fee should be positive")
+	require.Positive(t, fee, "fee should be positive")
 }
 
 func TestComputeFeeNoScriptReturnsError(t *testing.T) {
@@ -198,7 +198,7 @@ func TestComputeFeeEmptyUnlockingScriptFallsBackToTemplate(t *testing.T) {
 	model := &SatoshisPerKilobyte{Satoshis: 100}
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0))
+	require.Positive(t, fee)
 }
 
 func TestComputeFeeMultipleInputs(t *testing.T) {
@@ -237,7 +237,7 @@ func TestComputeFeeMultipleInputs(t *testing.T) {
 	model := &SatoshisPerKilobyte{Satoshis: 500}
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0))
+	require.Positive(t, fee)
 }
 
 func TestComputeFeeFeeScalesWithSize(t *testing.T) {

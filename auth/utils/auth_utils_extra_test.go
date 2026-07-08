@@ -66,7 +66,7 @@ func TestValidateCertificateEncoding(t *testing.T) {
 			// SerialNumber is zero-value [32]byte
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
-		assert.True(t, len(errs) >= 2, "expected at least 2 errors for empty type and serial")
+		assert.GreaterOrEqual(t, len(errs), 2, "expected at least 2 errors for empty type and serial")
 	})
 
 	t.Run("returns error for empty serial number", func(t *testing.T) {
@@ -75,7 +75,7 @@ func TestValidateCertificateEncoding(t *testing.T) {
 			// SerialNumber is zero-value
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
-		assert.True(t, len(errs) >= 1, "expected error for empty serial number")
+		assert.GreaterOrEqual(t, len(errs), 1, "expected error for empty serial number")
 		found := false
 		for _, e := range errs {
 			if contains(e, "SerialNumber") {
@@ -92,7 +92,7 @@ func TestValidateCertificateEncoding(t *testing.T) {
 			Fields:       map[string]string{"field1": "not-valid-base64!!!"},
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
-		assert.True(t, len(errs) >= 1, "expected error for invalid base64 field")
+		assert.GreaterOrEqual(t, len(errs), 1, "expected error for invalid base64 field")
 		found := false
 		for _, e := range errs {
 			if contains(e, "field1") {
