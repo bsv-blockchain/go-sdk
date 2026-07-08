@@ -15,14 +15,6 @@ func Ghash(input, hashSubKey []byte) []byte {
 	return result
 }
 
-// Min is a helper function to find the minimum of two integers.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func exclusiveOR(blockA, blockB []byte) []byte {
 	result := make([]byte, len(blockA))
 	for i := range blockA {

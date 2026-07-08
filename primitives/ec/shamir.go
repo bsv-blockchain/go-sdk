@@ -38,7 +38,7 @@ func (p *PrivateKey) ToPolynomial(threshold int) (*keyshares.Polynomial, error) 
 }
 
 // ToKeyShares splits the private key into shares using Shamir's Secret Sharing Scheme.
-func (p *PrivateKey) ToKeyShares(threshold, totalShares int) (keyShares *keyshares.KeyShares, error error) {
+func (p *PrivateKey) ToKeyShares(threshold, totalShares int) (keyShares *keyshares.KeyShares, err error) {
 	if threshold < 2 {
 		return nil, errors.New("threshold must be at least 2")
 	}

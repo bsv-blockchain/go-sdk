@@ -42,7 +42,7 @@ func Sha512HMAC(b, key []byte) []byte {
 
 // Ripemd160 hashes with RIPEMD160
 func Ripemd160(b []byte) []byte {
-	ripe := ripemd160.New() // nolint:gosec // required
+	ripe := ripemd160.New() //nolint:gosec // required
 	_, _ = ripe.Write(b[:])
 	return ripe.Sum(nil)
 }

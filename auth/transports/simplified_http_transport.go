@@ -198,7 +198,7 @@ func (t *SimplifiedHTTPTransport) authMessageFromGeneralMessageResponse(requestI
 	}
 	pubKey, err := primitives.PublicKeyFromString(identityKey)
 	if err != nil {
-		return nil, fmt.Errorf("invalid identity key format in reponse: %w", err)
+		return nil, fmt.Errorf("invalid identity key format in response: %w", err)
 	}
 
 	signature := res.Header.Get(brc104.HeaderSignature)

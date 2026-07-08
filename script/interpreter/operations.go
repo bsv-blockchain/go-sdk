@@ -2,7 +2,7 @@ package interpreter
 
 import (
 	"bytes"
-	"crypto/sha1" // nolint:gosec // OP_SHA1 support requires this
+	"crypto/sha1" //nolint:gosec // OP_SHA1 support requires this
 	"crypto/sha256"
 	"hash"
 	"math/big"

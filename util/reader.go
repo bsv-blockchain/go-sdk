@@ -367,7 +367,7 @@ func (r *ReaderHoldError) ReadIntBytesHex() string {
 }
 
 // ReadByte returns the next byte and holds any error internally
-func (r *ReaderHoldError) ReadByte() byte { //nolint:govet
+func (r *ReaderHoldError) ReadByte() byte { //nolint:govet // intentionally holds error internally instead of returning it, unlike io.ByteReader
 	if r.Err != nil {
 		return 0
 	}

@@ -146,7 +146,7 @@ func parseBinaryLookupAnswer(data []byte) (*LookupAnswer, error) {
 		}
 		txBeef, err := tx.BEEF()
 		if err != nil {
-			return nil, fmt.Errorf("binary lookup: re-serialising BEEF for txid %s: %w", m.txid, err)
+			return nil, fmt.Errorf("binary lookup: re-serializing BEEF for txid %s: %w", m.txid, err)
 		}
 		outputs = append(outputs, &OutputListItem{
 			Beef:        txBeef,

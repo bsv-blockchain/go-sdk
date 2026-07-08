@@ -12,7 +12,7 @@ type WIF string
 
 // PrivateKey returns the private key from the WIF string.
 func (w WIF) PrivateKey() (*ec.PrivateKey, error) {
-	return ec.PrivateKeyFromWif(string(w)) //nolint:wrapcheck
+	return ec.PrivateKeyFromWif(string(w)) //nolint:wrapcheck // pass-through of underlying parse error is sufficient here
 }
 
 // PrivHex represents a string holding private key in HEX format.
@@ -21,7 +21,7 @@ type PrivHex string
 
 // PrivateKey returns the private key from the PrivHex string.
 func (k PrivHex) PrivateKey() (*ec.PrivateKey, error) {
-	return ec.PrivateKeyFromHex(string(k)) //nolint:wrapcheck
+	return ec.PrivateKeyFromHex(string(k)) //nolint:wrapcheck // pass-through of underlying parse error is sufficient here
 }
 
 // PrivateKeySource represents a source of wallet owner private key.
@@ -156,7 +156,7 @@ type PubHex string
 
 // PublicKey returns the public key from the PubHex string.
 func (k PubHex) PublicKey() (*ec.PublicKey, error) {
-	return ec.PublicKeyFromString(string(k)) //nolint:wrapcheck
+	return ec.PublicKeyFromString(string(k)) //nolint:wrapcheck // pass-through of underlying parse error is sufficient here
 }
 
 // IdentityKeyPublicSource represents a source of identity key.

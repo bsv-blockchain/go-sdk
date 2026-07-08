@@ -41,7 +41,7 @@ func decodeShare(share string) (*PointInFiniteField, int, string, error) {
 }
 
 // NewKeySharesFromBackupFormat creates a new KeyShares object from a backup
-func NewKeySharesFromBackupFormat(shares []string) (keyShares *KeyShares, error error) {
+func NewKeySharesFromBackupFormat(shares []string) (keyShares *KeyShares, err error) {
 	threshold := 0
 	integrity := ""
 	points := make([]*PointInFiniteField, 0)
