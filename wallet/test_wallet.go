@@ -273,7 +273,7 @@ func (m *TestWallet) OnGetPublicKey() *MockWalletMethods[GetPublicKeyArgs, GetPu
 }
 
 func (m *TestWallet) GetPublicKey(ctx context.Context, args GetPublicKeyArgs, originator string) (*GetPublicKeyResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetPublicKey", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetPublicKey", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -296,7 +296,7 @@ func (m *TestWallet) OnEncrypt() *MockWalletMethods[EncryptArgs, EncryptResult] 
 }
 
 func (m *TestWallet) Encrypt(ctx context.Context, args EncryptArgs, originator string) (*EncryptResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "Encrypt", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "Encrypt", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -319,7 +319,7 @@ func (m *TestWallet) OnDecrypt() *MockWalletMethods[DecryptArgs, DecryptResult] 
 }
 
 func (m *TestWallet) Decrypt(ctx context.Context, args DecryptArgs, originator string) (*DecryptResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "Decrypt", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "Decrypt", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -342,7 +342,7 @@ func (m *TestWallet) OnCreateHMAC() *MockWalletMethods[CreateHMACArgs, CreateHMA
 }
 
 func (m *TestWallet) CreateHMAC(ctx context.Context, args CreateHMACArgs, originator string) (*CreateHMACResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "CreateHMAC", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "CreateHMAC", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -365,7 +365,7 @@ func (m *TestWallet) OnVerifyHMAC() *MockWalletMethods[VerifyHMACArgs, VerifyHMA
 }
 
 func (m *TestWallet) VerifyHMAC(ctx context.Context, args VerifyHMACArgs, originator string) (*VerifyHMACResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "VerifyHMAC", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "VerifyHMAC", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -388,7 +388,7 @@ func (m *TestWallet) OnCreateSignature() *MockWalletMethods[CreateSignatureArgs,
 }
 
 func (m *TestWallet) CreateSignature(ctx context.Context, args CreateSignatureArgs, originator string) (*CreateSignatureResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "CreateSignature", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "CreateSignature", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -411,7 +411,7 @@ func (m *TestWallet) OnVerifySignature() *MockWalletMethods[VerifySignatureArgs,
 }
 
 func (m *TestWallet) VerifySignature(ctx context.Context, args VerifySignatureArgs, originator string) (*VerifySignatureResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "VerifySignature", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "VerifySignature", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -434,7 +434,7 @@ func (m *TestWallet) OnCreateAction() *MockWalletMethods[CreateActionArgs, Creat
 }
 
 func (m *TestWallet) CreateAction(ctx context.Context, args CreateActionArgs, originator string) (*CreateActionResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "CreateAction", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "CreateAction", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -457,7 +457,7 @@ func (m *TestWallet) OnSignAction() *MockWalletMethods[SignActionArgs, SignActio
 }
 
 func (m *TestWallet) SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "SignAction", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "SignAction", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -480,7 +480,7 @@ func (m *TestWallet) OnAbortAction() *MockWalletMethods[AbortActionArgs, AbortAc
 }
 
 func (m *TestWallet) AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "AbortAction", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "AbortAction", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -503,7 +503,7 @@ func (m *TestWallet) OnListActions() *MockWalletMethods[ListActionsArgs, ListAct
 }
 
 func (m *TestWallet) ListActions(ctx context.Context, args ListActionsArgs, originator string) (*ListActionsResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "ListActions", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "ListActions", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -526,7 +526,7 @@ func (m *TestWallet) OnInternalizeAction() *MockWalletMethods[InternalizeActionA
 }
 
 func (m *TestWallet) InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "InternalizeAction", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "InternalizeAction", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -549,7 +549,7 @@ func (m *TestWallet) OnListOutputs() *MockWalletMethods[ListOutputsArgs, ListOut
 }
 
 func (m *TestWallet) ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "ListOutputs", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "ListOutputs", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -572,7 +572,7 @@ func (m *TestWallet) OnRelinquishOutput() *MockWalletMethods[RelinquishOutputArg
 }
 
 func (m *TestWallet) RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "RelinquishOutput", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "RelinquishOutput", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -595,7 +595,7 @@ func (m *TestWallet) OnRevealCounterpartyKeyLinkage() *MockWalletMethods[RevealC
 }
 
 func (m *TestWallet) RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "RevealCounterpartyKeyLinkage", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "RevealCounterpartyKeyLinkage", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -618,7 +618,7 @@ func (m *TestWallet) OnRevealSpecificKeyLinkage() *MockWalletMethods[RevealSpeci
 }
 
 func (m *TestWallet) RevealSpecificKeyLinkage(ctx context.Context, args RevealSpecificKeyLinkageArgs, originator string) (*RevealSpecificKeyLinkageResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "RevealSpecificKeyLinkage", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "RevealSpecificKeyLinkage", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -641,7 +641,7 @@ func (m *TestWallet) OnAcquireCertificate() *MockWalletMethods[AcquireCertificat
 }
 
 func (m *TestWallet) AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "AcquireCertificate", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "AcquireCertificate", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -664,7 +664,7 @@ func (m *TestWallet) OnListCertificates() *MockWalletMethods[ListCertificatesArg
 }
 
 func (m *TestWallet) ListCertificates(ctx context.Context, args ListCertificatesArgs, originator string) (*ListCertificatesResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "ListCertificates", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "ListCertificates", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -687,7 +687,7 @@ func (m *TestWallet) OnProveCertificate() *MockWalletMethods[ProveCertificateArg
 }
 
 func (m *TestWallet) ProveCertificate(ctx context.Context, args ProveCertificateArgs, originator string) (*ProveCertificateResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "ProveCertificate", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "ProveCertificate", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -710,7 +710,7 @@ func (m *TestWallet) OnRelinquishCertificate() *MockWalletMethods[RelinquishCert
 }
 
 func (m *TestWallet) RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "RelinquishCertificate", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "RelinquishCertificate", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -733,7 +733,7 @@ func (m *TestWallet) OnDiscoverByIdentityKey() *MockWalletMethods[DiscoverByIden
 }
 
 func (m *TestWallet) DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "DiscoverByIdentityKey", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "DiscoverByIdentityKey", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -756,7 +756,7 @@ func (m *TestWallet) OnDiscoverByAttributes() *MockWalletMethods[DiscoverByAttri
 }
 
 func (m *TestWallet) DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "DiscoverByAttributes", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "DiscoverByAttributes", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -779,7 +779,7 @@ func (m *TestWallet) OnIsAuthenticated() *MockWalletMethods[any, AuthenticatedRe
 }
 
 func (m *TestWallet) IsAuthenticated(ctx context.Context, args any, originator string) (*AuthenticatedResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "IsAuthenticated", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "IsAuthenticated", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -802,7 +802,7 @@ func (m *TestWallet) OnWaitForAuthentication() *MockWalletMethods[any, Authentic
 }
 
 func (m *TestWallet) WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "WaitForAuthentication", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "WaitForAuthentication", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -825,7 +825,7 @@ func (m *TestWallet) OnGetHeight() *MockWalletMethods[any, GetHeightResult] {
 }
 
 func (m *TestWallet) GetHeight(ctx context.Context, args any, originator string) (*GetHeightResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetHeight", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetHeight", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -848,7 +848,7 @@ func (m *TestWallet) OnGetHeaderForHeight() *MockWalletMethods[GetHeaderArgs, Ge
 }
 
 func (m *TestWallet) GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetHeaderForHeight", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetHeaderForHeight", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -868,7 +868,7 @@ func (m *TestWallet) OnGetNetwork() *MockWalletMethods[any, GetNetworkResult] {
 }
 
 func (m *TestWallet) GetNetwork(ctx context.Context, args any, originator string) (*GetNetworkResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetNetwork", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetNetwork", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
@@ -888,7 +888,7 @@ func (m *TestWallet) OnGetVersion() *MockWalletMethods[any, GetVersionResult] {
 }
 
 func (m *TestWallet) GetVersion(ctx context.Context, args any, originator string) (*GetVersionResult, error) {
-	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetVersion", "args", args, "originator", originator)
+	m.logger.DebugContext(ctx, "Wallet method called", "method", "GetVersion", "originator", originator)
 
 	m.checkExpectations(ctx, args, originator)
 
