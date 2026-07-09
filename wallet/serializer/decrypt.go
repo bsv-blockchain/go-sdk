@@ -51,7 +51,7 @@ func DeserializeDecryptArgs(data []byte) (*wallet.DecryptArgs, error) {
 
 	// Read ciphertext
 	ciphertextLen := r.ReadVarInt()
-	args.Ciphertext = r.ReadBytes(int(ciphertextLen))
+	args.Ciphertext = r.ReadBytes(int(ciphertextLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 
 	// Read seekPermission
 	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())

@@ -23,6 +23,8 @@ type DefaultOpcodeParser struct {
 }
 
 // ParsedOpcode is a parsed opcode.
+//
+//nolint:recvcheck // mix is intentional: read-only accessors use value receivers since ParsedOpcode is returned by value from State.Opcode() and other non-addressable call sites; mutating helpers use pointer receivers
 type ParsedOpcode struct {
 	op   opcode
 	Data []byte
@@ -404,7 +406,7 @@ func (o *ParsedOpcode) bytes() ([]byte, error) {
 		// tempting just to hardcode to avoid the complexity here.
 		switch o.op.length {
 		case -1:
-			retbytes = append(retbytes, byte(l))
+			retbytes = append(retbytes, byte(l)) //nolint:gosec // G115 -- OP_PUSHDATA1 data length is bounded to a single byte (0-255) by opcode encoding
 			nbytes = int(retbytes[1]) + len(retbytes)
 		case -2:
 			retbytes = append(retbytes, byte(l&0xff),

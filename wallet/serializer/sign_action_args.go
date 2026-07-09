@@ -34,7 +34,7 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 
 	// Options
 	if args.Options != nil {
-		w.WriteByte(1) // options present
+		w.WriteByteValue(1) // options present
 
 		// AcceptDelayedBroadcast, ReturnTXIDOnly, NoSend
 		w.WriteOptionalBool(args.Options.AcceptDelayedBroadcast)
@@ -46,7 +46,7 @@ func SerializeSignActionArgs(args *wallet.SignActionArgs) ([]byte, error) {
 			return nil, fmt.Errorf("error writing sendWith txids: %w", err)
 		}
 	} else {
-		w.WriteByte(0) // options not present
+		w.WriteByteValue(0) // options not present
 	}
 
 	return w.Buf, nil
@@ -59,7 +59,7 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 	// Deserialize spends
 	spendCount := r.ReadVarInt()
 	args.Spends = make(map[uint32]wallet.SignActionSpend)
-	for i := 0; i < int(spendCount); i++ {
+	for i := 0; i < int(spendCount); i++ { //nolint:gosec // G115 -- value is bounded by domain constraints
 		inputIndex := r.ReadVarInt32()
 		spend := wallet.SignActionSpend{}
 
@@ -77,7 +77,7 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 	args.Reference = r.ReadIntBytes()
 
 	// Options
-	optionsPresent := r.ReadByte()
+	optionsPresent := r.ReadByteValue()
 	if optionsPresent == 1 {
 		args.Options = &wallet.SignActionOptions{}
 

@@ -87,7 +87,7 @@ func (h *HTTPWalletWire) TransmitToWallet(ctx context.Context, message []byte) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP request failed with status: %s", resp.Status)

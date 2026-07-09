@@ -108,6 +108,7 @@ func mustRegister(params *Params) {
 	}
 }
 
+//nolint:gochecknoinits // registers the default networks in the package-level registry at load time
 func init() {
 	// Register all default networks when the package is initialized.
 	mustRegister(&MainNet)

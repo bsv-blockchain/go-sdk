@@ -20,7 +20,7 @@ func newOutputFromBytes(bytes []byte) (*TransactionOutput, int, error) {
 	l, size := util.NewVarIntFromBytes(bytes[offset:])
 	offset += size
 
-	totalLength := offset + int(l)
+	totalLength := offset + int(l) //nolint:gosec // G115 -- script length is bounded by realistic transaction sizes
 
 	if len(bytes) < totalLength {
 		return nil, 0, fmt.Errorf("%w < 8 + script", ErrInputTooShort)

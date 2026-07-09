@@ -70,6 +70,8 @@ func (c *Counterparty) MarshalJSON() ([]byte, error) {
 			return json.Marshal(nil) // Or handle this as an error if it should never happen
 		}
 		return json.Marshal(c.Counterparty.ToDERHex())
+	case CounterpartyUninitialized:
+		return json.Marshal(nil)
 	default:
 		return json.Marshal(nil) // Or handle this as an error if it should never happen
 	}
@@ -105,8 +107,9 @@ func (c *Counterparty) UnmarshalJSON(data []byte) error {
 type (
 	aliasCreateSignatureResult CreateSignatureResult
 	jsonCreateSignatureResult  struct {
-		Signature Signature `json:"signature"`
 		*aliasCreateSignatureResult
+
+		Signature Signature `json:"signature"`
 	}
 )
 
@@ -135,10 +138,11 @@ func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
 type (
 	aliasVerifySignatureArgs VerifySignatureArgs
 	jsonVerifySignatureArgs  struct {
+		*aliasVerifySignatureArgs
+
 		Data                 BytesList `json:"data,omitempty"`
 		HashToDirectlyVerify BytesList `json:"hashToDirectlyVerify,omitempty"`
 		Signature            Signature `json:"signature"`
-		*aliasVerifySignatureArgs
 	}
 )
 
@@ -169,8 +173,9 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 type (
 	aliasCertificate Certificate
 	jsonCertificate  struct {
-		Signature BytesHex `json:"signature"`
 		*aliasCertificate
+
+		Signature BytesHex `json:"signature"`
 	}
 )
 
@@ -210,8 +215,9 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 type (
 	aliasCreateActionInput CreateActionInput
 	jsonCreateActionInput  struct {
-		UnlockingScript BytesHex `json:"unlockingScript,omitempty"`
 		*aliasCreateActionInput
+
+		UnlockingScript BytesHex `json:"unlockingScript,omitempty"`
 	}
 )
 
@@ -239,8 +245,9 @@ func (i *CreateActionInput) UnmarshalJSON(data []byte) error {
 type (
 	aliasCreateActionOutput CreateActionOutput
 	jsonCreateActionOutput  struct {
-		LockingScript BytesHex `json:"lockingScript,omitempty"`
 		*aliasCreateActionOutput
+
+		LockingScript BytesHex `json:"lockingScript,omitempty"`
 	}
 )
 
@@ -268,8 +275,9 @@ func (o *CreateActionOutput) UnmarshalJSON(data []byte) error {
 type (
 	aliasSignActionSpend SignActionSpend
 	jsonSignActionSpend  struct {
-		UnlockingScript BytesHex `json:"unlockingScript"`
 		*aliasSignActionSpend
+
+		UnlockingScript BytesHex `json:"unlockingScript"`
 	}
 )
 
@@ -297,9 +305,10 @@ func (s *SignActionSpend) UnmarshalJSON(data []byte) error {
 type (
 	aliasActionInput ActionInput
 	jsonActionInput  struct {
+		*aliasActionInput
+
 		SourceLockingScript BytesHex `json:"sourceLockingScript,omitempty"`
 		UnlockingScript     BytesHex `json:"unlockingScript,omitempty"`
-		*aliasActionInput
 	}
 )
 
@@ -329,8 +338,9 @@ func (a *ActionInput) UnmarshalJSON(data []byte) error {
 type (
 	aliasActionOutput ActionOutput
 	jsonActionOutput  struct {
-		LockingScript BytesHex `json:"lockingScript,omitempty"`
 		*aliasActionOutput
+
+		LockingScript BytesHex `json:"lockingScript,omitempty"`
 	}
 )
 
@@ -358,8 +368,9 @@ func (o *ActionOutput) UnmarshalJSON(data []byte) error {
 type (
 	aliasInternalizeActionArgs InternalizeActionArgs
 	jsonInternalizeActionArgs  struct {
-		Tx BytesList `json:"tx"`
 		*aliasInternalizeActionArgs
+
+		Tx BytesList `json:"tx"`
 	}
 )
 
@@ -387,8 +398,9 @@ func (i *InternalizeActionArgs) UnmarshalJSON(data []byte) error {
 type (
 	aliasOutput Output
 	jsonOutput  struct {
-		LockingScript BytesHex `json:"lockingScript,omitempty"`
 		*aliasOutput
+
+		LockingScript BytesHex `json:"lockingScript,omitempty"`
 	}
 )
 
@@ -416,9 +428,10 @@ func (o *Output) UnmarshalJSON(data []byte) error {
 type (
 	aliasListOutputsResult ListOutputsResult
 	jsonListOutputsResult  struct {
+		*aliasListOutputsResult
+
 		BEEF    BytesList `json:"BEEF,omitempty"`
 		Outputs []Output  `json:"outputs"` // This will use Output's custom marshaler
-		*aliasListOutputsResult
 	}
 )
 
@@ -510,9 +523,10 @@ func (cr *CertificateResult) UnmarshalJSON(data []byte) error {
 type (
 	aliasRevealCounterpartyKeyLinkageResult RevealCounterpartyKeyLinkageResult
 	jsonRevealCounterpartyKeyLinkageResult  struct {
+		*aliasRevealCounterpartyKeyLinkageResult
+
 		EncryptedLinkage      BytesList `json:"encryptedLinkage"`
 		EncryptedLinkageProof BytesList `json:"encryptedLinkageProof"`
-		*aliasRevealCounterpartyKeyLinkageResult
 	}
 )
 
@@ -540,9 +554,10 @@ func (r *RevealCounterpartyKeyLinkageResult) UnmarshalJSON(data []byte) error {
 type (
 	aliasRevealSpecificKeyLinkageResult RevealSpecificKeyLinkageResult
 	jsonRevealSpecificKeyLinkageResult  struct {
+		*aliasRevealSpecificKeyLinkageResult
+
 		EncryptedLinkage      BytesList `json:"encryptedLinkage"`
 		EncryptedLinkageProof BytesList `json:"encryptedLinkageProof"`
-		*aliasRevealSpecificKeyLinkageResult
 	}
 )
 
@@ -664,8 +679,9 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 type (
 	aliasAcquireCertificateArgs AcquireCertificateArgs
 	jsonAcquireCertificateArgs  struct {
-		Signature BytesHex `json:"signature,omitempty"`
 		*aliasAcquireCertificateArgs
+
+		Signature BytesHex `json:"signature,omitempty"`
 	}
 )
 
@@ -701,8 +717,9 @@ func (a *AcquireCertificateArgs) UnmarshalJSON(data []byte) error {
 type (
 	aliasGetHeaderResult GetHeaderResult
 	jsonGetHeaderResult  struct {
-		Header BytesHex `json:"header"`
 		*aliasGetHeaderResult
+
+		Header BytesHex `json:"header"`
 	}
 )
 
@@ -727,9 +744,10 @@ func (r *GetHeaderResult) UnmarshalJSON(data []byte) error {
 type (
 	aliasVerifyHMACArgs VerifyHMACArgs
 	jsonVerifyHMACArgs  struct {
+		*aliasVerifyHMACArgs
+
 		Data BytesList `json:"data"`
 		HMAC BytesList `json:"hmac"`
-		*aliasVerifyHMACArgs
 	}
 )
 
@@ -762,8 +780,9 @@ func (v *VerifyHMACArgs) UnmarshalJSON(data []byte) error {
 type (
 	aliasCreateHMACResult CreateHMACResult
 	jsonCreateHMACResult  struct {
-		HMAC BytesList `json:"hmac"`
 		*aliasCreateHMACResult
+
+		HMAC BytesList `json:"hmac"`
 	}
 )
 

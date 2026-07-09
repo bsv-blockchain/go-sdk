@@ -69,6 +69,7 @@ var (
 	ErrChecksumIncorrect = errors.New("checksum incorrect")
 )
 
+//nolint:gochecknoinits // sets the default BIP39 word list at package load time
 func init() {
 	SetWordList(wordlists.English)
 }
@@ -131,7 +132,7 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 			return nil, fmt.Errorf("word `%v` not found in reverse map", v)
 		}
 
-		binary.BigEndian.PutUint16(wordBytes[:], uint16(index))
+		binary.BigEndian.PutUint16(wordBytes[:], uint16(index)) //nolint:gosec // G115 -- word index is bounded by wordlist size (2048 words)
 		b.Mul(b, shift11BitsMask)
 		b.Or(b, big.NewInt(0).SetBytes(wordBytes[:]))
 	}

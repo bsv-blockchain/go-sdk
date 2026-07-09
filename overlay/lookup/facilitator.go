@@ -43,7 +43,7 @@ func (f *HTTPSOverlayLookupFacilitator) Lookup(ctx context.Context, url string, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &util.HTTPError{
@@ -117,7 +117,7 @@ func parseBinaryLookupAnswer(data []byte) (*LookupAnswer, error) {
 
 		var context []byte
 		if contextLen > 0 {
-			context, err = r.ReadBytes(int(contextLen))
+			context, err = r.ReadBytes(int(contextLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 			if err != nil {
 				return nil, fmt.Errorf("binary lookup: reading context[%d]: %w", i, err)
 			}
@@ -125,7 +125,7 @@ func parseBinaryLookupAnswer(data []byte) (*LookupAnswer, error) {
 
 		metas = append(metas, outpointMeta{
 			txid:        txid,
-			outputIndex: uint32(outputIndex),
+			outputIndex: uint32(outputIndex), //nolint:gosec // G115 -- output index bounded by transaction output count
 			context:     context,
 		})
 	}

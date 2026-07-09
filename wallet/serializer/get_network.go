@@ -17,9 +17,9 @@ func SerializeGetNetworkResult(result *wallet.GetNetworkResult) ([]byte, error) 
 
 	// Network byte (0 for mainnet, 1 for testnet)
 	if result.Network == wallet.NetworkMainnet {
-		w.WriteByte(networkMainnetCode)
+		w.WriteByteValue(networkMainnetCode)
 	} else {
-		w.WriteByte(networkTestnetCode)
+		w.WriteByteValue(networkTestnetCode)
 	}
 
 	return w.Buf, nil
@@ -30,7 +30,7 @@ func DeserializeGetNetworkResult(data []byte) (*wallet.GetNetworkResult, error) 
 
 	// Read network byte
 	result := new(wallet.GetNetworkResult)
-	switch r.ReadByte() {
+	switch r.ReadByteValue() {
 	case networkMainnetCode:
 		result.Network = wallet.NetworkMainnet
 	case networkTestnetCode:

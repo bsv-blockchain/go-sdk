@@ -16,9 +16,9 @@ func SerializeGetPublicKeyArgs(args *wallet.GetPublicKeyArgs) ([]byte, error) {
 
 	// Write identity key flag
 	if args.IdentityKey {
-		w.WriteByte(identityKeyFlag)
+		w.WriteByteValue(identityKeyFlag)
 	} else {
-		w.WriteByte(0)
+		w.WriteByteValue(0)
 	}
 
 	if !args.IdentityKey {
@@ -54,7 +54,7 @@ func DeserializeGetPublicKeyArgs(data []byte) (*wallet.GetPublicKeyArgs, error) 
 	args := &wallet.GetPublicKeyArgs{}
 
 	// Read identity key flag
-	if r.ReadByte() == identityKeyFlag {
+	if r.ReadByteValue() == identityKeyFlag {
 		args.IdentityKey = true
 	}
 

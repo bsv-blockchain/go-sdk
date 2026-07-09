@@ -140,7 +140,7 @@ func (a *Arc) ArcBroadcast(ctx context.Context, t *transaction.Transaction) (*Ar
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (a *Arc) Status(txid string) (*ArcResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

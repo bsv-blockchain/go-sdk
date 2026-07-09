@@ -86,14 +86,14 @@ const (
 )
 
 // HasFlag returns whether the Flags has the passed flag set.
-func (s Flag) HasFlag(flag Flag) bool {
-	return s&flag == flag
+func (s *Flag) HasFlag(flag Flag) bool {
+	return *s&flag == flag
 }
 
 // HasAny returns true if any of the passed in flags are present.
-func (s Flag) HasAny(flags ...Flag) bool {
+func (s *Flag) HasAny(flags ...Flag) bool {
 	for _, f := range flags {
-		if s&f == f {
+		if *s&f == f {
 			return true
 		}
 	}

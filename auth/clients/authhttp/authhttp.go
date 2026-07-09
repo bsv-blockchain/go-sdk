@@ -320,7 +320,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			// Check if there's a session associated with this baseURL
 			if peerToUse.SupportsMutualAuth != nil && !*peerToUse.SupportsMutualAuth {
 				// Use standard fetch if mutual authentication is not supported
-				resp, err := a.handleFetchAndValidate(ctx, urlStr, config, peerToUse)
+				resp, err := a.handleFetchAndValidate(ctx, urlStr, config, peerToUse) //nolint:bodyclose // response is forwarded via responseChan to Fetch's caller, which closes it
 				responseChan <- struct {
 					resp *http.Response
 					err  error
@@ -399,9 +399,9 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 				}
 			}
 
-			requestIDFromResponse, response, err := authpayload.ToHTTPResponse(payload, authpayload.WithSenderPublicKey(senderPublicKey))
-			if err != nil {
-				return fmt.Errorf("invalid response send by server: %w", err)
+			requestIDFromResponse, response, respErr := authpayload.ToHTTPResponse(payload, authpayload.WithSenderPublicKey(senderPublicKey)) //nolint:bodyclose // response body is an in-memory io.NopCloser (see authpayload.ToHTTPResponse), nothing to leak
+			if respErr != nil {
+				return fmt.Errorf("invalid response send by server: %w", respErr)
 			}
 
 			responseNonceBase64 := base64.StdEncoding.EncodeToString(requestIDFromResponse)
@@ -463,7 +463,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 				}
 
 				// Retry the request
-				resp, retryErr := a.Fetch(ctx, urlStr, config)
+				resp, retryErr := a.Fetch(ctx, urlStr, config) //nolint:bodyclose // response is forwarded via responseChan to Fetch's caller, which closes it
 				responseChan <- struct {
 					resp *http.Response
 					err  error
@@ -471,7 +471,7 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 				return
 			} else if errors.Is(err, transports.ErrHTTPServerFailedToAuthenticate) {
 				// Fall back to regular HTTP request
-				resp, fallbackErr := a.handleFetchAndValidate(ctx, urlStr, config, peerToUse)
+				resp, fallbackErr := a.handleFetchAndValidate(ctx, urlStr, config, peerToUse) //nolint:bodyclose // response is forwarded via responseChan to Fetch's caller, which closes it
 				responseChan <- struct {
 					resp *http.Response
 					err  error
@@ -637,6 +637,7 @@ func (a *AuthFetch) handleFetchAndValidate(ctx context.Context, urlStr string, c
 	// Validate that the server is not trying to fake authentication
 	for k := range response.Header {
 		if strings.ToLower(k) == "x-bsv-auth-identity-key" || strings.HasPrefix(strings.ToLower(k), "x-bsv-auth") {
+			_ = response.Body.Close()
 			return nil, errors.New("the server is trying to claim it has been authenticated when it has not")
 		}
 	}
@@ -648,6 +649,7 @@ func (a *AuthFetch) handleFetchAndValidate(ctx context.Context, urlStr string, c
 		return response, nil
 	}
 
+	_ = response.Body.Close()
 	return nil, fmt.Errorf("request failed with status: %d", response.StatusCode)
 }
 

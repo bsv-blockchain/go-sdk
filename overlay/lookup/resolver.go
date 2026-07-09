@@ -171,8 +171,8 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 			ctxWithTimeout, cancel := context.WithTimeout(ctx, trackerTimeout)
 			defer cancel()
 
-			if answer, err := l.Facilitator.Lookup(ctxWithTimeout, url, query); err != nil {
-				slog.Error(fmt.Sprintf("Error querying tracker: %s %v", url, err))
+			if answer, lookupErr := l.Facilitator.Lookup(ctxWithTimeout, url, query); lookupErr != nil {
+				slog.Error(fmt.Sprintf("Error querying tracker: %s %v", url, lookupErr))
 			} else {
 				responses <- answer
 			}
@@ -187,8 +187,8 @@ func (l *LookupResolver) FindCompetentHosts(ctx context.Context, service string)
 			continue
 		}
 		for _, output := range result.Outputs {
-			if _, tx, _, err := transaction.ParseBeef(output.Beef); err != nil {
-				slog.Error("Error parsing BEEF", "error", err)
+			if _, tx, _, parseErr := transaction.ParseBeef(output.Beef); parseErr != nil {
+				slog.Error("Error parsing BEEF", "error", parseErr)
 			} else if tx == nil {
 				slog.Error("No transaction found in BEEF")
 			} else if len(tx.Outputs) <= int(output.OutputIndex) {

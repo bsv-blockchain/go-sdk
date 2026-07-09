@@ -91,9 +91,9 @@ func (tx *Transaction) CalcInputPreimage(inputNumber uint32, sigHashFlag sighash
 	if (sigHashFlag&31) != sighash.Single && (sigHashFlag&31) != sighash.None {
 		// This will be executed in the usual BSV case (where sigHashType = SighashAllForkID)
 		hashOutputs = tx.OutputsHash(-1)
-	} else if (sigHashFlag&31) == sighash.Single && inputNumber < uint32(tx.OutputCount()) {
+	} else if (sigHashFlag&31) == sighash.Single && inputNumber < uint32(tx.OutputCount()) { //nolint:gosec // G115 -- output count is bounded well within uint32
 		// This will *not* be executed in the usual BSV case (where sigHashType = SighashAllForkID)
-		hashOutputs = tx.OutputsHash(int32(inputNumber))
+		hashOutputs = tx.OutputsHash(int32(inputNumber)) //nolint:gosec // G115 -- inputNumber is bounded by the number of transaction outputs (checked above)
 	}
 
 	buf := make([]byte, 0, 256)

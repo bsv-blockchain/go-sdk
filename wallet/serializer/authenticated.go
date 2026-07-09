@@ -12,9 +12,9 @@ func SerializeIsAuthenticatedResult(result *wallet.AuthenticatedResult) ([]byte,
 
 	// Authenticated flag (1=true, 0=false)
 	if result.Authenticated {
-		w.WriteByte(1)
+		w.WriteByteValue(1)
 	} else {
-		w.WriteByte(0)
+		w.WriteByteValue(0)
 	}
 
 	return w.Buf, nil

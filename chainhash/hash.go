@@ -24,6 +24,8 @@ var ErrHashStrSize = fmt.Errorf("max hash string length is %v bytes", MaxHashStr
 
 // Hash is used in several of the bitcoin messages and common structures.  It
 // typically represents the double sha256 of data.
+//
+//nolint:recvcheck // mix is intentional: Hash is widely used by value (map keys, struct fields) and implements fmt.Stringer/json.Marshaler by value, while SetBytes/UnmarshalJSON etc. must mutate via pointer receiver
 type Hash [HashSize]byte
 
 // String returns the Hash as the hexadecimal string of the byte-reversed

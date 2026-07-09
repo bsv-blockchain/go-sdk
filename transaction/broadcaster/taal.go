@@ -56,7 +56,7 @@ func (b *TAALBroadcast) BroadcastCtx(ctx context.Context, t *transaction.Transac
 			Description: err.Error(),
 		}
 	} else {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		var taalResp TAALResponse
 		if err := json.NewDecoder(resp.Body).Decode(&taalResp); err != nil {
 			return nil, &transaction.BroadcastFailure{

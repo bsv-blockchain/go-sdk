@@ -34,14 +34,14 @@ func (p *ProtoWallet) RevealCounterpartyKeyLinkage(
 		Counterparty: args.Counterparty,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to reveal counterparty secret: %v", err)
+		return nil, fmt.Errorf("failed to reveal counterparty secret: %w", err)
 	}
 
 	// Generate Schnorr proof
 	s := schnorr.New()
 	proof, err := s.GenerateProof(identityKey, proverPublicKey, args.Counterparty, linkagePoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate proof: %v", err)
+		return nil, fmt.Errorf("failed to generate proof: %w", err)
 	}
 
 	// Serialize the proof components
@@ -74,7 +74,7 @@ func (p *ProtoWallet) RevealCounterpartyKeyLinkage(
 	}
 	encryptResult, err := p.Encrypt(ctx, encryptArgs, originator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt linkage: %v", err)
+		return nil, fmt.Errorf("failed to encrypt linkage: %w", err)
 	}
 
 	// Encrypt the proof for the verifier
@@ -88,7 +88,7 @@ func (p *ProtoWallet) RevealCounterpartyKeyLinkage(
 	}
 	encryptProofResult, err := p.Encrypt(ctx, encryptProofArgs, originator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt proof: %v", err)
+		return nil, fmt.Errorf("failed to encrypt proof: %w", err)
 	}
 
 	return &RevealCounterpartyKeyLinkageResult{
@@ -125,7 +125,7 @@ func (p *ProtoWallet) RevealSpecificKeyLinkage(
 	// Get the specific secret (linkage)
 	linkage, err := p.keyDeriver.RevealSpecificSecret(args.Counterparty, args.ProtocolID, args.KeyID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to reveal specific secret: %v", err)
+		return nil, fmt.Errorf("failed to reveal specific secret: %w", err)
 	}
 
 	// For specific key linkage, we use proof type 0 (no proof)
@@ -149,7 +149,7 @@ func (p *ProtoWallet) RevealSpecificKeyLinkage(
 	}
 	encryptResult, err := p.Encrypt(ctx, encryptArgs, originator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt linkage: %v", err)
+		return nil, fmt.Errorf("failed to encrypt linkage: %w", err)
 	}
 
 	// Encrypt the proof for the verifier
@@ -163,7 +163,7 @@ func (p *ProtoWallet) RevealSpecificKeyLinkage(
 	}
 	encryptProofResult, err := p.Encrypt(ctx, encryptProofArgs, originator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt proof: %v", err)
+		return nil, fmt.Errorf("failed to encrypt proof: %w", err)
 	}
 
 	return &RevealSpecificKeyLinkageResult{
@@ -200,6 +200,8 @@ func getCounterpartyPublicKey(counterparty Counterparty) (*ec.PublicKey, error) 
 			return nil, fmt.Errorf("counterparty public key is required")
 		}
 		return counterparty.Counterparty, nil
+	case CounterpartyUninitialized:
+		return nil, fmt.Errorf("invalid counterparty type: %v", counterparty.Type)
 	default:
 		return nil, fmt.Errorf("invalid counterparty type: %v", counterparty.Type)
 	}

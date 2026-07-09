@@ -148,7 +148,7 @@ func mapDefinitionTypeToServiceName(definitionType DefinitionType) string {
 // buildPushDropFields converts definition data into an array of pushdrop fields.
 // Each definition type has a slightly different shape.
 func buildPushDropFields(data DefinitionData, registryOperator string) ([][]byte, error) {
-	var fields []string
+	var fields []string //nolint:prealloc // fields is reassigned to a fresh literal per case below; preallocating the zero-value declaration has no effect
 
 	switch d := data.(type) {
 	case *BasketDefinitionData:

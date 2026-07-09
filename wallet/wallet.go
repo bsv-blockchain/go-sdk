@@ -85,6 +85,7 @@ type EncryptionArgs struct {
 // It extends EncryptionArgs with the plaintext data to be encrypted.
 type EncryptArgs struct {
 	EncryptionArgs
+
 	Plaintext BytesList `json:"plaintext"`
 }
 
@@ -92,6 +93,7 @@ type EncryptArgs struct {
 // It extends EncryptionArgs with the ciphertext data to be decrypted.
 type DecryptArgs struct {
 	EncryptionArgs
+
 	Ciphertext BytesList `json:"ciphertext"`
 }
 
@@ -109,6 +111,7 @@ type DecryptResult struct {
 // It extends EncryptionArgs with flags to specify identity key or derived key behavior.
 type GetPublicKeyArgs struct {
 	EncryptionArgs
+
 	IdentityKey bool  `json:"identityKey,omitempty"`
 	ForSelf     *bool `json:"forSelf,omitempty"`
 }
@@ -122,6 +125,7 @@ type GetPublicKeyResult struct {
 // It can sign either raw data (which will be hashed) or a pre-computed hash.
 type CreateSignatureArgs struct {
 	EncryptionArgs
+
 	Data               BytesList `json:"data,omitempty"`
 	HashToDirectlySign BytesList `json:"hashToDirectlySign,omitempty"`
 }
@@ -145,6 +149,7 @@ var (
 // It can verify against either raw data (which will be hashed) or a pre-computed hash.
 type VerifySignatureArgs struct {
 	EncryptionArgs
+
 	Data                 []byte        `json:"data,omitempty"`
 	HashToDirectlyVerify []byte        `json:"hashToDirectlyVerify,omitempty"`
 	Signature            *ec.Signature `json:"-"` // Ignore original field for JSON
@@ -155,6 +160,7 @@ type VerifySignatureArgs struct {
 // It extends EncryptionArgs with the data to be authenticated.
 type CreateHMACArgs struct {
 	EncryptionArgs
+
 	Data BytesList `json:"data"`
 }
 
@@ -167,6 +173,7 @@ type CreateHMACResult struct {
 // It extends EncryptionArgs with the data and HMAC to be verified.
 type VerifyHMACArgs struct {
 	EncryptionArgs
+
 	Data []byte   `json:"data"`
 	HMAC [32]byte `json:"hmac"`
 }

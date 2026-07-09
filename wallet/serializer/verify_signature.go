@@ -37,10 +37,10 @@ func SerializeVerifySignatureArgs(args *wallet.VerifySignatureArgs) ([]byte, err
 
 	// Write data or hash flag and content
 	if len(args.Data) > 0 {
-		w.WriteByte(1)
+		w.WriteByteValue(1)
 		w.WriteIntBytes(args.Data)
 	} else if len(args.HashToDirectlyVerify) == sha256.Size {
-		w.WriteByte(2)
+		w.WriteByteValue(2)
 		w.WriteBytes(args.HashToDirectlyVerify)
 	} else {
 		return nil, fmt.Errorf("invalid data or hash to directly verify")
@@ -78,7 +78,7 @@ func DeserializeVerifySignatureArgs(data []byte) (*wallet.VerifySignatureArgs, e
 	args.Signature = sig
 
 	// Read data type flag
-	dataTypeFlag := r.ReadByte()
+	dataTypeFlag := r.ReadByteValue()
 	switch dataTypeFlag {
 	case 1: // Data is provided directly
 		args.Data = r.ReadIntBytes()

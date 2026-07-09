@@ -10,7 +10,7 @@ import (
 func SerializeDiscoverCertificatesResult(result *wallet.DiscoverCertificatesResult) ([]byte, error) {
 	w := util.NewWriter()
 
-	if result.TotalCertificates != uint32(len(result.Certificates)) {
+	if result.TotalCertificates != uint32(len(result.Certificates)) { //nolint:gosec // G115 -- value is bounded by domain constraints
 		return nil, fmt.Errorf("total certificates %d does not match length of certificates slice %d", result.TotalCertificates, len(result.Certificates))
 	}
 
@@ -34,7 +34,7 @@ func DeserializeDiscoverCertificatesResult(data []byte) (*wallet.DiscoverCertifi
 	result := &wallet.DiscoverCertificatesResult{}
 
 	// Read total certificates
-	result.TotalCertificates = uint32(r.ReadVarInt())
+	result.TotalCertificates = uint32(r.ReadVarInt()) //nolint:gosec // G115 -- certificate count is bounded well within uint32 range
 
 	// Read certificates
 	if result.TotalCertificates > 0 {

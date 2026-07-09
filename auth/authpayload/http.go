@@ -230,7 +230,7 @@ func FromResponse(requestID []byte, res SimplifiedHttpResponse) ([]byte, error) 
 
 	writer := util.NewWriter()
 	writer.WriteBytes(requestID)
-	writer.WriteVarInt(uint64(res.StatusCode))
+	writer.WriteVarInt(uint64(res.StatusCode)) //nolint:gosec // G115 -- HTTP status codes are bounded (100-599)
 
 	includedHeaders, err := extractHeadersToInclude(res.Header, IsHeaderToIncludeInResponse)
 	if err != nil {

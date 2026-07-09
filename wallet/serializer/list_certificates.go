@@ -83,7 +83,7 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]byte, error) {
 	w := util.NewWriter()
 
-	if result.TotalCertificates != uint32(len(result.Certificates)) {
+	if result.TotalCertificates != uint32(len(result.Certificates)) { //nolint:gosec // G115 -- value is bounded by domain constraints
 		return nil, fmt.Errorf("total certificates %d does not match length of certificates %d", result.TotalCertificates, len(result.Certificates))
 	}
 
@@ -100,7 +100,7 @@ func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]b
 
 		// Write keyring if present
 		if cert.Keyring != nil {
-			w.WriteByte(1) // present
+			w.WriteByteValue(1) // present
 			keyringKeys := make([]string, 0, len(cert.Keyring))
 			for k := range cert.Keyring {
 				keyringKeys = append(keyringKeys, k)
@@ -115,7 +115,7 @@ func SerializeListCertificatesResult(result *wallet.ListCertificatesResult) ([]b
 				}
 			}
 		} else {
-			w.WriteByte(0) // not present
+			w.WriteByteValue(0) // not present
 		}
 
 		w.WriteIntBytes(cert.Verifier)
@@ -129,7 +129,7 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 	result := &wallet.ListCertificatesResult{}
 
 	// Read total certificates
-	result.TotalCertificates = uint32(r.ReadVarInt())
+	result.TotalCertificates = uint32(r.ReadVarInt()) //nolint:gosec // G115 -- certificate count is bounded well within uint32 range
 
 	// Read certificates
 	if result.TotalCertificates > 0 {
@@ -144,7 +144,7 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 		certResult := wallet.CertificateResult{Certificate: *cert}
 
 		// Read keyring if present
-		if r.ReadByte() == 1 {
+		if r.ReadByteValue() == 1 {
 			keyringLen := r.ReadVarInt()
 			if keyringLen > 0 {
 				certResult.Keyring = make(map[string]string, keyringLen)

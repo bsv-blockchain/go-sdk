@@ -173,7 +173,7 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 func (mp *MerklePath) Bytes() []byte {
 	bytes := util.VarInt(mp.BlockHeight).Bytes()
 	treeHeight := len(mp.Path)
-	bytes = append(bytes, byte(treeHeight))
+	bytes = append(bytes, byte(treeHeight)) //nolint:gosec // G115 -- merkle tree height is bounded well within a byte
 	for level := 0; level < treeHeight; level++ {
 		nLeaves := len(mp.Path[level])
 		bytes = append(bytes, util.VarInt(nLeaves).Bytes()...)
@@ -354,7 +354,7 @@ func (m *MerklePath) Combine(other *MerklePath) (err error) {
 			m.Path[h] = append(m.Path[h], combinedPath[h][offset])
 		}
 		slices.SortFunc(m.Path[h], func(a, b *PathElement) int {
-			return int(a.Offset) - int(b.Offset)
+			return int(a.Offset) - int(b.Offset) //nolint:gosec // G115 -- merkle path offsets are bounded well within int range by tree size
 		})
 	}
 
@@ -456,7 +456,7 @@ func (mp *MerklePath) ComputeMissingHashes() {
 	// Sort each level by offset for consistency
 	for _, level := range mp.Path {
 		slices.SortFunc(level, func(a, b *PathElement) int {
-			return int(a.Offset) - int(b.Offset)
+			return int(a.Offset) - int(b.Offset) //nolint:gosec // G115 -- merkle path offsets are bounded well within int range by tree size
 		})
 	}
 }

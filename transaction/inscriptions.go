@@ -108,7 +108,7 @@ func (tx *Transaction) InscribeSpecificOrdinal(ia *script.InscriptionArgs, input
 //
 // For more info check the Ordinals Theory Handbook (https://docs.ordinals.com/faq.html).
 func rangeAbove(is []*TransactionInput, inputIdx uint32, satIdx uint64) (uint64, error) {
-	if uint32(len(is)) < inputIdx {
+	if uint32(len(is)) < inputIdx { //nolint:gosec // G115 -- input slice length is bounded well within uint32
 		return 0, ErrOutputNoExist
 	}
 

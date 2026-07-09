@@ -194,6 +194,9 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 	case RequireAckAll:
 		requireTopics = b.Topics
 		requireHosts = RequireAckAll
+	case RequireAckNone:
+		requireTopics = []string{}
+		requireHosts = RequireAckNone
 	default:
 		requireTopics = []string{}
 		requireHosts = RequireAckNone
@@ -217,6 +220,9 @@ func (b *Broadcaster) BroadcastCtx(ctx context.Context, tx *transaction.Transact
 	case RequireAckAll:
 		requireTopics = b.Topics
 		requireHosts = RequireAckAll
+	case RequireAckNone:
+		requireTopics = []string{}
+		requireHosts = RequireAckNone
 	default:
 		requireTopics = []string{}
 		requireHosts = RequireAckNone
@@ -352,6 +358,8 @@ func (t *Broadcaster) checkAcknowledgmentFromSpecificHosts(hostAcks map[string]m
 		case RequireAckSome:
 			require = RequireAckAll
 			requiredTopics = requiredHost.Topics
+		case RequireAckNone:
+			continue
 		default:
 			continue
 		}

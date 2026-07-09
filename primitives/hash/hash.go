@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 
-	"golang.org/x/crypto/ripemd160" // nolint:staticcheck // required
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck,gosec // required
 )
 
 // Sha256 calculates hash(b) and returns the resulting bytes.

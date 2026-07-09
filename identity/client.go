@@ -209,7 +209,7 @@ func (c *Client) PubliclyRevealAttributes(
 	}
 
 	// Broadcast the transaction
-	success, failure := broadcaster.Broadcast(tx)
+	success, failure := broadcaster.Broadcast(tx) //nolint:contextcheck // topic.Broadcaster.Broadcast does not accept a context parameter
 	return success, failure, nil
 }
 

@@ -21,7 +21,7 @@ func (s *SatoshisPerKilobyte) ComputeFee(tx *transaction.Transaction) (uint64, e
 			size += util.VarInt(scriptLen).Length() + scriptLen
 		} else if i.UnlockingScriptTemplate != nil {
 			scriptLen := int(i.UnlockingScriptTemplate.EstimateLength(tx, uint32(vin)))
-			size += util.VarInt(scriptLen).Length() + scriptLen
+			size += util.VarInt(scriptLen).Length() + scriptLen //nolint:gosec // G115 -- script length is bounded well within uint64 range
 		} else {
 			return 0, ErrNoUnlockingScript
 		}

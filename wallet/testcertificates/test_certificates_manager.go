@@ -57,6 +57,7 @@ type Manager struct {
 
 type managedCertificate struct {
 	*wallet.Certificate
+
 	master *certificates.MasterCertificate
 }
 
@@ -86,7 +87,7 @@ func (m *Manager) AcquireCertificate(_ context.Context, _ wallet.AcquireCertific
 
 func (m *Manager) ListCertificates(_ context.Context, args wallet.ListCertificatesArgs, _ string) (*wallet.ListCertificatesResult, error) {
 	result := &wallet.ListCertificatesResult{
-		TotalCertificates: uint32(len(m.certs)),
+		TotalCertificates: uint32(len(m.certs)), //nolint:gosec // G115 -- value is bounded by domain constraints
 		Certificates:      make([]wallet.CertificateResult, 0, len(m.certs)),
 	}
 

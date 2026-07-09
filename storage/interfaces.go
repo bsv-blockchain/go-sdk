@@ -42,10 +42,10 @@ type UploadFileResult struct {
 
 // FindFileData is returned by StorageUploader.FindFile.
 type FindFileData struct {
-	Name       string // File name or path on the CDN
-	Size       string // File size as returned by the service
-	MimeType   string // MIME type of the file
-	ExpiryTime int64  // Expiration timestamp
+	Name       string `json:"name"`       // File name or path on the CDN
+	Size       string `json:"size"`       // File size as returned by the service
+	MimeType   string `json:"mimeType"`   // MIME type of the file
+	ExpiryTime int64  `json:"expiryTime"` // Expiration timestamp
 }
 
 // UploadMetadata contains metadata for each upload returned by ListUploads.

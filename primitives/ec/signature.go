@@ -83,12 +83,12 @@ func (sig *Signature) Serialize() []byte {
 	b := make([]byte, length)
 
 	b[0] = 0x30
-	b[1] = byte(length - 2)
+	b[1] = byte(length - 2) //nolint:gosec // G115 -- DER signature length is bounded well within a byte
 	b[2] = 0x02
-	b[3] = byte(len(rb))
+	b[3] = byte(len(rb)) //nolint:gosec // G115 -- DER-encoded integer length is bounded well within a byte
 	offset := copy(b[4:], rb) + 4
 	b[offset] = 0x02
-	b[offset+1] = byte(len(sb))
+	b[offset+1] = byte(len(sb)) //nolint:gosec // G115 -- DER-encoded integer length is bounded well within a byte
 	copy(b[offset+2:], sb)
 	return b
 }

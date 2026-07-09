@@ -77,7 +77,7 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 		scriptBytes := messageReader.ReadOptionalBytes()
 		if scriptBytes != nil {
 			input.UnlockingScript = scriptBytes
-			input.UnlockingScriptLength = uint32(len(scriptBytes))
+			input.UnlockingScriptLength = uint32(len(scriptBytes)) //nolint:gosec // G115 -- script length is bounded well within uint32
 		} else {
 			// Read unlocking script length value
 			length := messageReader.ReadVarInt32()
@@ -137,9 +137,9 @@ func deserializeCreateActionOutputs(messageReader *util.ReaderHoldError) ([]wall
 
 // deserializeCreateActionOptions decodes into wallet.CreateActionOptions
 func deserializeCreateActionOptions(messageReader *util.ReaderHoldError) (*wallet.CreateActionOptions, error) {
-	optionsPresent := messageReader.ReadByte()
+	optionsPresent := messageReader.ReadByteValue()
 	if optionsPresent != 1 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // absent optional args value, distinct from a decode error
 	}
 
 	options := &wallet.CreateActionOptions{}
@@ -149,7 +149,7 @@ func deserializeCreateActionOptions(messageReader *util.ReaderHoldError) (*walle
 	options.AcceptDelayedBroadcast = messageReader.ReadOptionalBool()
 
 	// Read trustSelf
-	if messageReader.ReadByte() == trustSelfKnown {
+	if messageReader.ReadByteValue() == trustSelfKnown {
 		options.TrustSelf = wallet.TrustSelfKnown
 	}
 

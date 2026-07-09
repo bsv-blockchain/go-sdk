@@ -442,7 +442,7 @@ func (t *thread) Step() (bool, error) {
 	// The number of elements in the combination of the data and alt stacks
 	// must not exceed the maximum number of stack elements allowed.
 	combinedStackSize := t.dstack.Depth() + t.astack.Depth()
-	if combinedStackSize > int32(t.cfg.MaxStackSize()) {
+	if combinedStackSize > int32(t.cfg.MaxStackSize()) { //nolint:gosec // G115 -- configured max stack size is a small constant well within int32
 		return false, errs.NewError(errs.ErrStackOverflow,
 			"combined stack size %d > max allowed %d", combinedStackSize, t.cfg.MaxStackSize())
 	}

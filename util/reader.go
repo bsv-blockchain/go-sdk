@@ -66,7 +66,7 @@ func (r *Reader) ReadIntBytes() ([]byte, error) {
 	if linkageLen <= 0 {
 		return nil, nil
 	}
-	b, err := r.ReadBytes(int(linkageLen))
+	b, err := r.ReadBytes(int(linkageLen)) //nolint:gosec // G115 -- bounded by actual buffer size checked inside ReadBytes
 	if err != nil {
 		return nil, fmt.Errorf("error reading bytes int: %w", err)
 	}
@@ -87,14 +87,14 @@ func (r *Reader) ReadVarIntOptional() (*uint64, error) {
 		return nil, err
 	}
 	if i == math.MaxUint64 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // nil,nil signals the optional field was absent, distinct from a read error
 	}
 	return &i, nil
 }
 
 func (r *Reader) ReadVarInt32() (uint32, error) {
 	varUint64, err := r.ReadVarInt()
-	return uint32(varUint64), err
+	return uint32(varUint64), err //nolint:gosec // G115 -- wire-format 32-bit fields are bounded by protocol design
 }
 
 // Read implements the io.Reader interface
@@ -124,7 +124,7 @@ func (r *Reader) ReadString() (string, error) {
 	if length == math.MaxUint64 || length == 0 {
 		return "", nil
 	}
-	data, err := r.ReadBytes(int(length))
+	data, err := r.ReadBytes(int(length)) //nolint:gosec // G115 -- bounded by actual buffer size checked inside ReadBytes
 	if err != nil {
 		return "", fmt.Errorf("error reading string bytes: %w", err)
 	}
@@ -150,6 +150,8 @@ func (r *Reader) ReadOptionalBytes(opts ...BytesOption) ([]byte, error) {
 			withFlag = true
 		case BytesOptionTxIdLen:
 			txIdLen = true
+		case BytesOptionZeroIfEmpty:
+			// only relevant when writing; no-op when reading
 		}
 	}
 	if withFlag {
@@ -183,7 +185,7 @@ func (r *Reader) ReadOptionalUint32() (*uint32, error) {
 		return nil, fmt.Errorf("error reading val for optional uint32: %w", err)
 	}
 	if val == math.MaxUint64 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // nil,nil signals the optional field was absent, distinct from a read error
 	}
 	var val32 uint32
 	if val > math.MaxUint32 {
@@ -199,7 +201,7 @@ func (r *Reader) ReadOptionalBool() (*bool, error) {
 		return nil, fmt.Errorf("error reading byte for optional bool: %w", err)
 	}
 	if b == 0xFF {
-		return nil, nil
+		return nil, nil //nolint:nilnil // nil,nil signals the optional field was absent, distinct from a read error
 	}
 	val := b == 1
 	return &val, nil
@@ -261,7 +263,7 @@ func (r *Reader) ReadOptionalToHex() (string, error) {
 	if dataLen == math.MaxUint64 {
 		return "", nil
 	}
-	data, err := r.ReadBytes(int(dataLen))
+	data, err := r.ReadBytes(int(dataLen)) //nolint:gosec // G115 -- bounded by actual buffer size checked inside ReadBytes
 	if err != nil {
 		return "", fmt.Errorf("error reading data bytes for optional hex: %w", err)
 	}
@@ -338,7 +340,7 @@ func (r *ReaderHoldError) ReadBytesReverse(n int) []byte {
 }
 
 func (r *ReaderHoldError) ReadBase64Int() string {
-	return r.ReadBase64(int(r.ReadVarInt()))
+	return r.ReadBase64(int(r.ReadVarInt())) //nolint:gosec // G115 -- bounded by actual buffer size checked inside ReadBytes
 }
 
 func (r *ReaderHoldError) ReadBase64(n int) string {
@@ -366,8 +368,8 @@ func (r *ReaderHoldError) ReadIntBytesHex() string {
 	return hex.EncodeToString(r.ReadIntBytes())
 }
 
-// ReadByte returns the next byte and holds any error internally
-func (r *ReaderHoldError) ReadByte() byte { //nolint:govet // intentionally holds error internally instead of returning it, unlike io.ByteReader
+// ReadByteValue returns the next byte and holds any error internally
+func (r *ReaderHoldError) ReadByteValue() byte {
 	if r.Err != nil {
 		return 0
 	}

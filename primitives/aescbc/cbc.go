@@ -43,7 +43,7 @@ func AESCBCDecrypt(data, key, iv []byte) ([]byte, error) {
 
 func PKCS7Padd(data []byte, blockSize int) []byte {
 	padding := blockSize - len(data)%blockSize
-	return append(data, bytes.Repeat([]byte{byte(padding)}, padding)...)
+	return append(data, bytes.Repeat([]byte{byte(padding)}, padding)...) //nolint:gosec // G115 -- PKCS7 padding is bounded by the cipher block size, which fits in a byte
 }
 
 // PKCS7UnPadding removes padding from the plaintext

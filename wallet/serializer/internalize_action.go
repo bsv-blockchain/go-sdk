@@ -29,7 +29,7 @@ func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte,
 			if output.PaymentRemittance == nil {
 				return nil, fmt.Errorf("payment remittance is required for wallet payment protocol")
 			}
-			w.WriteByte(internalizeActionProtocolWalletPayment)
+			w.WriteByteValue(internalizeActionProtocolWalletPayment)
 			w.WriteBytes(output.PaymentRemittance.SenderIdentityKey.Compressed())
 			w.WriteIntBytes(output.PaymentRemittance.DerivationPrefix)
 			w.WriteIntBytes(output.PaymentRemittance.DerivationSuffix)
@@ -38,7 +38,7 @@ func SerializeInternalizeActionArgs(args *wallet.InternalizeActionArgs) ([]byte,
 			if output.InsertionRemittance == nil {
 				return nil, fmt.Errorf("insertion remittance is required for basket insertion protocol")
 			}
-			w.WriteByte(internalizeActionProtocolBasketInsertion)
+			w.WriteByteValue(internalizeActionProtocolBasketInsertion)
 			w.WriteString(output.InsertionRemittance.Basket)
 			w.WriteOptionalString(output.InsertionRemittance.CustomInstructions)
 			w.WriteStringSlice(output.InsertionRemittance.Tags)
@@ -59,7 +59,7 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 
 	// Transaction BEEF - read length first
 	txLen := r.ReadVarInt()
-	args.Tx = r.ReadBytes(int(txLen))
+	args.Tx = r.ReadBytes(int(txLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 	if r.Err != nil {
 		return nil, fmt.Errorf("error reading tx bytes: %w", r.Err)
 	}
@@ -73,7 +73,8 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 		}
 
 		// Payment remittance
-		switch r.ReadByte() {
+		protocol := r.ReadByteValue()
+		switch protocol {
 		case internalizeActionProtocolWalletPayment:
 			output.Protocol = wallet.InternalizeProtocolWalletPayment
 			senderIdentityKey, err := ec.PublicKeyFromBytes(r.ReadBytes(sizePubKey))
@@ -93,7 +94,7 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 				Tags:               r.ReadStringSlice(),
 			}
 		default:
-			return nil, fmt.Errorf("invalid internalize action protocol: %d", r.Err)
+			return nil, fmt.Errorf("invalid internalize action protocol: %d", protocol)
 		}
 
 		// Check error each loop

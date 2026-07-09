@@ -80,7 +80,7 @@ func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transact
 				Description: err.Error(),
 			}
 		} else {
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			if resp.StatusCode != 200 {
 				if body, err := io.ReadAll(resp.Body); err != nil {
 					return nil, &transaction.BroadcastFailure{

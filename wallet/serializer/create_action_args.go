@@ -20,14 +20,10 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 	paramWriter.WriteOptionalBytes(args.InputBEEF)
 
 	// Serialize inputs
-	if err := serializeCreateActionInputs(paramWriter, args.Inputs); err != nil {
-		return nil, fmt.Errorf("failed to serialize create action inputs: %w", err)
-	}
+	serializeCreateActionInputs(paramWriter, args.Inputs)
 
 	// Serialize outputs
-	if err := serializeCreateActionOutputs(paramWriter, args.Outputs); err != nil {
-		return nil, fmt.Errorf("failed to serialize create action outputs: %w", err)
-	}
+	serializeCreateActionOutputs(paramWriter, args.Outputs)
 
 	// Serialize lockTime, version, and labels
 	paramWriter.WriteOptionalUint32(args.LockTime)
@@ -42,10 +38,10 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 	return paramWriter.Buf, nil
 }
 
-func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.CreateActionInput) error {
+func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.CreateActionInput) {
 	if inputs == nil {
 		paramWriter.WriteNegativeOne()
-		return nil
+		return
 	}
 	paramWriter.WriteVarInt(uint64(len(inputs)))
 	for _, input := range inputs {
@@ -64,13 +60,12 @@ func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.Creat
 		paramWriter.WriteString(input.InputDescription)
 		paramWriter.WriteOptionalUint32(input.SequenceNumber)
 	}
-	return nil
 }
 
-func serializeCreateActionOutputs(paramWriter *util.Writer, outputs []wallet.CreateActionOutput) error {
+func serializeCreateActionOutputs(paramWriter *util.Writer, outputs []wallet.CreateActionOutput) {
 	if outputs == nil {
 		paramWriter.WriteNegativeOne()
-		return nil
+		return
 	}
 	paramWriter.WriteVarInt(uint64(len(outputs)))
 	for _, output := range outputs {
@@ -82,15 +77,14 @@ func serializeCreateActionOutputs(paramWriter *util.Writer, outputs []wallet.Cre
 		paramWriter.WriteOptionalString(output.CustomInstructions)
 		paramWriter.WriteStringSlice(output.Tags)
 	}
-	return nil
 }
 
 func serializeCreateActionOptions(paramWriter *util.Writer, options *wallet.CreateActionOptions) error {
 	if options == nil {
-		paramWriter.WriteByte(0) // options not present
+		paramWriter.WriteByteValue(0) // options not present
 		return nil
 	}
-	paramWriter.WriteByte(1) // options present
+	paramWriter.WriteByteValue(1) // options present
 
 	// signAndProcess and acceptDelayedBroadcast
 	paramWriter.WriteOptionalBool(options.SignAndProcess)
@@ -98,7 +92,7 @@ func serializeCreateActionOptions(paramWriter *util.Writer, options *wallet.Crea
 
 	// trustSelf
 	if options.TrustSelf == wallet.TrustSelfKnown {
-		paramWriter.WriteByte(trustSelfKnown)
+		paramWriter.WriteByteValue(trustSelfKnown)
 	} else {
 		paramWriter.WriteNegativeOneByte()
 	}

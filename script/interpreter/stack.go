@@ -57,7 +57,7 @@ func newStack(cfg config, verifyMinimalData bool) stack {
 
 // Depth returns the number of items on the stack.
 func (s *stack) Depth() int32 {
-	return int32(len(s.stk))
+	return int32(len(s.stk)) //nolint:gosec // G115 -- stack depth is bounded well within int32 range by script execution limits
 }
 
 // PushByteArray adds the given back array to the top of the stack.
@@ -127,7 +127,7 @@ func (s *stack) PopBool() (bool, error) {
 
 // PeekByteArray returns the Nth item on the stack without removing it.
 func (s *stack) PeekByteArray(idx int32) ([]byte, error) {
-	sz := int32(len(s.stk))
+	sz := int32(len(s.stk)) //nolint:gosec // G115 -- stack depth is bounded well within int32 range by script execution limits
 	if idx < 0 || idx >= sz {
 		return nil, errs.NewError(errs.ErrInvalidStackOperation, "index %d is invalid for stack size %d", idx, sz)
 	}
@@ -165,7 +165,7 @@ func (s *stack) PeekBool(idx int32) (bool, error) {
 // nipN(1): [... x1 x2 x3] -> [... x1 x3]
 // nipN(2): [... x1 x2 x3] -> [... x2 x3]
 func (s *stack) nipN(idx int32) ([]byte, error) {
-	sz := int32(len(s.stk))
+	sz := int32(len(s.stk)) //nolint:gosec // G115 -- stack depth bounded well within int32
 	if idx < 0 || idx > sz-1 {
 		return nil, errs.NewError(errs.ErrInvalidStackOperation, "index %d is invalid for stack size %d", idx, sz)
 	}

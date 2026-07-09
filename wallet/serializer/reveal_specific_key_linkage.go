@@ -89,7 +89,7 @@ func SerializeRevealSpecificKeyLinkageResult(result *wallet.RevealSpecificKeyLin
 	w.WriteIntBytes(result.EncryptedLinkageProof)
 
 	// Write proof type
-	w.WriteByte(result.ProofType)
+	w.WriteByteValue(result.ProofType)
 
 	return w.Buf, nil
 }
@@ -130,7 +130,7 @@ func DeserializeRevealSpecificKeyLinkageResult(data []byte) (*wallet.RevealSpeci
 	result.EncryptedLinkageProof = r.ReadIntBytes()
 
 	// Read proof type
-	result.ProofType = r.ReadByte()
+	result.ProofType = r.ReadByteValue()
 
 	r.CheckComplete()
 	if r.Err != nil {

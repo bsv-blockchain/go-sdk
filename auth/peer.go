@@ -755,7 +755,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	p.sessionManager.UpdateSession(session)
 
 	// Convert json of requested certificates to bytes for verification
-	certRequestData, err := json.Marshal(message.RequestedCertificates)
+	certRequestData, err := json.Marshal(message.RequestedCertificates) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
@@ -1027,7 +1027,7 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 	}
 
 	// Marshal the certificate requirements to match TypeScript
-	certRequestData, err := json.Marshal(certificateRequirements)
+	certRequestData, err := json.Marshal(certificateRequirements) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}

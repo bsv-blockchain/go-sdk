@@ -143,8 +143,8 @@ type fieldVal struct {
 }
 
 // String returns the field value as a human-readable hex string.
-func (f fieldVal) String() string {
-	t := new(fieldVal).Set(&f).Normalise()
+func (f *fieldVal) String() string {
+	t := new(fieldVal).Set(f).Normalise()
 	return hex.EncodeToString(t.Bytes()[:])
 }
 
@@ -182,7 +182,7 @@ func (f *fieldVal) Set(val *fieldVal) *fieldVal {
 // as f := new(fieldVal).SetInt(2).Mul(f2) so that f = 2 * f2.
 func (f *fieldVal) SetInt(ui uint) *fieldVal {
 	f.Zero()
-	f.n[0] = uint32(ui)
+	f.n[0] = uint32(ui) //nolint:gosec // G115 -- callers only pass small constants that fit in a field word
 	return f
 }
 
@@ -392,33 +392,33 @@ func (f *fieldVal) PutBytes(b *[32]byte) {
 	b[31] = byte(f.n[0] & eightBitsMask)
 	b[30] = byte((f.n[0] >> 8) & eightBitsMask)
 	b[29] = byte((f.n[0] >> 16) & eightBitsMask)
-	b[28] = byte((f.n[0]>>24)&twoBitsMask | (f.n[1]&sixBitsMask)<<2)
+	b[28] = byte((f.n[0]>>24)&twoBitsMask | (f.n[1]&sixBitsMask)<<2) //nolint:gosec // G115 -- masked to fit a byte before conversion
 	b[27] = byte((f.n[1] >> 6) & eightBitsMask)
 	b[26] = byte((f.n[1] >> 14) & eightBitsMask)
-	b[25] = byte((f.n[1]>>22)&fourBitsMask | (f.n[2]&fourBitsMask)<<4)
+	b[25] = byte((f.n[1]>>22)&fourBitsMask | (f.n[2]&fourBitsMask)<<4) //nolint:gosec // G115 -- masked to fit a byte before conversion
 	b[24] = byte((f.n[2] >> 4) & eightBitsMask)
 	b[23] = byte((f.n[2] >> 12) & eightBitsMask)
-	b[22] = byte((f.n[2]>>20)&sixBitsMask | (f.n[3]&twoBitsMask)<<6)
+	b[22] = byte((f.n[2]>>20)&sixBitsMask | (f.n[3]&twoBitsMask)<<6) //nolint:gosec // G115 -- masked to fit a byte before conversion
 	b[21] = byte((f.n[3] >> 2) & eightBitsMask)
 	b[20] = byte((f.n[3] >> 10) & eightBitsMask)
 	b[19] = byte((f.n[3] >> 18) & eightBitsMask)
 	b[18] = byte(f.n[4] & eightBitsMask)
 	b[17] = byte((f.n[4] >> 8) & eightBitsMask)
 	b[16] = byte((f.n[4] >> 16) & eightBitsMask)
-	b[15] = byte((f.n[4]>>24)&twoBitsMask | (f.n[5]&sixBitsMask)<<2)
+	b[15] = byte((f.n[4]>>24)&twoBitsMask | (f.n[5]&sixBitsMask)<<2) //nolint:gosec // G115 -- masked to fit a byte before conversion
 	b[14] = byte((f.n[5] >> 6) & eightBitsMask)
 	b[13] = byte((f.n[5] >> 14) & eightBitsMask)
-	b[12] = byte((f.n[5]>>22)&fourBitsMask | (f.n[6]&fourBitsMask)<<4)
+	b[12] = byte((f.n[5]>>22)&fourBitsMask | (f.n[6]&fourBitsMask)<<4) //nolint:gosec // G115 -- masked to fit a byte before conversion
 	b[11] = byte((f.n[6] >> 4) & eightBitsMask)
 	b[10] = byte((f.n[6] >> 12) & eightBitsMask)
-	b[9] = byte((f.n[6]>>20)&sixBitsMask | (f.n[7]&twoBitsMask)<<6)
+	b[9] = byte((f.n[6]>>20)&sixBitsMask | (f.n[7]&twoBitsMask)<<6) //nolint:gosec // G115 -- masked to fit a byte before conversion
 	b[8] = byte((f.n[7] >> 2) & eightBitsMask)
 	b[7] = byte((f.n[7] >> 10) & eightBitsMask)
 	b[6] = byte((f.n[7] >> 18) & eightBitsMask)
 	b[5] = byte(f.n[8] & eightBitsMask)
 	b[4] = byte((f.n[8] >> 8) & eightBitsMask)
 	b[3] = byte((f.n[8] >> 16) & eightBitsMask)
-	b[2] = byte((f.n[8]>>24)&twoBitsMask | (f.n[9]&sixBitsMask)<<2)
+	b[2] = byte((f.n[8]>>24)&twoBitsMask | (f.n[9]&sixBitsMask)<<2) //nolint:gosec // G115 -- masked to fit a byte before conversion
 	b[1] = byte((f.n[9] >> 6) & eightBitsMask)
 	b[0] = byte((f.n[9] >> 14) & eightBitsMask)
 }
@@ -527,7 +527,7 @@ func (f *fieldVal) AddInt(ui uint) *fieldVal {
 	// Since the field representation intentionally provides overflow bits,
 	// it's ok to use carryless addition as the carry bit is safely part of
 	// the word and will be normalised out.
-	f.n[0] += uint32(ui)
+	f.n[0] += uint32(ui) //nolint:gosec // G115 -- callers only pass small constants that fit in a field word
 
 	return f
 }
@@ -593,7 +593,7 @@ func (f *fieldVal) MulInt(val uint) *fieldVal {
 	// propagation so long as the values won't overflow a uint32.  This
 	// could obviously be done in a loop, but the unrolled version is
 	// faster.
-	ui := uint32(val)
+	ui := uint32(val) //nolint:gosec // G115 -- callers only pass small constants that fit in a field word
 	f.n[0] *= ui
 	f.n[1] *= ui
 	f.n[2] *= ui
