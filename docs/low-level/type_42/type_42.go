@@ -46,6 +46,6 @@ func main() {
 
 	// Now, Bob can privately verify Alice's signature
 	verified := aliceSigningPub.Verify(message, signature)
-	fmt.Println("Verified:", verified)
+	fmt.Println("Verified:", verified) //nolint:forbidigo // example program output
 	// Output should be true if everything is correct
 }

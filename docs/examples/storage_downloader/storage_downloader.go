@@ -21,14 +21,14 @@ func main() {
 	uhrpURL := "uhrp://Tq71srNSBVHg69m3V8MeBy7YafjmYn21JDqc9iYaQSxmeSyGJ"
 
 	// Now download the file
-	fmt.Println("Downloading file...")
+	fmt.Println("Downloading file...") //nolint:forbidigo // example program output
 	result, err := downloader.Download(context.Background(), uhrpURL)
 	if err != nil {
 		log.Fatalf("Failed to download file: %v", err)
 	}
 
-	fmt.Printf("Successfully downloaded %d bytes\n", len(result.Data))
-	fmt.Printf("MIME type: %s\n", result.MimeType)
+	fmt.Printf("Successfully downloaded %d bytes\n", len(result.Data)) //nolint:forbidigo // example program output
+	fmt.Printf("MIME type: %s\n", result.MimeType)                     //nolint:forbidigo // example program output
 
 	// Save the file
 	outputFilename := "downloaded_file"
@@ -48,32 +48,32 @@ func main() {
 		}
 	}
 
-	if err := os.WriteFile(outputFilename, result.Data, 0o644); err != nil {
-		log.Fatalf("Failed to save file: %v", err)
+	if writeErr := os.WriteFile(outputFilename, result.Data, 0o600); writeErr != nil {
+		log.Fatalf("Failed to save file: %v", writeErr)
 	}
 
-	fmt.Printf("File saved to: %s\n", outputFilename)
+	fmt.Printf("File saved to: %s\n", outputFilename) //nolint:forbidigo // example program output
 
 	// Demonstrate URL utility functions
-	fmt.Println("\nUtility functions demonstration:")
+	fmt.Println("\nUtility functions demonstration:") //nolint:forbidigo // example program output
 
 	// Validate URL
-	fmt.Printf("Is valid URL: %v\n", storage.IsValidURL(uhrpURL))
+	fmt.Printf("Is valid URL: %v\n", storage.IsValidURL(uhrpURL)) //nolint:forbidigo // example program output
 
 	// Extract hash from URL
 	hash, err := storage.GetHashFromURL(uhrpURL)
 	if err != nil {
-		fmt.Printf("Failed to extract hash: %v\n", err)
+		fmt.Printf("Failed to extract hash: %v\n", err) //nolint:forbidigo // example program output
 	} else {
-		fmt.Printf("Extracted hash: %x\n", hash)
+		fmt.Printf("Extracted hash: %x\n", hash) //nolint:forbidigo // example program output
 	}
 
 	// Generate URL from file content
 	url, err := storage.GetURLForFile(result.Data)
 	if err != nil {
-		fmt.Printf("Failed to generate URL: %v\n", err)
+		fmt.Printf("Failed to generate URL: %v\n", err) //nolint:forbidigo // example program output
 	} else {
-		fmt.Printf("Generated URL from content: %s\n", url)
-		fmt.Printf("URL matches original: %v\n", url == uhrpURL)
+		fmt.Printf("Generated URL from content: %s\n", url)      //nolint:forbidigo // example program output
+		fmt.Printf("URL matches original: %v\n", url == uhrpURL) //nolint:forbidigo // example program output
 	}
 }

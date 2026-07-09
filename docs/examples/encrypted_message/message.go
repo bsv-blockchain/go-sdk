@@ -19,15 +19,15 @@ func main() {
 	// Decrypt a message using the private key of the recipient
 	decryptedData, _ := message.Decrypt(encryptedData, recipient)
 
-	fmt.Printf("decryptedData: %s\n", decryptedData)
+	fmt.Printf("decryptedData: %s\n", decryptedData) //nolint:forbidigo // example program output
 
 	// sign message for a recipient
 	signature, _ := message.Sign(msg, sender, recipient.PubKey())
 	verified, _ := message.Verify(msg, signature, recipient)
-	fmt.Printf("verified: %t\n", verified)
+	fmt.Printf("verified: %t\n", verified) //nolint:forbidigo // example program output
 
 	// sign a message for anyone
 	signature, _ = message.Sign(msg, sender, nil)
 	verified, _ = message.Verify(msg, signature, nil)
-	fmt.Printf("verified: %t\n", verified)
+	fmt.Printf("verified: %t\n", verified) //nolint:forbidigo // example program output
 }

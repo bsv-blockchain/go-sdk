@@ -15,12 +15,12 @@ func main() {
 
 	encryptedData, _ := ecies.EncryptShared("hello world", recipientPublicKey, myPrivateKey)
 
-	fmt.Println(encryptedData)
+	fmt.Println(encryptedData) //nolint:forbidigo // example program output
 	// Prints:
 	// QklFMQO7zpX/GS4XpthCy6/hT38ZKsBGbn8JKMGHOY5ifmaoT+nbjXrzxPofyG94/QHgX8QZ3+a/DfQbTJ+Qvm1KtZWZISHww7MM5oRZybxHjtAa+Q==
 
 	decryptedData, _ := ecies.DecryptShared(encryptedData, myPrivateKey, recipientPublicKey)
-	fmt.Printf("decryptedData: %s\n", decryptedData)
+	fmt.Printf("decryptedData: %s\n", decryptedData) //nolint:forbidigo // example program output
 	// Prints:
 	// decryptedData: hello world
 }

@@ -42,22 +42,22 @@ func main() {
 	}
 
 	// Resolve the basket
-	fmt.Println("Resolving basket definition...")
+	fmt.Println("Resolving basket definition...") //nolint:forbidigo // example program output
 	results, err := client.ResolveBasket(ctx, query)
 	if err != nil {
 		log.Fatalf("Failed to resolve basket: %v", err)
 	}
 
 	// Print the results
-	fmt.Printf("Found %d basket definitions\n", len(results))
+	fmt.Printf("Found %d basket definitions\n", len(results)) //nolint:forbidigo // example program output
 	for i, basket := range results {
-		fmt.Printf("Basket %d:\n", i+1)
+		fmt.Printf("Basket %d:\n", i+1) //nolint:forbidigo // example program output
 		fmt.Printf("  Basket ID: %s\n", basket.BasketID)
-		fmt.Printf("  Name: %s\n", basket.Name)
-		fmt.Printf("  Description: %s\n", basket.Description)
-		fmt.Printf("  Icon URL: %s\n", basket.IconURL)
-		fmt.Printf("  Documentation URL: %s\n", basket.DocumentationURL)
-		fmt.Printf("  Registry Operator: %s\n", basket.RegistryOperator)
+		fmt.Printf("  Name: %s\n", basket.Name)                          //nolint:forbidigo // example program output
+		fmt.Printf("  Description: %s\n", basket.Description)            //nolint:forbidigo // example program output
+		fmt.Printf("  Icon URL: %s\n", basket.IconURL)                   //nolint:forbidigo // example program output
+		fmt.Printf("  Documentation URL: %s\n", basket.DocumentationURL) //nolint:forbidigo // example program output
+		fmt.Printf("  Registry Operator: %s\n", basket.RegistryOperator) //nolint:forbidigo // example program output
 	}
 }
 
@@ -65,7 +65,7 @@ func main() {
 type MockLookupResolver struct{}
 
 // Query implements the lookup.LookupResolver Query method
-func (m *MockLookupResolver) Query(ctx context.Context, question *lookup.LookupQuestion, timeout interface{}) (*lookup.LookupAnswer, error) {
+func (m *MockLookupResolver) Query(ctx context.Context, question *lookup.LookupQuestion, timeout interface{}) (*lookup.LookupAnswer, error) { //nolint:unparam // ctx required by lookup.Facilitator-style resolver interface
 	// Check if this is a basket query
 	if question.Service != "ls_basketmap" {
 		return nil, fmt.Errorf("unsupported service: %s", question.Service)
@@ -102,7 +102,7 @@ func (m *MockLookupResolver) Query(ctx context.Context, question *lookup.LookupQ
 }
 
 // Lookup delegates to Query and is required for the interface
-func (m *MockLookupResolver) Lookup(ctx context.Context, host string, question *lookup.LookupQuestion, timeout time.Duration) (*lookup.LookupAnswer, error) {
+func (m *MockLookupResolver) Lookup(ctx context.Context, host string, question *lookup.LookupQuestion, timeout time.Duration) (*lookup.LookupAnswer, error) { //nolint:unparam // host required by lookup.Facilitator-style resolver interface
 	return m.Query(ctx, question, timeout)
 }
 

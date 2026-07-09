@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get user's identity public key: %v", err)
 	}
-	fmt.Printf("User's Identity Public Key: %s\n", hex.EncodeToString(identityPubKeyResult.PublicKey.Compressed()))
+	fmt.Printf("User's Identity Public Key: %s\n", hex.EncodeToString(identityPubKeyResult.PublicKey.Compressed())) //nolint:forbidigo // example program output
 
 	// --- Get User's Derived Public Key for a Protocol/KeyID (Self) ---
 	// Define a protocol and key ID for deriving a key
@@ -58,7 +58,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get user's derived public key (self): %v", err)
 	}
-	fmt.Printf("User's Derived Public Key (Self - Protocol: %s, KeyID: %s): %s\n",
+	fmt.Printf("User's Derived Public Key (Self - Protocol: %s, KeyID: %s): %s\n", //nolint:forbidigo // example program output
 		selfProtocol.Protocol, selfKeyID, hex.EncodeToString(selfPubKeyResult.PublicKey.Compressed()))
 
 	// --- Get Counterparty's Public Key ---
@@ -100,7 +100,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get derived public key for counterparty: %v", err)
 	}
-	fmt.Printf("User's Derived Public Key (for Counterparty - Protocol: %s, KeyID: %s): %s\n",
+	fmt.Printf("User's Derived Public Key (for Counterparty - Protocol: %s, KeyID: %s): %s\n", //nolint:forbidigo // example program output
 		counterpartyProtocol.Protocol, counterpartyKeyID, hex.EncodeToString(derivedForCounterpartyPubKeyResult.PublicKey.Compressed()))
 
 	log.Println("Successfully retrieved public keys.")

@@ -14,13 +14,13 @@ func main() {
 	// Encrypt using the public key of the given private key
 	encryptedData, err := aes.AESEncrypt([]byte("0123456789abcdef"), key)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err) //nolint:forbidigo // example program output
 	}
 
 	// Decrypt using the private key
 	decryptedData, err := aes.AESDecrypt(encryptedData, key)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err) //nolint:forbidigo // example program output
 	}
-	fmt.Printf("decryptedData: %s\n", decryptedData)
+	fmt.Printf("decryptedData: %s\n", decryptedData) //nolint:forbidigo // example program output
 }

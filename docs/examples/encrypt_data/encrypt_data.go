@@ -13,7 +13,7 @@ func main() {
 	ctx := context.Background()
 
 	// --- 1. Setup Wallets ---
-	fmt.Println("--- 1. Setting up Alice's and Bob's wallets ---")
+	fmt.Println("--- 1. Setting up Alice's and Bob's wallets ---") //nolint:forbidigo // example program output
 	// Create Alice's wallet
 	// In a real application, load/derive this securely.
 	alicePrivKey, err := ec.NewPrivateKey()
@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create Alice's wallet: %v", err)
 	}
-	fmt.Println("Alice's wallet created.")
+	fmt.Println("Alice's wallet created.") //nolint:forbidigo // example program output
 
 	// Create Bob's wallet
 	// In a real application, load/derive this securely.
@@ -36,10 +36,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create Bob's wallet: %v", err)
 	}
-	fmt.Println("Bob's wallet created.")
+	fmt.Println("Bob's wallet created.") //nolint:forbidigo // example program output
 
 	// --- 2. Alice Gets Bob's Public Key for Encryption ---
-	fmt.Println("\n--- 2. Alice gets Bob's Public Key ---")
+	fmt.Println("\n--- 2. Alice gets Bob's Public Key ---") //nolint:forbidigo // example program output
 	// Alice needs Bob's public key to encrypt data for him.
 	// In a real scenario, Bob would share his public key (e.g., IdentityKey) with Alice.
 	bobIdentityKeyArgs := wallet.GetPublicKeyArgs{IdentityKey: true}
@@ -51,12 +51,12 @@ func main() {
 	if bobECPubKey == nil {
 		log.Fatalf("Bob's public key is nil from GetPublicKey")
 	}
-	fmt.Printf("Alice obtained Bob's Public Key: %x\n", bobECPubKey.Compressed())
+	fmt.Printf("Alice obtained Bob's Public Key: %x\n", bobECPubKey.Compressed()) //nolint:forbidigo // example program output
 
 	// --- 3. Alice Encrypts Data for Bob ---
-	fmt.Println("\n--- 3. Alice Encrypts Data for Bob ---")
+	fmt.Println("\n--- 3. Alice Encrypts Data for Bob ---") //nolint:forbidigo // example program output
 	plaintextForBob := []byte("Hello Bob, this is a secret message from Alice!")
-	fmt.Printf("Plaintext from Alice: %s\n", string(plaintextForBob))
+	fmt.Printf("Plaintext from Alice: %s\n", string(plaintextForBob)) //nolint:forbidigo // example program output
 
 	encryptArgsAliceToBob := wallet.EncryptArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -77,10 +77,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Alice failed to encrypt data for Bob: %v", err)
 	}
-	fmt.Printf("Alice encrypted ciphertext for Bob (first 32 bytes): %x...\n", encryptedResultAliceToBob.Ciphertext[:32])
+	fmt.Printf("Alice encrypted ciphertext for Bob (first 32 bytes): %x...\n", encryptedResultAliceToBob.Ciphertext[:32]) //nolint:forbidigo // example program output
 
 	// --- 4. Bob Decrypts Data from Alice ---
-	fmt.Println("\n--- 4. Bob Decrypts Data from Alice ---")
+	fmt.Println("\n--- 4. Bob Decrypts Data from Alice ---") //nolint:forbidigo // example program output
 	// Bob needs Alice's public key to know who the sender is for key derivation during decryption.
 	aliceIdentityKeyArgs := wallet.GetPublicKeyArgs{IdentityKey: true}
 	alicePubKeyResult, err := aliceWallet.GetPublicKey(ctx, aliceIdentityKeyArgs, "alice_originator_get_pubkey")
@@ -111,12 +111,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Bob failed to decrypt data from Alice: %v", err)
 	}
-	fmt.Printf("Bob decrypted message: %s\n", string(decryptedResultBobFromAlice.Plaintext))
+	fmt.Printf("Bob decrypted message: %s\n", string(decryptedResultBobFromAlice.Plaintext)) //nolint:forbidigo // example program output
 
 	// --- 5. Alice Encrypts Data for Herself ---
-	fmt.Println("\n--- 5. Alice Encrypts Data for Herself ---")
+	fmt.Println("\n--- 5. Alice Encrypts Data for Herself ---") //nolint:forbidigo // example program output
 	plaintextForSelf := []byte("This is Alice's secret note to herself.")
-	fmt.Printf("Plaintext from Alice for self: %s\n", string(plaintextForSelf))
+	fmt.Printf("Plaintext from Alice for self: %s\n", string(plaintextForSelf)) //nolint:forbidigo // example program output
 
 	selfEncryptArgs := wallet.EncryptArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -133,10 +133,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Alice failed to encrypt data for herself: %v", err)
 	}
-	fmt.Printf("Alice encrypted ciphertext for self (first 32 bytes): %x...\n", selfEncryptedResult.Ciphertext[:32])
+	fmt.Printf("Alice encrypted ciphertext for self (first 32 bytes): %x...\n", selfEncryptedResult.Ciphertext[:32]) //nolint:forbidigo // example program output
 
 	// --- 6. Alice Decrypts Her Own Data ---
-	fmt.Println("\n--- 6. Alice Decrypts Her Own Data ---")
+	fmt.Println("\n--- 6. Alice Decrypts Her Own Data ---") //nolint:forbidigo // example program output
 	selfDecryptArgs := wallet.DecryptArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			Counterparty: wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
@@ -152,7 +152,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Alice failed to decrypt her own data: %v", err)
 	}
-	fmt.Printf("Alice decrypted own message: %s\n", string(selfDecryptedResult.Plaintext))
+	fmt.Printf("Alice decrypted own message: %s\n", string(selfDecryptedResult.Plaintext)) //nolint:forbidigo // example program output
 
-	fmt.Println("\nEncryption and decryption example complete.")
+	fmt.Println("\nEncryption and decryption example complete.") //nolint:forbidigo // example program output
 }

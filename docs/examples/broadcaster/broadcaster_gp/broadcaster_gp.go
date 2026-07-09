@@ -26,5 +26,5 @@ func main() {
 	}
 
 	// Print the success message and transaction ID
-	println(success.Message, success.Txid)
+	println(success.Message, success.Txid) //nolint:forbidigo // example program output
 }

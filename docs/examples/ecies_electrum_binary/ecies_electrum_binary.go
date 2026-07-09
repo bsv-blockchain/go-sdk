@@ -17,8 +17,8 @@ func main() {
 
 	encryptedData, _ := ecies.ElectrumEncrypt([]byte("hello world"), user2Pk, user1Pk, false)
 
-	fmt.Println(string(encryptedData))
+	fmt.Println(string(encryptedData)) //nolint:forbidigo // example program output
 	decryptedData, _ := ecies.ElectrumDecrypt(encryptedData, user1Pk, user2Pk)
 
-	fmt.Printf("decryptedData: %s\n", decryptedData)
+	fmt.Printf("decryptedData: %s\n", decryptedData) //nolint:forbidigo // example program output
 }

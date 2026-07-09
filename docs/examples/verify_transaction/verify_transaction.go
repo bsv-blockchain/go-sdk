@@ -20,5 +20,5 @@ func main() {
 	// Also optionally verifies fees
 	ctx := context.Background()
 	verified, _ := spv.Verify(ctx, tx, &spv.GullibleHeadersClient{}, nil)
-	println(verified)
+	println(verified) //nolint:forbidigo // example program output
 }

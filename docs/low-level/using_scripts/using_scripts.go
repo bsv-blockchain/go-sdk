@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Script from Hex:", scriptFromHex)
+	fmt.Println("Script from Hex:", scriptFromHex) //nolint:forbidigo // example program output
 
 	// From ASM
 	p2pkhScriptAsm := "OP_DUP OP_HASH160 1451baa3aad777144a0759998a03538018dd7b4b OP_EQUALVERIFY OP_CHECKSIG"
@@ -27,12 +27,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Script from ASM:", scriptFromASM)
+	fmt.Println("Script from ASM:", scriptFromASM) //nolint:forbidigo // example program output
 
 	// From Binary
 	binaryData := []byte{script.OpPUSHDATA1, 3, 1, 2, 3}
 	scriptFromBinary := script.NewFromBytes(binaryData)
-	fmt.Println("Script from Binary:", scriptFromBinary)
+	fmt.Println("Script from Binary:", scriptFromBinary) //nolint:forbidigo // example program output
 
 	// Advanced Example: Creating a P2PKH Locking Script
 	privKey, err := ec.NewPrivateKey()
@@ -62,16 +62,16 @@ func main() {
 
 	// Serialize script to Hex
 	scriptAsHex := script.String()
-	fmt.Println("Script as Hex:", scriptAsHex)
+	fmt.Println("Script as Hex:", scriptAsHex) //nolint:forbidigo // example program output
 
 	// Serialize script to ASM
 	scriptAsASM := script.ToASM()
-	fmt.Println("Script as ASM:", scriptAsASM)
+	fmt.Println("Script as ASM:", scriptAsASM) //nolint:forbidigo // example program output
 
 	// Serialize script to Binary
 	scriptAsBinary, err := hex.DecodeString(script.String())
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Script:", hex.EncodeToString(scriptAsBinary))
+	fmt.Println("Script:", hex.EncodeToString(scriptAsBinary)) //nolint:forbidigo // example program output
 }
