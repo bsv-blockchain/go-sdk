@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+//nolint:gochecknoinits // validates the embedded word list checksum at package load time
 func init() {
 	// Ensure word list is correct
 	// $ wget https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/chinese_simplified.txt
