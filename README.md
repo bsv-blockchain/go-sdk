@@ -108,7 +108,7 @@
 
 ## 🧩 What's Inside
 
-The **BSV Blockchain Libraries Project** provides an updated and unified layer for developing scalable
+The **BSV Blockchain Go SDK** provides an updated and unified layer for developing scalable
 applications on the BSV Blockchain. This SDK addresses the limitations of previous tools by offering a
 fresh, peer-to-peer approach, adhering to SPV, and ensuring privacy and scalability.
 
@@ -288,7 +288,7 @@ magex help
 </details>
 
 <details>
-<summary><strong>Repository Features</strong></summary>
+<summary><strong><code>Repository Features</code></strong></summary>
 <br/>
 
 This repository ships with a large set of built-in features covering CI/CD, security, code quality, developer experience, and community tooling.
@@ -298,7 +298,7 @@ This repository ships with a large set of built-in features covering CI/CD, secu
 </details>
 
 <details>
-<summary><strong>GitHub Workflows</strong></summary>
+<summary><strong><code>GitHub Workflows</code></strong></summary>
 <br/>
 
 All workflows are driven by modular configuration in [`.github/env/`](.github/env/README.md) — no YAML editing required.
