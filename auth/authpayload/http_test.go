@@ -2,6 +2,7 @@ package authpayload_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -24,28 +25,28 @@ func TestHTTPRequestPayloadSuccessfulSerializationAndDeserialization(t *testing.
 		"GET from root path": {
 			requestID: bytes.Repeat([]byte{1}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com", nil)
 				return req
 			}(),
 		},
 		"request with path": {
 			requestID: bytes.Repeat([]byte{2}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com/api/resource/123", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com/api/resource/123", nil)
 				return req
 			}(),
 		},
 		"request with query params": {
 			requestID: bytes.Repeat([]byte{3}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com?param1=value1&param2=value2", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com?param1=value1&param2=value2", nil)
 				return req
 			}(),
 		},
 		"request with path and query params": {
 			requestID: bytes.Repeat([]byte{3}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com?param1=value1&param2=value2", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com?param1=value1&param2=value2", nil)
 				return req
 			}(),
 		},
@@ -53,7 +54,7 @@ func TestHTTPRequestPayloadSuccessfulSerializationAndDeserialization(t *testing.
 			requestID: bytes.Repeat([]byte{4}, 32),
 			request: func() *http.Request {
 				body := strings.NewReader(`{"key":"value"}`)
-				req, _ := http.NewRequest("POST", "https://example.com/api/resource", body)
+				req, _ := http.NewRequestWithContext(context.Background(), "POST", "https://example.com/api/resource", body)
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			}(),
@@ -61,7 +62,7 @@ func TestHTTPRequestPayloadSuccessfulSerializationAndDeserialization(t *testing.
 		"POST request with empty JSON body": {
 			requestID: bytes.Repeat([]byte{5}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("POST", "https://example.com/api/resource", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "POST", "https://example.com/api/resource", nil)
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			}(),
@@ -70,14 +71,14 @@ func TestHTTPRequestPayloadSuccessfulSerializationAndDeserialization(t *testing.
 			requestID: bytes.Repeat([]byte{6}, 32),
 			request: func() *http.Request {
 				body := strings.NewReader(`plain text content`)
-				req, _ := http.NewRequest("POST", "https://example.com/api/resource", body)
+				req, _ := http.NewRequestWithContext(context.Background(), "POST", "https://example.com/api/resource", body)
 				return req
 			}(),
 		},
 		"Request with headers": {
 			requestID: bytes.Repeat([]byte{7}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com/api/resource", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com/api/resource", nil)
 				req.Header.Set("Authorization", "Bearer token123")
 				req.Header.Set("X-Bsv-Test", "test-value")
 				return req
@@ -159,7 +160,7 @@ func TestHTTPRequestPayloadSkippingHeaders(t *testing.T) {
 			requestID := bytes.Repeat([]byte{1}, 32)
 
 			// and:
-			request, err := http.NewRequest("GET", "https://example.com", nil)
+			request, err := http.NewRequestWithContext(context.Background(), "GET", "https://example.com", nil)
 			require.NoError(t, err, "failed to prepare request, invalid test setup")
 			request.Header.Set(test.headerName, "value")
 
@@ -186,7 +187,7 @@ func TestHTTPRequestPayloadSerializationAndDeserializationErrors(t *testing.T) {
 		"Error when serialize with empty request ID": {
 			requestID: nil,
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com/api/resource", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com/api/resource", nil)
 				return req
 			}(),
 			errMsg: "request ID must be 32 bytes long",
@@ -194,7 +195,7 @@ func TestHTTPRequestPayloadSerializationAndDeserializationErrors(t *testing.T) {
 		"Error when serialize with too long request ID": {
 			requestID: bytes.Repeat([]byte{1}, 33),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com/api/resource", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com/api/resource", nil)
 				return req
 			}(),
 			errMsg: "request ID must be 32 bytes long",
@@ -202,7 +203,7 @@ func TestHTTPRequestPayloadSerializationAndDeserializationErrors(t *testing.T) {
 		"Error when serialize with too short request ID": {
 			requestID: bytes.Repeat([]byte{2}, 31),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com/api/resource", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com/api/resource", nil)
 				return req
 			}(),
 			errMsg: "request ID must be 32 bytes long",
@@ -210,7 +211,7 @@ func TestHTTPRequestPayloadSerializationAndDeserializationErrors(t *testing.T) {
 		"Error when serialize with multiple values for header": {
 			requestID: bytes.Repeat([]byte{4}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com/api/resource", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com/api/resource", nil)
 				req.Header.Add("X-Bsv-Test", "value1")
 				req.Header.Add("X-Bsv-Test", "value2")
 				return req
@@ -220,7 +221,7 @@ func TestHTTPRequestPayloadSerializationAndDeserializationErrors(t *testing.T) {
 		"Error when serialize with multiple values for content-type": {
 			requestID: bytes.Repeat([]byte{5}, 32),
 			request: func() *http.Request {
-				req, _ := http.NewRequest("GET", "https://example.com/api/resource", nil)
+				req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://example.com/api/resource", nil)
 				req.Header.Add("Content-Type", "application/json")
 				req.Header.Add("Content-Type", "text/plain")
 				return req
@@ -280,7 +281,7 @@ func TestHTTPResponsePayloadSuccessfulSerializationAndDeserialization(t *testing
 					Header:     make(http.Header),
 					Body:       io.NopCloser(bytes.NewReader(nil)),
 				}
-			}(),
+			}(), //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 			body:           []byte{},
 			expectedStatus: "OK",
 		},
@@ -295,7 +296,7 @@ func TestHTTPResponsePayloadSuccessfulSerializationAndDeserialization(t *testing
 					Header:     h,
 					Body:       io.NopCloser(bytes.NewReader([]byte("hello"))),
 				}
-			}(),
+			}(), //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 			body:           []byte("hello"),
 			expectedStatus: "OK",
 		},
@@ -307,7 +308,7 @@ func TestHTTPResponsePayloadSuccessfulSerializationAndDeserialization(t *testing
 					Header:     make(http.Header),
 					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"not found"}`))),
 				}
-			}(),
+			}(), //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 			body:           []byte(`{"error":"not found"}`),
 			expectedStatus: "Not Found",
 		},
@@ -319,7 +320,7 @@ func TestHTTPResponsePayloadSuccessfulSerializationAndDeserialization(t *testing
 					Header:     make(http.Header),
 					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 				}
-			}(),
+			}(), //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 			body:           []byte(""),
 			expectedStatus: "599",
 		},
@@ -332,7 +333,7 @@ func TestHTTPResponsePayloadSuccessfulSerializationAndDeserialization(t *testing
 					Header:     make(http.Header),
 					Body:       io.NopCloser(bytes.NewReader(bin)),
 				}
-			}(),
+			}(), //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 			body:           []byte{0x00, 0x01, 0x02, 0xFF},
 			expectedStatus: "Created",
 		},
@@ -345,7 +346,7 @@ func TestHTTPResponsePayloadSuccessfulSerializationAndDeserialization(t *testing
 			require.NoError(t, err)
 
 			// and
-			requestID, res, err := authpayload.ToHTTPResponse(serializedPayload)
+			requestID, res, err := authpayload.ToHTTPResponse(serializedPayload) //nolint:bodyclose // response body is read below via io.ReadAll, no live connection to leak
 			require.NoError(t, err)
 
 			// then
@@ -392,7 +393,7 @@ func TestHTTPResponsePayloadSkippingHeaders(t *testing.T) {
 			serializedPayload, err := authpayload.FromHTTPResponse(requestID, res)
 			require.NoError(t, err)
 
-			_, outRes, err := authpayload.ToHTTPResponse(serializedPayload)
+			_, outRes, err := authpayload.ToHTTPResponse(serializedPayload) //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 			require.NoError(t, err)
 
 			require.Empty(t, outRes.Header.Get(test.headerName))
@@ -440,7 +441,7 @@ func TestHTTPResponsePayloadSerializationAndDeserializationErrors(t *testing.T) 
 				h.Add("X-Bsv-Test", "value1")
 				h.Add("X-Bsv-Test", "value2")
 				return &http.Response{StatusCode: 200, Header: h, Body: io.NopCloser(bytes.NewReader(nil))}
-			}(),
+			}(), //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 			errMsg: "multiple values for header",
 		},
 	}
@@ -479,7 +480,7 @@ func TestHTTPResponsePayloadSerializationAndDeserializationErrors(t *testing.T) 
 	}
 	for name, tc := range deserializationTests {
 		t.Run(name, func(t *testing.T) {
-			requestID, res, err := authpayload.ToHTTPResponse(tc.payload)
+			requestID, res, err := authpayload.ToHTTPResponse(tc.payload) //nolint:bodyclose // deserialization fails before a body is produced
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errMsg)
 			assert.Nil(t, requestID)
@@ -505,7 +506,7 @@ func TestToHTTPResponseInjectsSenderPublicKeyHeader(t *testing.T) {
 	senderPub := priv.PubKey()
 
 	// when: deserialize with option
-	_, outRes, err := authpayload.ToHTTPResponse(payload, authpayload.WithSenderPublicKey(senderPub))
+	_, outRes, err := authpayload.ToHTTPResponse(payload, authpayload.WithSenderPublicKey(senderPub)) //nolint:bodyclose // test fixture body is an in-memory NopCloser, nothing to leak
 	require.NoError(t, err)
 
 	// then: header is injected

@@ -819,7 +819,7 @@ func TestScriptChunks(t *testing.T) {
 
 	t.Run("decode using PUSHDATA1", func(t *testing.T) {
 		scriptHex := "testing"
-		scriptBytes := append([]byte{script.OpPUSHDATA1}, byte(len(scriptHex)))
+		scriptBytes := append([]byte{script.OpPUSHDATA1}, byte(len(scriptHex))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		scriptBytes = append(scriptBytes, []byte(scriptHex)...)
 
 		s := script.NewFromBytes(scriptBytes)
@@ -838,7 +838,7 @@ func TestScriptChunks(t *testing.T) {
 
 	t.Run("invalid PUSHDATA2 - payload too small", func(t *testing.T) {
 		scriptHex := "testing PUSHDATA2"
-		scriptBytes := append([]byte{script.OpPUSHDATA2}, byte(len(scriptHex)))
+		scriptBytes := append([]byte{script.OpPUSHDATA2}, byte(len(scriptHex))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		scriptBytes = append(scriptBytes, []byte(scriptHex)...)
 
 		s := script.NewFromBytes(scriptBytes)
@@ -856,7 +856,7 @@ func TestScriptChunks(t *testing.T) {
 
 	t.Run("invalid PUSHDATA4 - payload too small", func(t *testing.T) {
 		scriptHex := "testing PUSHDATA4"
-		scriptBytes := append([]byte{script.OpPUSHDATA4}, byte(len(scriptHex)))
+		scriptBytes := append([]byte{script.OpPUSHDATA4}, byte(len(scriptHex))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		scriptBytes = append(scriptBytes, []byte(scriptHex)...)
 
 		s := script.NewFromBytes(scriptBytes)
@@ -1079,7 +1079,7 @@ func TestScriptAppendBigInt(t *testing.T) {
 	// The script should contain the correct PUSHDATA prefix and data
 	data := bInt.Bytes()
 	dataLen := len(data)
-	expectedScriptBytes := append([]byte{byte(dataLen)}, data...)
+	expectedScriptBytes := append([]byte{byte(dataLen)}, data...) //nolint:gosec // G115 -- value is bounded by domain constraints
 	expectedScriptHex := hex.EncodeToString(expectedScriptBytes)
 	require.Equal(t, expectedScriptHex, s.String())
 
@@ -1098,7 +1098,7 @@ func TestScriptAppendBigInt(t *testing.T) {
 	require.NoError(t, err)
 	data = bInt.Bytes() // Negative numbers are represented in two's complement
 	dataLen = len(data)
-	expectedScriptBytes = append([]byte{byte(dataLen)}, data...)
+	expectedScriptBytes = append([]byte{byte(dataLen)}, data...) //nolint:gosec // G115 -- value is bounded by domain constraints
 	expectedScriptHex = hex.EncodeToString(expectedScriptBytes)
 	require.Equal(t, expectedScriptHex, s.String())
 }

@@ -57,7 +57,7 @@ func TestSchnorr_FailVerificationWithTamperedR(t *testing.T) {
 	curve := A.Curve
 	tamperedR := new(ec.PublicKey)
 	tamperedR.Curve = curve
-	tamperedR.X, tamperedR.Y = curve.Add(proof.R.X, proof.R.Y, curve.Params().Gx, curve.Params().Gy)
+	tamperedR.X, tamperedR.Y = curve.Add(proof.R.X, proof.R.Y, curve.Params().Gx, curve.Params().Gy) //nolint:staticcheck // crypto/ecdh does not support the secp256k1 curve used here
 	tamperedProof := &Proof{
 		R:      tamperedR,
 		SPrime: proof.SPrime,
@@ -115,7 +115,7 @@ func TestSchnorr_FailVerificationWithTamperedSPrime(t *testing.T) {
 	curve := A.Curve
 	tamperedSPrime := new(ec.PublicKey)
 	tamperedSPrime.Curve = curve
-	tamperedSPrime.X, tamperedSPrime.Y = curve.Add(proof.SPrime.X, proof.SPrime.Y, curve.Params().Gx, curve.Params().Gy)
+	tamperedSPrime.X, tamperedSPrime.Y = curve.Add(proof.SPrime.X, proof.SPrime.Y, curve.Params().Gx, curve.Params().Gy) //nolint:staticcheck // crypto/ecdh does not support the secp256k1 curve used here
 	tamperedProof := &Proof{
 		R:      proof.R,
 		SPrime: tamperedSPrime,

@@ -336,7 +336,7 @@ func TestTransactionInputReadFromExtended(t *testing.T) {
 	b.Write([]byte{0xe8, 0x03, 0, 0, 0, 0, 0, 0}) // 1000 satoshis
 	// locking script len + script
 	ls := []byte{0x76, 0xa9, 0x14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0xac}
-	b.WriteByte(byte(len(ls)))
+	b.WriteByte(byte(len(ls))) //nolint:gosec // G115 -- test locking script is a small fixed constant
 	b.Write(ls)
 
 	_, err = newInput.ReadFromExtended(bytes.NewReader(b.Bytes()))

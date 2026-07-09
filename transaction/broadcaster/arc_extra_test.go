@@ -27,7 +27,10 @@ func (m *MockArcRejectedClient) Do(req *http.Request) (*http.Response, error) {
 		"extraInfo": "mempool conflict",
 		"title":     "Transaction rejected",
 	}
-	b, _ := json.Marshal(body)
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),
@@ -46,7 +49,10 @@ func (m *MockArcStatus200Client) Do(req *http.Request) (*http.Response, error) {
 		"txid":     txid,
 		"title":    "Success",
 	}
-	b, _ := json.Marshal(body)
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),
@@ -95,7 +101,8 @@ func (m *MockArcStatusCheckClient) Do(req *http.Request) (*http.Response, error)
 		"txid":   txid,
 		"title":  "OK",
 	}
-	b, _ := json.Marshal(body)
+	b, err := json.Marshal(body)
+	require.NoError(m.t, err)
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),
@@ -243,7 +250,10 @@ type MockArcStatusResponseClient struct {
 }
 
 func (m *MockArcStatusResponseClient) Do(req *http.Request) (*http.Response, error) {
-	b, _ := json.Marshal(m.resp)
+	b, err := json.Marshal(m.resp)
+	if err != nil {
+		return nil, err
+	}
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),

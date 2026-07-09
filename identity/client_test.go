@@ -297,7 +297,7 @@ import (
 func privateKeyFromInt(i int) (*ec.PrivateKey, *ec.PublicKey) {
 	// Convert int to byte slice (little endian)
 	bytes := make([]byte, 32)
-	bytes[0] = byte(i)
+	bytes[0] = byte(i) //nolint:gosec // G115 -- value is bounded by domain constraints
 	return ec.PrivateKeyFromBytes(bytes)
 }
 
@@ -322,9 +322,9 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
-		_, _, err := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "certificate has no fields to reveal")
+		_, _, revealErr := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
+		require.Error(t, revealErr)
+		require.Contains(t, revealErr.Error(), "certificate has no fields to reveal")
 	})
 
 	t.Run("should throw an error if fieldsToReveal is empty", func(t *testing.T) {
@@ -333,9 +333,9 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		}
 		var fieldsToReveal []CertificateFieldNameUnder50Bytes
 
-		_, _, err := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "you must reveal at least one field")
+		_, _, revealErr := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
+		require.Error(t, revealErr)
+		require.Contains(t, revealErr.Error(), "you must reveal at least one field")
 	})
 
 	t.Run("should throw an error if certificate verification fails", func(t *testing.T) {
@@ -362,13 +362,13 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		// Create a testable client with our mock verifier
 		specificMockWallet := wallet.NewTestWalletForRandomKey(t)
-		testableClient, err := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
-		require.NoError(t, err)
+		testableClient, testableErr := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
+		require.NoError(t, testableErr)
 
 		// Call PubliclyRevealAttributes which should fail with Certificate verification
-		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "certificate verification failed")
+		_, _, testableErr = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
+		require.Error(t, testableErr)
+		require.Contains(t, testableErr.Error(), "certificate verification failed")
 	})
 
 	typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()

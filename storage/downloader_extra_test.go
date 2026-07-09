@@ -29,11 +29,11 @@ func (m *mockLookupFacilitator) Lookup(ctx context.Context, url string, question
 }
 
 // newDownloaderWithMockFacilitator creates a StorageDownloader with a mock lookup facilitator.
-func newDownloaderWithMockFacilitator(facilitator lookup.Facilitator, serviceHostOverride string, hosts []string) *StorageDownloader {
+func newDownloaderWithMockFacilitator(facilitator lookup.Facilitator, hosts []string) *StorageDownloader {
 	resolver := &lookup.LookupResolver{
 		Facilitator: facilitator,
 		HostOverrides: map[string][]string{
-			serviceHostOverride: hosts,
+			"ls_uhrp": hosts,
 		},
 		AdditionalHosts: map[string][]string{},
 	}
@@ -43,7 +43,7 @@ func newDownloaderWithMockFacilitator(facilitator lookup.Facilitator, serviceHos
 // TestResolveLookupError tests Resolve when the lookup service returns an error.
 func TestResolveLookupError(t *testing.T) {
 	facilitator := &mockLookupFacilitator{err: assert.AnError}
-	d := newDownloaderWithMockFacilitator(facilitator, "ls_uhrp", []string{testHostURL})
+	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
 
 	_, err := d.Resolve(context.Background(), testUHRPURL)
 	require.Error(t, err)
@@ -58,7 +58,7 @@ func TestResolveWrongAnswerType(t *testing.T) {
 			Result: "some data",
 		},
 	}
-	d := newDownloaderWithMockFacilitator(facilitator, "ls_uhrp", []string{testHostURL})
+	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
 
 	_, err := d.Resolve(context.Background(), testUHRPURL)
 	require.Error(t, err)
@@ -73,7 +73,7 @@ func TestResolveEmptyOutputList(t *testing.T) {
 			Outputs: []*lookup.OutputListItem{},
 		},
 	}
-	d := newDownloaderWithMockFacilitator(facilitator, "ls_uhrp", []string{testHostURL})
+	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
 
 	hosts, err := d.Resolve(context.Background(), testUHRPURL)
 	require.NoError(t, err)
@@ -90,7 +90,7 @@ func TestResolveInvalidBEEF(t *testing.T) {
 			},
 		},
 	}
-	d := newDownloaderWithMockFacilitator(facilitator, "ls_uhrp", []string{testHostURL})
+	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
 
 	// Invalid BEEF is silently skipped
 	hosts, err := d.Resolve(context.Background(), testUHRPURL)
@@ -106,7 +106,7 @@ func TestDownloadNoHosts(t *testing.T) {
 			Outputs: []*lookup.OutputListItem{},
 		},
 	}
-	d := newDownloaderWithMockFacilitator(facilitator, "ls_uhrp", []string{testHostURL})
+	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
 
 	// Generate a valid UHRP URL
 	content := []byte("test content for download no hosts")
@@ -156,7 +156,7 @@ func TestNewStorageDownloaderTestnet(t *testing.T) {
 func TestResolveContextTimeout(t *testing.T) {
 	// Create a facilitator that hangs
 	facilitator := &slowDownloadFacilitator{}
-	d := newDownloaderWithMockFacilitator(facilitator, "ls_uhrp", []string{testHostURL})
+	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
@@ -175,6 +175,6 @@ func (s *slowDownloadFacilitator) Lookup(ctx context.Context, url string, questi
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case <-time.After(30 * time.Second):
-		return nil, nil
+		return nil, nil //nolint:nilnil // simulated slow lookup; test-level context timeout fires first in practice
 	}
 }

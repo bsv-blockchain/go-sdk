@@ -96,14 +96,14 @@ func TestAuthMessageFromNonGeneralMessageResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	makeTransportWithHandler := func(t *testing.T, serverURL string) *SimplifiedHTTPTransport {
-		transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
+		transport, transportErr := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
 			BaseURL: serverURL,
 		})
-		require.NoError(t, err)
-		err = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
+		require.NoError(t, transportErr)
+		transportErr = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
 			return nil
 		})
-		require.NoError(t, err)
+		require.NoError(t, transportErr)
 		return transport
 	}
 
@@ -205,14 +205,14 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 	payload := encodeGeneralPayload(requestID, "POST", "/test", "", map[string]string{"Content-Type": "application/json"}, []byte(`{}`))
 
 	makeTransportWithServer := func(t *testing.T, server *httptest.Server) (*SimplifiedHTTPTransport, func()) {
-		transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
+		transport, transportErr := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
 			BaseURL: server.URL,
 		})
-		require.NoError(t, err)
-		err = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
+		require.NoError(t, transportErr)
+		transportErr = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
 			return nil
 		})
-		require.NoError(t, err)
+		require.NoError(t, transportErr)
 		return transport, server.Close
 	}
 

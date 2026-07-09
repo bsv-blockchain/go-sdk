@@ -116,11 +116,11 @@ func TestAESDecrypt(t *testing.T) {
 
 			if tt.wantErr {
 				// Pass plaintext as "ciphertext" directly to test error paths
-				result, err := AESDecrypt(plaintext, key)
-				require.Error(t, err)
+				result, decryptErr := AESDecrypt(plaintext, key)
+				require.Error(t, decryptErr)
 				_ = result
 				if tt.errContain != "" {
-					require.Contains(t, err.Error(), tt.errContain)
+					require.Contains(t, decryptErr.Error(), tt.errContain)
 				}
 				return
 			}

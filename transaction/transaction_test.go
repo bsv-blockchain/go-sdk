@@ -54,8 +54,8 @@ func TestNewTransaction(t *testing.T) {
 		require.NoError(t, err)
 
 		// Sign the transaction
-		if err := tx.Sign(); err != nil {
-			require.NoError(t, err)
+		if signErr := tx.Sign(); signErr != nil {
+			require.NoError(t, signErr)
 		}
 
 		_, err = tx.BEEF()

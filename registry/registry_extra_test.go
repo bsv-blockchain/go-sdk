@@ -272,6 +272,7 @@ func TestRegisterDefinitionCertificateType(t *testing.T) {
 // mockWalletNetwork wraps MockRegistry and overrides GetNetwork.
 type mockWalletNetwork struct {
 	*MockRegistry
+
 	resp string
 	err  error
 }
@@ -476,6 +477,7 @@ func TestListOwnRegistryEntriesListOutputsError(t *testing.T) {
 // walletWithListError overrides ListOutputs to return an error.
 type walletWithListError struct {
 	*MockRegistry
+
 	err error
 }
 
@@ -907,6 +909,7 @@ func (c *customDefinitionData) GetRegistryOperator() string       { return c.ope
 // walletWithCreateActionError overrides CreateAction to return an error.
 type walletWithCreateActionError struct {
 	*MockRegistry
+
 	err error
 }
 
@@ -917,6 +920,7 @@ func (m *walletWithCreateActionError) CreateAction(_ context.Context, _ wallet.C
 // walletWithSignActionError overrides SignAction to return an error.
 type walletWithSignActionError struct {
 	*MockRegistry
+
 	err error
 }
 

@@ -18,7 +18,7 @@ type DRBGVector struct {
 
 // ReadDRBGVectors reads and parses the test vectors from a JSON file
 func ReadDRBGVectors(filename string) ([]DRBGVector, error) {
-	file, err := os.ReadFile(filename)
+	file, err := os.ReadFile(filename) //nolint:gosec // G304 -- test reads a fixed local testdata file
 	if err != nil {
 		return nil, err
 	}

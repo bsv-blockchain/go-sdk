@@ -93,7 +93,7 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 			name: "invalid txid length",
 			data: func() []byte {
 				w := util.NewWriter()
-				w.WriteByte(1)                   // txid flag
+				w.WriteByteValue(1)              // txid flag
 				w.WriteBytes([]byte{0x01, 0x02}) // invalid length
 				return w.Buf
 			}(),
@@ -104,11 +104,11 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 			data: func() []byte {
 				w := util.NewWriter()
 				// success byte
-				w.WriteByte(0)
+				w.WriteByteValue(0)
 				// txid flag
-				w.WriteByte(0)
+				w.WriteByteValue(0)
 				// tx flag
-				w.WriteByte(0)
+				w.WriteByteValue(0)
 				// noSendChange (nil)
 				w.WriteVarInt(util.NegativeOne)
 				// sendWithResults (1 item)
@@ -116,9 +116,9 @@ func TestDeserializeCreateActionResultErrors(t *testing.T) {
 				// txid
 				w.WriteBytes(make([]byte, 32))
 				// invalid status
-				w.WriteByte(99)
+				w.WriteByteValue(99)
 				// signable tx flag
-				w.WriteByte(0)
+				w.WriteByteValue(0)
 				return w.Buf
 			}(),
 			err: "invalid status code: 99",

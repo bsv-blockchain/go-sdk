@@ -228,7 +228,7 @@ func TestDecodeOutpoint(t *testing.T) {
 	validIndex := uint32(42)
 
 	// Create valid outpoint bytes
-	var validData []byte
+	validData := make([]byte, 0, chainhash.HashSize+9) // hash + max varint size
 	validData = append(validData, util.ReverseBytes(validTxIDHash[:])...)
 	validData = append(validData, util.VarInt(validIndex).Bytes()...)
 
@@ -301,7 +301,7 @@ func TestEncodeOutpoint(t *testing.T) {
 	}
 
 	// Expected valid binary output
-	var expectedBytes []byte
+	expectedBytes := make([]byte, 0, chainhash.HashSize+9) // hash + max varint size
 	expectedBytes = append(expectedBytes, util.ReverseBytes(validTxIDHash[:])...)
 	expectedBytes = append(expectedBytes, util.VarInt(validIndex).Bytes()...)
 

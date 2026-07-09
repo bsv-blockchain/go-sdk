@@ -126,12 +126,15 @@ func TestAuthFetchWithUnsupportedHeaders(t *testing.T) {
 			authFetch := New(mockWallet, WithHttpClientTransport(&failingTransport{t: t}))
 
 			// when:
-			_, err := authFetch.Fetch(t.Context(), "https://example.com", &SimplifiedFetchRequestOptions{
+			resp, err := authFetch.Fetch(t.Context(), "https://example.com", &SimplifiedFetchRequestOptions{
 				Method: "GET",
 				Headers: map[string]string{
 					test.headerName: test.headerValue,
 				},
 			})
+			if resp != nil {
+				defer func() { _ = resp.Body.Close() }()
+			}
 
 			// then:
 			require.ErrorContains(t, err, strings.ToLower(test.headerName))
@@ -184,6 +187,9 @@ func TestFetchWithRetryCounterAtZero(t *testing.T) {
 
 	// Call Fetch
 	resp, err := authFetch.Fetch(ctx, url, config)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 
 	require.Error(t, err)
 	require.Nil(t, resp)
@@ -272,7 +278,7 @@ func TestAuthFetchConcurrentMapAccess(t *testing.T) {
 		const numGoroutines = 10
 
 		for i := 0; i < numGoroutines; i++ {
-			go func(id int) {
+			go func(_ int) {
 				defer func() { done <- true }()
 
 				for j := 0; j < 100; j++ {

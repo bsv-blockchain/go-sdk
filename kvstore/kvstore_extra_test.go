@@ -1019,7 +1019,7 @@ func TestLocalKVStoreSetErrCorruptedState(t *testing.T) {
 // The new tx has SourceTransaction set so CalcInputSignatureHash works.
 // ---------------------------------------------------------------------------
 
-func buildSignableBeef(t *testing.T) (combinedBeefBytes, newTxBytes []byte, newTxIDStr string) {
+func buildSignableBeef(t *testing.T) (combinedBeefBytes, newTxBytes []byte) {
 	t.Helper()
 
 	// Parse existing pushDrop BEEF to get the source tx
@@ -1068,8 +1068,7 @@ func buildSignableBeef(t *testing.T) (combinedBeefBytes, newTxBytes []byte, newT
 	combinedBeefBytes, err = beef.Bytes()
 	require.NoError(t, err)
 
-	newTxID := newTx.TxID().String()
-	return combinedBeefBytes, newTx.Bytes(), newTxID
+	return combinedBeefBytes, newTx.Bytes()
 }
 
 // ---------------------------------------------------------------------------
@@ -1080,7 +1079,7 @@ func TestLocalKVStoreSetSignActionFailsRelinquishV2(t *testing.T) {
 	t.Parallel()
 
 	// Build a BEEF containing source tx + new spending tx
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 
@@ -1134,7 +1133,7 @@ func TestLocalKVStoreSetSignActionFailsRelinquishV2(t *testing.T) {
 func TestLocalKVStoreSetSignActionSuccess(t *testing.T) {
 	t.Parallel()
 
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 
@@ -1180,7 +1179,7 @@ func TestLocalKVStoreSetSignActionSuccess(t *testing.T) {
 func TestLocalKVStoreRemoveSignActionFailsRelinquish(t *testing.T) {
 	t.Parallel()
 
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 
@@ -1229,7 +1228,7 @@ func TestLocalKVStoreRemoveSignActionFailsRelinquish(t *testing.T) {
 func TestLocalKVStoreRemoveSignActionSuccess(t *testing.T) {
 	t.Parallel()
 
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 

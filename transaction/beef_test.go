@@ -696,8 +696,8 @@ func TestBeefErrorHandling(t *testing.T) {
 
 		// Skip BUMP data
 		for i := 0; i < int(numberOfBUMPs); i++ {
-			bump, err := NewMerklePathFromReader(reader)
-			require.NoError(t, err)
+			bump, bumpErr := NewMerklePathFromReader(reader)
+			require.NoError(t, bumpErr)
 			_ = bump
 		}
 
@@ -1370,7 +1370,8 @@ func TestReadBeefTxErrors(t *testing.T) {
 
 	t.Run("truncated TxIDOnly", func(t *testing.T) {
 		// Format byte = TxIDOnly (2), but no txid bytes follow
-		data := []byte{1} // 1 transaction
+		data := make([]byte, 0, 2)
+		data = append(data, 1) // 1 transaction
 		data = append(data, byte(TxIDOnly))
 		reader := bytes.NewReader(data)
 		_, _, err := readBeefTx(reader, bumps)
@@ -1379,7 +1380,8 @@ func TestReadBeefTxErrors(t *testing.T) {
 
 	t.Run("truncated RawTxAndBumpIndex", func(t *testing.T) {
 		// Format byte = RawTxAndBumpIndex (1), but no bump index follows
-		data := []byte{1} // 1 transaction
+		data := make([]byte, 0, 2)
+		data = append(data, 1) // 1 transaction
 		data = append(data, byte(RawTxAndBumpIndex))
 		reader := bytes.NewReader(data)
 		_, _, err := readBeefTx(reader, bumps)
@@ -1388,7 +1390,8 @@ func TestReadBeefTxErrors(t *testing.T) {
 
 	t.Run("truncated RawTx", func(t *testing.T) {
 		// Format byte = RawTx (0), but no tx data follows
-		data := []byte{1} // 1 transaction
+		data := make([]byte, 0, 2)
+		data = append(data, 1) // 1 transaction
 		data = append(data, byte(RawTx))
 		reader := bytes.NewReader(data)
 		_, _, err := readBeefTx(reader, bumps)
@@ -1411,7 +1414,8 @@ func TestReadBeefTxErrors(t *testing.T) {
 	})
 
 	t.Run("invalid data format", func(t *testing.T) {
-		data := []byte{1}         // 1 transaction
+		data := make([]byte, 0, 2)
+		data = append(data, 1)    // 1 transaction
 		data = append(data, 0x03) // invalid format > TxIDOnly
 		reader := bytes.NewReader(data)
 		_, _, err := readBeefTx(reader, bumps)

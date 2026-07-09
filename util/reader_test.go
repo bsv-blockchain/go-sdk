@@ -18,7 +18,7 @@ func TestWriterReader(t *testing.T) {
 		{
 			name: "writeByte/readByte",
 			writeFn: func(w *util.Writer) {
-				w.WriteByte(0xAB)
+				w.WriteByteValue(0xAB)
 			},
 			readFn: func(r *util.Reader) (any, error) {
 				return r.ReadByte()

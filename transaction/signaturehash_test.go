@@ -67,7 +67,7 @@ func TestTx_CalcInputPreimage(t *testing.T) {
 			})
 
 			var actualSigHash []byte
-			actualSigHash, err = tx.CalcInputPreimage(uint32(test.index), sighash.All|sighash.ForkID)
+			actualSigHash, err = tx.CalcInputPreimage(uint32(test.index), sighash.All|sighash.ForkID) //nolint:gosec // G115 -- value is bounded by domain constraints
 			require.NoError(t, err)
 			require.Equal(t, test.expectedPreimage, hex.EncodeToString(actualSigHash))
 		})
@@ -220,7 +220,7 @@ func TestTx_CalcInputPreimageLegacy(t *testing.T) {
 			})
 
 			var actualSigHash []byte
-			actualSigHash, err = tx.CalcInputPreimageLegacy(uint32(test.index), test.sigHashType)
+			actualSigHash, err = tx.CalcInputPreimageLegacy(uint32(test.index), test.sigHashType) //nolint:gosec // G115 -- value is bounded by domain constraints
 			require.NoError(t, err)
 			require.Equal(t, test.expectedPreimage, hex.EncodeToString(actualSigHash))
 		})

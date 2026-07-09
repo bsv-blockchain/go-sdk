@@ -86,16 +86,16 @@ func TestDeserializeSignActionResult(t *testing.T) {
 			name: "full result",
 			data: func() []byte {
 				w := util.NewWriter()
-				w.WriteByte(1) // txid present
+				w.WriteByteValue(1) // txid present
 				w.WriteBytes(txidBytes)
-				w.WriteByte(1) // tx present
+				w.WriteByteValue(1) // tx present
 				w.WriteVarInt(uint64(len(tx)))
 				w.WriteBytes(tx)
 				w.WriteVarInt(2) // 2 sendWith results
 				w.WriteBytes(txidBytes)
-				w.WriteByte(2) // status = sending
+				w.WriteByteValue(2) // status = sending
 				w.WriteBytes(txidBytes)
-				w.WriteByte(3) // status = failed
+				w.WriteByteValue(3) // status = failed
 				return w.Buf
 			}(),
 			want: &wallet.SignActionResult{
@@ -112,10 +112,10 @@ func TestDeserializeSignActionResult(t *testing.T) {
 			name: "only txid",
 			data: func() []byte {
 				w := util.NewWriter()
-				w.WriteByte(1) // txid present
+				w.WriteByteValue(1) // txid present
 				w.WriteBytes(txidBytes)
-				w.WriteByte(0)   // tx not present
-				w.WriteVarInt(0) // no sendWith results
+				w.WriteByteValue(0) // tx not present
+				w.WriteVarInt(0)    // no sendWith results
 				return w.Buf
 			}(),
 			want: &wallet.SignActionResult{
@@ -129,7 +129,7 @@ func TestDeserializeSignActionResult(t *testing.T) {
 				w := util.NewWriter()
 				w.WriteVarInt(1) // 1 sendWith result
 				w.WriteBytes(txidBytes)
-				w.WriteByte(4) // invalid status
+				w.WriteByteValue(4) // invalid status
 				return w.Buf
 			}(),
 			wantErr: true,
@@ -138,7 +138,7 @@ func TestDeserializeSignActionResult(t *testing.T) {
 			name: "invalid txid length",
 			data: func() []byte {
 				w := util.NewWriter()
-				w.WriteByte(1)                // txid present
+				w.WriteByteValue(1)           // txid present
 				w.WriteBytes([]byte{1, 2, 3}) // invalid length
 				return w.Buf
 			}(),

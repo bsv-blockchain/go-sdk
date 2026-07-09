@@ -83,7 +83,7 @@ func TestBRC42PrivateVectors(t *testing.T) {
 	require.True(t, ok, "Could not determine the directory of the current test file")
 
 	// Read in the file
-	vectors, err := os.ReadFile(testdataPath)
+	vectors, err := os.ReadFile(testdataPath) //nolint:gosec // G304 -- test reads a fixed local testdata file
 	if err != nil {
 		t.Fatalf("Could not read test vectors: %v", err) // use Fatalf to stop test if file cannot be read
 	}

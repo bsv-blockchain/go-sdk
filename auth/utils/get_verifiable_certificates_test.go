@@ -37,7 +37,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 1: Retrieves matching certificates based on requested set
 	t.Run("retrieves matching certificates based on requested set", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewTestWalletForRandomKey(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t) //nolint:contextcheck // shared test helper uses context.Background() internally
 
 		// Create base64-encoded field values as required by the standard
 		field1ValueBase64 := base64.StdEncoding.EncodeToString([]byte("encryptedData1"))
@@ -109,7 +109,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 2: Returns an empty array when no matching certificates are found
 	t.Run("returns an empty array when no matching certificates are found", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewTestWalletForRandomKey(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t) //nolint:contextcheck // shared test helper uses context.Background() internally
 
 		requestedCerts := &RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
@@ -132,7 +132,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 3: Propagates errors from ListCertificates
 	t.Run("propagates errors from ListCertificates", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewTestWalletForRandomKey(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t) //nolint:contextcheck // shared test helper uses context.Background() internally
 
 		requestedCerts := &RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{tu.GetPKFromString("certifier1")},
@@ -159,7 +159,7 @@ func TestGetVerifiableCertificates(t *testing.T) {
 	// Test case 4: Handles nil requested certificates gracefully
 	t.Run("handles nil requested certificates gracefully", func(t *testing.T) {
 		// Create a fresh mock for each test to avoid unexpected state
-		mockWallet := wallet.NewTestWalletForRandomKey(t)
+		mockWallet := wallet.NewTestWalletForRandomKey(t) //nolint:contextcheck // shared test helper uses context.Background() internally
 		options := GetVerifiableCertificatesOptions{
 			Wallet:                mockWallet,
 			RequestedCertificates: nil,

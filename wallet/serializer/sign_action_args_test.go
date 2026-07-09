@@ -97,11 +97,11 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 				w.WriteBytes(ref)
 
 				// Options
-				w.WriteByte(1)   // present
-				w.WriteByte(1)   // acceptDelayedBroadcast = true
-				w.WriteByte(0)   // returnTXIDOnly = false
-				w.WriteByte(1)   // noSend = true
-				w.WriteVarInt(2) // 2 sendWith
+				w.WriteByteValue(1) // present
+				w.WriteByteValue(1) // acceptDelayedBroadcast = true
+				w.WriteByteValue(0) // returnTXIDOnly = false
+				w.WriteByteValue(1) // noSend = true
+				w.WriteVarInt(2)    // 2 sendWith
 				w.WriteBytes(txid[:])
 				w.WriteBytes(txid[:])
 				return w.Buf
@@ -147,7 +147,7 @@ func TestDeserializeSignActionArgs(t *testing.T) {
 				w.WriteVarInt(0) // sequence
 				w.WriteVarInt(3) // ref length
 				w.WriteBytes([]byte{1, 2, 3})
-				w.WriteByte(1)                // options present
+				w.WriteByteValue(1)           // options present
 				w.WriteVarInt(1)              // 1 sendWith
 				w.WriteBytes([]byte{1, 2, 3}) // invalid txid
 				return w.Buf

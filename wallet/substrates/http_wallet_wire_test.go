@@ -1,6 +1,7 @@
 package substrates
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -61,7 +62,7 @@ func TestTransmitToWallet(t *testing.T) {
 		// Validate body
 		body := make([]byte, r.ContentLength)
 		_, err := r.Body.Read(body)
-		if err != nil && err != io.EOF {
+		if err != nil && !errors.Is(err, io.EOF) {
 			assert.NoError(t, err)
 		}
 		assert.Equal(t, body, []byte("payload"))
@@ -124,7 +125,7 @@ func TestTransmitToWallet_HTTPErrors(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, err := w.Write([]byte("server error"))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 

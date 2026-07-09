@@ -288,7 +288,7 @@ func TestRequestedCertificateTypeIDAndFieldListJSON(t *testing.T) {
 		badJSON := `{"not-base64!!!": ["field1"]}`
 		var m utils.RequestedCertificateTypeIDAndFieldList
 		err := json.Unmarshal([]byte(badJSON), &m)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid base64 key")
 	})
 
@@ -298,7 +298,7 @@ func TestRequestedCertificateTypeIDAndFieldListJSON(t *testing.T) {
 		badJSON, _ := json.Marshal(map[string][]string{shortKey: {"field1"}})
 		var m utils.RequestedCertificateTypeIDAndFieldList
 		err := json.Unmarshal(badJSON, &m)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "expected 32 bytes")
 	})
 

@@ -130,7 +130,8 @@ func TestCounterpartyUnmarshalPubKey(t *testing.T) {
 	require.NoError(t, err)
 	pubKeyHex := privKey.PubKey().ToDERHex()
 
-	jsonStr, _ := json.Marshal(pubKeyHex)
+	jsonStr, err := json.Marshal(pubKeyHex)
+	require.NoError(t, err)
 	var c wallet.Counterparty
 	err = json.Unmarshal(jsonStr, &c)
 	require.NoError(t, err)
@@ -436,7 +437,8 @@ func TestKeyringRevealerUnmarshalEmpty(t *testing.T) {
 func TestKeyringRevealerUnmarshalPubKey(t *testing.T) {
 	privKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
-	jsonStr, _ := json.Marshal(privKey.PubKey().ToDERHex())
+	jsonStr, err := json.Marshal(privKey.PubKey().ToDERHex())
+	require.NoError(t, err)
 
 	var r wallet.KeyringRevealer
 	err = json.Unmarshal(jsonStr, &r)

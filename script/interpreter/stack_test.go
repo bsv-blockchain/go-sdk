@@ -919,7 +919,7 @@ func TestStack(t *testing.T) {
 		}
 
 		// Ensure the resulting stack is the expected length.
-		if int32(len(test.after)) != s.Depth() {
+		if int32(len(test.after)) != s.Depth() { //nolint:gosec // G115 -- test stack depth bounded well within int32
 			t.Errorf("%s: stack depth doesn't match expected: %v "+
 				"vs %v", test.name, len(test.after),
 				s.Depth())

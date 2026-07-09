@@ -330,7 +330,7 @@ func TestBRC42PublicVectors(t *testing.T) {
 	testdataPath := filepath.Join(filepath.Dir(currentFile), "testdata", "BRC42.public.vectors.json")
 
 	// Read in the file
-	vectors, err := os.ReadFile(testdataPath)
+	vectors, err := os.ReadFile(testdataPath) //nolint:gosec // G304 -- test reads a fixed local testdata file
 	if err != nil {
 		t.Fatalf("Could not read test vectors: %v", err)
 	}

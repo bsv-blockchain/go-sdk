@@ -35,12 +35,12 @@ func buildScript(t *testing.T, parts ...interface{}) *script.Script {
 	return s
 }
 
-// chronicleVersionTx returns a minimal transaction with the given version number.
+// chronicleVersionTx returns a minimal transaction with version 1.
 // It is used for opcodes that read t.tx.Version (OP_VER, OP_VERIF, OP_VERNOTIF).
-func chronicleVersionTx(ver uint32) *transaction.Transaction {
+func chronicleVersionTx() *transaction.Transaction {
 	s := script.Script{}
 	return &transaction.Transaction{
-		Version: ver,
+		Version: 1,
 		Inputs: []*transaction.TransactionInput{{
 			SourceTxOutIndex: 0,
 			UnlockingScript:  &s,
@@ -54,7 +54,7 @@ func chronicleVersionTx(ver uint32) *transaction.Transaction {
 
 // versionLE serializes a uint32 as 4-byte little-endian – the format OP_VER pushes.
 func versionLE(v uint32) []byte {
-	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
+	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)} //nolint:gosec // G115 -- intentional truncation to encode uint32 as little-endian bytes
 }
 
 // TestChronicleOpcodes_PreChronicle verifies that every Chronicle-reactivated opcode
@@ -228,7 +228,7 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 				opts = append(opts, WithFlags(tc.flags))
 			}
 			if tc.needTx {
-				tx := chronicleVersionTx(1)
+				tx := chronicleVersionTx()
 				prevOut := &transaction.TransactionOutput{LockingScript: locking}
 				opts = []ExecutionOptionFunc{
 					WithTx(tx, 0, prevOut),
@@ -399,7 +399,7 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 			if tc.needTx {
 				prevOut := &transaction.TransactionOutput{LockingScript: locking}
 				opts = []ExecutionOptionFunc{
-					WithTx(chronicleVersionTx(1), 0, prevOut),
+					WithTx(chronicleVersionTx(), 0, prevOut),
 					WithAfterChronicle(),
 				}
 			} else {
@@ -549,7 +549,7 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 			script.Op1, // false branch (taken)
 			script.OpENDIF,
 		)
-		tx := chronicleVersionTx(1)
+		tx := chronicleVersionTx()
 		prevOut := &transaction.TransactionOutput{LockingScript: locking}
 		err := NewEngine().Execute(
 			WithTx(tx, 0, prevOut),
@@ -570,7 +570,7 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 			script.Op1, // false branch (taken because VERNOTIF condition is "not equal")
 			script.OpENDIF,
 		)
-		tx := chronicleVersionTx(1)
+		tx := chronicleVersionTx()
 		prevOut := &transaction.TransactionOutput{LockingScript: locking}
 		err := NewEngine().Execute(
 			WithTx(tx, 0, prevOut),

@@ -254,7 +254,7 @@ func TestLocalKVStoreRemove_ListOutputsError(t *testing.T) {
 	// ensure RelinquishOutput was not called
 	mockWallet.OnRelinquishOutput().Do(func(ctx context.Context, args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
 		require.Fail(t, "RelinquishOutput should not be called")
-		return nil, nil
+		return nil, nil //nolint:nilnil // unreachable stub; the test fails above if this callback ever runs
 	})
 
 	// Perform the Remove operation

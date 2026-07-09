@@ -42,7 +42,7 @@ func TestSymmetricKeyDecryption(t *testing.T) {
 
 	require.True(t, ok, "Could not determine the directory of the current test file")
 
-	vectors, err := os.ReadFile(testdataPath)
+	vectors, err := os.ReadFile(testdataPath) //nolint:gosec // G304 -- test reads a fixed local testdata file
 	if err != nil {
 		t.Fatalf("Error reading test vectors: %v", err)
 	}

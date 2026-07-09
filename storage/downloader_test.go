@@ -38,7 +38,7 @@ func TestStorageDownloader_InvalidURL(t *testing.T) {
 
 	// Test with invalid URL
 	_, err := downloader.Download(context.Background(), "invalid-url")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid parameter UHRP url")
 }
 

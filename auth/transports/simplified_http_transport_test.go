@@ -100,8 +100,8 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 			t.Errorf("Expected response message type 'general', got '%s'", msg.MessageType)
 		}
 
-		reqIDFromResponse, res, err := authpayload.ToSimplifiedHttpResponse(msg.Payload)
-		assert.NoError(t, err, "Payload should be deserializable to response")
+		reqIDFromResponse, res, responseErr := authpayload.ToSimplifiedHttpResponse(msg.Payload)
+		require.NoError(t, responseErr, "Payload should be deserializable to response")
 
 		assert.Equalf(t, requestID, reqIDFromResponse, "Request ID from response should match this from request")
 
@@ -118,7 +118,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 
 	// Send the message
 	err = transport.Send(context.Background(), testMessage)
-	assert.NoError(t, err, "Failed to send message")
+	require.NoError(t, err, "Failed to send message")
 
 	// Verify the proxied HTTP request was received
 	if receivedRequest == nil {
@@ -143,7 +143,7 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 		return nil
 	})
 
-	assert.NoError(t, err, "Failed to register callback")
+	require.NoError(t, err, "Failed to register callback")
 
 	// Test notifying handlers
 	testMessage := &auth.AuthMessage{
@@ -183,7 +183,7 @@ func TestSimplifiedHTTPTransportSendWithNoHandler(t *testing.T) {
 
 	// Send without registering a handler should fail
 	err = transport.Send(t.Context(), testMessage)
-	assert.ErrorIs(t, err, ErrNoHandlerRegistered, "Send should return ErrNoHandlerRegistered when no handler is registered")
+	require.ErrorIs(t, err, ErrNoHandlerRegistered, "Send should return ErrNoHandlerRegistered when no handler is registered")
 
 	// Now register a handler
 	err = transport.OnData(func(ctx context.Context, message *auth.AuthMessage) error {

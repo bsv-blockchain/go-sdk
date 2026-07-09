@@ -184,7 +184,7 @@ func TestWithTransactionCreator(t *testing.T) {
 		require.NoError(t, err)
 
 		result := client.WithTransactionCreator(func(data []byte) (*transaction.Transaction, error) {
-			return nil, nil
+			return nil, nil //nolint:nilnil // stub creator; only the WithTransactionCreator wiring is under test here
 		})
 		require.NotNil(t, result)
 	})

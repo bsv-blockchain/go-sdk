@@ -51,7 +51,7 @@ func bypassAuthForUploader(t *testing.T, uploader *Uploader, baseURL string) {
 	peersField := rv.FieldByName("peers")
 	require.True(t, peersField.IsValid(), "peers field not found on AuthFetch")
 
-	peersPtr := (*sync.Map)(unsafe.Pointer(peersField.UnsafeAddr()))
+	peersPtr := (*sync.Map)(unsafe.Pointer(peersField.UnsafeAddr())) //nolint:gosec // G103 -- test-only reflection to access unexported field
 	peersPtr.Store(baseURL, peer)
 }
 

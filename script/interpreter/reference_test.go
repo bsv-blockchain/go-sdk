@@ -24,6 +24,7 @@ import (
 
 var opcodeByName = make(map[string]byte)
 
+//nolint:gochecknoinits // builds the opcode name lookup table used by parseShortForm test helper
 func init() {
 	// Initialize the opcode name to value map using the contents of the
 	// opcode array.  Also add entries for "OP_FALSE", "OP_TRUE", and
@@ -100,7 +101,7 @@ func parseShortForm(scriptStr string) (*script.Script, error) {
 			if num == 0 {
 				_ = scr.AppendOpcodes(script.Op0)
 			} else if num == -1 || (1 <= num && num <= 16) {
-				_ = scr.AppendOpcodes((script.Op1 - 1) + byte(num))
+				_ = scr.AppendOpcodes((script.Op1 - 1) + byte(num)) //nolint:gosec // G115 -- num is bounds-checked to [1,16] above
 			} else {
 				n := &ScriptNumber{Val: big.NewInt(num)}
 				_ = scr.AppendPushData(n.Bytes())
@@ -131,6 +132,7 @@ func scriptTestName(test []any) (string, error) {
 	// The test must consist of at least a signature script, public key script,
 	// flags, and expected error.  Finally, it may optionally contain a comment.
 	if len(test) < 4 || 6 < len(test) {
+		//nolint:forbidigo // test debug output
 		fmt.Printf("%#v\n", test)
 		return "", fmt.Errorf("invalid test length %d", len(test))
 	}
@@ -316,7 +318,7 @@ func createSpendingTx(sigScript, pkScript *script.Script, outputValue int64) *tr
 		SequenceNumber:   0xffffffff,
 	})
 	coinbaseTx.AddOutput(&transaction.TransactionOutput{
-		Satoshis:      uint64(outputValue),
+		Satoshis:      uint64(outputValue), //nolint:gosec // G115 -- test-data amounts are always non-negative
 		LockingScript: pkScript,
 	})
 
@@ -330,7 +332,7 @@ func createSpendingTx(sigScript, pkScript *script.Script, outputValue int64) *tr
 			SequenceNumber:   0xffffffff,
 		}},
 		Outputs: []*transaction.TransactionOutput{{
-			Satoshis:      uint64(outputValue),
+			Satoshis:      uint64(outputValue), //nolint:gosec // G115 -- test-data amounts are always non-negative
 			LockingScript: script.NewFromBytes([]byte{}),
 		}},
 	}
@@ -486,7 +488,7 @@ func TestScripts(t *testing.T) {
 // then to a 32-bit unsigned integer which results in the expected behavior on
 // all platforms.
 func testVecF64ToUint32(f float64) uint32 {
-	return uint32(int32(f))
+	return uint32(int32(f)) //nolint:gosec // G115 -- intentional wraparound conversion matching reference test semantics
 }
 
 type txIOKey struct {
@@ -597,10 +599,10 @@ testloop:
 				continue testloop
 			}
 
-			script, err := parseShortForm(oscript)
-			if err != nil {
+			script, parseErr := parseShortForm(oscript)
+			if parseErr != nil {
 				t.Errorf("bad test (%dth input script doesn't "+
-					"parse %v) %d: %v", j, err, i, test)
+					"parse %v) %d: %v", j, parseErr, i, test)
 				continue testloop
 			}
 
@@ -747,10 +749,10 @@ testloop:
 				continue
 			}
 
-			script, err := parseShortForm(oscript)
-			if err != nil {
+			script, parseErr := parseShortForm(oscript)
+			if parseErr != nil {
 				t.Errorf("bad test (%dth input script doesn't "+
-					"parse %v) %d: %v", j, err, i, test)
+					"parse %v) %d: %v", j, parseErr, i, test)
 				continue
 			}
 

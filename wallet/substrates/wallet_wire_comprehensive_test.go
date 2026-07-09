@@ -31,7 +31,7 @@ func TestWalletWireProcessorEmptyMessage(t *testing.T) {
 	processor := substrates.NewWalletWireProcessor(tw)
 
 	_, err := processor.TransmitToWallet(context.Background(), []byte{})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty message")
 }
 

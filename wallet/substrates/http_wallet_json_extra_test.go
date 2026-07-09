@@ -23,8 +23,8 @@ func TestHTTPWalletJSONGetPublicKey(t *testing.T) {
 		// Don't decode args - EncryptionArgs has a custom protocolID format
 		resp := wallet.GetPublicKeyResult{PublicKey: privKey.PubKey()}
 		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(&resp)
-		assert.NoError(t, err)
+		encodeErr := json.NewEncoder(w).Encode(&resp)
+		assert.NoError(t, encodeErr)
 	}))
 	defer ts.Close()
 
