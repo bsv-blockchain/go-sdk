@@ -1,5 +1,7 @@
 {
     "recommendations": [
-        "SonarSource.sonarlint-vscode"
+        "golang.Go",
+        "github.vscode-github-actions",
+        "redhat.vscode-yaml"
     ]
 }
