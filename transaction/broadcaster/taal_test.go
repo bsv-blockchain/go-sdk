@@ -10,8 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 // MockTAALFailureClient simulates a failed API response.

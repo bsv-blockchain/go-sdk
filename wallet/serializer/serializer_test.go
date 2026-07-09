@@ -3,13 +3,14 @@ package serializer
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 func TestKeyRelatedParams(t *testing.T) {
@@ -227,7 +228,7 @@ func TestDecodeOutpoint(t *testing.T) {
 	validIndex := uint32(42)
 
 	// Create valid outpoint bytes
-	var validData []byte
+	validData := make([]byte, 0, chainhash.HashSize+9) // hash + max varint size
 	validData = append(validData, util.ReverseBytes(validTxIDHash[:])...)
 	validData = append(validData, util.VarInt(validIndex).Bytes()...)
 
@@ -300,7 +301,7 @@ func TestEncodeOutpoint(t *testing.T) {
 	}
 
 	// Expected valid binary output
-	var expectedBytes []byte
+	expectedBytes := make([]byte, 0, chainhash.HashSize+9) // hash + max varint size
 	expectedBytes = append(expectedBytes, util.ReverseBytes(validTxIDHash[:])...)
 	expectedBytes = append(expectedBytes, util.VarInt(validIndex).Bytes()...)
 

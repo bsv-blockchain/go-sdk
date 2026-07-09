@@ -1,6 +1,6 @@
 {
-  "json": {
-    "network": "mainnet"
-  },
-  "wire": "0000"
+    "json": {
+        "network": "mainnet"
+    },
+    "wire": "0000"
 }

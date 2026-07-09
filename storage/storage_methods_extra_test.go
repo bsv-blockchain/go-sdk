@@ -25,6 +25,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
@@ -32,8 +35,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const errUnableToDownload = "unable to download content"
@@ -41,7 +42,7 @@ const errUnableToDownload = "unable to download content"
 // ---- helpers ----------------------------------------------------------------
 
 // buildMinimalBeef creates a parent→child BEEF with the given locking script.
-func buildMinimalBeef(t *testing.T, lockingScript *script.Script) ([]byte, uint32) {
+func buildMinimalBeef(t *testing.T, lockingScript *script.Script) []byte {
 	t.Helper()
 	parentTx := transaction.NewTransaction()
 	parentTx.AddInput(&transaction.TransactionInput{
@@ -70,16 +71,16 @@ func buildMinimalBeef(t *testing.T, lockingScript *script.Script) ([]byte, uint3
 
 	beef, err := tx.AtomicBEEF(true)
 	require.NoError(t, err)
-	return beef, 0
+	return beef
 }
 
 // buildUhrpPushDropScript creates a pushdrop script matching the UHRP format
 // (fields: hash, uhrpURL, hostURL, expiryVarInt).
 // The expiry is encoded using the BSV VarInt format as expected by util.Reader.ReadVarInt.
-func buildUhrpPushDropScript(t *testing.T, hash []byte, uhrpURL string, hostURL string, expiryUnix int64) *script.Script {
+func buildUhrpPushDropScript(t *testing.T, hash []byte, uhrpURL, hostURL string, expiryUnix int64) *script.Script {
 	t.Helper()
 	// Encode expiry as a BSV VarInt (used by util.Reader.ReadVarInt)
-	expiryBytes := util.VarInt(uint64(expiryUnix)).Bytes()
+	expiryBytes := util.VarInt(uint64(expiryUnix)).Bytes() //nolint:gosec // G115 -- test-only expiry timestamps are always non-negative
 
 	s := &script.Script{}
 	require.NoError(t, s.AppendPushData(testPushDropPubKeyBytes))
@@ -132,7 +133,7 @@ func TestResolveTooFewPushDropFields(t *testing.T) {
 	require.NoError(t, s.AppendPushData([]byte("field2")))
 	require.NoError(t, s.AppendOpcodes(script.Op2DROP))
 
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type:    lookup.AnswerTypeOutputList,
@@ -155,7 +156,7 @@ func TestResolveExpiredOutput(t *testing.T) {
 	// Set expiry in the past
 	pastExpiry := time.Now().Add(-24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, hash, uhrpURL, "http://expired-host.example.com", pastExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -179,7 +180,7 @@ func TestResolveValidHostURL(t *testing.T) {
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	hostURL := "https://valid-host.example.com/file"
 	s := buildUhrpPushDropScript(t, hash, uhrpURL, hostURL, futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -203,7 +204,7 @@ func TestResolveEmptyHostURL(t *testing.T) {
 
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, hash, uhrpURL, "", futureExpiry) // empty host
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -222,7 +223,7 @@ func TestResolveEmptyHostURL(t *testing.T) {
 func TestResolveOutputIndexOutOfRange(t *testing.T) {
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, make([]byte, 32), "url", "http://host", futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -255,8 +256,8 @@ func TestResolveMultipleOutputsMixed(t *testing.T) {
 	validScript := buildUhrpPushDropScript(t, hash1, uhrpURL1, "https://host1.example.com", futureExpiry)
 	expiredScript := buildUhrpPushDropScript(t, hash2, uhrpURL2, "https://host2.example.com", pastExpiry)
 
-	validBeef, _ := buildMinimalBeef(t, validScript)
-	expiredBeef, _ := buildMinimalBeef(t, expiredScript)
+	validBeef := buildMinimalBeef(t, validScript)
+	expiredBeef := buildMinimalBeef(t, expiredScript)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -295,7 +296,7 @@ func TestDownloadSuccessfulHashMatch(t *testing.T) {
 
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -325,7 +326,7 @@ func TestDownloadHTTPErrorStatus(t *testing.T) {
 
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -355,7 +356,7 @@ func TestDownloadHashMismatch(t *testing.T) {
 
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -391,8 +392,8 @@ func TestDownloadAllHostsFailWithLastErr(t *testing.T) {
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s1 := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts1.URL, futureExpiry)
 	s2 := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts2.URL, futureExpiry)
-	beef1, _ := buildMinimalBeef(t, s1)
-	beef2, _ := buildMinimalBeef(t, s2)
+	beef1 := buildMinimalBeef(t, s1)
+	beef2 := buildMinimalBeef(t, s2)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -430,7 +431,7 @@ func TestDownloadContextCancelled(t *testing.T) {
 
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -458,7 +459,7 @@ func TestDownloadBadRequestURL(t *testing.T) {
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	// Use a URL that will fail request creation (invalid scheme/host combo)
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, "://bad-url-scheme", futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -504,7 +505,7 @@ func TestDownloadTruncatedBodyError(t *testing.T) {
 
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -582,7 +583,7 @@ func TestDownloadReadBodyError(t *testing.T) {
 	defer ts.Close()
 
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
@@ -607,7 +608,7 @@ func TestResolveNilPushDrop(t *testing.T) {
 	require.NoError(t, s.AppendOpcodes(script.OpRETURN))
 	require.NoError(t, s.AppendPushData([]byte("not pushdrop data")))
 
-	beef, _ := buildMinimalBeef(t, s)
+	beef := buildMinimalBeef(t, s)
 
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{

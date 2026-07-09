@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
-	"github.com/stretchr/testify/require"
 )
 
 // ---- Mock ChainTracker for testing Beef.Verify ----
@@ -280,7 +281,7 @@ func TestBeefTxidOnly(t *testing.T) {
 	txidOnly, err := b.TxidOnly()
 	require.NoError(t, err)
 	require.NotNil(t, txidOnly)
-	require.Equal(t, len(b.Transactions), len(txidOnly.Transactions))
+	require.Len(t, txidOnly.Transactions, len(b.Transactions))
 	for _, tx := range txidOnly.Transactions {
 		require.Equal(t, TxIDOnly, tx.DataFormat)
 	}
@@ -301,7 +302,7 @@ func TestTransactionInputReadFrom(t *testing.T) {
 	var input TransactionInput
 	n, err := input.ReadFrom(reader)
 	require.NoError(t, err)
-	require.Greater(t, n, int64(0))
+	require.Positive(t, n)
 }
 
 func TestTransactionInputReadFromExtended(t *testing.T) {
@@ -328,14 +329,14 @@ func TestTransactionInputReadFromExtended(t *testing.T) {
 	// 32 bytes prev txid + 4 bytes index + varint script len + script + 4 bytes sequence + 8 bytes satoshis + varint script len + locking script
 	var b bytes.Buffer
 	b.Write(input.SourceTXID[:])
-	b.Write([]byte{0, 0, 0, 0}) // index
-	b.WriteByte(0)               // unlocking script len = 0
+	b.Write([]byte{0, 0, 0, 0})             // index
+	b.WriteByte(0)                          // unlocking script len = 0
 	b.Write([]byte{0xff, 0xff, 0xff, 0xff}) // sequence
 	// satoshis (8 bytes LE)
 	b.Write([]byte{0xe8, 0x03, 0, 0, 0, 0, 0, 0}) // 1000 satoshis
 	// locking script len + script
 	ls := []byte{0x76, 0xa9, 0x14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0xac}
-	b.WriteByte(byte(len(ls)))
+	b.WriteByte(byte(len(ls))) //nolint:gosec // G115 -- test locking script is a small fixed constant
 	b.Write(ls)
 
 	_, err = newInput.ReadFromExtended(bytes.NewReader(b.Bytes()))
@@ -351,13 +352,13 @@ func TestInscribe(t *testing.T) {
 	lockScript := &script.Script{}
 	_ = lockScript.AppendOpcodes(script.OpTRUE)
 	ia := &script.InscriptionArgs{
-		ContentType:  contentTypeTextPlain,
-		Data:         []byte("hello world"),
+		ContentType:   contentTypeTextPlain,
+		Data:          []byte("hello world"),
 		LockingScript: lockScript,
 	}
 	err := tx.Inscribe(ia)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(tx.Outputs))
+	require.Len(t, tx.Outputs, 1)
 	require.Equal(t, uint64(1), tx.Outputs[0].Satoshis)
 }
 
@@ -380,8 +381,8 @@ func TestInscribeSpecificOrdinal(t *testing.T) {
 	lockScript := &script.Script{}
 	_ = lockScript.AppendOpcodes(script.OpTRUE)
 	ia := &script.InscriptionArgs{
-		ContentType:  contentTypeTextPlain,
-		Data:         []byte("ordinal"),
+		ContentType:   contentTypeTextPlain,
+		Data:          []byte("ordinal"),
 		LockingScript: lockScript,
 	}
 	extraScript := &script.Script{}
@@ -389,7 +390,7 @@ func TestInscribeSpecificOrdinal(t *testing.T) {
 
 	err := tx.InscribeSpecificOrdinal(ia, 0, 5, extraScript)
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tx.Outputs))
+	require.Len(t, tx.Outputs, 2)
 }
 
 func TestInscribeSpecificOrdinalOutputsNotEmpty(t *testing.T) {
@@ -487,7 +488,7 @@ func TestTransactionSize(t *testing.T) {
 	txHex := "0100000001a9b0c5a2437042e5d0c6288fad6abc2ef8725adb6fef5f1bab21b2124cfb7cf6dc9300006a47304402204c3f88aadc90a3f29669bba5c4369a2eebc10439e857a14e169d19626243ffd802205443013b187a5c7f23e2d5dd82bc4ea9a79d138a3dc6cae6e6ef68874bd23a42412103fd290068ae945c23a06775de8422ceb6010aaebab40b78e01a0af3f1322fa861ffffffff010000000000000000b1006a0963657274696861736822314c6d763150594d70387339594a556e374d3948565473446b64626155386b514e4a4032356163343531383766613035616532626436346562323632386666336432666636646338313665383335376364616366343765663862396331656433663531403064383963343363343636303262643865313831376530393137313736343134353938373337623161663865363939343930646364653462343937656338643300000000"
 	tx, err := NewTransactionFromHex(txHex)
 	require.NoError(t, err)
-	require.Greater(t, tx.Size(), 0)
+	require.Positive(t, tx.Size())
 }
 
 func TestTransactionAddMerkleProof(t *testing.T) {
@@ -621,13 +622,19 @@ func TestParseBeefV2(t *testing.T) {
 }
 
 func TestParseBeefTooShort(t *testing.T) {
-	_, _, _, err := ParseBeef([]byte{1, 2, 3})
+	beef, tx, txid, err := ParseBeef([]byte{1, 2, 3})
 	require.Error(t, err)
+	require.Nil(t, beef)
+	require.Nil(t, tx)
+	require.Nil(t, txid)
 }
 
 func TestParseBeefInvalidVersion(t *testing.T) {
-	_, _, _, err := ParseBeef([]byte{0x01, 0x00, 0x00, 0x00})
+	beef, tx, txid, err := ParseBeef([]byte{0x01, 0x00, 0x00, 0x00})
 	require.Error(t, err)
+	require.Nil(t, beef)
+	require.Nil(t, tx)
+	require.Nil(t, txid)
 }
 
 func TestNewBeefFromAtomicBytesTooShort(t *testing.T) {

@@ -168,21 +168,21 @@ func TestIsValidURL(t *testing.T) {
 func TestGetURLForHash_InvalidInputs(t *testing.T) {
 	// Test with invalid hash length
 	_, err := GetURLForHash([]byte{1, 2, 3}) // Too short
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestGetHashFromURL_InvalidInputs(t *testing.T) {
 	// Test with completely invalid input
 	_, err := GetHashFromURL("not-base58")
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// Modify a valid URL to invalidate the checksum
 	invalidURL := tsTestURL[:len(tsTestURL)-1] + "X"
 	_, err = GetHashFromURL(invalidURL)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// TS SDK test: known bad checksum URL
 	badChecksumURL := "XUU7cTfy6fA6q2neLDmzPqJnGB6o18PXKoGaWLPrH1SeWLKgdCKq"
 	_, err = GetHashFromURL(badChecksumURL)
-	assert.Error(t, err)
+	require.Error(t, err)
 }

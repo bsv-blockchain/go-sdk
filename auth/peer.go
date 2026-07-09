@@ -137,7 +137,6 @@ func (p *Peer) Start() error {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to register message handler with transport: %w", err)
 	}
@@ -268,7 +267,6 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 		},
 		Data: message,
 	}, "auth-peer")
-
 	if err != nil {
 		return fmt.Errorf("failed to sign message: %w", err)
 	}
@@ -637,7 +635,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		utilsRequestedCerts.CertificateTypes = certTypes
 
 		// Call ValidateCertificates with proper types
-		err := ValidateCertificates(
+		err = ValidateCertificates(
 			ctx,
 			p.wallet,
 			utilsMessage,
@@ -658,9 +656,9 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 		p.callbacksMu.RUnlock()
 
 		for _, callback := range callbacks {
-			err := callback(ctx, senderPublicKey, message.Certificates)
-			if err != nil {
-				return NewAuthError("certificate received callback error", err)
+			callbackErr := callback(ctx, senderPublicKey, message.Certificates)
+			if callbackErr != nil {
+				return NewAuthError("certificate received callback error", callbackErr)
 			}
 		}
 	} else {
@@ -675,10 +673,10 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 	for id, callback := range p.getInitialResponseCallbacks() {
 		if callback.SessionNonce == session.SessionNonce {
 			// Call the initial response callback with the peer's nonce
-			err := callback.Callback(session.SessionNonce)
+			callbackErr := callback.Callback(session.SessionNonce)
 			p.StopListeningForInitialResponse(id)
-			if err != nil {
-				return NewAuthError("initial response received callback error", err)
+			if callbackErr != nil {
+				return NewAuthError("initial response received callback error", callbackErr)
 			}
 		}
 	}
@@ -757,7 +755,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	p.sessionManager.UpdateSession(session)
 
 	// Convert json of requested certificates to bytes for verification
-	certRequestData, err := json.Marshal(message.RequestedCertificates)
+	certRequestData, err := json.Marshal(message.RequestedCertificates) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
@@ -1029,7 +1027,7 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 	}
 
 	// Marshal the certificate requirements to match TypeScript
-	certRequestData, err := json.Marshal(certificateRequirements)
+	certRequestData, err := json.Marshal(certificateRequirements) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
@@ -1051,7 +1049,6 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 		// Sign the certificate request data, as in TypeScript
 		Data: certRequestData,
 	}, "")
-
 	if err != nil {
 		return fmt.Errorf("failed to sign certificate request: %w", err)
 	}
@@ -1132,7 +1129,6 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 		},
 		Data: certData,
 	}, "")
-
 	if err != nil {
 		return fmt.Errorf("failed to sign certificate response: %w", err)
 	}

@@ -35,4 +35,4 @@ The true power of scripting comes from the combination of opcodes to form comple
 Opcodes also implement various cryptographic primitives such as digital signatures and hashing. These primitives are essential for maintaining the security and integrity of transactions on the blockchain. For instance, the `OP_CHECKSIG` opcode is crucial for verifying that a transaction is authorized by the holder of the private keys associated with the coins being spent.
 
 ## Conclusion
-By understanding the functionality of opcodes within the Bitcoin scripting language, users and developers can appreciate the flexibility and security that Bitcoin scripts provide. 
+By understanding the functionality of opcodes within the Bitcoin scripting language, users and developers can appreciate the flexibility and security that Bitcoin scripts provide.

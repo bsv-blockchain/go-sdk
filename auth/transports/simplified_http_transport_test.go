@@ -7,13 +7,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/authpayload"
 	"github.com/bsv-blockchain/go-sdk/auth/brc104"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewSimplifiedHTTPTransport(t *testing.T) {
@@ -22,7 +23,7 @@ func TestNewSimplifiedHTTPTransport(t *testing.T) {
 		BaseURL: "http://example.com",
 	})
 
-	assert.NoError(t, err, "Expected no error")
+	require.NoError(t, err, "Expected no error")
 	require.NotNil(t, transport, "Expected transport to be created")
 	assert.Equal(t, "http://example.com", transport.baseUrl, "Expected URL to be 'http://example.com'")
 
@@ -60,7 +61,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err, "Failed to read request body")
-		assert.Equal(t, `{"foo":"bar"}`, string(body), "Expected body '{\"foo\":\"bar\"}'")
+		assert.JSONEq(t, `{"foo":"bar"}`, string(body), "Expected body '{\"foo\":\"bar\"}'")
 
 		receivedRequest = r
 
@@ -99,10 +100,10 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 			t.Errorf("Expected response message type 'general', got '%s'", msg.MessageType)
 		}
 
-		reqIDFromResponse, res, err := authpayload.ToSimplifiedHttpResponse(msg.Payload)
-		assert.NoError(t, err, "Payload should be deserializable to response")
+		reqIDFromResponse, res, responseErr := authpayload.ToSimplifiedHttpResponse(msg.Payload)
+		require.NoError(t, responseErr, "Payload should be deserializable to response")
 
-		assert.EqualValuesf(t, requestID, reqIDFromResponse, "Request ID from response should match this from request")
+		assert.Equalf(t, requestID, reqIDFromResponse, "Request ID from response should match this from request")
 
 		assert.Equal(t, http.StatusOK, res.StatusCode, "Expected status code 200")
 
@@ -117,7 +118,7 @@ func TestSimplifiedHTTPTransportSend(t *testing.T) {
 
 	// Send the message
 	err = transport.Send(context.Background(), testMessage)
-	assert.NoError(t, err, "Failed to send message")
+	require.NoError(t, err, "Failed to send message")
 
 	// Verify the proxied HTTP request was received
 	if receivedRequest == nil {
@@ -142,7 +143,7 @@ func TestSimplifiedHTTPTransportOnData(t *testing.T) {
 		return nil
 	})
 
-	assert.NoError(t, err, "Failed to register callback")
+	require.NoError(t, err, "Failed to register callback")
 
 	// Test notifying handlers
 	testMessage := &auth.AuthMessage{
@@ -182,7 +183,7 @@ func TestSimplifiedHTTPTransportSendWithNoHandler(t *testing.T) {
 
 	// Send without registering a handler should fail
 	err = transport.Send(t.Context(), testMessage)
-	assert.ErrorIs(t, err, ErrNoHandlerRegistered, "Send should return ErrNoHandlerRegistered when no handler is registered")
+	require.ErrorIs(t, err, ErrNoHandlerRegistered, "Send should return ErrNoHandlerRegistered when no handler is registered")
 
 	// Now register a handler
 	err = transport.OnData(func(ctx context.Context, message *auth.AuthMessage) error {

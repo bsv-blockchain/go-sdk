@@ -67,7 +67,6 @@ func SignCertificateForTest(ctx context.Context, cert wallet.Certificate, signer
 	}
 
 	return SignCertificateWithWalletForTest(ctx, cert, signerWallet)
-
 }
 
 // SignCertificateWithWalletForTest properly signs a certificate for test purposes

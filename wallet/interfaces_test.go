@@ -3,18 +3,19 @@ package wallet_test
 import (
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // ---- CertificateType helpers ----
 
 func TestCertificateTypeFromString(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantErr   bool
+		name        string
+		input       string
+		wantErr     bool
 		errContains string
 	}{
 		{"valid short", "test", false, ""},
@@ -53,7 +54,7 @@ func TestCertificateTypeFromBase64Invalid(t *testing.T) {
 func TestCertificateTypeBytes(t *testing.T) {
 	ct, _ := wallet.CertificateTypeFromString("hello")
 	b := ct.Bytes()
-	assert.Equal(t, 32, len(b))
+	assert.Len(t, b, 32)
 	assert.Equal(t, byte('h'), b[0])
 }
 

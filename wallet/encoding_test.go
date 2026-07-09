@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // ---- BytesList ----
@@ -73,16 +74,17 @@ func TestBytes32Base64MarshalJSON(t *testing.T) {
 	require.NoError(t, err)
 	decoded, err := base64.StdEncoding.DecodeString(str)
 	require.NoError(t, err)
-	assert.Equal(t, 32, len(decoded))
+	assert.Len(t, decoded, 32)
 }
 
 func TestBytes32Base64UnmarshalJSON(t *testing.T) {
 	var src wallet.Bytes32Base64
 	copy(src[:], []byte("abcdefghijklmnop"))
-	data, _ := json.Marshal(src)
+	data, err := json.Marshal(src)
+	require.NoError(t, err)
 
 	var dst wallet.Bytes32Base64
-	err := json.Unmarshal(data, &dst)
+	err = json.Unmarshal(data, &dst)
 	require.NoError(t, err)
 	assert.Equal(t, src, dst)
 }
@@ -91,10 +93,11 @@ func TestBytes32Base64UnmarshalWrongLength(t *testing.T) {
 	// 16 bytes encoded - should fail
 	b16 := make([]byte, 16)
 	encoded := base64.StdEncoding.EncodeToString(b16)
-	jsonStr, _ := json.Marshal(encoded)
+	jsonStr, err := json.Marshal(encoded)
+	require.NoError(t, err)
 
 	var dst wallet.Bytes32Base64
-	err := json.Unmarshal(jsonStr, &dst)
+	err = json.Unmarshal(jsonStr, &dst)
 	assert.Error(t, err)
 }
 
@@ -110,7 +113,7 @@ func TestBytes33HexMarshalJSON(t *testing.T) {
 	var str string
 	err = json.Unmarshal(data, &str)
 	require.NoError(t, err)
-	assert.Equal(t, 66, len(str)) // 33 bytes = 66 hex chars
+	assert.Len(t, str, 66) // 33 bytes = 66 hex chars
 }
 
 func TestBytes33HexUnmarshalJSON(t *testing.T) {
@@ -118,10 +121,11 @@ func TestBytes33HexUnmarshalJSON(t *testing.T) {
 	for i := range src {
 		src[i] = byte(i + 1)
 	}
-	data, _ := json.Marshal(src)
+	data, err := json.Marshal(src)
+	require.NoError(t, err)
 
 	var dst wallet.Bytes33Hex
-	err := json.Unmarshal(data, &dst)
+	err = json.Unmarshal(data, &dst)
 	require.NoError(t, err)
 	assert.Equal(t, src, dst)
 }
@@ -134,10 +138,11 @@ func TestBytes33HexUnmarshalWrongLength(t *testing.T) {
 		hexStr[i*2] = "0123456789abcdef"[b32[i]>>4]
 		hexStr[i*2+1] = "0123456789abcdef"[b32[i]&0xf]
 	}
-	jsonStr, _ := json.Marshal(string(hexStr))
+	jsonStr, err := json.Marshal(string(hexStr))
+	require.NoError(t, err)
 
 	var dst wallet.Bytes33Hex
-	err := json.Unmarshal(jsonStr, &dst)
+	err = json.Unmarshal(jsonStr, &dst)
 	assert.Error(t, err)
 }
 

@@ -25,9 +25,9 @@ func SerializeListOutputsArgs(args *wallet.ListOutputsArgs) ([]byte, error) {
 	w.WriteStringSlice(args.Tags)
 	switch args.TagQueryMode {
 	case wallet.QueryModeAll:
-		w.WriteByte(tagQueryModeAllCode)
+		w.WriteByteValue(tagQueryModeAllCode)
 	case wallet.QueryModeAny:
-		w.WriteByte(tagQueryModeAnyCode)
+		w.WriteByteValue(tagQueryModeAnyCode)
 	default:
 		w.WriteNegativeOneByte()
 	}
@@ -35,9 +35,9 @@ func SerializeListOutputsArgs(args *wallet.ListOutputsArgs) ([]byte, error) {
 	// Include options
 	switch args.Include {
 	case wallet.OutputIncludeLockingScripts:
-		w.WriteByte(outputIncludeLockingScriptsCode)
+		w.WriteByteValue(outputIncludeLockingScriptsCode)
 	case wallet.OutputIncludeEntireTransactions:
-		w.WriteByte(outputIncludeEntireTransactionsCode)
+		w.WriteByteValue(outputIncludeEntireTransactionsCode)
 	default:
 		w.WriteNegativeOneByte()
 	}
@@ -64,14 +64,14 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 		return nil, fmt.Errorf("error reading basket/tags: %w", r.Err)
 	}
 
-	switch r.ReadByte() {
+	switch r.ReadByteValue() {
 	case tagQueryModeAllCode:
 		args.TagQueryMode = wallet.QueryModeAll
 	case tagQueryModeAnyCode:
 		args.TagQueryMode = wallet.QueryModeAny
 	}
 
-	switch r.ReadByte() {
+	switch r.ReadByteValue() {
 	case outputIncludeLockingScriptsCode:
 		args.Include = wallet.OutputIncludeLockingScripts
 	case outputIncludeEntireTransactionsCode:
@@ -96,7 +96,7 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 func SerializeListOutputsResult(result *wallet.ListOutputsResult) ([]byte, error) {
 	w := util.NewWriter()
 
-	if uint32(len(result.Outputs)) != result.TotalOutputs {
+	if uint32(len(result.Outputs)) != result.TotalOutputs { //nolint:gosec // G115 -- value is bounded by domain constraints
 		return nil, fmt.Errorf("total outputs %d does not match actual outputs %d", result.TotalOutputs, len(result.Outputs))
 	}
 
@@ -136,7 +136,7 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 	// Optional BEEF
 	beefLen := r.ReadVarInt()
 	if !util.IsNegativeOne(beefLen) {
-		result.BEEF = r.ReadBytes(int(beefLen))
+		result.BEEF = r.ReadBytes(int(beefLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 	}
 
 	// Outputs
@@ -150,7 +150,7 @@ func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error
 		lockScriptByteLen := r.ReadVarInt()
 		var lockingScript []byte
 		if !util.IsNegativeOne(lockScriptByteLen) {
-			lockingScript = r.ReadBytes(int(lockScriptByteLen))
+			lockingScript = r.ReadBytes(int(lockScriptByteLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 		}
 		output := wallet.Output{
 			Outpoint:           *outpoint,

@@ -8,8 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/auth"
 	"golang.org/x/net/websocket"
+
+	"github.com/bsv-blockchain/go-sdk/auth"
 )
 
 // WebSocketTransport implements the Transport interface for WebSocket communication

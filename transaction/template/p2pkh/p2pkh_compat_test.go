@@ -4,11 +4,12 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/stretchr/testify/require"
 )
 
 // TestP2PKHCompatibilityWithTypeScript tests compatibility with TypeScript SDK implementation

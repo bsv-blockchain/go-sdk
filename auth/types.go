@@ -143,18 +143,19 @@ func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 		formattedCerts = append(formattedCerts, &certCopy)
 	}
 
-	return json.Marshal(&struct {
+	return json.Marshal(&struct { //nolint:musttag // embedded Alias promotes utils.RequestedCertificateSet, which is defined in auth/utils and not owned by this package
+		*Alias
+
 		IdentityKey  string                                `json:"identityKey"`
 		Certificates []*certificates.VerifiableCertificate `json:"certificates,omitempty"`
 		Payload      wallet.BytesList                      `json:"payload,omitempty"`
 		Signature    wallet.BytesList                      `json:"signature,omitempty"`
-		*Alias
 	}{
+		Alias:        (*Alias)(m),
 		IdentityKey:  m.IdentityKey.ToDERHex(),
 		Certificates: formattedCerts,
 		Payload:      m.Payload,
 		Signature:    m.Signature,
-		Alias:        (*Alias)(m),
 	})
 }
 
@@ -164,15 +165,16 @@ func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 	type Alias AuthMessage
 
 	aux := &struct {
+		*Alias
+
 		IdentityKey string           `json:"identityKey"`
 		Payload     wallet.BytesList `json:"payload,omitempty"`
 		Signature   wallet.BytesList `json:"signature,omitempty"`
-		*Alias
 	}{
 		Alias: (*Alias)(m),
 	}
 
-	if err := json.Unmarshal(data, &aux); err != nil {
+	if err := json.Unmarshal(data, &aux); err != nil { //nolint:musttag // embedded Alias promotes utils.RequestedCertificateSet, which is defined in auth/utils and not owned by this package
 		return fmt.Errorf("error unmarshaling AuthMessage: %w", err)
 	}
 

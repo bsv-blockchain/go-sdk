@@ -165,4 +165,4 @@ This process creates an on-chain record of the revealed attributes while maintai
 ## Further Reading
 
 - [Identity Client Example](../examples/identity_client/README.md) - Complete working example
-- [API Documentation](../../identity/README.md) - Full API reference 
+- [API Documentation](../../identity/README.md) - Full API reference

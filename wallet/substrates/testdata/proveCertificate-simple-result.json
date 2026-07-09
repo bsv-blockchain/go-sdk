@@ -1,8 +1,8 @@
 {
-  "json": {
-    "keyringForVerifier": {
-      "name": "bmFtZS1rZXk="
-    }
-  },
-  "wire": "0001046e616d65086e616d652d6b6579"
+    "json": {
+        "keyringForVerifier": {
+            "name": "bmFtZS1rZXk="
+        }
+    },
+    "wire": "0001046e616d65086e616d652d6b6579"
 }

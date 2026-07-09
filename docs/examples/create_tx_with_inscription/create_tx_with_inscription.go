@@ -17,7 +17,7 @@ func main() {
 
 	unlocker, err := p2pkh.Unlock(priv, nil) // get public key bytes and address
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err) //nolint:forbidigo // example program output
 		return
 	}
 
@@ -33,7 +33,7 @@ func main() {
 	// Read the image file
 	data, err := os.ReadFile("1SatLogoLight.png")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err) //nolint:forbidigo // example program output
 		return
 	}
 
@@ -41,7 +41,7 @@ func main() {
 	contentType := mime.TypeByExtension(".png")
 	add, err := script.NewAddressFromPublicKey(priv.PubKey(), true)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err) //nolint:forbidigo // example program output
 		return
 	}
 	s, _ := p2pkh.Lock(add)
@@ -67,5 +67,5 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Println(tx.String())
+	fmt.Println(tx.String()) //nolint:forbidigo // example program output
 }

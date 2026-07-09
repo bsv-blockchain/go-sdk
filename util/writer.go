@@ -4,9 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"math"
 	"sort"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 // Writer is a helper for building binary messages
@@ -18,8 +19,7 @@ func NewWriter() *Writer {
 	return &Writer{}
 }
 
-//nolint:govet // suppress WriteByte signature mismatch
-func (w *Writer) WriteByte(b byte) {
+func (w *Writer) WriteByteValue(b byte) {
 	w.Buf = append(w.Buf, b)
 }
 
@@ -29,7 +29,7 @@ func (w *Writer) WriteBytes(b []byte) {
 
 func (w *Writer) WriteBytesReverse(b []byte) {
 	// Reverse the byte slice before appending
-	var newBytes = make([]byte, len(b))
+	newBytes := make([]byte, len(b))
 	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
 		newBytes[i], newBytes[j] = b[j], b[i]
 	}
@@ -71,7 +71,7 @@ func (w *Writer) WriteNegativeOne() {
 }
 
 func (w *Writer) WriteNegativeOneByte() {
-	w.WriteByte(NegativeOneByte)
+	w.WriteByteValue(NegativeOneByte)
 }
 
 func IsNegativeOne(val uint64) bool {
@@ -181,9 +181,9 @@ func (w *Writer) WriteOptionalBytes(b []byte, options ...BytesOption) {
 	hasData := len(b) > 0
 	if withFlag {
 		if hasData {
-			w.WriteByte(1)
+			w.WriteByteValue(1)
 		} else {
-			w.WriteByte(0)
+			w.WriteByteValue(0)
 			return
 		}
 	}
@@ -223,9 +223,9 @@ func (w *Writer) WriteStringSlice(slice []string) {
 func (w *Writer) WriteOptionalBool(b *bool) {
 	if b != nil {
 		if *b {
-			w.WriteByte(1)
+			w.WriteByteValue(1)
 		} else {
-			w.WriteByte(0)
+			w.WriteByteValue(0)
 		}
 	} else {
 		w.WriteNegativeOneByte()

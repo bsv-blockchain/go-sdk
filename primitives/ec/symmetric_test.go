@@ -42,7 +42,7 @@ func TestSymmetricKeyDecryption(t *testing.T) {
 
 	require.True(t, ok, "Could not determine the directory of the current test file")
 
-	vectors, err := os.ReadFile(testdataPath)
+	vectors, err := os.ReadFile(testdataPath) //nolint:gosec // G304 -- test reads a fixed local testdata file
 	if err != nil {
 		t.Fatalf("Error reading test vectors: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestSymmetricKeyWith31ByteKeyEncryption(t *testing.T) {
 	keyBytes := pubKey.X.Bytes()
 
 	// Verify this is indeed a 31-byte key
-	require.Equal(t, 31, len(keyBytes), "Expected 31-byte key")
+	require.Len(t, keyBytes, 31, "Expected 31-byte key")
 
 	symmetricKey := NewSymmetricKey(keyBytes)
 	plaintext := []byte("test message")
@@ -108,7 +108,7 @@ func TestSymmetricKeyWith32ByteKeyEncryption(t *testing.T) {
 	keyBytes := pubKey.X.Bytes()
 
 	// Verify this is indeed a 32-byte key
-	require.Equal(t, 32, len(keyBytes), "Expected 32-byte key")
+	require.Len(t, keyBytes, 32, "Expected 32-byte key")
 
 	symmetricKey := NewSymmetricKey(keyBytes)
 	plaintext := []byte("test message")

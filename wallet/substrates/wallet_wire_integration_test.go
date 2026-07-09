@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/serializer"
-	"github.com/stretchr/testify/require"
 )
 
 func createTestWalletWire(wallet wallet.Interface) *WalletWireTransceiver {
@@ -28,7 +29,7 @@ func TestCreateAction(t *testing.T) {
 		lockScript, err := hex.DecodeString("76a9143cf53c49c322d9d811728182939aee2dca087f9888ac")
 		require.NoError(t, err, "decoding locking script should not error")
 
-		var expectedCreateActionArgs = wallet.CreateActionArgs{
+		expectedCreateActionArgs := wallet.CreateActionArgs{
 			Description: "Test action description",
 			Outputs: []wallet.CreateActionOutput{{
 				LockingScript:      lockScript,
@@ -43,7 +44,7 @@ func TestCreateAction(t *testing.T) {
 
 		const originator = "test originator"
 
-		var expectedResult = &wallet.CreateActionResult{
+		expectedResult := &wallet.CreateActionResult{
 			Txid: txID,
 			Tx:   []byte{1, 2, 3, 4},
 		}
@@ -72,11 +73,11 @@ func TestCreateAction(t *testing.T) {
 
 	t.Run("should create an action with minimal inputs (only description)", func(t *testing.T) {
 		// Expected arguments and return value
-		var expectedCreateActionArgs = wallet.CreateActionArgs{
+		expectedCreateActionArgs := wallet.CreateActionArgs{
 			Description: "Minimal action description",
 		}
 
-		var expectedResult = &wallet.CreateActionResult{
+		expectedResult := &wallet.CreateActionResult{
 			Txid: txID,
 		}
 
@@ -103,12 +104,12 @@ func TestCreateAction(t *testing.T) {
 func TestTsCompatibility(t *testing.T) {
 	const createActionFrame = "0100175465737420616374696f6e206465736372697074696f6effffffffffffffffffffffffffffffffffff010100fde8031754657374206f7574707574206465736372697074696f6effffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00"
 	frame, err := hex.DecodeString(createActionFrame)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	request, err := serializer.ReadRequestFrame(frame)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, uint8(CallCreateAction), request.Call)
 	createActionArgs, err := serializer.DeserializeCreateActionArgs(request.Params)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, wallet.CreateActionArgs{
 		Description: "Test action description",
 		Outputs: []wallet.CreateActionOutput{{

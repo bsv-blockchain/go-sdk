@@ -13,7 +13,7 @@ func main() {
 	ctx := context.Background()
 
 	// --- 1. Setup Wallet ---
-	fmt.Println("--- 1. Setting up Wallet ---")
+	fmt.Println("--- 1. Setting up Wallet ---") //nolint:forbidigo // example program output
 	privateKey, err := ec.NewPrivateKey()
 	if err != nil {
 		log.Fatalf("Failed to create private key: %v", err)
@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create wallet: %v", err)
 	}
-	fmt.Println("Wallet created.")
+	fmt.Println("Wallet created.") //nolint:forbidigo // example program output
 
 	// Define ProtocolID and KeyID for HMAC operations
 	// Protocol names must contain only letters, numbers, and spaces, and be >= 5 chars.
@@ -31,10 +31,10 @@ func main() {
 	hmacKeyID := "my hmac key v1"
 
 	message := []byte("This is the data to be authenticated with HMAC.")
-	fmt.Printf("Original Message: %s\n", string(message))
+	fmt.Printf("Original Message: %s\n", string(message)) //nolint:forbidigo // example program output
 
 	// --- 2. Create HMAC (for Self) ---
-	fmt.Println("\n--- 2. Creating HMAC for the message (for self) ---")
+	fmt.Println("\n--- 2. Creating HMAC for the message (for self) ---") //nolint:forbidigo // example program output
 	createHmacArgs := wallet.CreateHMACArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: hmacProtocolID,
@@ -50,10 +50,10 @@ func main() {
 		log.Fatalf("Failed to create HMAC: %v", err)
 	}
 	hmacBytes := createHmacResult.HMAC
-	fmt.Printf("HMAC created: %x\n", hmacBytes)
+	fmt.Printf("HMAC created: %x\n", hmacBytes) //nolint:forbidigo // example program output
 
 	// --- 3. Verify HMAC (by Self) ---
-	fmt.Println("\n--- 3. Verifying the HMAC (by self) ---")
+	fmt.Println("\n--- 3. Verifying the HMAC (by self) ---") //nolint:forbidigo // example program output
 	verifyHmacArgs := wallet.VerifyHMACArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: hmacProtocolID, // Must match creation
@@ -71,29 +71,29 @@ func main() {
 		log.Fatalf("Error during HMAC verification call: %v", err)
 	}
 	if verifyHmacResult.Valid {
-		fmt.Println("HMAC VERIFIED successfully!")
+		fmt.Println("HMAC VERIFIED successfully!") //nolint:forbidigo // example program output
 	} else {
 		// This would be an unexpected failure for a valid HMAC
 		log.Fatalf("HMAC verification FAILED (but should have succeeded).")
 	}
 
 	// --- 4. Verification Failure with Tampered Data ---
-	fmt.Println("\n--- 4. Verifying with tampered data (expected failure) ---")
-	tamperedDataArgs := verifyHmacArgs // Copy previous args
+	fmt.Println("\n--- 4. Verifying with tampered data (expected failure) ---") //nolint:forbidigo // example program output
+	tamperedDataArgs := verifyHmacArgs                                          // Copy previous args
 	tamperedDataArgs.Data = wallet.BytesList([]byte("This is tampered data!"))
 	tamperedDataVerifyResult, err := myWallet.VerifyHMAC(ctx, tamperedDataArgs, "verifier_tampered_data")
 	if err != nil {
 		log.Fatalf("Error during tampered data HMAC verification call: %v", err)
 	}
 	if tamperedDataVerifyResult.Valid {
-		fmt.Println("Tampered data HMAC verification unexpectedly SUCCEEDED (Error!).")
+		fmt.Println("Tampered data HMAC verification unexpectedly SUCCEEDED (Error!).") //nolint:forbidigo // example program output
 	} else {
-		fmt.Println("Tampered data HMAC verification FAILED as expected.")
+		fmt.Println("Tampered data HMAC verification FAILED as expected.") //nolint:forbidigo // example program output
 	}
 
 	// --- 5. Verification Failure with Tampered HMAC ---
-	fmt.Println("\n--- 5. Verifying with tampered HMAC (expected failure) ---")
-	tamperedHmacArgs := verifyHmacArgs // Copy previous args
+	fmt.Println("\n--- 5. Verifying with tampered HMAC (expected failure) ---") //nolint:forbidigo // example program output
+	tamperedHmacArgs := verifyHmacArgs                                          // Copy previous args
 	// Create a slightly altered HMAC. Ensure it's different but same length if possible.
 	corruptedHmac := [32]byte{}
 	copy(corruptedHmac[:], hmacBytes[:])
@@ -104,10 +104,10 @@ func main() {
 		log.Fatalf("Error during tampered HMAC verification call: %v", err)
 	}
 	if tamperedHmacVerifyResult.Valid {
-		fmt.Println("Tampered HMAC verification unexpectedly SUCCEEDED (Error!).")
+		fmt.Println("Tampered HMAC verification unexpectedly SUCCEEDED (Error!).") //nolint:forbidigo // example program output
 	} else {
-		fmt.Println("Tampered HMAC verification FAILED as expected.")
+		fmt.Println("Tampered HMAC verification FAILED as expected.") //nolint:forbidigo // example program output
 	}
 
-	fmt.Println("\nCreate and verify HMAC example complete.")
+	fmt.Println("\nCreate and verify HMAC example complete.") //nolint:forbidigo // example program output
 }

@@ -5,13 +5,14 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
-func convertIntToBytes(int uint64) []byte {
+func convertIntToBytes(value uint64) []byte {
 	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.LittleEndian, int); err != nil {
+	if err := binary.Write(buf, binary.LittleEndian, value); err != nil {
 		return nil
 	}
 	return buf.Bytes()
@@ -20,7 +21,7 @@ func convertIntToBytes(int uint64) []byte {
 func TestDecodeVarInt(t *testing.T) {
 	t.Parallel()
 
-	var tests = []struct {
+	tests := []struct {
 		testName       string
 		input          []byte
 		expectedResult uint64
@@ -44,7 +45,7 @@ func TestDecodeVarInt(t *testing.T) {
 func TestVarIntUpperLimitInc(t *testing.T) {
 	t.Parallel()
 
-	var tests = []struct {
+	tests := []struct {
 		testName       string
 		input          uint64
 		expectedResult int
@@ -69,7 +70,7 @@ func TestVarIntUpperLimitInc(t *testing.T) {
 func TestVarInt(t *testing.T) {
 	t.Parallel()
 
-	var varIntTests = []struct {
+	varIntTests := []struct {
 		testName    string
 		input       uint64
 		expectedLen int

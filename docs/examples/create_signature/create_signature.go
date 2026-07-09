@@ -14,7 +14,7 @@ func main() {
 	ctx := context.Background()
 
 	// --- 1. Setup Signer's Wallet ---
-	fmt.Println("--- 1. Setting up Signer's wallet ---")
+	fmt.Println("--- 1. Setting up Signer's wallet ---") //nolint:forbidigo // example program output
 	privateKey, err := ec.NewPrivateKey()
 	if err != nil {
 		log.Fatalf("Failed to create private key: %v", err)
@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create signer wallet: %v", err)
 	}
-	fmt.Println("Signer's wallet created.")
+	fmt.Println("Signer's wallet created.") //nolint:forbidigo // example program output
 
 	// Define common protocol and key ID for self-operations
 	// Protocol names must contain only letters, numbers, and spaces, and be >= 5 chars.
@@ -31,9 +31,9 @@ func main() {
 	selfKeyID := "my signing key v1" // Key IDs can have spaces, must be >= 1 char.
 
 	// --- 2. Define Data and Create Signature (for self) ---
-	fmt.Println("\n--- 2. Creating signature for a message (for self) ---")
+	fmt.Println("\n--- 2. Creating signature for a message (for self) ---") //nolint:forbidigo // example program output
 	message := []byte("This is the message to be signed by myself, for myself.")
-	fmt.Printf("Original Message: %s\n", string(message))
+	fmt.Printf("Original Message: %s\n", string(message)) //nolint:forbidigo // example program output
 
 	createSigArgs := wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -49,10 +49,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create signature for self: %v", err)
 	}
-	fmt.Printf("Signature created (%x)\n", sigResult.Signature)
+	fmt.Printf("Signature created (%x)\n", sigResult.Signature) //nolint:forbidigo // example program output
 
 	// --- 3. Verify Signature (by self) ---
-	fmt.Println("\n--- 3. Verifying the signature (by self) ---")
+	fmt.Println("\n--- 3. Verifying the signature (by self) ---") //nolint:forbidigo // example program output
 	verifyArgs := wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: selfProtocolID, // Must match signing
@@ -71,13 +71,13 @@ func main() {
 		log.Fatalf("Error during self-signature verification: %v", err)
 	}
 	if verifyResult.Valid {
-		fmt.Println("Self-signature VERIFIED successfully using wallet.VerifySignature!")
+		fmt.Println("Self-signature VERIFIED successfully using wallet.VerifySignature!") //nolint:forbidigo // example program output
 	} else {
-		fmt.Println("Self-signature verification FAILED using wallet.VerifySignature.")
+		fmt.Println("Self-signature verification FAILED using wallet.VerifySignature.") //nolint:forbidigo // example program output
 	}
 
 	// --- 4. Verification with Tampered Data (Failure Case) ---
-	fmt.Println("\n--- 4. Verifying with tampered message (by self, expected failure) ---")
+	fmt.Println("\n--- 4. Verifying with tampered message (by self, expected failure) ---") //nolint:forbidigo // example program output
 	tamperedMessage := []byte("This is NOT the message that was signed.")
 	verifyArgsTampered := verifyArgs // Copy previous args, EncryptionArgs.Counterparty is already CounterpartyTypeSelf
 	verifyArgsTampered.Data = wallet.BytesList(tamperedMessage)
@@ -85,21 +85,21 @@ func main() {
 	tamperedVerifyResult, err := signerWallet.VerifySignature(ctx, verifyArgsTampered, "verifier_tampered_self_originator")
 	if err != nil {
 		// This means the VerifySignature call itself encountered an issue (e.g., bad args, or it returns error on invalid sig)
-		fmt.Printf("Tampered message self-signature verification FAILED as expected (due to error: %v)\n", err)
+		fmt.Printf("Tampered message self-signature verification FAILED as expected (due to error: %v)\n", err) //nolint:forbidigo // example program output
 	} else {
 		// VerifySignature call succeeded without error, now check the .Valid field
 		if tamperedVerifyResult == nil {
 			// This case should ideally not happen if err is nil, but good to guard.
 			log.Fatalf("Tampered verification returned nil result and nil error, which is unexpected.")
 		} else if tamperedVerifyResult.Valid {
-			fmt.Println("Tampered message self-signature verification unexpectedly SUCCEEDED (Error!).")
+			fmt.Println("Tampered message self-signature verification unexpectedly SUCCEEDED (Error!).") //nolint:forbidigo // example program output
 		} else {
-			fmt.Println("Tampered message self-signature verification FAILED as expected (result.Valid is false).")
+			fmt.Println("Tampered message self-signature verification FAILED as expected (result.Valid is false).") //nolint:forbidigo // example program output
 		}
 	}
 
 	// --- 5. Signing a Pre-computed Hash (for self) ---
-	fmt.Println("\n--- 5. Creating signature for a pre-computed hash (for self) ---")
+	fmt.Println("\n--- 5. Creating signature for a pre-computed hash (for self) ---") //nolint:forbidigo // example program output
 	selfHashProtocolID := wallet.Protocol{Protocol: "ECDSA SelfSignHash", SecurityLevel: wallet.SecurityLevelSilent}
 	selfHashKeyID := "my signing hash key v1"
 
@@ -107,8 +107,8 @@ func main() {
 	h := sha256.New()
 	h.Write(messageToHash)
 	messageHash := h.Sum(nil)
-	fmt.Printf("Original Message for Hashing: %s\n", string(messageToHash))
-	fmt.Printf("SHA256 Hash: %x\n", messageHash)
+	fmt.Printf("Original Message for Hashing: %s\n", string(messageToHash)) //nolint:forbidigo // example program output
+	fmt.Printf("SHA256 Hash: %x\n", messageHash)                            //nolint:forbidigo // example program output
 
 	createSigForHashArgs := wallet.CreateSignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
@@ -124,10 +124,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create signature for hash (for self): %v", err)
 	}
-	fmt.Printf("Signature for hash created (%x)\n", sigFromHashResult.Signature)
+	fmt.Printf("Signature for hash created (%x)\n", sigFromHashResult.Signature) //nolint:forbidigo // example program output
 
 	// --- 6. Verify Signature of Pre-computed Hash (by self) ---
-	fmt.Println("\n--- 6. Verifying signature of pre-computed hash (by self) ---")
+	fmt.Println("\n--- 6. Verifying signature of pre-computed hash (by self) ---") //nolint:forbidigo // example program output
 	verifyHashArgs := wallet.VerifySignatureArgs{
 		EncryptionArgs: wallet.EncryptionArgs{
 			ProtocolID: selfHashProtocolID, // Must match hash signing
@@ -146,10 +146,10 @@ func main() {
 		log.Fatalf("Error during self-signature (hash) verification: %v", err)
 	}
 	if verifyHashResult.Valid {
-		fmt.Println("Self-signature (hash) VERIFIED successfully using wallet.VerifySignature!")
+		fmt.Println("Self-signature (hash) VERIFIED successfully using wallet.VerifySignature!") //nolint:forbidigo // example program output
 	} else {
-		fmt.Println("Self-signature (hash) verification FAILED using wallet.VerifySignature.")
+		fmt.Println("Self-signature (hash) verification FAILED using wallet.VerifySignature.") //nolint:forbidigo // example program output
 	}
 
-	fmt.Println("\nCreate and verify signature example complete.")
+	fmt.Println("\nCreate and verify signature example complete.") //nolint:forbidigo // example program output
 }

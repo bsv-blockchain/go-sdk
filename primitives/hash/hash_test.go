@@ -9,13 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testData = "I am a test"
-const testData2 = "this is the data I want to hash"
+const (
+	testData  = "I am a test"
+	testData2 = "this is the data I want to hash"
+)
 
 func TestHashFunctions(t *testing.T) {
 	t.Parallel()
 
-	var hashTests = []struct {
+	hashTests := []struct {
 		testName string
 		input    string
 		expected string
@@ -85,7 +87,6 @@ func TestHashFunctions(t *testing.T) {
 
 	for _, hashTest := range hashTests {
 		t.Run(hashTest.testName, func(t *testing.T) {
-
 			// Decode input string to byte
 			expectedBytes, err := hex.DecodeString(hashTest.expected)
 			require.NoError(t, err)

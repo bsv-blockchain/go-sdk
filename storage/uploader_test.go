@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // setupMockWalletForAuth creates a mock wallet with the required methods for auth operations
@@ -44,7 +45,7 @@ func TestNewUploader(t *testing.T) {
 	}
 
 	uploader, err = NewUploader(config)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, uploader)
 	assert.Contains(t, err.Error(), "storage URL is required")
 
@@ -55,7 +56,7 @@ func TestNewUploader(t *testing.T) {
 	}
 
 	uploader, err = NewUploader(config)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, uploader)
 	assert.Contains(t, err.Error(), "wallet is required")
 }
@@ -80,7 +81,7 @@ func TestStorageUploader_PublishFile(t *testing.T) {
 	// This will fail due to network error since we're not connecting to a real server
 	// But we can verify the uploader is properly configured
 	_, err = uploader.PublishFile(context.Background(), testFile, 60)
-	assert.Error(t, err) // Expected to fail due to network/auth issues
+	require.Error(t, err) // Expected to fail due to network/auth issues
 
 	// The error should be related to network/auth, not configuration
 	assert.NotContains(t, err.Error(), "storage URL is required")
@@ -99,7 +100,7 @@ func TestStorageUploader_FindFile(t *testing.T) {
 	// This will fail due to network error since we're not connecting to a real server
 	// But we can verify the uploader is properly configured
 	_, err = uploader.FindFile(context.Background(), "uhrp://test123")
-	assert.Error(t, err) // Expected to fail due to network/auth issues
+	require.Error(t, err) // Expected to fail due to network/auth issues
 
 	// The error should be related to network/auth, not configuration
 	assert.NotContains(t, err.Error(), "storage URL is required")
@@ -145,7 +146,7 @@ func TestStorageUploader_ListUploads(t *testing.T) {
 	// This will fail due to network error since we're not connecting to a real server
 	// But we can verify the uploader is properly configured
 	_, err = uploader.ListUploads(context.Background())
-	assert.Error(t, err) // Expected to fail due to network/auth issues
+	require.Error(t, err) // Expected to fail due to network/auth issues
 
 	// The error should be related to network/auth, not configuration
 	assert.NotContains(t, err.Error(), "storage URL is required")
@@ -163,7 +164,7 @@ func TestStorageUploader_RenewFile(t *testing.T) {
 	// This will fail due to network error since we're not connecting to a real server
 	// But we can verify the uploader is properly configured
 	_, err = uploader.RenewFile(context.Background(), "uhrp://test123", 60)
-	assert.Error(t, err) // Expected to fail due to network/auth issues
+	require.Error(t, err) // Expected to fail due to network/auth issues
 
 	// The error should be related to network/auth, not configuration
 	assert.NotContains(t, err.Error(), "storage URL is required")

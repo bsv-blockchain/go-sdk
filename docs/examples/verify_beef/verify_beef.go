@@ -19,5 +19,5 @@ func main() {
 	// This ensures the BEEF structure is legitimate
 	ctx := context.Background()
 	verified, _ := tx.MerklePath.Verify(ctx, tx.TxID(), &spv.GullibleHeadersClient{})
-	println(verified)
+	println(verified) //nolint:forbidigo // example program output
 }

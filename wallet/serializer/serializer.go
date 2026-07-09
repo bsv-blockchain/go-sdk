@@ -8,6 +8,7 @@ package serializer
 import (
 	"errors"
 	"fmt"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -27,7 +28,7 @@ func encodeOutpoint(outpoint *transaction.Outpoint) []byte {
 type Outpoint string
 
 // encodeOutpoints serializes a slice of outpoints
-func encodeOutpoints(outpoints []transaction.Outpoint) ([]byte, error) {
+func encodeOutpoints(outpoints []transaction.Outpoint) ([]byte, error) { //nolint:unparam // result 1 (error) is always nil here, but call sites outside this file rely on the error-returning signature
 	if outpoints == nil {
 		return nil, nil
 	}
@@ -71,7 +72,7 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 		}
 		outpoints = append(outpoints, transaction.Outpoint{
 			Txid:  *tx,
-			Index: uint32(outputIndex),
+			Index: uint32(outputIndex), //nolint:gosec // G115 -- output index is bounded well within uint32 range
 		})
 	}
 	return outpoints, nil
@@ -91,7 +92,7 @@ func decodeOutpoint(reader *util.Reader) (*transaction.Outpoint, error) {
 	// Create revocation outpoint
 	return &transaction.Outpoint{
 		Txid:  chainhash.Hash(txidBytes),
-		Index: uint32(outputIndex),
+		Index: uint32(outputIndex), //nolint:gosec // G115 -- output index is bounded well within uint32 range
 	}, nil
 }
 
@@ -105,11 +106,11 @@ const (
 func encodeCounterparty(w *util.Writer, counterparty wallet.Counterparty) error {
 	switch counterparty.Type {
 	case wallet.CounterpartyUninitialized:
-		w.WriteByte(counterPartyTypeUninitializedCode)
+		w.WriteByteValue(counterPartyTypeUninitializedCode)
 	case wallet.CounterpartyTypeSelf:
-		w.WriteByte(counterPartyTypeSelfCode)
+		w.WriteByteValue(counterPartyTypeSelfCode)
 	case wallet.CounterpartyTypeAnyone:
-		w.WriteByte(counterPartyTypeAnyoneCode)
+		w.WriteByteValue(counterPartyTypeAnyoneCode)
 	case wallet.CounterpartyTypeOther:
 		if counterparty.Counterparty == nil {
 			return errors.New("counterparty is nil for type other")
@@ -124,7 +125,7 @@ func encodeCounterparty(w *util.Writer, counterparty wallet.Counterparty) error 
 // decodeCounterparty reads counterparty in the same format as TypeScript version
 func decodeCounterparty(r *util.ReaderHoldError) (wallet.Counterparty, error) {
 	counterparty := wallet.Counterparty{}
-	counterpartyFlag := r.ReadByte()
+	counterpartyFlag := r.ReadByteValue()
 	switch counterpartyFlag {
 	case counterPartyTypeUninitializedCode:
 		counterparty.Type = wallet.CounterpartyUninitialized
@@ -155,7 +156,7 @@ type KeyRelatedParams struct {
 // encodeProtocol serializes a Protocol to bytes matching the TypeScript format
 func encodeProtocol(protocol wallet.Protocol) []byte {
 	w := util.NewWriter()
-	w.WriteByte(byte(protocol.SecurityLevel))
+	w.WriteByteValue(byte(protocol.SecurityLevel)) //nolint:gosec // G115 -- value is bounded by domain constraints
 	w.WriteString(protocol.Protocol)
 	return w.Buf
 }
@@ -163,7 +164,7 @@ func encodeProtocol(protocol wallet.Protocol) []byte {
 // decodeProtocol deserializes Protocol from bytes matching the TypeScript format
 func decodeProtocol(r *util.ReaderHoldError) (wallet.Protocol, error) {
 	protocol := wallet.Protocol{
-		SecurityLevel: wallet.SecurityLevel(r.ReadByte()),
+		SecurityLevel: wallet.SecurityLevel(r.ReadByteValue()),
 		Protocol:      r.ReadString(),
 	}
 	if r.Err != nil {
@@ -194,7 +195,7 @@ func decodePrivilegedParams(r *util.ReaderHoldError) (*bool, string) {
 	privileged := r.ReadOptionalBool()
 
 	// Read privileged reason
-	b := r.ReadByte()
+	b := r.ReadByteValue()
 	// Technically if string length > MaxInt32 it will prefix with 0xFF which will get interpreted as NegativeOneByte
 	// Since that would be an extremely long string (4 billion characters), this should be safe
 	if b == util.NegativeOneByte {

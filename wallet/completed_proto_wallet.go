@@ -10,7 +10,8 @@ import (
 // Similar to the TypeScript implementation that extends ProtoWallet and implements WalletInterface
 type CompletedProtoWallet struct {
 	*ProtoWallet // Embed ProtoWallet (like extends in TypeScript)
-	keyDeriver   *KeyDeriver
+
+	keyDeriver *KeyDeriver
 }
 
 // NewCompletedProtoWallet creates a new CompletedProtoWallet from a private key
@@ -33,7 +34,7 @@ func (c *CompletedProtoWallet) CreateAction(ctx context.Context, args CreateActi
 }
 
 func (c *CompletedProtoWallet) AbortAction(ctx context.Context, args AbortActionArgs, originator string) (*AbortActionResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 // ListCertificates lists certificates
@@ -50,7 +51,7 @@ func (c *CompletedProtoWallet) ProveCertificate(ctx context.Context, args ProveC
 }
 
 func (c *CompletedProtoWallet) AcquireCertificate(ctx context.Context, args AcquireCertificateArgs, originator string) (*Certificate, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 // IsAuthenticated checks if the wallet is authenticated
@@ -82,23 +83,23 @@ func (c *CompletedProtoWallet) GetVersion(ctx context.Context, args any, origina
 }
 
 func (c *CompletedProtoWallet) SignAction(ctx context.Context, args SignActionArgs, originator string) (*SignActionResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) ListActions(ctx context.Context, args ListActionsArgs, originator string) (*ListActionsResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) InternalizeAction(ctx context.Context, args InternalizeActionArgs, originator string) (*InternalizeActionResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) ListOutputs(ctx context.Context, args ListOutputsArgs, originator string) (*ListOutputsResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) RelinquishOutput(ctx context.Context, args RelinquishOutputArgs, originator string) (*RelinquishOutputResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) RevealCounterpartyKeyLinkage(ctx context.Context, args RevealCounterpartyKeyLinkageArgs, originator string) (*RevealCounterpartyKeyLinkageResult, error) {
@@ -110,23 +111,23 @@ func (c *CompletedProtoWallet) RevealSpecificKeyLinkage(ctx context.Context, arg
 }
 
 func (c *CompletedProtoWallet) RelinquishCertificate(ctx context.Context, args RelinquishCertificateArgs, originator string) (*RelinquishCertificateResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) DiscoverByIdentityKey(ctx context.Context, args DiscoverByIdentityKeyArgs, originator string) (*DiscoverCertificatesResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) DiscoverByAttributes(ctx context.Context, args DiscoverByAttributesArgs, originator string) (*DiscoverCertificatesResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) WaitForAuthentication(ctx context.Context, args any, originator string) (*AuthenticatedResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 func (c *CompletedProtoWallet) GetHeaderForHeight(ctx context.Context, args GetHeaderArgs, originator string) (*GetHeaderResult, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // intentional stub: nil,nil is the documented "not implemented" result for this method (see completed_proto_wallet_test.go)
 }
 
 // CreateHMAC delegates to the embedded ProtoWallet

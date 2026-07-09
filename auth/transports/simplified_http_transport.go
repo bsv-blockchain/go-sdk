@@ -102,11 +102,17 @@ func (t *SimplifiedHTTPTransport) sendNonGeneralMessage(ctx context.Context, mes
 		requestURL = t.baseUrl + "/.well-known/auth"
 	}
 
-	resp, err := t.client.Post(requestURL, "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := t.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	responseMsg, err := t.authMessageFromNonGeneralMessageResponse(resp)
 	if err != nil {
@@ -166,7 +172,7 @@ func (t *SimplifiedHTTPTransport) sendGeneralMessage(ctx context.Context, messag
 	if err != nil {
 		return fmt.Errorf("failed to perform proxied HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	responseMsg, err := t.authMessageFromGeneralMessageResponse(requestIDBytes, resp)
 	if err != nil {
@@ -198,7 +204,7 @@ func (t *SimplifiedHTTPTransport) authMessageFromGeneralMessageResponse(requestI
 	}
 	pubKey, err := primitives.PublicKeyFromString(identityKey)
 	if err != nil {
-		return nil, fmt.Errorf("invalid identity key format in reponse: %w", err)
+		return nil, fmt.Errorf("invalid identity key format in response: %w", err)
 	}
 
 	signature := res.Header.Get(brc104.HeaderSignature)
@@ -211,7 +217,7 @@ func (t *SimplifiedHTTPTransport) authMessageFromGeneralMessageResponse(requestI
 
 	var requestedCertificates utils.RequestedCertificateSet
 	if requestedCertificatesJson != "" {
-		err = json.Unmarshal([]byte(requestedCertificatesJson), &requestedCertificates)
+		err = json.Unmarshal([]byte(requestedCertificatesJson), &requestedCertificates) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
 		if err != nil {
 			return nil, fmt.Errorf("invalid format of requested certificates in response: %w", err)
 		}

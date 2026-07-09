@@ -13,7 +13,7 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 	resultWriter := util.NewWriter()
 
 	// Write success byte (0 for success)
-	resultWriter.WriteByte(0)
+	resultWriter.WriteByteValue(0)
 
 	// Write txid and tx if present
 	resultWriter.WriteOptionalBytes(result.Txid[:], util.BytesOptionWithFlag, util.BytesOptionTxIdLen, util.BytesOptionZeroIfEmpty)
@@ -33,14 +33,14 @@ func SerializeCreateActionResult(result *wallet.CreateActionResult) ([]byte, err
 
 	// Write signableTransaction
 	if result.SignableTransaction != nil {
-		resultWriter.WriteByte(1) // flag present
+		resultWriter.WriteByteValue(1) // flag present
 		resultWriter.WriteVarInt(uint64(len(result.SignableTransaction.Tx)))
 		resultWriter.WriteBytes(result.SignableTransaction.Tx)
 
 		resultWriter.WriteVarInt(uint64(len(result.SignableTransaction.Reference)))
 		resultWriter.WriteBytes(result.SignableTransaction.Reference)
 	} else {
-		resultWriter.WriteByte(0) // flag not present
+		resultWriter.WriteByteValue(0) // flag not present
 	}
 
 	return resultWriter.Buf, nil
@@ -56,7 +56,7 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	result := &wallet.CreateActionResult{}
 
 	// Read success byte (0 for success)
-	if statusByte := resultReader.ReadByte(); statusByte != 0x00 {
+	if statusByte := resultReader.ReadByteValue(); statusByte != 0x00 {
 		return nil, fmt.Errorf("response indicates failure: %b", statusByte)
 	}
 
@@ -82,7 +82,7 @@ func DeserializeCreateActionResult(data []byte) (*wallet.CreateActionResult, err
 	}
 
 	// Parse signableTransaction
-	signableTxFlag := resultReader.ReadByte()
+	signableTxFlag := resultReader.ReadByteValue()
 	if signableTxFlag == 1 {
 		result.SignableTransaction = &wallet.SignableTransaction{
 			Tx:        resultReader.ReadIntBytes(),

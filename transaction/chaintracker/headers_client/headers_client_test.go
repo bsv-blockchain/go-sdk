@@ -7,8 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 func TestGetMerkleRootsSuccess(t *testing.T) {
@@ -30,16 +32,16 @@ func TestGetMerkleRootsSuccess(t *testing.T) {
 	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request method and path
-		require.Equal(t, http.MethodGet, r.Method)
-		require.Equal(t, "/api/v1/chain/merkleroot", r.URL.Path)
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/v1/chain/merkleroot", r.URL.Path)
 
 		// Verify query parameters
 		batchSize := r.URL.Query().Get("batchSize")
-		require.Equal(t, "10", batchSize)
+		assert.Equal(t, "10", batchSize)
 
 		// Verify Authorization header
 		auth := r.Header.Get("Authorization")
-		require.Equal(t, "Bearer test-api-key", auth)
+		assert.Equal(t, "Bearer test-api-key", auth)
 
 		// Write mock response
 		w.WriteHeader(http.StatusOK)
@@ -52,7 +54,7 @@ func TestGetMerkleRootsSuccess(t *testing.T) {
 			Content: expectedRoots,
 		}
 		err := json.NewEncoder(w).Encode(response)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -78,7 +80,7 @@ func TestGetMerkleRootsWithLastEvaluatedKey(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify lastEvaluatedKey is included
 		lastEvalKey := r.URL.Query().Get("lastEvaluatedKey")
-		require.Equal(t, lastKey.String(), lastEvalKey)
+		assert.Equal(t, lastKey.String(), lastEvalKey)
 
 		w.WriteHeader(http.StatusOK)
 		response := struct {
@@ -90,7 +92,7 @@ func TestGetMerkleRootsWithLastEvaluatedKey(t *testing.T) {
 			Content: []MerkleRootInfo{},
 		}
 		err := json.NewEncoder(w).Encode(response)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -137,26 +139,28 @@ func TestRegisterWebhookSuccess(t *testing.T) {
 	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request method and path
-		require.Equal(t, http.MethodPost, r.Method)
-		require.Equal(t, "/api/v1/webhook", r.URL.Path)
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/api/v1/webhook", r.URL.Path)
 
 		// Verify headers
-		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		require.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
 
 		// Verify request body
 		var webhookReq WebhookRequest
 		err := json.NewDecoder(r.Body).Decode(&webhookReq)
-		require.NoError(t, err)
-		require.Equal(t, "https://example.com/webhook", webhookReq.URL)
-		require.Equal(t, "Bearer", webhookReq.RequiredAuth.Type)
-		require.Equal(t, "webhook-auth-token", webhookReq.RequiredAuth.Token)
-		require.Equal(t, "Authorization", webhookReq.RequiredAuth.Header)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, "https://example.com/webhook", webhookReq.URL)
+		assert.Equal(t, "Bearer", webhookReq.RequiredAuth.Type)
+		assert.Equal(t, "webhook-auth-token", webhookReq.RequiredAuth.Token)
+		assert.Equal(t, "Authorization", webhookReq.RequiredAuth.Header)
 
 		// Write mock response
 		w.WriteHeader(http.StatusOK)
 		err = json.NewEncoder(w).Encode(expectedWebhook)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -201,15 +205,15 @@ func TestUnregisterWebhookSuccess(t *testing.T) {
 	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request method and path
-		require.Equal(t, http.MethodDelete, r.Method)
-		require.Equal(t, "/api/v1/webhook", r.URL.Path)
+		assert.Equal(t, http.MethodDelete, r.Method)
+		assert.Equal(t, "/api/v1/webhook", r.URL.Path)
 
 		// Verify query parameter
 		urlParam := r.URL.Query().Get("url")
-		require.Equal(t, callbackURL, urlParam)
+		assert.Equal(t, callbackURL, urlParam)
 
 		// Verify Authorization header
-		require.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
 
 		// Write success response
 		w.WriteHeader(http.StatusOK)
@@ -260,20 +264,20 @@ func TestGetWebhookSuccess(t *testing.T) {
 	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request method and path
-		require.Equal(t, http.MethodGet, r.Method)
-		require.Equal(t, "/api/v1/webhook", r.URL.Path)
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/v1/webhook", r.URL.Path)
 
 		// Verify query parameter
 		urlParam := r.URL.Query().Get("url")
-		require.Equal(t, expectedWebhook.URL, urlParam)
+		assert.Equal(t, expectedWebhook.URL, urlParam)
 
 		// Verify Authorization header
-		require.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
 
 		// Write mock response
 		w.WriteHeader(http.StatusOK)
 		err := json.NewEncoder(w).Encode(expectedWebhook)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -388,7 +392,7 @@ func TestGetMerkleRootsEmptyResponse(t *testing.T) {
 			Content: []MerkleRootInfo{},
 		}
 		err := json.NewEncoder(w).Encode(response)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -429,7 +433,7 @@ func TestWebhookWithMultipleErrorCounts(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				err := json.NewEncoder(w).Encode(expectedWebhook)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer ts.Close()
 

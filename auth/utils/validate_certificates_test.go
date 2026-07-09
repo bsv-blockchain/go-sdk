@@ -4,14 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	tcu "github.com/bsv-blockchain/go-sdk/util/test_cert_util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestValidateCertificatesFunctionality(t *testing.T) {
@@ -132,7 +133,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			},
 		}
 		err := utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "certifiers list is empty")
 
 		// Test empty types
@@ -141,7 +142,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{},
 		}
 		err = utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "certificate types map is empty")
 
 		// Test empty type name
@@ -152,7 +153,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			},
 		}
 		err = utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "empty certificate type specified")
 
 		// Test empty fields
@@ -163,7 +164,7 @@ func TestValidateCertificatesFunctionality(t *testing.T) {
 			},
 		}
 		err = utils.ValidateRequestedCertificateSet(req)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no fields specified for certificate type")
 
 		// Test valid request
@@ -200,7 +201,7 @@ func TestValidateCertificates(t *testing.T) {
 	differentVerifierrKey := differentSubject.PubKey()
 
 	// Create a requested certificate set
-	var requestedType = tcu.CertificateTypeName.ToType(t)
+	requestedType := tcu.CertificateTypeName.ToType(t)
 
 	successTestCases := map[string]struct {
 		requestedCerts *utils.RequestedCertificateSet
@@ -344,7 +345,7 @@ func TestValidateCertificates(t *testing.T) {
 			err := utils.ValidateCertificates(context.Background(), verifierWallet, test.certs(), subjectKey, test.requestedCerts)
 
 			// then:
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), test.expectedError)
 		})
 	}
@@ -362,7 +363,7 @@ func TestValidateCertificates(t *testing.T) {
 		err := utils.ValidateCertificates(ctx, verifierWallet, certs, subjectKey, certificatesRequested)
 
 		// then:
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Equal(t, context.Canceled, err)
 	})
 }

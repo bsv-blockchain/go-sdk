@@ -21,11 +21,11 @@ func WriteRequestFrame(requestFrame RequestFrame) []byte {
 	frameWriter := util.NewWriter()
 
 	// Write call type byte
-	frameWriter.WriteByte(requestFrame.Call)
+	frameWriter.WriteByteValue(requestFrame.Call)
 
 	// Write originator length and bytes
 	originatorBytes := []byte(requestFrame.Originator)
-	frameWriter.WriteByte(byte(len(originatorBytes)))
+	frameWriter.WriteByteValue(byte(len(originatorBytes))) //nolint:gosec // G115 -- value is bounded by domain constraints
 	frameWriter.WriteBytes(originatorBytes)
 
 	// Write params if present
@@ -73,7 +73,7 @@ func WriteResultFrame(result []byte, err *wallet.Error) []byte {
 
 	if err != nil {
 		// Write error byte
-		frameWriter.WriteByte(err.Code)
+		frameWriter.WriteByteValue(err.Code)
 
 		// Write error message
 		errorMsgBytes := []byte(err.Message)
@@ -86,7 +86,7 @@ func WriteResultFrame(result []byte, err *wallet.Error) []byte {
 		frameWriter.WriteBytes(stackBytes)
 	} else {
 		// Write success byte (0)
-		frameWriter.WriteByte(0)
+		frameWriter.WriteByteValue(0)
 
 		// Write result data if present
 		if len(result) > 0 {
@@ -113,7 +113,7 @@ func ReadResultFrame(data []byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading error message length: %w", err)
 		}
-		errorMsgBytes, err := frameReader.ReadBytes(int(errorMsgLen))
+		errorMsgBytes, err := frameReader.ReadBytes(int(errorMsgLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 		if err != nil {
 			return nil, fmt.Errorf("error reading error message: %w", err)
 		}
@@ -124,7 +124,7 @@ func ReadResultFrame(data []byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading stack trace length: %w", err)
 		}
-		stackTraceBytes, err := frameReader.ReadBytes(int(stackTraceLen))
+		stackTraceBytes, err := frameReader.ReadBytes(int(stackTraceLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 		if err != nil {
 			return nil, fmt.Errorf("error reading stack trace: %w", err)
 		}

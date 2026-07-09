@@ -33,7 +33,7 @@ func New() *Schnorr {
 //   - S: Shared secret (should be B multiplied by a)
 //
 // Returns a proof (R, S', z) that can be verified without revealing the private key
-func (s *Schnorr) GenerateProof(a *ec.PrivateKey, A *ec.PublicKey, B *ec.PublicKey, S *ec.PublicKey) (*Proof, error) {
+func (s *Schnorr) GenerateProof(a *ec.PrivateKey, A, B, S *ec.PublicKey) (*Proof, error) {
 	// Generate random value r
 	r, err := ec.NewPrivateKey()
 	if err != nil {
@@ -70,7 +70,7 @@ func (s *Schnorr) GenerateProof(a *ec.PrivateKey, A *ec.PublicKey, B *ec.PublicK
 //   - proof: The proof to verify
 //
 // Returns true if the proof is valid, false otherwise
-func (s *Schnorr) VerifyProof(A *ec.PublicKey, B *ec.PublicKey, S *ec.PublicKey, proof *Proof) bool {
+func (s *Schnorr) VerifyProof(A, B, S *ec.PublicKey, proof *Proof) bool {
 	// Compute challenge e = H(A || B || S || S' || R)
 	e := s.computeChallenge(A, B, S, proof.SPrime, proof.R)
 

@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 func TestGetMerkleTreeParentStr(t *testing.T) {

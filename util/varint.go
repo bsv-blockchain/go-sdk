@@ -10,6 +10,8 @@ import (
 // VarInt (variable integer) is a field used in transaction data to indicate the number of
 // upcoming fields, or the length of an upcoming field.
 // See http://learnmeabitcoin.com/glossary/varint
+//
+//nolint:recvcheck // mix is intentional: Bytes/Length/PutBytes/UpperLimitInc are called on non-addressable temporaries like util.VarInt(n).Bytes() throughout the codebase, so they must stay value receivers; ReadFrom must mutate via pointer receiver
 type VarInt uint64
 
 // NewVarIntFromBytes takes a byte array in VarInt format and returns the

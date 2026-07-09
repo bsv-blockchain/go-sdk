@@ -35,4 +35,4 @@ go run main.go
 
 For more detailed information about identity management and verification in the SDK, refer to:
 - [Identity Client Documentation](../../identity/README.md)
-- [Identity Concepts](../../concepts/IDENTITY.md) 
+- [Identity Concepts](../../concepts/IDENTITY.md)

@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 const testData = "test data"
@@ -67,7 +68,7 @@ func TestCompletedProtoWalletAcquireCertificate(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.AcquireCertificate(context.Background(), wallet.AcquireCertificateArgs{}, "test")
 	// Returns nil,nil by design
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -107,7 +108,7 @@ func TestCompletedProtoWalletSignAction(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.SignAction(context.Background(), wallet.SignActionArgs{}, "test")
 	// Returns nil,nil by design
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -115,7 +116,7 @@ func TestCompletedProtoWalletListActions(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.ListActions(context.Background(), wallet.ListActionsArgs{}, "test")
 	// Returns nil,nil by design
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -123,7 +124,7 @@ func TestCompletedProtoWalletInternalizeAction(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.InternalizeAction(context.Background(), wallet.InternalizeActionArgs{}, "test")
 	// Returns nil,nil by design
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -131,7 +132,7 @@ func TestCompletedProtoWalletListOutputs(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.ListOutputs(context.Background(), wallet.ListOutputsArgs{}, "test")
 	// Returns nil,nil by design
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -139,42 +140,42 @@ func TestCompletedProtoWalletRelinquishOutput(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.RelinquishOutput(context.Background(), wallet.RelinquishOutputArgs{}, "test")
 	// Returns nil,nil by design
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func TestCompletedProtoWalletRelinquishCertificate(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.RelinquishCertificate(context.Background(), wallet.RelinquishCertificateArgs{}, "test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func TestCompletedProtoWalletDiscoverByIdentityKey(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.DiscoverByIdentityKey(context.Background(), wallet.DiscoverByIdentityKeyArgs{}, "test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func TestCompletedProtoWalletDiscoverByAttributes(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.DiscoverByAttributes(context.Background(), wallet.DiscoverByAttributesArgs{}, "test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func TestCompletedProtoWalletWaitForAuthentication(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.WaitForAuthentication(context.Background(), nil, "test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func TestCompletedProtoWalletGetHeaderForHeight(t *testing.T) {
 	w := newTestCompletedProtoWallet(t)
 	result, err := w.GetHeaderForHeight(context.Background(), wallet.GetHeaderArgs{Height: 100}, "test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 

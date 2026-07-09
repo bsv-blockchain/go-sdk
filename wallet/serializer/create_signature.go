@@ -27,11 +27,11 @@ func SerializeCreateSignatureArgs(args *wallet.CreateSignatureArgs) ([]byte, err
 
 	// Write data or hash flag and content
 	if args.Data != nil {
-		w.WriteByte(1)
+		w.WriteByteValue(1)
 		w.WriteVarInt(uint64(len(args.Data)))
 		w.WriteBytes(args.Data)
 	} else {
-		w.WriteByte(2)
+		w.WriteByteValue(2)
 		w.WriteBytes(args.HashToDirectlySign)
 	}
 
@@ -57,12 +57,12 @@ func DeserializeCreateSignatureArgs(data []byte) (*wallet.CreateSignatureArgs, e
 	args.PrivilegedReason = params.PrivilegedReason
 
 	// Read data type flag and content
-	dataTypeFlag := r.ReadByte()
+	dataTypeFlag := r.ReadByteValue()
 	switch dataTypeFlag {
 	case 1:
 		// Data provided directly
 		dataLen := r.ReadVarInt()
-		args.Data = r.ReadBytes(int(dataLen))
+		args.Data = r.ReadBytes(int(dataLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 	case 2:
 		// Hash provided directly
 		args.HashToDirectlySign = r.ReadBytes(32)

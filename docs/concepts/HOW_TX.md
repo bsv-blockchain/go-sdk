@@ -57,4 +57,4 @@ Each of these steps is facilitated by the BSV SDK, which provides comprehensive 
 
 ## Conclusion
 
-The BSV SDK empowers developers to build robust applications on the network by abstracting the complexities of transaction creation. By understanding how transactions are structured and built through inputs and outputs, developers can leverage the full potential of the BSV blockchain, ensuring secure, efficient, and scalable applications. 
+The BSV SDK empowers developers to build robust applications on the network by abstracting the complexities of transaction creation. By understanding how transactions are structured and built through inputs and outputs, developers can leverage the full potential of the BSV blockchain, ensuring secure, efficient, and scalable applications.

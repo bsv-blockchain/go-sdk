@@ -178,4 +178,4 @@ err := auth.ValidateCertificates(
 The authentication system integrates with the wallet system for:
 - Identity key operations
 - Certificate management
-- Message signing and verification 
+- Message signing and verification

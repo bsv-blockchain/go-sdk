@@ -46,7 +46,7 @@ func SignWithCustomK(msg []byte, privateKey *e.PrivateKey, forceLowS bool, custo
 	}
 
 	// Calculate r = (kG).X mod N
-	kGx, _ := curve.ScalarBaseMult(customK.Bytes())
+	kGx, _ := curve.ScalarBaseMult(customK.Bytes()) //nolint:staticcheck // crypto/ecdh does not support the secp256k1 curve used here, so this raw scalar multiplication has no drop-in replacement
 	r := new(big.Int).Mod(kGx, N)
 	if r.Sign() == 0 {
 		return nil, errors.New("r is zero")

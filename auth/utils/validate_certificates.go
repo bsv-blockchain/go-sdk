@@ -14,9 +14,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-var (
-	ErrCertificateValidation = errors.New("certificate validation failed")
-)
+var ErrCertificateValidation = errors.New("certificate validation failed")
 
 // RequestedCertificateTypeIDAndFieldList maps certificate type IDs to required fields
 type RequestedCertificateTypeIDAndFieldList map[wallet.CertificateType][]string
@@ -158,7 +156,6 @@ func ValidateCertificate(
 	identityKey *ec.PublicKey,
 	certificatesRequested *RequestedCertificateSet,
 ) error {
-
 	// check for the context end
 	if ctx.Err() != nil {
 		return ctx.Err()

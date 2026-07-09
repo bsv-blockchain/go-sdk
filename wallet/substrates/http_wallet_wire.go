@@ -2,6 +2,7 @@ package substrates
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -16,7 +17,7 @@ type HTTPWalletWire struct {
 }
 
 // NewHTTPWalletWire creates a new HTTPWalletWire instance
-func NewHTTPWalletWire(originator string, baseURL string, httpClient *http.Client) *HTTPWalletWire {
+func NewHTTPWalletWire(originator, baseURL string, httpClient *http.Client) *HTTPWalletWire {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -31,7 +32,7 @@ func NewHTTPWalletWire(originator string, baseURL string, httpClient *http.Clien
 }
 
 // TransmitToWallet sends a binary message to the wallet and returns the response
-func (h *HTTPWalletWire) TransmitToWallet(message []byte) ([]byte, error) {
+func (h *HTTPWalletWire) TransmitToWallet(ctx context.Context, message []byte) ([]byte, error) {
 	// Create reader for the message
 	reader := bytes.NewReader(message)
 
@@ -72,7 +73,7 @@ func (h *HTTPWalletWire) TransmitToWallet(message []byte) ([]byte, error) {
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequest("POST", h.baseURL+"/"+callName, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, h.baseURL+"/"+callName, bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -86,7 +87,7 @@ func (h *HTTPWalletWire) TransmitToWallet(message []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP request failed with status: %s", resp.Status)

@@ -82,7 +82,7 @@ func (d *StorageDownloader) Resolve(ctx context.Context, uhrpURL string) ([]stri
 		// Check expiry time (field 3)
 		expiryReader := util.NewReader(pd.Fields[3])
 		expiryTime, err := expiryReader.ReadVarInt()
-		if err != nil || int64(expiryTime) < currentTime {
+		if err != nil || int64(expiryTime) < currentTime { //nolint:gosec // G115 -- expiryTime is a unix timestamp, well within int64 range
 			continue
 		}
 

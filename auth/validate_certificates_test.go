@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
@@ -12,8 +15,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestValidateCertificates tests the validateCertificates function
@@ -26,7 +27,7 @@ func TestValidateCertificates(t *testing.T) {
 
 		err := auth.ValidateCertificates(t.Context(), mockWallet, message, nil)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no certificates were provided")
 	})
 
@@ -126,7 +127,7 @@ func TestValidateCertificates(t *testing.T) {
 		// Convert keyring to expected format
 		keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 		for k, v := range keyringForVerifier {
-			keyringMap[k] = wallet.StringBase64(v)
+			keyringMap[k] = v
 		}
 
 		// Create VerifiableCertificate
@@ -313,7 +314,7 @@ func TestValidateCertificates(t *testing.T) {
 		// Validate should fail due to invalid signature
 		anyoneWallet, _ := wallet.NewCompletedProtoWallet(nil)
 		err := auth.ValidateCertificates(t.Context(), anyoneWallet, message, nil)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "signature")
 	})
 }

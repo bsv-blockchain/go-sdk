@@ -70,6 +70,8 @@ func (c *Counterparty) MarshalJSON() ([]byte, error) {
 			return json.Marshal(nil) // Or handle this as an error if it should never happen
 		}
 		return json.Marshal(c.Counterparty.ToDERHex())
+	case CounterpartyUninitialized:
+		return json.Marshal(nil)
 	default:
 		return json.Marshal(nil) // Or handle this as an error if it should never happen
 	}
@@ -102,11 +104,14 @@ func (c *Counterparty) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasCreateSignatureResult CreateSignatureResult
-type jsonCreateSignatureResult struct {
-	Signature Signature `json:"signature"`
-	*aliasCreateSignatureResult
-}
+type (
+	aliasCreateSignatureResult CreateSignatureResult
+	jsonCreateSignatureResult  struct {
+		*aliasCreateSignatureResult
+
+		Signature Signature `json:"signature"`
+	}
+)
 
 // MarshalJSON implements the json.Marshaler interface for CreateSignatureResult.
 func (c CreateSignatureResult) MarshalJSON() ([]byte, error) {
@@ -130,13 +135,16 @@ func (c *CreateSignatureResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasVerifySignatureArgs VerifySignatureArgs
-type jsonVerifySignatureArgs struct {
-	Data                 BytesList `json:"data,omitempty"`
-	HashToDirectlyVerify BytesList `json:"hashToDirectlyVerify,omitempty"`
-	Signature            Signature `json:"signature"`
-	*aliasVerifySignatureArgs
-}
+type (
+	aliasVerifySignatureArgs VerifySignatureArgs
+	jsonVerifySignatureArgs  struct {
+		*aliasVerifySignatureArgs
+
+		Data                 BytesList `json:"data,omitempty"`
+		HashToDirectlyVerify BytesList `json:"hashToDirectlyVerify,omitempty"`
+		Signature            Signature `json:"signature"`
+	}
+)
 
 // MarshalJSON implements the json.Marshaler interface for VerifySignatureArgs.
 func (v VerifySignatureArgs) MarshalJSON() ([]byte, error) {
@@ -162,11 +170,14 @@ func (v *VerifySignatureArgs) UnmarshalJSON(data []byte) error {
 }
 
 // aliasCertificate uses an alias to avoid recursion
-type aliasCertificate Certificate
-type jsonCertificate struct {
-	Signature BytesHex `json:"signature"`
-	*aliasCertificate
-}
+type (
+	aliasCertificate Certificate
+	jsonCertificate  struct {
+		*aliasCertificate
+
+		Signature BytesHex `json:"signature"`
+	}
+)
 
 // MarshalJSON implements json.Marshaler interface for Certificate
 func (c Certificate) MarshalJSON() ([]byte, error) {
@@ -201,11 +212,14 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasCreateActionInput CreateActionInput
-type jsonCreateActionInput struct {
-	UnlockingScript BytesHex `json:"unlockingScript,omitempty"`
-	*aliasCreateActionInput
-}
+type (
+	aliasCreateActionInput CreateActionInput
+	jsonCreateActionInput  struct {
+		*aliasCreateActionInput
+
+		UnlockingScript BytesHex `json:"unlockingScript,omitempty"`
+	}
+)
 
 func (i CreateActionInput) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonCreateActionInput{
@@ -228,11 +242,14 @@ func (i *CreateActionInput) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasCreateActionOutput CreateActionOutput
-type jsonCreateActionOutput struct {
-	LockingScript BytesHex `json:"lockingScript,omitempty"`
-	*aliasCreateActionOutput
-}
+type (
+	aliasCreateActionOutput CreateActionOutput
+	jsonCreateActionOutput  struct {
+		*aliasCreateActionOutput
+
+		LockingScript BytesHex `json:"lockingScript,omitempty"`
+	}
+)
 
 func (o CreateActionOutput) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonCreateActionOutput{
@@ -255,11 +272,14 @@ func (o *CreateActionOutput) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasSignActionSpend SignActionSpend
-type jsonSignActionSpend struct {
-	UnlockingScript BytesHex `json:"unlockingScript"`
-	*aliasSignActionSpend
-}
+type (
+	aliasSignActionSpend SignActionSpend
+	jsonSignActionSpend  struct {
+		*aliasSignActionSpend
+
+		UnlockingScript BytesHex `json:"unlockingScript"`
+	}
+)
 
 func (s SignActionSpend) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonSignActionSpend{
@@ -282,12 +302,15 @@ func (s *SignActionSpend) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasActionInput ActionInput
-type jsonActionInput struct {
-	SourceLockingScript BytesHex `json:"sourceLockingScript,omitempty"`
-	UnlockingScript     BytesHex `json:"unlockingScript,omitempty"`
-	*aliasActionInput
-}
+type (
+	aliasActionInput ActionInput
+	jsonActionInput  struct {
+		*aliasActionInput
+
+		SourceLockingScript BytesHex `json:"sourceLockingScript,omitempty"`
+		UnlockingScript     BytesHex `json:"unlockingScript,omitempty"`
+	}
+)
 
 func (a ActionInput) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonActionInput{
@@ -312,11 +335,14 @@ func (a *ActionInput) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasActionOutput ActionOutput
-type jsonActionOutput struct {
-	LockingScript BytesHex `json:"lockingScript,omitempty"`
-	*aliasActionOutput
-}
+type (
+	aliasActionOutput ActionOutput
+	jsonActionOutput  struct {
+		*aliasActionOutput
+
+		LockingScript BytesHex `json:"lockingScript,omitempty"`
+	}
+)
 
 func (o ActionOutput) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonActionOutput{
@@ -339,11 +365,14 @@ func (o *ActionOutput) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasInternalizeActionArgs InternalizeActionArgs
-type jsonInternalizeActionArgs struct {
-	Tx BytesList `json:"tx"`
-	*aliasInternalizeActionArgs
-}
+type (
+	aliasInternalizeActionArgs InternalizeActionArgs
+	jsonInternalizeActionArgs  struct {
+		*aliasInternalizeActionArgs
+
+		Tx BytesList `json:"tx"`
+	}
+)
 
 func (i InternalizeActionArgs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonInternalizeActionArgs{
@@ -366,11 +395,14 @@ func (i *InternalizeActionArgs) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasOutput Output
-type jsonOutput struct {
-	LockingScript BytesHex `json:"lockingScript,omitempty"`
-	*aliasOutput
-}
+type (
+	aliasOutput Output
+	jsonOutput  struct {
+		*aliasOutput
+
+		LockingScript BytesHex `json:"lockingScript,omitempty"`
+	}
+)
 
 func (o Output) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonOutput{
@@ -393,12 +425,15 @@ func (o *Output) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasListOutputsResult ListOutputsResult
-type jsonListOutputsResult struct {
-	BEEF    BytesList `json:"BEEF,omitempty"`
-	Outputs []Output  `json:"outputs"` // This will use Output's custom marshaler
-	*aliasListOutputsResult
-}
+type (
+	aliasListOutputsResult ListOutputsResult
+	jsonListOutputsResult  struct {
+		*aliasListOutputsResult
+
+		BEEF    BytesList `json:"BEEF,omitempty"`
+		Outputs []Output  `json:"outputs"` // This will use Output's custom marshaler
+	}
+)
 
 func (l ListOutputsResult) MarshalJSON() ([]byte, error) {
 	// Note: TotalOutputs is part of aliasListOutputsResult and will be marshaled directly.
@@ -485,12 +520,15 @@ func (cr *CertificateResult) UnmarshalJSON(data []byte) error {
 }
 
 // Custom marshalling for RevealCounterpartyKeyLinkageResult
-type aliasRevealCounterpartyKeyLinkageResult RevealCounterpartyKeyLinkageResult
-type jsonRevealCounterpartyKeyLinkageResult struct {
-	EncryptedLinkage      BytesList `json:"encryptedLinkage"`
-	EncryptedLinkageProof BytesList `json:"encryptedLinkageProof"`
-	*aliasRevealCounterpartyKeyLinkageResult
-}
+type (
+	aliasRevealCounterpartyKeyLinkageResult RevealCounterpartyKeyLinkageResult
+	jsonRevealCounterpartyKeyLinkageResult  struct {
+		*aliasRevealCounterpartyKeyLinkageResult
+
+		EncryptedLinkage      BytesList `json:"encryptedLinkage"`
+		EncryptedLinkageProof BytesList `json:"encryptedLinkageProof"`
+	}
+)
 
 func (r RevealCounterpartyKeyLinkageResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonRevealCounterpartyKeyLinkageResult{
@@ -513,12 +551,15 @@ func (r *RevealCounterpartyKeyLinkageResult) UnmarshalJSON(data []byte) error {
 }
 
 // Custom marshalling for RevealSpecificKeyLinkageResult
-type aliasRevealSpecificKeyLinkageResult RevealSpecificKeyLinkageResult
-type jsonRevealSpecificKeyLinkageResult struct {
-	EncryptedLinkage      BytesList `json:"encryptedLinkage"`
-	EncryptedLinkageProof BytesList `json:"encryptedLinkageProof"`
-	*aliasRevealSpecificKeyLinkageResult
-}
+type (
+	aliasRevealSpecificKeyLinkageResult RevealSpecificKeyLinkageResult
+	jsonRevealSpecificKeyLinkageResult  struct {
+		*aliasRevealSpecificKeyLinkageResult
+
+		EncryptedLinkage      BytesList `json:"encryptedLinkage"`
+		EncryptedLinkageProof BytesList `json:"encryptedLinkageProof"`
+	}
+)
 
 func (r RevealSpecificKeyLinkageResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonRevealSpecificKeyLinkageResult{
@@ -635,11 +676,14 @@ func (r *KeyringRevealer) UnmarshalJSON(data []byte) error {
 }
 
 // Custom marshalling for AcquireCertificateArgs
-type aliasAcquireCertificateArgs AcquireCertificateArgs
-type jsonAcquireCertificateArgs struct {
-	Signature BytesHex `json:"signature,omitempty"`
-	*aliasAcquireCertificateArgs
-}
+type (
+	aliasAcquireCertificateArgs AcquireCertificateArgs
+	jsonAcquireCertificateArgs  struct {
+		*aliasAcquireCertificateArgs
+
+		Signature BytesHex `json:"signature,omitempty"`
+	}
+)
 
 func (a AcquireCertificateArgs) MarshalJSON() ([]byte, error) {
 	var sigBytes BytesHex
@@ -670,11 +714,14 @@ func (a *AcquireCertificateArgs) UnmarshalJSON(data []byte) error {
 }
 
 // Custom marshalling for GetHeaderResult
-type aliasGetHeaderResult GetHeaderResult
-type jsonGetHeaderResult struct {
-	Header BytesHex `json:"header"`
-	*aliasGetHeaderResult
-}
+type (
+	aliasGetHeaderResult GetHeaderResult
+	jsonGetHeaderResult  struct {
+		*aliasGetHeaderResult
+
+		Header BytesHex `json:"header"`
+	}
+)
 
 func (r GetHeaderResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonGetHeaderResult{
@@ -694,12 +741,15 @@ func (r *GetHeaderResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasVerifyHMACArgs VerifyHMACArgs
-type jsonVerifyHMACArgs struct {
-	Data BytesList `json:"data"`
-	HMAC BytesList `json:"hmac"`
-	*aliasVerifyHMACArgs
-}
+type (
+	aliasVerifyHMACArgs VerifyHMACArgs
+	jsonVerifyHMACArgs  struct {
+		*aliasVerifyHMACArgs
+
+		Data BytesList `json:"data"`
+		HMAC BytesList `json:"hmac"`
+	}
+)
 
 func (v VerifyHMACArgs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonVerifyHMACArgs{
@@ -727,11 +777,14 @@ func (v *VerifyHMACArgs) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type aliasCreateHMACResult CreateHMACResult
-type jsonCreateHMACResult struct {
-	HMAC BytesList `json:"hmac"`
-	*aliasCreateHMACResult
-}
+type (
+	aliasCreateHMACResult CreateHMACResult
+	jsonCreateHMACResult  struct {
+		*aliasCreateHMACResult
+
+		HMAC BytesList `json:"hmac"`
+	}
+)
 
 func (c CreateHMACResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonCreateHMACResult{

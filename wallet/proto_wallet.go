@@ -92,7 +92,7 @@ func (p *ProtoWallet) GetPublicKey(ctx context.Context, args GetPublicKeyArgs, _
 			util.PtrToBool(args.ForSelf),
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to derive public key: %v", err)
+			return nil, fmt.Errorf("failed to derive public key: %w", err)
 		}
 		return &GetPublicKeyResult{
 			PublicKey: pubKey,
@@ -106,7 +106,6 @@ func (p *ProtoWallet) Encrypt(
 	args EncryptArgs,
 	originator string,
 ) (*EncryptResult, error) {
-
 	if args.Counterparty.Type == CounterpartyUninitialized {
 		args.Counterparty = Counterparty{
 			Type: CounterpartyTypeSelf,
@@ -126,12 +125,12 @@ func (p *ProtoWallet) Encrypt(
 	// Derive a symmetric key for encryption
 	key, err := p.keyDeriver.DeriveSymmetricKey(protocol, args.KeyID, counterpartyObj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
 	encrypted, err := key.Encrypt(args.Plaintext)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt: %v", err)
+		return nil, fmt.Errorf("failed to encrypt: %w", err)
 	}
 
 	return &EncryptResult{
@@ -145,7 +144,6 @@ func (p *ProtoWallet) Decrypt(
 	args DecryptArgs,
 	originator string,
 ) (*DecryptResult, error) {
-
 	if p.keyDeriver == nil {
 		return nil, errors.New("keyDeriver is undefined")
 	}
@@ -161,12 +159,12 @@ func (p *ProtoWallet) Decrypt(
 	// Derive a symmetric key for decryption
 	key, err := p.keyDeriver.DeriveSymmetricKey(args.ProtocolID, args.KeyID, counterparty)
 	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
 	plaintext, err := key.Decrypt(args.Ciphertext)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt: %v", err)
+		return nil, fmt.Errorf("failed to decrypt: %w", err)
 	}
 
 	return &DecryptResult{
@@ -208,13 +206,13 @@ func (p *ProtoWallet) CreateSignature(
 		counterpartyObj,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to derive private key: %v", err)
+		return nil, fmt.Errorf("failed to derive private key: %w", err)
 	}
 
 	// Create signature
 	signature, err := privKey.Sign(dataHash)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create signature: %v", err)
+		return nil, fmt.Errorf("failed to create signature: %w", err)
 	}
 
 	return &CreateSignatureResult{
@@ -260,7 +258,7 @@ func (p *ProtoWallet) VerifySignature(
 		util.PtrToBool(args.ForSelf),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to derive public key: %v", err)
+		return nil, fmt.Errorf("failed to derive public key: %w", err)
 	}
 
 	// Verify signature
@@ -300,7 +298,7 @@ func (p *ProtoWallet) CreateHMAC(
 		counterpartyObj,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
 	// Create HMAC using the derived key
@@ -340,7 +338,7 @@ func (p *ProtoWallet) VerifyHMAC(
 		counterpartyObj,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to derive symmetric key: %v", err)
+		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
 	// Create expected HMAC

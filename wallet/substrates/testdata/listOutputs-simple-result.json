@@ -1,24 +1,24 @@
 {
-  "json": {
-    "totalOutputs": 2,
-    "BEEF": [
-      1,
-      2,
-      3,
-      4
-    ],
-    "outputs": [
-      {
-        "satoshis": 1000,
-        "spendable": true,
-        "outpoint": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.0"
-      },
-      {
-        "satoshis": 5000,
-        "spendable": true,
-        "outpoint": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2"
-      }
-    ]
-  },
-  "wire": "000204010203041234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef00fde803ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789002fd8813ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    "json": {
+        "BEEF": [
+            1,
+            2,
+            3,
+            4
+        ],
+        "outputs": [
+            {
+                "outpoint": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.0",
+                "satoshis": 1000,
+                "spendable": true
+            },
+            {
+                "outpoint": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.2",
+                "satoshis": 5000,
+                "spendable": true
+            }
+        ],
+        "totalOutputs": 2
+    },
+    "wire": "000204010203041234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef00fde803ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789002fd8813ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 }

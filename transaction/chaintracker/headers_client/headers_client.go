@@ -34,7 +34,7 @@ type MerkleRootInfo struct {
 }
 
 type Client struct {
-	Ctx        context.Context
+	Ctx        context.Context //nolint:containedctx // kept for backward compatibility; per-call context.Context parameters are used instead
 	Url        string
 	ApiKey     string
 	httpClient *http.Client
@@ -47,7 +47,7 @@ func (c *Client) getHTTPClient() *http.Client {
 	return &http.Client{}
 }
 
-func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
+func (c *Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
 	type requestBody struct {
 		MerkleRoot  string `json:"merkleRoot"`
 		BlockHeight uint32 `json:"blockHeight"`
@@ -56,12 +56,12 @@ func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, 
 	payload := []requestBody{{MerkleRoot: root.String(), BlockHeight: height}}
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return false, fmt.Errorf("error marshaling JSON: %v", err)
+		return false, fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.Url+"/api/v1/chain/merkleroot/verify", bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return false, fmt.Errorf("error creating request: %v", err)
+		return false, fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -70,13 +70,13 @@ func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("error sending request: %v", err)
+		return false, fmt.Errorf("error sending request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return false, fmt.Errorf("error reading response body: %v", err)
+		return false, fmt.Errorf("error reading response body: %w", err)
 	}
 
 	var response struct {
@@ -85,7 +85,7 @@ func (c Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, 
 
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return false, fmt.Errorf("error unmarshaling JSON: %v", err)
+		return false, fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
 
 	return response.ConfirmationState == "CONFIRMED", nil
@@ -95,7 +95,7 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 	headers := []Header{}
 	client := &http.Client{}
 	url := fmt.Sprintf("%s/api/v1/chain/header/byHeight?height=%d", c.Url, height)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		if err := json.NewDecoder(res.Body).Decode(&headers); err != nil {
 			return nil, err
 		}
@@ -128,7 +128,7 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error) {
 	headerState := &State{}
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/chain/header/state/%s", c.Url, hash), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/v1/chain/header/state/%s", c.Url, hash), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error)
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		if err := json.NewDecoder(res.Body).Decode(headerState); err != nil {
 			return nil, err
 		}
@@ -147,7 +147,7 @@ func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error)
 func (c *Client) GetChaintip(ctx context.Context) (*State, error) {
 	headerState := &State{}
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/chain/tip/longest", c.Url), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/v1/chain/tip/longest", c.Url), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (c *Client) GetChaintip(ctx context.Context) (*State, error) {
 	if res, err := client.Do(req); err != nil {
 		return nil, err
 	} else {
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		if err := json.NewDecoder(res.Body).Decode(headerState); err != nil {
 			return nil, err
 		}
@@ -189,7 +189,7 @@ func (c *Client) GetMerkleRoots(ctx context.Context, batchSize int, lastEvaluate
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// Parse the paged response
 	var response struct {
@@ -230,7 +230,7 @@ type Webhook struct {
 }
 
 // RegisterWebhook registers a webhook URL with the block headers service
-func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authToken string) (*Webhook, error) {
+func (c *Client) RegisterWebhook(ctx context.Context, callbackURL, authToken string) (*Webhook, error) {
 	req := WebhookRequest{
 		URL: callbackURL,
 		RequiredAuth: RequiredAuth{
@@ -242,12 +242,12 @@ func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authTo
 
 	jsonPayload, err := json.Marshal(req)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling webhook request: %v", err)
+		return nil, fmt.Errorf("error marshaling webhook request: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", c.Url+"/api/v1/webhook", bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -255,9 +255,9 @@ func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authTo
 
 	resp, err := c.getHTTPClient().Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("error sending request: %v", err)
+		return nil, fmt.Errorf("error sending request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -266,7 +266,7 @@ func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authTo
 
 	var webhook Webhook
 	if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
 
 	return &webhook, nil
@@ -276,16 +276,16 @@ func (c *Client) RegisterWebhook(ctx context.Context, callbackURL string, authTo
 func (c *Client) UnregisterWebhook(ctx context.Context, callbackURL string) error {
 	httpReq, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/api/v1/webhook?url=%s", c.Url, callbackURL), nil)
 	if err != nil {
-		return fmt.Errorf("error creating request: %v", err)
+		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
 
 	resp, err := c.getHTTPClient().Do(httpReq)
 	if err != nil {
-		return fmt.Errorf("error sending request: %v", err)
+		return fmt.Errorf("error sending request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -299,16 +299,16 @@ func (c *Client) UnregisterWebhook(ctx context.Context, callbackURL string) erro
 func (c *Client) GetWebhook(ctx context.Context, callbackURL string) (*Webhook, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/v1/webhook?url=%s", c.Url, callbackURL), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	httpReq.Header.Set("Authorization", "Bearer "+c.ApiKey)
 
 	resp, err := c.getHTTPClient().Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("error sending request: %v", err)
+		return nil, fmt.Errorf("error sending request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -317,7 +317,7 @@ func (c *Client) GetWebhook(ctx context.Context, callbackURL string) (*Webhook, 
 
 	var webhook Webhook
 	if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
 
 	return &webhook, nil

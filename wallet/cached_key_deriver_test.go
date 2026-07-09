@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 type MockKeyDeriver struct {
@@ -41,6 +43,7 @@ func (m *MockKeyDeriver) DeriveSymmetricKey(protocolID Protocol, keyID string, c
 	m.symmetricKeyCallCount++
 	return m.symmetricKeyToReturn, m.symmetricKeyErrorToReturn
 }
+
 func (m *MockKeyDeriver) RevealSpecificSecret(counterparty Counterparty, protocol Protocol, keyID string) ([]byte, error) {
 	m.specificSecretCallCount++
 	return m.specificSecretToReturn, nil
@@ -69,13 +72,13 @@ func TestDerivePublicKey(t *testing.T) {
 
 		// First call - should call through to real deriver
 		pubKey1, err := cachedDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
-		assert.NoError(t, err, "first DerivePublicKey call should not error")
+		require.NoError(t, err, "first DerivePublicKey call should not error")
 		assert.NotNil(t, pubKey1, "first derived public key should not be nil")
 		assert.Equal(t, publicKey.ToDERHex(), pubKey1.ToDERHex(), "first derived public key should match expected key")
 
 		// Second call - should return cached value
 		pubKey2, err := cachedDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
-		assert.NoError(t, err, "second DerivePublicKey call (cached) should not error")
+		require.NoError(t, err, "second DerivePublicKey call (cached) should not error")
 		assert.Equal(t, pubKey1.ToDERHex(), pubKey2.ToDERHex(), "second derived public key should match the first (cached)")
 		assert.Equal(t, 1, mockKeyDeriver.publicKeyCallCount, "underlying deriver should only be called once")
 	})
@@ -93,7 +96,7 @@ func TestDerivePublicKey(t *testing.T) {
 		}, "key1", Counterparty{
 			Type: CounterpartyTypeSelf,
 		}, false)
-		assert.NoError(t, err, "DerivePublicKey call with first params set should not error")
+		require.NoError(t, err, "DerivePublicKey call with first params set should not error")
 		assert.Equal(t, publicKey.ToDERHex(), pubKey1.ToDERHex(), "derived public key with first params set should match expected key")
 
 		// Call with different params
@@ -103,7 +106,7 @@ func TestDerivePublicKey(t *testing.T) {
 		}, "key2", Counterparty{
 			Type: CounterpartyTypeAnyone,
 		}, false)
-		assert.NoError(t, err, "DerivePublicKey call with second params set should not error")
+		require.NoError(t, err, "DerivePublicKey call with second params set should not error")
 		assert.Equal(t, pubKey1.ToDERHex(), pubKey2.ToDERHex(), "derived public key with second params set should match (mock returns same key)")
 		assert.Equal(t, 2, mockKeyDeriver.publicKeyCallCount, "underlying deriver should be called twice for different parameters")
 	})
@@ -126,7 +129,7 @@ func TestDerivePrivateKey(t *testing.T) {
 	t.Run("should call derivePrivateKey on KeyDeriver and cache the result", func(t *testing.T) {
 		// Generate keys
 		privateKey, err := ec.NewPrivateKey()
-		assert.NoError(t, err, "generating test private key should not error")
+		require.NoError(t, err, "generating test private key should not error")
 
 		// Create a mock key deriver that returns a fixed private key
 		cachedDeriver := NewCachedKeyDeriver(rootKey, 0)
@@ -135,12 +138,12 @@ func TestDerivePrivateKey(t *testing.T) {
 
 		// First call - should call through to real deriver
 		privKey1, err := cachedDeriver.DerivePrivateKey(protocol, keyID, counterparty)
-		assert.NoError(t, err, "first DerivePrivateKey call should not error")
+		require.NoError(t, err, "first DerivePrivateKey call should not error")
 		assert.Equal(t, privateKey.Wif(), privKey1.Wif(), "first derived private key should match expected key")
 
 		// Second call - should return cached value
 		privKey2, err := cachedDeriver.DerivePrivateKey(protocol, keyID, counterparty)
-		assert.NoError(t, err, "second DerivePrivateKey call (cached) should not error")
+		require.NoError(t, err, "second DerivePrivateKey call (cached) should not error")
 		assert.Equal(t, privKey1.Wif(), privKey2.Wif(), "second derived private key should match the first (cached)")
 		assert.Equal(t, 1, mockKeyDeriver.privateKeyCallCount, "underlying deriver should only be called once")
 	})
@@ -148,9 +151,9 @@ func TestDerivePrivateKey(t *testing.T) {
 	t.Run("should differentiate cache entries based on parameters", func(t *testing.T) {
 		// Generate keys
 		privateKey, err := ec.NewPrivateKey()
-		assert.NoError(t, err, "generating first test private key should not error")
+		require.NoError(t, err, "generating first test private key should not error")
 		privateKey2, err := ec.NewPrivateKey()
-		assert.NoError(t, err, "generating second test private key should not error")
+		require.NoError(t, err, "generating second test private key should not error")
 
 		// Create a mock key deriver that returns a fixed private key
 		cachedDeriver := NewCachedKeyDeriver(rootKey, 0)
@@ -159,16 +162,15 @@ func TestDerivePrivateKey(t *testing.T) {
 
 		// First call
 		privKey1, err := cachedDeriver.DerivePrivateKey(protocol, keyID, counterparty)
-		assert.NoError(t, err, "first DerivePrivateKey call with first params set should not error")
+		require.NoError(t, err, "first DerivePrivateKey call with first params set should not error")
 		assert.Equal(t, privateKey.Wif(), privKey1.Wif(), "first derived private key should match expected key 1")
 
 		// Second call with different keyID
 		mockKeyDeriver.privateKeyToReturn = privateKey2
 		privKey2, err := cachedDeriver.DerivePrivateKey(protocol, "key2", counterparty)
-		assert.NoError(t, err, "second DerivePrivateKey call with different keyID should not error")
+		require.NoError(t, err, "second DerivePrivateKey call with different keyID should not error")
 		assert.Equal(t, privateKey2.Wif(), privKey2.Wif(), "second derived private key should match expected key 2")
 		assert.Equal(t, 2, mockKeyDeriver.privateKeyCallCount, "underlying deriver should be called twice for different key IDs")
-
 	})
 }
 
@@ -199,12 +201,12 @@ func TestDeriveSymmetricKey(t *testing.T) {
 
 		// First call
 		symmetricKey1, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
-		assert.NoError(t, err, "first DeriveSymmetricKey call should not error")
+		require.NoError(t, err, "first DeriveSymmetricKey call should not error")
 		assert.Equal(t, symmetricKey.ToBytes(), symmetricKey1.ToBytes(), "first derived symmetric key should match expected key")
 
 		// Second call with same parameters
 		symmetricKey2, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
-		assert.NoError(t, err, "second DeriveSymmetricKey call (cached) should not error")
+		require.NoError(t, err, "second DeriveSymmetricKey call (cached) should not error")
 		assert.Equal(t, symmetricKey1.ToBytes(), symmetricKey2.ToBytes(), "second derived symmetric key should match the first (cached)")
 		assert.Equal(t, 1, mockKeyDeriver.symmetricKeyCallCount, "underlying deriver should only be called once")
 	})
@@ -221,13 +223,13 @@ func TestDeriveSymmetricKey(t *testing.T) {
 
 		// First call
 		result1, err := cachedDeriver.DeriveSymmetricKey(protocol, keyID, counterparty)
-		assert.NoError(t, err, "first DeriveSymmetricKey call with first params set should not error")
+		require.NoError(t, err, "first DeriveSymmetricKey call with first params set should not error")
 		assert.Equal(t, symmetricKey1.ToBytes(), result1.ToBytes(), "first derived symmetric key should match expected key 1")
 
 		// Second call with different keyID
 		mockKeyDeriver.symmetricKeyToReturn = symmetricKey2
 		result2, err := cachedDeriver.DeriveSymmetricKey(protocol, "key2", counterparty)
-		assert.NoError(t, err, "second DeriveSymmetricKey call with different keyID should not error")
+		require.NoError(t, err, "second DeriveSymmetricKey call with different keyID should not error")
 		assert.Equal(t, symmetricKey2.ToBytes(), result2.ToBytes(), "second derived symmetric key should match expected key 2")
 		assert.Equal(t, 2, mockKeyDeriver.symmetricKeyCallCount, "underlying deriver should be called twice for different key IDs")
 	})
@@ -264,7 +266,7 @@ func TestCacheManagement(t *testing.T) {
 		for i := 0; i < maxCacheSize; i++ {
 			mockKeyDeriver.publicKeyToReturn = &ec.PublicKey{X: big.NewInt(int64(i)), Y: big.NewInt(0), Curve: ec.S256()}
 			_, err := cachedDeriver.DerivePublicKey(protocol, fmt.Sprintf("key%d", i), counterparty, false)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 
 		// Cache should be full now
@@ -272,12 +274,12 @@ func TestCacheManagement(t *testing.T) {
 
 		// Access one of the earlier keys to make it recently used
 		_, err := cachedDeriver.DerivePublicKey(protocol, "key0", counterparty, false)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Add one more entry to exceed the cache size
 		mockKeyDeriver.publicKeyToReturn = &ec.PublicKey{X: big.NewInt(int64(maxCacheSize)), Y: big.NewInt(0), Curve: ec.S256()}
 		_, err = cachedDeriver.DerivePublicKey(protocol, "key5", counterparty, false)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Cache size should still be maxCacheSize
 		assert.Equal(t, maxCacheSize, cachedDeriver.cache.list.Len())
@@ -317,7 +319,7 @@ func TestRevealSpecificSecret(t *testing.T) {
 			Protocol{SecurityLevel: SecurityLevelSilent, Protocol: "testprotocol"},
 			"key1",
 		)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, testSecret, secret1)
 		assert.Equal(t, 1, mockKeyDeriver.specificSecretCallCount)
 
@@ -327,7 +329,7 @@ func TestRevealSpecificSecret(t *testing.T) {
 			Protocol{SecurityLevel: SecurityLevelSilent, Protocol: "testprotocol"},
 			"key1",
 		)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, secret1, secret2)
 		assert.Equal(t, 1, mockKeyDeriver.specificSecretCallCount)
 	})
@@ -350,7 +352,7 @@ func TestRevealSpecificSecret(t *testing.T) {
 			Protocol{SecurityLevel: SecurityLevelSilent, Protocol: "protocol1"},
 			"key1",
 		)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, secret1, result1)
 
 		// Second call with different parameters
@@ -360,7 +362,7 @@ func TestRevealSpecificSecret(t *testing.T) {
 			Protocol{SecurityLevel: SecurityLevelEveryApp, Protocol: "protocol2"},
 			"key2",
 		)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, secret2, result2)
 		assert.Equal(t, 2, mockKeyDeriver.specificSecretCallCount)
 	})
@@ -387,13 +389,13 @@ func TestPerformanceConsiderations(t *testing.T) {
 		// First call - should be slow
 		startTime := time.Now()
 		_, err := cachedKeyDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		firstCallDuration := time.Since(startTime)
 
 		// Second call - should be fast due to caching
 		startTime = time.Now()
 		_, err = cachedKeyDeriver.DerivePublicKey(protocol, keyID, counterparty, false)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		secondCallDuration := time.Since(startTime)
 
 		// Verify performance improvement

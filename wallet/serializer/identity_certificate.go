@@ -23,7 +23,7 @@ func SerializeIdentityCertificate(cert *wallet.IdentityCertificate) ([]byte, err
 	w.WriteString(cert.CertifierInfo.Name)
 	w.WriteString(cert.CertifierInfo.IconUrl)
 	w.WriteString(cert.CertifierInfo.Description)
-	w.WriteByte(cert.CertifierInfo.Trust)
+	w.WriteByteValue(cert.CertifierInfo.Trust)
 
 	// Serialize PubliclyRevealedKeyring
 	var keys []string
@@ -63,7 +63,7 @@ func DeserializeIdentityCertificate(r *util.ReaderHoldError) (*wallet.IdentityCe
 	cert.CertifierInfo.Name = r.ReadString()
 	cert.CertifierInfo.IconUrl = r.ReadString()
 	cert.CertifierInfo.Description = r.ReadString()
-	cert.CertifierInfo.Trust = r.ReadByte()
+	cert.CertifierInfo.Trust = r.ReadByteValue()
 
 	// Deserialize PubliclyRevealedKeyring
 	keyringLen := r.ReadVarInt()

@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	script "github.com/bsv-blockchain/go-sdk/script"
-	"github.com/stretchr/testify/require"
 )
 
 const testPublicKeyHash = "00ac6144c4db7b5790f343cf0477a65fb8a02eb7"
@@ -51,7 +52,6 @@ func TestNewAddressFromString(t *testing.T) {
 		require.Nil(t, addr)
 		require.EqualError(t, err, "address not supported "+unsupportedAddress)
 	})
-
 }
 
 func TestNewAddressFromPublicKeyString(t *testing.T) {
@@ -108,7 +108,8 @@ func TestBase58EncodeMissingChecksum(t *testing.T) {
 	input, err := hex.DecodeString("0488b21e000000000000000000362f7a9030543db8751401c387d6a71e870f1895b3a62569d455e8ee5f5f5e5f03036624c6df96984db6b4e625b6707c017eb0e0d137cd13a0c989bfa77a4473fd")
 	require.NoError(t, err)
 
-	require.Equal(t,
+	require.Equal(
+		t,
 		"xpub661MyMwAqRbcF5ivRisXcZTEoy7d9DfLF6fLqpu5GWMfeUyGHuWJHVp5uexDqXTWoySh8pNx3ELW7qymwPNg3UEYHjwh1tpdm3P9J2j4g32",
 		script.Base58EncodeMissingChecksum(input),
 	)

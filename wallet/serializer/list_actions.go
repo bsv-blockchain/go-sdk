@@ -23,9 +23,9 @@ func SerializeListActionsArgs(args *wallet.ListActionsArgs) ([]byte, error) {
 	// Serialize labelQueryMode
 	switch args.LabelQueryMode {
 	case wallet.QueryModeAny:
-		w.WriteByte(labelQueryModeAnyCode)
+		w.WriteByteValue(labelQueryModeAnyCode)
 	case wallet.QueryModeAll:
-		w.WriteByte(labelQueryModeAllCode)
+		w.WriteByteValue(labelQueryModeAllCode)
 	case "":
 		w.WriteNegativeOneByte()
 	default:
@@ -59,7 +59,7 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	args.Labels = r.ReadStringSlice()
 
 	// Deserialize labelQueryMode
-	switch r.ReadByte() {
+	switch r.ReadByteValue() {
 	case labelQueryModeAnyCode:
 		args.LabelQueryMode = wallet.QueryModeAny
 	case labelQueryModeAllCode:
@@ -67,7 +67,7 @@ func DeserializeListActionsArgs(data []byte) (*wallet.ListActionsArgs, error) {
 	case util.NegativeOneByte:
 		args.LabelQueryMode = ""
 	default:
-		return nil, fmt.Errorf("invalid label query mode byte: %d", r.ReadByte())
+		return nil, fmt.Errorf("invalid label query mode byte: %d", r.ReadByteValue())
 	}
 
 	// Deserialize include options
@@ -119,24 +119,24 @@ func SerializeListActionsResult(result *wallet.ListActionsResult) ([]byte, error
 	for _, action := range result.Actions {
 		// Serialize basic action fields
 		w.WriteBytesReverse(action.Txid[:])
-		w.WriteVarInt(uint64(action.Satoshis))
+		w.WriteVarInt(uint64(action.Satoshis)) //nolint:gosec // G115 -- satoshi amounts are always non-negative
 
 		// Serialize status
 		switch action.Status {
 		case wallet.ActionStatusCompleted:
-			w.WriteByte(byte(actionStatusCodeCompleted))
+			w.WriteByteValue(byte(actionStatusCodeCompleted))
 		case wallet.ActionStatusUnprocessed:
-			w.WriteByte(byte(actionStatusCodeUnprocessed))
+			w.WriteByteValue(byte(actionStatusCodeUnprocessed))
 		case wallet.ActionStatusSending:
-			w.WriteByte(byte(actionStatusCodeSending))
+			w.WriteByteValue(byte(actionStatusCodeSending))
 		case wallet.ActionStatusUnproven:
-			w.WriteByte(byte(actionStatusCodeUnproven))
+			w.WriteByteValue(byte(actionStatusCodeUnproven))
 		case wallet.ActionStatusUnsigned:
-			w.WriteByte(byte(actionStatusCodeUnsigned))
+			w.WriteByteValue(byte(actionStatusCodeUnsigned))
 		case wallet.ActionStatusNoSend:
-			w.WriteByte(byte(actionStatusCodeNoSend))
+			w.WriteByteValue(byte(actionStatusCodeNoSend))
 		case wallet.ActionStatusNonFinal:
-			w.WriteByte(byte(actionStatusCodeNonFinal))
+			w.WriteByteValue(byte(actionStatusCodeNonFinal))
 		default:
 			return nil, fmt.Errorf("invalid action status: %s", action.Status)
 		}
@@ -205,10 +205,10 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 
 		// Deserialize basic action fields
 		copy(action.Txid[:], r.ReadBytesReverse(chainhash.HashSize))
-		action.Satoshis = int64(r.ReadVarInt())
+		action.Satoshis = int64(r.ReadVarInt()) //nolint:gosec // G115 -- satoshi values are bounded well within int64 range by the total coin supply
 
 		// Deserialize status
-		status := r.ReadByte()
+		status := r.ReadByteValue()
 		switch actionStatusCode(status) {
 		case actionStatusCodeCompleted:
 			action.Status = wallet.ActionStatusCompleted
@@ -229,7 +229,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		}
 
 		// Deserialize IsOutgoing, Description, Labels, Version, and LockTime
-		action.IsOutgoing = r.ReadByte() == 1
+		action.IsOutgoing = r.ReadByteValue() == 1
 		action.Description = r.ReadString()
 		action.Labels = r.ReadStringSlice()
 		action.Version = r.ReadVarInt32()
@@ -281,7 +281,7 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 			output.OutputIndex = r.ReadVarInt32()
 			output.Satoshis = r.ReadVarInt()
 			output.LockingScript = r.ReadIntBytes()
-			output.Spendable = r.ReadByte() == 1
+			output.Spendable = r.ReadByteValue() == 1
 			output.OutputDescription = r.ReadString()
 			output.Basket = r.ReadString()
 			output.Tags = r.ReadStringSlice()

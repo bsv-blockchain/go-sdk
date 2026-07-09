@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/stretchr/testify/require"
+
+	script "github.com/bsv-blockchain/go-sdk/script"
 )
 
 // TestScriptBytes verifies that Bytes returns the underlying byte slice.
@@ -106,7 +107,8 @@ func TestScriptAddress(t *testing.T) {
 	t.Run("P2SH script returns error", func(t *testing.T) {
 		// OP_HASH160 <20 bytes> OP_EQUAL
 		hash := make([]byte, 20)
-		b := []byte{script.OpHASH160, script.OpDATA20}
+		b := make([]byte, 0, 2+len(hash)+1)
+		b = append(b, script.OpHASH160, script.OpDATA20)
 		b = append(b, hash...)
 		b = append(b, script.OpEQUAL)
 		s := script.NewFromBytes(b)
@@ -125,12 +127,12 @@ func TestScriptIsMultiSigOut(t *testing.T) {
 		t.Helper()
 		s := script.NewFromBytes([]byte{})
 		// OP_m (OP_ONE = 0x51, so m-of-n uses 0x50+m)
-		require.NoError(t, s.AppendOpcodes(byte(0x50+m)))
+		require.NoError(t, s.AppendOpcodes(byte(0x50+m))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		for _, pk := range pubkeys {
 			require.NoError(t, s.AppendPushData(pk))
 		}
 		// OP_n
-		require.NoError(t, s.AppendOpcodes(byte(0x50+n)))
+		require.NoError(t, s.AppendOpcodes(byte(0x50+n))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		require.NoError(t, s.AppendOpcodes(script.OpCHECKMULTISIG))
 		return s
 	}
@@ -195,7 +197,8 @@ func TestReadOpExtraCases(t *testing.T) {
 
 	t.Run("OpPUSHDATA1 valid", func(t *testing.T) {
 		data := []byte("hello")
-		b := []byte{script.OpPUSHDATA1, byte(len(data))}
+		b := make([]byte, 0, 2+len(data))
+		b = append(b, script.OpPUSHDATA1, byte(len(data))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		b = append(b, data...)
 		s := script.Script(b)
 		pos := 0
@@ -228,8 +231,9 @@ func TestReadOpExtraCases(t *testing.T) {
 			data[i] = byte(i)
 		}
 		lenBuf := make([]byte, 2)
-		binary.LittleEndian.PutUint16(lenBuf, uint16(len(data)))
-		b := []byte{script.OpPUSHDATA2}
+		binary.LittleEndian.PutUint16(lenBuf, uint16(len(data))) //nolint:gosec // G115 -- data is fixed at 300 bytes, within uint16 range
+		b := make([]byte, 0, 1+len(lenBuf)+len(data))
+		b = append(b, script.OpPUSHDATA2)
 		b = append(b, lenBuf...)
 		b = append(b, data...)
 		s := script.Script(b)
@@ -251,7 +255,8 @@ func TestReadOpExtraCases(t *testing.T) {
 	t.Run("OpPUSHDATA2 data too small", func(t *testing.T) {
 		lenBuf := make([]byte, 2)
 		binary.LittleEndian.PutUint16(lenBuf, 100)
-		b := []byte{script.OpPUSHDATA2}
+		b := make([]byte, 0, 1+len(lenBuf)+5)
+		b = append(b, script.OpPUSHDATA2)
 		b = append(b, lenBuf...)
 		b = append(b, make([]byte, 5)...) // only 5 bytes, needs 100
 		s := script.Script(b)
@@ -263,8 +268,9 @@ func TestReadOpExtraCases(t *testing.T) {
 	t.Run("OpPUSHDATA4 valid", func(t *testing.T) {
 		data := make([]byte, 10)
 		lenBuf := make([]byte, 4)
-		binary.LittleEndian.PutUint32(lenBuf, uint32(len(data)))
-		b := []byte{script.OpPUSHDATA4}
+		binary.LittleEndian.PutUint32(lenBuf, uint32(len(data))) //nolint:gosec // G115 -- test data length is a small fixed constant
+		b := make([]byte, 0, 1+len(lenBuf)+len(data))
+		b = append(b, script.OpPUSHDATA4)
 		b = append(b, lenBuf...)
 		b = append(b, data...)
 		s := script.Script(b)
@@ -286,7 +292,8 @@ func TestReadOpExtraCases(t *testing.T) {
 	t.Run("OpPUSHDATA4 data too small", func(t *testing.T) {
 		lenBuf := make([]byte, 4)
 		binary.LittleEndian.PutUint32(lenBuf, 500)
-		b := []byte{script.OpPUSHDATA4}
+		b := make([]byte, 0, 1+len(lenBuf)+5)
+		b = append(b, script.OpPUSHDATA4)
 		b = append(b, lenBuf...)
 		b = append(b, make([]byte, 5)...) // only 5 bytes, needs 500
 		s := script.Script(b)

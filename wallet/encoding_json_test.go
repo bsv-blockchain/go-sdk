@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 // ---- CertificateType JSON ----
@@ -129,7 +130,8 @@ func TestCounterpartyUnmarshalPubKey(t *testing.T) {
 	require.NoError(t, err)
 	pubKeyHex := privKey.PubKey().ToDERHex()
 
-	jsonStr, _ := json.Marshal(pubKeyHex)
+	jsonStr, err := json.Marshal(pubKeyHex)
+	require.NoError(t, err)
 	var c wallet.Counterparty
 	err = json.Unmarshal(jsonStr, &c)
 	require.NoError(t, err)
@@ -268,7 +270,7 @@ func TestInternalizeActionArgsMarshalUnmarshalJSON(t *testing.T) {
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
 	assert.Equal(t, args.Description, decoded.Description)
-	assert.Equal(t, args.Tx, []byte(decoded.Tx))
+	assert.Equal(t, args.Tx, decoded.Tx)
 }
 
 // ---- Output JSON ----
@@ -378,8 +380,8 @@ func TestRevealCounterpartyKeyLinkageResultMarshalUnmarshalJSON(t *testing.T) {
 	var decoded wallet.RevealCounterpartyKeyLinkageResult
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
-	assert.Equal(t, result.EncryptedLinkage, []byte(decoded.EncryptedLinkage))
-	assert.Equal(t, result.EncryptedLinkageProof, []byte(decoded.EncryptedLinkageProof))
+	assert.Equal(t, result.EncryptedLinkage, decoded.EncryptedLinkage)
+	assert.Equal(t, result.EncryptedLinkageProof, decoded.EncryptedLinkageProof)
 }
 
 // ---- RevealSpecificKeyLinkageResult JSON ----
@@ -396,8 +398,8 @@ func TestRevealSpecificKeyLinkageResultMarshalUnmarshalJSON(t *testing.T) {
 	var decoded wallet.RevealSpecificKeyLinkageResult
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
-	assert.Equal(t, result.EncryptedLinkage, []byte(decoded.EncryptedLinkage))
-	assert.Equal(t, result.EncryptedLinkageProof, []byte(decoded.EncryptedLinkageProof))
+	assert.Equal(t, result.EncryptedLinkage, decoded.EncryptedLinkage)
+	assert.Equal(t, result.EncryptedLinkageProof, decoded.EncryptedLinkageProof)
 }
 
 // ---- KeyringRevealer JSON ----
@@ -435,7 +437,8 @@ func TestKeyringRevealerUnmarshalEmpty(t *testing.T) {
 func TestKeyringRevealerUnmarshalPubKey(t *testing.T) {
 	privKey, err := ec.NewPrivateKey()
 	require.NoError(t, err)
-	jsonStr, _ := json.Marshal(privKey.PubKey().ToDERHex())
+	jsonStr, err := json.Marshal(privKey.PubKey().ToDERHex())
+	require.NoError(t, err)
 
 	var r wallet.KeyringRevealer
 	err = json.Unmarshal(jsonStr, &r)
@@ -510,7 +513,7 @@ func TestVerifyHMACArgsMarshalUnmarshalJSON(t *testing.T) {
 	err = json.Unmarshal(data, &decoded)
 	require.NoError(t, err)
 	assert.Equal(t, args.HMAC, decoded.HMAC)
-	assert.Equal(t, args.Data, []byte(decoded.Data))
+	assert.Equal(t, args.Data, decoded.Data)
 }
 
 func TestVerifyHMACArgsUnmarshalWrongHMACLength(t *testing.T) {

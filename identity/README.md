@@ -56,7 +56,7 @@ success, failure, err := identityClient.PubliclyRevealAttributes(
 ```go
 // Simplified API that returns just the transaction ID like the TypeScript implementation
 txid, err := identityClient.PubliclyRevealAttributesSimple(
-	context.Background(), 
+	context.Background(),
 	certificate,
 	[]identity.CertificateFieldNameUnder50Bytes{"name", "email"},
 )
@@ -146,4 +146,4 @@ func main() {
 
 ## License
 
-Open BSV License 
+Open BSV License

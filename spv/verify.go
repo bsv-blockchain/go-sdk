@@ -11,7 +11,8 @@ import (
 
 func Verify(ctx context.Context, t *transaction.Transaction,
 	chainTracker chaintracker.ChainTracker,
-	feeModel transaction.FeeModel) (bool, error) {
+	feeModel transaction.FeeModel,
+) (bool, error) {
 	verifiedTxids := make(map[string]struct{})
 	txQueue := []*transaction.Transaction{t}
 	if chainTracker == nil {

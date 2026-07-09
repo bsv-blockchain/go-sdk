@@ -7,11 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/util"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewHTTPWalletJSON(t *testing.T) {
@@ -56,24 +58,24 @@ func TestHTTPWalletJSON_API(t *testing.T) {
 	// Test server that validates requests and returns mock responses
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Validate headers
-		require.Equal(t, r.Header.Get("Accept"), "application/json")
-		require.Equal(t, r.Header.Get("Content-Type"), "application/json")
-		require.Equal(t, r.Header.Get("Originator"), TestOriginator)
-		require.Equal(t, r.URL.Path, "/testEndpoint")
+		assert.Equal(t, "application/json", r.Header.Get("Accept"))
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, TestOriginator, r.Header.Get("Originator"))
+		assert.Equal(t, "/testEndpoint", r.URL.Path)
 
 		// Validate body
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		var req map[string]any
 		err = json.Unmarshal(body, &req)
-		require.NoError(t, err)
-		require.Equal(t, "testValue", req["testKey"])
+		assert.NoError(t, err)
+		assert.Equal(t, "testValue", req["testKey"])
 
 		// Return test response
 		resp := map[string]string{"result": "success"}
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(resp)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -116,7 +118,7 @@ func TestHTTPWalletJSON_API_Errors(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
 				_, err := w.Write([]byte(tt.response))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer ts.Close()
 
@@ -150,7 +152,7 @@ func TestHTTPWalletJSON_ErrorCases(t *testing.T) {
 	t.Run("invalid JSON response", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("invalid json"))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		}))
 		defer ts.Close()
 
@@ -170,12 +172,12 @@ func writeJSONResponse(t *testing.T, w http.ResponseWriter, data interface{}) {
 func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 	txId := tu.GetByte32FromString("test-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/createAction", r.URL.Path)
+		assert.Equal(t, "/createAction", r.URL.Path)
 
 		var args wallet.CreateActionArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, "test desc", args.Description)
+		err := json.NewDecoder(r.Body).Decode(&args) //nolint:musttag // CreateActionArgs.Options (CreateActionOptions) is defined without JSON tags by design
+		assert.NoError(t, err)
+		assert.Equal(t, "test desc", args.Description)
 
 		writeJSONResponse(t, w, &wallet.CreateActionResult{Txid: txId})
 	}))
@@ -190,19 +192,23 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 }
 
 func TestHTTPWalletJSON_SignAction(t *testing.T) {
-	var testRef = []byte("test-ref")
-	var testScript = []byte("test-script")
+	testRef := []byte("test-ref")
+	testScript := []byte("test-script")
 	testTxId := tu.GetByte32FromString("signed-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/signAction", r.URL.Path)
+		assert.Equal(t, "/signAction", r.URL.Path)
 
 		var args wallet.SignActionArgs
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body))
-		require.Equal(t, testRef, args.Reference)
-		require.Len(t, args.Spends, 1)
-		require.Equal(t, testScript, args.Spends[0].UnlockingScript)
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body)) { //nolint:musttag // SignActionArgs.Options (SignActionOptions) is defined without JSON tags by design
+			return
+		}
+		assert.Equal(t, testRef, args.Reference)
+		assert.Len(t, args.Spends, 1)
+		assert.Equal(t, testScript, args.Spends[0].UnlockingScript)
 
 		writeJSONResponse(t, w, &wallet.SignActionResult{Txid: testTxId})
 	}))
@@ -221,12 +227,12 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 
 func TestHTTPWalletJSON_AbortAction(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/abortAction", r.URL.Path)
+		assert.Equal(t, "/abortAction", r.URL.Path)
 
 		var args wallet.AbortActionArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, []byte{1, 2, 3, 4}, args.Reference)
+		assert.NoError(t, err)
+		assert.Equal(t, []byte{1, 2, 3, 4}, args.Reference)
 
 		writeJSONResponse(t, w, wallet.AbortActionResult{Aborted: true})
 	}))
@@ -243,13 +249,13 @@ func TestHTTPWalletJSON_AbortAction(t *testing.T) {
 func TestHTTPWalletJSON_ListActions(t *testing.T) {
 	testTxID := tu.GetByte32FromString("test-txid")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/listActions", r.URL.Path)
+		assert.Equal(t, "/listActions", r.URL.Path)
 
 		var args wallet.ListActionsArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, []string{"test-label"}, args.Labels)
-		require.Equal(t, util.Uint32Ptr(uint32(10)), args.Limit)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"test-label"}, args.Labels)
+		assert.Equal(t, util.Uint32Ptr(uint32(10)), args.Limit)
 
 		writeJSONResponse(t, w, wallet.ListActionsResult{
 			TotalActions: 1,
@@ -276,14 +282,14 @@ func TestHTTPWalletJSON_ListActions(t *testing.T) {
 
 func TestHTTPWalletJSON_InternalizeAction(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/internalizeAction", r.URL.Path)
+		assert.Equal(t, "/internalizeAction", r.URL.Path)
 
 		var args wallet.InternalizeActionArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, "test-desc", args.Description)
-		require.Len(t, args.Outputs, 1)
-		require.Equal(t, uint32(0), args.Outputs[0].OutputIndex)
+		assert.NoError(t, err)
+		assert.Equal(t, "test-desc", args.Description)
+		assert.Len(t, args.Outputs, 1)
+		assert.Equal(t, uint32(0), args.Outputs[0].OutputIndex)
 
 		writeJSONResponse(t, w, wallet.InternalizeActionResult{Accepted: true})
 	}))
@@ -308,13 +314,13 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 	encryptedData := []byte("encrypted-data")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/encrypt", r.URL.Path)
+		assert.Equal(t, "/encrypt", r.URL.Path)
 
 		var args wallet.EncryptArgs
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.NoError(t, json.Unmarshal(body, &args))
-		require.Equal(t, testData, []byte(args.Plaintext))
+		assert.NoError(t, err)
+		assert.NoError(t, json.Unmarshal(body, &args))
+		assert.Equal(t, testData, []byte(args.Plaintext))
 
 		resp := wallet.EncryptResult{Ciphertext: encryptedData}
 		writeJSONResponse(t, w, &resp)
@@ -330,12 +336,12 @@ func TestHTTPWalletJSON_EncryptDecrypt(t *testing.T) {
 
 	// Test decrypt
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/decrypt", r.URL.Path)
+		assert.Equal(t, "/decrypt", r.URL.Path)
 
 		var args wallet.DecryptArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, encryptedData, []byte(args.Ciphertext))
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, encryptedData, []byte(args.Ciphertext))
 
 		resp := wallet.DecryptResult{Plaintext: testData}
 		writeJSONResponse(t, w, &resp)
@@ -358,17 +364,17 @@ func TestHTTPWalletJSON_HMACOperations(t *testing.T) {
 		if r.URL.Path == "/createHmac" {
 			var args wallet.CreateHMACArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
+			assert.NoError(t, err)
+			assert.Equal(t, testData, []byte(args.Data))
 
 			resp := wallet.CreateHMACResult{HMAC: testHMAC}
 			writeJSONResponse(t, w, &resp)
 		} else {
 			var args wallet.VerifyHMACArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testHMAC, args.HMAC)
+			assert.NoError(t, err)
+			assert.Equal(t, testData, args.Data)
+			assert.Equal(t, testHMAC, args.HMAC)
 
 			resp := wallet.VerifyHMACResult{Valid: true}
 			writeJSONResponse(t, w, &resp)
@@ -403,17 +409,17 @@ func TestHTTPWalletJSON_SignatureOperations(t *testing.T) {
 		if r.URL.Path == "/createSignature" {
 			var args wallet.CreateSignatureArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
+			assert.NoError(t, err)
+			assert.Equal(t, testData, []byte(args.Data))
 
 			resp := wallet.CreateSignatureResult{Signature: testSig}
 			writeJSONResponse(t, w, &resp)
 		} else {
 			var args wallet.VerifySignatureArgs
 			err := json.NewDecoder(r.Body).Decode(&args)
-			require.NoError(t, err)
-			require.Equal(t, testData, []byte(args.Data))
-			require.Equal(t, testSig.Serialize(), args.Signature.Serialize())
+			assert.NoError(t, err)
+			assert.Equal(t, testData, args.Data)
+			assert.Equal(t, testSig.Serialize(), args.Signature.Serialize())
 
 			resp := wallet.VerifySignatureResult{Valid: true}
 			writeJSONResponse(t, w, &resp)
@@ -446,13 +452,13 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 	verifier := tu.GetPKFromHex(t, "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
 	// Test AcquireCertificate
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/acquireCertificate", r.URL.Path)
+		assert.Equal(t, "/acquireCertificate", r.URL.Path)
 
 		var args wallet.AcquireCertificateArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, typeTest, args.Type)
-		require.Equal(t, certifier, args.Certifier)
+		assert.NoError(t, err)
+		assert.Equal(t, typeTest, args.Type)
+		assert.Equal(t, certifier, args.Certifier)
 
 		cert := wallet.Certificate{
 			SerialNumber: serialNumber,
@@ -473,12 +479,12 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 
 	// Test ListCertificates
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/listCertificates", r.URL.Path)
+		assert.Equal(t, "/listCertificates", r.URL.Path)
 
 		var args wallet.ListCertificatesArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, []*ec.PublicKey{certifier}, args.Certifiers)
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, []*ec.PublicKey{certifier}, args.Certifiers)
 
 		result := wallet.ListCertificatesResult{
 			TotalCertificates: 1,
@@ -505,12 +511,12 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 
 	// Test ProveCertificate
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/proveCertificate", r.URL.Path)
+		assert.Equal(t, "/proveCertificate", r.URL.Path)
 
 		var args wallet.ProveCertificateArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, verifier.Compressed(), args.Verifier.Compressed())
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, verifier.Compressed(), args.Verifier.Compressed())
 
 		result := wallet.ProveCertificateResult{
 			KeyringForVerifier: map[string]string{"field": "key"},
@@ -529,12 +535,12 @@ func TestHTTPWalletJSON_CertificateOperations(t *testing.T) {
 
 	// Test RelinquishCertificate
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/relinquishCertificate", r.URL.Path)
+		assert.Equal(t, "/relinquishCertificate", r.URL.Path)
 
 		var args wallet.RelinquishCertificateArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, typeTest, args.Type)
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, typeTest, args.Type)
 
 		writeJSONResponse(t, w, wallet.RelinquishCertificateResult{Relinquished: true})
 	}))
@@ -553,19 +559,21 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 	testKey := tu.GetPKFromHex(t, "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
 	// Test DiscoverByIdentityKey
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/discoverByIdentityKey", r.URL.Path)
+		assert.Equal(t, "/discoverByIdentityKey", r.URL.Path)
 
 		var args wallet.DiscoverByIdentityKeyArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, testKey, args.IdentityKey)
+		assert.NoError(t, err)
+		assert.Equal(t, testKey, args.IdentityKey)
 
 		result := wallet.DiscoverCertificatesResult{
 			TotalCertificates: 1,
-			Certificates: []wallet.IdentityCertificate{{
-				Certificate: wallet.Certificate{
-					Type: typeDiscovered,
-				}},
+			Certificates: []wallet.IdentityCertificate{
+				{
+					Certificate: wallet.Certificate{
+						Type: typeDiscovered,
+					},
+				},
 			},
 		}
 		writeJSONResponse(t, w, result)
@@ -582,12 +590,12 @@ func TestHTTPWalletJSON_DiscoveryOperations(t *testing.T) {
 
 	// Test DiscoverByAttributes
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/discoverByAttributes", r.URL.Path)
+		assert.Equal(t, "/discoverByAttributes", r.URL.Path)
 
 		var args wallet.DiscoverByAttributesArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, "value", args.Attributes["key"])
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, "value", args.Attributes["key"])
 
 		writeJSONResponse(t, w, wallet.DiscoverCertificatesResult{
 			TotalCertificates: 1,
@@ -606,13 +614,13 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 	// Test ListOutputs
 	outpoint := *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/listOutputs", r.URL.Path)
+		assert.Equal(t, "/listOutputs", r.URL.Path)
 
 		var args wallet.ListOutputsArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, "test-basket", args.Basket)
-		require.Equal(t, []string{"tag1"}, args.Tags)
+		assert.NoError(t, err)
+		assert.Equal(t, "test-basket", args.Basket)
+		assert.Equal(t, []string{"tag1"}, args.Tags)
 
 		result := wallet.ListOutputsResult{
 			TotalOutputs: 1,
@@ -639,13 +647,13 @@ func TestHTTPWalletJSON_OutputOperations(t *testing.T) {
 
 	// Test RelinquishOutput
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/relinquishOutput", r.URL.Path)
+		assert.Equal(t, "/relinquishOutput", r.URL.Path)
 
 		var args wallet.RelinquishOutputArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, "test-basket", args.Basket)
-		require.Equal(t, outpoint, args.Output)
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, "test-basket", args.Basket)
+		assert.Equal(t, outpoint, args.Output)
 
 		writeJSONResponse(t, w, wallet.RelinquishOutputResult{Relinquished: true})
 	}))
@@ -665,13 +673,13 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 	verifier := tu.GetPKFromHex(t, "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
 	// Test RevealCounterpartyKeyLinkage
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/revealCounterpartyKeyLinkage", r.URL.Path)
+		assert.Equal(t, "/revealCounterpartyKeyLinkage", r.URL.Path)
 
 		var args wallet.RevealCounterpartyKeyLinkageArgs
 		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, counterParty, args.Counterparty)
-		require.Equal(t, verifier, args.Verifier)
+		assert.NoError(t, err)
+		assert.Equal(t, counterParty, args.Counterparty)
+		assert.Equal(t, verifier, args.Verifier)
 
 		result := wallet.RevealCounterpartyKeyLinkageResult{
 			EncryptedLinkage: []byte("encrypted-data"),
@@ -690,13 +698,13 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 
 	// Test RevealSpecificKeyLinkage
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/revealSpecificKeyLinkage", r.URL.Path)
+		assert.Equal(t, "/revealSpecificKeyLinkage", r.URL.Path)
 
 		var args wallet.RevealSpecificKeyLinkageArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, "test-protocol", args.ProtocolID.Protocol)
-		require.Equal(t, "test-key", args.KeyID)
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, "test-protocol", args.ProtocolID.Protocol)
+		assert.Equal(t, "test-key", args.KeyID)
 
 		result := wallet.RevealSpecificKeyLinkageResult{
 			EncryptedLinkage: []byte("specific-encrypted"),
@@ -719,7 +727,7 @@ func TestHTTPWalletJSON_KeyLinkageOperations(t *testing.T) {
 func TestHTTPWalletJSON_AuthOperations(t *testing.T) {
 	// Test IsAuthenticated
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/isAuthenticated", r.URL.Path)
+		assert.Equal(t, "/isAuthenticated", r.URL.Path)
 		writeJSONResponse(t, w, wallet.AuthenticatedResult{Authenticated: true})
 	}))
 	defer ts.Close()
@@ -731,7 +739,7 @@ func TestHTTPWalletJSON_AuthOperations(t *testing.T) {
 
 	// Test WaitForAuthentication
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/waitForAuthentication", r.URL.Path)
+		assert.Equal(t, "/waitForAuthentication", r.URL.Path)
 		writeJSONResponse(t, w, wallet.AuthenticatedResult{Authenticated: true})
 	}))
 	defer ts.Close()
@@ -745,7 +753,7 @@ func TestHTTPWalletJSON_AuthOperations(t *testing.T) {
 func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 	// Test GetHeight
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/getHeight", r.URL.Path)
+		assert.Equal(t, "/getHeight", r.URL.Path)
 		writeJSONResponse(t, w, wallet.GetHeightResult{Height: 12345})
 	}))
 	defer ts.Close()
@@ -757,12 +765,12 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 
 	// Test GetHeaderForHeight
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/getHeaderForHeight", r.URL.Path)
+		assert.Equal(t, "/getHeaderForHeight", r.URL.Path)
 
 		var args wallet.GetHeaderArgs
-		err := json.NewDecoder(r.Body).Decode(&args)
-		require.NoError(t, err)
-		require.Equal(t, uint32(12345), args.Height)
+		decodeErr := json.NewDecoder(r.Body).Decode(&args)
+		assert.NoError(t, decodeErr)
+		assert.Equal(t, uint32(12345), args.Height)
 
 		writeJSONResponse(t, w, wallet.GetHeaderResult{Header: []byte("test-header")})
 	}))
@@ -777,7 +785,7 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 
 	// Test GetNetwork
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/getNetwork", r.URL.Path)
+		assert.Equal(t, "/getNetwork", r.URL.Path)
 		writeJSONResponse(t, w, wallet.GetNetworkResult{Network: wallet.NetworkMainnet})
 	}))
 	defer ts.Close()
@@ -789,7 +797,7 @@ func TestHTTPWalletJSON_NetworkOperations(t *testing.T) {
 
 	// Test GetVersion
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/getVersion", r.URL.Path)
+		assert.Equal(t, "/getVersion", r.URL.Path)
 		writeJSONResponse(t, w, wallet.GetVersionResult{Version: "1.0.0"})
 	}))
 	defer ts.Close()

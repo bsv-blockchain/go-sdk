@@ -28,6 +28,7 @@ var (
 type MasterCertificate struct {
 	// Embed the base Certificate struct
 	Certificate
+
 	// MasterKeyring contains encrypted symmetric keys (Base64 encoded) for each field.
 	// The key is the field name, and the value is the encrypted key.
 	MasterKeyring map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64 `json:"masterKeyring,omitempty"`
@@ -137,7 +138,6 @@ func IssueCertificateForSubject(
 	getRevocationOutpoint func(string) (*transaction.Outpoint, error), // Optional func
 	serialNumberStr string, // Optional serial number as StringBase64
 ) (*MasterCertificate, error) {
-
 	// 1. Generate a random serialNumber if not provided
 	var serialNumber wallet.StringBase64
 	if serialNumberStr != "" {
@@ -214,6 +214,8 @@ func IssueCertificateForSubject(
 	case wallet.CounterpartyTypeAnyone:
 		// For "anyone" counterparty, use the certifier's key as well
 		baseCert.Subject = *certifierPubKey.PublicKey
+	case wallet.CounterpartyUninitialized:
+		return nil, fmt.Errorf("unhandled subject counterparty type: %v", subject.Type)
 	default:
 		return nil, fmt.Errorf("unhandled subject counterparty type: %v", subject.Type)
 	}
@@ -385,7 +387,7 @@ func CreateKeyringForVerifier(
 		)
 		if err != nil {
 			// Wrap the original error with our ErrDecryptionFailed
-			return nil, fmt.Errorf("failed to decrypt master key for field %s during keyring creation: %w: %v",
+			return nil, fmt.Errorf("failed to decrypt master key for field %s during keyring creation: %w: %w",
 				fieldName, ErrDecryptionFailed, err)
 		}
 		fieldRevelationKey := decryptedKey.FieldRevelationKey

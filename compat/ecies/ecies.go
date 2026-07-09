@@ -3,10 +3,9 @@ package compat
 import (
 	"crypto/hmac"
 	"encoding/base64"
+	"errors"
 	"math/big"
 	"reflect"
-
-	"errors"
 
 	ecies "github.com/bsv-blockchain/go-sdk/primitives/aescbc"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -104,7 +103,6 @@ func ElectrumEncrypt(message []byte,
 
 // ElectrumDecrypt decrypts a message using ECIES using Electrum decryption method
 func ElectrumDecrypt(encryptedData []byte, toPrivateKey *ec.PrivateKey, fromPublicKey *ec.PublicKey) ([]byte, error) {
-
 	if len(encryptedData) < 52 { // Minimum length: 4 (magic) + 16 (min cipher) + 32 (mac)
 		return nil, errors.New("invalid encrypted text: length")
 	}
@@ -161,7 +159,6 @@ func BitcoreEncrypt(message []byte,
 	fromPrivateKey *ec.PrivateKey,
 	iv []byte,
 ) ([]byte, error) {
-
 	// If IV is not provided, fill it with zeros
 	if iv == nil {
 		iv = make([]byte, 16)
@@ -192,7 +189,6 @@ func BitcoreEncrypt(message []byte,
 
 // BitcoreDecrypt decrypts a message using ECIES using Bitcore decryption method
 func BitcoreDecrypt(encryptedMessage []byte, toPrivatKey *ec.PrivateKey) ([]byte, error) {
-
 	fromPublicKey, err := ec.ParsePubKey(encryptedMessage[:33])
 	if err != nil {
 		return nil, err

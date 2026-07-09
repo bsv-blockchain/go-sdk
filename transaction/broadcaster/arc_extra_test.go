@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 const arcExampleURL = "https://arc.example.com"
@@ -26,7 +27,10 @@ func (m *MockArcRejectedClient) Do(req *http.Request) (*http.Response, error) {
 		"extraInfo": "mempool conflict",
 		"title":     "Transaction rejected",
 	}
-	b, _ := json.Marshal(body)
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),
@@ -45,7 +49,10 @@ func (m *MockArcStatus200Client) Do(req *http.Request) (*http.Response, error) {
 		"txid":     txid,
 		"title":    "Success",
 	}
-	b, _ := json.Marshal(body)
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),
@@ -94,7 +101,8 @@ func (m *MockArcStatusCheckClient) Do(req *http.Request) (*http.Response, error)
 		"txid":   txid,
 		"title":  "OK",
 	}
-	b, _ := json.Marshal(body)
+	b, err := json.Marshal(body)
+	require.NoError(m.t, err)
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),
@@ -216,9 +224,9 @@ func TestArcStatusMethod(t *testing.T) {
 	mined := MINED
 	ts := time.Now()
 	expectedResp := &ArcResponse{
-		Txid:     txid,
-		TxStatus: &mined,
-		Status:   200,
+		Txid:      txid,
+		TxStatus:  &mined,
+		Status:    200,
 		Timestamp: ts,
 	}
 
@@ -242,7 +250,10 @@ type MockArcStatusResponseClient struct {
 }
 
 func (m *MockArcStatusResponseClient) Do(req *http.Request) (*http.Response, error) {
-	b, _ := json.Marshal(m.resp)
+	b, err := json.Marshal(m.resp)
+	if err != nil {
+		return nil, err
+	}
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(string(b))),

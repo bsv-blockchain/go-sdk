@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+//nolint:gochecknoinits // validates the embedded wordlist checksum at package load time
 func init() {
 	// Ensure word list is correct
 	// $ wget https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/chinese_traditional.txt
@@ -19,8 +20,9 @@ func init() {
 
 // ChineseTraditional is a slice of mnemonic words taken from the bip39 specification
 // https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/chinese_traditional.txt
-var ChineseTraditional = strings.Split(strings.TrimSpace(chineseTraditional), "\n")
-var chineseTraditional = `的
+var (
+	ChineseTraditional = strings.Split(strings.TrimSpace(chineseTraditional), "\n")
+	chineseTraditional = `的
 一
 是
 在
@@ -2069,3 +2071,4 @@ var chineseTraditional = `的
 矮
 歇
 `
+)

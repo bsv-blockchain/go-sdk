@@ -118,4 +118,4 @@ To integrate the storage uploader in your application:
 
 For more information on the storage package, see:
 - [Package Documentation](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk/storage)
-- [Storage Downloader Example](../storage_downloader/) 
+- [Storage Downloader Example](../storage_downloader/)

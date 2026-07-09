@@ -9,11 +9,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"sync"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
+	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -45,7 +45,7 @@ func NewLocalKVStore(config KVStoreConfig) (*LocalKVStore, error) {
 }
 
 // getProtocol returns the wallet protocol for the given key
-func (kv *LocalKVStore) getProtocol(key string) wallet.Protocol {
+func (kv *LocalKVStore) getProtocol(_ string) wallet.Protocol {
 	// SecurityLevelEveryAppAndCounterparty seems appropriate for a shared KV store concept
 	return wallet.Protocol{
 		SecurityLevel: wallet.SecurityLevelEveryAppAndCounterparty,
@@ -63,7 +63,7 @@ type lookupValueResult struct {
 }
 
 // lookupValue finds the current value for a key
-func (kv *LocalKVStore) lookupValue(ctx context.Context, key string, defaultValue string, limit int) (*lookupValueResult, error) {
+func (kv *LocalKVStore) lookupValue(ctx context.Context, key, defaultValue string, limit int) (*lookupValueResult, error) {
 	outputsResult, err := kv.getOutputs(ctx, key, limit)
 	if err != nil {
 		// Wrap wallet operation error
@@ -178,7 +178,7 @@ func (kv *LocalKVStore) getOutputs(ctx context.Context, key string, limit int) (
 		Basket:  kv.context,
 		Tags:    []string{key},
 		Include: "entire transactions",
-		Limit:   util.Uint32Ptr(uint32(limit)),
+		Limit:   util.Uint32Ptr(uint32(limit)), //nolint:gosec // G115 -- limit is a small caller-supplied query bound
 	}
 	result, err := kv.wallet.ListOutputs(ctx, listArgs, kv.originator)
 	if err != nil {
@@ -189,7 +189,7 @@ func (kv *LocalKVStore) getOutputs(ctx context.Context, key string, limit int) (
 }
 
 // Get retrieves a value for the given key, or returns the defaultValue if not found.
-func (kv *LocalKVStore) Get(ctx context.Context, key string, defaultValue string) (string, error) {
+func (kv *LocalKVStore) Get(ctx context.Context, key, defaultValue string) (string, error) {
 	if key == "" {
 		return "", ErrInvalidKey
 	}
@@ -214,7 +214,7 @@ func (kv *LocalKVStore) Get(ctx context.Context, key string, defaultValue string
 }
 
 // Set stores a value with the given key, returning the outpoint of the transaction output.
-func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (string, error) {
+func (kv *LocalKVStore) Set(ctx context.Context, key, value string) (string, error) {
 	if key == "" {
 		return "", ErrInvalidKey
 	}
@@ -233,7 +233,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 			return "", fmt.Errorf("cannot set key %s due to existing corrupted state: %w", key, err)
 		}
 		// Log other lookup errors but attempt to proceed with Set (overwrite)
-		fmt.Printf("Warning: lookupValue failed during Set for key %s: %v\n", key, err)
+		fmt.Printf("Warning: lookupValue failed during Set for key %s: %v\n", key, err) //nolint:forbidigo // best-effort diagnostic warning on a non-fatal cleanup path
 		lookupResult = &lookupValueResult{valueExists: false, outpoints: []transaction.Outpoint{}, lor: &wallet.ListOutputsResult{}}
 	} else if err == nil && !lookupResult.valueExists { // Handle case where getOutputs was empty
 		lookupResult = &lookupValueResult{valueExists: false, outpoints: []transaction.Outpoint{}, lor: &wallet.ListOutputsResult{}}
@@ -254,7 +254,8 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 			},
 			Plaintext: valueBytes,
 		}
-		encryptResult, err := kv.wallet.Encrypt(ctx, encryptArgs, kv.originator)
+		var encryptResult *wallet.EncryptResult
+		encryptResult, err = kv.wallet.Encrypt(ctx, encryptArgs, kv.originator)
 		if err != nil {
 			return "", fmt.Errorf("for key %s: %w", key, err)
 		}
@@ -346,7 +347,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 	signResult, err := kv.wallet.SignAction(ctx, signArgs, kv.originator)
 	if err != nil {
 		// *** Add Relinquish logic here ***
-		fmt.Printf("Warning: SignAction failed for Set key %s. Attempting to relinquish inputs. Error: %v\n", key, err)
+		fmt.Printf("Warning: SignAction failed for Set key %s. Attempting to relinquish inputs. Error: %v\n", key, err) //nolint:forbidigo // best-effort diagnostic warning on a non-fatal cleanup path
 		for _, input := range inputs {
 			relinquishArgs := wallet.RelinquishOutputArgs{
 				Basket: kv.context,
@@ -354,7 +355,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 			}
 			_, relinquishErr := kv.wallet.RelinquishOutput(ctx, relinquishArgs, kv.originator)
 			if relinquishErr != nil {
-				fmt.Printf("Warning: Failed to relinquish output %s for key %s after SignAction failure: %v\n", input.Outpoint, key, relinquishErr)
+				fmt.Printf("Warning: Failed to relinquish output %s for key %s after SignAction failure: %v\n", input.Outpoint, key, relinquishErr) //nolint:forbidigo // best-effort diagnostic warning on a non-fatal cleanup path
 			}
 		}
 		// Return the original wrapped signing error
@@ -365,7 +366,7 @@ func (kv *LocalKVStore) Set(ctx context.Context, key string, value string) (stri
 }
 
 // prepareSpends generates the signing instructions for the inputs of a transaction.
-func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []wallet.CreateActionInput, signableTxBytes []byte, inputBeef []byte) (map[uint32]wallet.SignActionSpend, error) {
+func (kv *LocalKVStore) prepareSpends(ctx context.Context, key string, inputs []wallet.CreateActionInput, signableTxBytes, inputBeef []byte) (map[uint32]wallet.SignActionSpend, error) {
 	spends := make(map[uint32]wallet.SignActionSpend)
 
 	// Parse the input BEEF first to provide context for linking
@@ -497,7 +498,7 @@ func (kv *LocalKVStore) Remove(ctx context.Context, key string) ([]string, error
 		signResult, err := kv.wallet.SignAction(ctx, signArgs, kv.originator)
 		if err != nil {
 			// *** Add Relinquish logic here ***
-			fmt.Printf("Warning: SignAction failed for Remove key %s. Attempting to relinquish inputs. Error: %v\n", key, err)
+			fmt.Printf("Warning: SignAction failed for Remove key %s. Attempting to relinquish inputs. Error: %v\n", key, err) //nolint:forbidigo // best-effort diagnostic warning on a non-fatal cleanup path
 			for _, input := range inputs {
 				relinquishArgs := wallet.RelinquishOutputArgs{
 					Basket: kv.context,
@@ -505,7 +506,7 @@ func (kv *LocalKVStore) Remove(ctx context.Context, key string) ([]string, error
 				}
 				_, relinquishErr := kv.wallet.RelinquishOutput(ctx, relinquishArgs, kv.originator)
 				if relinquishErr != nil {
-					fmt.Printf("Warning: Failed to relinquish output %s for key %s after SignAction failure: %v\n", input.Outpoint, key, relinquishErr)
+					fmt.Printf("Warning: Failed to relinquish output %s for key %s after SignAction failure: %v\n", input.Outpoint, key, relinquishErr) //nolint:forbidigo // best-effort diagnostic warning on a non-fatal cleanup path
 				}
 			}
 			// Return the original wrapped signing error

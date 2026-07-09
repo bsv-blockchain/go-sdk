@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCertificate(t *testing.T) {
@@ -46,8 +47,8 @@ func TestCertificate(t *testing.T) {
 
 	// Helper function to create a ProtoWallet for testing
 	createProtoWallet := func(privateKey *ec.PrivateKey) *wallet.ProtoWallet {
-		protoWallet, err := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypePrivateKey, PrivateKey: privateKey})
-		require.NoError(t, err)
+		protoWallet, walletErr := wallet.NewProtoWallet(wallet.ProtoWalletArgs{Type: wallet.ProtoWalletArgsTypePrivateKey, PrivateKey: privateKey})
+		require.NoError(t, walletErr)
 		return protoWallet
 	}
 
@@ -82,11 +83,11 @@ func TestCertificate(t *testing.T) {
 			Signature:          nil, // No signature
 		}
 
-		serialized, err := certificate.ToBinary(false) // Exclude signature
-		require.NoError(t, err)
+		serialized, serializeErr := certificate.ToBinary(false) // Exclude signature
+		require.NoError(t, serializeErr)
 
-		deserializedCertificate, err := CertificateFromBinary(serialized)
-		require.NoError(t, err)
+		deserializedCertificate, serializeErr := CertificateFromBinary(serialized)
+		require.NoError(t, serializeErr)
 
 		assert.Equal(t, sampleType, deserializedCertificate.Type)
 		assert.Equal(t, sampleSerialNumber, deserializedCertificate.SerialNumber)
@@ -114,11 +115,11 @@ func TestCertificate(t *testing.T) {
 		err = certificate.Sign(t.Context(), certifierProtoWallet)
 		require.NoError(t, err)
 
-		serialized, err := certificate.ToBinary(true) // Include signature
-		require.NoError(t, err)
+		serialized, serializeErr := certificate.ToBinary(true) // Include signature
+		require.NoError(t, serializeErr)
 
-		deserializedCertificate, err := CertificateFromBinary(serialized)
-		require.NoError(t, err)
+		deserializedCertificate, serializeErr := CertificateFromBinary(serialized)
+		require.NoError(t, serializeErr)
 
 		assert.Equal(t, sampleType, deserializedCertificate.Type)
 		assert.Equal(t, sampleSerialNumber, deserializedCertificate.SerialNumber)
@@ -174,7 +175,7 @@ func TestCertificate(t *testing.T) {
 
 		// Verify the signature
 		err = certificate.Verify(t.Context())
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("should fail verification if the signature is missing", func(t *testing.T) {
@@ -190,7 +191,7 @@ func TestCertificate(t *testing.T) {
 
 		// Verify the signature
 		err = certificate.Verify(t.Context())
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("should fail verification if the signature is incorrect", func(t *testing.T) {
@@ -209,7 +210,7 @@ func TestCertificate(t *testing.T) {
 
 		// Verify the signature
 		err = certificate.Verify(t.Context())
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("should handle certificates with empty fields", func(t *testing.T) {
@@ -230,17 +231,17 @@ func TestCertificate(t *testing.T) {
 		require.NoError(t, err)
 
 		// Serialize and deserialize
-		serialized, err := certificate.ToBinary(true)
-		require.NoError(t, err)
+		serialized, serializeErr := certificate.ToBinary(true)
+		require.NoError(t, serializeErr)
 
-		deserializedCertificate, err := CertificateFromBinary(serialized)
-		require.NoError(t, err)
+		deserializedCertificate, serializeErr := CertificateFromBinary(serialized)
+		require.NoError(t, serializeErr)
 
 		assert.Equal(t, sampleFieldsEmpty, deserializedCertificate.Fields)
 
 		// Verify the signature
-		err = deserializedCertificate.Verify(t.Context())
-		assert.NoError(t, err)
+		serializeErr = deserializedCertificate.Verify(t.Context())
+		assert.NoError(t, serializeErr)
 	})
 
 	t.Run("should correctly handle serialization/deserialization when signature is excluded", func(t *testing.T) {
@@ -258,11 +259,11 @@ func TestCertificate(t *testing.T) {
 		}
 
 		// Serialize without signature
-		serialized, err := certificate.ToBinary(false)
-		require.NoError(t, err)
+		serialized, serializeErr := certificate.ToBinary(false)
+		require.NoError(t, serializeErr)
 
-		deserializedCertificate, err := CertificateFromBinary(serialized)
-		require.NoError(t, err)
+		deserializedCertificate, serializeErr := CertificateFromBinary(serialized)
+		require.NoError(t, serializeErr)
 
 		assert.Nil(t, deserializedCertificate.Signature)
 		assert.Equal(t, sampleFields, deserializedCertificate.Fields)
@@ -300,17 +301,17 @@ func TestCertificate(t *testing.T) {
 		require.NoError(t, err)
 
 		// Serialize and deserialize
-		serialized, err := certificate.ToBinary(true)
-		require.NoError(t, err)
+		serialized, serializeErr := certificate.ToBinary(true)
+		require.NoError(t, serializeErr)
 
-		deserializedCertificate, err := CertificateFromBinary(serialized)
-		require.NoError(t, err)
+		deserializedCertificate, serializeErr := CertificateFromBinary(serialized)
+		require.NoError(t, serializeErr)
 
 		assert.Equal(t, fields, deserializedCertificate.Fields)
 
 		// Verify the signature
-		err = deserializedCertificate.Verify(t.Context())
-		assert.NoError(t, err)
+		serializeErr = deserializedCertificate.Verify(t.Context())
+		assert.NoError(t, serializeErr)
 	})
 
 	t.Run("should correctly serialize and deserialize the revocationOutpoint", func(t *testing.T) {
@@ -324,11 +325,11 @@ func TestCertificate(t *testing.T) {
 			Signature:          nil, // No signature
 		}
 
-		serialized, err := certificate.ToBinary(false)
-		require.NoError(t, err)
+		serialized, serializeErr := certificate.ToBinary(false)
+		require.NoError(t, serializeErr)
 
-		deserializedCertificate, err := CertificateFromBinary(serialized)
-		require.NoError(t, err)
+		deserializedCertificate, serializeErr := CertificateFromBinary(serialized)
+		require.NoError(t, serializeErr)
 
 		assert.Equal(t, certificate.RevocationOutpoint, deserializedCertificate.RevocationOutpoint)
 	})
@@ -349,12 +350,12 @@ func TestCertificate(t *testing.T) {
 
 		// Trying to sign again should error
 		err = preSignedCertificate.Sign(t.Context(), certifierProtoWallet)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "certificate has already been signed")
 
 		// Scenario 2: The certifier property is set to something different from the wallet's public key
-		mismatchedCertifierPrivateKey, err := ec.NewPrivateKey()
-		require.NoError(t, err)
+		mismatchedCertifierPrivateKey, certErr := ec.NewPrivateKey()
+		require.NoError(t, certErr)
 		mismatchedCertifierPubKey := mismatchedCertifierPrivateKey.PubKey()
 
 		certificateWithMismatch := &Certificate{
@@ -369,18 +370,18 @@ func TestCertificate(t *testing.T) {
 
 		// Sign the certificate; it should automatically update
 		// the certifier field to match the wallet's actual public key
-		err = certificateWithMismatch.Sign(t.Context(), certifierProtoWallet)
-		require.NoError(t, err)
+		certErr = certificateWithMismatch.Sign(t.Context(), certifierProtoWallet)
+		require.NoError(t, certErr)
 
 		// Get the expected public key from the wallet
-		pubKey, err := certifierProtoWallet.GetPublicKey(t.Context(), wallet.GetPublicKeyArgs{
+		pubKey, certErr := certifierProtoWallet.GetPublicKey(t.Context(), wallet.GetPublicKeyArgs{
 			IdentityKey: true,
 		}, "")
-		require.NoError(t, err)
+		require.NoError(t, certErr)
 
 		assert.True(t, certificateWithMismatch.Certifier.IsEqual(pubKey.PublicKey))
-		err = certificateWithMismatch.Verify(t.Context())
-		assert.NoError(t, err)
+		certErr = certificateWithMismatch.Verify(t.Context())
+		assert.NoError(t, certErr)
 	})
 
 	t.Run("ToWalletCertificate should convert Certificate to wallet.Certificate correctly", func(t *testing.T) {
@@ -394,8 +395,8 @@ func TestCertificate(t *testing.T) {
 			Signature:          nil,
 		}
 
-		walletCert, err := certificate.ToWalletCertificate()
-		require.NoError(t, err)
+		walletCert, convertErr := certificate.ToWalletCertificate()
+		require.NoError(t, convertErr)
 
 		// Verify the conversion
 		assert.NotNil(t, walletCert)
@@ -410,7 +411,7 @@ func TestCertificate(t *testing.T) {
 		assert.Equal(t, sampleSerialNumber, convertedSerial)
 
 		// Check fields conversion
-		assert.Equal(t, len(sampleFields), len(walletCert.Fields))
+		assert.Len(t, walletCert.Fields, len(sampleFields))
 		for fieldName, fieldValue := range sampleFields {
 			assert.Equal(t, string(fieldValue), walletCert.Fields[string(fieldName)])
 		}
@@ -482,7 +483,7 @@ func TestCertificate(t *testing.T) {
 		assert.Equal(t, expectedSerial, certificate.SerialNumber)
 
 		// Check fields conversion
-		assert.Equal(t, len(walletCert.Fields), len(certificate.Fields))
+		assert.Len(t, certificate.Fields, len(walletCert.Fields))
 		for fieldName, fieldValue := range walletCert.Fields {
 			certFieldValue := certificate.Fields[wallet.CertificateFieldNameUnder50Bytes(fieldName)]
 			assert.Equal(t, fieldValue, string(certFieldValue))
@@ -524,7 +525,7 @@ func TestCertificate(t *testing.T) {
 
 	t.Run("FromWalletCertificate should handle nil input", func(t *testing.T) {
 		certificate, err := FromWalletCertificate(nil)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, certificate)
 		assert.Contains(t, err.Error(), "wallet certificate cannot be nil")
 	})
@@ -541,7 +542,7 @@ func TestCertificate(t *testing.T) {
 		}
 
 		walletCert, err := certificate.ToWalletCertificate()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, walletCert)
 		assert.Contains(t, err.Error(), "invalid certificate type")
 	})
@@ -558,7 +559,7 @@ func TestCertificate(t *testing.T) {
 		}
 
 		walletCert, err := certificate.ToWalletCertificate()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, walletCert)
 		assert.Contains(t, err.Error(), "invalid serial number")
 	})

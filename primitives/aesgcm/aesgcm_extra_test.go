@@ -93,11 +93,11 @@ func TestAESDecrypt(t *testing.T) {
 			keyHex:      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
 		},
 		{
-			name:       "ciphertext wrong block size",
+			name:        "ciphertext wrong block size",
 			plaintextHx: "001122334455",
-			keyHex:     "000102030405060708090a0b0c0d0e0f",
-			wantErr:    true,
-			errContain: "ciphertext is not the correct block size",
+			keyHex:      "000102030405060708090a0b0c0d0e0f",
+			wantErr:     true,
+			errContain:  "ciphertext is not the correct block size",
 		},
 		{
 			name:        "invalid key length",
@@ -116,11 +116,11 @@ func TestAESDecrypt(t *testing.T) {
 
 			if tt.wantErr {
 				// Pass plaintext as "ciphertext" directly to test error paths
-				result, err := AESDecrypt(plaintext, key)
-				require.Error(t, err)
+				result, decryptErr := AESDecrypt(plaintext, key)
+				require.Error(t, decryptErr)
 				_ = result
 				if tt.errContain != "" {
-					require.Contains(t, err.Error(), tt.errContain)
+					require.Contains(t, decryptErr.Error(), tt.errContain)
 				}
 				return
 			}

@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/primitives/schnorr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/primitives/schnorr"
 )
 
 func TestProtoWallet_RevealCounterpartyKeyLinkage(t *testing.T) {
@@ -85,7 +86,7 @@ func TestProtoWallet_RevealCounterpartyKeyLinkage(t *testing.T) {
 	}, "test")
 	require.NoError(t, err)
 	// Verify proof format (should be 98 bytes: 33 + 33 + 32)
-	assert.Equal(t, 98, len(decryptProofResult.Plaintext))
+	assert.Len(t, decryptProofResult.Plaintext, 98)
 
 	// Proof components: R compressed (33 bytes) || S' compressed (33 bytes) || z (32 bytes)
 }
@@ -196,7 +197,7 @@ func TestProtoWallet_RevealCounterpartyKeyLinkage_Errors(t *testing.T) {
 		Counterparty: nil,
 		Verifier:     proverKey.PubKey(),
 	}, "test")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "counterparty public key is required")
 
 	// Test with nil verifier
@@ -204,7 +205,7 @@ func TestProtoWallet_RevealCounterpartyKeyLinkage_Errors(t *testing.T) {
 		Counterparty: proverKey.PubKey(),
 		Verifier:     nil,
 	}, "test")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "verifier public key is required")
 }
 
@@ -227,7 +228,7 @@ func TestProtoWallet_RevealSpecificKeyLinkage_Errors(t *testing.T) {
 		ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "test"},
 		KeyID:        "test",
 	}, "test")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "verifier public key is required")
 
 	// Test with "self" counterparty
@@ -237,7 +238,7 @@ func TestProtoWallet_RevealSpecificKeyLinkage_Errors(t *testing.T) {
 		ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "test"},
 		KeyID:        "test",
 	}, "test")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot reveal specific key linkage for 'self'")
 
 	// Test with "anyone" counterparty
@@ -247,7 +248,7 @@ func TestProtoWallet_RevealSpecificKeyLinkage_Errors(t *testing.T) {
 		ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "test"},
 		KeyID:        "test",
 	}, "test")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot reveal specific key linkage for 'anyone'")
 }
 

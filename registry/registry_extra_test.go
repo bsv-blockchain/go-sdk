@@ -16,6 +16,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
@@ -25,8 +28,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -271,6 +272,7 @@ func TestRegisterDefinitionCertificateType(t *testing.T) {
 // mockWalletNetwork wraps MockRegistry and overrides GetNetwork.
 type mockWalletNetwork struct {
 	*MockRegistry
+
 	resp string
 	err  error
 }
@@ -377,13 +379,15 @@ func TestListOwnRegistryEntriesOutOfBoundsIndexSkipped(t *testing.T) {
 	mw.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
 		Outputs: []wallet.Output{
-			{Satoshis: 1000, Spendable: true,
-				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 99}},
+			{
+				Satoshis: 1000, Spendable: true,
+				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 99},
+			},
 		},
 		BEEF: beef,
 	}
 	// Use testLogger context to cover the debug branch
-	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck
+	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 	client := NewRegistryClient(mw, "originator")
 	results, err := client.ListOwnRegistryEntries(ctx, DefinitionTypeBasket)
 	require.NoError(t, err)
@@ -398,12 +402,14 @@ func TestListOwnRegistryEntriesInvalidLockingScriptSkipped(t *testing.T) {
 	mw.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
 		Outputs: []wallet.Output{
-			{Satoshis: 1000, Spendable: true,
-				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 0}},
+			{
+				Satoshis: 1000, Spendable: true,
+				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 0},
+			},
 		},
 		BEEF: beef,
 	}
-	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck
+	ctx := context.WithValue(context.Background(), "testLogger", logCapture{}) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 	client := NewRegistryClient(mw, "originator")
 	results, err := client.ListOwnRegistryEntries(ctx, DefinitionTypeBasket)
 	require.NoError(t, err)
@@ -421,8 +427,10 @@ func TestListOwnRegistryEntriesProtocolType(t *testing.T) {
 	mw.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
 		Outputs: []wallet.Output{
-			{Satoshis: 1000, Spendable: true,
-				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 0}},
+			{
+				Satoshis: 1000, Spendable: true,
+				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 0},
+			},
 		},
 		BEEF: beef,
 	}
@@ -445,8 +453,10 @@ func TestListOwnRegistryEntriesCertificateType(t *testing.T) {
 	mw.ListOutputsResultToReturn = &wallet.ListOutputsResult{
 		TotalOutputs: 1,
 		Outputs: []wallet.Output{
-			{Satoshis: 1000, Spendable: true,
-				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 0}},
+			{
+				Satoshis: 1000, Spendable: true,
+				Outpoint: transaction.Outpoint{Txid: *tx.TxID(), Index: 0},
+			},
 		},
 		BEEF: beef,
 	}
@@ -467,6 +477,7 @@ func TestListOwnRegistryEntriesListOutputsError(t *testing.T) {
 // walletWithListError overrides ListOutputs to return an error.
 type walletWithListError struct {
 	*MockRegistry
+
 	err error
 }
 
@@ -898,6 +909,7 @@ func (c *customDefinitionData) GetRegistryOperator() string       { return c.ope
 // walletWithCreateActionError overrides CreateAction to return an error.
 type walletWithCreateActionError struct {
 	*MockRegistry
+
 	err error
 }
 
@@ -908,6 +920,7 @@ func (m *walletWithCreateActionError) CreateAction(_ context.Context, _ wallet.C
 // walletWithSignActionError overrides SignAction to return an error.
 type walletWithSignActionError struct {
 	*MockRegistry
+
 	err error
 }
 
@@ -1059,7 +1072,8 @@ func TestPushDropLockCoversBuildFieldsProtocol(t *testing.T) {
 		[]byte(`[2,"proto"]`), []byte("name"), []byte("icon"),
 		[]byte("desc"), []byte("doc"), testPubKeyBytes(),
 	}
-	_, err := pd.Lock(ctx, fields, wallet.Protocol{}, "1",
+	_, err := pd.Lock(
+		ctx, fields, wallet.Protocol{}, "1",
 		wallet.Counterparty{Type: wallet.CounterpartyTypeAnyone},
 		false, false, pushdrop.LockBefore,
 	)

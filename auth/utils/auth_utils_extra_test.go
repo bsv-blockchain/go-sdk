@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	tcu "github.com/bsv-blockchain/go-sdk/util/test_cert_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestRandomBase64 covers the RandomBase64 function in base64.go
@@ -65,7 +66,7 @@ func TestValidateCertificateEncoding(t *testing.T) {
 			// SerialNumber is zero-value [32]byte
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
-		assert.True(t, len(errs) >= 2, "expected at least 2 errors for empty type and serial")
+		assert.GreaterOrEqual(t, len(errs), 2, "expected at least 2 errors for empty type and serial")
 	})
 
 	t.Run("returns error for empty serial number", func(t *testing.T) {
@@ -74,7 +75,7 @@ func TestValidateCertificateEncoding(t *testing.T) {
 			// SerialNumber is zero-value
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
-		assert.True(t, len(errs) >= 1, "expected error for empty serial number")
+		assert.GreaterOrEqual(t, len(errs), 1, "expected error for empty serial number")
 		found := false
 		for _, e := range errs {
 			if contains(e, "SerialNumber") {
@@ -91,7 +92,7 @@ func TestValidateCertificateEncoding(t *testing.T) {
 			Fields:       map[string]string{"field1": "not-valid-base64!!!"},
 		}
 		errs := utils.ValidateCertificateEncoding(cert)
-		assert.True(t, len(errs) >= 1, "expected error for invalid base64 field")
+		assert.GreaterOrEqual(t, len(errs), 1, "expected error for invalid base64 field")
 		found := false
 		for _, e := range errs {
 			if contains(e, "field1") {
@@ -287,7 +288,7 @@ func TestRequestedCertificateTypeIDAndFieldListJSON(t *testing.T) {
 		badJSON := `{"not-base64!!!": ["field1"]}`
 		var m utils.RequestedCertificateTypeIDAndFieldList
 		err := json.Unmarshal([]byte(badJSON), &m)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid base64 key")
 	})
 
@@ -297,7 +298,7 @@ func TestRequestedCertificateTypeIDAndFieldListJSON(t *testing.T) {
 		badJSON, _ := json.Marshal(map[string][]string{shortKey: {"field1"}})
 		var m utils.RequestedCertificateTypeIDAndFieldList
 		err := json.Unmarshal(badJSON, &m)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "expected 32 bytes")
 	})
 

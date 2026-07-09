@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
+
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/pkg/errors"
 )
 
 /*
@@ -93,7 +94,7 @@ func (o *TransactionOutput) Bytes() []byte {
 // BytesForSigHash returns the proper serialization
 // of an output to be hashed and signed (sighash).
 func (o *TransactionOutput) BytesForSigHash() []byte {
-	buf := make([]byte, 0)
+	buf := make([]byte, 0, 8+9+len(*o.LockingScript))
 
 	satoshis := make([]byte, 8)
 	binary.LittleEndian.PutUint64(satoshis, o.Satoshis)

@@ -5,17 +5,17 @@ import (
 	"errors"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 const (
 	testKeyID = "test-key"
 	testAppID = "my-app"
 )
-
 
 func TestNewTestWalletForRandomKey(t *testing.T) {
 	tw := wallet.NewTestWalletForRandomKey(t)

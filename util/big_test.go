@@ -4,9 +4,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 func TestUmod(t *testing.T) {

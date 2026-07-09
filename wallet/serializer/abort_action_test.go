@@ -3,9 +3,10 @@ package serializer
 import (
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func TestAbortActionArgsSerializeAndDeserialize(t *testing.T) {
@@ -81,7 +82,7 @@ func TestSerializeAbortActionArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := SerializeAbortActionArgs(&tt.args)
-			assert.NoError(t, err, "SerializeAbortActionArgs() error = %v", err)
+			require.NoError(t, err, "SerializeAbortActionArgs() error = %v", err)
 			assert.Equal(t, tt.want, got, "SerializeAbortActionArgs() = %v, want %v", got, tt.want)
 		})
 	}
@@ -110,7 +111,7 @@ func TestDeserializeAbortActionArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := DeserializeAbortActionArgs(tt.data)
-			assert.NoError(t, err, "DeserializeAbortActionArgs() error = %v", err)
+			require.NoError(t, err, "DeserializeAbortActionArgs() error = %v", err)
 			assert.Equal(t, tt.want, got, "DeserializeAbortActionArgs() = %v, want %v", got, tt.want)
 		})
 	}
@@ -119,7 +120,7 @@ func TestDeserializeAbortActionArgs(t *testing.T) {
 func TestSerializeAbortActionResult(t *testing.T) {
 	result := &wallet.AbortActionResult{Aborted: true}
 	data, err := SerializeAbortActionResult(result)
-	assert.NoError(t, err, "SerializeAbortActionResult() error = %v", err)
+	require.NoError(t, err, "SerializeAbortActionResult() error = %v", err)
 	assert.Equal(t, []byte(nil), data, "SerializeAbortActionResult() = %v, want %v", data, []byte(nil))
 }
 

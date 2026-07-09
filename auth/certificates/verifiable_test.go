@@ -6,11 +6,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 func TestVerifiableCertificate(t *testing.T) {
@@ -100,7 +101,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			// Convert keyring to expected format
 			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k, v := range keyringForVerifier {
-				keyringMap[k] = wallet.StringBase64(v)
+				keyringMap[k] = v
 			}
 
 			// Create VerifiableCertificate
@@ -197,7 +198,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			// Convert keyring to expected format
 			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k, v := range keyringForVerifier {
-				keyringMap[k] = wallet.StringBase64(v)
+				keyringMap[k] = v
 			}
 
 			// Create VerifiableCertificate
@@ -378,7 +379,7 @@ func TestVerifiableCertificate(t *testing.T) {
 			// Convert keyring to expected format
 			keyringMap := make(map[wallet.CertificateFieldNameUnder50Bytes]wallet.StringBase64)
 			for k, v := range keyringForVerifier {
-				keyringMap[k] = wallet.StringBase64(v)
+				keyringMap[k] = v
 			}
 
 			// Create certificate with "anyone" certifier

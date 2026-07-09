@@ -24,6 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/authpayload"
 	"github.com/bsv-blockchain/go-sdk/auth/brc104"
@@ -31,8 +34,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const wellKnownAuthPath = "/.well-known/auth"
@@ -102,7 +103,7 @@ func (ct *channelTransport) next(timeout time.Duration) (*auth.AuthMessage, erro
 // Pass 0 for 200.
 // ---------------------------------------------------------------------------
 
-func buildInProcessBRC31Server(t *testing.T, responseStatusCode int) (*httptest.Server, *wallet.TestWallet) {
+func buildInProcessBRC31Server(t *testing.T, responseStatusCode int) *httptest.Server {
 	t.Helper()
 
 	if responseStatusCode == 0 {
@@ -129,7 +130,7 @@ func buildInProcessBRC31Server(t *testing.T, responseStatusCode int) (*httptest.
 
 	ts := httptest.NewServer(mux)
 	t.Cleanup(ts.Close)
-	return ts, serverWallet
+	return ts
 }
 
 // buildAuthInitHandler returns an HTTP handler for POST /.well-known/auth
@@ -346,19 +347,16 @@ func writeSignedResponse(w http.ResponseWriter, r *http.Request, args signedResp
 }
 
 // buildNoAuthServer starts an httptest.Server that returns 501 on /.well-known/auth
-// and the given statusCode on all other paths.  It is the caller's responsibility
+// and 200 OK on all other paths.  It is the caller's responsibility
 // to close the server (use t.Cleanup or defer ts.Close()).
-func buildNoAuthServer(t *testing.T, statusCode int) *httptest.Server {
+func buildNoAuthServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	if statusCode == 0 {
-		statusCode = http.StatusOK
-	}
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == wellKnownAuthPath {
 			http.Error(w, `{"error":"not implemented"}`, http.StatusNotImplemented)
 			return
 		}
-		w.WriteHeader(statusCode)
+		w.WriteHeader(http.StatusOK)
 	}))
 }
 
@@ -393,7 +391,7 @@ func buildPreloadedPeer(t *testing.T, af *AuthFetch, clientWallet wallet.Interfa
 // ---------------------------------------------------------------------------
 
 func TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate(t *testing.T) {
-	ts := buildNoAuthServer(t, http.StatusOK)
+	ts := buildNoAuthServer(t)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -404,6 +402,7 @@ func TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate
 
 	resp, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -415,7 +414,7 @@ func TestFetchErrHTTPServerFailedToAuthenticateFallsBackToHandleFetchAndValidate
 // ---------------------------------------------------------------------------
 
 func TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey(t *testing.T) {
-	ts := buildNoAuthServer(t, http.StatusOK)
+	ts := buildNoAuthServer(t)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -434,6 +433,7 @@ func TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey(t *testing.T
 
 	resp, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -445,7 +445,7 @@ func TestFetchErrHTTPServerFailedToAuthenticateWithKnownIdentityKey(t *testing.T
 // ---------------------------------------------------------------------------
 
 func TestFetchErrHTTPServerFailedToAuthenticateWithInvalidIdentityKey(t *testing.T) {
-	ts := buildNoAuthServer(t, http.StatusOK)
+	ts := buildNoAuthServer(t)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -459,6 +459,7 @@ func TestFetchErrHTTPServerFailedToAuthenticateWithInvalidIdentityKey(t *testing
 
 	resp, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -473,7 +474,7 @@ func TestFetchErrHTTPServerFailedToAuthenticateWithInvalidIdentityKey(t *testing
 // ---------------------------------------------------------------------------
 
 func TestFetchHasPendingCertificateRequestsTicker(t *testing.T) {
-	ts := buildNoAuthServer(t, http.StatusOK)
+	ts := buildNoAuthServer(t)
 	defer ts.Close()
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
@@ -505,6 +506,7 @@ func TestFetchHasPendingCertificateRequestsTicker(t *testing.T) {
 
 	resp, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -533,6 +535,7 @@ func TestFetchExistingPeerNonMutualAuthReused(t *testing.T) {
 
 	resp, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -578,7 +581,7 @@ func TestSendCertificateRequestExistingPeerLoaded(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFetchFullBRC31Auth200Response(t *testing.T) {
-	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
+	ts := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
@@ -588,6 +591,7 @@ func TestFetchFullBRC31Auth200Response(t *testing.T) {
 
 	resp, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -601,7 +605,7 @@ func TestFetchFullBRC31Auth200Response(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFetchFullBRC31Auth402ResponseTriggersHandlePaymentAndRetry(t *testing.T) {
-	ts, _ := buildInProcessBRC31Server(t, http.StatusPaymentRequired)
+	ts := buildInProcessBRC31Server(t, http.StatusPaymentRequired)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
@@ -609,7 +613,10 @@ func TestFetchFullBRC31Auth402ResponseTriggersHandlePaymentAndRetry(t *testing.T
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := af.Fetch(ctx, ts.URL+"/pay", &SimplifiedFetchRequestOptions{Method: "GET"})
+	resp, err := af.Fetch(ctx, ts.URL+"/pay", &SimplifiedFetchRequestOptions{Method: "GET"})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported x-bsv-payment-version")
 }
@@ -622,7 +629,7 @@ func TestFetchFullBRC31Auth402ResponseTriggersHandlePaymentAndRetry(t *testing.T
 // ---------------------------------------------------------------------------
 
 func TestFetchFullBRC31AuthSecondRequestReusesPeer(t *testing.T) {
-	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
+	ts := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
@@ -632,10 +639,12 @@ func TestFetchFullBRC31AuthSecondRequestReusesPeer(t *testing.T) {
 
 	resp1, err := af.Fetch(ctx, ts.URL+"/first", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp1.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp1.StatusCode)
 
 	resp2, err := af.Fetch(ctx, ts.URL+"/second", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp2.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 }
 
@@ -648,7 +657,7 @@ func TestFetchFullBRC31AuthSecondRequestReusesPeer(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFetchFullBRC31AuthSessionNotFoundRetry(t *testing.T) {
-	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
+	ts := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	sm := auth.NewSessionManager()
@@ -660,6 +669,7 @@ func TestFetchFullBRC31AuthSessionNotFoundRetry(t *testing.T) {
 	// First request establishes a session.
 	resp1, err := af.Fetch(ctx, ts.URL+"/init", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp1.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp1.StatusCode)
 
 	// Wipe the session manager and peer so ToPeer triggers "Session not found".
@@ -668,6 +678,7 @@ func TestFetchFullBRC31AuthSessionNotFoundRetry(t *testing.T) {
 
 	resp2, err := af.Fetch(ctx, ts.URL+"/retry", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp2.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 }
 
@@ -679,7 +690,7 @@ func TestFetchFullBRC31AuthSessionNotFoundRetry(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFetchFullBRC31AuthCertificatesReceivedCallback(t *testing.T) {
-	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
+	ts := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
@@ -691,6 +702,9 @@ func TestFetchFullBRC31AuthCertificatesReceivedCallback(t *testing.T) {
 		Method: "POST",
 		Body:   []byte(`{"key":"value"}`),
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -774,7 +788,10 @@ func TestHandlePaymentAndRetryRetryCounterNilSetsDefault(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err = af.handlePaymentAndRetry(ctx, "https://127.0.0.1:0/pay", config, resp402)
+	resp, err := af.handlePaymentAndRetry(ctx, "https://127.0.0.1:0/pay", config, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	// Expected to fail (no server at 127.0.0.1:0), but the RetryCounter was set.
 	require.Error(t, err)
 	// After the call RetryCounter must NOT be nil (it was initialised to 3 then decremented).
@@ -790,7 +807,7 @@ func TestHandlePaymentAndRetryRetryCounterNilSetsDefault(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFetchFullBRC31AuthMultiplePaths(t *testing.T) {
-	ts, _ := buildInProcessBRC31Server(t, http.StatusOK)
+	ts := buildInProcessBRC31Server(t, http.StatusOK)
 
 	clientWallet := wallet.NewTestWalletForRandomKey(t)
 	af := New(clientWallet, WithoutLogging())
@@ -801,14 +818,17 @@ func TestFetchFullBRC31AuthMultiplePaths(t *testing.T) {
 	// First request → new peer created, handshake performed.
 	resp1, err := af.Fetch(ctx, ts.URL+"/a", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp1.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp1.StatusCode)
 
 	// Second and third requests → peer reused (SupportsMutualAuth=true, identityKey set).
 	resp2, err := af.Fetch(ctx, ts.URL+"/b", &SimplifiedFetchRequestOptions{Method: "POST", Body: []byte("body")})
 	require.NoError(t, err)
+	defer func() { _ = resp2.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 	resp3, err := af.Fetch(ctx, ts.URL+"/c", &SimplifiedFetchRequestOptions{Method: "GET"})
 	require.NoError(t, err)
+	defer func() { _ = resp3.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp3.StatusCode)
 }

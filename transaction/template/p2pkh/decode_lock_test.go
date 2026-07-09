@@ -3,18 +3,18 @@ package p2pkh_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/stretchr/testify/require"
 )
 
 // knownP2PKHHex is a standard P2PKH locking script for a known address.
 // Corresponds to address 1EXaDXx3f8H3u4BNPBXSb8roFkgJ7CDVMA (mainnet).
 const knownP2PKHHex = "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac"
-
 
 // TestDecodeValidP2PKH verifies that a well-formed 25-byte P2PKH script
 // is decoded to a non-nil Address.
@@ -236,10 +236,10 @@ func TestLockOutputScriptStructure(t *testing.T) {
 
 	raw := []byte(*s)
 	require.Len(t, raw, 25)
-	require.Equal(t, byte(script.OpDUP), raw[0])
-	require.Equal(t, byte(script.OpHASH160), raw[1])
-	require.Equal(t, byte(script.OpDATA20), raw[2])
+	require.Equal(t, script.OpDUP, raw[0])
+	require.Equal(t, script.OpHASH160, raw[1])
+	require.Equal(t, script.OpDATA20, raw[2])
 	require.Equal(t, hash, raw[3:23])
-	require.Equal(t, byte(script.OpEQUALVERIFY), raw[23])
-	require.Equal(t, byte(script.OpCHECKSIG), raw[24])
+	require.Equal(t, script.OpEQUALVERIFY, raw[23])
+	require.Equal(t, script.OpCHECKSIG, raw[24])
 }

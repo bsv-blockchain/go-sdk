@@ -62,7 +62,6 @@ func createBIP276(script BIP276) (string, string) {
 // DecodeBIP276 is used to decode BIP276 formatted data into specific (non-standard) scripts.
 // See https://github.com/moneybutton/bips/blob/master/bip-0276.mediawiki
 func DecodeBIP276(text string) (*BIP276, error) {
-
 	// Determine if regex match
 	res := validBIP276.FindStringSubmatch(text)
 

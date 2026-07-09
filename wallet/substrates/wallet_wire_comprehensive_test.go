@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const testAppOriginator = "test-app"
@@ -30,7 +31,7 @@ func TestWalletWireProcessorEmptyMessage(t *testing.T) {
 	processor := substrates.NewWalletWireProcessor(tw)
 
 	_, err := processor.TransmitToWallet(context.Background(), []byte{})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty message")
 }
 

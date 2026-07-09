@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
-	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/overlay"
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 )
 
 // MockStorageDownloader implements StorageDownloaderInterface for testing
@@ -37,7 +38,7 @@ func TestStorageDownloader_InvalidURL(t *testing.T) {
 
 	// Test with invalid URL
 	_, err := downloader.Download(context.Background(), "invalid-url")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid parameter UHRP url")
 }
 

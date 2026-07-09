@@ -2,12 +2,12 @@ package interpreter
 
 import (
 	"bytes"
-	"crypto/sha1" // nolint:gosec // OP_SHA1 support requires this
+	"crypto/sha1" //nolint:gosec // OP_SHA1 support requires this
 	"crypto/sha256"
 	"hash"
 	"math/big"
 
-	"golang.org/x/crypto/ripemd160" // nolint:staticcheck // required
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck,gosec // required
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
@@ -25,9 +25,7 @@ const (
 	opCondSkip  = 2
 )
 
-var (
-	externalVerifySignatureFn func(payload, signature, publicKey []byte) bool = nil
-)
+var externalVerifySignatureFn func(payload, signature, publicKey []byte) bool = nil
 
 func InjectExternalVerifySignatureFn(fn func(payload, signature, publicKey []byte) bool) {
 	externalVerifySignatureFn = fn
@@ -240,14 +238,14 @@ var opcodeArray = [256]opcode{
 	script.OpCHECKMULTISIGVERIFY: {script.OpCHECKMULTISIGVERIFY, "OP_CHECKMULTISIGVERIFY", 1, opcodeCheckMultiSigVerify},
 
 	// Reserved opcodes. NOP4-NOP8 are repurposed as Chronicle opcodes.
-	script.OpNOP1:    {script.OpNOP1, "OP_NOP1", 1, opcodeNop},
-	script.OpSUBSTR:  {script.OpSUBSTR, "OP_SUBSTR", 1, opcodeSubstr},
-	script.OpLEFT:    {script.OpLEFT, "OP_LEFT", 1, opcodeLeft},
-	script.OpRIGHT:   {script.OpRIGHT, "OP_RIGHT", 1, opcodeRight},
+	script.OpNOP1:      {script.OpNOP1, "OP_NOP1", 1, opcodeNop},
+	script.OpSUBSTR:    {script.OpSUBSTR, "OP_SUBSTR", 1, opcodeSubstr},
+	script.OpLEFT:      {script.OpLEFT, "OP_LEFT", 1, opcodeLeft},
+	script.OpRIGHT:     {script.OpRIGHT, "OP_RIGHT", 1, opcodeRight},
 	script.OpLSHIFTNUM: {script.OpLSHIFTNUM, "OP_LSHIFTNUM", 1, opcodeLShiftNum},
 	script.OpRSHIFTNUM: {script.OpRSHIFTNUM, "OP_RSHIFTNUM", 1, opcodeRShiftNum},
-	script.OpNOP9:    {script.OpNOP9, "OP_NOP9", 1, opcodeNop},
-	script.OpNOP10:   {script.OpNOP10, "OP_NOP10", 1, opcodeNop},
+	script.OpNOP9:      {script.OpNOP9, "OP_NOP9", 1, opcodeNop},
+	script.OpNOP10:     {script.OpNOP10, "OP_NOP10", 1, opcodeNop},
 
 	// Undefined opcodes.
 	script.OpUNKNOWN186: {script.OpUNKNOWN186, "OP_UNKNOWN186", 1, opcodeInvalid},
@@ -335,10 +333,9 @@ var opcodeArray = [256]opcode{
 // opcodes before executing in an initial parse step, the consensus rules
 // dictate the script doesn't fail until the program counter passes over a
 // disabled opcode (even when they appear in a branch that is not executed).
-func opcodeDisabled(op *ParsedOpcode, t *thread) error {
+func opcodeDisabled(op *ParsedOpcode, _ *thread) error {
 	return errs.NewError(errs.ErrDisabledOpcode, "attempt to execute disabled opcode %s", op.Name())
 }
-
 
 // opcodeReserved is a common handler for all reserved opcodes.  It returns an
 // appropriate error indicating the opcode is reserved.
@@ -985,7 +982,7 @@ func opcodeSplit(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	if n.Int32() > int32(len(c)) {
+	if n.Int32() > int32(len(c)) { //nolint:gosec // G115 -- len(c) is bounded by MaxScriptElementSize, well within int32 range
 		return errs.NewError(errs.ErrNumberTooBig, "n is larger than length of array")
 	}
 	if n.LessThanInt(0) {
@@ -2014,7 +2011,7 @@ func opcodeCheckSig(op *ParsedOpcode, t *thread) error {
 	sourceTxOut := txCopy.Inputs[t.inputIdx].SourceTxOutput()
 	sourceTxOut.LockingScript = up
 
-	hash, err = txCopy.CalcInputSignatureHash(uint32(t.inputIdx), shf)
+	hash, err = txCopy.CalcInputSignatureHash(uint32(t.inputIdx), shf) //nolint:gosec // G115 -- inputIdx is bounded by the number of transaction inputs
 	if err != nil {
 		t.dstack.PushBool(false)
 		return err
@@ -2137,9 +2134,9 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 
 	pubKeys := make([][]byte, 0, numPubKeys)
 	for i := 0; i < numPubKeys; i++ {
-		pubKey, err := t.dstack.PopByteArray()
-		if err != nil {
-			return err
+		pubKey, popErr := t.dstack.PopByteArray()
+		if popErr != nil {
+			return popErr
 		}
 		pubKeys = append(pubKeys, pubKey)
 	}
@@ -2163,9 +2160,9 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 
 	signatures := make([]*parsedSigInfo, 0, numSignatures)
 	for i := 0; i < numSignatures; i++ {
-		signature, err := t.dstack.PopByteArray()
-		if err != nil {
-			return err
+		signature, popErr := t.dstack.PopByteArray()
+		if popErr != nil {
+			return popErr
 		}
 		sigInfo := &parsedSigInfo{signature: signature}
 		signatures = append(signatures, sigInfo)
@@ -2291,7 +2288,7 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 			sourceOut.LockingScript = up
 		}
 
-		signatureHash, err := txCopy.CalcInputSignatureHash(uint32(t.inputIdx), shf)
+		signatureHash, err := txCopy.CalcInputSignatureHash(uint32(t.inputIdx), shf) //nolint:gosec // G115 -- inputIdx is bounded by the number of transaction inputs
 		if err != nil {
 			t.dstack.PushBool(false)
 			return nil //nolint:nilerr // only need a false push in this case
@@ -2345,7 +2342,7 @@ func opcodeVer(op *ParsedOpcode, t *thread) error {
 		return errs.NewError(errs.ErrInvalidParams, "OP_VER requires a transaction")
 	}
 	v := t.tx.Version
-	t.dstack.PushByteArray([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)})
+	t.dstack.PushByteArray([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}) //nolint:gosec // G115 -- intentional truncation to extract individual bytes of a uint32
 	return nil
 }
 
@@ -2398,7 +2395,7 @@ func txVersionMatchesBytes(tx *transaction.Transaction, data []byte) bool {
 		return false
 	}
 	v := tx.Version
-	return bytes.Equal([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}, data)
+	return bytes.Equal([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}, data) //nolint:gosec // G115 -- intentional truncation to extract individual bytes of a uint32
 }
 
 // opcode2Mul treats the top item on the data stack as an integer and replaces

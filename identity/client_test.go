@@ -6,10 +6,11 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 // ALIGN THIS W THE TYPESCRIPT IM PLEMENTATION
@@ -296,7 +297,7 @@ import (
 func privateKeyFromInt(i int) (*ec.PrivateKey, *ec.PublicKey) {
 	// Convert int to byte slice (little endian)
 	bytes := make([]byte, 32)
-	bytes[0] = byte(i)
+	bytes[0] = byte(i) //nolint:gosec // G115 -- value is bounded by domain constraints
 	return ec.PrivateKeyFromBytes(bytes)
 }
 
@@ -321,9 +322,9 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		}
 		fieldsToReveal := []CertificateFieldNameUnder50Bytes{"name"}
 
-		_, _, err := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "certificate has no fields to reveal")
+		_, _, revealErr := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
+		require.Error(t, revealErr)
+		require.Contains(t, revealErr.Error(), "certificate has no fields to reveal")
 	})
 
 	t.Run("should throw an error if fieldsToReveal is empty", func(t *testing.T) {
@@ -332,9 +333,9 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		}
 		var fieldsToReveal []CertificateFieldNameUnder50Bytes
 
-		_, _, err := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "you must reveal at least one field")
+		_, _, revealErr := client.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
+		require.Error(t, revealErr)
+		require.Contains(t, revealErr.Error(), "you must reveal at least one field")
 	})
 
 	t.Run("should throw an error if certificate verification fails", func(t *testing.T) {
@@ -361,13 +362,13 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 
 		// Create a testable client with our mock verifier
 		specificMockWallet := wallet.NewTestWalletForRandomKey(t)
-		testableClient, err := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
-		require.NoError(t, err)
+		testableClient, testableErr := NewTestableIdentityClient(specificMockWallet, nil, "", mockVerifier)
+		require.NoError(t, testableErr)
 
 		// Call PubliclyRevealAttributes which should fail with Certificate verification
-		_, _, err = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "certificate verification failed")
+		_, _, testableErr = testableClient.PubliclyRevealAttributes(context.Background(), certificate, fieldsToReveal)
+		require.Error(t, testableErr)
+		require.Contains(t, testableErr.Error(), "certificate verification failed")
 	})
 
 	typeXCert, err := wallet.StringBase64(KnownIdentityTypes.XCert).ToArray()
@@ -414,7 +415,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 					Tx:        nil,
 					Reference: []byte("ref"),
 				},
-			})
+			},
+		)
 
 		// Create a mock certificate verifier that always succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -472,7 +474,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 					Tx:        []byte{1, 2, 3},
 					Reference: []byte("ref"),
 				},
-			})
+			},
+		)
 
 		// Create a mock certificate verifier that always succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -538,7 +541,7 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 		specificMockWallet.OnCreateAction().Do(func(ctx context.Context, args wallet.CreateActionArgs, originator string) (*wallet.CreateActionResult, error) {
 			// Verify the action is created with expected parameters
 			require.Equal(t, "Create a new Identity Token", args.Description)
-			require.Equal(t, 1, len(args.Outputs))
+			require.Len(t, args.Outputs, 1)
 			require.Equal(t, "Identity Token", args.Outputs[0].OutputDescription)
 			createActionCalled = true
 
@@ -611,7 +614,8 @@ func TestPubliclyRevealAttributes(t *testing.T) {
 					Tx:        []byte{1, 2, 3, 4},
 					Reference: []byte("ref"),
 				},
-			})
+			},
+		)
 
 		// Create a mock certificate verifier that succeeds
 		mockVerifier := &MockCertificateVerifier{
@@ -668,7 +672,8 @@ func TestResolveByIdentityKey(t *testing.T) {
 						},
 					},
 				},
-			})
+			},
+		)
 
 		// Call ResolveByIdentityKey
 		identities, err := client.ResolveByIdentityKey(context.Background(), wallet.DiscoverByIdentityKeyArgs{
@@ -724,7 +729,8 @@ func TestResolveByAttributes(t *testing.T) {
 						},
 					},
 				},
-			})
+			},
+		)
 
 		// Call ResolveByAttributes
 		identities, err := client.ResolveByAttributes(context.Background(), wallet.DiscoverByAttributesArgs{

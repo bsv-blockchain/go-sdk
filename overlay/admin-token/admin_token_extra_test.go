@@ -58,8 +58,8 @@ func TestDecodeNullByteFields(t *testing.T) {
 	require.NotNil(t, decoded)
 
 	// Null bytes should be normalized to empty strings
-	assert.Equal(t, "", decoded.Domain, "null byte domain should decode to empty string")
-	assert.Equal(t, "", decoded.TopicOrService, "null byte topicOrService should decode to empty string")
+	assert.Empty(t, decoded.Domain, "null byte domain should decode to empty string")
+	assert.Empty(t, decoded.TopicOrService, "null byte topicOrService should decode to empty string")
 	assert.Equal(t, overlay.ProtocolSHIP, decoded.Protocol)
 }
 
@@ -94,5 +94,5 @@ func TestNewOverlayAdminTokenWithoutOriginator(t *testing.T) {
 	// Should not panic; Originator should be empty
 	token := admintoken.NewOverlayAdminToken(testWallet)
 	require.NotNil(t, token)
-	assert.Equal(t, "", token.PushDrop.Originator)
+	assert.Empty(t, token.PushDrop.Originator)
 }

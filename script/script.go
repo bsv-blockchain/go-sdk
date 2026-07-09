@@ -8,8 +8,9 @@ import (
 	"math/bits"
 	"strings"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/pkg/errors"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // ScriptKey types.
@@ -109,7 +110,7 @@ func (s *Script) AppendBigInt(bInt big.Int) error {
 // AppendPushDataStrings takes an array of strings and appends their
 // UTF-8 encoding to the script with proper PUSHDATA prefixes
 func (s *Script) AppendPushDataStrings(pushDataStrings []string) error {
-	dataBytes := make([][]byte, 0)
+	dataBytes := make([][]byte, 0, len(pushDataStrings))
 	for _, str := range pushDataStrings {
 		strBytes := []byte(str)
 		dataBytes = append(dataBytes, strBytes)

@@ -9,10 +9,8 @@ import (
 	"testing"
 )
 
-var (
-	// Generate a new private key for the test
-	privateHex = "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5"
-)
+// Generate a new private key for the test
+var privateHex = "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5"
 
 func TestECDSA(t *testing.T) {
 	// Define test cases

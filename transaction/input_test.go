@@ -65,7 +65,8 @@ func TestInput_String(t *testing.T) {
 		require.NotNil(t, i)
 		require.Equal(t, int64(148), s)
 
-		require.Equal(t,
+		require.Equal(
+			t,
 			"sourceTxHash:   6fc75f30a085f3313265b92c818082f9768c13b8a1a107b484023ecf63c86e4c\nsourceOutIndex: 1\nscriptLen:    107\nscript:       483045022100f01c1a1679c9437398d691c8497f278fa2d615efc05115688bf2c3335b45c88602201b54437e54fb53bc50545de44ea8c64e9e583952771fcc663c8687dc2638f7854121037e87bbd3b680748a74372640628a8f32d3a841ceeef6f75626ab030c1a04824f\nsequence:     ffffffff\n",
 			i.String(),
 		)

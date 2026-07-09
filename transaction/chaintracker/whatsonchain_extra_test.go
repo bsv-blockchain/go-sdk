@@ -6,8 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 func TestNewWhatsOnChain(t *testing.T) {
@@ -151,7 +153,7 @@ func TestGetBlockHeaderSuccessAuthHeader(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify the API key is in the header (not "Bearer" prefix)
 		authHeader := r.Header.Get("Authorization")
-		require.Equal(t, "testapikey", authHeader)
+		assert.Equal(t, "testapikey", authHeader)
 
 		header := &BlockHeader{
 			Hash:       &hash,
@@ -162,7 +164,7 @@ func TestGetBlockHeaderSuccessAuthHeader(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 		err := json.NewEncoder(w).Encode(header)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 

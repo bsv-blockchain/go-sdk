@@ -35,4 +35,4 @@ With its versioned format, BEEF is designed for future improvements and iteratio
 
 ## Conclusion
 
-The Background Evaluation Extended Format represents a significant advancement in the BSV ecosystem. By combining transactions with their ancestral data and SPV proofs in a compact, binary format, BEEF addresses key challenges in transaction verification and validation. By aligning across the ecosystem, BEEF maximizes interoperability among wallets and network services. It offers a scalable, secure, and efficient mechanism for ensuring the integrity of transactions across the blockchain. 
+The Background Evaluation Extended Format represents a significant advancement in the BSV ecosystem. By combining transactions with their ancestral data and SPV proofs in a compact, binary format, BEEF addresses key challenges in transaction verification and validation. By aligning across the ecosystem, BEEF maximizes interoperability among wallets and network services. It offers a scalable, secure, and efficient mechanism for ensuring the integrity of transactions across the blockchain.

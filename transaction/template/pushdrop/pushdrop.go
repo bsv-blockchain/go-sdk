@@ -135,7 +135,7 @@ func (p *PushDrop) Lock(
 	lockChunks := make([]*script.ScriptChunk, 0)
 	pubKeyBytes := pub.PublicKey.Compressed()
 	lockChunks = append(lockChunks, &script.ScriptChunk{
-		Op:   byte(len(pubKeyBytes)),
+		Op:   byte(len(pubKeyBytes)), //nolint:gosec // G115 -- value is bounded by domain constraints
 		Data: pubKeyBytes,
 	})
 	lockChunks = append(lockChunks, &script.ScriptChunk{
@@ -185,7 +185,7 @@ func (p *PushDrop) Lock(
 // Unlocker provides the unlock interface matching TypeScript
 type Unlocker struct {
 	pushDrop       *PushDrop
-	ctx            context.Context
+	ctx            context.Context //nolint:containedctx // captured at Unlock() time; Sign's signature is fixed by the unlocking-script-template interface and cannot accept a context parameter
 	protocol       wallet.Protocol
 	keyID          string
 	counterparty   wallet.Counterparty
@@ -210,7 +210,7 @@ func (u *Unlocker) Sign(tx *transaction.Transaction, inputIndex int) (*script.Sc
 		signatureScope |= sighash.AnyOneCanPay
 	}
 
-	if sigHash, err := tx.CalcInputSignatureHash(uint32(inputIndex), signatureScope); err != nil {
+	if sigHash, err := tx.CalcInputSignatureHash(uint32(inputIndex), signatureScope); err != nil { //nolint:gosec // G115 -- inputIndex is bounded by the transaction's input count
 		return nil, err
 	} else {
 		sig, err := u.pushDrop.Wallet.CreateSignature(u.ctx, wallet.CreateSignatureArgs{
@@ -299,7 +299,7 @@ func CreateMinimallyEncodedScriptChunk(data []byte) *script.ScriptChunk {
 	}
 	if len(data) <= 75 {
 		return &script.ScriptChunk{
-			Op:   byte(len(data)),
+			Op:   byte(len(data)), //nolint:gosec // G115 -- value is bounded by domain constraints
 			Data: data,
 		}
 	}

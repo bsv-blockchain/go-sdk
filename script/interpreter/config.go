@@ -26,9 +26,11 @@ const (
 	MaxScriptNumberLengthAfterChronicle = 32 * 1024 * 1024
 )
 
-type beforeGenesisConfig struct{}
-type afterGenesisConfig struct{}
-type afterChronicleConfig struct{}
+type (
+	beforeGenesisConfig  struct{}
+	afterGenesisConfig   struct{}
+	afterChronicleConfig struct{}
+)
 
 func (a *afterGenesisConfig) AfterGenesis() bool {
 	return true

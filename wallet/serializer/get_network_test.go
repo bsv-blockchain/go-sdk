@@ -1,9 +1,11 @@
 package serializer
 
 import (
-	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func TestGetNetworkResult(t *testing.T) {
@@ -30,7 +32,7 @@ func TestGetNetworkResult(t *testing.T) {
 			// Test serialization
 			data, err := SerializeGetNetworkResult(tt.result)
 			require.NoError(t, err)
-			require.Equal(t, 1, len(data)) // error byte + network byte
+			require.Len(t, data, 1) // error byte + network byte
 
 			// Test deserialization
 			got, err := DeserializeGetNetworkResult(data)

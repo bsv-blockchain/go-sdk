@@ -1,10 +1,13 @@
 package serializer
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func TestRequestFrameRoundTrip(t *testing.T) {
@@ -39,7 +42,7 @@ func TestRequestFrameRoundTrip(t *testing.T) {
 
 			// Deserialize and verify
 			deserialized, err := ReadRequestFrame(serialized)
-			assert.NoError(t, err, "deserializing request frame should not error")
+			require.NoError(t, err, "deserializing request frame should not error")
 			assert.Equal(t, tt.call, deserialized.Call, "deserialized call byte should match original")
 			assert.Equal(t, tt.originator, deserialized.Originator, "deserialized originator should match original")
 			assert.Equal(t, tt.params, deserialized.Params, "deserialized params should match original")
@@ -78,14 +81,15 @@ func TestResultFrameRoundTrip(t *testing.T) {
 			// Deserialize and verify
 			result, err := ReadResultFrame(serialized)
 			if tt.err != nil {
-				assert.Error(t, err, "deserializing an error frame should produce an error")
-				walletErr, ok := err.(*wallet.Error)
+				require.Error(t, err, "deserializing an error frame should produce an error")
+				var walletErr *wallet.Error
+				ok := errors.As(err, &walletErr)
 				assert.True(t, ok, "error should be of type *wallet.Error")
 				assert.Equal(t, tt.err.Code, walletErr.Code, "deserialized error code should match original")
 				assert.Equal(t, tt.err.Message, walletErr.Message, "deserialized error message should match original")
 				assert.Equal(t, tt.err.Stack, walletErr.Stack, "deserialized error stack should match original")
 			} else {
-				assert.NoError(t, err, "deserializing a success frame should not error")
+				require.NoError(t, err, "deserializing a success frame should not error")
 				assert.Equal(t, tt.result, result, "deserialized success result should match original")
 			}
 		})

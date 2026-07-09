@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+//nolint:gochecknoinits // validates the embedded wordlist checksum at package load time
 func init() {
 	// Ensure word list is correct
 	// $ wget https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/japanese.txt
@@ -19,8 +20,9 @@ func init() {
 
 // Japanese is a slice of mnemonic words taken from the bip39 specification
 // https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/japanese.txt
-var Japanese = strings.Split(strings.TrimSpace(japanese), "\n")
-var japanese = `あいこくしん
+var (
+	Japanese = strings.Split(strings.TrimSpace(japanese), "\n")
+	japanese = `あいこくしん
 あいさつ
 あいだ
 あおぞら
@@ -2069,3 +2071,4 @@ var japanese = `あいこくしん
 わらう
 われる
 `
+)

@@ -3,9 +3,10 @@ package registry
 import (
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 const (
@@ -203,7 +204,7 @@ func TestBuildPushDropFieldsCertificate(t *testing.T) {
 func TestBuildPushDropFieldsUnsupported(t *testing.T) {
 	// Pass a type that doesn't match any case
 	fields, err := buildPushDropFields(&unsupportedData{}, "operator")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, fields)
 }
 

@@ -9,11 +9,12 @@ import (
 	"log"
 	"slices"
 
+	"github.com/pkg/errors"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/pkg/errors"
 )
 
 type Transaction struct {
@@ -455,7 +456,7 @@ func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended b
 				copy(h[offset:], scriptLenBytes)
 				offset += len(scriptLenBytes)
 				copy(h[offset:], *sourceTxOut.LockingScript)
-				offset += int(scriptLen)
+				offset += int(scriptLen) //nolint:gosec // G115 -- scriptLen is derived from an existing slice length, already bounded by int range
 			} else {
 				binary.LittleEndian.PutUint64(h[offset:], 0)
 				offset += 8
@@ -600,7 +601,7 @@ func (t *Transaction) AtomicBEEF(allowPartial bool) ([]byte, error) {
 		tx := txns[txid]
 		if tx.MerklePath != nil {
 			writer.Write([]byte{byte(RawTxAndBumpIndex)})
-			writer.Write(util.VarInt(bumpMap[tx.MerklePath.BlockHeight]).Bytes())
+			writer.Write(util.VarInt(bumpMap[tx.MerklePath.BlockHeight]).Bytes()) //nolint:gosec // G115 -- bump index is bounded by number of BUMPs, always non-negative
 		} else {
 			writer.Write([]byte{byte(RawTx)})
 		}
@@ -645,5 +646,4 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 	default:
 		return nil, fmt.Errorf("use NewBeefFromBytes to parse anything which isn't V1 BEEF or AtomicBEEF")
 	}
-
 }

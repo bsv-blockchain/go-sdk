@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/brc104"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const testHTTPExampleURL = "http://example.com"
@@ -25,7 +26,7 @@ func TestGetRegisteredOnData(t *testing.T) {
 		require.NoError(t, err)
 
 		handler, err := transport.GetRegisteredOnData()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no handlers registered")
 		assert.Nil(t, handler)
 	})
@@ -95,14 +96,14 @@ func TestAuthMessageFromNonGeneralMessageResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	makeTransportWithHandler := func(t *testing.T, serverURL string) *SimplifiedHTTPTransport {
-		transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
+		transport, transportErr := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
 			BaseURL: serverURL,
 		})
-		require.NoError(t, err)
-		err = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
+		require.NoError(t, transportErr)
+		transportErr = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
 			return nil
 		})
-		require.NoError(t, err)
+		require.NoError(t, transportErr)
 		return transport
 	}
 
@@ -121,7 +122,7 @@ func TestAuthMessageFromNonGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to authenticate")
 	})
 
@@ -140,7 +141,7 @@ func TestAuthMessageFromNonGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "empty response body")
 	})
 
@@ -159,7 +160,7 @@ func TestAuthMessageFromNonGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("non-general message succeeds when response is valid AuthMessage JSON", func(t *testing.T) {
@@ -188,7 +189,7 @@ func TestAuthMessageFromNonGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, received)
 	})
 }
@@ -204,14 +205,14 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 	payload := encodeGeneralPayload(requestID, "POST", "/test", "", map[string]string{"Content-Type": "application/json"}, []byte(`{}`))
 
 	makeTransportWithServer := func(t *testing.T, server *httptest.Server) (*SimplifiedHTTPTransport, func()) {
-		transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
+		transport, transportErr := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
 			BaseURL: server.URL,
 		})
-		require.NoError(t, err)
-		err = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
+		require.NoError(t, transportErr)
+		transportErr = transport.OnData(func(ctx context.Context, msg *auth.AuthMessage) error {
 			return nil
 		})
-		require.NoError(t, err)
+		require.NoError(t, transportErr)
 		return transport, server.Close
 	}
 
@@ -231,7 +232,7 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "missing version header")
 	})
 
@@ -252,7 +253,7 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "missing identity key header")
 	})
 
@@ -273,7 +274,7 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid identity key format")
 	})
 
@@ -295,7 +296,7 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid signature format")
 	})
 
@@ -318,7 +319,7 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "non-general message type")
 	})
 
@@ -351,7 +352,7 @@ func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 		}
 
 		err = transport.Send(context.Background(), msg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, received)
 	})
 }

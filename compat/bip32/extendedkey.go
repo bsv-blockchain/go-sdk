@@ -123,8 +123,8 @@ type ExtendedKey struct {
 // only by used by applications that need to create custom ExtendedKeys. All
 // other applications should just use NewMaster, Child, or Neuter.
 func NewExtendedKey(version, key, chainCode, parentFP []byte, depth uint8,
-	childNum uint32, isPrivate bool) *ExtendedKey {
-
+	childNum uint32, isPrivate bool,
+) *ExtendedKey {
 	// NOTE: The pubKey field is intentionally left nil so it is only
 	// computed and memoized as required.
 	return &ExtendedKey{
@@ -392,11 +392,10 @@ func (k *ExtendedKey) addressFromPublicKeyHash(hash []byte, mainnet bool) string
 	// regtest := 111
 	// mainnet: 0
 
-	bb := make([]byte, 1)
+	bb := make([]byte, 1, 1+len(hash))
 	if !mainnet {
 		bb[0] = 111
 	}
-	//nolint:makezero // ignore
 	bb = append(bb, hash...)
 	b := make([]byte, 0, len(bb)+4)
 	b = append(b, bb[:]...)
@@ -408,7 +407,7 @@ func (k *ExtendedKey) addressFromPublicKeyHash(hash []byte, mainnet bool) string
 func (k *ExtendedKey) checksum(input []byte) (ckSum [4]byte) {
 	h := crypto.Sha256d(input)
 	copy(ckSum[:], h[:4])
-	return
+	return ckSum
 }
 
 // paddedAppend appends the src byte slice to dst, returning the new slice.

@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bsv-blockchain/go-sdk/auth"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/websocket"
+
+	"github.com/bsv-blockchain/go-sdk/auth"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // testWsServer is a basic WebSocket test server
@@ -169,8 +170,10 @@ func TestWebSocketTransportSendReceive(t *testing.T) {
 	// Wait for the message to be received back by the handler (with timeout)
 	select {
 	case receivedMsg := <-receivedMsgChan:
-		sentJSON, _ := json.Marshal(testMessage)
-		receivedJSON, _ := json.Marshal(receivedMsg)
+		sentJSON, marshalErr := json.Marshal(testMessage)
+		require.NoError(t, marshalErr)
+		receivedJSON, marshalErr := json.Marshal(receivedMsg)
+		require.NoError(t, marshalErr)
 		require.JSONEq(t, string(sentJSON), string(receivedJSON), "Received message does not match sent message")
 	case <-time.After(2 * time.Second):
 		t.Fatal("Timeout waiting for message reception")

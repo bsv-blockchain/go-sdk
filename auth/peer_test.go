@@ -11,6 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth"
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/auth/transports"
@@ -21,8 +24,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/testcertificates"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -105,6 +106,7 @@ func (t *MockTransport) receive(ctx context.Context, message *auth.AuthMessage) 
 // LoggingMockTransport extends MockTransportOld with detailed logging
 type LoggingMockTransport struct {
 	*MockTransport
+
 	logger *slog.Logger
 }
 
@@ -134,31 +136,36 @@ func (t *LoggingMockTransport) Send(ctx context.Context, message *auth.AuthMessa
 			logger.InfoContext(ctx, "Requiring Certificates from peer", slog.Group("requested", t.requestedCertificatesLoggingArgs(message)...))
 		}
 	case auth.MessageTypeInitialResponse:
-		logger.InfoContext(ctx,
+		logger.InfoContext(
+			ctx,
 			"Initial Response",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 			slog.Int("received.certificates.count", len(message.Certificates)),
 		)
 		if len(message.Certificates) > 0 {
-			logger.InfoContext(ctx, "Initial Response included certificates",
+			logger.InfoContext(
+				ctx, "Initial Response included certificates",
 				slog.Group("received.certs", t.receivedCertificatesLoggingArgs(message)...),
 			)
 		}
 	case auth.MessageTypeCertificateRequest:
-		logger.InfoContext(ctx, "Certificate Request",
+		logger.InfoContext(
+			ctx, "Certificate Request",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 			slog.Group("requested", t.requestedCertificatesLoggingArgs(message)...),
 		)
 	case auth.MessageTypeCertificateResponse:
-		logger.InfoContext(ctx, "Certificate Response",
+		logger.InfoContext(
+			ctx, "Certificate Response",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 			slog.Group("received.certs", t.receivedCertificatesLoggingArgs(message)...),
 		)
 	case auth.MessageTypeGeneral:
-		logger.InfoContext(ctx, "General Message",
+		logger.InfoContext(
+			ctx, "General Message",
 			slog.String("nonce", message.Nonce),
 			slog.String("yourNonce", message.YourNonce),
 		)
@@ -168,7 +175,8 @@ func (t *LoggingMockTransport) Send(ctx context.Context, message *auth.AuthMessa
 
 func (t *LoggingMockTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
 	wrappedCallback := func(ctx context.Context, message *auth.AuthMessage) error {
-		t.logger.InfoContext(ctx, "Received message",
+		t.logger.InfoContext(
+			ctx, "Received message",
 			slog.String("direction", "RECEIVE"),
 			slog.String("messageType", string(message.MessageType)),
 			slog.String("initialNonce", message.InitialNonce),
@@ -176,7 +184,7 @@ func (t *LoggingMockTransport) OnData(callback func(context.Context, *auth.AuthM
 			slog.String("yourNonce", message.YourNonce),
 			slog.String("identityKey", message.IdentityKey.ToDERHex()),
 		)
-		return callback(context.Background(), message)
+		return callback(ctx, message)
 	}
 	return t.MockTransport.OnData(wrappedCallback)
 }
@@ -188,7 +196,7 @@ func (t *LoggingMockTransport) receivedCertificatesLoggingArgs(message *auth.Aut
 		}
 	}
 
-	var args = make([]any, 0)
+	args := make([]any, 0)
 	for _, certificate := range message.Certificates {
 		fields := fmt.Sprintf("%v", slices.Collect(maps.Keys(certificate.Fields)))
 
@@ -200,7 +208,8 @@ func (t *LoggingMockTransport) receivedCertificatesLoggingArgs(message *auth.Aut
 			certType = string(certTypeArray[:])
 		}
 
-		args = append(args, slog.Group(certType,
+		args = append(args, slog.Group(
+			certType,
 			slog.String("fields", fields),
 			slog.String("certifier", certificate.Certifier.ToDERHex()),
 		))
@@ -211,7 +220,7 @@ func (t *LoggingMockTransport) receivedCertificatesLoggingArgs(message *auth.Aut
 func (t *LoggingMockTransport) requestedCertificatesLoggingArgs(message *auth.AuthMessage) []any {
 	certificateRequestLoggingArgs := make([]any, 0)
 	if len(message.RequestedCertificates.Certifiers) > 0 {
-		certifiers := make([]string, 0)
+		certifiers := make([]string, 0, len(message.RequestedCertificates.Certifiers))
 		for _, certifier := range message.RequestedCertificates.Certifiers {
 			certifiers = append(certifiers, certifier.ToDERHex())
 		}
@@ -221,7 +230,7 @@ func (t *LoggingMockTransport) requestedCertificatesLoggingArgs(message *auth.Au
 	}
 
 	if len(message.RequestedCertificates.CertificateTypes) > 0 {
-		certInfoLoggingArgs := make([]any, 0)
+		certInfoLoggingArgs := make([]any, 0, len(message.RequestedCertificates.CertificateTypes))
 		for certType, certFields := range message.RequestedCertificates.CertificateTypes {
 			certInfoLoggingArgs = append(certInfoLoggingArgs, slog.String(certType.String(), fmt.Sprintf("%v", certFields)))
 		}
@@ -324,14 +333,14 @@ func TestPeerAuthentication(t *testing.T) {
 
 	// Get Bob's session with Alice
 	bobSession, err := bob.SessionManager.GetSession(alice.IdentityKey.ToDERHex())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if assert.NotNil(t, bobSession) {
 		assert.True(t, bobSession.IsAuthenticated, "Bob should have an authenticated session with Alice")
 	}
 
 	// Get Alice's session with Bob
 	aliceSession, err := alice.SessionManager.GetSession(bob.IdentityKey.ToDERHex())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if assert.NotNil(t, aliceSession) {
 		assert.True(t, aliceSession.IsAuthenticated, "Alice should have an authenticated session with Bob")
 	}
@@ -741,7 +750,7 @@ func TestAuthenticationWithCertificatesFromCustomCertificatesRequestedCallbackOn
 	bob.Wallet.OnListCertificates().ReturnError(fmt.Errorf("unexpected call to wallet.ListCertificates"))
 
 	// and: Bob will setup custom certificates requested callback
-	bob.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+	bob.ListenForCertificatesRequested(func(ctx context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 		var cert certificates.VerifiableCertificate
 		// Use a verifiable certificate, that was working with TypeScript version
 		err := json.Unmarshal([]byte(`{
@@ -762,7 +771,7 @@ func TestAuthenticationWithCertificatesFromCustomCertificatesRequestedCallbackOn
 		if err != nil {
 			return fmt.Errorf("cannot recreate verifiable certificate from json, %w", err)
 		}
-		return bob.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{&cert})
+		return bob.SendCertificateResponse(ctx, senderPublicKey, []*certificates.VerifiableCertificate{&cert})
 	})
 
 	// and: listen for a received message
@@ -810,7 +819,7 @@ func TestAuthenticationWithCertificatesFromCustomCertificatesRequestedCallbackOn
 	})
 
 	// and: Alice will setup custom certificates requested callback
-	alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+	alice.ListenForCertificatesRequested(func(ctx context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 		var cert certificates.VerifiableCertificate
 		// Use a verifiable certificate, that was working with TypeScript version
 		err := json.Unmarshal([]byte(`{
@@ -831,7 +840,7 @@ func TestAuthenticationWithCertificatesFromCustomCertificatesRequestedCallbackOn
 		if err != nil {
 			return fmt.Errorf("cannot recreate verifiable certificate from json, %w", err)
 		}
-		return alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{&cert})
+		return alice.SendCertificateResponse(ctx, senderPublicKey, []*certificates.VerifiableCertificate{&cert})
 	})
 
 	// and: Alice shouldn't try to get certificates from wallet
@@ -933,17 +942,16 @@ func TestCertificateExchangeWithCustomFlow(t *testing.T) {
 
 	// when: Bob receives message about book, he requires sender to give him a library card
 	certReceived := make(chan struct{}, 1)
-	bob.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
-
+	bob.ListenForGeneralMessages(func(ctx context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
 		// Bob will make a dedicated request for certificates
-		err := bob.RequestCertificates(t.Context(), senderPublicKey, utils.RequestedCertificateSet{
+		requestErr := bob.RequestCertificates(ctx, senderPublicKey, utils.RequestedCertificateSet{
 			Certifiers: []*ec.PublicKey{bob.IdentityKey},
 			CertificateTypes: utils.RequestedCertificateTypeIDAndFieldList{
 				certType: []string{ownerField},
 			},
 		}, 500)
-		if err != nil {
-			return fmt.Errorf("failed to request for library card from requester, %w", err)
+		if requestErr != nil {
+			return fmt.Errorf("failed to request for library card from requester, %w", requestErr)
 		}
 
 		// Then he will wait for receiving certificates
@@ -954,7 +962,7 @@ func TestCertificateExchangeWithCustomFlow(t *testing.T) {
 		}
 
 		//  Bob received certificate with library card, so now he can give the book to Alice.
-		err = bob.ToPeer(t.Context(), messageWithBook, senderPublicKey, 5000)
+		err = bob.ToPeer(ctx, messageWithBook, senderPublicKey, 5000)
 		if err != nil {
 			return fmt.Errorf("failed to give book to Alice: %w", err)
 		}
@@ -1036,8 +1044,8 @@ func TestCertificatesRejectedByReceiver(t *testing.T) {
 			// and: alice will send invalid certificate
 			invalidCertificate := test.makeInvalid(verifiableCert)
 
-			alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
-				err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
+			alice.ListenForCertificatesRequested(func(ctx context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+				err := alice.SendCertificateResponse(ctx, senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
 				if err != nil {
 					return fmt.Errorf("failed to send certificates to counterparty, %w", err)
 				}
@@ -1122,8 +1130,8 @@ func TestCertificatesRejectedBySender(t *testing.T) {
 			// and: Bob will send invalid certificate
 			invalidCertificate := test.makeInvalid(verifiableCert)
 
-			bob.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
-				err := bob.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
+			bob.ListenForCertificatesRequested(func(ctx context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+				err := bob.SendCertificateResponse(ctx, senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
 				if err != nil {
 					return fmt.Errorf("failed to send certificates to counterparty, %w", err)
 				}
@@ -1208,8 +1216,8 @@ func TestCustomRequestedCertificatesRejected(t *testing.T) {
 			// and: Bob will send invalid certificate
 			invalidCertificate := test.makeInvalid(verifiableCert)
 
-			bob.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
-				err := bob.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
+			bob.ListenForCertificatesRequested(func(ctx context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
+				err := bob.SendCertificateResponse(ctx, senderPublicKey, []*certificates.VerifiableCertificate{invalidCertificate})
 				if err != nil {
 					return fmt.Errorf("failed to send certificates to counterparty, %w", err)
 				}
@@ -1378,7 +1386,7 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 		var numberOfCalls int
 		callbackID := alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 			numberOfCalls++
-			err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{aliceCert.ToVerifiableCertificate(senderPublicKey)})
+			err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{aliceCert.ToVerifiableCertificate(senderPublicKey)}) //nolint:contextcheck // shared test helper uses context.Background() internally
 			if err != nil {
 				return fmt.Errorf("failed to send certificate to peer: %w", err)
 			}
@@ -1418,7 +1426,7 @@ func TestPeerCallbacksRegistrationAndUnregistration(t *testing.T) {
 		var numberOfCalls int
 		callbackID := alice.ListenForCertificatesRequested(func(_ context.Context, senderPublicKey *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 			numberOfCalls++
-			err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{aliceCert.ToVerifiableCertificate(senderPublicKey)})
+			err := alice.SendCertificateResponse(t.Context(), senderPublicKey, []*certificates.VerifiableCertificate{aliceCert.ToVerifiableCertificate(senderPublicKey)}) //nolint:contextcheck // shared test helper uses context.Background() internally
 			if err != nil {
 				return fmt.Errorf("failed to send certificate to peer: %w", err)
 			}

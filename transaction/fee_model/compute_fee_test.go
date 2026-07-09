@@ -3,9 +3,10 @@ package feemodel
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/stretchr/testify/require"
 )
 
 // mockUnlockingScriptTemplate implements transaction.UnlockingScriptTemplate
@@ -15,16 +16,18 @@ type mockUnlockingScriptTemplate struct {
 }
 
 func (m *mockUnlockingScriptTemplate) Sign(_ *transaction.Transaction, _ uint32) (*script.Script, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // mock stub; only EstimateLength is exercised by this test
 }
 
 func (m *mockUnlockingScriptTemplate) EstimateLength(_ *transaction.Transaction, _ uint32) uint32 {
 	return m.estimatedLen
 }
 
-func makeLockingScript(t *testing.T, hex string) *script.Script {
+const testLockingScriptHex = "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac"
+
+func makeLockingScript(t *testing.T) *script.Script {
 	t.Helper()
-	s, err := script.NewFromHex(hex)
+	s, err := script.NewFromHex(testLockingScriptHex)
 	require.NoError(t, err)
 	return s
 }
@@ -37,22 +40,22 @@ func buildTxWithUnlockingScript(t *testing.T) *transaction.Transaction {
 
 	// Create a previous transaction that provides the source output.
 	prevTx := transaction.NewTransaction()
-	lockScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	lockScript := makeLockingScript(t)
 	prevTx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      5000,
 		LockingScript: lockScript,
 	})
 
 	input := &transaction.TransactionInput{
-		SourceTxOutIndex: 0,
+		SourceTxOutIndex:  0,
 		SourceTransaction: prevTx,
-		SequenceNumber:   0xffffffff,
+		SequenceNumber:    0xffffffff,
 	}
 	s := script.NewFromBytes([]byte{0x51}) // OP_1 as a minimal unlocking script
 	input.UnlockingScript = s
 	tx.AddInput(input)
 
-	outputScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	outputScript := makeLockingScript(t)
 	tx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      4000,
 		LockingScript: outputScript,
@@ -68,7 +71,7 @@ func buildTxWithTemplate(t *testing.T, estimatedLen uint32) *transaction.Transac
 	tx := transaction.NewTransaction()
 
 	prevTx := transaction.NewTransaction()
-	lockScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	lockScript := makeLockingScript(t)
 	prevTx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      5000,
 		LockingScript: lockScript,
@@ -82,7 +85,7 @@ func buildTxWithTemplate(t *testing.T, estimatedLen uint32) *transaction.Transac
 	}
 	tx.AddInput(input)
 
-	outputScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	outputScript := makeLockingScript(t)
 	tx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      4000,
 		LockingScript: outputScript,
@@ -98,7 +101,7 @@ func buildTxWithNoScript(t *testing.T) *transaction.Transaction {
 	tx := transaction.NewTransaction()
 
 	prevTx := transaction.NewTransaction()
-	lockScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	lockScript := makeLockingScript(t)
 	prevTx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      5000,
 		LockingScript: lockScript,
@@ -112,7 +115,7 @@ func buildTxWithNoScript(t *testing.T) *transaction.Transaction {
 	}
 	tx.AddInput(input)
 
-	outputScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	outputScript := makeLockingScript(t)
 	tx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      4000,
 		LockingScript: outputScript,
@@ -129,7 +132,7 @@ func TestComputeFeeWithUnlockingScript(t *testing.T) {
 
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0), "fee should be positive")
+	require.Positive(t, fee, "fee should be positive")
 }
 
 func TestComputeFeeWithTemplate(t *testing.T) {
@@ -140,7 +143,7 @@ func TestComputeFeeWithTemplate(t *testing.T) {
 
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0), "fee should be positive")
+	require.Positive(t, fee, "fee should be positive")
 }
 
 func TestComputeFeeNoScriptReturnsError(t *testing.T) {
@@ -172,7 +175,7 @@ func TestComputeFeeEmptyUnlockingScriptFallsBackToTemplate(t *testing.T) {
 	tx := transaction.NewTransaction()
 
 	prevTx := transaction.NewTransaction()
-	lockScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	lockScript := makeLockingScript(t)
 	prevTx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      5000,
 		LockingScript: lockScript,
@@ -188,7 +191,7 @@ func TestComputeFeeEmptyUnlockingScriptFallsBackToTemplate(t *testing.T) {
 	}
 	tx.AddInput(input)
 
-	outputScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	outputScript := makeLockingScript(t)
 	tx.AddOutput(&transaction.TransactionOutput{
 		Satoshis:      4000,
 		LockingScript: outputScript,
@@ -197,7 +200,7 @@ func TestComputeFeeEmptyUnlockingScriptFallsBackToTemplate(t *testing.T) {
 	model := &SatoshisPerKilobyte{Satoshis: 100}
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0))
+	require.Positive(t, fee)
 }
 
 func TestComputeFeeMultipleInputs(t *testing.T) {
@@ -207,7 +210,7 @@ func TestComputeFeeMultipleInputs(t *testing.T) {
 	tx := transaction.NewTransaction()
 
 	prevTx := transaction.NewTransaction()
-	lockScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	lockScript := makeLockingScript(t)
 	prevTx.AddOutput(&transaction.TransactionOutput{Satoshis: 5000, LockingScript: lockScript})
 	prevTx.AddOutput(&transaction.TransactionOutput{Satoshis: 5000, LockingScript: lockScript})
 
@@ -230,13 +233,13 @@ func TestComputeFeeMultipleInputs(t *testing.T) {
 	}
 	tx.AddInput(input2)
 
-	outputScript := makeLockingScript(t, "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac")
+	outputScript := makeLockingScript(t)
 	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 9000, LockingScript: outputScript})
 
 	model := &SatoshisPerKilobyte{Satoshis: 500}
 	fee, err := model.ComputeFee(tx)
 	require.NoError(t, err)
-	require.Greater(t, fee, uint64(0))
+	require.Positive(t, fee)
 }
 
 func TestComputeFeeFeeScalesWithSize(t *testing.T) {

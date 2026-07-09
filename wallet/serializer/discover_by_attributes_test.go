@@ -1,10 +1,12 @@
 package serializer
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestDiscoverByAttributesArgs(t *testing.T) {

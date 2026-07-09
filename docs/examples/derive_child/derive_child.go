@@ -17,6 +17,6 @@ func main() {
 
 	child, _ := merchantPrivKey.DeriveChild(customerPubKey, invoiceNum)
 
-	fmt.Printf("%x", child.Serialize())
+	fmt.Printf("%x", child.Serialize()) //nolint:forbidigo // example program output
 	// now use the child key to sign a message, transaction, etc
 }

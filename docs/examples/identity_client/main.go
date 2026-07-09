@@ -58,8 +58,8 @@ func main() {
 	} else if failure != nil {
 		log.Printf("Broadcast failed: %s", failure.Description)
 	} else {
-		fmt.Printf("Successfully revealed attributes! Transaction ID: %s\n", success.Txid)
-		fmt.Printf("Message: %s\n", success.Message)
+		fmt.Printf("Successfully revealed attributes! Transaction ID: %s\n", success.Txid) //nolint:forbidigo // example program output
+		fmt.Printf("Message: %s\n", success.Message)                                       //nolint:forbidigo // example program output
 	}
 
 	// If you prefer a simplified API that matches the TypeScript implementation:
@@ -71,7 +71,7 @@ func main() {
 	if err != nil {
 		log.Printf("Error revealing attributes (simple API): %v", err)
 	} else {
-		fmt.Printf("Successfully revealed attributes! Transaction ID: %s\n", txid)
+		fmt.Printf("Successfully revealed attributes! Transaction ID: %s\n", txid) //nolint:forbidigo // example program output
 	}
 
 	// -------------------------------------------------------------------------
@@ -92,13 +92,13 @@ func main() {
 	if err != nil {
 		log.Printf("Error resolving identity by key: %v", err)
 	} else {
-		fmt.Printf("Found %d identities for the given key\n", len(identities))
+		fmt.Printf("Found %d identities for the given key\n", len(identities)) //nolint:forbidigo // example program output
 		for i, identity := range identities {
-			fmt.Printf("Identity %d:\n", i+1)
-			fmt.Printf("  Name: %s\n", identity.Name)
-			fmt.Printf("  Avatar URL: %s\n", identity.AvatarURL)
-			fmt.Printf("  Identity Key: %s\n", identity.IdentityKey)
-			fmt.Printf("  Badge: %s\n", identity.BadgeLabel)
+			fmt.Printf("Identity %d:\n", i+1)                        //nolint:forbidigo // example program output
+			fmt.Printf("  Name: %s\n", identity.Name)                //nolint:forbidigo // example program output
+			fmt.Printf("  Avatar URL: %s\n", identity.AvatarURL)     //nolint:forbidigo // example program output
+			fmt.Printf("  Identity Key: %s\n", identity.IdentityKey) //nolint:forbidigo // example program output
+			fmt.Printf("  Badge: %s\n", identity.BadgeLabel)         //nolint:forbidigo // example program output
 		}
 	}
 
@@ -116,11 +116,11 @@ func main() {
 	if err != nil {
 		log.Printf("Error resolving identity by attributes: %v", err)
 	} else {
-		fmt.Printf("Found %d identities with the given attributes\n", len(identitiesByAttr))
+		fmt.Printf("Found %d identities with the given attributes\n", len(identitiesByAttr)) //nolint:forbidigo // example program output
 		for i, identity := range identitiesByAttr {
-			fmt.Printf("Identity %d:\n", i+1)
-			fmt.Printf("  Name: %s\n", identity.Name)
-			fmt.Printf("  Identity Key: %s\n", identity.IdentityKey)
+			fmt.Printf("Identity %d:\n", i+1)                        //nolint:forbidigo // example program output
+			fmt.Printf("  Name: %s\n", identity.Name)                //nolint:forbidigo // example program output
+			fmt.Printf("  Identity Key: %s\n", identity.IdentityKey) //nolint:forbidigo // example program output
 		}
 	}
 
@@ -148,8 +148,8 @@ func main() {
 	}
 
 	displayableIdentity := identity.ParseIdentity(certFromElsewhere)
-	fmt.Printf("Parsed Identity:\n")
-	fmt.Printf("  Name: %s\n", displayableIdentity.Name)
-	fmt.Printf("  Badge: %s\n", displayableIdentity.BadgeLabel)
-	fmt.Printf("  Badge Icon: %s\n", displayableIdentity.BadgeIconURL)
+	fmt.Printf("Parsed Identity:\n")                                   //nolint:forbidigo // example program output
+	fmt.Printf("  Name: %s\n", displayableIdentity.Name)               //nolint:forbidigo // example program output
+	fmt.Printf("  Badge: %s\n", displayableIdentity.BadgeLabel)        //nolint:forbidigo // example program output
+	fmt.Printf("  Badge Icon: %s\n", displayableIdentity.BadgeIconURL) //nolint:forbidigo // example program output
 }

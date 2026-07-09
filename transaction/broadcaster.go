@@ -7,6 +7,7 @@ type BroadcastSuccess struct {
 	Message string `json:"message"`
 }
 
+//nolint:errname // BroadcastFailure is established public API used across the SDK; renaming to BroadcastError would be a breaking change
 type BroadcastFailure struct {
 	Code        string `json:"code"`
 	Description string `json:"description"`

@@ -7,13 +7,14 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/kvstore"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 const errPrepareSpends = "prepare spends"
@@ -101,13 +102,13 @@ func TestErrorSentinels(t *testing.T) {
 	}
 
 	for i, e := range errs {
-		require.NotNil(t, e, "error at index %d should not be nil", i)
+		require.Error(t, e, "error at index %d should not be nil", i)
 	}
 
 	// Check errors are all distinct
 	for i := 0; i < len(errs); i++ {
 		for j := i + 1; j < len(errs); j++ {
-			require.False(t, errors.Is(errs[i], errs[j]),
+			require.NotErrorIs(t, errs[i], errs[j],
 				"errors at index %d and %d should be distinct", i, j)
 		}
 	}
@@ -124,7 +125,7 @@ func TestLocalKVStoreGetEmptyKey(t *testing.T) {
 	result, err := store.Get(context.Background(), "", "default")
 	require.Error(t, err)
 	require.Equal(t, kvstore.ErrInvalidKey, err)
-	require.Equal(t, "", result)
+	require.Empty(t, result)
 }
 
 func TestLocalKVStoreGetNoOutputsReturnsDefault(t *testing.T) {
@@ -345,8 +346,9 @@ func TestLocalKVStoreRemoveOutputsWithoutBEEFReturnsError(t *testing.T) {
 
 // brc62BeefHex is a valid BEEF V1 hex containing two transactions.
 // The subject (last) transaction has:
-//   TXID: 157428aee67d11123203735e4c540fa1bdab3b36d5882c6f8c5ff79f07d20d1c
-//   Output 0: P2PKH script (not a PushDrop), 26172 satoshis
+//
+//	TXID: 157428aee67d11123203735e4c540fa1bdab3b36d5882c6f8c5ff79f07d20d1c
+//	Output 0: P2PKH script (not a PushDrop), 26172 satoshis
 const brc62BeefHex = "0100beef01fe636d0c0007021400fe507c0c7aa754cef1f7889d5fd395cf1f785dd7de98eed895dbedfe4e5bc70d1502ac4e164f5bc16746bb0868404292ac8318bbac3800e4aad13a014da427adce3e010b00bc4ff395efd11719b277694cface5aa50d085a0bb81f613f70313acd28cf4557010400574b2d9142b8d28b61d88e3b2c3f44d858411356b49a28a4643b6d1a6a092a5201030051a05fc84d531b5d250c23f4f886f6812f9fe3f402d61607f977b4ecd2701c19010000fd781529d58fc2523cf396a7f25440b409857e7e221766c57214b1d38c7b481f01010062f542f45ea3660f86c013ced80534cb5fd4c19d66c56e7e8c5d4bf2d40acc5e010100b121e91836fd7cd5102b654e9f72f3cf6fdbfd0b161c53a9c54b12c841126331020100000001cd4e4cac3c7b56920d1e7655e7e260d31f29d9a388d04910f1bbd72304a79029010000006b483045022100e75279a205a547c445719420aa3138bf14743e3f42618e5f86a19bde14bb95f7022064777d34776b05d816daf1699493fcdf2ef5a5ab1ad710d9c97bfb5b8f7cef3641210263e2dee22b1ddc5e11f6fab8bcd2378bdd19580d640501ea956ec0e786f93e76ffffffff013e660000000000001976a9146bfd5c7fbe21529d45803dbcf0c87dd3c71efbc288ac0000000001000100000001ac4e164f5bc16746bb0868404292ac8318bbac3800e4aad13a014da427adce3e000000006a47304402203a61a2e931612b4bda08d541cfb980885173b8dcf64a3471238ae7abcd368d6402204cbf24f04b9aa2256d8901f0ed97866603d2be8324c2bfb7a37bf8fc90edd5b441210263e2dee22b1ddc5e11f6fab8bcd2378bdd19580d640501ea956ec0e786f93e76ffffffff013c660000000000001976a9146bfd5c7fbe21529d45803dbcf0c87dd3c71efbc288ac0000000000"
 
 // The subject txid for brc62BeefHex (last tx)
@@ -354,11 +356,15 @@ const brc62SubjectTxID = "157428aee67d11123203735e4c540fa1bdab3b36d5882c6f8c5ff7
 
 // pushDropBeefHex is an AtomicBEEF containing a transaction with a PushDrop output.
 // The transaction:
-//   TXID: d3fea5678c09ae4f29e2995d2e2aa54756879744a866a4449fd117e7b46e9e33
-//   Output 0: PushDrop lock-before script (pubkey=0279be..., field[0]="testvalue")
+//
+//	TXID: d3fea5678c09ae4f29e2995d2e2aa54756879744a866a4449fd117e7b46e9e33
+//	Output 0: PushDrop lock-before script (pubkey=0279be..., field[0]="testvalue")
+//
 // Generated with private key = 0x01 (secp256k1 base point)
-const pushDropBeefHex = "01010101339e6eb4e717d19f44a466a84497875647a52a2e5d99e2294fae098c67a5fed30200beef000200010000000001e803000000000000015100000000000100000001aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000ffffffff0101000000000000002f210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac097465737476616c7565756a00000000"
-const pushDropTxID = "d3fea5678c09ae4f29e2995d2e2aa54756879744a866a4449fd117e7b46e9e33"
+const (
+	pushDropBeefHex = "01010101339e6eb4e717d19f44a466a84497875647a52a2e5d99e2294fae098c67a5fed30200beef000200010000000001e803000000000000015100000000000100000001aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000ffffffff0101000000000000002f210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac097465737476616c7565756a00000000"
+	pushDropTxID    = "d3fea5678c09ae4f29e2995d2e2aa54756879744a866a4449fd117e7b46e9e33"
+)
 
 // buildOutpoint creates an Outpoint from txid hex string and index
 func buildOutpoint(t *testing.T, txidHex string, index uint32) transaction.Outpoint {
@@ -459,7 +465,7 @@ func TestLocalKVStoreGetValidBEEFNotPushDrop(t *testing.T) {
 	_, err = store.Get(context.Background(), "mykey", "default")
 	require.Error(t, err)
 	// The error may be about pushdrop token format or invalid format
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestLocalKVStoreGetPushDropReturnsValue(t *testing.T) {
@@ -1013,7 +1019,7 @@ func TestLocalKVStoreSetErrCorruptedState(t *testing.T) {
 // The new tx has SourceTransaction set so CalcInputSignatureHash works.
 // ---------------------------------------------------------------------------
 
-func buildSignableBeef(t *testing.T) (combinedBeefBytes []byte, newTxBytes []byte, newTxIDStr string) {
+func buildSignableBeef(t *testing.T) (combinedBeefBytes, newTxBytes []byte) {
 	t.Helper()
 
 	// Parse existing pushDrop BEEF to get the source tx
@@ -1040,9 +1046,9 @@ func buildSignableBeef(t *testing.T) (combinedBeefBytes []byte, newTxBytes []byt
 		Version: 1,
 		Inputs: []*transaction.TransactionInput{
 			{
-				SourceTXID:       sourceTxHash,
-				SourceTxOutIndex: 0,
-				SequenceNumber:   0xFFFFFFFF,
+				SourceTXID:        sourceTxHash,
+				SourceTxOutIndex:  0,
+				SequenceNumber:    0xFFFFFFFF,
 				SourceTransaction: sourceTx, // required for sighash calculation
 			},
 		},
@@ -1062,8 +1068,7 @@ func buildSignableBeef(t *testing.T) (combinedBeefBytes []byte, newTxBytes []byt
 	combinedBeefBytes, err = beef.Bytes()
 	require.NoError(t, err)
 
-	newTxID := newTx.TxID().String()
-	return combinedBeefBytes, newTx.Bytes(), newTxID
+	return combinedBeefBytes, newTx.Bytes()
 }
 
 // ---------------------------------------------------------------------------
@@ -1074,7 +1079,7 @@ func TestLocalKVStoreSetSignActionFailsRelinquishV2(t *testing.T) {
 	t.Parallel()
 
 	// Build a BEEF containing source tx + new spending tx
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 
@@ -1128,7 +1133,7 @@ func TestLocalKVStoreSetSignActionFailsRelinquishV2(t *testing.T) {
 func TestLocalKVStoreSetSignActionSuccess(t *testing.T) {
 	t.Parallel()
 
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 
@@ -1174,7 +1179,7 @@ func TestLocalKVStoreSetSignActionSuccess(t *testing.T) {
 func TestLocalKVStoreRemoveSignActionFailsRelinquish(t *testing.T) {
 	t.Parallel()
 
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 
@@ -1223,7 +1228,7 @@ func TestLocalKVStoreRemoveSignActionFailsRelinquish(t *testing.T) {
 func TestLocalKVStoreRemoveSignActionSuccess(t *testing.T) {
 	t.Parallel()
 
-	combinedBeef, newTxBytes, _ := buildSignableBeef(t)
+	combinedBeef, newTxBytes := buildSignableBeef(t)
 
 	store, mockWallet := setupTestKVStore(t)
 

@@ -136,12 +136,13 @@ func ToHTTPRequest(payload []byte, opts ...func(*HttpRequestDeserializationOptio
 	}
 
 	for i := range numHeaders {
-		headerName, err := reader.ReadString()
+		var headerName, headerValue string
+		headerName, err = reader.ReadString()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to read header[%d] name from payload to create http request: %w", i, err)
 		}
 
-		headerValue, err := reader.ReadString()
+		headerValue, err = reader.ReadString()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to read header[%d] %s value from payload to create http request: %w", i, headerName, err)
 		}
@@ -229,7 +230,7 @@ func FromResponse(requestID []byte, res SimplifiedHttpResponse) ([]byte, error) 
 
 	writer := util.NewWriter()
 	writer.WriteBytes(requestID)
-	writer.WriteVarInt(uint64(res.StatusCode))
+	writer.WriteVarInt(uint64(res.StatusCode)) //nolint:gosec // G115 -- HTTP status codes are bounded (100-599)
 
 	includedHeaders, err := extractHeadersToInclude(res.Header, IsHeaderToIncludeInResponse)
 	if err != nil {
@@ -274,12 +275,13 @@ func ToSimplifiedHttpResponse(payload []byte, opts ...func(*HttpResponseDeserial
 	}
 	responseHeaders := make(http.Header, nHeaders)
 	for i := range nHeaders {
-		headerKey, err := responseReader.ReadString()
+		var headerKey, headerValue string
+		headerKey, err = responseReader.ReadString()
 		if err != nil {
 			return nil, res, fmt.Errorf("failed to read header[%d] key to create http response: %w", i, err)
 		}
 
-		headerValue, err := responseReader.ReadString()
+		headerValue, err = responseReader.ReadString()
 		if err != nil {
 			return nil, res, fmt.Errorf("failed to read header[%d] value to create http response: %w", i, err)
 		}
@@ -336,7 +338,8 @@ func extractHeadersToInclude(headers http.Header, headersFilter func(headerName 
 			value = strings.SplitN(value, ";", 2)[0]
 		}
 
-		includedHeaders = append(includedHeaders,
+		includedHeaders = append(
+			includedHeaders,
 			includedHeader{
 				Name:  headerKey,
 				Value: value,

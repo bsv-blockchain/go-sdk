@@ -213,22 +213,22 @@ func main() {
 	}, "example")
 	bobIdentity := hex.EncodeToString(bobIdentityResult.PublicKey.Compressed())
 
-	fmt.Printf("Alice's identity key: %s\n", aliceIdentity)
-	fmt.Printf("Bob's identity key: %s\n", bobIdentity)
+	fmt.Printf("Alice's identity key: %s\n", aliceIdentity) //nolint:forbidigo // example program output
+	fmt.Printf("Bob's identity key: %s\n", bobIdentity)     //nolint:forbidigo // example program output
 
 	// Set up message listeners
 	alicePeer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
-		fmt.Printf("Alice received message from %s: %s\n", senderPublicKey.Compressed(), string(payload))
+		fmt.Printf("Alice received message from %s: %s\n", senderPublicKey.Compressed(), string(payload)) //nolint:forbidigo // example program output
 		return nil
 	})
 
 	bobPeer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
-		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey.Compressed(), string(payload))
+		fmt.Printf("Bob received message from %s: %s\n", senderPublicKey.Compressed(), string(payload)) //nolint:forbidigo // example program output
 
 		// Reply to Alice
-		err := bobPeer.ToPeer(context.Background(), []byte("Hello back, Alice!"), senderPublicKey, 5000)
-		if err != nil {
-			log.Printf("Bob failed to reply: %v", err)
+		replyErr := bobPeer.ToPeer(context.Background(), []byte("Hello back, Alice!"), senderPublicKey, 5000) //nolint:contextcheck // example callback has no inbound context to propagate
+		if replyErr != nil {
+			log.Printf("Bob failed to reply: %v", replyErr)
 		}
 		return nil
 	})
@@ -242,5 +242,5 @@ func main() {
 	// Wait for messages to be processed
 	time.Sleep(1 * time.Second)
 
-	fmt.Println("Example completed successfully!")
+	fmt.Println("Example completed successfully!") //nolint:forbidigo // example program output
 }

@@ -8,12 +8,13 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth/certificates"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 const DefaultCertifierPrivKeyHex = "a4ba93def94ee38d2fae8c5948e2daab5c490225ef5be35eb64ce314e0985c28"
@@ -56,6 +57,7 @@ type Manager struct {
 
 type managedCertificate struct {
 	*wallet.Certificate
+
 	master *certificates.MasterCertificate
 }
 
@@ -85,7 +87,7 @@ func (m *Manager) AcquireCertificate(_ context.Context, _ wallet.AcquireCertific
 
 func (m *Manager) ListCertificates(_ context.Context, args wallet.ListCertificatesArgs, _ string) (*wallet.ListCertificatesResult, error) {
 	result := &wallet.ListCertificatesResult{
-		TotalCertificates: uint32(len(m.certs)),
+		TotalCertificates: uint32(len(m.certs)), //nolint:gosec // G115 -- value is bounded by domain constraints
 		Certificates:      make([]wallet.CertificateResult, 0, len(m.certs)),
 	}
 
@@ -203,7 +205,7 @@ type TestCertificateOperations interface {
 
 type TestCertificateBuilder interface {
 	// WithFieldValue sets a single field value in the certificate.
-	WithFieldValue(fieldName string, fieldValue string) TestCertificateIssuableFieldBuilder
+	WithFieldValue(fieldName, fieldValue string) TestCertificateIssuableFieldBuilder
 
 	// WithFieldValues adds provided fields values map to the certificate.
 	WithFieldValues(fields map[string]string) TestCertificateIssuableFieldBuilder
@@ -238,7 +240,7 @@ func (o *testCertificateOperations) WithType(typeName string) TestCertificateBui
 	return o
 }
 
-func (o *testCertificateOperations) WithFieldValue(fieldName string, fieldValue string) TestCertificateIssuableFieldBuilder {
+func (o *testCertificateOperations) WithFieldValue(fieldName, fieldValue string) TestCertificateIssuableFieldBuilder {
 	o.fields[fieldName] = fieldValue
 	return o
 }

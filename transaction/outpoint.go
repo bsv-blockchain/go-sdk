@@ -11,6 +11,8 @@ import (
 )
 
 // Outpoint represents a transaction output reference consisting of a transaction ID and output index
+//
+//nolint:recvcheck // mix is intentional: Outpoint implements fmt.Stringer/json.Marshaler/driver.Valuer by value since it's widely held by value, while UnmarshalJSON/Scan etc. must mutate via pointer receiver
 type Outpoint struct {
 	Txid  chainhash.Hash `json:"txid"`
 	Index uint32         `json:"index"`

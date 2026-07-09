@@ -40,6 +40,7 @@ type TransactionCreator func([]byte) (*transaction.Transaction, error)
 // TestableIdentityClient extends IdentityClient with features that make it easier to test
 type TestableIdentityClient struct {
 	*Client
+
 	certificateVerifier CertificateVerifier
 	transactionCreator  TransactionCreator
 	broadcaster         topic.Broadcaster
@@ -192,7 +193,7 @@ func (c *TestableIdentityClient) PubliclyRevealAttributes(
 	}
 
 	// Broadcast the transaction
-	success, failure := broadcaster.Broadcast(tx)
+	success, failure := broadcaster.Broadcast(tx) //nolint:contextcheck // topic.Broadcaster.Broadcast does not accept a context parameter
 	return success, failure, nil
 }
 

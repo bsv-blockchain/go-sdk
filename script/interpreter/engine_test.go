@@ -9,12 +9,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
-	"github.com/stretchr/testify/require"
 )
 
 // TestBadPC sets the pc to a deliberately bad result then confirms that Step()
@@ -506,7 +507,6 @@ func TestCheckPubKeyEncoding(t *testing.T) {
 				"when it should have failed", test.name)
 		}
 	}
-
 }
 
 // TestCheckSignatureEncoding ensures the internal checkSignatureEncoding
@@ -1005,11 +1005,11 @@ func TestLargeStackDataNUM2BIN(t *testing.T) {
 	// 5. Takes first 4 bytes and checks if non-zero
 
 	tests := []struct {
-		name           string
-		size           int64
-		withAfterGen   bool
-		expectError    bool
-		errorContains  string
+		name          string
+		size          int64
+		withAfterGen  bool
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name:         "100KB with AfterGenesis succeeds",

@@ -70,6 +70,7 @@ type Interface interface {
 }
 
 type (
+	//nolint:recvcheck // mix is intentional: CertificateType implements fmt.Stringer by value since it's widely held/compared by value, while Base64 matches the pointer-based stdlib idiom
 	CertificateType [32]byte
 	SerialNumber    [32]byte
 )
@@ -493,7 +494,8 @@ type IdentityCertifier struct {
 }
 
 type IdentityCertificate struct {
-	Certificate                               // Embedded
+	Certificate // Embedded
+
 	CertifierInfo           IdentityCertifier `json:"certifierInfo"`
 	PubliclyRevealedKeyring map[string]string `json:"publiclyRevealedKeyring"`
 	DecryptedFields         map[string]string `json:"decryptedFields"`
@@ -556,9 +558,10 @@ type ListCertificatesArgs struct {
 
 // CertificateResult represents a certificate with its associated keyring and verifier information.
 type CertificateResult struct {
-	Certificate                   // Embed certificate fields directly. They already have tags.
-	Keyring     map[string]string `json:"keyring"`
-	Verifier    []byte            `json:"verifier"`
+	Certificate // Embed certificate fields directly. They already have tags.
+
+	Keyring  map[string]string `json:"keyring"`
+	Verifier []byte            `json:"verifier"`
 }
 
 // ListCertificatesResult contains a paginated list of certificates matching the query criteria.

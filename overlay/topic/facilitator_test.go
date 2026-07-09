@@ -6,8 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/overlay"
 )
 
 const headerContentType = "Content-Type"
@@ -20,10 +22,10 @@ func TestHTTPSOverlayBroadcastFacilitatorSuccess(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/submit", r.URL.Path)
-		require.Equal(t, http.MethodPost, r.Method)
-		require.Equal(t, "application/octet-stream", r.Header.Get(headerContentType))
-		require.NotEmpty(t, r.Header.Get("X-Topics"))
+		assert.Equal(t, "/submit", r.URL.Path)
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "application/octet-stream", r.Header.Get(headerContentType))
+		assert.NotEmpty(t, r.Header.Get("X-Topics"))
 
 		w.Header().Set(headerContentType, "application/json")
 		w.WriteHeader(http.StatusOK)

@@ -11,7 +11,7 @@ const OrdinalsPrefix = "ord"
 
 // Inscribe adds an output to the transaction with an inscription.
 func (tx *Transaction) Inscribe(ia *script.InscriptionArgs) error {
-	ins := script.Script{} // deep copy
+	ins := make(script.Script, 0, len(*ia.LockingScript)) // deep copy
 
 	// add Inscription data
 	// (Example: 	OP_FALSE
@@ -72,7 +72,8 @@ func (tx *Transaction) Inscribe(ia *script.InscriptionArgs) error {
 // One output will be created with the extra Satoshis and then another
 // output will be created with 1 Satoshi with the inscription in it.
 func (tx *Transaction) InscribeSpecificOrdinal(ia *script.InscriptionArgs, inputIdx uint32, satoshiIdx uint64,
-	extraOutputScript *script.Script) error {
+	extraOutputScript *script.Script,
+) error {
 	amount, err := rangeAbove(tx.Inputs, inputIdx, satoshiIdx)
 	if err != nil {
 		return err
@@ -107,7 +108,7 @@ func (tx *Transaction) InscribeSpecificOrdinal(ia *script.InscriptionArgs, input
 //
 // For more info check the Ordinals Theory Handbook (https://docs.ordinals.com/faq.html).
 func rangeAbove(is []*TransactionInput, inputIdx uint32, satIdx uint64) (uint64, error) {
-	if uint32(len(is)) < inputIdx {
+	if uint32(len(is)) < inputIdx { //nolint:gosec // G115 -- input slice length is bounded well within uint32
 		return 0, ErrOutputNoExist
 	}
 

@@ -51,7 +51,7 @@ func DeserializeCreateHMACArgs(data []byte) (*wallet.CreateHMACArgs, error) {
 
 	// Read data
 	dataLen := r.ReadVarInt()
-	args.Data = r.ReadBytes(int(dataLen))
+	args.Data = r.ReadBytes(int(dataLen)) //nolint:gosec // G115 -- bounded by actual buffer size checked inside ReadBytes
 
 	// Read seekPermission
 	args.SeekPermission = util.PtrToBool(r.ReadOptionalBool())

@@ -7,9 +7,10 @@ import (
 	"math"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -567,7 +568,7 @@ func TestReaderReadString(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadString()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run("MaxUint64 length returns empty", func(t *testing.T) {
@@ -576,7 +577,7 @@ func TestReaderReadString(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadString()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run("truncated bytes returns error", func(t *testing.T) {
@@ -597,7 +598,7 @@ func TestReaderReadOptionalString(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadOptionalString()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run("non-empty string round-trip", func(t *testing.T) {
@@ -815,7 +816,7 @@ func TestReaderReadOptionalToHex(t *testing.T) {
 		r := util.NewReader(w.Buf)
 		s, err := r.ReadOptionalToHex()
 		require.NoError(t, err)
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -838,27 +839,27 @@ func TestReaderHoldErrorBasic(t *testing.T) {
 	t.Run("IsComplete false then true", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{0x01})
 		require.False(t, r.IsComplete())
-		r.ReadByte()
+		r.ReadByteValue()
 		require.True(t, r.IsComplete())
 	})
 
 	t.Run("CheckComplete no error on fully consumed", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{0x01})
-		r.ReadByte()
+		r.ReadByteValue()
 		r.CheckComplete()
 		require.NoError(t, r.Err)
 	})
 
 	t.Run("CheckComplete error when not fully consumed", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{0x01, 0x02})
-		r.ReadByte()
+		r.ReadByteValue()
 		r.CheckComplete()
 		require.Error(t, r.Err)
 	})
 
 	t.Run("CheckComplete skips if already has error", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte() // sets err
+		r.ReadByteValue() // sets err
 		originalErr := r.Err
 		r.CheckComplete()
 		require.Equal(t, originalErr, r.Err) // err unchanged
@@ -879,7 +880,7 @@ func TestReaderHoldErrorReadVarInt(t *testing.T) {
 
 	t.Run("propagates prior error", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte() // force error
+		r.ReadByteValue() // force error
 		v := r.ReadVarInt()
 		require.Equal(t, uint64(0), v)
 	})
@@ -912,7 +913,7 @@ func TestReaderHoldErrorReadOptionalUint32(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		result := r.ReadOptionalUint32()
 		require.Nil(t, result)
 	})
@@ -938,7 +939,7 @@ func TestReaderHoldErrorReadBytes(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		b := r.ReadBytes(2)
 		require.Nil(t, b)
 	})
@@ -957,7 +958,7 @@ func TestReaderHoldErrorReadBytesReverse(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		b := r.ReadBytesReverse(3)
 		require.Nil(t, b)
 	})
@@ -1015,7 +1016,7 @@ func TestReaderHoldErrorReadIntBytes(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		b := r.ReadIntBytes()
 		require.Nil(t, b)
 	})
@@ -1037,22 +1038,22 @@ func TestReaderHoldErrorReadByte(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{0x42})
-		b := r.ReadByte()
+		b := r.ReadByteValue()
 		require.NoError(t, r.Err)
 		require.Equal(t, byte(0x42), b)
 	})
 
 	t.Run("error past end", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		b := r.ReadByte()
+		b := r.ReadByteValue()
 		require.Error(t, r.Err)
 		require.Equal(t, byte(0), b)
 	})
 
 	t.Run("zero on prior error", func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
-		b := r.ReadByte()
+		r.ReadByteValue()
+		b := r.ReadByteValue()
 		require.Equal(t, byte(0), b)
 	})
 }
@@ -1073,7 +1074,7 @@ func TestReaderHoldErrorReadOptionalBool(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		result := r.ReadOptionalBool()
 		require.Nil(t, result)
 	})
@@ -1107,7 +1108,7 @@ func TestReaderHoldErrorReadOptionalBytes(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		b := r.ReadOptionalBytes()
 		require.Nil(t, b)
 	})
@@ -1130,14 +1131,14 @@ func TestReaderHoldErrorReadString(t *testing.T) {
 		s := r.ReadString("my error")
 		require.Error(t, r.Err)
 		require.Contains(t, r.Err.Error(), "my error")
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 
 	t.Run(subTestEmptyOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		s := r.ReadString()
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -1155,9 +1156,9 @@ func TestReaderHoldErrorReadOptionalString(t *testing.T) {
 
 	t.Run(subTestEmptyOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		s := r.ReadOptionalString()
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -1175,7 +1176,7 @@ func TestReaderHoldErrorReadStringSlice(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		result := r.ReadStringSlice()
 		require.Nil(t, result)
 	})
@@ -1196,9 +1197,9 @@ func TestReaderHoldErrorReadOptionalToHex(t *testing.T) {
 
 	t.Run(subTestEmptyOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		s := r.ReadOptionalToHex()
-		require.Equal(t, "", s)
+		require.Empty(t, s)
 	})
 }
 
@@ -1213,7 +1214,7 @@ func TestReaderHoldErrorReadRemaining(t *testing.T) {
 
 	t.Run(subTestNilOnPriorError, func(t *testing.T) {
 		r := util.NewReaderHoldError([]byte{})
-		r.ReadByte()
+		r.ReadByteValue()
 		result := r.ReadRemaining()
 		require.Nil(t, result)
 	})
@@ -1310,7 +1311,7 @@ func TestReadOptionalToHexZeroLength(t *testing.T) {
 	r := util.NewReader(w.Buf)
 	s, err := r.ReadOptionalToHex()
 	require.NoError(t, err)
-	require.Equal(t, "", s)
+	require.Empty(t, s)
 }
 
 func TestReadOptionalToHexContent(t *testing.T) {

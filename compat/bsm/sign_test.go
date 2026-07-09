@@ -25,7 +25,6 @@ func TestSigningCompression(t *testing.T) {
 	}
 
 	err = compat.VerifyMessage(address.AddressString, sig, testData)
-
 	if err != nil {
 		t.Errorf("Failed to validate compressed %s", err)
 	}
@@ -34,7 +33,7 @@ func TestSigningCompression(t *testing.T) {
 // TestSignMessage will test the method SignMessage() and SignMessageString()
 func TestSignMessage(t *testing.T) {
 	t.Parallel()
-	var tests = []struct {
+	tests := []struct {
 		inputKey          string
 		inputMessage      string
 		expectedSignature string
@@ -135,7 +134,7 @@ func TestSignMessage(t *testing.T) {
 
 func TestSignMessageUncompressed(t *testing.T) {
 	t.Parallel()
-	var tests = []struct {
+	tests := []struct {
 		inputKey          string
 		inputMessage      string
 		expectedSignature string

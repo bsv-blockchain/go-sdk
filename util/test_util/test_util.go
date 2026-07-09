@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/stretchr/testify/require"
 )
 
 // GetByte32FromString returns a [32]byte from a string
@@ -67,7 +68,7 @@ func GetPKFromHex(t *testing.T, s string) *ec.PublicKey {
 // GetSigFromHex returns a Signature from a hex string
 func GetSigFromHex(t *testing.T, s string) *ec.Signature {
 	d, err := hex.DecodeString(s)
-	require.NoError(t, err, fmt.Sprintf("error decoding hex string '%s': %v", s, err))
+	require.NoError(t, err, "error decoding hex string '%s': %v", s, err)
 	sig, err := ec.ParseSignature(d)
 	require.NoError(t, err)
 	return sig
@@ -82,12 +83,12 @@ func GetByteFromHexString(t *testing.T, s string) []byte {
 
 func OutpointFromString(t *testing.T, s string) *transaction.Outpoint {
 	outpoint, err := transaction.OutpointFromString(s)
-	require.NoError(t, err, fmt.Sprintf("error creating transaction.Outpoint from string '%s': %v", s, err))
+	require.NoError(t, err, "error creating transaction.Outpoint from string '%s': %v", s, err)
 	return outpoint
 }
 
 func HashFromString(t *testing.T, s string) chainhash.Hash {
 	hash, err := chainhash.NewHashFromHex(s)
-	require.NoError(t, err, fmt.Sprintf("error creating wallet.Outpoint from string '%s': %v", s, err))
+	require.NoError(t, err, "error creating wallet.Outpoint from string '%s': %v", s, err)
 	return *hash
 }

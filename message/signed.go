@@ -65,7 +65,7 @@ func Sign(message []byte, signer *ec.PrivateKey, verifier *ec.PublicKey) ([]byte
 	return sig, nil
 }
 
-func Verify(message []byte, sig []byte, recipient *ec.PrivateKey) (bool, error) {
+func Verify(message, sig []byte, recipient *ec.PrivateKey) (bool, error) {
 	counter := 4
 	messageVersion := sig[:counter]
 	if !bytes.Equal(messageVersion, VERSION_BYTES) {
@@ -112,5 +112,4 @@ func Verify(message []byte, sig []byte, recipient *ec.PrivateKey) (bool, error) 
 	hashedMessage := sha256.Sum256(message)
 	verified := signature.Verify(hashedMessage[:], signingKey)
 	return verified, nil
-
 }

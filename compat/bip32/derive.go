@@ -8,9 +8,7 @@ import (
 	"strings"
 )
 
-var (
-	numericPlusTick = regexp.MustCompile(`^[0-9]+'{0,1}$`)
-)
+var numericPlusTick = regexp.MustCompile(`^[0-9]+'{0,1}$`)
 
 // DerivePath given an uint64 number will generate a hardened BIP32 path 3 layers deep.
 //

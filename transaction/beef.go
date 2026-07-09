@@ -31,9 +31,11 @@ func NewBeef() *Beef {
 	}
 }
 
-const BEEF_V1 = uint32(4022206465)     // BRC-64
-const BEEF_V2 = uint32(4022206466)     // BRC-96
-const ATOMIC_BEEF = uint32(0x01010101) // BRC-95
+const (
+	BEEF_V1     = uint32(4022206465) // BRC-64
+	BEEF_V2     = uint32(4022206466) // BRC-96
+	ATOMIC_BEEF = uint32(0x01010101) // BRC-95
+)
 
 func (t *Transaction) FromBEEF(beef []byte) error {
 	tx, err := NewTransactionFromBEEF(beef)
@@ -143,7 +145,10 @@ func NewBeefFromHex(beefHex string) (*Beef, error) {
 
 func NewBeefFromBytes(beef []byte) (*Beef, error) {
 	var reader *bytes.Reader
-	if binary.LittleEndian.Uint32(beef[:4]) == ATOMIC_BEEF {
+	if len(beef) >= 4 && binary.LittleEndian.Uint32(beef[:4]) == ATOMIC_BEEF {
+		if len(beef) < 36 {
+			return nil, fmt.Errorf("invalid atomic BEEF: expected at least 36 bytes, got %d", len(beef))
+		}
 		reader = bytes.NewReader(beef[36:])
 	} else {
 		reader = bytes.NewReader(beef)
@@ -154,14 +159,14 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 	}
 
 	if version == BEEF_V1 {
-		BUMPs, err := readBUMPs(reader)
-		if err != nil {
-			return nil, err
+		BUMPs, v1Err := readBUMPs(reader)
+		if v1Err != nil {
+			return nil, v1Err
 		}
 
-		txs, lastTx, err := readAllTransactions(reader, BUMPs)
-		if err != nil {
-			return nil, err
+		txs, lastTx, v1Err := readAllTransactions(reader, BUMPs)
+		if v1Err != nil {
+			return nil, v1Err
 		}
 
 		// run through the txs map and convert to BeefTx
@@ -440,7 +445,7 @@ func (t *Transaction) BEEF() ([]byte, error) {
 		b.Write(tx.Bytes())
 		if tx.MerklePath != nil {
 			b.Write([]byte{1})
-			b.Write(util.VarInt(bumpMap[tx.MerklePath.BlockHeight]).Bytes())
+			b.Write(util.VarInt(bumpMap[tx.MerklePath.BlockHeight]).Bytes()) //nolint:gosec // G115 -- bump index is bounded by number of BUMPs, always non-negative
 		} else {
 			b.Write([]byte{0})
 		}
@@ -1383,14 +1388,14 @@ func (b *Beef) Bytes() ([]byte, error) {
 			rawTxBytes := tx.Transaction.Bytes()
 			var txBytes []byte
 			if tx.DataFormat == RawTxAndBumpIndex {
-				bumpIndexBytes := util.VarInt(tx.BumpIndex).Bytes()
+				bumpIndexBytes := util.VarInt(tx.BumpIndex).Bytes() //nolint:gosec // G115 -- bump index is bounded by number of BUMPs, always non-negative
 				txBytes = make([]byte, 1+len(bumpIndexBytes)+len(rawTxBytes))
 				txBytes[0] = byte(tx.DataFormat)
 				copy(txBytes[1:], bumpIndexBytes)
 				copy(txBytes[1+len(bumpIndexBytes):], rawTxBytes)
 			} else {
 				txBytes = make([]byte, 1+len(rawTxBytes))
-				txBytes[0] = byte(tx.DataFormat)
+				txBytes[0] = byte(tx.DataFormat) //nolint:gosec // G115 -- DataFormat is a small enum with only a few possible values
 				copy(txBytes[1:], rawTxBytes)
 			}
 			orderedTxBytes = append(orderedTxBytes, txBytes)

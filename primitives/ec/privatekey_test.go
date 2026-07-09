@@ -14,10 +14,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	keyshares "github.com/bsv-blockchain/go-sdk/primitives/keyshares"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPrivKeys(t *testing.T) {
@@ -83,7 +83,7 @@ func TestBRC42PrivateVectors(t *testing.T) {
 	require.True(t, ok, "Could not determine the directory of the current test file")
 
 	// Read in the file
-	vectors, err := os.ReadFile(testdataPath)
+	vectors, err := os.ReadFile(testdataPath) //nolint:gosec // G304 -- test reads a fixed local testdata file
 	if err != nil {
 		t.Fatalf("Could not read test vectors: %v", err) // use Fatalf to stop test if file cannot be read
 	}
@@ -151,9 +151,8 @@ func TestPrivateKeySerializationAndDeserialization(t *testing.T) {
 		deserialized, err := PrivateKeyFromHex(serialized)
 
 		// then:
-		assert.NoError(t, err, "failed to deserialize private key")
+		require.NoError(t, err, "failed to deserialize private key")
 		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
-
 	})
 
 	t.Run("WIF", func(t *testing.T) {
@@ -165,10 +164,9 @@ func TestPrivateKeySerializationAndDeserialization(t *testing.T) {
 		deserialized, err := PrivateKeyFromWif(serialized)
 
 		// then:
-		assert.NoError(t, err, "failed to deserialize private key")
+		require.NoError(t, err, "failed to deserialize private key")
 		require.Equal(t, expectedPK, deserialized, "deserialized private key does not match expected")
 	})
-
 }
 
 func TestPrivateKeyFromInvalidWif(t *testing.T) {
@@ -247,8 +245,10 @@ func TestStaticKeyShares(t *testing.T) {
 	bigInt4, _ := new(big.Int).SetString("69399200685258027967243383183941157630666642239721524878579037738057870534877", 10)
 	bigInt5, _ := new(big.Int).SetString("57624126407367177448064453473133284173777913145687126926923766367371013747852", 10)
 
-	points := []*keyshares.PointInFiniteField{{
-		X: big.NewInt(1), Y: bigInt1},
+	points := []*keyshares.PointInFiniteField{
+		{
+			X: big.NewInt(1), Y: bigInt1,
+		},
 		{X: big.NewInt(2), Y: bigInt2},
 		{X: big.NewInt(3), Y: bigInt3},
 		{X: big.NewInt(4), Y: bigInt4},
@@ -585,7 +585,6 @@ func TestExampleBackupAndRecovery(t *testing.T) {
 }
 
 func TestExampleFromTypescript(t *testing.T) {
-
 	recoveryShares := []string{
 		"HYkALskEizXkRLHr5Q5fzj9w7ThpdgwqBwjHih9sifVW.6zRqQ7LMKFu7eFSf9eABfuugnvzG9tSiv4uj8zXrX6r7.6.35449bb9",
 		"CnAGiYWrGzKZn5GcAu4FZSnZkNi6pToVRkPfUaCtiDm6.4e3M6FN2R3iUssJwJ8PazCX7fCvx3mgu1M82GREXrptn.6.35449bb9",

@@ -1,11 +1,14 @@
 package substrates
 
 import (
-	"github.com/stretchr/testify/require"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const TestOriginator = "test.com"
@@ -52,21 +55,21 @@ func TestTransmitToWallet(t *testing.T) {
 	// Test server that validates requests and returns mock responses
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Validate headers
-		require.Equal(t, r.Header.Get("Content-Type"), "application/octet-stream")
-		require.Equal(t, r.Header.Get("Origin"), TestOriginator)
-		require.Equal(t, r.URL.Path, "/createAction")
+		assert.Equal(t, "application/octet-stream", r.Header.Get("Content-Type"))
+		assert.Equal(t, TestOriginator, r.Header.Get("Origin"))
+		assert.Equal(t, "/createAction", r.URL.Path)
 
 		// Validate body
 		body := make([]byte, r.ContentLength)
 		_, err := r.Body.Read(body)
-		if err != nil && err != io.EOF {
-			require.NoError(t, err)
+		if err != nil && !errors.Is(err, io.EOF) {
+			assert.NoError(t, err)
 		}
-		require.Equal(t, body, []byte("payload"))
+		assert.Equal(t, body, []byte("payload"))
 
 		// Return test response
 		_, err = w.Write([]byte("response"))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -79,7 +82,7 @@ func TestTransmitToWallet(t *testing.T) {
 	}
 
 	wire := NewHTTPWalletWire(TestOriginator, ts.URL, nil)
-	response, err := wire.TransmitToWallet(message)
+	response, err := wire.TransmitToWallet(t.Context(), message)
 	require.NoError(t, err, "TransmitToWallet failed")
 	require.Equal(t, []byte("response"), response, "unexpected response")
 }
@@ -110,7 +113,7 @@ func TestTransmitToWallet_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wire := NewHTTPWalletWire(TestOriginator, "http://localhost", &http.Client{})
-			_, err := wire.TransmitToWallet(tt.message)
+			_, err := wire.TransmitToWallet(t.Context(), tt.message)
 			require.Error(t, err, "expected error")
 			require.ErrorContains(t, err, tt.wantErr, "error message mismatch")
 		})
@@ -122,7 +125,7 @@ func TestTransmitToWallet_HTTPErrors(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, err := w.Write([]byte("server error"))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
@@ -133,7 +136,7 @@ func TestTransmitToWallet_HTTPErrors(t *testing.T) {
 	}
 
 	wire := NewHTTPWalletWire("", ts.URL, nil)
-	_, err := wire.TransmitToWallet(message)
+	_, err := wire.TransmitToWallet(t.Context(), message)
 	require.Error(t, err, "expected HTTP error")
 	require.EqualError(t, err, "HTTP request failed with status: 500 Internal Server Error", "error message mismatch")
 }

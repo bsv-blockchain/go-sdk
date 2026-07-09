@@ -2,8 +2,8 @@ package serializer
 
 import (
 	"fmt"
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
@@ -37,7 +37,7 @@ func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) e
 		default:
 			return fmt.Errorf("invalid status: %s", res.Status)
 		}
-		w.WriteByte(byte(statusByte))
+		w.WriteByteValue(byte(statusByte))
 	}
 	return nil
 }

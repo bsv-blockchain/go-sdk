@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewP2PKHOutputFromPubKeyHashHex(t *testing.T) {
@@ -22,7 +23,8 @@ func TestNewP2PKHOutputFromPubKeyHashHex(t *testing.T) {
 		require.NoError(t, err)
 		s, err := p2pkh.Lock(add)
 		require.NoError(t, err)
-		require.Equal(t,
+		require.Equal(
+			t,
 			"76a9148fe80c75c9560e8b56ed64ea3c26e18d2c52211b88ac",
 			hex.EncodeToString(*s),
 		)
@@ -43,7 +45,8 @@ func TestNewHashPuzzleOutput(t *testing.T) {
 		err := tx.AddHashPuzzleOutput("", "", uint64(5000))
 
 		require.NoError(t, err)
-		require.Equal(t,
+		require.Equal(
+			t,
 			"a914b472a266d0bd89c13706a4132ccfb16f7c3b9fcb8876a90088ac",
 			tx.Outputs[0].LockingScriptHex(),
 		)
@@ -58,7 +61,8 @@ func TestNewHashPuzzleOutput(t *testing.T) {
 		err = tx.AddHashPuzzleOutput("secret1", addr.PublicKeyHash.String(), uint64(5000))
 
 		require.NoError(t, err)
-		require.Equal(t,
+		require.Equal(
+			t,
 			"a914d3f9e3d971764be5838307b175ee4e08ba427b908876a914c28f832c3d539933e0c719297340b34eee0f4c3488ac",
 			tx.Outputs[0].LockingScriptHex(),
 		)

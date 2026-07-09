@@ -300,13 +300,12 @@ func main() {
 
 	// Set up message handlers
 	alicePeer.ListenForGeneralMessages(func(_ context.Context, senderPubKey *ec.PublicKey, payload []byte) error {
-
-		fmt.Printf("Alice received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
+		fmt.Printf("Alice received message from %s: %s\n", senderPubKey.Compressed(), string(payload)) //nolint:forbidigo // example program output
 		return nil
 	})
 
 	bobPeer.ListenForGeneralMessages(func(_ context.Context, senderPubKey *ec.PublicKey, payload []byte) error {
-		fmt.Printf("Bob received message from %s: %s\n", senderPubKey.Compressed(), string(payload))
+		fmt.Printf("Bob received message from %s: %s\n", senderPubKey.Compressed(), string(payload)) //nolint:forbidigo // example program output
 		return nil
 	})
 
@@ -322,14 +321,14 @@ func main() {
 	aliceIdKeyString := hex.EncodeToString(aliceIdentityKey.PublicKey.Compressed())
 	bobIdKeyString := hex.EncodeToString(bobIdentityKey.PublicKey.Compressed())
 
-	fmt.Printf("Alice's identity key: %s\n", aliceIdKeyString)
-	fmt.Printf("Bob's identity key: %s\n", bobIdKeyString)
+	fmt.Printf("Alice's identity key: %s\n", aliceIdKeyString) //nolint:forbidigo // example program output
+	fmt.Printf("Bob's identity key: %s\n", bobIdKeyString)     //nolint:forbidigo // example program output
 
 	// Wait a moment for connections to establish
 	time.Sleep(500 * time.Millisecond)
 
 	// Alice sends a message to Bob
-	fmt.Println("Alice is sending a message to Bob...")
+	fmt.Println("Alice is sending a message to Bob...") //nolint:forbidigo // example program output
 	err = alicePeer.ToPeer(context.Background(), []byte("Hello Bob, this is Alice!"), bobIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Alice to Bob: %v", err)
@@ -339,14 +338,14 @@ func main() {
 	time.Sleep(500 * time.Millisecond)
 
 	// Bob replies to Alice
-	fmt.Println("Bob is replying to Alice...")
+	fmt.Println("Bob is replying to Alice...") //nolint:forbidigo // example program output
 	err = bobPeer.ToPeer(context.Background(), []byte("Hello Alice, nice to hear from you!"), aliceIdentityKey.PublicKey, 5000)
 	if err != nil {
 		log.Fatalf("Failed to send message from Bob to Alice: %v", err)
 	}
 
 	// Wait for Ctrl+C to exit
-	fmt.Println("\nPress Ctrl+C to exit")
+	fmt.Println("\nPress Ctrl+C to exit") //nolint:forbidigo // example program output
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c

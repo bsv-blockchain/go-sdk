@@ -8,6 +8,8 @@ import (
 )
 
 // ByteString is a byte array that serializes to hex
+//
+//nolint:recvcheck // mix is intentional: ByteString implements json.Marshaler/driver.Valuer by value, while UnmarshalJSON/Scan/String must mutate or match the pointer-based stdlib idiom
 type ByteString []byte
 
 func NewByteStringFromHex(s string) ByteString {

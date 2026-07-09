@@ -9,11 +9,12 @@ package interpreter
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/stretchr/testify/require"
 )
 
 // buildScript constructs a *script.Script from push-data + opcode sequences.
@@ -34,12 +35,12 @@ func buildScript(t *testing.T, parts ...interface{}) *script.Script {
 	return s
 }
 
-// chronicleVersionTx returns a minimal transaction with the given version number.
+// chronicleVersionTx returns a minimal transaction with version 1.
 // It is used for opcodes that read t.tx.Version (OP_VER, OP_VERIF, OP_VERNOTIF).
-func chronicleVersionTx(ver uint32) *transaction.Transaction {
+func chronicleVersionTx() *transaction.Transaction {
 	s := script.Script{}
 	return &transaction.Transaction{
-		Version: ver,
+		Version: 1,
 		Inputs: []*transaction.TransactionInput{{
 			SourceTxOutIndex: 0,
 			UnlockingScript:  &s,
@@ -51,9 +52,9 @@ func chronicleVersionTx(ver uint32) *transaction.Transaction {
 	}
 }
 
-// versionLE serialises a uint32 as 4-byte little-endian – the format OP_VER pushes.
+// versionLE serializes a uint32 as 4-byte little-endian – the format OP_VER pushes.
 func versionLE(v uint32) []byte {
-	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
+	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)} //nolint:gosec // G115 -- intentional truncation to encode uint32 as little-endian bytes
 }
 
 // TestChronicleOpcodes_PreChronicle verifies that every Chronicle-reactivated opcode
@@ -68,12 +69,12 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 	world := []byte("World")
 
 	tests := []struct {
-		name       string
-		locking    func() *script.Script
-		unlocking  *script.Script
+		name        string
+		locking     func() *script.Script
+		unlocking   *script.Script
 		wantErrCode errs.ErrorCode
-		flags      scriptflag.Flag
-		needTx     bool // set true when the opcode reads t.tx
+		flags       scriptflag.Flag
+		needTx      bool // set true when the opcode reads t.tx
 	}{
 		// OP_VER (0x62) – reserved pre-Chronicle
 		{
@@ -89,7 +90,8 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 		{
 			name: "OP_VERIF always-illegal pre-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					versionLE(1),
 					script.OpVERIF,
 					script.Op1,
@@ -107,7 +109,8 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 			name: "OP_VERNOTIF always-illegal pre-Chronicle",
 			locking: func() *script.Script {
 				// 0x01ff0000 != version 1, so VERNOTIF branch would be true post-Chronicle
-				return buildScript(t,
+				return buildScript(
+					t,
 					versionLE(0x0000ff01),
 					script.OpVERNOTIF,
 					script.Op1,
@@ -124,7 +127,8 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 		{
 			name: "OP_SUBSTR treated as NOP4 pre-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					helloWorld,
 					script.Op4,
 					script.Op5,
@@ -141,7 +145,8 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 		{
 			name: "OP_LEFT treated as NOP5 pre-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					helloWorld,
 					script.Op5,
 					script.OpLEFT,
@@ -157,7 +162,8 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 		{
 			name: "OP_RIGHT treated as NOP6 pre-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					helloWorld,
 					script.Op5,
 					script.OpRIGHT,
@@ -210,7 +216,6 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -223,7 +228,7 @@ func TestChronicleOpcodesPreChronicle(t *testing.T) {
 				opts = append(opts, WithFlags(tc.flags))
 			}
 			if tc.needTx {
-				tx := chronicleVersionTx(1)
+				tx := chronicleVersionTx()
 				prevOut := &transaction.TransactionOutput{LockingScript: locking}
 				opts = []ExecutionOptionFunc{
 					WithTx(tx, 0, prevOut),
@@ -274,7 +279,8 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 		{
 			name: "OP_VERIF version-conditional true branch post-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					versionLE(1), // push 01 00 00 00 (version 1 LE)
 					script.OpVERIF,
 					script.Op1,
@@ -291,7 +297,8 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 			name: "OP_VERNOTIF version-conditional (not-equal branch) post-Chronicle",
 			locking: func() *script.Script {
 				// 0x0000ff01 ≠ version 1 (0x00000001), so VERNOTIF takes the true branch
-				return buildScript(t,
+				return buildScript(
+					t,
 					versionLE(0x0000ff01),
 					script.OpVERNOTIF,
 					script.Op1,
@@ -307,7 +314,8 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 		{
 			name: "OP_SUBSTR extracts substring post-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					helloWorld,
 					script.Op4,
 					script.Op5,
@@ -322,7 +330,8 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 		{
 			name: "OP_LEFT returns left N bytes post-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					helloWorld,
 					script.Op5,
 					script.OpLEFT,
@@ -336,7 +345,8 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 		{
 			name: "OP_RIGHT returns right N bytes post-Chronicle",
 			locking: func() *script.Script {
-				return buildScript(t,
+				return buildScript(
+					t,
 					helloWorld,
 					script.Op5,
 					script.OpRIGHT,
@@ -381,7 +391,6 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -390,7 +399,7 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 			if tc.needTx {
 				prevOut := &transaction.TransactionOutput{LockingScript: locking}
 				opts = []ExecutionOptionFunc{
-					WithTx(chronicleVersionTx(1), 0, prevOut),
+					WithTx(chronicleVersionTx(), 0, prevOut),
 					WithAfterChronicle(),
 				}
 			} else {
@@ -423,7 +432,8 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_SUBSTR invalid range rejected post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// "Hi" has length 2; requesting begin=5, len=1 is out of range
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			[]byte("Hi"),
 			script.Op5,
 			script.Op1,
@@ -441,7 +451,8 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_LEFT zero bytes post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// OP_LEFT("Hello", 0) == ""
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			[]byte("Hello"),
 			script.Op0,
 			script.OpLEFT,
@@ -458,7 +469,8 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_RIGHT full-length post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// OP_RIGHT("Hello", 5) == "Hello" (all bytes)
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			[]byte("Hello"),
 			script.Op5,
 			script.OpRIGHT,
@@ -475,7 +487,8 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_LSHIFTNUM zero shift is identity post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// 7 << 0 == 7
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			script.Op7,
 			script.Op0,
 			script.OpLSHIFTNUM,
@@ -492,7 +505,8 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_RSHIFTNUM to zero post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// 1 >> 8 == 0
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			script.Op1,
 			script.Op8,
 			script.OpRSHIFTNUM,
@@ -509,7 +523,8 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_2MUL zero post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// 0 * 2 == 0
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			script.Op0,
 			script.Op2MUL,
 			script.Op0,
@@ -525,15 +540,16 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_VERIF non-matching version takes else branch post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// Push version 2 bytes; tx is version 1 → not equal → VERIF goes to ELSE → OP_TRUE
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			versionLE(2), // 02 00 00 00
 			script.OpVERIF,
-			script.Op0,  // true branch (NOT taken since versions differ)
+			script.Op0, // true branch (NOT taken since versions differ)
 			script.OpELSE,
-			script.Op1,  // false branch (taken)
+			script.Op1, // false branch (taken)
 			script.OpENDIF,
 		)
-		tx := chronicleVersionTx(1)
+		tx := chronicleVersionTx()
 		prevOut := &transaction.TransactionOutput{LockingScript: locking}
 		err := NewEngine().Execute(
 			WithTx(tx, 0, prevOut),
@@ -545,7 +561,8 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Run("OP_VERNOTIF matching version takes else branch post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		// Push version 1 bytes; tx is version 1 → equal → VERNOTIF (not-if) goes to ELSE → OP_TRUE
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			versionLE(1), // 01 00 00 00
 			script.OpVERNOTIF,
 			script.Op0, // true branch (NOT taken since they are equal)
@@ -553,7 +570,7 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 			script.Op1, // false branch (taken because VERNOTIF condition is "not equal")
 			script.OpENDIF,
 		)
-		tx := chronicleVersionTx(1)
+		tx := chronicleVersionTx()
 		prevOut := &transaction.TransactionOutput{LockingScript: locking}
 		err := NewEngine().Execute(
 			WithTx(tx, 0, prevOut),
@@ -589,13 +606,14 @@ func TestChronicleNopBehaviorWithoutDiscourageFlag(t *testing.T) {
 	// Top of stack is false → ErrEvalFalse (or the equal gives false)
 	t.Run("OP_SUBSTR as silent NOP leaves extra stack items", func(t *testing.T) {
 		t.Parallel()
-		locking := buildScript(t,
+		locking := buildScript(
+			t,
 			[]byte("AB"),
 			script.Op1,
 			script.Op1,
 			script.OpSUBSTR, // NOP, does nothing
 			[]byte("AB"),    // pushed on top
-			script.OpEQUAL, // "AB" == 1? → false, leaves extra ["AB",1,false]
+			script.OpEQUAL,  // "AB" == 1? → false, leaves extra ["AB",1,false]
 		)
 		err := NewEngine().Execute(
 			WithScripts(locking, &script.Script{}),

@@ -9,10 +9,9 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/substrates"
 )
@@ -32,11 +31,11 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Mock CreateAction
-	var mockCreateActionReference = []byte("mock-tx-reference-123")
+	mockCreateActionReference := []byte("mock-tx-reference-123")
 	mockCreateActionTxId, _ := chainhash.NewHashFromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	mux.HandleFunc("/createAction", func(w http.ResponseWriter, r *http.Request) {
 		var args wallet.CreateActionArgs
-		if err := json.NewDecoder(r.Body).Decode(&args); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&args); err != nil { //nolint:musttag // wallet.CreateActionArgs is defined in the wallet package, not owned here
 			http.Error(w, "Failed to decode request for createAction", http.StatusBadRequest)
 			return
 		}
@@ -69,11 +68,11 @@ func main() {
 	ctx := context.Background()
 
 	// --- CreateAction ---
-	fmt.Println("\n--- CreateAction ---")
+	fmt.Println("\n--- CreateAction ---") //nolint:forbidigo // example program output
 	// Create a P2PKH script for the output
 	mockToAddress, err := script.NewAddressFromString("mfZQtGMnf2aP17fF3a9TzWMRw2NXp25hN2") // Using a valid testnet address format
 	if err != nil {
-		fmt.Printf("Error creating mock address: %v\n", err)
+		fmt.Printf("Error creating mock address: %v\n", err) //nolint:forbidigo // example program output
 		return
 	}
 	p2pkhScript, _ := p2pkh.Lock(mockToAddress)
@@ -90,19 +89,18 @@ func main() {
 	}
 	createActionResult, err := w.CreateAction(ctx, createActionArgs)
 	if err != nil {
-		fmt.Printf("Error creating action: %v\n", err)
+		fmt.Printf("Error creating action: %v\n", err) //nolint:forbidigo // example program output
 	}
 	var currentActionReference []byte
 	if createActionResult != nil {
-		fmt.Printf("CreateAction Result - TxID: %s\n", createActionResult.Txid.String())
+		fmt.Printf("CreateAction Result - TxID: %s\n", createActionResult.Txid.String()) //nolint:forbidigo // example program output
 		if createActionResult.SignableTransaction != nil {
 			currentActionReference = createActionResult.SignableTransaction.Reference
-			fmt.Printf("CreateAction Result - Reference: %s\n", string(currentActionReference))
+			fmt.Printf("CreateAction Result - Reference: %s\n", string(currentActionReference)) //nolint:forbidigo // example program output
 		} else {
-			fmt.Println("CreateAction Result - No SignableTransaction returned by mock.")
+			fmt.Println("CreateAction Result - No SignableTransaction returned by mock.") //nolint:forbidigo // example program output
 		}
 	} else {
-		fmt.Println("CreateAction failed or mock returned nil.")
+		fmt.Println("CreateAction failed or mock returned nil.") //nolint:forbidigo // example program output
 	}
-
 }

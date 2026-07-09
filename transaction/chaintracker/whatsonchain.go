@@ -61,10 +61,10 @@ func (w *WhatsOnChain) GetBlockHeader(ctx context.Context, height uint32) (heade
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
+		return nil, nil //nolint:nilnil // 404 means no merkle root found, not an error
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to verify merkleroot for height %d: %v", height, resp.Status)
@@ -91,16 +91,16 @@ func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err er
 	url := fmt.Sprintf("%s/chain/info", w.baseURL)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return
+		return height, err
 	}
 
 	req.Header.Set("Authorization", w.ApiKey)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return
+		return height, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return 0, fmt.Errorf("chain info not found for network %s", w.Network)

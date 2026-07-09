@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/pkg/errors"
 )
 
 /*
@@ -170,12 +171,12 @@ sequence:     %x
 }
 
 // Bytes encodes the Input into a hex byte array.
-func (i *TransactionInput) Bytes(clear bool) []byte {
+func (i *TransactionInput) Bytes(clearScript bool) []byte {
 	// Calculate total size: 32 (txid) + 4 (index) + varint + script + 4 (sequence)
 	var scriptLen int
 	var varInt util.VarInt
 	var varIntLen int
-	if clear || i.UnlockingScript == nil {
+	if clearScript || i.UnlockingScript == nil {
 		varIntLen = 1
 		scriptLen = 0
 	} else {
@@ -190,7 +191,7 @@ func (i *TransactionInput) Bytes(clear bool) []byte {
 	binary.LittleEndian.PutUint32(h[32:36], i.SourceTxOutIndex)
 
 	offset := 36
-	if clear || i.UnlockingScript == nil {
+	if clearScript || i.UnlockingScript == nil {
 		h[offset] = 0x00
 		offset++
 	} else {

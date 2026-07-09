@@ -27,7 +27,8 @@ func TestNewFromHex(t *testing.T) {
 	s, err := script.NewFromHex("76a914e2a623699e81b291c0327f408fea765d534baa2a88ac")
 	require.NoError(t, err)
 	require.NotNil(t, s)
-	require.Equal(t,
+	require.Equal(
+		t,
 		"76a914e2a623699e81b291c0327f408fea765d534baa2a88ac",
 		hex.EncodeToString(*s),
 	)
@@ -68,7 +69,8 @@ func TestNewFromASM(t *testing.T) {
 	s, err := script.NewFromASM("OP_DUP OP_HASH160 e2a623699e81b291c0327f408fea765d534baa2a OP_EQUALVERIFY OP_CHECKSIG")
 	require.NoError(t, err)
 	require.NotNil(t, s)
-	require.Equal(t,
+	require.Equal(
+		t,
 		"76a914e2a623699e81b291c0327f408fea765d534baa2a88ac",
 		hex.EncodeToString(*s),
 	)
@@ -131,7 +133,7 @@ func TestScript_IsMultisigOut(t *testing.T) {
 	})
 
 	t.Run("is not multisig and no error", func(t *testing.T) {
-		//Test Txid:de22e20422dbba8e8eeab87d5532480499abb01d6619bb66fe374f4d4a7500ee, vout:1
+		// Test Txid:de22e20422dbba8e8eeab87d5532480499abb01d6619bb66fe374f4d4a7500ee, vout:1
 
 		b, err := hex.DecodeString("5101400176018801a901ac615e7961007901687f7700005279517f75007f77007901fd8763615379537f75517f77007901007e81517a7561537a75527a527a5379535479937f75537f77527a75517a67007901fe8763615379557f75517f77007901007e81517a7561537a75527a527a5379555479937f75557f77527a75517a67007901ff8763615379597f75517f77007901007e81517a7561537a75527a527a5379595479937f75597f77527a75517a67615379517f75007f77007901007e81517a7561537a75527a527a5379515479937f75517f77527a75517a6868685179517a75517a75517a75517a7561517a7561007982770079011494527951797f77537952797f750001127900a063610113795a7959797e01147e51797e5a797e58797e517a7561610079011479007958806152790079827700517902fd009f63615179515179517951938000795179827751947f75007f77517a75517a75517a7561517a75675179030000019f6301fd615279525179517951938000795179827751947f75007f77517a75517a75517a75617e517a756751790500000000019f6301fe615279545179517951938000795179827751947f75007f77517a75517a75517a75617e517a75675179090000000000000000019f6301ff615279585179517951938000795179827751947f75007f77517a75517a75517a75617e517a7568686868007953797e517a75517a75517a75617e517a75517a7561527951797e537a75527a527a527975757568607900a06351790112797e610079011279007958806152790079827700517902fd009f63615179515179517951938000795179827751947f75007f77517a75517a75517a7561517a75675179030000019f6301fd615279525179517951938000795179827751947f75007f77517a75517a75517a75617e517a756751790500000000019f6301fe615279545179517951938000795179827751947f75007f77517a75517a75517a75617e517a75675179090000000000000000019f6301ff615279585179517951938000795179827751947f75007f77517a75517a75517a75617e517a7568686868007953797e517a75517a75517a75617e517a75517a7561527951797e537a75527a527a5279757575685e7900a063615f795a7959797e01147e51797e5a797e58797e517a75616100796079007958806152790079827700517902fd009f63615179515179517951938000795179827751947f75007f77517a75517a75517a7561517a75675179030000019f6301fd615279525179517951938000795179827751947f75007f77517a75517a75517a75617e517a756751790500000000019f6301fe615279545179517951938000795179827751947f75007f77517a75517a75517a75617e517a75675179090000000000000000019f6301ff615279585179517951938000795179827751947f75007f77517a75517a75517a75617e517a7568686868007953797e517a75517a75517a75617e517a75517a7561527951797e537a75527a527a5279757575685c7900a063615d795a7959797e01147e51797e5a797e58797e517a75616100795e79007958806152790079827700517902fd009f63615179515179517951938000795179827751947f75007f77517a75517a75517a7561517a75675179030000019f6301fd615279525179517951938000795179827751947f75007f77517a75517a75517a75617e517a756751790500000000019f6301fe615279545179517951938000795179827751947f75007f77517a75517a75517a75617e517a75675179090000000000000000019f6301ff615279585179517951938000795179827751947f75007f77517a75517a75517a75617e517a7568686868007953797e517a75517a75517a75617e517a75517a7561527951797e537a75527a527a5279757575680079aa007961011679007982775179517958947f7551790128947f77517a75517a75618769011679a954798769011779011779ac69610115796100792097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce0810201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c011379011379855679aa616100790079517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e81517a756157795679567956795679537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff0061517951795179517997527a75517a5179009f635179517993527a75517a685179517a75517a7561527a75517a517951795296a0630079527994527a75517a68537982775279827754527993517993013051797e527e53797e57797e527e52797e5579517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7e56797e0079517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a756100795779ac517a75517a75517a75517a75517a75517a75517a75517a75517a7561517a75617777777777777777777777777777777777777777777777776ae0cfa0c0930b63270459fe368d5ed31da74c00de")
 		require.NoError(t, err)
@@ -299,33 +301,223 @@ func TestScript_MinPushSize(t *testing.T) {
 	}{
 		"OpX / OpNeg returns 1": {
 			data: [][]byte{
-				{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9},
-				{10}, {11}, {12}, {13}, {14}, {15}, {16}, {0x81},
+				{1},
+				{2},
+				{3},
+				{4},
+				{5},
+				{6},
+				{7},
+				{8},
+				{9},
+				{10},
+				{11},
+				{12},
+				{13},
+				{14},
+				{15},
+				{16},
+				{0x81},
 			},
 			expLen: 1,
 		},
 		"OP_DATA_1 + data returns 2": {
 			data: [][]byte{
-				{0x17}, {0x18}, {0x19}, {0x20}, {0x21}, {0x22}, {0x23}, {0x24}, {0x25}, {0x26},
-				{0x27}, {0x28}, {0x29}, {0x30}, {0x31}, {0x32}, {0x33}, {0x34}, {0x35}, {0x36},
-				{0x37}, {0x38}, {0x39}, {0x40}, {0x41}, {0x42}, {0x43}, {0x44}, {0x45}, {0x46},
-				{0x47}, {0x48}, {0x49}, {0x50}, {0x51}, {0x52}, {0x53}, {0x54}, {0x55}, {0x56},
-				{0x57}, {0x58}, {0x59}, {0x60}, {0x61}, {0x62}, {0x63}, {0x64}, {0x65}, {0x66},
-				{0x67}, {0x68}, {0x69}, {0x70}, {0x71}, {0x72}, {0x73}, {0x74}, {0x75}, {0x76},
-				{0x78}, {0x79}, {0x7a}, {0x7b}, {0x7c}, {0x7d}, {0x7e}, {0x7f}, {0x80},
-				{0x82}, {0x83}, {0x84}, {0x85}, {0x86}, {0x87}, {0x88}, {0x89}, {0x8a}, {0x8b},
-				{0x8c}, {0x8d}, {0x8e}, {0x8f}, {0x90}, {0x91}, {0x92}, {0x93}, {0x94}, {0x95},
-				{0x96}, {0x97}, {0x98}, {0x99}, {0x9a}, {0x9b}, {0x9c}, {0x9d}, {0x9e}, {0x9f},
-				{0xa0}, {0xa1}, {0xa2}, {0xa3}, {0xa4}, {0xa5}, {0xa6}, {0xa7}, {0xa8}, {0xa9},
-				{0xaa}, {0xab}, {0xac}, {0xad}, {0xae}, {0xaf}, {0xb0}, {0xb1}, {0xb2}, {0xb3},
-				{0xb4}, {0xb5}, {0xb6}, {0xb7}, {0xb8}, {0xb9}, {0xba}, {0xbb}, {0xbc}, {0xbd},
-				{0xbe}, {0xbf}, {0xc0}, {0xc1}, {0xc2}, {0xc3}, {0xc4}, {0xc5}, {0xc6}, {0xc7},
-				{0xc8}, {0xc9}, {0xca}, {0xcb}, {0xcc}, {0xcd}, {0xce}, {0xcf}, {0xd0}, {0xd1},
-				{0xd2}, {0xd3}, {0xd4}, {0xd5}, {0xd6}, {0xd7}, {0xd8}, {0xd9}, {0xda}, {0xdb},
-				{0xdc}, {0xdd}, {0xde}, {0xdf}, {0xe0}, {0xe1}, {0xe2}, {0xe3}, {0xe4}, {0xe5},
-				{0xe6}, {0xe7}, {0xe8}, {0xe9}, {0xea}, {0xeb}, {0xec}, {0xed}, {0xee}, {0xef},
-				{0xf0}, {0xf1}, {0xf2}, {0xf3}, {0xf4}, {0xf5}, {0xf6}, {0xf7}, {0xf8}, {0xf9},
-				{0xfa}, {0xfb}, {0xfc}, {0xfd}, {0xfe}, {0xff},
+				{0x17},
+				{0x18},
+				{0x19},
+				{0x20},
+				{0x21},
+				{0x22},
+				{0x23},
+				{0x24},
+				{0x25},
+				{0x26},
+				{0x27},
+				{0x28},
+				{0x29},
+				{0x30},
+				{0x31},
+				{0x32},
+				{0x33},
+				{0x34},
+				{0x35},
+				{0x36},
+				{0x37},
+				{0x38},
+				{0x39},
+				{0x40},
+				{0x41},
+				{0x42},
+				{0x43},
+				{0x44},
+				{0x45},
+				{0x46},
+				{0x47},
+				{0x48},
+				{0x49},
+				{0x50},
+				{0x51},
+				{0x52},
+				{0x53},
+				{0x54},
+				{0x55},
+				{0x56},
+				{0x57},
+				{0x58},
+				{0x59},
+				{0x60},
+				{0x61},
+				{0x62},
+				{0x63},
+				{0x64},
+				{0x65},
+				{0x66},
+				{0x67},
+				{0x68},
+				{0x69},
+				{0x70},
+				{0x71},
+				{0x72},
+				{0x73},
+				{0x74},
+				{0x75},
+				{0x76},
+				{0x78},
+				{0x79},
+				{0x7a},
+				{0x7b},
+				{0x7c},
+				{0x7d},
+				{0x7e},
+				{0x7f},
+				{0x80},
+				{0x82},
+				{0x83},
+				{0x84},
+				{0x85},
+				{0x86},
+				{0x87},
+				{0x88},
+				{0x89},
+				{0x8a},
+				{0x8b},
+				{0x8c},
+				{0x8d},
+				{0x8e},
+				{0x8f},
+				{0x90},
+				{0x91},
+				{0x92},
+				{0x93},
+				{0x94},
+				{0x95},
+				{0x96},
+				{0x97},
+				{0x98},
+				{0x99},
+				{0x9a},
+				{0x9b},
+				{0x9c},
+				{0x9d},
+				{0x9e},
+				{0x9f},
+				{0xa0},
+				{0xa1},
+				{0xa2},
+				{0xa3},
+				{0xa4},
+				{0xa5},
+				{0xa6},
+				{0xa7},
+				{0xa8},
+				{0xa9},
+				{0xaa},
+				{0xab},
+				{0xac},
+				{0xad},
+				{0xae},
+				{0xaf},
+				{0xb0},
+				{0xb1},
+				{0xb2},
+				{0xb3},
+				{0xb4},
+				{0xb5},
+				{0xb6},
+				{0xb7},
+				{0xb8},
+				{0xb9},
+				{0xba},
+				{0xbb},
+				{0xbc},
+				{0xbd},
+				{0xbe},
+				{0xbf},
+				{0xc0},
+				{0xc1},
+				{0xc2},
+				{0xc3},
+				{0xc4},
+				{0xc5},
+				{0xc6},
+				{0xc7},
+				{0xc8},
+				{0xc9},
+				{0xca},
+				{0xcb},
+				{0xcc},
+				{0xcd},
+				{0xce},
+				{0xcf},
+				{0xd0},
+				{0xd1},
+				{0xd2},
+				{0xd3},
+				{0xd4},
+				{0xd5},
+				{0xd6},
+				{0xd7},
+				{0xd8},
+				{0xd9},
+				{0xda},
+				{0xdb},
+				{0xdc},
+				{0xdd},
+				{0xde},
+				{0xdf},
+				{0xe0},
+				{0xe1},
+				{0xe2},
+				{0xe3},
+				{0xe4},
+				{0xe5},
+				{0xe6},
+				{0xe7},
+				{0xe8},
+				{0xe9},
+				{0xea},
+				{0xeb},
+				{0xec},
+				{0xed},
+				{0xee},
+				{0xef},
+				{0xf0},
+				{0xf1},
+				{0xf2},
+				{0xf3},
+				{0xf4},
+				{0xf5},
+				{0xf6},
+				{0xf7},
+				{0xf8},
+				{0xf9},
+				{0xfa},
+				{0xfb},
+				{0xfc},
+				{0xfd},
+				{0xfe},
+				{0xff},
 			},
 			expLen: 2,
 		},
@@ -444,7 +636,6 @@ func TestScriptToAsm(t *testing.T) {
 	if asm != expected {
 		t.Errorf("\nExpected %q\ngot      %q", expected, asm)
 	}
-
 }
 
 func TestRunScriptExample2(t *testing.T) {
@@ -523,7 +714,6 @@ func TestScriptValid(t *testing.T) {
 				asm2 := s.ToASM()
 				require.Equal(t, asm, asm2)
 			}
-
 		})
 	}
 }
@@ -568,6 +758,7 @@ func TestSpendValid(t *testing.T) {
 		})
 	}
 }
+
 func TestScriptChunks(t *testing.T) {
 	t.Parallel()
 
@@ -628,7 +819,7 @@ func TestScriptChunks(t *testing.T) {
 
 	t.Run("decode using PUSHDATA1", func(t *testing.T) {
 		scriptHex := "testing"
-		scriptBytes := append([]byte{script.OpPUSHDATA1}, byte(len(scriptHex)))
+		scriptBytes := append([]byte{script.OpPUSHDATA1}, byte(len(scriptHex))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		scriptBytes = append(scriptBytes, []byte(scriptHex)...)
 
 		s := script.NewFromBytes(scriptBytes)
@@ -647,7 +838,7 @@ func TestScriptChunks(t *testing.T) {
 
 	t.Run("invalid PUSHDATA2 - payload too small", func(t *testing.T) {
 		scriptHex := "testing PUSHDATA2"
-		scriptBytes := append([]byte{script.OpPUSHDATA2}, byte(len(scriptHex)))
+		scriptBytes := append([]byte{script.OpPUSHDATA2}, byte(len(scriptHex))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		scriptBytes = append(scriptBytes, []byte(scriptHex)...)
 
 		s := script.NewFromBytes(scriptBytes)
@@ -665,7 +856,7 @@ func TestScriptChunks(t *testing.T) {
 
 	t.Run("invalid PUSHDATA4 - payload too small", func(t *testing.T) {
 		scriptHex := "testing PUSHDATA4"
-		scriptBytes := append([]byte{script.OpPUSHDATA4}, byte(len(scriptHex)))
+		scriptBytes := append([]byte{script.OpPUSHDATA4}, byte(len(scriptHex))) //nolint:gosec // G115 -- value is bounded by domain constraints
 		scriptBytes = append(scriptBytes, []byte(scriptHex)...)
 
 		s := script.NewFromBytes(scriptBytes)
@@ -846,7 +1037,7 @@ func TestScriptAppendPushDataArray(t *testing.T) {
 	err = s.AppendPushDataArray([][]byte{})
 	require.NoError(t, err)
 	// Script should be empty
-	require.Equal(t, "", s.String())
+	require.Empty(t, s.String())
 
 	// Test with data that requires PUSHDATA1
 	longData := []byte(strings.Repeat("a", 80)) // 80 bytes
@@ -888,7 +1079,7 @@ func TestScriptAppendBigInt(t *testing.T) {
 	// The script should contain the correct PUSHDATA prefix and data
 	data := bInt.Bytes()
 	dataLen := len(data)
-	expectedScriptBytes := append([]byte{byte(dataLen)}, data...)
+	expectedScriptBytes := append([]byte{byte(dataLen)}, data...) //nolint:gosec // G115 -- value is bounded by domain constraints
 	expectedScriptHex := hex.EncodeToString(expectedScriptBytes)
 	require.Equal(t, expectedScriptHex, s.String())
 
@@ -907,7 +1098,7 @@ func TestScriptAppendBigInt(t *testing.T) {
 	require.NoError(t, err)
 	data = bInt.Bytes() // Negative numbers are represented in two's complement
 	dataLen = len(data)
-	expectedScriptBytes = append([]byte{byte(dataLen)}, data...)
+	expectedScriptBytes = append([]byte{byte(dataLen)}, data...) //nolint:gosec // G115 -- value is bounded by domain constraints
 	expectedScriptHex = hex.EncodeToString(expectedScriptBytes)
 	require.Equal(t, expectedScriptHex, s.String())
 }
@@ -930,7 +1121,7 @@ func TestScriptAppendPushDataStrings(t *testing.T) {
 	err = s.AppendPushDataStrings([]string{})
 	require.NoError(t, err)
 	// Script should be empty
-	require.Equal(t, "", s.String())
+	require.Empty(t, s.String())
 
 	// Test with strings that require PUSHDATA1
 	longStrings := []string{strings.Repeat("a", 80), strings.Repeat("b", 80)}

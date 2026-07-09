@@ -43,7 +43,7 @@ func (f *HTTPSOverlayLookupFacilitator) Lookup(ctx context.Context, url string, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &util.HTTPError{
@@ -96,25 +96,28 @@ func parseBinaryLookupAnswer(data []byte) (*LookupAnswer, error) {
 	metas := make([]outpointMeta, 0, nOutpoints)
 
 	for i := uint64(0); i < nOutpoints; i++ {
-		txidBytes, err := r.ReadBytes(32)
+		var txidBytes []byte
+		txidBytes, err = r.ReadBytes(32)
 		if err != nil {
 			return nil, fmt.Errorf("binary lookup: reading txid[%d]: %w", i, err)
 		}
 		txid := hex.EncodeToString(txidBytes)
 
-		outputIndex, err := r.ReadVarInt()
+		var outputIndex uint64
+		outputIndex, err = r.ReadVarInt()
 		if err != nil {
 			return nil, fmt.Errorf("binary lookup: reading outputIndex[%d]: %w", i, err)
 		}
 
-		contextLen, err := r.ReadVarInt()
+		var contextLen uint64
+		contextLen, err = r.ReadVarInt()
 		if err != nil {
 			return nil, fmt.Errorf("binary lookup: reading contextLen[%d]: %w", i, err)
 		}
 
 		var context []byte
 		if contextLen > 0 {
-			context, err = r.ReadBytes(int(contextLen))
+			context, err = r.ReadBytes(int(contextLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
 			if err != nil {
 				return nil, fmt.Errorf("binary lookup: reading context[%d]: %w", i, err)
 			}
@@ -122,7 +125,7 @@ func parseBinaryLookupAnswer(data []byte) (*LookupAnswer, error) {
 
 		metas = append(metas, outpointMeta{
 			txid:        txid,
-			outputIndex: uint32(outputIndex),
+			outputIndex: uint32(outputIndex), //nolint:gosec // G115 -- output index bounded by transaction output count
 			context:     context,
 		})
 	}
@@ -146,7 +149,7 @@ func parseBinaryLookupAnswer(data []byte) (*LookupAnswer, error) {
 		}
 		txBeef, err := tx.BEEF()
 		if err != nil {
-			return nil, fmt.Errorf("binary lookup: re-serialising BEEF for txid %s: %w", m.txid, err)
+			return nil, fmt.Errorf("binary lookup: re-serializing BEEF for txid %s: %w", m.txid, err)
 		}
 		outputs = append(outputs, &OutputListItem{
 			Beef:        txBeef,

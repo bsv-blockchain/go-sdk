@@ -7,12 +7,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/kvstore"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 // --- Test Helpers ---
@@ -148,7 +149,7 @@ func TestLocalKVStoreGet_WalletError(t *testing.T) {
 	// Perform the Get operation
 	result, err := store.Get(context.Background(), key, "")
 	require.Error(t, err)
-	require.Equal(t, "", result)
+	require.Empty(t, result)
 	require.ErrorContains(t, err, expectedError.Error())
 }
 
@@ -253,7 +254,7 @@ func TestLocalKVStoreRemove_ListOutputsError(t *testing.T) {
 	// ensure RelinquishOutput was not called
 	mockWallet.OnRelinquishOutput().Do(func(ctx context.Context, args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
 		require.Fail(t, "RelinquishOutput should not be called")
-		return nil, nil
+		return nil, nil //nolint:nilnil // unreachable stub; the test fails above if this callback ever runs
 	})
 
 	// Perform the Remove operation
@@ -339,7 +340,7 @@ func TestLocalKVStore_EmptyKey(t *testing.T) {
 	// Test empty key for Get
 	result, err := store.Get(context.Background(), "", "")
 	require.Error(t, err)
-	require.Equal(t, "", result)
+	require.Empty(t, result)
 	require.Equal(t, kvstore.ErrInvalidKey, err)
 
 	// Test empty key for Set

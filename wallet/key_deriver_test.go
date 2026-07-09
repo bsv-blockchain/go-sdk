@@ -6,9 +6,10 @@ import (
 	"encoding/hex"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 func TestKeyDeriver(t *testing.T) {
@@ -39,7 +40,7 @@ func TestKeyDeriver(t *testing.T) {
 
 	t.Run("should compute the correct invoice number", func(t *testing.T) {
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
-		assert.NoError(t, err, "computing invoice number should not error")
+		require.NoError(t, err, "computing invoice number should not error")
 		assert.Equal(t, "0-testprotocol-12345", invoiceNumber, "computed invoice number should match expected value")
 	})
 
@@ -47,7 +48,7 @@ func TestKeyDeriver(t *testing.T) {
 		normalized, err := keyDeriver.normalizeCounterparty(Counterparty{
 			Type: CounterpartyTypeSelf,
 		})
-		assert.NoError(t, err, "normalizing self counterparty should not error")
+		require.NoError(t, err, "normalizing self counterparty should not error")
 		assert.Equal(t, rootPublicKey.ToDERHex(), normalized.ToDERHex(), "normalized self counterparty should be root public key")
 	})
 
@@ -55,7 +56,7 @@ func TestKeyDeriver(t *testing.T) {
 		normalized, err := keyDeriver.normalizeCounterparty(Counterparty{
 			Type: CounterpartyTypeAnyone,
 		})
-		assert.NoError(t, err, "normalizing anyone counterparty should not error")
+		require.NoError(t, err, "normalizing anyone counterparty should not error")
 		assert.Equal(t, anyonePublicKey.ToDERHex(), normalized.ToDERHex(), "normalized anyone counterparty should be anyone public key")
 	})
 
@@ -64,7 +65,7 @@ func TestKeyDeriver(t *testing.T) {
 			Type:         CounterpartyTypeOther,
 			Counterparty: counterpartyPublicKey,
 		})
-		assert.NoError(t, err, "normalizing other counterparty (public key) should not error")
+		require.NoError(t, err, "normalizing other counterparty (public key) should not error")
 		assert.Equal(t, counterpartyPublicKey.ToDERHex(), normalized.ToDERHex(), "normalized other counterparty should be the provided public key")
 	})
 
@@ -79,7 +80,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			false,
 		)
-		assert.NoError(t, err, "deriving public key as anyone should not error")
+		require.NoError(t, err, "deriving public key as anyone should not error")
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey, "derived key should be a public key")
 	})
 
@@ -93,7 +94,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			false,
 		)
-		assert.NoError(t, err, "deriving public key for counterparty should not error")
+		require.NoError(t, err, "deriving public key for counterparty should not error")
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey, "derived key should be a public key")
 	})
 
@@ -107,7 +108,7 @@ func TestKeyDeriver(t *testing.T) {
 			},
 			true,
 		)
-		assert.NoError(t, err, "deriving public key for self should not error")
+		require.NoError(t, err, "deriving public key for self should not error")
 		assert.IsType(t, &ec.PublicKey{}, derivedPublicKey, "derived key should be a public key")
 	})
 
@@ -120,7 +121,7 @@ func TestKeyDeriver(t *testing.T) {
 				Counterparty: counterpartyPublicKey,
 			},
 		)
-		assert.NoError(t, err, "deriving private key should not error")
+		require.NoError(t, err, "deriving private key should not error")
 		assert.IsType(t, &ec.PrivateKey{}, derivedPrivateKey, "derived key should be a private key")
 	})
 
@@ -133,7 +134,7 @@ func TestKeyDeriver(t *testing.T) {
 				Counterparty: counterpartyPublicKey,
 			},
 		)
-		assert.NoError(t, err, "deriving symmetric key should not error")
+		require.NoError(t, err, "deriving symmetric key should not error")
 		assert.NotEmpty(t, derivedSymmetricKey, "derived symmetric key should not be empty")
 		assert.Equal(t, "4ce8e868f2006e3fa8fc61ea4bc4be77d397b412b44b4dca047fb7ec3ca7cfd8", hex.EncodeToString(derivedSymmetricKey.ToBytes()), "derived symmetric key should match expected value")
 	})
@@ -158,7 +159,7 @@ func TestKeyDeriver(t *testing.T) {
 				Counterparty: counterpartyPublicKey,
 			},
 		)
-		assert.NoError(t, err, "deriving symmetric key for shared secret test should not error")
+		require.NoError(t, err, "deriving symmetric key for shared secret test should not error")
 		assert.NotEmpty(t, sharedSecret, "shared secret should not be empty")
 	})
 
@@ -166,7 +167,7 @@ func TestKeyDeriver(t *testing.T) {
 		_, err := keyDeriver.RevealCounterpartySecret(Counterparty{
 			Type: CounterpartyTypeSelf,
 		})
-		assert.EqualError(t, err, "counterparty secrets cannot be revealed for counterparty=self", "revealing secret for self should error")
+		require.EqualError(t, err, "counterparty secrets cannot be revealed for counterparty=self", "revealing secret for self should error")
 
 		_, err = keyDeriver.RevealCounterpartySecret(Counterparty{
 			Type:         CounterpartyTypeOther,
@@ -180,11 +181,11 @@ func TestKeyDeriver(t *testing.T) {
 			Type:         CounterpartyTypeOther,
 			Counterparty: counterpartyPublicKey,
 		})
-		assert.NoError(t, err, "revealing counterparty secret should not error")
+		require.NoError(t, err, "revealing counterparty secret should not error")
 		assert.NotEmpty(t, sharedSecret, "revealed shared secret should not be empty")
 
 		expected, err := rootPrivateKey.DeriveSharedSecret(counterpartyPublicKey)
-		assert.NoError(t, err, "deriving expected shared secret should not error")
+		require.NoError(t, err, "deriving expected shared secret should not error")
 		assert.Equal(t, expected.ToDER(), sharedSecret.ToDER(), "revealed shared secret should match expected value")
 	})
 
@@ -197,15 +198,15 @@ func TestKeyDeriver(t *testing.T) {
 			protocolID,
 			keyID,
 		)
-		assert.NoError(t, err, "revealing specific secret should not error")
+		require.NoError(t, err, "revealing specific secret should not error")
 		assert.NotEmpty(t, secret, "revealed specific secret should not be empty")
 
 		// Verify HMAC computation
 		sharedSecret, err := rootPrivateKey.DeriveSharedSecret(counterpartyPublicKey)
-		assert.NoError(t, err, "deriving shared secret for verification should not error")
+		require.NoError(t, err, "deriving shared secret for verification should not error")
 
 		invoiceNumber, err := keyDeriver.computeInvoiceNumber(protocolID, keyID)
-		assert.NoError(t, err, "computing invoice number for verification should not error")
+		require.NoError(t, err, "computing invoice number for verification should not error")
 
 		mac := hmac.New(sha256.New, sharedSecret.Compressed())
 		mac.Write([]byte(invoiceNumber))

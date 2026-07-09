@@ -39,4 +39,4 @@ Templates are designed to be flexible and extensible, accommodating various tran
 
 ## Conclusion
 
-Script templates are fundamental tools within the BSV SDK that streamline the development of on-chain use-cases by providing robust, secure, and efficient methods for handling transaction scripts. They encapsulate the complexity of script creation and ensure that developers can focus on higher-level application logic, thereby accelerating the development process and enhancing the capabilities of their implementations. 
+Script templates are fundamental tools within the BSV SDK that streamline the development of on-chain use-cases by providing robust, secure, and efficient methods for handling transaction scripts. They encapsulate the complexity of script creation and ensure that developers can focus on higher-level application logic, thereby accelerating the development process and enhancing the capabilities of their implementations.

@@ -19,7 +19,7 @@ type HTTPWalletJSON struct {
 }
 
 // NewHTTPWalletJSON creates a new HTTPWalletJSON instance
-func NewHTTPWalletJSON(originator string, baseURL string, httpClient *http.Client) *HTTPWalletJSON {
+func NewHTTPWalletJSON(originator, baseURL string, httpClient *http.Client) *HTTPWalletJSON {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -57,7 +57,7 @@ func (h *HTTPWalletJSON) api(ctx context.Context, call string, args any) ([]byte
 	if err != nil {
 		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -75,7 +75,7 @@ func (h *HTTPWalletJSON) CreateAction(ctx context.Context, args wallet.CreateAct
 		return nil, err
 	}
 	var result wallet.CreateActionResult
-	err = json.Unmarshal(data, &result)
+	err = json.Unmarshal(data, &result) //nolint:musttag // CreateActionResult is defined in the wallet package without JSON tags by design
 	return &result, err
 }
 
@@ -86,7 +86,7 @@ func (h *HTTPWalletJSON) SignAction(ctx context.Context, args *wallet.SignAction
 		return nil, err
 	}
 	var result wallet.SignActionResult
-	err = json.Unmarshal(data, &result)
+	err = json.Unmarshal(data, &result) //nolint:musttag // SignActionResult is defined in the wallet package without JSON tags by design
 	return &result, err
 }
 

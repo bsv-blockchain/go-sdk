@@ -9,10 +9,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/transaction/testdata"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -27,15 +29,15 @@ func TestHTTPSOverlayLookupFacilitatorSuccess(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/lookup", r.URL.Path)
-		require.Equal(t, http.MethodPost, r.Method)
-		require.Equal(t, contentTypeJSON, r.Header.Get(headerContentType))
+		assert.Equal(t, "/lookup", r.URL.Path)
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, contentTypeJSON, r.Header.Get(headerContentType)) //nolint:testifylint // contentTypeJSON is a MIME type string, not JSON; JSONEq would fail to parse it
 
 		// Decode the incoming question to verify it was sent correctly.
 		var q LookupQuestion
 		err := json.NewDecoder(r.Body).Decode(&q)
-		require.NoError(t, err)
-		require.Equal(t, "ls_slap", q.Service)
+		assert.NoError(t, err)
+		assert.Equal(t, "ls_slap", q.Service)
 
 		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
@@ -156,7 +158,7 @@ func buildBinaryLookupResponse(t *testing.T, outputIndex uint32, contextData []b
 
 func TestHTTPSOverlayLookupFacilitatorXAggregationHeader(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "yes", r.Header.Get("X-Aggregation"))
+		assert.Equal(t, "yes", r.Header.Get("X-Aggregation"))
 		w.Header().Set(headerContentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(&LookupAnswer{Type: AnswerTypeFreeform})
@@ -219,7 +221,7 @@ func TestParseBinaryLookupAnswerZeroOutpoints(t *testing.T) {
 	// but since there are 0 outpoints, BEEF parsing is still attempted).
 	// So just verify the function at least doesn't panic and returns a meaningful error or empty list.
 	buf := make([]byte, 5)
-	buf[0] = 0x00 // VarInt(0) outpoints
+	buf[0] = 0x00                                      // VarInt(0) outpoints
 	binary.LittleEndian.PutUint32(buf[1:], 0xDEADBEEF) // garbage BEEF
 	_, err := parseBinaryLookupAnswer(buf)
 	// Either an empty list (if BEEF version check passes) or an error — no panic either way.

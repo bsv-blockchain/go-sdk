@@ -5,48 +5,47 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bsv-blockchain/go-sdk/script"
-
 	bip32 "github.com/bsv-blockchain/go-sdk/compat/bip32"
 	"github.com/bsv-blockchain/go-sdk/compat/bip39"
+	"github.com/bsv-blockchain/go-sdk/script"
 	chaincfg "github.com/bsv-blockchain/go-sdk/transaction/chaincfg"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
 func main() {
 	// Generate entropy for the mnemonic
-	fmt.Println("Generating entropy for mnemonic...")
-	entropy, err := bip39.NewEntropy(128) // 128 bits for a 12-word mnemonic
+	fmt.Println("Generating entropy for mnemonic...") //nolint:forbidigo // example program output
+	entropy, err := bip39.NewEntropy(128)             // 128 bits for a 12-word mnemonic
 	if err != nil {
 		log.Fatalf("Failed to generate entropy: %v", err)
 	}
 
 	// Generate a new 12-word mnemonic from the entropy
-	fmt.Println("Generating a new mnemonic...")
+	fmt.Println("Generating a new mnemonic...") //nolint:forbidigo // example program output
 	mnemonic, err := bip39.NewMnemonic(entropy)
 	if err != nil {
 		log.Fatalf("Failed to generate mnemonic: %v", err)
 	}
-	fmt.Println("Mnemonic generated (not logged for security). Store it securely.")
+	fmt.Println("Mnemonic generated (not logged for security). Store it securely.") //nolint:forbidigo // example program output
 
 	// Generate a seed from the mnemonic
 	// An empty password is used for simplicity in this example
-	fmt.Println("Generating seed from mnemonic...")
+	fmt.Println("Generating seed from mnemonic...") //nolint:forbidigo // example program output
 	seed := bip39.NewSeed(mnemonic, "")
 
 	// Create a new master extended key from the seed
-	fmt.Println("Creating master extended key...")
+	fmt.Println("Creating master extended key...") //nolint:forbidigo // example program output
 	masterKey, err := bip32.NewMaster(seed, &chaincfg.MainNet)
 	if err != nil {
 		log.Fatalf("Failed to create master key: %v", err)
 	}
-	fmt.Println("Master private key created (not logged for security).")
+	fmt.Println("Master private key created (not logged for security).") //nolint:forbidigo // example program output
 
 	// Create a wallet instance from the master private key
 	// Note: The wallet instance itself doesn't store the mnemonic or master xPriv directly for this example
 	// It would typically be initialized with a specific private key derived for an identity.
 	// For simplicity, we'll use the master private key to demonstrate wallet creation.
-	fmt.Println("\nCreating wallet instance (using master private key for this example)...")
+	fmt.Println("\nCreating wallet instance (using master private key for this example)...") //nolint:forbidigo // example program output
 	masterPrivKey, err := masterKey.ECPrivKey()
 	if err != nil {
 		log.Fatalf("Failed to get master private key for wallet: %v", err)
@@ -55,14 +54,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create wallet: %v", err)
 	}
-	_ = w // Wallet instance created, assign to _ to satisfy linter for this example
-	fmt.Println("Wallet instance created.")
+	_ = w                                   // Wallet instance created, assign to _ to satisfy linter for this example
+	fmt.Println("Wallet instance created.") //nolint:forbidigo // example program output
 
 	// Define a derivation path
 	// m/44'/0'/0'/0/0 is a standard BIP44 path for the first external address
 	// The "m/" prefix is a convention, remove it for DeriveChildFromPath
 	derivationPathStr := "44'/0'/0'/0/0"
-	fmt.Printf("\nDeriving key for path: m/%s\n", derivationPathStr)
+	fmt.Printf("\nDeriving key for path: m/%s\n", derivationPathStr) //nolint:forbidigo // example program output
 
 	// Derive the child key using the masterKey (ExtendedKey)
 	// The DeriveChildFromPath method handles string paths.
@@ -76,24 +75,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get derived private key: %v", err)
 	}
-	fmt.Println("Derived private key created (not logged for security).")
+	fmt.Println("Derived private key created (not logged for security).") //nolint:forbidigo // example program output
 
 	// Get the public key from the private key
 	publicKey := privateKey.PubKey()
 	publicKeyHash := sha256.Sum256(publicKey.Compressed())
-	fmt.Printf("Derived public key fingerprint: %x\n", publicKeyHash[:8])
+	fmt.Printf("Derived public key fingerprint: %x\n", publicKeyHash[:8]) //nolint:forbidigo // example program output
 
 	// Get the P2PKH address from the public key
 	// This is one way to get the address.
 	addressFromPubKey, _ := script.NewAddressFromPublicKey(publicKey, false)
-	fmt.Printf("Address from Public Key: %s\n\n", addressFromPubKey.AddressString)
+	fmt.Printf("Address from Public Key: %s\n\n", addressFromPubKey.AddressString) //nolint:forbidigo // example program output
 
 	// You can also get the address directly from the derived extended key
 	// This is another way, often more direct if you have the ExtendedKey.
 	addressFromExtendedKey := derivedKey.Address(&chaincfg.MainNet)
-	fmt.Printf("Address from Derived Extended Key: %s\n\n", addressFromExtendedKey)
+	fmt.Printf("Address from Derived Extended Key: %s\n\n", addressFromExtendedKey) //nolint:forbidigo // example program output
 
-	fmt.Println("Wallet creation and key derivation complete.")
-	fmt.Println("IMPORTANT: Store your mnemonic phrase securely. This example generates a new wallet on each run.")
-	fmt.Println("Never log or transmit your mnemonic or private keys in plaintext.")
+	fmt.Println("Wallet creation and key derivation complete.")                                                     //nolint:forbidigo // example program output
+	fmt.Println("IMPORTANT: Store your mnemonic phrase securely. This example generates a new wallet on each run.") //nolint:forbidigo // example program output
+	fmt.Println("Never log or transmit your mnemonic or private keys in plaintext.")                                //nolint:forbidigo // example program output
 }

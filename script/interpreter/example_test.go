@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/script/interpreter"
-	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/bsv-blockchain/go-sdk/script/interpreter"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 func ExampleEngine_Execute() {

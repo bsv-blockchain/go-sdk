@@ -11,7 +11,7 @@ UHRP (Universal Hash Resolution Protocol) is a content-addressable storage syste
 This example demonstrates:
 
 1. Creating a `StorageDownloader` instance
-2. Resolving a UHRP URL to find hosting servers 
+2. Resolving a UHRP URL to find hosting servers
 3. Downloading file content
 4. Saving the file locally
 5. Using utility functions to work with UHRP URLs and file hashes
@@ -104,4 +104,4 @@ This ensures that any issues encountered during the download process are appropr
 
 For more information on the storage package, see:
 - [Package Documentation](https://pkg.go.dev/github.com/bsv-blockchain/go-sdk/storage)
-- [Storage Uploader Example](../storage_uploader/) 
+- [Storage Uploader Example](../storage_uploader/)

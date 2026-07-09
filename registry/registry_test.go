@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
@@ -17,7 +19,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction/template/pushdrop"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 // MockLookupResolver is a mock implementation that satisfies both the LookupResolver and Facilitator interfaces
@@ -31,7 +32,7 @@ func (m *MockLookupResolver) Query(ctx context.Context, question *lookup.LookupQ
 	if m.QueryFunc != nil {
 		return m.QueryFunc(ctx, question, timeout)
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // default mock fallback when no func is configured
 }
 
 // Lookup satisfies the lookup.Facilitator interface
@@ -43,7 +44,7 @@ func (m *MockLookupResolver) Lookup(ctx context.Context, host string, question *
 	if m.QueryFunc != nil {
 		return m.QueryFunc(ctx, question, timeout)
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // default mock fallback when no func is configured
 }
 
 // MockBroadcaster implements the transaction.Broadcaster interface for testing
@@ -180,14 +181,14 @@ func TestRegistryClient_ResolveBasket(t *testing.T) {
 	}
 
 	// Create a test mock for ResolveBasket as a standalone function
-	mockResolveBasket := func(ctx context.Context, client *RegistryClient, query BasketQuery) ([]*BasketDefinitionData, error) {
+	mockResolveBasket := func(_ context.Context, _ *RegistryClient, query BasketQuery) []*BasketDefinitionData {
 		t.Log("Mock ResolveBasket called")
 		// Verify we're querying for the expected basket
 		require.NotNil(t, query.BasketID, "BasketID should not be nil")
 		require.Equal(t, "test_basket_id", *query.BasketID, "Unexpected basket ID in query")
 
 		// Return our predefined basket data
-		return []*BasketDefinitionData{basketData}, nil
+		return []*BasketDefinitionData{basketData}
 	}
 
 	// Create test query
@@ -199,9 +200,8 @@ func TestRegistryClient_ResolveBasket(t *testing.T) {
 
 	// Test using our mock function directly instead of calling client.ResolveBasket
 	t.Log("Calling mockResolveBasket")
-	results, err := mockResolveBasket(ctx, client, query)
+	results := mockResolveBasket(ctx, client, query)
 	t.Log("mockResolveBasket returned")
-	require.NoError(t, err)
 	require.Len(t, results, 1, "Expected 1 basket to be resolved")
 
 	// Verify the basket properties
@@ -220,7 +220,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 	// We can now implement this test using our MockRegistry
 	ctx := context.Background()
 	// Add the test logger to the context
-	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck
+	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 
 	mockRegistry := NewMockRegistry(t)
 
@@ -242,7 +242,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 	scriptChunks := []*script.ScriptChunk{
 		// The public key
 		{
-			Op:   byte(len(publicKeyBytes)),
+			Op:   byte(len(publicKeyBytes)), //nolint:gosec // G115 -- value is bounded by domain constraints
 			Data: publicKeyBytes,
 		},
 		// OP_CHECKSIG
@@ -276,7 +276,7 @@ func TestRegistryClient_ListOwnRegistryEntries(t *testing.T) {
 		},
 		// Field 6: registry operator (public key)
 		{
-			Op:   byte(len(publicKeyBytes)),
+			Op:   byte(len(publicKeyBytes)), //nolint:gosec // G115 -- value is bounded by domain constraints
 			Data: publicKeyBytes,
 		},
 		// OP_2DROP (drops fields 5-6)
@@ -503,7 +503,7 @@ func TestRegistryClient_RevokeOwnRegistryEntry(t *testing.T) {
 
 func TestRegistryClient_ListOwnRegistryEntries_PushDropParity(t *testing.T) {
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck
+	ctx = context.WithValue(ctx, "testLogger", t) //nolint:staticcheck // test-only context key, collision risk is not a concern here
 
 	mockRegistry := NewMockRegistry(t)
 

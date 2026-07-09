@@ -12,11 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -182,7 +183,8 @@ func TestNewWithAllOptions(t *testing.T) {
 		CertificateTypes: make(utils.RequestedCertificateTypeIDAndFieldList),
 	}
 
-	af := New(w,
+	af := New(
+		w,
 		WithSessionManager(sm),
 		WithLogger(logger),
 		WithHttpClient(httpClient),
@@ -257,7 +259,10 @@ func TestFetchNilConfigContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately cancel
 
-	_, err := af.Fetch(ctx, testExampleURL, nil)
+	resp, err := af.Fetch(ctx, testExampleURL, nil)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	// The request might fail with context error or a transport error - either is fine
 	require.Error(t, err)
 }
@@ -269,7 +274,10 @@ func TestFetchDefaultMethodApplied(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	_, err := af.Fetch(ctx, testLocalhostZeroURL, &SimplifiedFetchRequestOptions{Method: ""})
+	resp, err := af.Fetch(ctx, testLocalhostZeroURL, &SimplifiedFetchRequestOptions{Method: ""})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	// Will fail to connect but should not fail on header validation
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), errNotAllowedInAuthFetch)
@@ -290,7 +298,10 @@ func TestFetchRetryCounterDecremented(t *testing.T) {
 
 	// Should not hit the "maximum retries" path (counter = 1 means 1 attempt remaining),
 	// it will proceed but fail due to no server.
-	_, err := af.Fetch(ctx, testLocalhostZeroURL, config)
+	resp, err := af.Fetch(ctx, testLocalhostZeroURL, config)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	// Should not be the retry-exhausted error
 	assert.NotContains(t, err.Error(), errMaxRetries)
@@ -303,7 +314,10 @@ func TestFetchContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := af.Fetch(ctx, testExampleURL, &SimplifiedFetchRequestOptions{Method: "GET"})
+	resp, err := af.Fetch(ctx, testExampleURL, &SimplifiedFetchRequestOptions{Method: "GET"})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 }
 
@@ -315,13 +329,16 @@ func TestFetchAllowedHeaders(t *testing.T) {
 	defer cancel()
 
 	// "content-type" and "authorization" are in the allowed list.
-	_, err := af.Fetch(ctx, testLocalhostZeroURL, &SimplifiedFetchRequestOptions{
+	resp, err := af.Fetch(ctx, testLocalhostZeroURL, &SimplifiedFetchRequestOptions{
 		Method: "POST",
 		Headers: map[string]string{
 			"content-type":  "application/json",
 			"authorization": "Bearer token",
 		},
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), errNotAllowedInAuthFetch)
 }
@@ -355,6 +372,9 @@ func TestHandleFetchAndValidateSuccessPath(t *testing.T) {
 	resp, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
 		Method: "GET",
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -376,11 +396,14 @@ func TestHandleFetchAndValidateWithBody(t *testing.T) {
 		Method: "POST",
 		Body:   []byte(`{"key":"value"}`),
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	respBody, _ := io.ReadAll(resp.Body)
-	assert.Equal(t, `{"key":"value"}`, string(respBody))
+	assert.JSONEq(t, `{"key":"value"}`, string(respBody))
 }
 
 // TestHandleFetchAndValidateServerClaimingAuth tests the security check: if the server
@@ -395,9 +418,12 @@ func TestHandleFetchAndValidateServerClaimingAuth(t *testing.T) {
 	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
-	_, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
+	resp, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
 		Method: "GET",
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "authenticated when it has not")
 }
@@ -413,9 +439,12 @@ func TestHandleFetchAndValidateServerClaimingBsvAuthHeader(t *testing.T) {
 	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
-	_, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
+	resp, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
 		Method: "GET",
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "authenticated when it has not")
 }
@@ -430,9 +459,12 @@ func TestHandleFetchAndValidate4xxError(t *testing.T) {
 	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
-	_, err := af.Fetch(context.Background(), ts.URL+"/notfound", &SimplifiedFetchRequestOptions{
+	resp, err := af.Fetch(context.Background(), ts.URL+"/notfound", &SimplifiedFetchRequestOptions{
 		Method: "GET",
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "404")
 }
@@ -449,12 +481,15 @@ func TestHandleFetchAndValidateWithHeaders(t *testing.T) {
 	af := newAuthFetch(t)
 	buildNonMutualAuthPeer(ts.URL, af)
 
-	_, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
+	resp, err := af.Fetch(context.Background(), ts.URL+"/path", &SimplifiedFetchRequestOptions{
 		Method: "GET",
 		Headers: map[string]string{
 			"authorization": "Bearer mytoken",
 		},
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	assert.Equal(t, "Bearer mytoken", receivedAuth)
 }
@@ -492,8 +527,12 @@ func TestHandleFetchAndValidateWithHeaders(t *testing.T) {
 func TestHandlePaymentAndRetryMissingPaymentVersion(t *testing.T) {
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	// No x-bsv-payment-version header set → version mismatch
-	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported x-bsv-payment-version")
 }
@@ -502,9 +541,13 @@ func TestHandlePaymentAndRetryMissingPaymentVersion(t *testing.T) {
 func TestHandlePaymentAndRetryWrongVersion(t *testing.T) {
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, "2.0")
 
-	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported x-bsv-payment-version")
 }
@@ -513,10 +556,14 @@ func TestHandlePaymentAndRetryWrongVersion(t *testing.T) {
 func TestHandlePaymentAndRetryMissingSatoshisHeader(t *testing.T) {
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	// No satoshis header
 
-	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), hdrSatoshisRequired)
 }
@@ -525,10 +572,14 @@ func TestHandlePaymentAndRetryMissingSatoshisHeader(t *testing.T) {
 func TestHandlePaymentAndRetryInvalidSatoshisValue(t *testing.T) {
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "not-a-number")
 
-	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid x-bsv-payment-satoshis-required")
 }
@@ -537,10 +588,14 @@ func TestHandlePaymentAndRetryInvalidSatoshisValue(t *testing.T) {
 func TestHandlePaymentAndRetryZeroSatoshis(t *testing.T) {
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "0")
 
-	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid x-bsv-payment-satoshis-required")
 }
@@ -549,11 +604,15 @@ func TestHandlePaymentAndRetryZeroSatoshis(t *testing.T) {
 func TestHandlePaymentAndRetryMissingIdentityKey(t *testing.T) {
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	// No x-bsv-auth-identity-key
 
-	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), hdrIdentityKey)
 }
@@ -567,12 +626,16 @@ func TestHandlePaymentAndRetryMissingDerivationPrefix(t *testing.T) {
 
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
 	// No x-bsv-payment-derivation-prefix
 
-	_, err = af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), hdrDerivationPrefix)
 }
@@ -581,12 +644,16 @@ func TestHandlePaymentAndRetryMissingDerivationPrefix(t *testing.T) {
 func TestHandlePaymentAndRetryInvalidIdentityKey(t *testing.T) {
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, "not-a-valid-hex-key")
 	resp402.Header.Set(hdrDerivationPrefix, "prefix123")
 
-	_, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, &SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 }
 
@@ -600,6 +667,7 @@ func TestHandlePaymentAndRetryValidHeadersInvokeWallet(t *testing.T) {
 
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "500")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -614,7 +682,10 @@ func TestHandlePaymentAndRetryValidHeadersInvokeWallet(t *testing.T) {
 		RetryCounter: &retryCount,
 	}
 
-	_, err = af.handlePaymentAndRetry(context.Background(), testPayURL, config, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, config, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	// Should fail because retry counter is 0 → exhausted
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), errMaxRetries)
@@ -690,7 +761,10 @@ func TestSendCertificateRequestReusesPeer(t *testing.T) {
 	// We do that by using a cancelled context so Fetch returns quickly.
 	ctx0, cancel0 := context.WithCancel(context.Background())
 	cancel0()
-	_, _ = af.Fetch(ctx0, ts.URL+"/init", nil)
+	initResp, _ := af.Fetch(ctx0, ts.URL+"/init", nil)
+	if initResp != nil {
+		defer func() { _ = initResp.Body.Close() }()
+	}
 
 	// Now confirm a peer exists for ts.URL (the base).
 	_, loaded := af.peers.Load(ts.URL)
@@ -754,7 +828,10 @@ func TestHandleFetchAndValidateDirectCall(t *testing.T) {
 	config := &SimplifiedFetchRequestOptions{
 		Method: "GET",
 	}
-	resp, err := af.handleFetchAndValidate(ts.URL+"/test", config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/test", config, peer)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	// SupportsMutualAuth should now be set to false
@@ -777,7 +854,10 @@ func TestHandleFetchAndValidateDirectCallWithBody(t *testing.T) {
 		Method: "POST",
 		Body:   []byte("hello"),
 	}
-	_, err := af.handleFetchAndValidate(ts.URL+"/test", config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/test", config, peer)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	assert.Equal(t, "hello", string(receivedBody))
 }
@@ -792,7 +872,10 @@ func TestHandleFetchAndValidate500Response(t *testing.T) {
 	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
-	_, err := af.handleFetchAndValidate(ts.URL+"/fail", config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/fail", config, peer)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
 }
@@ -804,7 +887,7 @@ func TestHandleFetchAndValidate500Response(t *testing.T) {
 // TestSimplifiedFetchRequestOptionsDefaults checks zero-value struct fields.
 func TestSimplifiedFetchRequestOptionsDefaults(t *testing.T) {
 	opts := &SimplifiedFetchRequestOptions{}
-	assert.Equal(t, "", opts.Method)
+	assert.Empty(t, opts.Method)
 	assert.Nil(t, opts.Headers)
 	assert.Nil(t, opts.Body)
 	assert.Nil(t, opts.RetryCounter)
@@ -835,7 +918,10 @@ func TestHandleFetchAndValidateBadURL(t *testing.T) {
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
 	// A malformed method causes NewRequest to fail
 	config.Method = "INVALID METHOD WITH SPACES"
-	_, err := af.handleFetchAndValidate(testExampleURL, config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), testExampleURL, config, peer)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 }
 
@@ -850,13 +936,17 @@ func TestFetchXBSVPaymentHeaderAllowed(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	paymentJSON, _ := json.Marshal(map[string]string{"key": "value"})
-	_, err := af.Fetch(ctx, testLocalhostZeroURL, &SimplifiedFetchRequestOptions{
+	paymentJSON, err := json.Marshal(map[string]string{"key": "value"})
+	require.NoError(t, err)
+	resp, err := af.Fetch(ctx, testLocalhostZeroURL, &SimplifiedFetchRequestOptions{
 		Method: "GET",
 		Headers: map[string]string{
 			hdrPayment: string(paymentJSON),
 		},
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), errNotAllowedInAuthFetch)
 }
@@ -873,9 +963,12 @@ func TestFetchInvalidScheme(t *testing.T) {
 	defer cancel()
 
 	// An invalid scheme will cause an error in one of the layers
-	_, err := af.Fetch(ctx, "not-a-real-scheme://host/path", &SimplifiedFetchRequestOptions{
+	resp, err := af.Fetch(ctx, "not-a-real-scheme://host/path", &SimplifiedFetchRequestOptions{
 		Method: "GET",
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 }
 
@@ -948,6 +1041,7 @@ func TestHandlePaymentAndRetryNilHeaders(t *testing.T) {
 
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "500")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -961,7 +1055,10 @@ func TestHandlePaymentAndRetryNilHeaders(t *testing.T) {
 		RetryCounter: &retryCount,
 	}
 
-	_, err = af.handlePaymentAndRetry(context.Background(), testPayURL, config, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, config, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	// Expect retry exhaustion – meaning it got past header validation and payment setup
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), errMaxRetries)
@@ -1010,7 +1107,10 @@ func TestSendCertificateRequestWithIdentityKey(t *testing.T) {
 	ctx0, cancel0 := context.WithCancel(context.Background())
 	cancel0()
 	// Trigger peer creation for ts.URL
-	_, _ = af.Fetch(ctx0, ts.URL+"/init", nil)
+	initResp, _ := af.Fetch(ctx0, ts.URL+"/init", nil)
+	if initResp != nil {
+		defer func() { _ = initResp.Body.Close() }()
+	}
 
 	// Update the stored peer's identity key to a known value.
 	if p, ok := af.peers.Load(ts.URL); ok {
@@ -1044,7 +1144,10 @@ func TestSendCertificateRequestWithInvalidIdentityKey(t *testing.T) {
 
 	ctx0, cancel0 := context.WithCancel(context.Background())
 	cancel0()
-	_, _ = af.Fetch(ctx0, ts.URL+"/init", nil)
+	initResp, _ := af.Fetch(ctx0, ts.URL+"/init", nil)
+	if initResp != nil {
+		defer func() { _ = initResp.Body.Close() }()
+	}
 
 	// Set an invalid identity key on the peer
 	if p, ok := af.peers.Load(ts.URL); ok {
@@ -1074,7 +1177,10 @@ func TestHandleFetchAndValidateUnreachableURL(t *testing.T) {
 
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
-	_, err := af.handleFetchAndValidate("http://localhost:0/unreachable", config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), "http://localhost:0/unreachable", config, peer)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "request failed")
 }
@@ -1092,6 +1198,7 @@ func TestHandlePaymentAndRetryRetryCounterAlreadySet(t *testing.T) {
 
 	af := newAuthFetch(t)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "100")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
@@ -1104,7 +1211,10 @@ func TestHandlePaymentAndRetryRetryCounterAlreadySet(t *testing.T) {
 		RetryCounter: &existingRetry,
 	}
 
-	_, err = af.handlePaymentAndRetry(context.Background(), testPayURL, config, resp402)
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL, config, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), errMaxRetries)
 	// The retry counter should remain at the value we passed (not reset to 3).
@@ -1130,7 +1240,10 @@ func TestFetchNewPeerCreation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	_, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
+	resp, err := af.Fetch(ctx, ts.URL+"/test", &SimplifiedFetchRequestOptions{Method: "GET"})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	// Should be context.DeadlineExceeded or similar
 }
@@ -1147,7 +1260,10 @@ func TestFetchNilConfigDefaultsToGet(t *testing.T) {
 	defer cancel()
 
 	// nil config → should default to GET and not panic
-	_, err := af.Fetch(ctx, testLocalhostZeroURL, nil)
+	resp, err := af.Fetch(ctx, testLocalhostZeroURL, nil)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 }
 
@@ -1169,6 +1285,9 @@ func TestHandleFetchAndValidatePostEmptyBody(t *testing.T) {
 		Method: "POST",
 		Body:   nil, // no body
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -1198,7 +1317,7 @@ func TestConsumeReceivedCertificatesImmediateAfterNew(t *testing.T) {
 	af := newAuthFetch(t)
 	result := af.ConsumeReceivedCertificates()
 	assert.NotNil(t, result)
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 // ---------------------------------------------------------------------------
@@ -1218,7 +1337,10 @@ func TestHandleFetchAndValidateNonAuthBSVHeader(t *testing.T) {
 	af := newAuthFetch(t)
 	peer := &AuthPeer{}
 	config := &SimplifiedFetchRequestOptions{Method: "GET"}
-	resp, err := af.handleFetchAndValidate(ts.URL+"/test", config, peer)
+	resp, err := af.handleFetchAndValidate(t.Context(), ts.URL+"/test", config, peer)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -1234,9 +1356,12 @@ func TestFetchInvalidMethod(t *testing.T) {
 	af := newAuthFetch(t)
 
 	// Methods with spaces are invalid and cause NewRequestWithContext to fail.
-	_, err := af.Fetch(context.Background(), testExampleURL, &SimplifiedFetchRequestOptions{
+	resp, err := af.Fetch(context.Background(), testExampleURL, &SimplifiedFetchRequestOptions{
 		Method: "INVALID METHOD",
 	})
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create request")
 }
@@ -1258,13 +1383,17 @@ func TestHandlePaymentAndRetryCreateNonceFails(t *testing.T) {
 
 	af := New(tw)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
 	resp402.Header.Set(hdrDerivationPrefix, "prefix")
 
-	_, err = af.handlePaymentAndRetry(context.Background(), testPayURL,
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL,
 		&SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create derivation suffix")
 }
@@ -1282,13 +1411,17 @@ func TestHandlePaymentAndRetryGetPublicKeyFails(t *testing.T) {
 
 	af := New(tw)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
 	resp402.Header.Set(hdrDerivationPrefix, "prefix")
 
-	_, err = af.handlePaymentAndRetry(context.Background(), testPayURL,
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL,
 		&SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 }
 
@@ -1305,13 +1438,17 @@ func TestHandlePaymentAndRetryCreateActionFails(t *testing.T) {
 
 	af := New(tw)
 	resp402 := make402Response()
+	defer func() { _ = resp402.Body.Close() }()
 	resp402.Header.Set(hdrPaymentVersion, PaymentVersion)
 	resp402.Header.Set(hdrSatoshisRequired, "1000")
 	resp402.Header.Set(hdrIdentityKey, serverPubKeyHex)
 	resp402.Header.Set(hdrDerivationPrefix, "prefix")
 
-	_, err = af.handlePaymentAndRetry(context.Background(), testPayURL,
+	resp, err := af.handlePaymentAndRetry(context.Background(), testPayURL,
 		&SimplifiedFetchRequestOptions{Method: "GET"}, resp402)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create payment transaction")
 }

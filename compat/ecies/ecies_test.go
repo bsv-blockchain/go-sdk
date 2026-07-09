@@ -5,14 +5,17 @@ import (
 	"log"
 	"testing"
 
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/stretchr/testify/require"
+
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
-const msgString = "hello world"
-const wrongData = "wrong data"
-const wif = "L211enC224G1kV8pyyq7bjVd9SxZebnRYEzzM3i7ZHCc1c5E7dQu"
-const counterpartyWif = "L27ZSAC1xTsZrghYHqnxwAQZ12bH57piaAdoGaLizTp3JZrjkZjK"
+const (
+	msgString       = "hello world"
+	wrongData       = "wrong data"
+	wif             = "L211enC224G1kV8pyyq7bjVd9SxZebnRYEzzM3i7ZHCc1c5E7dQu"
+	counterpartyWif = "L27ZSAC1xTsZrghYHqnxwAQZ12bH57piaAdoGaLizTp3JZrjkZjK"
+)
 
 func TestEncryptDecryptSingle(t *testing.T) {
 	pk, _ := ec.PrivateKeyFromWif(wif)
@@ -37,7 +40,6 @@ func TestEncryptDecryptSingle(t *testing.T) {
 	wrongData := base64.StdEncoding.EncodeToString([]byte(wrongData))
 	_, err = DecryptSingle(wrongData, pk)
 	require.Error(t, err)
-
 }
 
 func TestEncryptDecryptShared(t *testing.T) {
@@ -53,7 +55,6 @@ func TestEncryptDecryptShared(t *testing.T) {
 }
 
 func TestElectrumEncryptDecryptSingle(t *testing.T) {
-
 	pk, _ := ec.PrivateKeyFromWif(wif)
 
 	// Electrum Encrypt
