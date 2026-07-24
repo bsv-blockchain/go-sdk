@@ -385,11 +385,18 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			},
 		})
 
-		// Set up listener for response
+		// Set up listener for response.
+		//
+		// Peer.handleGeneralMessage fans every received message out to ALL
+		// registered listeners, so this listener must only deregister itself
+		// once it has seen ITS OWN response (nonce match). Deregistering on
+		// the first message to arrive — as this code previously did — removed
+		// every other in-flight request's listener, so with concurrent
+		// requests only the first response resolved and the rest hung until
+		// the 30s ToPeer timeout. That forced callers to serialize all
+		// requests through one AuthFetch.
 		var listenerID int32
 		listenerID = peerToUse.Peer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
-			peerToUse.Peer.StopListeningForGeneralMessages(listenerID)
-
 			if senderPublicKey != nil {
 				if p, ok := a.peers.Load(baseURL); ok {
 					peer := p.(*AuthPeer)
@@ -406,8 +413,9 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 
 			responseNonceBase64 := base64.StdEncoding.EncodeToString(requestIDFromResponse)
 			if responseNonceBase64 != requestNonceBase64 {
-				return nil // Not our response
+				return nil // Not our response; keep listening (do NOT deregister).
 			}
+			peerToUse.Peer.StopListeningForGeneralMessages(listenerID)
 
 			// Resolve with the response
 			if cb, ok := a.callbacks.LoadAndDelete(requestNonceBase64); ok {
@@ -416,6 +424,15 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 
 			return nil
 		})
+		// Ensure the listener and callback are removed on every exit of this
+		// request goroutine. Both are idempotent map deletes, so the success
+		// path (listener already self-removed) is unaffected, while error and
+		// timeout paths no longer leak a listener that would be invoked for
+		// every future response.
+		defer func() {
+			peerToUse.Peer.StopListeningForGeneralMessages(listenerID)
+			a.callbacks.Delete(requestNonceBase64)
+		}()
 
 		// Make sure no certificate requests are pending
 		hasPending := func() bool {

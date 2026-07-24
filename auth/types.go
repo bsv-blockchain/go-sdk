@@ -10,6 +10,8 @@ import (
 	"github.com/bsv-blockchain/go-sdk/auth/utils"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
+	"sync/atomic"
+	"time"
 )
 
 // MessageType defines the type of message exchanged in auth
@@ -100,6 +102,10 @@ type PeerSession struct {
 	PeerIdentityKey *ec.PublicKey
 
 	// The last time the session was updated (milliseconds since epoch)
+	// LastUpdate is a unix-millisecond timestamp. Peers touch it on every
+	// handled message while other goroutines may be reading the session, so
+	// access it via TouchLastUpdate/LoadLastUpdate (atomic) — a plain
+	// read/write races under concurrent requests.
 	LastUpdate int64
 }
 
@@ -200,4 +206,14 @@ func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+// TouchLastUpdate atomically stamps LastUpdate with the current time.
+func (s *PeerSession) TouchLastUpdate() {
+	atomic.StoreInt64(&s.LastUpdate, time.Now().UnixMilli())
+}
+
+// LoadLastUpdate atomically reads LastUpdate.
+func (s *PeerSession) LoadLastUpdate() int64 {
+	return atomic.LoadInt64(&s.LastUpdate)
 }
