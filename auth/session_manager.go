@@ -66,9 +66,14 @@ func (sm *DefaultSessionManager) AddSession(session *PeerSession) error {
 
 // UpdateSession updates a session in the manager (primarily by re-adding it),
 // ensuring we record the latest data (e.g., isAuthenticated, lastUpdate, etc.).
+//
+// The update is an idempotent re-Add rather than remove-then-add: sessions are
+// mutated in place and keyed by their immutable SessionNonce, and peers call
+// UpdateSession after every handled message. A removal window would make
+// concurrent lookups by sessionNonce fail with session-not-found, so under
+// concurrent requests on one session the peer randomly rejected valid
+// messages.
 func (sm *DefaultSessionManager) UpdateSession(session *PeerSession) {
-	// Remove the old references (if any) and re-add
-	sm.RemoveSession(session)
 	_ = sm.AddSession(session)
 }
 
@@ -101,7 +106,7 @@ func (sm *DefaultSessionManager) GetSession(identifier string) (*PeerSession, er
 			s := s.(*PeerSession)
 			if best == nil {
 				best = s
-			} else if s.LastUpdate > best.LastUpdate {
+			} else if s.LoadLastUpdate() > best.LoadLastUpdate() {
 				if s.IsAuthenticated || !best.IsAuthenticated {
 					best = s
 				}

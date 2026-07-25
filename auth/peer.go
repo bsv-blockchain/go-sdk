@@ -62,8 +62,10 @@ type Peer struct {
 	callbacksMu                           sync.RWMutex
 	callbackIdCounter                     atomic.Int32
 	autoPersistLastSession                bool
-	lastInteractedWithPeer                *ec.PublicKey
-	logger                                *slog.Logger // Logger for debug messages
+	// lastInteractedWithPeer is read/written from concurrent ToPeer calls and
+	// message handlers; atomic so concurrent requests on one peer do not race.
+	lastInteractedWithPeer atomic.Pointer[ec.PublicKey]
+	logger                 *slog.Logger // Logger for debug messages
 }
 
 // PeerOptions contains configuration options for creating a new Peer instance.
@@ -220,8 +222,8 @@ func (p *Peer) getInitialResponseCallbacks() map[int32]InitialResponseCallback {
 
 // ToPeer sends a message to a peer, initiating authentication if needed
 func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.PublicKey, maxWaitTime int) error {
-	if p.autoPersistLastSession && p.lastInteractedWithPeer != nil && identityKey == nil {
-		identityKey = p.lastInteractedWithPeer
+	if p.autoPersistLastSession && identityKey == nil {
+		identityKey = p.lastInteractedWithPeer.Load()
 	}
 
 	peerSession, err := p.GetAuthenticatedSession(ctx, identityKey, maxWaitTime)
@@ -274,13 +276,12 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 	generalMessage.Signature = sigResult.Signature.Serialize()
 
 	// Update session timestamp
-	now := time.Now().UnixNano() / int64(time.Millisecond)
-	peerSession.LastUpdate = now
+	peerSession.TouchLastUpdate()
 	p.sessionManager.UpdateSession(peerSession)
 
 	// Update last interacted peer if auto-persist is enabled
 	if p.autoPersistLastSession {
-		p.lastInteractedWithPeer = peerSession.PeerIdentityKey
+		p.lastInteractedWithPeer.Store(peerSession.PeerIdentityKey)
 	}
 
 	// Send the message
@@ -299,7 +300,7 @@ func (p *Peer) GetAuthenticatedSession(ctx context.Context, identityKey *ec.Publ
 		session, _ := p.sessionManager.GetSession(identityKey.ToDERHex())
 		if session != nil && session.IsAuthenticated {
 			if p.autoPersistLastSession {
-				p.lastInteractedWithPeer = identityKey
+				p.lastInteractedWithPeer.Store(identityKey)
 			}
 			return session, nil
 		}
@@ -312,7 +313,7 @@ func (p *Peer) GetAuthenticatedSession(ctx context.Context, identityKey *ec.Publ
 	}
 
 	if p.autoPersistLastSession {
-		p.lastInteractedWithPeer = identityKey
+		p.lastInteractedWithPeer.Store(identityKey)
 	}
 
 	return session, nil
@@ -607,7 +608,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 
 	session.PeerNonce = message.InitialNonce
 	session.PeerIdentityKey = message.IdentityKey
-	session.LastUpdate = time.Now().UnixMilli()
+	session.TouchLastUpdate()
 
 	// Check if we require certificates from the peer
 	needsCerts := p.CertificatesToRequest != nil && len(p.CertificatesToRequest.CertificateTypes) > 0
@@ -668,7 +669,7 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 
 	p.sessionManager.UpdateSession(session)
 
-	p.lastInteractedWithPeer = message.IdentityKey
+	p.lastInteractedWithPeer.Store(message.IdentityKey)
 
 	for id, callback := range p.getInitialResponseCallbacks() {
 		if callback.SessionNonce == session.SessionNonce {
@@ -751,7 +752,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	}
 
 	// Update session timestamp
-	session.LastUpdate = time.Now().UnixMilli()
+	session.TouchLastUpdate()
 	p.sessionManager.UpdateSession(session)
 
 	// Convert json of requested certificates to bytes for verification
@@ -818,7 +819,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 	}
 
 	// Update session timestamp
-	session.LastUpdate = time.Now().UnixMilli()
+	session.TouchLastUpdate()
 	p.sessionManager.UpdateSession(session)
 
 	// Convert json of certificates to bytes for verification
@@ -889,7 +890,7 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 
 		// Certificates validated successfully, authenticate the session
 		session.IsAuthenticated = true
-		session.LastUpdate = time.Now().UnixMilli()
+		session.TouchLastUpdate()
 		p.sessionManager.UpdateSession(session)
 
 		// TODO: maybe it should by default (if no callback) check if there are all required certificates
@@ -966,12 +967,12 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 	}
 
 	// Update session timestamp
-	session.LastUpdate = time.Now().UnixMilli()
+	session.TouchLastUpdate()
 	p.sessionManager.UpdateSession(session)
 
 	// Update last interacted peer
 	if p.autoPersistLastSession {
-		p.lastInteractedWithPeer = senderPublicKey
+		p.lastInteractedWithPeer.Store(senderPublicKey)
 	}
 
 	// Notify general message listeners
@@ -1062,13 +1063,12 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 	}
 
 	// Update session timestamp
-	now := time.Now().UnixNano() / int64(time.Millisecond)
-	peerSession.LastUpdate = now
+	peerSession.TouchLastUpdate()
 	p.sessionManager.UpdateSession(peerSession)
 
 	// Update last interacted peer
 	if p.autoPersistLastSession {
-		p.lastInteractedWithPeer = identityKey
+		p.lastInteractedWithPeer.Store(identityKey)
 	}
 
 	return nil
@@ -1142,13 +1142,12 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 	}
 
 	// Update session timestamp
-	now := time.Now().UnixNano() / int64(time.Millisecond)
-	peerSession.LastUpdate = now
+	peerSession.TouchLastUpdate()
 	p.sessionManager.UpdateSession(peerSession)
 
 	// Update last interacted peer
 	if p.autoPersistLastSession {
-		p.lastInteractedWithPeer = identityKey
+		p.lastInteractedWithPeer.Store(identityKey)
 	}
 
 	return nil
