@@ -41,8 +41,12 @@ type SimplifiedFetchRequestOptions struct {
 }
 
 // AuthPeer represents an authenticated peer with potential certificate requests.
+// Concurrent Fetch calls against the same base URL share one AuthPeer; mu
+// guards the mutable session metadata fields below (Peer itself is concurrent-safe).
 type AuthPeer struct {
-	Peer                       *auth.Peer
+	Peer *auth.Peer
+
+	mu                         sync.Mutex
 	IdentityKey                string
 	SupportsMutualAuth         *bool
 	PendingCertificateRequests []bool
@@ -281,7 +285,9 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			peerToUse.Peer.ListenForCertificatesRequested(func(_ context.Context, verifier *ec.PublicKey, requestedCertificates utils.RequestedCertificateSet) error {
 				if p, ok := a.peers.Load(baseURL); ok {
 					peer := p.(*AuthPeer)
+					peer.mu.Lock()
 					peer.PendingCertificateRequests = append(peer.PendingCertificateRequests, true)
+					peer.mu.Unlock()
 				}
 
 				certificatesToInclude, err := utils.GetVerifiableCertificates(
@@ -309,16 +315,21 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 					time.Sleep(500 * time.Millisecond)
 					if p, ok := a.peers.Load(baseURL); ok {
 						peer := p.(*AuthPeer)
+						peer.mu.Lock()
 						if len(peer.PendingCertificateRequests) > 0 {
 							peer.PendingCertificateRequests = peer.PendingCertificateRequests[1:]
 						}
+						peer.mu.Unlock()
 					}
 				}()
 				return nil
 			})
 		} else {
 			// Check if there's a session associated with this baseURL
-			if peerToUse.SupportsMutualAuth != nil && !*peerToUse.SupportsMutualAuth {
+			peerToUse.mu.Lock()
+			noMutualAuth := peerToUse.SupportsMutualAuth != nil && !*peerToUse.SupportsMutualAuth
+			peerToUse.mu.Unlock()
+			if noMutualAuth {
 				// Use standard fetch if mutual authentication is not supported
 				resp, err := a.handleFetchAndValidate(ctx, urlStr, config, peerToUse) //nolint:bodyclose // response is forwarded via responseChan to Fetch's caller, which closes it
 				responseChan <- struct {
@@ -400,9 +411,14 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 			if senderPublicKey != nil {
 				if p, ok := a.peers.Load(baseURL); ok {
 					peer := p.(*AuthPeer)
+					// Peer.handleGeneralMessage fans each message to every
+					// registered listener, so concurrent in-flight requests all
+					// race here on the shared AuthPeer. Serialize the writes.
+					peer.mu.Lock()
 					peer.IdentityKey = senderPublicKey.ToDERHex()
 					supportsMutualAuth := true
 					peer.SupportsMutualAuth = &supportsMutualAuth
+					peer.mu.Unlock()
 				}
 			}
 
@@ -437,7 +453,11 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		// Make sure no certificate requests are pending
 		hasPending := func() bool {
 			if p, ok := a.peers.Load(baseURL); ok {
-				return len(p.(*AuthPeer).PendingCertificateRequests) > 0
+				peer := p.(*AuthPeer)
+				peer.mu.Lock()
+				n := len(peer.PendingCertificateRequests)
+				peer.mu.Unlock()
+				return n > 0
 			}
 			return false
 		}
@@ -456,7 +476,10 @@ func (a *AuthFetch) Fetch(ctx context.Context, urlStr string, config *Simplified
 		// Send the request
 		var identityKey string
 		if p, ok := a.peers.Load(baseURL); ok {
-			identityKey = p.(*AuthPeer).IdentityKey
+			peer := p.(*AuthPeer)
+			peer.mu.Lock()
+			identityKey = peer.IdentityKey
+			peer.mu.Unlock()
 		}
 		var idKeyObject *ec.PublicKey
 		var toPublicKeyError error
@@ -586,8 +609,11 @@ func (a *AuthFetch) SendCertificateRequest(ctx context.Context, baseURL string, 
 
 	// Get peer identity key if available
 	var identityKey *ec.PublicKey
-	if peerToUse.IdentityKey != "" {
-		pubKey, err := ec.PublicKeyFromString(peerToUse.IdentityKey)
+	peerToUse.mu.Lock()
+	identityKeyHex := peerToUse.IdentityKey
+	peerToUse.mu.Unlock()
+	if identityKeyHex != "" {
+		pubKey, err := ec.PublicKeyFromString(identityKeyHex)
 		if err == nil {
 			identityKey = pubKey
 		}
@@ -662,7 +688,9 @@ func (a *AuthFetch) handleFetchAndValidate(ctx context.Context, urlStr string, c
 	// Set supportsMutualAuth to false if successful
 	if response.StatusCode < 400 {
 		supportsMutualAuth := false
+		peerToUse.mu.Lock()
 		peerToUse.SupportsMutualAuth = &supportsMutualAuth
+		peerToUse.mu.Unlock()
 		return response, nil
 	}
 
