@@ -130,23 +130,27 @@ func (t *SimplifiedHTTPTransport) authMessageFromNonGeneralMessageResponse(resp 
 		return responseMsg, errors.Join(ErrHTTPServerFailedToAuthenticate, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body)))
 	}
 
-	if resp.ContentLength == 0 {
+	// Read the body regardless of the reported Content-Length. A response
+	// delivered over HTTP/2 or with chunked transfer-encoding carries no
+	// Content-Length header, so resp.ContentLength is -1 (unknown). Gating the
+	// read on `ContentLength > 0` silently skipped the body in that case and
+	// returned a zero-value AuthMessage (Version == ""), which the peer then
+	// rejected as "invalid or unsupported message auth version". This happens
+	// whenever the handshake is proxied through an HTTP/2 front end (e.g.
+	// Cloudflare) even though the body is fully intact.
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return responseMsg, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if len(body) == 0 {
 		return responseMsg, fmt.Errorf("empty response body")
 	}
 
-	// If we have a response, process it as a potential auth message
-	if resp.ContentLength > 0 {
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return responseMsg, fmt.Errorf("failed to read response body: %w", err)
-		}
-
-		err = json.Unmarshal(body, &responseMsg)
-		if err != nil {
-			return responseMsg, fmt.Errorf("failed to unmarshal authmessage from body (%q): %w", string(body), err)
-		}
+	if err := json.Unmarshal(body, &responseMsg); err != nil {
+		return responseMsg, fmt.Errorf("failed to unmarshal authmessage from body (%q): %w", string(body), err)
 	}
+
 	return responseMsg, nil
 }
 

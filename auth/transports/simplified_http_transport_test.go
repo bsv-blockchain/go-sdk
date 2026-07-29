@@ -1,6 +1,7 @@
 package transports
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -195,4 +196,60 @@ func TestSimplifiedHTTPTransportSendWithNoHandler(t *testing.T) {
 	// Note: It may fail for other reasons (like invalid message format), but at least not for missing handler
 	err = transport.Send(t.Context(), testMessage)
 	assert.NotErrorIs(t, err, ErrNoHandlerRegistered, "Send should not return ErrNoHandlerRegistered after a handler is registered")
+}
+
+// TestAuthMessageFromNonGeneralResponseNoContentLength reproduces the handshake
+// failure that occurs when the /.well-known/auth response is delivered without a
+// Content-Length header (HTTP/2 or chunked transfer-encoding, e.g. when proxied
+// through Cloudflare). Go reports such a response as ContentLength == -1; the
+// body must still be read and parsed rather than being silently dropped.
+func TestAuthMessageFromNonGeneralResponseNoContentLength(t *testing.T) {
+	transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{BaseURL: "http://example.com"})
+	require.NoError(t, err)
+
+	priv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+
+	want := &auth.AuthMessage{
+		Version:     "0.1",
+		MessageType: auth.MessageTypeInitialResponse,
+		IdentityKey: priv.PubKey(),
+		Nonce:       "kkNkT1nGzXaej8UZ9c9y9Nq0f3iF9m1H0mFq4mFq4mE=",
+		YourNonce:   "3c7cz2GRj8C2esQolXjjdq5YYtsgHwsu+w2iYiFjaBY=",
+	}
+	body, err := want.MarshalJSON()
+	require.NoError(t, err)
+
+	// ContentLength == -1 is what net/http reports for a response with no
+	// Content-Length header (HTTP/2 / chunked). The body is fully present.
+	resp := &http.Response{
+		StatusCode:    http.StatusOK,
+		ContentLength: -1,
+		Body:          io.NopCloser(bytes.NewReader(body)),
+	}
+
+	got, err := transport.authMessageFromNonGeneralMessageResponse(resp)
+	require.NoError(t, err)
+	assert.Equal(t, want.Version, got.Version, "version must be parsed from the body even without Content-Length")
+	assert.Equal(t, want.MessageType, got.MessageType)
+	require.NotNil(t, got.IdentityKey, "identity key must be parsed from the body")
+	assert.Equal(t, want.IdentityKey.ToDERHex(), got.IdentityKey.ToDERHex())
+}
+
+// TestAuthMessageFromNonGeneralResponseEmptyBody ensures a genuinely empty body
+// (no Content-Length) is still reported as an error rather than a silent
+// zero-value AuthMessage.
+func TestAuthMessageFromNonGeneralResponseEmptyBody(t *testing.T) {
+	transport, err := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{BaseURL: "http://example.com"})
+	require.NoError(t, err)
+
+	resp := &http.Response{
+		StatusCode:    http.StatusOK,
+		ContentLength: -1,
+		Body:          io.NopCloser(bytes.NewReader(nil)),
+	}
+
+	_, err = transport.authMessageFromNonGeneralMessageResponse(resp)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty response body")
 }
