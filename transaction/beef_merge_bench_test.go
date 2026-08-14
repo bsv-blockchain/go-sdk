@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"fmt"
-	"math/bits"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -69,6 +68,13 @@ func benchMerkleTree(leaves []*chainhash.Hash) [][]*chainhash.Hash {
 	return levels
 }
 
+// benchOffset converts a position in the tree built above into a path offset.
+// Positions are slice indices, so they are non-negative and bounded by the tree
+// size.
+func benchOffset(position int) uint64 {
+	return uint64(position) //nolint:gosec // G115 -- a tree position is a slice index: non-negative and bounded by the tree size
+}
+
 // benchProofBUMP builds the merkle proof for one leaf: at every level, the
 // sibling needed to climb to the root. Proofs built from the same tree share a
 // root, so merging them together exercises the combine path.
@@ -78,8 +84,8 @@ func benchProofBUMP(blockHeight uint32, levels [][]*chainhash.Hash, index int) *
 
 	isTxid := true
 	path[0] = []*PathElement{
-		{Offset: uint64(index), Hash: levels[0][index], Txid: &isTxid},
-		{Offset: uint64(index ^ 1), Hash: levels[0][index^1]},
+		{Offset: benchOffset(index), Hash: levels[0][index], Txid: &isTxid},
+		{Offset: benchOffset(index ^ 1), Hash: levels[0][index^1]},
 	}
 	if index&1 == 1 {
 		path[0][0], path[0][1] = path[0][1], path[0][0]
@@ -87,7 +93,7 @@ func benchProofBUMP(blockHeight uint32, levels [][]*chainhash.Hash, index int) *
 
 	for h := 1; h < treeHeight; h++ {
 		sib := (index >> h) ^ 1
-		path[h] = []*PathElement{{Offset: uint64(sib), Hash: levels[h][sib]}}
+		path[h] = []*PathElement{{Offset: benchOffset(sib), Hash: levels[h][sib]}}
 	}
 
 	return NewMerklePath(blockHeight, path)
@@ -102,7 +108,7 @@ func benchFullBUMP(blockHeight uint32, levels [][]*chainhash.Hash) *MerklePath {
 	for h := 0; h < treeHeight; h++ {
 		path[h] = make([]*PathElement, 0, len(levels[h]))
 		for offset, hash := range levels[h] {
-			el := &PathElement{Offset: uint64(offset), Hash: hash}
+			el := &PathElement{Offset: benchOffset(offset), Hash: hash}
 			if h == 0 {
 				el.Txid = &isTxid
 			}
@@ -116,16 +122,19 @@ func benchFullBUMP(blockHeight uint32, levels [][]*chainhash.Hash) *MerklePath {
 // over `blocks` block heights. n/blocks must be a power of two.
 func benchProvedBatch(n, blocks int) []*Transaction {
 	perBlock := n / blocks
-	if bits.OnesCount(uint(perBlock)) != 1 {
+	// Power of two: the merkle tree helpers assume a full tree.
+	if perBlock <= 0 || perBlock&(perBlock-1) != 0 {
 		panic("transactions per block must be a power of two")
 	}
 
 	txs := make([]*Transaction, 0, n)
+	var lockTime uint32
 	for b := 0; b < blocks; b++ {
 		block := make([]*Transaction, 0, perBlock)
 		leaves := make([]*chainhash.Hash, 0, perBlock)
 		for i := 0; i < perBlock; i++ {
-			tx := benchTx(uint32(b*perBlock + i))
+			lockTime++
+			tx := benchTx(lockTime)
 			block = append(block, tx)
 			leaves = append(leaves, tx.TxID())
 		}
