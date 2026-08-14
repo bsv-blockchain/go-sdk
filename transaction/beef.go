@@ -21,6 +21,64 @@ type Beef struct {
 	BUMPs        []*MerklePath
 	Transactions map[chainhash.Hash]*BeefTx
 	NewestTxID   *chainhash.Hash
+
+	// Values derived from the BUMPs, keyed by identity and computed on first
+	// use. Merging a graph asks the same questions of the same proofs over and
+	// over — what root does this prove, does it prove this txid — and answering
+	// them from Path each time dominated the merge.
+	derivedBumps map[*MerklePath]*derivedBump
+}
+
+// derivedBump caches what merging needs to know about one MerklePath.
+type derivedBump struct {
+	root   *chainhash.Hash
+	leaves map[chainhash.Hash]struct{}
+}
+
+func (b *Beef) derivedFor(bump *MerklePath) *derivedBump {
+	if b.derivedBumps == nil {
+		b.derivedBumps = make(map[*MerklePath]*derivedBump)
+	}
+	d, ok := b.derivedBumps[bump]
+	if !ok {
+		d = &derivedBump{}
+		b.derivedBumps[bump] = d
+	}
+	return d
+}
+
+// bumpRoot returns the merkle root bump proves, computing it at most once per
+// BEEF for as long as the proof's Path is unchanged.
+func (b *Beef) bumpRoot(bump *MerklePath) (*chainhash.Hash, error) {
+	d := b.derivedFor(bump)
+	if d.root == nil {
+		root, err := bump.ComputeRoot(nil)
+		if err != nil {
+			return nil, err
+		}
+		d.root = root
+	}
+	return d.root, nil
+}
+
+// bumpProves reports whether bump proves txid, backed by a leaf set built once
+// so that checking every transaction in the graph stays cheap.
+func (b *Beef) bumpProves(bump *MerklePath, txid *chainhash.Hash) bool {
+	if txid == nil || len(bump.Path) == 0 {
+		return false
+	}
+	d := b.derivedFor(bump)
+	if d.leaves == nil {
+		leaves := make(map[chainhash.Hash]struct{}, len(bump.Path[0]))
+		for _, leaf := range bump.Path[0] {
+			if leaf.Hash != nil {
+				leaves[*leaf.Hash] = struct{}{}
+			}
+		}
+		d.leaves = leaves
+	}
+	_, ok := d.leaves[*txid]
+	return ok
 }
 
 func NewBeef() *Beef {
@@ -503,10 +561,8 @@ func (b *Beef) FindBumpByHash(txid *chainhash.Hash) *MerklePath {
 		return nil
 	}
 	for _, bump := range b.BUMPs {
-		for _, leaf := range bump.Path[0] {
-			if leaf.Hash != nil && leaf.Hash.Equal(*txid) {
-				return bump
-			}
+		if b.bumpProves(bump, txid) {
+			return bump
 		}
 	}
 	return nil
@@ -563,36 +619,49 @@ func (b *Beef) FindTransactionForSigning(txid string) *Transaction {
 
 func (b *Beef) FindAtomicTransactionByHash(txid *chainhash.Hash) *Transaction {
 	beefTx := b.findTxid(txid)
-	if beefTx == nil {
+	if beefTx == nil || beefTx.DataFormat == TxIDOnly || beefTx.Transaction == nil {
 		return nil
 	}
 
-	var addInputProof func(beef *Beef, tx *Transaction)
-	addInputProof = func(beef *Beef, tx *Transaction) {
-		mp := beef.FindBumpByHash(tx.TxID())
+	// An ancestry is a DAG, so the same parent is reached by many paths. Without
+	// visited, resolving a transaction whose ancestors fan back together walks
+	// the same subgraph once per path.
+	visited := make(map[chainhash.Hash]struct{})
+
+	var addInputProof func(beef *Beef, txid *chainhash.Hash, tx *Transaction)
+	addInputProof = func(beef *Beef, txid *chainhash.Hash, tx *Transaction) {
+		if txid == nil {
+			txid = tx.TxID()
+		}
+		if _, seen := visited[*txid]; seen {
+			return
+		}
+		visited[*txid] = struct{}{}
+
+		mp := beef.FindBumpByHash(txid)
 		if mp != nil {
 			tx.MerklePath = mp
-		} else {
-			for _, input := range tx.Inputs {
-				if input.SourceTransaction == nil {
-					itx := beef.findTxid(input.SourceTXID)
-					if itx != nil {
-						input.SourceTransaction = itx.Transaction
-					}
-				}
-				if input.SourceTransaction != nil {
-					mp := beef.FindBumpByHash(input.SourceTransaction.TxID())
-					if mp != nil {
-						input.SourceTransaction.MerklePath = mp
-					} else {
-						addInputProof(beef, input.SourceTransaction)
-					}
+			return
+		}
+
+		for _, input := range tx.Inputs {
+			if input.SourceTransaction == nil {
+				itx := beef.findTxid(input.SourceTXID)
+				if itx != nil {
+					input.SourceTransaction = itx.Transaction
 				}
 			}
+			if input.SourceTransaction == nil {
+				continue
+			}
+			// SourceTXID identifies SourceTransaction, so it stands in for a
+			// TxID() call that would re-serialize and re-hash the parent. The
+			// recursive call attaches the parent's own proof if it has one.
+			addInputProof(beef, input.SourceTXID, input.SourceTransaction)
 		}
 	}
 
-	addInputProof(b, beefTx.Transaction)
+	addInputProof(b, txid, beefTx.Transaction)
 
 	return beefTx.Transaction
 }
@@ -606,52 +675,47 @@ func (b *Beef) FindAtomicTransaction(txid string) *Transaction {
 }
 
 func (b *Beef) MergeBump(bump *MerklePath) int {
-	var bumpIndex *int
-	// If this proof is identical to another one previously added, we use that first.
-	// Otherwise, we try to merge it with proofs from the same block.
+	bumpIndex := -1
+	var incomingRoot *chainhash.Hash
+
 	for i, existingBump := range b.BUMPs {
-		if existingBump == bump { // Literally the same
+		if existingBump == bump {
 			return i
 		}
 		if existingBump.BlockHeight == bump.BlockHeight {
-			// Probably the same...
-			rootA, err := existingBump.ComputeRoot(nil)
+			if incomingRoot == nil {
+				root, err := bump.ComputeRoot(nil)
+				if err != nil {
+					return -1
+				}
+				incomingRoot = root
+			}
+			existingRoot, err := b.bumpRoot(existingBump)
 			if err != nil {
 				return -1
 			}
-			rootB, err := bump.ComputeRoot(nil)
-			if err != nil {
-				return -1
-			}
-			if rootA == rootB {
-				// Definitely the same... combine them to save space
-				_ = existingBump.Combine(bump)
-				bumpIndex = &i
+			if existingRoot.IsEqual(incomingRoot) {
+				existingBump.combineVerified(bump)
+				b.derivedFor(existingBump).leaves = nil
+				bumpIndex = i
 				break
 			}
 		}
 	}
 
-	// if the proof is not yet added, add a new path.
-	if bumpIndex == nil {
-		newIndex := len(b.BUMPs)
+	if bumpIndex < 0 {
+		bumpIndex = len(b.BUMPs)
 		b.BUMPs = append(b.BUMPs, bump)
-		bumpIndex = &newIndex
 	}
 
-	// review if any transactions are proven by this bump
+	merged := b.BUMPs[bumpIndex]
 	for txid, tx := range b.Transactions {
-		if tx.Transaction != nil && tx.Transaction.MerklePath == nil {
-			for _, node := range b.BUMPs[*bumpIndex].Path[0] {
-				if node.Hash != nil && node.Hash.Equal(txid) {
-					tx.Transaction.MerklePath = b.BUMPs[*bumpIndex]
-					break
-				}
-			}
+		if tx.Transaction != nil && tx.Transaction.MerklePath == nil && b.bumpProves(merged, &txid) {
+			tx.Transaction.MerklePath = merged
 		}
 	}
 
-	return *bumpIndex
+	return bumpIndex
 }
 
 func (b *Beef) findTxid(txid *chainhash.Hash) *BeefTx {
@@ -739,6 +803,13 @@ func (b *Beef) MergeTransaction(tx *Transaction) (*BeefTx, error) {
 
 // MergeTransactionWithTxid merges a transaction when the txid is already known (avoids recomputing TxID)
 func (b *Beef) MergeTransactionWithTxid(txid *chainhash.Hash, tx *Transaction) (*BeefTx, error) {
+	// A transaction ancestry is a DAG, not a tree: the same ancestor is
+	// reachable by many paths, and without this check each path re-merges it
+	// and re-walks everything above it, which is exponential in the depth.
+	if existing := b.findTxid(txid); b.mergeWouldNotChange(existing, tx) {
+		return existing, nil
+	}
+
 	b.RemoveExistingTxid(txid)
 
 	var bumpIndex *int
@@ -761,15 +832,51 @@ func (b *Beef) MergeTransactionWithTxid(txid *chainhash.Hash, tx *Transaction) (
 
 	if bumpIndex == nil {
 		for _, input := range tx.Inputs {
-			if input.SourceTransaction != nil {
-				if _, err := b.MergeTransaction(input.SourceTransaction); err != nil {
-					return nil, err
-				}
+			if input.SourceTransaction == nil {
+				continue
+			}
+			if _, err := b.MergeTransaction(input.SourceTransaction); err != nil {
+				return nil, err
 			}
 		}
 	}
 
 	return newTx, nil
+}
+
+// mergeWouldNotChange reports whether merging tx over the already-stored
+// existing entry would leave the graph as it is, making the merge — and the
+// ancestry walk below it — skippable.
+func (b *Beef) mergeWouldNotChange(existing *BeefTx, tx *Transaction) bool {
+	if existing == nil || existing.Transaction == nil || existing.DataFormat == TxIDOnly {
+		return false
+	}
+
+	// The incoming copy carries a proof the stored one lacks.
+	if tx.MerklePath != nil && existing.DataFormat != RawTxAndBumpIndex {
+		return false
+	}
+
+	// A proved transaction is terminal: its ancestry is never walked.
+	if existing.DataFormat == RawTxAndBumpIndex {
+		return true
+	}
+
+	// Otherwise the incoming copy is only worth merging if it can contribute an
+	// ancestor the graph does not already hold as a raw transaction.
+	for _, input := range tx.Inputs {
+		if input.SourceTransaction == nil {
+			continue
+		}
+		if input.SourceTXID == nil {
+			return false
+		}
+		if src := b.findTxid(input.SourceTXID); src == nil || src.DataFormat == TxIDOnly {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (b *Beef) MergeTxidOnly(txid *chainhash.Hash) *BeefTx {

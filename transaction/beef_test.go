@@ -606,25 +606,53 @@ func TestBeefMergeBump(t *testing.T) {
 
 	// Record initial state
 	initialBumpCount := len(beef1.BUMPs)
+	expectedRoot, err := bumpToMerge.ComputeRoot(nil)
+	require.NoError(t, err)
 
-	// Test MergeBump
-	beef1.MergeBump(bumpToMerge)
+	// Test MergeBump. The bump proves the same block as one beef1 already
+	// holds, so it is combined into it rather than stored a second time.
+	index := beef1.MergeBump(bumpToMerge)
+	require.GreaterOrEqual(t, index, 0)
 
-	// Verify the BUMP was merged
-	require.Len(t, beef1.BUMPs, initialBumpCount+1, "Should have one more BUMP after merge")
-	require.Equal(t, bumpToMerge.BlockHeight, beef1.BUMPs[len(beef1.BUMPs)-1].BlockHeight, "Merged BUMP should have same block height")
+	require.Len(t, beef1.BUMPs, initialBumpCount, "An equivalent BUMP should be combined, not appended")
+	merged := beef1.BUMPs[index]
+	require.Equal(t, bumpToMerge.BlockHeight, merged.BlockHeight, "Merged BUMP should have same block height")
 
-	// Verify the paths are equal but not the same instance
-	require.Len(t, beef1.BUMPs[len(beef1.BUMPs)-1].Path, len(bumpToMerge.Path), "Path lengths should match")
-	for i := range bumpToMerge.Path {
-		require.Len(t, beef1.BUMPs[len(beef1.BUMPs)-1].Path[i], len(bumpToMerge.Path[i]), "Path element lengths should match")
-		for j := range bumpToMerge.Path[i] {
-			require.Equal(t, bumpToMerge.Path[i][j].Offset, beef1.BUMPs[len(beef1.BUMPs)-1].Path[i][j].Offset, "Path element offset should match")
-			if bumpToMerge.Path[i][j].Hash != nil {
-				require.Equal(t, bumpToMerge.Path[i][j].Hash.String(), beef1.BUMPs[len(beef1.BUMPs)-1].Path[i][j].Hash.String(), "Path element hash should match")
-			}
+	// Combining must preserve the root, and must keep proving every txid the
+	// incoming bump proved.
+	mergedRoot, err := merged.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, mergedRoot.IsEqual(expectedRoot), "Combined BUMP should compute the same root")
+
+	for _, leaf := range bumpToMerge.Path[0] {
+		if leaf.Hash == nil || leaf.Txid == nil || !*leaf.Txid {
+			continue
 		}
+		root, err := merged.ComputeRoot(leaf.Hash)
+		require.NoErrorf(t, err, "combined BUMP should still prove txid %s", leaf.Hash)
+		require.True(t, root.IsEqual(expectedRoot))
 	}
+}
+
+func TestBeefMergeBumpAppendsDifferentBlock(t *testing.T) {
+	// A bump for a block the BEEF knows nothing about is stored as its own.
+	beefBytes, err := hex.DecodeString(BEEFSet)
+	require.NoError(t, err)
+
+	beef, err := NewBeefFromBytes(beefBytes)
+	require.NoError(t, err)
+	require.NotEmpty(t, beef.BUMPs)
+
+	initialBumpCount := len(beef.BUMPs)
+
+	other, err := NewBeefFromBytes(beefBytes)
+	require.NoError(t, err)
+	foreign := other.BUMPs[0]
+	foreign.BlockHeight = 999999
+
+	index := beef.MergeBump(foreign)
+	require.Equal(t, initialBumpCount, index, "should be appended at the end")
+	require.Len(t, beef.BUMPs, initialBumpCount+1, "a BUMP for another block is a separate proof")
 }
 
 func TestBeefMergeTransactions(t *testing.T) {

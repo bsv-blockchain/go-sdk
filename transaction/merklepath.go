@@ -311,19 +311,24 @@ func (m *MerklePath) Combine(other *MerklePath) (err error) {
 		return errors.New("cannot combine MerklePaths with different block heights")
 	}
 
-	root1, err := m.ComputeRootHex(nil)
+	root1, err := m.ComputeRoot(nil)
 	if err != nil {
 		return err
 	}
-	root2, err := other.ComputeRootHex(nil)
+	root2, err := other.ComputeRoot(nil)
 	if err != nil {
 		return err
 	}
 
-	if root1 != root2 {
+	if !root1.IsEqual(root2) {
 		return errors.New("cannot combine MerklePaths with different roots")
 	}
 
+	m.combineVerified(other)
+	return nil
+}
+
+func (m *MerklePath) combineVerified(other *MerklePath) {
 	combinedPath := make([]map[uint64]*PathElement, len(m.Path))
 	for h := 0; h < len(m.Path); h++ {
 		path := map[uint64]*PathElement{}
@@ -357,8 +362,6 @@ func (m *MerklePath) Combine(other *MerklePath) (err error) {
 			return int(a.Offset) - int(b.Offset) //nolint:gosec // G115 -- merkle path offsets are bounded well within int range by tree size
 		})
 	}
-
-	return err
 }
 
 // FindLeafByOffset finds a PathElement at the given offset in the specified level.
