@@ -148,7 +148,9 @@ func readBeefTxFull(reader *bytes.Reader, beefTx *BeefTx, BUMPs []*MerklePath, t
 	}
 
 	for _, input := range beefTx.Transaction.Inputs {
-		if sourceObj, ok := txs[*input.SourceTXID]; ok {
+		// A source held as a bare txid has no transaction to link to. Linking one
+		// anyway leaves the input pointing at something it cannot spend.
+		if sourceObj, ok := txs[*input.SourceTXID]; ok && sourceObj.Transaction != nil {
 			input.SourceTransaction = sourceObj.Transaction
 		}
 	}
@@ -170,8 +172,7 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[chainhash.Hash]
 			return nil, nil, err
 		}
 		beefTx := BeefTx{
-			DataFormat:  DataFormat(formatByte),
-			Transaction: &Transaction{},
+			DataFormat: DataFormat(formatByte),
 		}
 		if beefTx.DataFormat > TxIDOnly {
 			return nil, nil, fmt.Errorf("invalid data format: %d", formatByte)
@@ -179,8 +180,14 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[chainhash.Hash]
 
 		var txid *chainhash.Hash
 		if beefTx.DataFormat == TxIDOnly {
+			// A TxIDOnly entry has no transaction, only a txid. Leave
+			// Transaction nil, matching what MergeTxidOnly builds in memory: an
+			// empty placeholder would be a transaction with no inputs and no
+			// outputs, which every consumer of a raw entry then has to defend
+			// against.
 			txid, err = readBeefTxIDOnly(reader, &beefTx)
 		} else {
+			beefTx.Transaction = &Transaction{}
 			txid, err = readBeefTxFull(reader, &beefTx, BUMPs, txs)
 		}
 		if err != nil {
