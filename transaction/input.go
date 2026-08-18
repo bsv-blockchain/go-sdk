@@ -41,9 +41,12 @@ type TransactionInput struct {
 }
 
 func (i *TransactionInput) SourceTxOutput() *TransactionOutput {
-	if i.SourceTransaction != nil {
+	if i.SourceTransaction != nil && int(i.SourceTxOutIndex) < len(i.SourceTransaction.Outputs) {
 		return i.SourceTransaction.Outputs[i.SourceTxOutIndex]
 	}
+	// The source transaction does not carry the output this input spends. Fall
+	// back to any output supplied directly; callers already handle nil, whereas
+	// indexing here panicked.
 	return i.sourceOutput
 }
 
