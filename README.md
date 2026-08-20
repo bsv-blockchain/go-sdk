@@ -1,5 +1,3 @@
-> 📣 **Heads-up:** Consolidating this repository into the [go-stack monorepo](https://github.com/bsv-blockchain/go-stack) is under discussion — no archive decision has been made. Please weigh in on [roadmap discussion #70](https://github.com/bsv-blockchain/roadmap/discussions/70) before any change is made.
-
 <div align="center">
 
 # ⛓️&nbsp;&nbsp;BSV Blockchain | Go SDK
