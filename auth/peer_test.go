@@ -462,7 +462,7 @@ func TestAuthenticationOfMultipleReceiverPeerDevices(t *testing.T) {
 
 	// and: listen for received messages
 	messageReceived := make(chan ReceivedMessage, 1)
-	bobPhone.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
+	bobPhone.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error { //nolint:unparam // callback signature is fixed by OnGeneralMessageReceivedCallback
 		messageReceived <- ReceivedMessage{
 			Device:         bobPhone.Name,
 			SenderIdentity: senderPublicKey.ToDERHex(),
@@ -470,7 +470,7 @@ func TestAuthenticationOfMultipleReceiverPeerDevices(t *testing.T) {
 		}
 		return nil
 	})
-	bobComputer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error {
+	bobComputer.ListenForGeneralMessages(func(_ context.Context, senderPublicKey *ec.PublicKey, payload []byte) error { //nolint:unparam // callback signature is fixed by OnGeneralMessageReceivedCallback
 		messageReceived <- ReceivedMessage{
 			Device:         bobComputer.Name,
 			SenderIdentity: senderPublicKey.ToDERHex(),
