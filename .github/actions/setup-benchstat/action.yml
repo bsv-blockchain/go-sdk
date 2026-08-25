@@ -105,6 +105,11 @@ runs:
         # a crafted input append its own key=value lines to the output file (output-injection).
         BENCHSTAT_VERSION="${BENCHSTAT_VERSION//$'\r'/}"; BENCHSTAT_VERSION="${BENCHSTAT_VERSION//$'\n'/}"
         BENCHSTAT_VERSION_LATEST="${BENCHSTAT_VERSION_LATEST//$'\r'/}"; BENCHSTAT_VERSION_LATEST="${BENCHSTAT_VERSION_LATEST//$'\n'/}"
+        # GO_VERSION and BENCHSTAT_LATEST_MIN_GO are caller-controlled and echoed into log/error
+        # messages below; strip CR/LF from them too so a crafted value can't inject its own
+        # ::workflow-command onto a new line (output-injection). Keeps the hardening consistent.
+        BENCHSTAT_LATEST_MIN_GO="${BENCHSTAT_LATEST_MIN_GO//$'\r'/}"; BENCHSTAT_LATEST_MIN_GO="${BENCHSTAT_LATEST_MIN_GO//$'\n'/}"
+        GO_VERSION="${GO_VERSION//$'\r'/}"; GO_VERSION="${GO_VERSION//$'\n'/}"
 
         # Extract major and minor version:
         #   "1.24.x"  -> MAJOR=1, MINOR=24
