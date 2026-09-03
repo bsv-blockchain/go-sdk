@@ -54,7 +54,7 @@ func SignWithCustomK(msg []byte, privateKey *e.PrivateKey, forceLowS bool, custo
 
 	// Calculate s = k^(-1) * (hash + priv.D * r) mod N
 	e := new(big.Int).SetBytes(msg)
-	s := new(big.Int).Mul(privateKey.D, r)
+	s := new(big.Int).Mul(privateKey.D, r) //nolint:staticcheck // crypto/ecdh does not support the secp256k1 curve used here, so the raw scalar has no drop-in replacement
 	s.Add(s, e)
 	s.Mul(s, new(big.Int).ModInverse(customK, N))
 	s.Mod(s, N)

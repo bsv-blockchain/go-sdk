@@ -10,6 +10,7 @@ import (
 
 	bdkscript "github.com/bitcoin-sv/bdk/module/gobdk/script"
 	bdksecp256k1 "github.com/bitcoin-sv/bdk/module/gobdk/secp256k1"
+
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -103,7 +104,7 @@ func (v *Validator) VerifyScriptWithCustomFlags(tx *transaction.Transaction, utx
 }
 
 // GetSigOpCount returns GoBDK's signature-operation count for tx.
-func (v *Validator) GetSigOpCount(tx *transaction.Transaction, utxoHeights []int32, blockHeight int32, countP2SHSigOps bool, consensus bool) (uint64, error) {
+func (v *Validator) GetSigOpCount(tx *transaction.Transaction, utxoHeights []int32, blockHeight int32, countP2SHSigOps, consensus bool) (uint64, error) {
 	if err := v.valid(); err != nil {
 		return 0, err
 	}

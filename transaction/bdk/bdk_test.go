@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	bdkscript "github.com/bitcoin-sv/bdk/module/gobdk/script"
+	"github.com/stretchr/testify/require"
+
 	bsm "github.com/bsv-blockchain/go-sdk/compat/bsm"
 	"github.com/bsv-blockchain/go-sdk/message"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
@@ -21,7 +23,6 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction/bdk"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/stretchr/testify/require"
 )
 
 const (
