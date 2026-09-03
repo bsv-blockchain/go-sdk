@@ -23,6 +23,7 @@ Here, you will find a number of common usage examples for the go-sdk.
 - [Validate SPV](./validate_spv/) - Validate a Simple Payment Verification (SPV) proof.
 - [Verify BEEF](./verify_beef/) - Verify a BEEF (Background Evaluation Extended Format) transaction.
 - [Verify Transaction](./verify_transaction/) - Verify the validity of a Bitcoin transaction.
+- [GoBDK Integration](./bdk/) - Use native transaction validation and secp256k1 signatures.
 
 ## Messaging and Authentication
 - [Authenticated Messaging](./authenticated_messaging/) - Examples of authenticated messaging between parties.

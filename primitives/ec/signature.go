@@ -32,7 +32,7 @@ func (sig *Signature) ToDER() ([]byte, error) {
 
 // Verify checks the validity of an ECDSA signature.
 func Verify(msg []byte, sig *Signature, pubKey *e.PublicKey) bool {
-	return e.Verify(pubKey, msg, sig.R, sig.S)
+	return sig.Verify(msg, (*PublicKey)(pubKey))
 }
 
 // FromDER decodes a DER encoded signature.
@@ -93,10 +93,47 @@ func (sig *Signature) Serialize() []byte {
 	return b
 }
 
-// Verify calls ecdsa.Verify to verify the signature of hash using the public
-// key.  It returns true if the signature is valid, false otherwise.
+// Verify verifies the signature of hash using the public key. It uses an
+// external verifier when one is installed and otherwise uses crypto/ecdsa.
 func (sig *Signature) Verify(hash []byte, pubKey *PublicKey) bool {
+	if verifier := getExternalVerifySignatureFn(); verifier != nil {
+		if sig == nil || sig.R == nil || sig.S == nil ||
+			pubKey == nil || pubKey.Curve == nil || pubKey.X == nil || pubKey.Y == nil {
+			return false
+		}
+
+		// The external verifier accepts only secp256k1 public keys. Preserve
+		// crypto/ecdsa behavior for callers using another curve.
+		curve, ok := pubKey.Curve.(*KoblitzCurve)
+		if !ok || curve != S256() {
+			return e.Verify(pubKey.ToECDSA(), hash, sig.R, sig.S)
+		}
+
+		// Compressed serialization discards all but X and Y's parity. Without
+		// validating the point first, an off-curve key can serialize to the same
+		// bytes as a valid key and be accepted by the external verifier.
+		if !sig.hasValidScalars() || !validSecp256k1PublicKey(curve, pubKey) {
+			return false
+		}
+		return verifier(hash, sig.Serialize(), pubKey.Compressed())
+	}
 	return e.Verify(pubKey.ToECDSA(), hash, sig.R, sig.S)
+}
+
+func validSecp256k1PublicKey(curve *KoblitzCurve, pubKey *PublicKey) bool {
+	// KoblitzCurve.IsOnCurve converts coordinates to fixed-width field values.
+	// Check the affine coordinate range first so negative or oversized values
+	// cannot be truncated to a different valid point.
+	fieldPrime := curve.Params().P
+	return pubKey.X.Sign() >= 0 && pubKey.Y.Sign() >= 0 &&
+		pubKey.X.Cmp(fieldPrime) < 0 && pubKey.Y.Cmp(fieldPrime) < 0 &&
+		curve.IsOnCurve(pubKey.X, pubKey.Y)
+}
+
+func (sig *Signature) hasValidScalars() bool {
+	return sig != nil && sig.R != nil && sig.S != nil &&
+		sig.R.Sign() == 1 && sig.S.Sign() == 1 &&
+		sig.R.Cmp(S256().N) < 0 && sig.S.Cmp(S256().N) < 0
 }
 
 // IsEqual compares this Signature instance to the one passed, returning true

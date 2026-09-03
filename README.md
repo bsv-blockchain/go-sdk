@@ -212,6 +212,7 @@ Every example below is self-contained and thoroughly commented. Browse the full 
 - [Validate SPV](./docs/examples/validate_spv/) — Validate SPV by decoding BEEF and checking merkle roots.
 - [Verify BEEF](./docs/examples/verify_beef/) — Verify a BEEF structure.
 - [Verify Transaction](./docs/examples/verify_transaction/) — Verify a transaction's scripts, merkle path, and fees.
+- [GoBDK Integration](./docs/examples/bdk/) — Opt into native transaction validation and secp256k1 signatures.
 
 ### Keys & Addresses
 - [Address From WIF](./docs/examples/address_from_wif/) — Derive an address from a WIF private key.

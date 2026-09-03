@@ -25,12 +25,6 @@ const (
 	opCondSkip  = 2
 )
 
-var externalVerifySignatureFn func(payload, signature, publicKey []byte) bool = nil
-
-func InjectExternalVerifySignatureFn(fn func(payload, signature, publicKey []byte) bool) {
-	externalVerifySignatureFn = fn
-}
-
 type opcode struct {
 	val    byte
 	name   string
@@ -2019,7 +2013,7 @@ func opcodeCheckSig(op *ParsedOpcode, t *thread) error {
 
 	var sigBytesDer []byte
 	// if the signature is in DER format, we can set it here and just use it
-	// directly if an externalVerifySignatureFn is set
+	// directly if an external verifier is set
 	if t.hasAny(scriptflag.VerifyStrictEncoding, scriptflag.VerifyDERSignatures) {
 		sigBytesDer = sigBytes
 	}
@@ -2027,7 +2021,7 @@ func opcodeCheckSig(op *ParsedOpcode, t *thread) error {
 	var ok bool
 	var signature *ec.Signature
 
-	if externalVerifySignatureFn != nil {
+	if verifySignature := getExternalVerifySignatureFn(); verifySignature != nil {
 		if sigBytesDer == nil {
 			// signature is not in DER format, so we must parse it and set the bytes
 			signature, err = ec.ParseSignature(sigBytes)
@@ -2039,7 +2033,7 @@ func opcodeCheckSig(op *ParsedOpcode, t *thread) error {
 				return err
 			}
 		}
-		ok = externalVerifySignatureFn(hash, sigBytesDer, pkBytes)
+		ok = verifySignature(hash, sigBytesDer, pkBytes)
 	} else {
 		var pubKey *ec.PublicKey
 		pubKey, err = ec.ParsePubKey(pkBytes)
