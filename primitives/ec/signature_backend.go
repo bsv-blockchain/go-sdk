@@ -13,8 +13,8 @@ var signatureBackend externalSignatureBackend
 
 // InjectExternalSignerFn installs an external secp256k1 ECDSA signer. The
 // signer receives a message digest and a 32-byte private key and must return a
-// strict DER-encoded signature. Passing nil restores the built-in pure-Go
-// signer.
+// canonical, low-S, strict DER-encoded signature. Passing nil restores the
+// built-in pure-Go signer.
 //
 // The configured signer is process-wide and safe to call concurrently.
 // Applications should normally configure it during startup.

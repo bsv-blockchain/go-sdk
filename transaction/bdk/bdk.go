@@ -1,12 +1,5 @@
 //go:build cgo && !ios && !android && (darwin || linux) && (amd64 || arm64)
 
-// Package bdk adapts go-sdk transactions and secp256k1 signatures to GoBDK's
-// native implementations.
-//
-// GoBDK ships prebuilt native libraries. This package is available only with
-// CGO on supported Linux and macOS amd64/arm64 targets. Importing the package
-// does not change SDK behavior; callers must explicitly install the signature
-// backend or construct a Validator.
 package bdk
 
 import (
@@ -257,7 +250,7 @@ func (b *ValidateBatch) Reserve(capacity int) {
 // OP_CHECKMULTISIG. The selection is process-wide and should normally be made
 // during application startup.
 func InstallSignatureBackend() {
-	ec.InjectExternalSignerFn(bdksecp256k1.SignMessage)
+	ec.InjectExternalSignerFn(signMessage)
 	ec.InjectExternalVerifySignatureFn(verifySignature)
 	interpreter.InjectExternalVerifySignatureFn(verifySignature)
 }
@@ -268,6 +261,15 @@ func ResetSignatureBackend() {
 	ec.InjectExternalSignerFn(nil)
 	ec.InjectExternalVerifySignatureFn(nil)
 	interpreter.InjectExternalVerifySignatureFn(nil)
+}
+
+func signMessage(message, privateKey []byte) ([]byte, error) {
+	// Keep the safety check at this adapter boundary instead of relying on the
+	// native dependency to reject a slice that is too short for a 32-byte read.
+	if len(message) != sha256.Size {
+		return nil, fmt.Errorf("bdk: message digest must be %d bytes: got %d", sha256.Size, len(message))
+	}
+	return bdksecp256k1.SignMessage(message, privateKey)
 }
 
 func verifySignature(message, signature, publicKey []byte) bool {

@@ -161,7 +161,7 @@ func TestInstallSignatureBackend(t *testing.T) {
 	require.False(t, signature.Verify(invalidDigest[:], privateKey.PubKey()))
 	require.False(t, signature.Verify([]byte("short digest"), privateKey.PubKey()))
 	_, err = privateKey.Sign([]byte("short digest"))
-	require.Error(t, err)
+	require.EqualError(t, err, "bdk: message digest must be 32 bytes: got 12")
 
 	signedMessage, err := message.Sign([]byte("signed through GoBDK"), privateKey, nil)
 	require.NoError(t, err)
