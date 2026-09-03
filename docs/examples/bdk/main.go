@@ -1,4 +1,4 @@
-//go:build cgo && (darwin || linux) && (amd64 || arm64)
+//go:build cgo && !ios && !android && (darwin || linux) && (amd64 || arm64)
 
 package main
 

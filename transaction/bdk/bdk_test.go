@@ -1,4 +1,4 @@
-//go:build cgo && (darwin || linux) && (amd64 || arm64)
+//go:build cgo && !ios && !android && (darwin || linux) && (amd64 || arm64)
 
 package bdk_test
 
@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"runtime"
 	"testing"
 
@@ -120,6 +121,15 @@ func TestValidateBatch(t *testing.T) {
 	batch.Clear()
 	require.Zero(t, batch.Size())
 	require.True(t, batch.Empty())
+
+	// Clearing releases the first set of pins without preventing batch reuse.
+	require.NoError(t, batch.Add(mustTestTransaction(t), []int32{testUTXOHeight}, testBlockHeight, true))
+	runtime.GC()
+	results, err = validator.ValidateBatch(batch)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.NoError(t, results[0])
+	batch.Clear()
 }
 
 func TestInstallSignatureBackend(t *testing.T) {
@@ -135,6 +145,16 @@ func TestInstallSignatureBackend(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, signature.Verify(digest[:], privateKey.PubKey()))
 	require.True(t, ec.Verify(digest[:], signature, privateKey.PubKey().ToECDSA()))
+
+	validPublicKey := privateKey.PubKey()
+	invalidPublicKey := &ec.PublicKey{
+		Curve: ec.S256(),
+		X:     new(big.Int).Set(validPublicKey.X),
+		Y:     new(big.Int).Add(validPublicKey.Y, big.NewInt(2)),
+	}
+	require.False(t, invalidPublicKey.Validate())
+	require.Equal(t, validPublicKey.Compressed(), invalidPublicKey.Compressed())
+	require.False(t, signature.Verify(digest[:], invalidPublicKey))
 
 	invalidDigest := digest
 	invalidDigest[0] ^= 0x01

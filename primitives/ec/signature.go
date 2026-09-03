@@ -97,12 +97,37 @@ func (sig *Signature) Serialize() []byte {
 // external verifier when one is installed and otherwise uses crypto/ecdsa.
 func (sig *Signature) Verify(hash []byte, pubKey *PublicKey) bool {
 	if verifier := getExternalVerifySignatureFn(); verifier != nil {
-		if !sig.hasValidScalars() {
+		if sig == nil || sig.R == nil || sig.S == nil ||
+			pubKey == nil || pubKey.Curve == nil || pubKey.X == nil || pubKey.Y == nil {
+			return false
+		}
+
+		// The external verifier accepts only secp256k1 public keys. Preserve
+		// crypto/ecdsa behavior for callers using another curve.
+		curve, ok := pubKey.Curve.(*KoblitzCurve)
+		if !ok || curve != S256() {
+			return e.Verify(pubKey.ToECDSA(), hash, sig.R, sig.S)
+		}
+
+		// Compressed serialization discards all but X and Y's parity. Without
+		// validating the point first, an off-curve key can serialize to the same
+		// bytes as a valid key and be accepted by the external verifier.
+		if !sig.hasValidScalars() || !validSecp256k1PublicKey(curve, pubKey) {
 			return false
 		}
 		return verifier(hash, sig.Serialize(), pubKey.Compressed())
 	}
 	return e.Verify(pubKey.ToECDSA(), hash, sig.R, sig.S)
+}
+
+func validSecp256k1PublicKey(curve *KoblitzCurve, pubKey *PublicKey) bool {
+	// KoblitzCurve.IsOnCurve converts coordinates to fixed-width field values.
+	// Check the affine coordinate range first so negative or oversized values
+	// cannot be truncated to a different valid point.
+	fieldPrime := curve.Params().P
+	return pubKey.X.Sign() >= 0 && pubKey.Y.Sign() >= 0 &&
+		pubKey.X.Cmp(fieldPrime) < 0 && pubKey.Y.Cmp(fieldPrime) < 0 &&
+		curve.IsOnCurve(pubKey.X, pubKey.Y)
 }
 
 func (sig *Signature) hasValidScalars() bool {

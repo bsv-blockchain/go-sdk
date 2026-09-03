@@ -1,4 +1,4 @@
-//go:build cgo && (darwin || linux) && (amd64 || arm64)
+//go:build cgo && !ios && !android && (darwin || linux) && (amd64 || arm64)
 
 // Package bdk adapts go-sdk transactions and secp256k1 signatures to GoBDK's
 // native implementations.
@@ -155,6 +155,7 @@ type ValidateBatch struct {
 	native          *bdkscript.ValidateBatch
 	extendedTxs     [][]byte
 	utxoHeightLists [][]int32
+	pinner          *runtime.Pinner
 }
 
 // NewValidateBatch creates a validation batch. An optional positive capacity
@@ -164,12 +165,22 @@ func NewValidateBatch(capacity ...int) *ValidateBatch {
 	if native == nil {
 		return nil
 	}
-	return &ValidateBatch{native: native}
+	batch := &ValidateBatch{
+		native: native,
+		pinner: new(runtime.Pinner),
+	}
+	runtime.SetFinalizer(batch, finalizeValidateBatch)
+	return batch
 }
 
-// Add serializes and adds tx to the batch. The adapter retains the serialized
-// transaction and a private copy of the heights until Clear is called because
-// GoBDK retains their memory while processing the batch.
+func finalizeValidateBatch(batch *ValidateBatch) {
+	batch.Clear()
+}
+
+// Add serializes and adds tx to the batch. The adapter pins and retains the
+// serialized transaction and a private copy of the heights until Clear is
+// called because GoBDK retains pointers to their memory while processing the
+// batch.
 func (b *ValidateBatch) Add(tx *transaction.Transaction, utxoHeights []int32, blockHeight int32, consensus bool) error {
 	if b == nil || b.native == nil {
 		return ErrNilBatch
@@ -179,11 +190,16 @@ func (b *ValidateBatch) Add(tx *transaction.Transaction, utxoHeights []int32, bl
 		return err
 	}
 	heights := append([]int32(nil), utxoHeights...)
+	if len(extendedTx) > 0 {
+		b.pinner.Pin(&extendedTx[0])
+	}
+	if len(heights) > 0 {
+		b.pinner.Pin(&heights[0])
+	}
 	b.extendedTxs = append(b.extendedTxs, extendedTx)
 	b.utxoHeightLists = append(b.utxoHeightLists, heights)
 	b.native.Add(extendedTx, heights, blockHeight, consensus)
-	runtime.KeepAlive(b.extendedTxs)
-	runtime.KeepAlive(b.utxoHeightLists)
+	runtime.KeepAlive(b)
 	return nil
 }
 
@@ -197,17 +213,19 @@ func (v *Validator) ValidateBatch(batch *ValidateBatch) ([]error, error) {
 		return nil, ErrNilBatch
 	}
 	results := v.native.ValidateBatch(batch.native)
-	runtime.KeepAlive(batch.extendedTxs)
-	runtime.KeepAlive(batch.utxoHeightLists)
+	runtime.KeepAlive(batch)
 	return results, nil
 }
 
-// Clear removes all entries and releases the Go buffers retained by the batch.
+// Clear removes all entries, unpins their Go buffers, and releases them.
 func (b *ValidateBatch) Clear() {
 	if b == nil || b.native == nil {
 		return
 	}
+	// GoBDK stores spans into the pinned buffers. Clear the native spans before
+	// making the Go memory movable and collectible again.
 	b.native.Clear()
+	b.pinner.Unpin()
 	b.extendedTxs = nil
 	b.utxoHeightLists = nil
 }
