@@ -1149,10 +1149,14 @@ func TestSendCertificateRequestWithInvalidIdentityKey(t *testing.T) {
 		defer func() { _ = initResp.Body.Close() }()
 	}
 
-	// Set an invalid identity key on the peer
+	// Set an invalid identity key on the peer. Guard the write with the peer
+	// mutex because a background goroutine spawned by the earlier Fetch call may
+	// still be reading IdentityKey under the same lock (see authhttp.go Fetch.func1).
 	if p, ok := af.peers.Load(ts.URL); ok {
 		authPeer := p.(*AuthPeer)
+		authPeer.mu.Lock()
 		authPeer.IdentityKey = "this-is-not-a-valid-hex-key"
+		authPeer.mu.Unlock()
 	}
 
 	certSet := utils.RequestedCertificateSet{
