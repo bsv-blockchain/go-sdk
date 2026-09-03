@@ -48,10 +48,10 @@ func PrivateKeyFromBytes(pk []byte) (*PrivateKey, *PublicKey) {
 	priv := &e.PrivateKey{
 		PublicKey: e.PublicKey{
 			Curve: S256(),
-			X:     x,
-			Y:     y,
+			X:     x, //nolint:staticcheck // crypto/ecdh does not support the secp256k1 curve used here, so the raw coordinates must be set directly
+			Y:     y, //nolint:staticcheck // crypto/ecdh does not support the secp256k1 curve used here, so the raw coordinates must be set directly
 		},
-		D: new(big.Int).SetBytes(pk),
+		D: new(big.Int).SetBytes(pk), //nolint:staticcheck // crypto/ecdh does not support the secp256k1 curve used here, so the raw scalar must be set directly
 	}
 	return (*PrivateKey)(priv), (*PublicKey)(&priv.PublicKey)
 }

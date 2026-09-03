@@ -60,14 +60,14 @@ func TestECDSA(t *testing.T) {
 
 			// Convert the private key to *ecdsa.PrivateKey
 			privateKey := &e.PrivateKey{
-				D: privKeyInt,
+				D: privKeyInt, //nolint:staticcheck // test constructs an ecdsa.PrivateKey directly; the raw scalar field has no drop-in replacement for this low-level setup
 				PublicKey: e.PublicKey{
 					Curve: elliptic.P256(),
-					X:     nil,
-					Y:     nil,
+					X:     nil, //nolint:staticcheck // test constructs an ecdsa.PublicKey directly; the raw coordinate field has no drop-in replacement for this low-level setup
+					Y:     nil, //nolint:staticcheck // test constructs an ecdsa.PublicKey directly; the raw coordinate field has no drop-in replacement for this low-level setup
 				},
 			}
-			privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes())
+			privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes()) //nolint:staticcheck // test constructs an ecdsa.PrivateKey directly; the raw coordinate/scalar fields have no drop-in replacement for this low-level setup
 
 			signature, err := Sign(msgBytes, privateKey, tc.forceLowS, tc.customK)
 			if err != nil {
@@ -92,12 +92,12 @@ func TestECDSA(t *testing.T) {
 		privKeyInt.SetString(privateHex, 16)
 
 		privateKey := &e.PrivateKey{
-			D: privKeyInt,
+			D: privKeyInt, //nolint:staticcheck // test constructs an ecdsa.PrivateKey directly; the raw scalar field has no drop-in replacement for this low-level setup
 			PublicKey: e.PublicKey{
 				Curve: elliptic.P256(),
 			},
 		}
-		privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes())
+		privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes()) //nolint:staticcheck // test constructs an ecdsa.PrivateKey directly; the raw coordinate/scalar fields have no drop-in replacement for this low-level setup
 
 		signature, err := Sign(msgBytes, privateKey, false, nil)
 		if err != nil {

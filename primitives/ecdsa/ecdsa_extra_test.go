@@ -17,12 +17,12 @@ func makeTestPrivKey(t *testing.T) *e.PrivateKey {
 	privKeyInt := new(big.Int)
 	privKeyInt.SetString(privateHex, 16)
 	privateKey := &e.PrivateKey{
-		D: privKeyInt,
+		D: privKeyInt, //nolint:staticcheck // test constructs an ecdsa.PrivateKey directly; the raw scalar field has no drop-in replacement for this low-level setup
 		PublicKey: e.PublicKey{
 			Curve: elliptic.P256(),
 		},
 	}
-	privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes())
+	privateKey.X, privateKey.Y = privateKey.ScalarBaseMult(privateKey.D.Bytes()) //nolint:staticcheck // test constructs an ecdsa.PrivateKey directly; the raw coordinate/scalar fields have no drop-in replacement for this low-level setup
 	return privateKey
 }
 
