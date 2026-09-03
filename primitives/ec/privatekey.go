@@ -158,11 +158,25 @@ func (p *PrivateKey) PubKey() *PublicKey {
 	return (*PublicKey)(&p.PublicKey)
 }
 
-// Sign generates an ECDSA signature for the provided hash (which should be the result
-// of hashing a larger message) using the private key. Produced signature
-// is deterministic (same message and same key yield the same signature) and canonical
-// in accordance with RFC6979 and BIP0062.
+// Sign generates an ECDSA signature for the provided hash, which should be the
+// result of hashing a larger message. The built-in signer produces deterministic,
+// canonical signatures in accordance with RFC6979 and BIP0062. A signer installed
+// with InjectExternalSignerFn replaces the built-in implementation process-wide.
 func (p *PrivateKey) Sign(hash []byte) (*Signature, error) {
+	if signer := getExternalSignerFn(); signer != nil {
+		serializedSignature, err := signer(hash, p.Serialize())
+		if err != nil {
+			return nil, err
+		}
+		signature, err := ParseDERSignature(serializedSignature)
+		if err != nil {
+			return nil, fmt.Errorf("invalid signature from external signer: %w", err)
+		}
+		if !bytes.Equal(signature.Serialize(), serializedSignature) {
+			return nil, errors.New("external signer returned a non-canonical DER signature")
+		}
+		return signature, nil
+	}
 	return signRFC6979(p, hash)
 }
 

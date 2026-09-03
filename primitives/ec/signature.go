@@ -32,7 +32,7 @@ func (sig *Signature) ToDER() ([]byte, error) {
 
 // Verify checks the validity of an ECDSA signature.
 func Verify(msg []byte, sig *Signature, pubKey *e.PublicKey) bool {
-	return e.Verify(pubKey, msg, sig.R, sig.S)
+	return sig.Verify(msg, (*PublicKey)(pubKey))
 }
 
 // FromDER decodes a DER encoded signature.
@@ -93,10 +93,22 @@ func (sig *Signature) Serialize() []byte {
 	return b
 }
 
-// Verify calls ecdsa.Verify to verify the signature of hash using the public
-// key.  It returns true if the signature is valid, false otherwise.
+// Verify verifies the signature of hash using the public key. It uses an
+// external verifier when one is installed and otherwise uses crypto/ecdsa.
 func (sig *Signature) Verify(hash []byte, pubKey *PublicKey) bool {
+	if verifier := getExternalVerifySignatureFn(); verifier != nil {
+		if !sig.hasValidScalars() {
+			return false
+		}
+		return verifier(hash, sig.Serialize(), pubKey.Compressed())
+	}
 	return e.Verify(pubKey.ToECDSA(), hash, sig.R, sig.S)
+}
+
+func (sig *Signature) hasValidScalars() bool {
+	return sig != nil && sig.R != nil && sig.S != nil &&
+		sig.R.Sign() == 1 && sig.S.Sign() == 1 &&
+		sig.R.Cmp(S256().N) < 0 && sig.S.Cmp(S256().N) < 0
 }
 
 // IsEqual compares this Signature instance to the one passed, returning true
