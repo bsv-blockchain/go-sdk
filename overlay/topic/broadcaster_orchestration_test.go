@@ -9,6 +9,8 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
+	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
@@ -195,4 +197,101 @@ func TestBroadcastCtxAckFromSpecificHostMissing(t *testing.T) {
 	require.Nil(t, success)
 	require.NotNil(t, failure)
 	require.Equal(t, "ERR_REQUIRE_ACK_FROM_SPECIFIC_HOSTS_FAILED", failure.Code)
+}
+
+// mockLookupFacilitator returns a canned lookup answer, standing in for the
+// SHIP tracker HTTP calls made during host discovery.
+type mockLookupFacilitator struct {
+	answer *lookup.LookupAnswer
+	err    error
+}
+
+func (m *mockLookupFacilitator) Lookup(_ context.Context, _ string, _ *lookup.LookupQuestion) (*lookup.LookupAnswer, error) {
+	return m.answer, m.err
+}
+
+// adminTokenBeef hand-builds a BEEF whose single output is a pushdrop admin
+// token (SHIP/SLAP advertisement) for the given domain and topic/service, so
+// admintoken.Decode recognizes it without needing a wallet.
+func adminTokenBeef(t *testing.T, protocol, domain, topicOrService string) []byte {
+	t.Helper()
+	priv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	pub := priv.PubKey().Compressed()
+
+	s := &script.Script{}
+	require.NoError(t, s.AppendPushData(pub)) // locking public key
+	require.NoError(t, s.AppendOpcodes(script.OpCHECKSIG))
+	require.NoError(t, s.AppendPushData([]byte(protocol)))       // field 0: protocol
+	require.NoError(t, s.AppendPushData(pub))                    // field 1: identity key
+	require.NoError(t, s.AppendPushData([]byte(domain)))         // field 2: domain
+	require.NoError(t, s.AppendPushData([]byte(topicOrService))) // field 3: topic/service
+	require.NoError(t, s.AppendOpcodes(script.Op2DROP))
+	require.NoError(t, s.AppendOpcodes(script.Op2DROP))
+
+	tx := transaction.NewTransaction()
+	src := transaction.NewTransaction()
+	src.AddOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: &script.Script{}})
+	tx.AddInputFromTx(src, 0, nil)
+	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 500, LockingScript: s})
+	beef, err := tx.BEEF()
+	require.NoError(t, err)
+	return beef
+}
+
+// TestBroadcastCtxDiscoversInterestedHosts covers the non-local path where the
+// broadcaster resolves SHIP advertisements to find interested hosts and then
+// sends to them.
+func TestBroadcastCtxDiscoversInterestedHosts(t *testing.T) {
+	tx := broadcastTestTx(t)
+
+	beef := adminTokenBeef(t, "SHIP", "http://interested-host", "tm_test")
+	resolver := lookup.NewLookupResolver(&lookup.LookupResolver{
+		Facilitator: &mockLookupFacilitator{answer: &lookup.LookupAnswer{
+			Type:    lookup.AnswerTypeOutputList,
+			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
+		}},
+		HostOverrides: map[string][]string{"ls_ship": {"http://tracker"}},
+	})
+
+	sendFac := &mockBroadcastFacilitator{steak: ackSteak("tm_test")}
+	b := &Broadcaster{
+		Topics:        []string{"tm_test"},
+		Facilitator:   sendFac,
+		Resolver:      *resolver,
+		NetworkPreset: overlay.NetworkMainnet,
+		AckFromAll:    AckFrom{RequireAck: RequireAckNone},
+		AckFromAny:    AckFrom{RequireAck: RequireAckNone},
+	}
+
+	success, failure := b.BroadcastCtx(context.Background(), tx)
+	require.Nil(t, failure)
+	require.NotNil(t, success)
+	require.Equal(t, []string{"http://interested-host"}, sendFac.sent)
+}
+
+// TestBroadcastCtxNoInterestedHosts covers the branch where discovery finds no
+// interested hosts.
+func TestBroadcastCtxNoInterestedHosts(t *testing.T) {
+	tx := broadcastTestTx(t)
+
+	resolver := lookup.NewLookupResolver(&lookup.LookupResolver{
+		Facilitator: &mockLookupFacilitator{answer: &lookup.LookupAnswer{
+			Type:    lookup.AnswerTypeOutputList,
+			Outputs: []*lookup.OutputListItem{},
+		}},
+		HostOverrides: map[string][]string{"ls_ship": {"http://tracker"}},
+	})
+
+	b := &Broadcaster{
+		Topics:        []string{"tm_test"},
+		Facilitator:   &mockBroadcastFacilitator{steak: ackSteak("tm_test")},
+		Resolver:      *resolver,
+		NetworkPreset: overlay.NetworkMainnet,
+	}
+
+	success, failure := b.BroadcastCtx(context.Background(), tx)
+	require.Nil(t, success)
+	require.NotNil(t, failure)
+	require.Equal(t, "ERR_NO_HOSTS_INTERESTED", failure.Code)
 }
