@@ -242,19 +242,29 @@ func TestWhatsOnChainBroadcastNilTransaction(t *testing.T) {
 }
 
 func TestWhatsOnChainBroadcastNilClient(t *testing.T) {
+	// Stub http.DefaultTransport so the nil-Client -> http.DefaultClient
+	// fallback path is exercised without reaching api.whatsonchain.com.
+	withStubTransport(t, func(_ *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(`{"txid":"4d76b00f29e480e0a933cef9d9ffe303d6ab919e2cdb265dd2cea41089baa85a"}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
 	tx, err := transaction.NewTransactionFromHex(testTxHex)
 	require.NoError(t, err)
 
 	b := &WhatsOnChain{
 		Network: WOCMainnet,
 		ApiKey:  "",
-		// Client intentionally left nil
+		// Client intentionally left nil -> falls back to http.DefaultClient
 	}
 
-	// This will use http.DefaultClient
-	// We expect a failure since we're not actually making HTTP calls
-	_, failure := b.Broadcast(tx)
-	require.NotNil(t, failure)
+	success, failure := b.Broadcast(tx)
+	require.Nil(t, failure)
+	require.NotNil(t, success)
+	require.Equal(t, tx.TxID().String(), success.Txid)
 }
 
 func TestWhatsOnChainBroadcastTestnet(t *testing.T) {
