@@ -122,7 +122,8 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 			return nil, err
 		}
 
-		if err = guardParseCount(reader, uint64(nLeavesAtThisHeight), "merkle path leaves"); err != nil {
+		// A leaf is at least an offset varint (>=1 byte) plus a flags byte.
+		if err = guardParseCount(reader, uint64(nLeavesAtThisHeight), 2, "merkle path leaves"); err != nil {
 			return nil, err
 		}
 		bump.Path[lv] = make([]*PathElement, nLeavesAtThisHeight)

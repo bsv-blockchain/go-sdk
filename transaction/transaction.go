@@ -193,7 +193,9 @@ func (tt *Transactions) ReadFrom(r io.Reader) (int64, error) {
 		return bytesRead, err
 	}
 
-	if err = guardParseCount(r, uint64(txCount), "transactions"); err != nil {
+	// The smallest possible transaction (version, 0 inputs, 0 outputs, locktime)
+	// is 10 bytes.
+	if err = guardParseCount(r, uint64(txCount), 10, "transactions"); err != nil {
 		return bytesRead, err
 	}
 	*tt = make([]*Transaction, txCount)

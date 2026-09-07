@@ -404,7 +404,8 @@ func readBUMPs(reader *bytes.Reader) ([]*MerklePath, error) {
 		return nil, err
 	}
 
-	if err = guardParseCount(reader, uint64(numberOfBUMPs), "BEEF BUMPs"); err != nil {
+	// A BUMP is at least a block-height varint (>=1 byte) plus a tree-height byte.
+	if err = guardParseCount(reader, uint64(numberOfBUMPs), 2, "BEEF BUMPs"); err != nil {
 		return nil, err
 	}
 	BUMPs := make([]*MerklePath, numberOfBUMPs)

@@ -21,19 +21,25 @@ func TestGuardParseCount(t *testing.T) {
 		name      string
 		remaining int
 		count     uint64
+		minBytes  int
 		wantErr   bool
 	}{
-		{name: "count within remaining", remaining: 100, count: 50, wantErr: false},
-		{name: "count equals remaining", remaining: 100, count: 100, wantErr: false},
-		{name: "count exceeds remaining", remaining: 10, count: 5000, wantErr: true},
-		{name: "absurd count on tiny reader", remaining: 4, count: 1 << 62, wantErr: true},
-		{name: "zero count", remaining: 0, count: 0, wantErr: false},
+		{name: "byte slice within remaining", remaining: 100, count: 50, minBytes: 1, wantErr: false},
+		{name: "byte slice equals remaining", remaining: 100, count: 100, minBytes: 1, wantErr: false},
+		{name: "byte slice exceeds remaining", remaining: 10, count: 5000, minBytes: 1, wantErr: true},
+		{name: "absurd count on tiny reader", remaining: 4, count: 1 << 62, minBytes: 1, wantErr: true},
+		{name: "zero count", remaining: 0, count: 0, minBytes: 1, wantErr: false},
+		// Per-element minimum tightens the bound for pointer slices: 100 bytes can
+		// describe at most 10 ten-byte elements.
+		{name: "pointer slice within capacity", remaining: 100, count: 10, minBytes: 10, wantErr: false},
+		{name: "pointer slice exceeds capacity", remaining: 100, count: 11, minBytes: 10, wantErr: true},
+		{name: "min bytes clamped to one", remaining: 8, count: 8, minBytes: 0, wantErr: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := bytes.NewReader(make([]byte, tt.remaining))
-			err := guardParseCount(r, tt.count, "thing")
+			err := guardParseCount(r, tt.count, tt.minBytes, "thing")
 			if tt.wantErr {
 				require.Error(t, err)
 				require.ErrorContains(t, err, "exceeds")
@@ -48,7 +54,7 @@ func TestGuardParseCount(t *testing.T) {
 // its remaining length is left unguarded (returns nil).
 func TestGuardParseCountUnboundedReader(t *testing.T) {
 	r := nonLenReader{r: bytes.NewReader(make([]byte, 4))}
-	require.NoError(t, guardParseCount(r, 1<<62, "thing"))
+	require.NoError(t, guardParseCount(r, 1<<62, 1, "thing"))
 }
 
 // TestNewTransactionFromBEEFBumpIndexGuard is a regression test for the BEEF

@@ -16,23 +16,33 @@ type byteLenReader interface {
 // element count read from untrusted binary. When the reader can report its
 // remaining bytes — which is the case for every entry point that parses a byte
 // slice (NewTransactionFromBytes, NewTransactionFromBEEF, NewMerklePathFromBinary
-// all wrap the input in a *bytes.Reader) — a count larger than the bytes that
-// remain cannot be satisfied and is rejected before make() is handed an
-// impossible size. This turns a "makeslice: len out of range" panic on malformed
-// input into an ordinary error.
+// all wrap the input in a *bytes.Reader) — a count that could not possibly be
+// satisfied by the bytes that remain is rejected before make() is handed an
+// oversized length. This turns a "makeslice: len out of range" panic on
+// malformed input into an ordinary error.
 //
-// Valid transactions are unaffected regardless of size: every element consumes at
-// least one byte, so a legitimate count can never exceed the remaining input.
-// Streaming readers that cannot report a length are left unguarded — they are not
-// the untrusted-binary entry points, and bounding them could reject legitimate
-// streamed data.
-func guardParseCount(r io.Reader, count uint64, what string) error {
+// minBytesPerElem is the minimum number of input bytes each element consumes
+// while parsing (1 for a byte slice). For pointer-element slices this keeps the
+// bound tight — an N-byte message cannot describe more than N/minBytesPerElem
+// elements — so a small message cannot force a large (count * pointer-size)
+// allocation. It must never exceed the true per-element minimum, or valid input
+// would be rejected.
+//
+// Valid transactions are unaffected regardless of size. Streaming readers that
+// cannot report a length are left unguarded — they are not the untrusted-binary
+// entry points, and bounding them could reject legitimate streamed data.
+func guardParseCount(r io.Reader, count uint64, minBytesPerElem int, what string) error {
 	lr, ok := r.(byteLenReader)
 	if !ok {
 		return nil
 	}
-	if remaining := lr.Len(); count > uint64(remaining) { //nolint:gosec // G115 -- Len() is non-negative
-		return fmt.Errorf("%s count %d exceeds %d remaining bytes", what, count, remaining)
+	if minBytesPerElem < 1 {
+		minBytesPerElem = 1
+	}
+	remaining := lr.Len()
+	maxCount := uint64(remaining) / uint64(minBytesPerElem) //nolint:gosec // G115 -- Len() and minBytesPerElem are non-negative
+	if count > maxCount {
+		return fmt.Errorf("%s count %d exceeds capacity of %d remaining bytes", what, count, remaining)
 	}
 	return nil
 }
@@ -43,7 +53,7 @@ func guardParseCount(r io.Reader, count uint64, what string) error {
 // read alongside the buffer so callers can account for the read and wrap errors
 // with their own context.
 func readGuardedBytes(r io.Reader, l uint64, what string) ([]byte, int, error) {
-	if err := guardParseCount(r, l, what); err != nil {
+	if err := guardParseCount(r, l, 1, what); err != nil {
 		return nil, 0, err
 	}
 	buf := make([]byte, l)
