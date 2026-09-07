@@ -33,8 +33,21 @@ func withErrTransport(t *testing.T) {
 // request method by making the transport fail.
 func TestHeadersClientTransportErrors(t *testing.T) {
 	withErrTransport(t)
+	requireAllRequestMethodsError(t, &Client{Url: "http://headers.test", ApiKey: testAPIKey})
+}
 
-	c := &Client{Url: "http://headers.test", ApiKey: testAPIKey}
+// TestHeadersClientRequestCreationErrors covers the "error creating request"
+// branch by using a URL containing a control character that http.NewRequest
+// rejects.
+func TestHeadersClientRequestCreationErrors(t *testing.T) {
+	requireAllRequestMethodsError(t, &Client{Url: "http://headers.test/\x7f", ApiKey: testAPIKey})
+}
+
+// requireAllRequestMethodsError asserts that every request-issuing method on c
+// returns an error, so both the transport-failure and request-creation-failure
+// cases can share one assertion set.
+func requireAllRequestMethodsError(t *testing.T, c *Client) {
+	t.Helper()
 	ctx := context.Background()
 	root := &chainhash.Hash{}
 
@@ -51,39 +64,6 @@ func TestHeadersClientTransportErrors(t *testing.T) {
 	require.Error(t, err)
 
 	_, err = c.CurrentHeight(ctx)
-	require.Error(t, err)
-
-	_, err = c.GetMerkleRoots(ctx, 10, nil)
-	require.Error(t, err)
-
-	_, err = c.RegisterWebhook(ctx, "https://example.com/webhook", "tok")
-	require.Error(t, err)
-
-	err = c.UnregisterWebhook(ctx, "https://example.com/webhook")
-	require.Error(t, err)
-
-	_, err = c.GetWebhook(ctx, "https://example.com/webhook")
-	require.Error(t, err)
-}
-
-// TestHeadersClientRequestCreationErrors covers the "error creating request"
-// branch by using a URL containing a control character that http.NewRequest
-// rejects.
-func TestHeadersClientRequestCreationErrors(t *testing.T) {
-	c := &Client{Url: "http://headers.test/\x7f", ApiKey: testAPIKey}
-	ctx := context.Background()
-	root := &chainhash.Hash{}
-
-	_, err := c.IsValidRootForHeight(ctx, root, 1)
-	require.Error(t, err)
-
-	_, err = c.BlockByHeight(ctx, 1)
-	require.Error(t, err)
-
-	_, err = c.GetBlockState(ctx, "deadbeef")
-	require.Error(t, err)
-
-	_, err = c.GetChaintip(ctx)
 	require.Error(t, err)
 
 	_, err = c.GetMerkleRoots(ctx, 10, nil)

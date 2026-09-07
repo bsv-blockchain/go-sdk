@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/wallet"
+
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 // setupMockWalletForAuth creates a mock wallet with the required methods for auth operations
@@ -64,7 +66,7 @@ func TestNewUploader(t *testing.T) {
 func TestStorageUploader_PublishFile(t *testing.T) {
 	// Intercept the auth client's default HTTP transport so the request fails
 	// immediately instead of reaching the configured StorageURL over the network.
-	stubTransportUnreachable(t)
+	tu.WithUnreachableTransport(t)
 
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
@@ -95,7 +97,7 @@ func TestStorageUploader_PublishFile(t *testing.T) {
 func TestStorageUploader_FindFile(t *testing.T) {
 	// Intercept the auth client's default HTTP transport so the request fails
 	// immediately instead of reaching the configured StorageURL over the network.
-	stubTransportUnreachable(t)
+	tu.WithUnreachableTransport(t)
 
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
@@ -146,7 +148,7 @@ func TestFindFileData(t *testing.T) {
 func TestStorageUploader_ListUploads(t *testing.T) {
 	// Intercept the auth client's default HTTP transport so the request fails
 	// immediately instead of reaching the configured StorageURL over the network.
-	stubTransportUnreachable(t)
+	tu.WithUnreachableTransport(t)
 
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
@@ -168,7 +170,7 @@ func TestStorageUploader_ListUploads(t *testing.T) {
 func TestStorageUploader_RenewFile(t *testing.T) {
 	// Intercept the auth client's default HTTP transport so the request fails
 	// immediately instead of reaching the configured StorageURL over the network.
-	stubTransportUnreachable(t)
+	tu.WithUnreachableTransport(t)
 
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{

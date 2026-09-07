@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 const arcExampleURL = "https://arc.example.com"
@@ -302,7 +304,7 @@ func TestArcBroadcastFailureNonSuccessStatus(t *testing.T) {
 func TestArcDefaultHTTPClient(t *testing.T) {
 	// Stub http.DefaultTransport so the nil-Client -> http.DefaultClient
 	// fallback path is exercised without reaching arc.example.com.
-	withStubTransport(t, func(_ *http.Request) (*http.Response, error) {
+	tu.WithStubTransport(t, func(_ *http.Request) (*http.Response, error) {
 		seen := SEEN_ON_NETWORK
 		body, err := json.Marshal(ArcResponse{
 			Status:   200,

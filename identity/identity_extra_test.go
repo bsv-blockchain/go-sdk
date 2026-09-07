@@ -11,6 +11,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/overlay/topic"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-sdk/wallet/testcertificates"
 )
@@ -355,7 +356,7 @@ func TestTestablePubliclyRevealAttributesSimpleViaNetwork(t *testing.T) {
 	t.Run("reaches broadcast via simple API (failure path from broadcast)", func(t *testing.T) {
 		// Intercept the overlay broadcaster's default HTTP client so the
 		// broadcast fails immediately instead of doing real DNS/HTTP.
-		stubTransportUnreachable(t)
+		tu.WithUnreachableTransport(t)
 
 		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(
 			t, 203,
@@ -488,7 +489,7 @@ func setupRevealAttributesClient(
 
 func TestTestablePubliclyRevealAttributesGetNetworkPath(t *testing.T) {
 	t.Run("reaches GetNetwork after successful transaction creation", func(t *testing.T) {
-		stubTransportUnreachable(t)
+		tu.WithUnreachableTransport(t)
 		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(
 			t, 200,
 			func(mw *wallet.TestWallet) {
@@ -517,7 +518,7 @@ func TestTestablePubliclyRevealAttributesGetNetworkPath(t *testing.T) {
 	})
 
 	t.Run("mainnet path uses mainnet broadcaster", func(t *testing.T) {
-		stubTransportUnreachable(t)
+		tu.WithUnreachableTransport(t)
 		testableClient, cert, fieldsToReveal := setupRevealAttributesClient(
 			t, 202,
 			func(mw *wallet.TestWallet) {

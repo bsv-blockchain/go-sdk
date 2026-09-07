@@ -10,9 +10,9 @@ import (
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
-	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 // mockBroadcastFacilitator records the hosts it was asked to send to and returns
@@ -210,42 +210,13 @@ func (m *mockLookupFacilitator) Lookup(_ context.Context, _ string, _ *lookup.Lo
 	return m.answer, m.err
 }
 
-// adminTokenBeef hand-builds a BEEF whose single output is a pushdrop admin
-// token (SHIP/SLAP advertisement) for the given domain and topic/service, so
-// admintoken.Decode recognizes it without needing a wallet.
-func adminTokenBeef(t *testing.T, protocol, domain, topicOrService string) []byte {
-	t.Helper()
-	priv, err := ec.NewPrivateKey()
-	require.NoError(t, err)
-	pub := priv.PubKey().Compressed()
-
-	s := &script.Script{}
-	require.NoError(t, s.AppendPushData(pub)) // locking public key
-	require.NoError(t, s.AppendOpcodes(script.OpCHECKSIG))
-	require.NoError(t, s.AppendPushData([]byte(protocol)))       // field 0: protocol
-	require.NoError(t, s.AppendPushData(pub))                    // field 1: identity key
-	require.NoError(t, s.AppendPushData([]byte(domain)))         // field 2: domain
-	require.NoError(t, s.AppendPushData([]byte(topicOrService))) // field 3: topic/service
-	require.NoError(t, s.AppendOpcodes(script.Op2DROP))
-	require.NoError(t, s.AppendOpcodes(script.Op2DROP))
-
-	tx := transaction.NewTransaction()
-	src := transaction.NewTransaction()
-	src.AddOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: &script.Script{}})
-	tx.AddInputFromTx(src, 0, nil)
-	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 500, LockingScript: s})
-	beef, err := tx.BEEF()
-	require.NoError(t, err)
-	return beef
-}
-
 // TestBroadcastCtxDiscoversInterestedHosts covers the non-local path where the
 // broadcaster resolves SHIP advertisements to find interested hosts and then
 // sends to them.
 func TestBroadcastCtxDiscoversInterestedHosts(t *testing.T) {
 	tx := broadcastTestTx(t)
 
-	beef := adminTokenBeef(t, "SHIP", "http://interested-host", "tm_test")
+	beef := tu.BuildAdminTokenBeef(t, "SHIP", "http://interested-host", "tm_test")
 	resolver := lookup.NewLookupResolver(&lookup.LookupResolver{
 		Facilitator: &mockLookupFacilitator{answer: &lookup.LookupAnswer{
 			Type:    lookup.AnswerTypeOutputList,

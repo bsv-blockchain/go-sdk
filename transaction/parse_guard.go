@@ -36,3 +36,17 @@ func guardParseCount(r io.Reader, count uint64, what string) error {
 	}
 	return nil
 }
+
+// readGuardedBytes reads exactly l bytes from r into a freshly allocated slice,
+// first rejecting (via guardParseCount) a length larger than r's remaining bytes
+// so a malformed length cannot trigger a makeslice panic. It returns the bytes
+// read alongside the buffer so callers can account for the read and wrap errors
+// with their own context.
+func readGuardedBytes(r io.Reader, l uint64, what string) ([]byte, int, error) {
+	if err := guardParseCount(r, l, what); err != nil {
+		return nil, 0, err
+	}
+	buf := make([]byte, l)
+	n, err := io.ReadFull(r, buf)
+	return buf, n, err
+}

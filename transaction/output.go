@@ -50,11 +50,7 @@ func (o *TransactionOutput) ReadFrom(r io.Reader) (int64, error) {
 		return bytesRead, err
 	}
 
-	if err = guardParseCount(r, uint64(l), "output locking script"); err != nil {
-		return bytesRead, err
-	}
-	scriptBytes := make([]byte, l)
-	n, err = io.ReadFull(r, scriptBytes)
+	scriptBytes, n, err := readGuardedBytes(r, uint64(l), "output locking script")
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, errors.Wrapf(err, "lockingScript(%d): got %d bytes", l, n)
