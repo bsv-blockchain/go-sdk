@@ -31,18 +31,34 @@ type byteLenReader interface {
 // Valid transactions are unaffected regardless of size. Streaming readers that
 // cannot report a length are left unguarded — they are not the untrusted-binary
 // entry points, and bounding them could reject legitimate streamed data.
+// maxParseAllocBytes caps the allocation a single count/length may request from
+// a reader that cannot report its remaining bytes (a streaming io.Reader). It is
+// far larger than any legitimate transaction field or element count, but small
+// enough that the resulting make() cannot exceed the runtime's maximum slice
+// size and panic with "makeslice: len out of range".
+const maxParseAllocBytes uint64 = 1 << 32 // 4 GiB
+
 func guardParseCount(r io.Reader, count uint64, minBytesPerElem int, what string) error {
-	lr, ok := r.(byteLenReader)
-	if !ok {
-		return nil
-	}
 	if minBytesPerElem < 1 {
 		minBytesPerElem = 1
 	}
-	remaining := lr.Len()
-	maxCount := uint64(remaining) / uint64(minBytesPerElem) //nolint:gosec // G115 -- Len() and minBytesPerElem are non-negative
-	if count > maxCount {
-		return fmt.Errorf("%s count %d exceeds capacity of %d remaining bytes", what, count, remaining)
+	m := uint64(minBytesPerElem)
+
+	if lr, ok := r.(byteLenReader); ok {
+		// The bytes are already in memory, so the remaining length is an exact
+		// upper bound on how many elements can possibly follow.
+		remaining := lr.Len()
+		if maxCount := uint64(remaining) / m; count > maxCount { //nolint:gosec // G115 -- Len() is non-negative
+			return fmt.Errorf("%s count %d exceeds capacity of %d remaining bytes", what, count, remaining)
+		}
+		return nil
+	}
+
+	// A streaming reader cannot report its remaining bytes, so fall back to a
+	// generous absolute ceiling. This keeps an attacker-controlled count on an
+	// unbounded reader from reaching make() with a size that would panic.
+	if maxCount := maxParseAllocBytes / m; count > maxCount {
+		return fmt.Errorf("%s count %d exceeds the maximum for a streamed reader", what, count)
 	}
 	return nil
 }

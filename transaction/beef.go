@@ -433,9 +433,17 @@ func readAllTransactions(reader *bytes.Reader, BUMPs []*MerklePath) (map[string]
 		return nil, nil, err
 	}
 
+	// Each BEEF entry is at least a 10-byte transaction plus a has-bump byte, so
+	// a count larger than the remaining bytes can accommodate is malformed. This
+	// also keeps the uint64 count from being silently truncated by an int loop
+	// bound.
+	if err = guardParseCount(reader, uint64(numberOfTransactions), 10, "BEEF transactions"); err != nil {
+		return nil, nil, err
+	}
+
 	transactions := make(map[string]*Transaction, 0)
 	var tx *Transaction
-	for i := 0; i < int(numberOfTransactions); i++ {
+	for i := uint64(0); i < uint64(numberOfTransactions); i++ {
 		tx = &Transaction{}
 		_, err = tx.ReadFrom(reader)
 		if err != nil {

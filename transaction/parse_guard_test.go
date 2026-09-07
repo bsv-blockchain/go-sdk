@@ -3,6 +3,7 @@ package transaction
 import (
 	"bytes"
 	"encoding/binary"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -51,10 +52,17 @@ func TestGuardParseCount(t *testing.T) {
 }
 
 // TestGuardParseCountUnboundedReader verifies that a reader which cannot report
-// its remaining length is left unguarded (returns nil).
+// its remaining length still rejects an implausibly large count (so make cannot
+// panic) while allowing a plausible one.
 func TestGuardParseCountUnboundedReader(t *testing.T) {
 	r := nonLenReader{r: bytes.NewReader(make([]byte, 4))}
-	require.NoError(t, guardParseCount(r, 1<<62, 1, "thing"))
+
+	// A count beyond the streamed-reader ceiling is rejected instead of reaching
+	// make() and panicking.
+	require.ErrorContains(t, guardParseCount(r, 1<<62, 1, "thing"), "exceeds")
+
+	// A modest count is still allowed on an unbounded reader.
+	require.NoError(t, guardParseCount(r, 1024, 1, "thing"))
 }
 
 // TestNewTransactionFromBEEFBumpIndexGuard is a regression test for the BEEF
@@ -76,4 +84,18 @@ func TestNewTransactionFromBEEFBumpIndexGuard(t *testing.T) {
 	_, err := NewTransactionFromBEEF(buf.Bytes())
 	require.Error(t, err)
 	require.ErrorContains(t, err, "BUMP index")
+}
+
+// TestNewTransactionFromBEEFHugeTxCount is a regression test for the BEEF parser:
+// a transaction count that would overflow an int loop bound must return an error
+// instead of silently parsing nothing and reporting success.
+func TestNewTransactionFromBEEFHugeTxCount(t *testing.T) {
+	var buf bytes.Buffer
+	require.NoError(t, binary.Write(&buf, binary.LittleEndian, BEEF_V1))
+	buf.Write(util.VarInt(0).Bytes())              // 0 BUMPs
+	buf.Write(util.VarInt(math.MaxUint64).Bytes()) // absurd transaction count
+
+	_, err := NewTransactionFromBEEF(buf.Bytes())
+	require.Error(t, err)
+	require.ErrorContains(t, err, "exceeds")
 }
