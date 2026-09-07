@@ -47,7 +47,12 @@ func TestNewInputFromReader(t *testing.T) {
 		i := &TransactionInput{}
 		s, err := i.readFrom(bytes.NewReader([]byte("000000000000000000000000000000000000000000000000000000000000000000000000")), false)
 		require.Error(t, err)
-		require.Equal(t, int64(72), s)
+		// The script-length guard rejects a claimed length larger than the
+		// bytes that remain before allocating, so parsing stops right after the
+		// 32-byte txid, 4-byte index and 1-byte length varint (37 bytes) rather
+		// than consuming the remaining bytes first.
+		require.ErrorContains(t, err, "exceeds")
+		require.Equal(t, int64(37), s)
 	})
 }
 

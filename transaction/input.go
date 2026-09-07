@@ -102,6 +102,9 @@ func (i *TransactionInput) readFrom(r io.Reader, extended bool) (int64, error) {
 		return bytesRead, err
 	}
 
+	if err = guardParseCount(r, uint64(l), "input script"); err != nil {
+		return bytesRead, err
+	}
 	scriptBytes := make([]byte, l)
 	n, err = io.ReadFull(r, scriptBytes)
 	bytesRead += int64(n)
@@ -139,6 +142,9 @@ func (i *TransactionInput) readFrom(r io.Reader, extended bool) (int64, error) {
 			return bytesRead, err
 		}
 
+		if err = guardParseCount(r, uint64(scriptLen), "input source script"); err != nil {
+			return bytesRead, err
+		}
 		scriptBytes := make([]byte, scriptLen)
 		n, err := io.ReadFull(r, scriptBytes)
 		bytesRead += int64(n)

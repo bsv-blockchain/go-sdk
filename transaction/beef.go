@@ -404,6 +404,9 @@ func readBUMPs(reader *bytes.Reader) ([]*MerklePath, error) {
 		return nil, err
 	}
 
+	if err = guardParseCount(reader, uint64(numberOfBUMPs), "BEEF BUMPs"); err != nil {
+		return nil, err
+	}
 	BUMPs := make([]*MerklePath, numberOfBUMPs)
 	for i := 0; i < int(numberOfBUMPs); i++ {
 		BUMPs[i], err = NewMerklePathFromReader(reader)
@@ -448,6 +451,9 @@ func readAllTransactions(reader *bytes.Reader, BUMPs []*MerklePath) (map[string]
 			_, err = pathIndex.ReadFrom(reader)
 			if err != nil {
 				return nil, nil, err
+			}
+			if uint64(pathIndex) >= uint64(len(BUMPs)) {
+				return nil, nil, fmt.Errorf("BEEF transaction references BUMP index %d but only %d BUMPs are present", uint64(pathIndex), len(BUMPs))
 			}
 			tx.MerklePath = BUMPs[int(pathIndex)]
 		}

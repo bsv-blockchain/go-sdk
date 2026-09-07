@@ -193,6 +193,9 @@ func (tt *Transactions) ReadFrom(r io.Reader) (int64, error) {
 		return bytesRead, err
 	}
 
+	if err = guardParseCount(r, uint64(txCount), "transactions"); err != nil {
+		return bytesRead, err
+	}
 	*tt = make([]*Transaction, txCount)
 
 	for i := uint64(0); i < uint64(txCount); i++ {
