@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
@@ -101,6 +102,73 @@ func TestFindCompetentHostsSkipsNonOutputList(t *testing.T) {
 		HostOverrides:   map[string][]string{},
 		AdditionalHosts: map[string][]string{},
 		SLAPTrackers:    []string{"http://tracker-a"},
+	}
+
+	hosts, err := r.FindCompetentHosts(context.Background(), "ls_service")
+	require.NoError(t, err)
+	require.Empty(t, hosts)
+}
+
+// slapAdminBeef hand-builds a BEEF whose single output is a pushdrop SLAP admin
+// token advertising the given service at the given domain, so admintoken.Decode
+// recognizes it without a wallet.
+func slapAdminBeef(t *testing.T, domain, service string) []byte {
+	t.Helper()
+	priv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	pub := priv.PubKey().Compressed()
+
+	s := &script.Script{}
+	require.NoError(t, s.AppendPushData(pub))
+	require.NoError(t, s.AppendOpcodes(script.OpCHECKSIG))
+	require.NoError(t, s.AppendPushData([]byte("SLAP")))  // field 0: protocol
+	require.NoError(t, s.AppendPushData(pub))             // field 1: identity key
+	require.NoError(t, s.AppendPushData([]byte(domain)))  // field 2: domain
+	require.NoError(t, s.AppendPushData([]byte(service))) // field 3: service
+	require.NoError(t, s.AppendOpcodes(script.Op2DROP))
+	require.NoError(t, s.AppendOpcodes(script.Op2DROP))
+
+	tx := transaction.NewTransaction()
+	src := transaction.NewTransaction()
+	src.AddOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: &script.Script{}})
+	tx.AddInputFromTx(src, 0, nil)
+	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 500, LockingScript: s})
+	beef, err := tx.BEEF()
+	require.NoError(t, err)
+	return beef
+}
+
+// TestFindCompetentHostsReturnsDomain covers the SLAP-decode success path: a
+// tracker advertises a competent host for the requested service.
+func TestFindCompetentHostsReturnsDomain(t *testing.T) {
+	beef := slapAdminBeef(t, "https://competent-host", "ls_service")
+	r := &LookupResolver{
+		Facilitator: &mockFacilitator{answer: &LookupAnswer{
+			Type:    AnswerTypeOutputList,
+			Outputs: []*OutputListItem{{Beef: beef, OutputIndex: 0}},
+		}},
+		HostOverrides:   map[string][]string{},
+		AdditionalHosts: map[string][]string{},
+		SLAPTrackers:    []string{"http://tracker"},
+	}
+
+	hosts, err := r.FindCompetentHosts(context.Background(), "ls_service")
+	require.NoError(t, err)
+	require.Equal(t, []string{"https://competent-host"}, hosts)
+}
+
+// TestFindCompetentHostsIgnoresWrongService covers the branch where a SLAP token
+// advertises a different service and is skipped.
+func TestFindCompetentHostsIgnoresWrongService(t *testing.T) {
+	beef := slapAdminBeef(t, "https://competent-host", "ls_other")
+	r := &LookupResolver{
+		Facilitator: &mockFacilitator{answer: &LookupAnswer{
+			Type:    AnswerTypeOutputList,
+			Outputs: []*OutputListItem{{Beef: beef, OutputIndex: 0}},
+		}},
+		HostOverrides:   map[string][]string{},
+		AdditionalHosts: map[string][]string{},
+		SLAPTrackers:    []string{"http://tracker"},
 	}
 
 	hosts, err := r.FindCompetentHosts(context.Background(), "ls_service")
