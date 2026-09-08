@@ -89,6 +89,20 @@ func (o *TransactionOutput) appendTo(buf []byte) []byte {
 	return buf
 }
 
+// writeTo streams the raw serialized output to w (matching Bytes()) using
+// scratch (len >= 9) as a stack buffer, adding the bytes written to *total.
+func (o *TransactionOutput) writeTo(w io.Writer, scratch []byte, total *int64) error {
+	binary.LittleEndian.PutUint64(scratch[:8], o.Satoshis)
+	if err := writeAll(w, scratch[:8], total); err != nil {
+		return err
+	}
+	n := util.VarInt(uint64(len(*o.LockingScript))).PutBytes(scratch)
+	if err := writeAll(w, scratch[:n], total); err != nil {
+		return err
+	}
+	return writeAll(w, *o.LockingScript, total)
+}
+
 // size returns the serialized length of the output in bytes, matching
 // Bytes(), without allocating.
 func (o *TransactionOutput) size() int {

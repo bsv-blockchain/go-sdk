@@ -191,6 +191,34 @@ func (i *TransactionInput) appendTo(buf []byte, clearScript bool) []byte {
 	return buf
 }
 
+// writeTo streams the raw serialized input to w (matching Bytes(false)) using
+// scratch (len >= 9) as a stack buffer, adding the bytes written to *total.
+func (i *TransactionInput) writeTo(w io.Writer, scratch []byte, total *int64) error {
+	if err := writeAll(w, i.SourceTXID[:], total); err != nil {
+		return err
+	}
+	binary.LittleEndian.PutUint32(scratch[:4], i.SourceTxOutIndex)
+	if err := writeAll(w, scratch[:4], total); err != nil {
+		return err
+	}
+	if i.UnlockingScript == nil {
+		scratch[0] = 0x00
+		if err := writeAll(w, scratch[:1], total); err != nil {
+			return err
+		}
+	} else {
+		n := util.VarInt(uint64(len(*i.UnlockingScript))).PutBytes(scratch)
+		if err := writeAll(w, scratch[:n], total); err != nil {
+			return err
+		}
+		if err := writeAll(w, *i.UnlockingScript, total); err != nil {
+			return err
+		}
+	}
+	binary.LittleEndian.PutUint32(scratch[:4], i.SequenceNumber)
+	return writeAll(w, scratch[:4], total)
+}
+
 // size returns the serialized length of the input in bytes, matching
 // Bytes(clearScript), without allocating.
 func (i *TransactionInput) size(clearScript bool) int {

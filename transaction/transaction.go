@@ -388,13 +388,17 @@ func (tx *Transaction) ShallowClone() *Transaction {
 }
 
 func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended bool) []byte {
-	// Pre-size the buffer exactly, then append each field directly into it.
-	// This avoids the per-input/per-output throwaway []byte allocations the
-	// previous two-pass implementation made (one Bytes() per element, copied
-	// in and discarded). Output bytes are identical; guarded by the golden
-	// raw/EF hex tests and the parser fuzz round-trips.
-	h := make([]byte, 0, tx.serializedSize(index, lockingScript, extended))
+	// Pre-size the buffer exactly, then append each field directly into it via
+	// appendBytesHelper. This avoids the per-input/per-output throwaway []byte
+	// allocations the previous two-pass implementation made (one Bytes() per
+	// element, copied in and discarded). Output bytes are identical; guarded by
+	// the golden raw/EF hex tests and the parser fuzz round-trips.
+	return tx.appendBytesHelper(make([]byte, 0, tx.serializedSize(index, lockingScript, extended)), index, lockingScript, extended)
+}
 
+// appendBytesHelper appends the serialized transaction to h and returns the
+// extended slice. It performs no allocation when h has sufficient capacity.
+func (tx *Transaction) appendBytesHelper(h []byte, index int, lockingScript []byte, extended bool) []byte {
 	h = binary.LittleEndian.AppendUint32(h, tx.Version)
 
 	if extended {
@@ -427,9 +431,61 @@ func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended b
 		h = out.appendTo(h)
 	}
 
-	h = binary.LittleEndian.AppendUint32(h, tx.LockTime)
+	return binary.LittleEndian.AppendUint32(h, tx.LockTime)
+}
 
-	return h
+// AppendBytes appends the raw serialized transaction to dst and returns the
+// extended slice. When dst has sufficient spare capacity -- e.g. pre-allocated
+// with make([]byte, 0, tx.Size()) -- this performs no heap allocation, letting
+// callers serialize many transactions into one reused buffer. The appended
+// bytes are identical to Bytes().
+func (tx *Transaction) AppendBytes(dst []byte) []byte {
+	return tx.appendBytesHelper(dst, 0, nil, false)
+}
+
+// WriteTo streams the raw serialized transaction to w, implementing io.WriterTo.
+// It writes field by field using only a small stack buffer, so it never
+// allocates a copy of the whole transaction (wrap w in a bufio.Writer if it is
+// unbuffered). The bytes written are identical to Bytes().
+func (tx *Transaction) WriteTo(w io.Writer) (int64, error) {
+	var total int64
+	var scratch [9]byte
+
+	binary.LittleEndian.PutUint32(scratch[:4], tx.Version)
+	if err := writeAll(w, scratch[:4], &total); err != nil {
+		return total, err
+	}
+
+	n := util.VarInt(uint64(len(tx.Inputs))).PutBytes(scratch[:])
+	if err := writeAll(w, scratch[:n], &total); err != nil {
+		return total, err
+	}
+	for _, in := range tx.Inputs {
+		if err := in.writeTo(w, scratch[:], &total); err != nil {
+			return total, err
+		}
+	}
+
+	n = util.VarInt(uint64(len(tx.Outputs))).PutBytes(scratch[:])
+	if err := writeAll(w, scratch[:n], &total); err != nil {
+		return total, err
+	}
+	for _, out := range tx.Outputs {
+		if err := out.writeTo(w, scratch[:], &total); err != nil {
+			return total, err
+		}
+	}
+
+	binary.LittleEndian.PutUint32(scratch[:4], tx.LockTime)
+	err := writeAll(w, scratch[:4], &total)
+	return total, err
+}
+
+// writeAll writes all of b to w and adds the number of bytes written to *total.
+func writeAll(w io.Writer, b []byte, total *int64) error {
+	n, err := w.Write(b)
+	*total += int64(n)
+	return err
 }
 
 // Size will return the size of tx in bytes.
