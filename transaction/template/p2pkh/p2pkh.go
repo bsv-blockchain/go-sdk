@@ -59,13 +59,31 @@ type P2PKH struct {
 }
 
 func (p *P2PKH) Sign(tx *transaction.Transaction, inputIndex uint32) (*script.Script, error) {
+	return p.sign(tx, inputIndex, nil)
+}
+
+// SignWithCache signs using a shared transaction.SigHashCache so that signing
+// every input of a transaction is O(N) rather than O(N^2). It implements
+// transaction.UnlockingScriptTemplateWithCache and produces a script identical
+// to Sign for the same input and flag.
+func (p *P2PKH) SignWithCache(tx *transaction.Transaction, inputIndex uint32, cache *transaction.SigHashCache) (*script.Script, error) {
+	return p.sign(tx, inputIndex, cache)
+}
+
+func (p *P2PKH) sign(tx *transaction.Transaction, inputIndex uint32, cache *transaction.SigHashCache) (*script.Script, error) {
 	input := tx.Inputs[inputIndex]
 
 	if input.SourceTxOutput() == nil {
 		return nil, transaction.ErrEmptyPreviousTx
 	}
 
-	sh, err := tx.CalcInputSignatureHash(inputIndex, *p.SigHashFlag)
+	var sh []byte
+	var err error
+	if cache != nil {
+		sh, err = tx.CalcInputSignatureHashWithCache(inputIndex, *p.SigHashFlag, cache)
+	} else {
+		sh, err = tx.CalcInputSignatureHash(inputIndex, *p.SigHashFlag)
+	}
 	if err != nil {
 		return nil, err
 	}

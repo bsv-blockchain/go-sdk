@@ -496,14 +496,16 @@ func (tx *Transaction) Sign() error {
 	if err != nil {
 		return err
 	}
+	var cache *SigHashCache
 	for vin, i := range tx.Inputs {
-		if i.UnlockingScriptTemplate != nil {
-			unlock, err := i.UnlockingScriptTemplate.Sign(tx, uint32(vin))
-			if err != nil {
-				return err
-			}
-			i.UnlockingScript = unlock
+		if i.UnlockingScriptTemplate == nil {
+			continue
 		}
+		unlock, err := tx.signWithTemplate(i, uint32(vin), &cache)
+		if err != nil {
+			return err
+		}
+		i.UnlockingScript = unlock
 	}
 	return nil
 }
@@ -514,18 +516,33 @@ func (tx *Transaction) SignUnsigned() error {
 	if err != nil {
 		return err
 	}
+	var cache *SigHashCache
 	for vin, i := range tx.Inputs {
-		if i.UnlockingScript == nil {
-			if i.UnlockingScriptTemplate != nil {
-				unlock, err := i.UnlockingScriptTemplate.Sign(tx, uint32(vin))
-				if err != nil {
-					return err
-				}
-				i.UnlockingScript = unlock
+		if i.UnlockingScript == nil && i.UnlockingScriptTemplate != nil {
+			unlock, err := tx.signWithTemplate(i, uint32(vin), &cache)
+			if err != nil {
+				return err
 			}
+			i.UnlockingScript = unlock
 		}
 	}
 	return nil
+}
+
+// signWithTemplate signs input in with its unlocking-script template. When the
+// template implements UnlockingScriptTemplateWithCache the shared BIP143
+// SigHashCache is used, built lazily on first use via cache and reused for the
+// rest of the signing pass. The cache stays valid across the pass because the
+// midstate hashes depend only on the prevouts, sequences and outputs, not on the
+// unlocking scripts being assigned as signing proceeds.
+func (tx *Transaction) signWithTemplate(in *TransactionInput, vin uint32, cache **SigHashCache) (*script.Script, error) {
+	if wc, ok := in.UnlockingScriptTemplate.(UnlockingScriptTemplateWithCache); ok {
+		if *cache == nil {
+			*cache = tx.NewSigHashCache()
+		}
+		return wc.SignWithCache(tx, vin, *cache)
+	}
+	return in.UnlockingScriptTemplate.Sign(tx, vin)
 }
 
 func (tx *Transaction) checkFeeComputed() error {
