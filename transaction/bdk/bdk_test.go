@@ -240,3 +240,31 @@ func mustTestTransaction(t *testing.T) *transaction.Transaction {
 	require.NoError(t, err)
 	return tx
 }
+
+// TestValidatorNilAndWrapPaths covers the nil-validator guards and the
+// WrapValidator success path that the happy-path tests do not exercise.
+func TestValidatorNilAndWrapPaths(t *testing.T) {
+	var nilValidator *bdk.Validator
+	require.Nil(t, nilValidator.Native())
+
+	tx := mustTestTransaction(t)
+	heights := []int32{testUTXOHeight}
+
+	require.ErrorIs(t, nilValidator.VerifyScript(tx, heights, testBlockHeight, true), bdk.ErrNilValidator)
+	require.ErrorIs(t, nilValidator.VerifyScriptWithCustomFlags(tx, heights, testBlockHeight, true, nil), bdk.ErrNilValidator)
+	_, err := nilValidator.GetSigOpCount(tx, heights, testBlockHeight, true, true)
+	require.ErrorIs(t, err, bdk.ErrNilValidator)
+
+	// WrapValidator around an existing native validator succeeds and is usable.
+	base, err := bdk.NewValidator("main")
+	require.NoError(t, err)
+	wrapped, err := bdk.WrapValidator(base.Native())
+	require.NoError(t, err)
+	require.NotNil(t, wrapped.Native())
+	require.NoError(t, wrapped.VerifyScript(tx, heights, testBlockHeight, true))
+
+	// validationArguments error paths surfaced through VerifyScript/GetSigOpCount.
+	require.ErrorIs(t, base.VerifyScript(nil, nil, testBlockHeight, true), bdk.ErrNilTransaction)
+	_, err = base.GetSigOpCount(nil, nil, testBlockHeight, true, true)
+	require.ErrorIs(t, err, bdk.ErrNilTransaction)
+}

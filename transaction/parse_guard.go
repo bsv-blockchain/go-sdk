@@ -1,0 +1,83 @@
+package transaction
+
+import (
+	"fmt"
+	"io"
+)
+
+// byteLenReader is implemented by the in-memory readers the binary parsers are
+// actually driven by (*bytes.Reader, *bytes.Buffer, *strings.Reader): it reports
+// the number of unread bytes remaining.
+type byteLenReader interface {
+	Len() int
+}
+
+// guardParseCount protects a slice preallocation against an attacker-controlled
+// element count read from untrusted binary. When the reader can report its
+// remaining bytes — which is the case for every entry point that parses a byte
+// slice (NewTransactionFromBytes, NewTransactionFromBEEF, NewMerklePathFromBinary
+// all wrap the input in a *bytes.Reader) — a count that could not possibly be
+// satisfied by the bytes that remain is rejected before make() is handed an
+// oversized length. This turns a "makeslice: len out of range" panic on
+// malformed input into an ordinary error.
+//
+// minBytesPerElem is the minimum number of input bytes each element consumes
+// while parsing (1 for a byte slice). For pointer-element slices this keeps the
+// bound tight — an N-byte message cannot describe more than N/minBytesPerElem
+// elements — so a small message cannot force a large (count * pointer-size)
+// allocation. It must never exceed the true per-element minimum, or valid input
+// would be rejected.
+//
+// Valid transactions are unaffected regardless of size. Streaming readers that
+// cannot report a length are left unguarded — they are not the untrusted-binary
+// entry points, and bounding them could reject legitimate streamed data.
+// maxParseAllocBytes caps the allocation a single count/length may request from
+// a reader that cannot report its remaining bytes (a streaming io.Reader). It is
+// far larger than any legitimate transaction field or element count, but small
+// enough that the resulting make() cannot exceed the runtime's maximum slice
+// size and panic with "makeslice: len out of range".
+const maxParseAllocBytes uint64 = 1 << 32 // 4 GiB
+
+func guardParseCount(r io.Reader, count uint64, minBytesPerElem int, what string) error {
+	if minBytesPerElem < 1 {
+		minBytesPerElem = 1
+	}
+	m := uint64(minBytesPerElem)
+
+	if lr, ok := r.(byteLenReader); ok {
+		// The bytes are already in memory, so the remaining length is an exact
+		// upper bound on how many elements can possibly follow.
+		remaining := lr.Len()
+		if maxCount := uint64(remaining) / m; count > maxCount { //nolint:gosec // G115 -- Len() is non-negative
+			return fmt.Errorf("%s count %d exceeds capacity of %d remaining bytes", what, count, remaining)
+		}
+		return nil
+	}
+
+	// A streaming reader cannot report its remaining bytes, so fall back to a
+	// generous absolute ceiling. Clamp it to the platform's maximum int as well,
+	// so the subsequent make([]T, count) cannot overflow the length on 32-bit
+	// builds and panic with "makeslice: len out of range".
+	maxCount := maxParseAllocBytes / m
+	if maxInt := uint64(^uint(0) >> 1); maxCount > maxInt {
+		maxCount = maxInt
+	}
+	if count > maxCount {
+		return fmt.Errorf("%s count %d exceeds the maximum for a streamed reader", what, count)
+	}
+	return nil
+}
+
+// readGuardedBytes reads exactly l bytes from r into a freshly allocated slice,
+// first rejecting (via guardParseCount) a length larger than r's remaining bytes
+// so a malformed length cannot trigger a makeslice panic. It returns the bytes
+// read alongside the buffer so callers can account for the read and wrap errors
+// with their own context.
+func readGuardedBytes(r io.Reader, l uint64, what string) ([]byte, int, error) {
+	if err := guardParseCount(r, l, 1, what); err != nil {
+		return nil, 0, err
+	}
+	buf := make([]byte, l)
+	n, err := io.ReadFull(r, buf)
+	return buf, n, err
+}

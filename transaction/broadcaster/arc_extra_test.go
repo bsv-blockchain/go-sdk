@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 const arcExampleURL = "https://arc.example.com"
@@ -300,14 +302,30 @@ func TestArcBroadcastFailureNonSuccessStatus(t *testing.T) {
 }
 
 func TestArcDefaultHTTPClient(t *testing.T) {
-	// When Client is nil, it defaults to http.DefaultClient
+	// Stub http.DefaultTransport so the nil-Client -> http.DefaultClient
+	// fallback path is exercised without reaching arc.example.com.
+	tu.WithStubTransport(t, func(_ *http.Request) (*http.Response, error) {
+		seen := SEEN_ON_NETWORK
+		body, err := json.Marshal(ArcResponse{
+			Status:   200,
+			TxStatus: &seen,
+			Txid:     "4d76b00f29e480e0a933cef9d9ffe303d6ab919e2cdb265dd2cea41089baa85a",
+		})
+		require.NoError(t, err)
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(string(body))),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	// When Client is nil, it defaults to http.DefaultClient.
 	a := &Arc{
 		ApiUrl: arcExampleURL,
 	}
-	// This will fail since we're not calling a real endpoint, but it exercises the nil check
 	tx := &transaction.Transaction{}
-	// ArcBroadcast will try to call the real URL which will fail; but code for nil check will be exercised
-	_, err := a.ArcBroadcast(context.Background(), tx)
-	// Error is expected since we can't connect to arc.example.com
-	_ = err
+	resp, err := a.ArcBroadcast(context.Background(), tx)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, 200, resp.Status)
 }
