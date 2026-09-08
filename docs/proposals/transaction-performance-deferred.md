@@ -50,25 +50,34 @@ streaming behavior is untouched.
 
 ## 2. Legacy (pre-fork) sighash preimage optimization
 
-**Current** (`signaturehash.go` `CalcInputPreimageLegacy`): `ShallowClone`s the
-whole transaction per call, then serializes into an un-presized `make([]byte, 0)`
-with a `make([]byte, 4/8)` scratch slice and a `VarInt.Bytes()` allocation per
-input and per output (inputs=64: ~333 allocations for a single preimage).
+*Implemented on this branch.* `CalcInputPreimageLegacy` built the preimage in an
+un-presized `make([]byte, 0)` with a `make([]byte, 4/8)` scratch, a
+`VarInt.Bytes()` and a `SourceTXID.CloneBytes()` per input and per output
+(inputs=64: ~333 allocations). It now computes the exact preimage length up front
+— from each input's `SourceTxScript` (the field the legacy format serializes,
+which is why `txCopy.Size()`, measuring unlocking scripts, cannot be used) — and
+appends with the shared zero-alloc writers (`binary.LittleEndian.AppendUint32/64`,
+`appendVarInt`, `SourceTXID[:]`), exactly as the FORKID `assemblePreimage` does.
 
-**Proposed:** pre-size the buffer via arithmetic and append with the shared
-zero-alloc writers (as done for the BIP143 path), and evaluate eliminating the
-per-call `ShallowClone` by serializing the modified view directly.
+**Prerequisite (done first):** the legacy flags were golden-pinned before the
+refactor. `TestTx_CalcInputPreimageLegacy` and `TestTx_CalcInputSignatureHash`
+now cover `None`, `Single` and every `AnyOneCanPay` variant across a 1-input and
+a 2-input/3-output fixture; the expected bytes were captured from the current
+implementation and **independently confirmed byte-for-byte against go-bt's
+`CalcInputPreimageLegacy`** (all 18 preimages identical), so the refactor is
+provably byte-identical.
 
-**Why deferred:** the legacy (non-`FORKID`) algorithm is effectively unused on
-BSV, and — unlike the BIP143 path — its exact bytes are **not** pinned by a
-golden test (`TestGoldenSigHashDigests` covers only `FORKID` flags). Landing it
-safely requires first adding a legacy golden characterization test, then a
-careful byte-for-byte refactor of consensus-critical code, for a rarely-hit path.
+**Kept:** the per-call `ShallowClone` (it isolates the per-flag input/output
+mutation from the caller's transaction). Dropping it — serializing the modified
+view directly — would remove the bulk of the remaining allocations but is a
+separate, riskier change; it stays a follow-up.
 
-**Prerequisite:** add golden digests for the legacy flags (`All`, `None`,
-`Single`, each with/without `AnyOneCanPay`) before touching the code.
+**Result** (`-benchtime=100ms -count=10`, geomean over flags × inputs): sec/op
+−18.6%, B/op −26.2%, allocs −10.9%; e.g. `inputs=64/All` 3772n → 2919n (−23%),
+21.5Ki → 13.6Ki (−37%).
 
-**Risk:** Medium (consensus-critical, currently under-pinned).
+**Risk:** Medium (consensus-critical) — landed with the legacy path now
+golden-pinned and cross-checked against go-bt.
 
 <br>
 
@@ -197,7 +206,7 @@ elimination landed; the `ComputeRoot` algorithmic part remains.
 | # | Candidate | Kind | Risk |
 |---|-----------|------|------|
 | 1 | Deserialization scratch reuse + guarded pre-size — *implemented* | pure internal | Low |
-| 2 | Legacy sighash preimage | pure internal | Medium (under-pinned) |
+| 2 | Legacy sighash preimage — *implemented* | pure internal | Medium (now golden-pinned + cross-checked) |
 | 3 | `SetTxHash` opt-in txid cache — *implemented* | additive | Medium (staleness) |
 | 4 | `AppendBytes`/`WriteTo` — *implemented* | additive | Low |
 | 5 | Arena allocator | additive | Medium (lifetime) |
@@ -205,7 +214,9 @@ elimination landed; the `ComputeRoot` algorithmic part remains.
 | 7 | Merkle/BEEF: buffer reuse + BEEF copy elimination *implemented*; ComputeRoot maps deferred | pure internal | Medium (correctness) |
 | 8 | PushDrop cache, bench normalize (+ residual `ValidateTransactions` txid) | mixed | Low |
 
-**Recommended sequencing:** the remaining higher-risk internal refactors —
-legacy sighash (2) and the `ComputeRoot`/BEEF algorithmic parts of (7) — each
-with a characterization test added first, then the arena allocator (5) and the
-`Clone()` rewrite (6) as separate reviewed changes.
+**Recommended sequencing:** the deserialization scratch reuse + guarded pre-size
+(1), the BEEF copy elimination (part of 7) and the legacy sighash preimage (2)
+have landed, each with a characterization test added first. The remaining
+higher-risk items are the `ComputeRoot` per-level maps (the algorithmic part of
+7), then the arena allocator (5) and the `Clone()` rewrite (6) as separate
+reviewed changes.

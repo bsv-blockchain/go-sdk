@@ -128,10 +128,24 @@ into its atomic-prefixed buffer instead of re-copying the whole BEEF.
 | `BeefBytes` | 2520n → 2200n (−13%) | 9.1Ki → 7.0Ki (−23%) | 26 → **18** |
 | `BeefAtomicBytes` | 2830n → 2249n (−21%) | 12.5Ki → 7.3Ki (**−42%**) | 27 → **19** |
 
+### Legacy (non-FORKID) sighash preimage
+
+`CalcInputPreimageLegacy` now pre-sizes the preimage buffer arithmetically and
+appends with the shared zero-alloc writers instead of an un-presized buffer with
+per-input/output `make`/`VarInt.Bytes()`/`CloneBytes()` scratch. The per-call
+`ShallowClone` is kept (it still dominates the remaining alloc count), so the
+sec/op and B/op wins outrun the alloc-count reduction. Byte-identical: the legacy
+`None`/`Single`/`AnyOneCanPay` flags are newly golden-pinned and were
+cross-checked byte-for-byte against go-bt before the refactor.
+
+| Benchmark | sec/op | B/op | allocs/op |
+|---|---|---|---|
+| `CalcInputPreimageLegacy/64/All` | 3772n → 2919n (−23%) | 21.5Ki → 13.6Ki (**−37%**) | 333 → 324 |
+| geomean (flags × inputs) | **−18.6%** | **−26.2%** | −10.9% |
+
 ## Still deferred
 
 See [`proposals/transaction-performance-deferred.md`](proposals/transaction-performance-deferred.md):
 
-- Legacy (non-FORKID) sighash preimage (needs a legacy golden characterization test first)
 - `ComputeRoot` per-level index maps (algorithmic; medium byte-identity risk)
 - Arena allocator for batch deserialization; `Clone()` field-copy rewrite; opcodeparser bench normalization; PushDrop cache adoption
