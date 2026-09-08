@@ -97,16 +97,8 @@ func (o *TransactionOutput) size() int {
 }
 
 // BytesForSigHash returns the proper serialization
-// of an output to be hashed and signed (sighash).
+// of an output to be hashed and signed (sighash). This is the standard output
+// serialization (identical to Bytes()).
 func (o *TransactionOutput) BytesForSigHash() []byte {
-	buf := make([]byte, 0, 8+9+len(*o.LockingScript))
-
-	satoshis := make([]byte, 8)
-	binary.LittleEndian.PutUint64(satoshis, o.Satoshis)
-	buf = append(buf, satoshis...)
-
-	buf = append(buf, util.VarInt(uint64(len(*o.LockingScript))).Bytes()...)
-	buf = append(buf, *o.LockingScript...)
-
-	return buf
+	return o.appendTo(make([]byte, 0, o.size()))
 }

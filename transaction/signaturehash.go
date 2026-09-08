@@ -334,15 +334,18 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 // OutputsHash returns a bytes slice of the requested output, used for generating
 // the txs signature hash. If n is -1, it will create the byte slice from all outputs.
 func (tx *Transaction) OutputsHash(n int32) []byte {
-	buf := make([]byte, 0)
-
-	if n == -1 {
-		for _, out := range tx.Outputs {
-			buf = append(buf, out.BytesForSigHash()...)
-		}
-	} else {
-		buf = append(buf, tx.Outputs[n].BytesForSigHash()...)
+	if n != -1 {
+		out := tx.Outputs[n]
+		return crypto.Sha256d(out.appendTo(make([]byte, 0, out.size())))
 	}
 
+	size := 0
+	for _, out := range tx.Outputs {
+		size += out.size()
+	}
+	buf := make([]byte, 0, size)
+	for _, out := range tx.Outputs {
+		buf = out.appendTo(buf)
+	}
 	return crypto.Sha256d(buf)
 }
