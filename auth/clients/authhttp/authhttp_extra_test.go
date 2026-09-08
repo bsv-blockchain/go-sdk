@@ -1113,9 +1113,13 @@ func TestSendCertificateRequestWithIdentityKey(t *testing.T) {
 	}
 
 	// Update the stored peer's identity key to a known value.
+	// Guard the write with the peer mutex: a background goroutine spawned by
+	// the Fetch above may still be reading IdentityKey concurrently.
 	if p, ok := af.peers.Load(ts.URL); ok {
 		authPeer := p.(*AuthPeer)
+		authPeer.mu.Lock()
 		authPeer.IdentityKey = serverPubKeyHex
+		authPeer.mu.Unlock()
 	}
 
 	certSet := utils.RequestedCertificateSet{
