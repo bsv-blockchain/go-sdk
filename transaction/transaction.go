@@ -481,8 +481,9 @@ func appendVarInt(dst []byte, v uint64) []byte {
 }
 
 func (tx *Transaction) AddMerkleProof(bump *MerklePath) error {
+	txid := tx.TxID()
 	if !slices.ContainsFunc(bump.Path[0], func(v *PathElement) bool {
-		return v.Hash.Equal(*tx.TxID())
+		return v.Hash.Equal(*txid)
 	}) {
 		return ErrBadMerkleProof
 	}

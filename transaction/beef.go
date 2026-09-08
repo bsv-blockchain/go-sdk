@@ -237,23 +237,27 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 		// run through the txs map and convert to BeefTx
 		beefTxs := make(map[chainhash.Hash]*BeefTx, len(txs))
 		for _, tx := range txs {
+			// Compute the txid once per transaction and reuse it; the tx is not
+			// mutated in this loop, and TxID() re-serializes + double-hashes the
+			// whole transaction on every call.
+			txid := tx.TxID()
 			if tx.MerklePath != nil {
 				// find which bump index this tx is in
 				idx := -1
 				for i, bump := range BUMPs {
 					for _, leaf := range bump.Path[0] {
-						if leaf.Hash != nil && tx.TxID().Equal(*leaf.Hash) {
+						if leaf.Hash != nil && txid.Equal(*leaf.Hash) {
 							idx = i
 						}
 					}
 				}
-				beefTxs[*tx.TxID()] = &BeefTx{
+				beefTxs[*txid] = &BeefTx{
 					DataFormat:  RawTxAndBumpIndex,
 					Transaction: tx,
 					BumpIndex:   idx,
 				}
 			} else {
-				beefTxs[*tx.TxID()] = &BeefTx{
+				beefTxs[*txid] = &BeefTx{
 					DataFormat:  RawTx,
 					Transaction: tx,
 				}
@@ -554,7 +558,7 @@ func (t *Transaction) collectAncestors(txid *chainhash.Hash, txns map[chainhash.
 			if allowPartial {
 				continue
 			} else {
-				return nil, fmt.Errorf("missing previous transaction for %s", t.TxID())
+				return nil, fmt.Errorf("missing previous transaction for %s", txid)
 			}
 		}
 		txns[*input.SourceTXID] = input.SourceTransaction
