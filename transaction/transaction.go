@@ -626,16 +626,15 @@ func NewTransactionFromBEEF(beef []byte) (*Transaction, error) {
 
 	switch version {
 	case ATOMIC_BEEF:
-		hash := make([]byte, 32)
-		if _, err := io.ReadFull(reader, hash); err != nil {
+		b, txid, err := NewBeefFromAtomicBytes(beef)
+		if err != nil {
 			return nil, err
-		} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
-			return nil, err
-		} else if txid, err := chainhash.NewHash(hash); err != nil {
-			return nil, err
-		} else {
-			return b.FindAtomicTransaction(txid.String()), nil
 		}
+		tx := b.FindAtomicTransactionByHash(txid)
+		if tx == nil {
+			return nil, fmt.Errorf("atomic BEEF raw subject %s is unavailable", txid.String())
+		}
+		return tx, nil
 	case BEEF_V1:
 		BUMPs, err := readBUMPs(reader)
 		if err != nil {

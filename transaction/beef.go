@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/transaction/chaintracker"
@@ -90,7 +91,7 @@ func NewBeef() *Beef {
 }
 
 const (
-	BEEF_V1     = uint32(4022206465) // BRC-64
+	BEEF_V1     = uint32(4022206465) // BRC-62
 	BEEF_V2     = uint32(4022206466) // BRC-96
 	ATOMIC_BEEF = uint32(0x01010101) // BRC-95
 )
@@ -122,7 +123,7 @@ func newEmptyBeef(version uint32) *Beef {
 
 func readBeefTxIDOnly(reader *bytes.Reader, beefTx *BeefTx) (*chainhash.Hash, error) {
 	var txid chainhash.Hash
-	if _, err := reader.Read(txid[:]); err != nil {
+	if _, err := io.ReadFull(reader, txid[:]); err != nil {
 		return nil, err
 	}
 	beefTx.KnownTxID = &txid
@@ -135,6 +136,9 @@ func readBeefTxFull(reader *bytes.Reader, beefTx *BeefTx, BUMPs []*MerklePath, t
 	if bump {
 		if _, err := bumpIndex.ReadFrom(reader); err != nil {
 			return nil, err
+		}
+		if uint64(bumpIndex) >= uint64(len(BUMPs)) {
+			return nil, fmt.Errorf("BEEF transaction references BUMP index %d but only %d BUMPs are present", uint64(bumpIndex), len(BUMPs))
 		}
 		beefTx.BumpIndex = int(bumpIndex)
 	}
@@ -163,10 +167,16 @@ func readBeefTx(reader *bytes.Reader, BUMPs []*MerklePath) (*map[chainhash.Hash]
 	if _, err := numberOfTransactions.ReadFrom(reader); err != nil {
 		return nil, nil, err
 	}
+	// A V2 entry is at least a data-format byte and a minimal 10-byte raw
+	// transaction. Guarding the count prevents malformed VarInts from driving
+	// excessive parsing before the byte-slice reader can report an EOF.
+	if err := guardParseCount(reader, uint64(numberOfTransactions), 11, "BEEF transactions"); err != nil {
+		return nil, nil, err
+	}
 
 	txs := make(map[chainhash.Hash]*BeefTx, 0)
 	var lastTxID *chainhash.Hash
-	for i := 0; i < int(numberOfTransactions); i++ {
+	for i := uint64(0); i < uint64(numberOfTransactions); i++ {
 		formatByte, err := reader.ReadByte()
 		if err != nil {
 			return nil, nil, err
@@ -208,16 +218,20 @@ func NewBeefFromHex(beefHex string) (*Beef, error) {
 	return NewBeefFromBytes(beef)
 }
 
+// NewBeefFromBytes parses a BEEF prefix. For AtomicBEEF it also requires the
+// declared subject to be present, but does not validate the complete graph,
+// scripts, proof roots, or trust in txid-only entries.
 func NewBeefFromBytes(beef []byte) (*Beef, error) {
-	var reader *bytes.Reader
 	if len(beef) >= 4 && binary.LittleEndian.Uint32(beef[:4]) == ATOMIC_BEEF {
-		if len(beef) < 36 {
-			return nil, fmt.Errorf("invalid atomic BEEF: expected at least 36 bytes, got %d", len(beef))
-		}
-		reader = bytes.NewReader(beef[36:])
-	} else {
-		reader = bytes.NewReader(beef)
+		b, _, err := NewBeefFromAtomicBytes(beef)
+		return b, err
 	}
+	return newBeefFromBytes(beef)
+}
+
+// newBeefFromBytes parses the inner V1/V2 prefix, never another Atomic wrapper.
+func newBeefFromBytes(beef []byte) (*Beef, error) {
+	reader := bytes.NewReader(beef)
 	version, err := readVersion(reader)
 	if err != nil {
 		return nil, err
@@ -234,18 +248,19 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 			return nil, v1Err
 		}
 
-		// run through the txs map and convert to BeefTx
+		// Convert the V1 transactions into V2-shaped entries. The parser attaches
+		// the exact BUMP pointer selected by each encoded index, which is the only
+		// reliable way to retain that index when multiple proofs include a txid.
 		beefTxs := make(map[chainhash.Hash]*BeefTx, len(txs))
+		bumpIndexes := make(map[*MerklePath]int, len(BUMPs))
+		for i, bump := range BUMPs {
+			bumpIndexes[bump] = i
+		}
 		for _, tx := range txs {
 			if tx.MerklePath != nil {
-				// find which bump index this tx is in
-				idx := -1
-				for i, bump := range BUMPs {
-					for _, leaf := range bump.Path[0] {
-						if leaf.Hash != nil && tx.TxID().Equal(*leaf.Hash) {
-							idx = i
-						}
-					}
+				idx, ok := bumpIndexes[tx.MerklePath]
+				if !ok {
+					return nil, fmt.Errorf("BEEF transaction references an unknown BUMP")
 				}
 				beefTxs[*tx.TxID()] = &BeefTx{
 					DataFormat:  RawTxAndBumpIndex,
@@ -291,18 +306,28 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 	}, nil
 }
 
+// NewBeefFromAtomicBytes parses an AtomicBEEF prefix and binds the subject to
+// an included entry. Presence is not graph validation or SPV verification.
 func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	if len(beef) < 36 {
 		return nil, nil, fmt.Errorf("provided atomic BEEF length (%d) is too short", len(beef))
-	} else if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
-		return nil, nil, fmt.Errorf("version %d is not atomic BEEF", version)
-	} else if txid, err := chainhash.NewHash(beef[4:36]); err != nil {
-		return nil, nil, fmt.Errorf("invalid txid: %w", err)
-	} else if b, err := NewBeefFromBytes(beef[36:]); err != nil {
-		return nil, nil, fmt.Errorf("invalid BEEF: %w", err)
-	} else {
-		return b, txid, nil
 	}
+	if version := binary.LittleEndian.Uint32(beef[:4]); version != ATOMIC_BEEF {
+		return nil, nil, fmt.Errorf("version %d is not atomic BEEF", version)
+	}
+	txid, err := chainhash.NewHash(beef[4:36])
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid txid: %w", err)
+	}
+	b, err := newBeefFromBytes(beef[36:])
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid BEEF: %w", err)
+	}
+	if _, ok := b.Transactions[*txid]; !ok {
+		return nil, nil, fmt.Errorf("atomic BEEF subject %s is missing", txid.String())
+	}
+	b.NewestTxID = txid
+	return b, txid, nil
 }
 
 func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
@@ -312,19 +337,20 @@ func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
 	version := binary.LittleEndian.Uint32(beefBytes[:4])
 	switch version {
 	case ATOMIC_BEEF:
-		if len(beefBytes) < 36 {
-			return nil, nil, nil, fmt.Errorf("invalid-atomic-beef")
+		b, txid, err := NewBeefFromAtomicBytes(beefBytes)
+		if err != nil {
+			return nil, nil, nil, err
 		}
-		if txid, err := chainhash.NewHash(beefBytes[4:36]); err != nil {
-			return nil, nil, nil, fmt.Errorf("invalid txid: %w", err)
-		} else if b, err := NewBeefFromBytes(beefBytes[36:]); err != nil {
-			return nil, nil, nil, fmt.Errorf("invalid BEEF: %w", err)
-		} else {
-			return b, b.FindTransaction(txid.String()), txid, nil
+		tx := b.FindTransactionByHash(txid)
+		if tx == nil {
+			return nil, nil, nil, fmt.Errorf("atomic BEEF raw subject %s is unavailable", txid.String())
 		}
+		return b, tx, txid, nil
 	case BEEF_V1:
 		if tx, err := NewTransactionFromBEEF(beefBytes); err != nil {
 			return nil, nil, nil, err
+		} else if tx == nil {
+			return newEmptyBeef(BEEF_V1), nil, nil, nil
 		} else if b, err := NewBeefFromTransaction(tx); err != nil {
 			return nil, nil, nil, err
 		} else {
@@ -414,6 +440,9 @@ func readBUMPs(reader *bytes.Reader) ([]*MerklePath, error) {
 		if err != nil {
 			return nil, err
 		}
+		if len(BUMPs[i].Path) == 0 {
+			return nil, fmt.Errorf("BEEF BUMP at index %d has no path levels", i)
+		}
 	}
 	return BUMPs, nil
 }
@@ -455,7 +484,10 @@ func readAllTransactions(reader *bytes.Reader, BUMPs []*MerklePath) (map[string]
 		if err != nil {
 			return nil, nil, err
 		}
-		if hasBump[0] != 0 {
+		if hasBump[0] > 1 {
+			return nil, nil, fmt.Errorf("invalid BEEF transaction hasBump value: %d", hasBump[0])
+		}
+		if hasBump[0] == 1 {
 			var pathIndex util.VarInt
 			_, err = pathIndex.ReadFrom(reader)
 			if err != nil {
@@ -660,7 +692,16 @@ func (b *Beef) FindAtomicTransactionByHash(txid *chainhash.Hash) *Transaction {
 		}
 		visited[*txid] = struct{}{}
 
-		mp := beef.FindBumpByHash(txid)
+		// Preserve an explicit wire proof reference when multiple BUMPs contain
+		// this transaction. Proof discovery is only for entries without an index.
+		var mp *MerklePath
+		if entry := beef.findTxid(txid); entry != nil && entry.DataFormat == RawTxAndBumpIndex {
+			if entry.BumpIndex >= 0 && entry.BumpIndex < len(beef.BUMPs) {
+				mp = beef.BUMPs[entry.BumpIndex]
+			}
+		} else {
+			mp = beef.FindBumpByHash(txid)
+		}
 		if mp != nil {
 			tx.MerklePath = mp
 			return
@@ -1479,111 +1520,233 @@ func (b *Beef) AddComputedLeaves() {
 	}
 }
 
-// Bytes returns the BEEF BRC-96 as a byte slice.
+// Bytes serializes BEEF using b.Version (BRC-62 for V1, BRC-96 for V2).
+// V1 cannot represent txid-only entries; callers must explicitly select V2.
 func (b *Beef) Bytes() ([]byte, error) {
-	// First pass: collect all transaction bytes in order and calculate total size
-	txs := make(map[chainhash.Hash]struct{}, len(b.Transactions))
-	var orderedTxBytes [][]byte
-
-	var collectTx func(tx *BeefTx) error
-	collectTx = func(tx *BeefTx) error {
-		var txid chainhash.Hash
-		if tx.DataFormat == TxIDOnly {
-			if tx.KnownTxID == nil {
-				return fmt.Errorf("txid is nil")
-			}
-			txid = *tx.KnownTxID
-		} else if tx.Transaction == nil {
-			return fmt.Errorf("transaction is nil")
-		} else {
-			txid = *tx.Transaction.TxID()
+	if b.Version != BEEF_V1 && b.Version != BEEF_V2 {
+		return nil, fmt.Errorf("invalid BEEF version: %d", b.Version)
+	}
+	// Check map keys before using them to resolve dependency edges. The identity
+	// of a raw entry is always derived from its transaction bytes.
+	for id, tx := range b.Transactions {
+		actual, err := beefEntryID(tx)
+		if err != nil {
+			return nil, err
 		}
-		if _, ok := txs[txid]; ok {
+		if id != *actual {
+			return nil, fmt.Errorf("BEEF map key %s does not match transaction %s", id.String(), actual.String())
+		}
+		if tx.DataFormat == TxIDOnly && b.Version == BEEF_V1 {
+			return nil, fmt.Errorf("BEEF V1 cannot serialize txid-only transaction %s", id.String())
+		}
+		if tx.DataFormat == RawTxAndBumpIndex && (tx.BumpIndex < 0 || tx.BumpIndex >= len(b.BUMPs)) {
+			return nil, fmt.Errorf("invalid BEEF BUMP index: %d", tx.BumpIndex)
+		}
+	}
+
+	visited := make(map[chainhash.Hash]bool, len(b.Transactions))
+	visiting := make(map[chainhash.Hash]bool, len(b.Transactions))
+	var orderedTxBytes [][]byte
+	var collectTx func(id chainhash.Hash) error
+	collectTx = func(id chainhash.Hash) error {
+		if visited[id] {
 			return nil
 		}
-		if tx.DataFormat == TxIDOnly {
-			txBytes := make([]byte, 1+chainhash.HashSize)
-			txBytes[0] = byte(tx.DataFormat)
-			copy(txBytes[1:], tx.KnownTxID[:])
-			orderedTxBytes = append(orderedTxBytes, txBytes)
-		} else {
-			for _, txin := range tx.Transaction.Inputs {
-				if parentTx := b.findTxid(txin.SourceTXID); parentTx != nil {
-					if err := collectTx(parentTx); err != nil {
+		if visiting[id] {
+			return fmt.Errorf("cyclic BEEF transaction dependency: %s", id.String())
+		}
+		visiting[id] = true
+		tx := b.Transactions[id]
+		if tx.DataFormat != TxIDOnly {
+			for _, input := range tx.Transaction.Inputs {
+				if _, ok := b.Transactions[*input.SourceTXID]; ok {
+					if err := collectTx(*input.SourceTXID); err != nil {
 						return err
 					}
 				}
 			}
-			rawTxBytes := tx.Transaction.Bytes()
-			var txBytes []byte
-			if tx.DataFormat == RawTxAndBumpIndex {
-				bumpIndexBytes := util.VarInt(tx.BumpIndex).Bytes() //nolint:gosec // G115 -- bump index is bounded by number of BUMPs, always non-negative
-				txBytes = make([]byte, 1+len(bumpIndexBytes)+len(rawTxBytes))
-				txBytes[0] = byte(tx.DataFormat)
-				copy(txBytes[1:], bumpIndexBytes)
-				copy(txBytes[1+len(bumpIndexBytes):], rawTxBytes)
-			} else {
-				txBytes = make([]byte, 1+len(rawTxBytes))
-				txBytes[0] = byte(tx.DataFormat) //nolint:gosec // G115 -- DataFormat is a small enum with only a few possible values
-				copy(txBytes[1:], rawTxBytes)
-			}
-			orderedTxBytes = append(orderedTxBytes, txBytes)
 		}
-		txs[txid] = struct{}{}
+		orderedTxBytes = append(orderedTxBytes, tx.beefBytes(b.Version))
+		visited[id] = true
+		delete(visiting, id)
 		return nil
 	}
-	for _, tx := range b.Transactions {
-		if err := collectTx(tx); err != nil {
+	// Retain the parsed subject as the final entry whenever dependency ordering
+	// permits it. A map's iteration order must not change the implicit V1 target.
+	for id := range b.Transactions {
+		if b.NewestTxID != nil && id == *b.NewestTxID {
+			continue
+		}
+		if err := collectTx(id); err != nil {
 			return nil, err
 		}
 	}
-
-	// Calculate bump bytes
-	bumpBytes := make([][]byte, len(b.BUMPs))
-	bumpsTotalLen := 0
-	for i, bump := range b.BUMPs {
-		bumpBytes[i] = bump.Bytes()
-		bumpsTotalLen += len(bumpBytes[i])
+	if b.NewestTxID != nil {
+		if _, ok := b.Transactions[*b.NewestTxID]; ok {
+			if err := collectTx(*b.NewestTxID); err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	// Calculate total size
-	totalLen := 4 // version
-	totalLen += util.VarInt(len(b.BUMPs)).Length() + bumpsTotalLen
-	totalLen += util.VarInt(len(b.Transactions)).Length()
+	bumpBytes := make([][]byte, len(b.BUMPs))
+	totalLen := 4 + util.VarInt(len(b.BUMPs)).Length() + util.VarInt(len(orderedTxBytes)).Length()
+	for i, bump := range b.BUMPs {
+		if err := validateBeefBump(bump); err != nil {
+			return nil, fmt.Errorf("BEEF BUMP %d: %w", i, err)
+		}
+		bumpBytes[i] = bump.Bytes()
+		totalLen += len(bumpBytes[i])
+	}
 	for _, txBytes := range orderedTxBytes {
 		totalLen += len(txBytes)
 	}
 
-	// Second pass: write to pre-allocated buffer
-	beef := make([]byte, totalLen)
-	offset := 0
-
-	binary.LittleEndian.PutUint32(beef[offset:], b.Version)
-	offset += 4
-
-	bumpCountBytes := util.VarInt(len(b.BUMPs)).Bytes()
-	copy(beef[offset:], bumpCountBytes)
-	offset += len(bumpCountBytes)
-
+	beef := make([]byte, 0, totalLen)
+	beef = binary.LittleEndian.AppendUint32(beef, b.Version)
+	beef = append(beef, util.VarInt(len(b.BUMPs)).Bytes()...)
 	for _, bb := range bumpBytes {
-		copy(beef[offset:], bb)
-		offset += len(bb)
+		beef = append(beef, bb...)
 	}
-
-	txCountBytes := util.VarInt(len(b.Transactions)).Bytes()
-	copy(beef[offset:], txCountBytes)
-	offset += len(txCountBytes)
-
+	beef = append(beef, util.VarInt(len(orderedTxBytes)).Bytes()...)
 	for _, txBytes := range orderedTxBytes {
-		copy(beef[offset:], txBytes)
-		offset += len(txBytes)
+		beef = append(beef, txBytes...)
 	}
-
 	return beef, nil
 }
 
+// beefEntryID validates the representation before serialization or selection.
+func beefEntryID(tx *BeefTx) (*chainhash.Hash, error) {
+	if tx == nil {
+		return nil, fmt.Errorf("BEEF transaction is nil")
+	}
+	switch tx.DataFormat {
+	case TxIDOnly:
+		if tx.KnownTxID == nil {
+			return nil, fmt.Errorf("txid is nil")
+		}
+		return tx.KnownTxID, nil
+	case RawTx, RawTxAndBumpIndex:
+		if tx.Transaction == nil {
+			return nil, fmt.Errorf("transaction is nil")
+		}
+		for _, input := range tx.Transaction.Inputs {
+			if input == nil || input.SourceTXID == nil {
+				return nil, fmt.Errorf("BEEF transaction input or source txid is nil")
+			}
+		}
+		for _, output := range tx.Transaction.Outputs {
+			if output == nil || output.LockingScript == nil {
+				return nil, fmt.Errorf("BEEF transaction output or locking script is nil")
+			}
+		}
+		return tx.Transaction.TxID(), nil
+	default:
+		return nil, fmt.Errorf("invalid BEEF data format: %d", tx.DataFormat)
+	}
+}
+
+// validateBeefBump checks representability only, not Merkle proof validity.
+func validateBeefBump(bump *MerklePath) error {
+	if bump == nil || len(bump.Path) == 0 || len(bump.Path) > 255 {
+		return fmt.Errorf("BUMP must have between 1 and 255 path levels")
+	}
+	for _, level := range bump.Path {
+		for _, leaf := range level {
+			if leaf == nil || (leaf.Hash == nil && (leaf.Duplicate == nil || !*leaf.Duplicate)) {
+				return fmt.Errorf("BUMP leaf or non-duplicate hash is nil")
+			}
+		}
+	}
+	return nil
+}
+
+// beefBytes requires a validated entry and a supported version.
+func (tx *BeefTx) beefBytes(version uint32) []byte {
+	if tx.DataFormat == TxIDOnly {
+		return append([]byte{byte(TxIDOnly)}, tx.KnownTxID[:]...)
+	}
+	raw := tx.Transaction.Bytes()
+	var flags []byte
+	if tx.DataFormat == RawTxAndBumpIndex {
+		flags = append([]byte{1}, util.VarInt(tx.BumpIndex).Bytes()...) //nolint:gosec // G115 -- Bytes validates the non-negative BUMP index
+	} else {
+		flags = []byte{0}
+	}
+	if version == BEEF_V1 {
+		return append(raw, flags...)
+	}
+	return append(flags, raw...)
+}
+
+// AtomicBytes serializes the subject and its available ancestry, stopping at
+// txid-only entries or a matching BUMP. The caller's BEEF is not modified.
+// This is structural serialization; it does not validate scripts, header roots,
+// or the receiver's trust in txid-only entries, and can contain missing inputs.
 func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
-	beef, err := b.Bytes()
+	if txid == nil {
+		return nil, fmt.Errorf("atomic BEEF txid is nil")
+	}
+	if _, ok := b.Transactions[*txid]; !ok {
+		return nil, fmt.Errorf("atomic BEEF subject %s is missing", txid.String())
+	}
+	selected := newEmptyBeef(b.Version)
+	selected.NewestTxID = txid
+	bumpIndexes := make(map[int]int)
+	stack := []chainhash.Hash{*txid}
+	for len(stack) > 0 {
+		id := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if _, ok := selected.Transactions[id]; ok {
+			continue
+		}
+		tx := b.Transactions[id]
+		actual, err := beefEntryID(tx)
+		if err != nil {
+			return nil, err
+		}
+		if id != *actual {
+			return nil, fmt.Errorf("BEEF map key %s does not match transaction %s", id.String(), actual.String())
+		}
+		copyTx := *tx
+		selected.Transactions[id] = &copyTx
+		if tx.DataFormat == TxIDOnly {
+			continue
+		}
+		if tx.DataFormat == RawTxAndBumpIndex {
+			if tx.BumpIndex < 0 || tx.BumpIndex >= len(b.BUMPs) || b.BUMPs[tx.BumpIndex] == nil {
+				return nil, fmt.Errorf("invalid BEEF BUMP index: %d", tx.BumpIndex)
+			}
+			if err := validateBeefBump(b.BUMPs[tx.BumpIndex]); err != nil {
+				return nil, err
+			}
+			index, ok := bumpIndexes[tx.BumpIndex]
+			if !ok {
+				index = len(selected.BUMPs)
+				bumpIndexes[tx.BumpIndex] = index
+				selected.BUMPs = append(selected.BUMPs, b.BUMPs[tx.BumpIndex])
+			}
+			copyTx.BumpIndex = index
+			matched := false
+			if bump := b.BUMPs[tx.BumpIndex]; len(bump.Path) > 0 {
+				for _, leaf := range bump.Path[0] {
+					if leaf.Hash != nil && (leaf.Duplicate == nil || !*leaf.Duplicate) && *leaf.Hash == id {
+						matched = true
+						break
+					}
+				}
+			}
+			if matched {
+				continue
+			}
+		}
+		for _, input := range tx.Transaction.Inputs {
+			if _, ok := b.Transactions[*input.SourceTXID]; ok {
+				stack = append(stack, *input.SourceTXID)
+			}
+		}
+	}
+	beef, err := selected.Bytes()
 	if err != nil {
 		return nil, err
 	}
@@ -1591,7 +1754,6 @@ func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
 	binary.LittleEndian.PutUint32(result[0:4], ATOMIC_BEEF)
 	copy(result[4:4+chainhash.HashSize], txid[:])
 	copy(result[4+chainhash.HashSize:], beef)
-
 	return result, nil
 }
 
