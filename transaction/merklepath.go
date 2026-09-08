@@ -173,16 +173,32 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 	return bump, nil
 }
 
+// bytesLen returns the exact BRC-74 serialized length of the BUMP so Bytes can
+// pre-size its buffer. It mirrors the byte layout produced by Bytes.
+func (mp *MerklePath) bytesLen() int {
+	size := util.VarInt(mp.BlockHeight).Length() + 1 // block-height varint + tree-height byte
+	for level := 0; level < len(mp.Path); level++ {
+		size += util.VarInt(len(mp.Path[level])).Length()
+		for _, leaf := range mp.Path[level] {
+			size += util.VarInt(leaf.Offset).Length() + 1 // offset varint + flags byte
+			if leaf.Duplicate == nil || !*leaf.Duplicate {
+				size += chainhash.HashSize
+			}
+		}
+	}
+	return size
+}
+
 // Bytes encodes a BUMP as a slice of bytes. BUMP Binary Format according to BRC-74 https://brc.dev/74
 func (mp *MerklePath) Bytes() []byte {
-	bytes := util.VarInt(mp.BlockHeight).Bytes()
+	buf := make([]byte, 0, mp.bytesLen())
+	buf = appendVarInt(buf, uint64(mp.BlockHeight))
 	treeHeight := len(mp.Path)
-	bytes = append(bytes, byte(treeHeight)) //nolint:gosec // G115 -- merkle tree height is bounded well within a byte
+	buf = append(buf, byte(treeHeight)) //nolint:gosec // G115 -- merkle tree height is bounded well within a byte
 	for level := 0; level < treeHeight; level++ {
-		nLeaves := len(mp.Path[level])
-		bytes = append(bytes, util.VarInt(nLeaves).Bytes()...)
+		buf = appendVarInt(buf, uint64(len(mp.Path[level])))
 		for _, leaf := range mp.Path[level] {
-			bytes = append(bytes, util.VarInt(leaf.Offset).Bytes()...)
+			buf = appendVarInt(buf, leaf.Offset)
 			flags := byte(0)
 			if leaf.Duplicate != nil && *leaf.Duplicate {
 				flags |= 1
@@ -190,13 +206,13 @@ func (mp *MerklePath) Bytes() []byte {
 			if leaf.Txid != nil && *leaf.Txid {
 				flags |= 2
 			}
-			bytes = append(bytes, flags)
+			buf = append(buf, flags)
 			if (flags & 1) == 0 {
-				bytes = append(bytes, leaf.Hash.CloneBytes()...)
+				buf = append(buf, leaf.Hash[:]...)
 			}
 		}
 	}
-	return bytes
+	return buf
 }
 
 // Hex converts the MerklePath to a hexadecimal string representation
