@@ -1,0 +1,48 @@
+{
+  "tsSourceCommit": "2bc799a8d8e535242e6de2d305f426ce3975ea7b",
+  "identityFixtureCommit": "c58f81787e7c2a985a167c15db9fd9ca5fed6c35",
+  "sdkVersion": "2.5.0",
+  "nodeVersion": "26.3.0",
+  "typescriptCompilerVersion": "7.0.2",
+  "build": "git archive pinned packages/sdk and config/typescript; tsc -p packages/sdk/tsconfig.esm.json --incremental false (separate output directory, existing dependency links read-only)",
+  "selectedFiles": {
+    "packages/sdk/src/transaction/Beef.ts": "a610adf23c722bd42c57457cd193b853280816cfa5d445e6416fad3e80f1f671",
+    "packages/sdk/dist/esm/src/transaction/Beef.js": "d798bc373cfb6a7667030b9b7a40bdaafbd8bde1a46aee0a004b1de60b458949",
+    "packages/sdk/src/transaction/BeefTx.ts": "1711be87dde7b1008155dbe4702392ccbf78b3047e0d99375a1faa743deb28fa",
+    "packages/sdk/dist/esm/src/transaction/BeefTx.js": "74750303373a5147922a52af270240e409018efa987f66493b77fbff2e335831",
+    "packages/sdk/src/transaction/BeefConstants.ts": "6ae67915f6975784b466115a38adf68f9d632b696068ac7c0fbd714daa07d0f6",
+    "packages/sdk/dist/esm/src/transaction/BeefConstants.js": "5f9356058c0865d2b087f713728e6ab4afb4ef9b57a8569526d76613b520e4c9",
+    "packages/sdk/src/transaction/Transaction.ts": "a55edfc1042a5885eb164c3023667907abe1b448048534dbe7d23588869e70d2",
+    "packages/sdk/dist/esm/src/transaction/Transaction.js": "04620a860b6e3382ba1b76b0fc9b50ba8214b041312d8414c914ad47d8474832",
+    "packages/sdk/src/transaction/MerklePath.ts": "291710039d04a24bc3023c02cf43ff2f7f7d077763477c2f83d7ba640fdc6939",
+    "packages/sdk/dist/esm/src/transaction/MerklePath.js": "b9d7be716faefaba328f3d96d401ef63d8396cbaf0e3f4341f16a538a8fe08ea"
+  },
+  "sourceTree": {
+    "files": 345,
+    "pathAndSHA256Digest": "0bd20e06d5a23619382bc6b58ad992c9de4bda81f37197a24a44b4e31626198d"
+  },
+  "emittedJSTree": {
+    "files": 171,
+    "pathAndSHA256Digest": "4c425ad6fec97ae06b1e945dfde1109151bd2858b1beb6309a48f32636cffcf9"
+  },
+  "specifications": [
+    {
+      "url": "https://github.com/bsv-blockchain/BRCs/blob/39a643ff148a8dcd23ec08986a8ddeb7d5713743/transactions/0062.md",
+      "repositoryCommit": "39a643ff148a8dcd23ec08986a8ddeb7d5713743",
+      "fileCommit": "2354625956374d123ecd8d0d467da99fcd5d6a8d",
+      "sha256": "7fdee54fa863a3787143ba86a076e1b790d9d9d0584059aa156214fea828a313"
+    },
+    {
+      "url": "https://github.com/bsv-blockchain/BRCs/blob/39a643ff148a8dcd23ec08986a8ddeb7d5713743/transactions/0095.md",
+      "repositoryCommit": "39a643ff148a8dcd23ec08986a8ddeb7d5713743",
+      "fileCommit": "a3c5da002ab1e905504f8d23b999158ded5ae2dc",
+      "sha256": "e5ceb51ecbfd9b3715227e65891503908e485eb09d1a0bfd8060d99b2e13026e"
+    },
+    {
+      "url": "https://github.com/bsv-blockchain/BRCs/blob/39a643ff148a8dcd23ec08986a8ddeb7d5713743/transactions/0096.md",
+      "repositoryCommit": "39a643ff148a8dcd23ec08986a8ddeb7d5713743",
+      "fileCommit": "af85053dcec150cbec9f1913e83456c47f58caea",
+      "sha256": "9b4b11fdb28c5ec66332cb3260716f82d61318e9dc376aba730fef903a577283"
+    }
+  ]
+}

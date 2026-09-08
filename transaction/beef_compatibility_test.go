@@ -54,6 +54,7 @@ func TestBeefVersionRoundTripFromTSIdentity(t *testing.T) {
 	require.Equal(t, fixture.MerkleRoot, root.String())
 	tsAtomic, err := base64.StdEncoding.DecodeString(fixture.AtomicBase64)
 	require.NoError(t, err)
+	require.Equal(t, tsAtomic, atomic, "Go AtomicBytes must match the exact signed TS fixture")
 	original, originalTarget, err := NewBeefFromAtomicBytes(tsAtomic)
 	require.NoError(t, err)
 	require.Equal(t, id, originalTarget)
