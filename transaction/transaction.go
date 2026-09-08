@@ -503,11 +503,23 @@ func (tx *Transaction) WriteTo(w io.Writer) (int64, error) {
 	return total, err
 }
 
-// writeAll writes all of b to w and adds the number of bytes written to *total.
+// writeAll writes all of b to w, adding the number of bytes written to *total.
+// It loops until every byte is written or an error occurs, and returns
+// io.ErrShortWrite if the writer accepts no bytes without reporting an error, so
+// WriteTo stays correct across writers that only accept partial writes.
 func writeAll(w io.Writer, b []byte, total *int64) error {
-	n, err := w.Write(b)
-	*total += int64(n)
-	return err
+	for len(b) > 0 {
+		n, err := w.Write(b)
+		*total += int64(n)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return io.ErrShortWrite
+		}
+		b = b[n:]
+	}
+	return nil
 }
 
 // Size will return the size of tx in bytes.

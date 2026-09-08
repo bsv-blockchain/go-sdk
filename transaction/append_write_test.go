@@ -110,6 +110,20 @@ func TestWriteToPropagatesWriterError(t *testing.T) {
 	}
 }
 
+// zeroWriter accepts no bytes and reports no error, to exercise WriteTo's
+// io.ErrShortWrite guard (a partial write that never progresses).
+type zeroWriter struct{}
+
+func (zeroWriter) Write(p []byte) (int, error) { return 0, nil }
+
+// TestWriteToShortWrite verifies WriteTo returns io.ErrShortWrite when the
+// writer makes no progress rather than looping forever.
+func TestWriteToShortWrite(t *testing.T) {
+	tx := benchP2PKHTx(t, 1)
+	_, err := tx.WriteTo(zeroWriter{})
+	require.ErrorIs(t, err, io.ErrShortWrite)
+}
+
 // TestAppendBytesReuseZeroAlloc confirms AppendBytes into a reused,
 // sufficiently-sized buffer performs no heap allocation.
 func TestAppendBytesReuseZeroAlloc(t *testing.T) {
