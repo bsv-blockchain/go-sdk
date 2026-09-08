@@ -116,10 +116,22 @@ in-memory readers behind `guardParseCount`.
 Parse geomean: scratch reuse −45% allocs / −24% sec/op; the pre-size adds a
 further −6% allocs / −4% sec/op (measurably above noise, `p ≤ 0.001`).
 
+### BEEF serialization copy elimination
+
+`Beef.Bytes()` now appends each transaction once, straight into the pre-sized
+output buffer via `Transaction.AppendBytes`, instead of a throwaway `tx.Bytes()`
++ a per-transaction temporary + a final copy; `AtomicBytes()` appends the body
+into its atomic-prefixed buffer instead of re-copying the whole BEEF.
+
+| Benchmark (BEEFSet) | sec/op | B/op | allocs/op |
+|---|---|---|---|
+| `BeefBytes` | 2520n → 2200n (−13%) | 9.1Ki → 7.0Ki (−23%) | 26 → **18** |
+| `BeefAtomicBytes` | 2830n → 2249n (−21%) | 12.5Ki → 7.3Ki (**−42%**) | 27 → **19** |
+
 ## Still deferred
 
 See [`proposals/transaction-performance-deferred.md`](proposals/transaction-performance-deferred.md):
 
 - Legacy (non-FORKID) sighash preimage (needs a legacy golden characterization test first)
-- `ComputeRoot` per-level index maps + redundant `Beef.Bytes`/`AtomicBytes` copies (algorithmic; medium byte-identity risk)
+- `ComputeRoot` per-level index maps (algorithmic; medium byte-identity risk)
 - Arena allocator for batch deserialization; `Clone()` field-copy rewrite; opcodeparser bench normalization; PushDrop cache adoption

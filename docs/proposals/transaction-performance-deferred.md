@@ -153,13 +153,23 @@ pre-sizes its buffer and slices leaf hashes with `[:]` (256 leaves: 17 allocs �
 1, −62% time). Both are byte-identical (guarded by a new identity test, the
 merkle/BEEF golden tests, and the MerklePath fuzzer round-trip).
 
-**Still deferred:** `ComputeRoot`'s per-level index maps (an algorithmic
-restructure that is the bulk of its remaining allocations) and the redundant
-`Beef.Bytes`/`AtomicBytes` transaction copies. These carry more
-merkle-root/BEEF byte-identity risk and should be a separate reviewed change.
+**Also implemented on this branch:** the redundant `Beef.Bytes`/`AtomicBytes`
+transaction copies are gone. An `appendBytes(dst)` helper pre-computes the exact
+size (`Transaction.Size()`) in one dependency-ordered traversal and appends each
+transaction straight into the final buffer via `Transaction.AppendBytes` — no
+throwaway `tx.Bytes()`, no per-tx temporary, no second pass; `AtomicBytes` writes
+its atomic prefix and appends the body into the same buffer instead of re-copying
+the whole BEEF. Byte-identical for any given map order (the traversal is
+unchanged); guarded by `TestBeefBytesCharacterization` (structural round-trip +
+`IsValid` + `AtomicBytes == ATOMIC_BEEF || txid || Bytes()`). Result on `BEEFSet`:
+`Bytes` 26 → 18 allocs / −13%; `AtomicBytes` 27 → 19 allocs / −21% / B/op −42%.
 
-**Risk:** Medium (merkle-root correctness) — the low-risk buffer reuse landed;
-the algorithmic parts remain.
+**Still deferred:** `ComputeRoot`'s per-level index maps — an algorithmic
+restructure that is the bulk of its remaining allocations and carries
+merkle-root byte-identity risk, so it should be a separate reviewed change.
+
+**Risk:** Medium (merkle-root correctness) — the buffer reuse and the BEEF copy
+elimination landed; the `ComputeRoot` algorithmic part remains.
 
 <br>
 
@@ -192,7 +202,7 @@ the algorithmic parts remain.
 | 4 | `AppendBytes`/`WriteTo` — *implemented* | additive | Low |
 | 5 | Arena allocator | additive | Medium (lifetime) |
 | 6 | `Clone()` rewrite | behavior/signature | Medium |
-| 7 | Merkle/BEEF: buffer reuse *implemented*; ComputeRoot maps + BEEF copies deferred | pure internal | Medium (correctness) |
+| 7 | Merkle/BEEF: buffer reuse + BEEF copy elimination *implemented*; ComputeRoot maps deferred | pure internal | Medium (correctness) |
 | 8 | PushDrop cache, bench normalize (+ residual `ValidateTransactions` txid) | mixed | Low |
 
 **Recommended sequencing:** the remaining higher-risk internal refactors —
