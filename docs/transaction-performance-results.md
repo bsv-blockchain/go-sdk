@@ -20,8 +20,8 @@ Deferred follow-ups are tracked in
 |---|---|
 | `magex test` | ✅ all unit tests pass |
 | `magex lint` | ✅ 0 issues (golangci-lint, 53 linters) + `go vet` |
-| `go-pre-commit run --all-files` | ✅ 6/6 checks on 692 files |
-| `gitleaks git --log-opts="master..HEAD"` | ✅ no leaks (13 commits) |
+| `go-pre-commit run --all-files` | ✅ 6/6 checks on 694 files |
+| `gitleaks git --log-opts="master..HEAD"` | ✅ no leaks (24 commits) |
 | Parser fuzzers (`FuzzNewTransactionFromBytes`, `…FromBEEF`, `FuzzMerklePathFromBinary`) | ✅ no crashers |
 
 <br>
@@ -110,11 +110,11 @@ parse round-trip / `readVarInt`-equivalence tests.
 via an allocation-free `readVarInt`, then pre-sizes the input/output slices for
 in-memory readers behind `guardParseCount`.
 
-| Benchmark | sec/op | allocs/op |
-|---|---|---|
-| `NewTransactionFromBytes/64` | 5443n → 4029n (**−26%**) | 537 → **267** (−50%) |
-| `ReadFrom/64` | 5644n → 3996n (**−29%**) | 535 → **265** (−50%) |
-| `NewTransactionFromBytesEF/64` | 8425n → 6248n (−26%) | 859 → **459** (−47%) |
+| Benchmark | sec/op | B/op | allocs/op |
+|---|---|---|---|
+| `NewTransactionFromBytes/64` | 5513n → 4011n (**−27%**) | 18.6Ki → 15.3Ki (−18%) | 537 → **267** (−50%) |
+| `ReadFrom/64` | 5475n → 3986n (**−27%**) | 18.5Ki → 15.2Ki (−18%) | 535 → **265** (−50%) |
+| `NewTransactionFromBytesEF/64` | 8136n → 6188n (−24%) | 24.3Ki → 20.3Ki (−16%) | 859 → **459** (−47%) |
 
 Parse geomean: scratch reuse −45% allocs / −24% sec/op; the pre-size adds a
 further −6% allocs / −4% sec/op (measurably above noise, `p ≤ 0.001`).
@@ -145,6 +145,15 @@ cross-checked byte-for-byte against go-bt before the refactor.
 |---|---|---|---|
 | `CalcInputPreimageLegacy/64/All` | 3772n → 2919n (−23%) | 21.5Ki → 13.6Ki (**−37%**) | 333 → 324 |
 | geomean (flags × inputs) | **−18.6%** | **−26.2%** | −10.9% |
+
+### Whole-session cross-check (no regressions)
+
+A full `-count=10` run of the pre-existing `transaction` benchmarks before the
+continuation (`b240ab7`) vs. after confirms no regression on paths this work did
+not touch — `TxID`, `SerializeRaw`/`Extended`, `Size`, the FORKID
+`CalcInputPreimage`, `SignP2PKH` and cached `TxID` are all flat (identical B/op
+and allocs). `BEEFRoundTrip/issue96` improved as a side effect of the faster
+parse it round-trips through: 933 → **656 allocs (−30%)**, −8.8% sec/op.
 
 ## Still deferred
 
