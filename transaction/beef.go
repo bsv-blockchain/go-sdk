@@ -1562,36 +1562,17 @@ func (b *Beef) orderedTxsForSerialization() ([]*BeefTx, int, error) {
 
 	var collect func(tx *BeefTx) error
 	collect = func(tx *BeefTx) error {
-		var txid chainhash.Hash
-		switch {
-		case tx.DataFormat == TxIDOnly:
-			if tx.KnownTxID == nil {
-				return fmt.Errorf("txid is nil")
-			}
-			txid = *tx.KnownTxID
-		case tx.Transaction == nil:
-			return fmt.Errorf("transaction is nil")
-		default:
-			txid = *tx.Transaction.TxID()
+		txid, err := beefTxID(tx)
+		if err != nil {
+			return err
 		}
 		if _, ok := seen[txid]; ok {
 			return nil
 		}
-		if tx.DataFormat == TxIDOnly {
-			txListLen += 1 + chainhash.HashSize
-		} else {
-			for _, txin := range tx.Transaction.Inputs {
-				if parentTx := b.findTxid(txin.SourceTXID); parentTx != nil {
-					if err := collect(parentTx); err != nil {
-						return err
-					}
-				}
-			}
-			txListLen += 1 + tx.Transaction.Size()
-			if tx.DataFormat == RawTxAndBumpIndex {
-				txListLen += util.VarInt(uint64(tx.BumpIndex)).Length() //nolint:gosec // G115 -- BumpIndex is a non-negative index into BUMPs
-			}
+		if err := b.collectParents(tx, collect); err != nil {
+			return err
 		}
+		txListLen += beefTxSerializedLen(tx)
 		seen[txid] = struct{}{}
 		ordered = append(ordered, tx)
 		return nil
@@ -1602,6 +1583,54 @@ func (b *Beef) orderedTxsForSerialization() ([]*BeefTx, int, error) {
 		}
 	}
 	return ordered, txListLen, nil
+}
+
+// beefTxID returns the txid identifying a BeefTx entry: its KnownTxID for a
+// TxIDOnly entry, otherwise the contained transaction's id.
+func beefTxID(tx *BeefTx) (chainhash.Hash, error) {
+	if tx.DataFormat == TxIDOnly {
+		if tx.KnownTxID == nil {
+			return chainhash.Hash{}, fmt.Errorf("txid is nil")
+		}
+		return *tx.KnownTxID, nil
+	}
+	if tx.Transaction == nil {
+		return chainhash.Hash{}, fmt.Errorf("transaction is nil")
+	}
+	return *tx.Transaction.TxID(), nil
+}
+
+// collectParents visits, via collect, the BEEF entries that fund tx's inputs so
+// each parent is serialized before the child that spends it. TxIDOnly entries
+// have no inputs to follow.
+func (b *Beef) collectParents(tx *BeefTx, collect func(*BeefTx) error) error {
+	if tx.DataFormat == TxIDOnly {
+		return nil
+	}
+	for _, txin := range tx.Transaction.Inputs {
+		parentTx := b.findTxid(txin.SourceTXID)
+		if parentTx == nil {
+			continue
+		}
+		if err := collect(parentTx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// beefTxSerializedLen is the serialized length of one transaction-list entry: a
+// format byte plus either the 32-byte txid (TxIDOnly) or the raw transaction and
+// an optional bump-index varint.
+func beefTxSerializedLen(tx *BeefTx) int {
+	if tx.DataFormat == TxIDOnly {
+		return 1 + chainhash.HashSize
+	}
+	n := 1 + tx.Transaction.Size()
+	if tx.DataFormat == RawTxAndBumpIndex {
+		n += util.VarInt(uint64(tx.BumpIndex)).Length() //nolint:gosec // G115 -- BumpIndex is a non-negative index into BUMPs
+	}
+	return n
 }
 
 func (b *Beef) TxidOnly() (*Beef, error) {
