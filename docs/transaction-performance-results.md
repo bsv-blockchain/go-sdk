@@ -3,8 +3,6 @@
 **Status:** Results summary for the `feature/transaction-performance` branch (13
 commits off `master`). For review.
 
-**Author:** go-sdk maintainers
-
 **Scope:** non-breaking performance work on the `transaction` package, plus a few
 additive (semver-minor) opt-in APIs. Every change is byte-identical on existing
 behavior and went through the acceptance gate in

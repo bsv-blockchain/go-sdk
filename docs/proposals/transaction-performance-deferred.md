@@ -2,8 +2,6 @@
 
 **Status:** Proposal — *not implemented*. Filed for team review.
 
-**Author:** go-sdk maintainers
-
 **Related work:** `feature/transaction-performance` landed the non-breaking,
 benchstat-proven wins (arithmetic `Size()`, direct-append serialization, the
 additive `SigHashCache` for O(N) signing, and `OutputsHash` pre-sizing) under

@@ -2,8 +2,6 @@
 
 **Status:** Adopted procedure — used by the `feature/transaction-performance` work.
 
-**Author:** go-sdk maintainers
-
 **Related work:** the transaction hot-path optimizations on
 `feature/transaction-performance` (arithmetic `Size()`, direct-append
 serialization, `SigHashCache`, `OutputsHash` pre-sizing). Each landed as a
