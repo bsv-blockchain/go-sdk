@@ -83,15 +83,15 @@ a local — a pure, non-caching win worth doing independently; see item 8.)
 
 ## 4. Zero-alloc streaming serialization API (`AppendBytes` / `WriteTo`)
 
-**Proposed:** add `AppendBytes(dst []byte) []byte` (append into a caller buffer)
-and `WriteTo(io.Writer)` (stream with a stack scratch, no intermediate slice),
-as in go-bt. `Bytes()` becomes `AppendBytes(make([]byte, 0, Size()))`.
+*Implemented on this branch.* `AppendBytes(dst []byte) []byte` appends the raw
+serialization into a caller-provided buffer (0 B / 0 allocs when the buffer is
+reused), and `WriteTo(io.Writer) (int64, error)` streams it field-by-field via a
+stack buffer (a constant ~16 B/op regardless of transaction size), implementing
+io.WriterTo. `toBytesHelper` delegates to a shared `appendBytesHelper`, so
+`Bytes()`/`EF()` are unchanged and byte-identical. Both are backward-compatible
+additive methods (semver-minor).
 
-**Why deferred:** additive public API (new exported methods). High value for
-batch serializers and BEEF writers that can reuse a buffer, but it should be a
-reviewed API addition, not folded into the internal-only serialization commit.
-
-**Risk:** Low (purely additive).
+**Risk:** Low (purely additive) — landed.
 
 <br>
 
@@ -172,13 +172,13 @@ benchmarks and the BEEF golden round-trips as guards.
 | 1 | Guarded `ReadFrom` pre-size | pure internal | Low (sub-noise win) |
 | 2 | Legacy sighash preimage | pure internal | Medium (under-pinned) |
 | 3 | `SetTxHash` opt-in txid cache | additive | Medium (staleness) |
-| 4 | `AppendBytes`/`WriteTo` | additive | Low |
+| 4 | `AppendBytes`/`WriteTo` — *implemented* | additive | Low |
 | 5 | Arena allocator | additive | Medium (lifetime) |
 | 6 | `Clone()` rewrite | behavior/signature | Medium |
 | 7 | Merkle/BEEF deep opt | pure internal | Medium (correctness) |
 | 8 | PushDrop cache, bench normalize (+ residual `ValidateTransactions` txid) | mixed | Low |
 
-**Recommended sequencing:** the additive APIs (4, 3) behind a reviewed minor
-release, then the higher-risk internal refactors (2, 7) each with a
+**Recommended sequencing:** the additive `SetTxHash` cache (3) behind a reviewed
+minor release, then the higher-risk internal refactors (2, 7) each with a
 characterization test added first, and finally 5 and 6 as separate reviewed
 changes.
