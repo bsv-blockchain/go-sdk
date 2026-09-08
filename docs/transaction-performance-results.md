@@ -1,7 +1,9 @@
 # Transaction Performance — Results
 
-**Status:** Results summary for the `feature/transaction-performance` branch (13
-commits off `master`). For review.
+**Status:** Results summary for the `feature/transaction-performance` branch. For
+review. The **Cumulative benchstat** and tables below cover the initial phase;
+the **Continuation** section adds the later deserialization, BEEF and
+legacy-sighash commits.
 
 **Scope:** non-breaking performance work on the `transaction` package, plus a few
 additive (semver-minor) opt-in APIs. Every change is byte-identical on existing
@@ -24,11 +26,12 @@ Deferred follow-ups are tracked in
 
 <br>
 
-## Cumulative benchstat (master → HEAD)
+## Cumulative benchstat (initial phase)
 
 `go test -bench . -benchmem -benchtime=100ms -count=10 ./transaction/`, Apple M4.
 Measured on the pre-existing benchmarks, i.e. the improvement to code that
-already existed. **Package geomean: −31.5% sec/op.**
+already existed. **Package geomean: −31.5% sec/op.** (The Continuation section
+below reports the later parse/BEEF/legacy-sighash work separately.)
 
 | Benchmark (inputs/leaves) | sec/op | allocs/op |
 |---|---|---|
