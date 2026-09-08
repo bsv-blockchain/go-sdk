@@ -55,9 +55,14 @@ func guardParseCount(r io.Reader, count uint64, minBytesPerElem int, what string
 	}
 
 	// A streaming reader cannot report its remaining bytes, so fall back to a
-	// generous absolute ceiling. This keeps an attacker-controlled count on an
-	// unbounded reader from reaching make() with a size that would panic.
-	if maxCount := maxParseAllocBytes / m; count > maxCount {
+	// generous absolute ceiling. Clamp it to the platform's maximum int as well,
+	// so the subsequent make([]T, count) cannot overflow the length on 32-bit
+	// builds and panic with "makeslice: len out of range".
+	maxCount := maxParseAllocBytes / m
+	if maxInt := uint64(^uint(0) >> 1); maxCount > maxInt {
+		maxCount = maxInt
+	}
+	if count > maxCount {
 		return fmt.Errorf("%s count %d exceeds the maximum for a streamed reader", what, count)
 	}
 	return nil
