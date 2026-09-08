@@ -296,51 +296,50 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 		txCopy.Inputs = txCopy.Inputs[inputNumber : inputNumber+1]
 	}
 
-	buf := make([]byte, 0)
-
-	// Version
-	v := make([]byte, 4)
-	binary.LittleEndian.PutUint32(v, tx.Version)
-	buf = append(buf, v...)
-
-	buf = append(buf, util.VarInt(uint64(len(txCopy.Inputs))).Bytes()...)
+	// Pre-size the buffer to the exact preimage length, then append with the
+	// shared zero-alloc writers (as the FORKID path does). The input script field
+	// carries each input's SourceTxScript (the subscript for the signing input,
+	// empty for the others), so the length is computed from those scripts rather
+	// than from txCopy.Size(), which measures the unlocking scripts. The trailing
+	// 4 bytes are the sighash flag.
+	size := 4 + util.VarInt(uint64(len(txCopy.Inputs))).Length()
 	for _, in := range txCopy.Inputs {
-		buf = append(buf, in.SourceTXID.CloneBytes()...)
-
-		oi := make([]byte, 4)
-		binary.LittleEndian.PutUint32(oi, in.SourceTxOutIndex)
-		buf = append(buf, oi...)
-
-		if in.SourceTxScript() != nil {
-			buf = append(buf, util.VarInt(uint64(len(*in.SourceTxScript()))).Bytes()...)
-			buf = append(buf, *in.SourceTxScript()...)
-		} else {
-			buf = append(buf, util.VarInt(0).Bytes()...)
+		scriptLen := 0
+		if s := in.SourceTxScript(); s != nil {
+			scriptLen = len(*s)
 		}
-
-		sq := make([]byte, 4)
-		binary.LittleEndian.PutUint32(sq, in.SequenceNumber)
-		buf = append(buf, sq...)
+		size += 32 + 4 + util.VarInt(uint64(scriptLen)).Length() + scriptLen + 4
 	}
-
-	buf = append(buf, util.VarInt(uint64(len(txCopy.Outputs))).Bytes()...)
+	size += util.VarInt(uint64(len(txCopy.Outputs))).Length()
 	for _, out := range txCopy.Outputs {
-		st := make([]byte, 8)
-		binary.LittleEndian.PutUint64(st, out.Satoshis)
-		buf = append(buf, st...)
+		scriptLen := len(*out.LockingScript)
+		size += 8 + util.VarInt(uint64(scriptLen)).Length() + scriptLen
+	}
+	size += 4 + 4 // locktime + sighash flag
 
-		buf = append(buf, util.VarInt(uint64(len(*out.LockingScript))).Bytes()...)
+	buf := make([]byte, 0, size)
+	buf = binary.LittleEndian.AppendUint32(buf, tx.Version)
+	buf = appendVarInt(buf, uint64(len(txCopy.Inputs)))
+	for _, in := range txCopy.Inputs {
+		buf = append(buf, in.SourceTXID[:]...)
+		buf = binary.LittleEndian.AppendUint32(buf, in.SourceTxOutIndex)
+		if s := in.SourceTxScript(); s != nil {
+			buf = appendVarInt(buf, uint64(len(*s)))
+			buf = append(buf, *s...)
+		} else {
+			buf = appendVarInt(buf, 0)
+		}
+		buf = binary.LittleEndian.AppendUint32(buf, in.SequenceNumber)
+	}
+	buf = appendVarInt(buf, uint64(len(txCopy.Outputs)))
+	for _, out := range txCopy.Outputs {
+		buf = binary.LittleEndian.AppendUint64(buf, out.Satoshis)
+		buf = appendVarInt(buf, uint64(len(*out.LockingScript)))
 		buf = append(buf, *out.LockingScript...)
 	}
-
-	// LockTime
-	lt := make([]byte, 4)
-	binary.LittleEndian.PutUint32(lt, tx.LockTime)
-	buf = append(buf, lt...)
-
-	sh := make([]byte, 4)
-	binary.LittleEndian.PutUint32(sh, uint32(shf)>>0)
-	return append(buf, sh...), nil
+	buf = binary.LittleEndian.AppendUint32(buf, tx.LockTime)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(shf))
+	return buf, nil
 }
 
 // OutputsHash returns a bytes slice of the requested output, used for generating
