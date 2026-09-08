@@ -66,18 +66,19 @@ careful byte-for-byte refactor of consensus-critical code, for a rarely-hit path
 call; there is no cache (the struct's fields are all exported and mutable, so a
 read-populated cache could silently go stale).
 
-**Proposed:** add an unexported `atomic.Pointer[chainhash.Hash]` populated
-**only** by an explicit `SetTxHash(*chainhash.Hash)` and read by `TxID` — never
-auto-populated (go-bt's `tx.go` approach). Callers that know a transaction is
-immutable opt in; the getter never writes the cache, so it cannot go stale on
-its own.
+*Implemented on this branch.* `SetTxHash(*chainhash.Hash)` populates an
+unexported cache read by `TxID`; it is never auto-populated, so the getter cannot
+create a value that later goes stale on its own (the caller opts in and owns
+invalidation; `SetTxHash(nil)` clears it). A **plain pointer** is used rather
+than `atomic.Pointer` because the latter's `noCopy` marker would make `go vet`
+reject the existing `*t = *tx` (FromBEEF) and `*tx = Transaction{}` (ReadFrom)
+by-value copies; the field matches `Transaction`'s existing
+(non-concurrent-mutation) contract, and `SetTxHash` documents the
+set-before-share requirement.
 
-**Why deferred:** additive but semantics-sensitive — it places an
-immutability contract on the caller. Needs a documented policy and review.
-(Within a single operation, redundant `TxID()` calls should first be hoisted to
-a local — a pure, non-caching win worth doing independently; see item 8.)
+**Result:** `TxID/inputs=64` 3888 ns / 9792 B / 3 allocs → cached 1.6 ns / 0 / 0.
 
-**Risk:** Medium (staleness foot-gun if misused).
+**Risk:** Medium (staleness foot-gun if misused) — landed with a documented contract.
 
 <br>
 
@@ -134,15 +135,19 @@ on the error contract.
 per call; `MerklePath.Bytes` is un-presized and `CloneBytes()`es each leaf;
 `Beef.Bytes`/`AtomicBytes` copy each transaction two–three times.
 
-**Proposed:** reuse a single 64-byte scratch in `MerkleTreeParent`, pre-size
-`MerklePath.Bytes`, slice leaf hashes with `[:]`, and remove the redundant BEEF
-buffer copies.
+**Partially implemented on this branch:** `MerkleTreeParent` now hashes via a
+stack buffer + `sha256.Sum256` (2 allocs → 1, ~−11%), and `MerklePath.Bytes`
+pre-sizes its buffer and slices leaf hashes with `[:]` (256 leaves: 17 allocs →
+1, −62% time). Both are byte-identical (guarded by a new identity test, the
+merkle/BEEF golden tests, and the MerklePath fuzzer round-trip).
 
-**Why deferred:** medium risk on merkle-root byte-identity; a larger surface than
-the core tx paths. Should be its own reviewed change with `ComputeRoot`/BEEF
-benchmarks and the BEEF golden round-trips as guards.
+**Still deferred:** `ComputeRoot`'s per-level index maps (an algorithmic
+restructure that is the bulk of its remaining allocations) and the redundant
+`Beef.Bytes`/`AtomicBytes` transaction copies. These carry more
+merkle-root/BEEF byte-identity risk and should be a separate reviewed change.
 
-**Risk:** Medium (merkle-root correctness).
+**Risk:** Medium (merkle-root correctness) — the low-risk buffer reuse landed;
+the algorithmic parts remain.
 
 <br>
 
@@ -171,14 +176,14 @@ benchmarks and the BEEF golden round-trips as guards.
 |---|-----------|------|------|
 | 1 | Guarded `ReadFrom` pre-size | pure internal | Low (sub-noise win) |
 | 2 | Legacy sighash preimage | pure internal | Medium (under-pinned) |
-| 3 | `SetTxHash` opt-in txid cache | additive | Medium (staleness) |
+| 3 | `SetTxHash` opt-in txid cache — *implemented* | additive | Medium (staleness) |
 | 4 | `AppendBytes`/`WriteTo` — *implemented* | additive | Low |
 | 5 | Arena allocator | additive | Medium (lifetime) |
 | 6 | `Clone()` rewrite | behavior/signature | Medium |
-| 7 | Merkle/BEEF deep opt | pure internal | Medium (correctness) |
+| 7 | Merkle/BEEF: buffer reuse *implemented*; ComputeRoot maps + BEEF copies deferred | pure internal | Medium (correctness) |
 | 8 | PushDrop cache, bench normalize (+ residual `ValidateTransactions` txid) | mixed | Low |
 
-**Recommended sequencing:** the additive `SetTxHash` cache (3) behind a reviewed
-minor release, then the higher-risk internal refactors (2, 7) each with a
-characterization test added first, and finally 5 and 6 as separate reviewed
-changes.
+**Recommended sequencing:** the remaining higher-risk internal refactors —
+legacy sighash (2) and the `ComputeRoot`/BEEF algorithmic parts of (7) — each
+with a characterization test added first, then the arena allocator (5) and the
+`Clone()` rewrite (6) as separate reviewed changes.
