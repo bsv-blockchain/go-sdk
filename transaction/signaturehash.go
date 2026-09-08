@@ -139,39 +139,51 @@ func (tx *Transaction) preimage(inputNumber uint32, sigHashFlag sighash.Flag, ca
 	}
 
 	var zero [32]byte
-	hashPreviousOuts := zero[:]
-	hashSequence := zero[:]
-	hashOutputs := zero[:]
+	hashPreviousOuts, hashSequence, hashOutputs := zero[:], zero[:], zero[:]
 
-	notSingleOrNone := (sigHashFlag&31) != sighash.Single && (sigHashFlag&31) != sighash.None
+	masked := sigHashFlag & 31
+	notSingleOrNone := masked != sighash.Single && masked != sighash.None
 
 	// Usual BSV case is SIGHASH_ALL|FORKID: all three midstates are used.
 	if sigHashFlag&sighash.AnyOneCanPay == 0 {
-		if cache != nil {
-			hashPreviousOuts = cache.prevoutsHash
-		} else {
-			hashPreviousOuts = tx.SourceOutHash().CloneBytes()
-		}
+		hashPreviousOuts = tx.prevoutsMidstate(cache)
 		if notSingleOrNone {
-			if cache != nil {
-				hashSequence = cache.sequenceHash
-			} else {
-				hashSequence = tx.SequenceHash()
-			}
+			hashSequence = tx.sequenceMidstate(cache)
 		}
 	}
 
 	if notSingleOrNone {
-		if cache != nil {
-			hashOutputs = cache.outputsHash
-		} else {
-			hashOutputs = tx.OutputsHash(-1)
-		}
-	} else if (sigHashFlag&31) == sighash.Single && inputNumber < uint32(tx.OutputCount()) { //nolint:gosec // G115 -- output count is bounded well within uint32
+		hashOutputs = tx.outputsMidstate(cache)
+	} else if masked == sighash.Single && inputNumber < uint32(tx.OutputCount()) { //nolint:gosec // G115 -- output count is bounded well within uint32
 		hashOutputs = tx.OutputsHash(int32(inputNumber)) //nolint:gosec // G115 -- inputNumber is bounded by the number of transaction outputs (checked above)
 	}
 
 	return tx.assemblePreimage(in, sigHashFlag, hashPreviousOuts, hashSequence, hashOutputs), nil
+}
+
+// prevoutsMidstate returns the BIP143 hashPrevouts, reusing the cache when set.
+func (tx *Transaction) prevoutsMidstate(cache *SigHashCache) []byte {
+	if cache != nil {
+		return cache.prevoutsHash
+	}
+	return tx.SourceOutHash().CloneBytes()
+}
+
+// sequenceMidstate returns the BIP143 hashSequence, reusing the cache when set.
+func (tx *Transaction) sequenceMidstate(cache *SigHashCache) []byte {
+	if cache != nil {
+		return cache.sequenceHash
+	}
+	return tx.SequenceHash()
+}
+
+// outputsMidstate returns the BIP143 hashOutputs over all outputs, reusing the
+// cache when set.
+func (tx *Transaction) outputsMidstate(cache *SigHashCache) []byte {
+	if cache != nil {
+		return cache.outputsHash
+	}
+	return tx.OutputsHash(-1)
 }
 
 // assemblePreimage writes the BIP143 preimage for a single input into one

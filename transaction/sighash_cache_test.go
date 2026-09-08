@@ -65,29 +65,32 @@ func TestSigHashCacheEquivalence(t *testing.T) {
 func BenchmarkPreimageAllInputs(b *testing.B) {
 	for _, nIn := range []int{1, 16, 64} {
 		tx := benchP2PKHTx(b, nIn)
-
 		b.Run(fmt.Sprintf("uncached/inputs=%d", nIn), func(b *testing.B) {
-			b.ReportAllocs()
-			for b.Loop() {
-				for vin := range nIn {
-					if _, err := tx.CalcInputPreimage(uint32(vin), sighash.AllForkID); err != nil {
-						b.Fatal(err)
-					}
-				}
-			}
+			benchAllPreimages(b, tx, nIn, false)
 		})
-
 		b.Run(fmt.Sprintf("cached/inputs=%d", nIn), func(b *testing.B) {
-			b.ReportAllocs()
-			for b.Loop() {
-				cache := tx.NewSigHashCache()
-				for vin := range nIn {
-					if _, err := tx.CalcInputPreimageWithCache(uint32(vin), sighash.AllForkID, cache); err != nil {
-						b.Fatal(err)
-					}
-				}
-			}
+			benchAllPreimages(b, tx, nIn, true)
 		})
+	}
+}
+
+// benchAllPreimages computes the sighash preimage for every input of tx once per
+// b.Loop iteration. With useCache the BIP143 midstates are computed once per pass
+// (O(N)); without it each call recomputes them (O(N^2)). A nil cache to
+// CalcInputPreimageWithCache is exactly CalcInputPreimage.
+func benchAllPreimages(b *testing.B, tx *transaction.Transaction, nIn int, useCache bool) {
+	b.Helper()
+	b.ReportAllocs()
+	for b.Loop() {
+		var cache *transaction.SigHashCache
+		if useCache {
+			cache = tx.NewSigHashCache()
+		}
+		for vin := range nIn {
+			if _, err := tx.CalcInputPreimageWithCache(uint32(vin), sighash.AllForkID, cache); err != nil {
+				b.Fatal(err)
+			}
+		}
 	}
 }
 
