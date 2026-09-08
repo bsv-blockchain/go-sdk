@@ -33,30 +33,36 @@ type TransactionOutput struct {
 
 // ReadFrom reads from the `io.Reader` into the `transaction.TransactionOutput`.
 func (o *TransactionOutput) ReadFrom(r io.Reader) (int64, error) {
+	return o.readFrom(r, make([]byte, 32))
+}
+
+// readFrom decodes a single output from r using the caller's reusable scratch
+// buffer (len >= 8), so a whole transaction parses with one header allocation.
+// The satoshi field is read into scratch and parsed immediately; the locking
+// script keeps its own retained allocation because script.NewFromBytes aliases
+// it.
+func (o *TransactionOutput) readFrom(r io.Reader, scratch []byte) (int64, error) {
 	*o = TransactionOutput{}
 	var bytesRead int64
 
-	satoshis := make([]byte, 8)
-	n, err := io.ReadFull(r, satoshis)
+	n, err := io.ReadFull(r, scratch[:8])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, errors.Wrapf(err, "satoshis(8): got %d bytes", n)
 	}
+	o.Satoshis = binary.LittleEndian.Uint64(scratch[:8])
 
-	var l util.VarInt
-	n64, err := l.ReadFrom(r)
+	scriptLen, n64, err := readVarInt(r, scratch)
 	bytesRead += n64
 	if err != nil {
 		return bytesRead, err
 	}
 
-	scriptBytes, n, err := readGuardedBytes(r, uint64(l), "output locking script")
+	scriptBytes, n, err := readGuardedBytes(r, scriptLen, "output locking script")
 	bytesRead += int64(n)
 	if err != nil {
-		return bytesRead, errors.Wrapf(err, "lockingScript(%d): got %d bytes", l, n)
+		return bytesRead, errors.Wrapf(err, "lockingScript(%d): got %d bytes", scriptLen, n)
 	}
-
-	o.Satoshis = binary.LittleEndian.Uint64(satoshis)
 	o.LockingScript = script.NewFromBytes(scriptBytes)
 
 	return bytesRead, nil

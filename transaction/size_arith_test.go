@@ -84,6 +84,38 @@ func TestBytesForSigHashEqualsBytes(t *testing.T) {
 	}
 }
 
+// TestParseRoundTripVarIntBoundaries locks that a transaction serialized with
+// multi-byte CompactSize VarInts — for the input count, output count and script
+// lengths — parses back byte-identically. It deterministically exercises the
+// 0xfd (2-byte) and 0xfe (4-byte) VarInt read branches and the guarded slice
+// pre-size against large counts, none of which the fixed P2PKH benchmark
+// fixtures or the golden vectors reach.
+func TestParseRoundTripVarIntBoundaries(t *testing.T) {
+	cases := []struct {
+		name                      string
+		nIn, nOut                 int
+		inScriptLen, outScriptLen int
+	}{
+		// 253 crosses the 1-byte -> 3-byte (0xfd) VarInt boundary for both the
+		// element counts and the script lengths.
+		{"count-and-script-varint253", 253, 253, 253, 253},
+		// 65536 crosses the 3-byte -> 5-byte (0xfe) boundary for a script length.
+		{"script-varint65536", 1, 1, 65536, 25},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tx := sizeTestTx(tc.nIn, tc.nOut, tc.inScriptLen, tc.outScriptLen)
+			raw := tx.Bytes()
+
+			parsed, err := NewTransactionFromBytes(raw)
+			require.NoError(t, err)
+			require.Len(t, parsed.Inputs, tc.nIn)
+			require.Len(t, parsed.Outputs, tc.nOut)
+			require.Equal(t, raw, parsed.Bytes(), "parse->serialize must be byte-identical")
+		})
+	}
+}
+
 // TestSerializedSizeMatchesAllModes locks that the arithmetic serializedSize
 // used to pre-size the serialization buffer matches the actual byte length
 // produced by toBytesHelper in every mode: raw, cleared-input (signing), and

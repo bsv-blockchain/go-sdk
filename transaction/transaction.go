@@ -86,34 +86,40 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 	var n64 int64
 	var err error
 
-	version := make([]byte, 4)
-	n, err := io.ReadFull(r, version)
+	// One reusable scratch buffer for every fixed-size field and length prefix
+	// in this parse: large enough for the 32-byte previous-txid, and threaded
+	// into input/output parsing. Slices of it feed binary.LittleEndian and
+	// chainhash.NewHash (which read/copy immediately) and readVarInt, so the
+	// whole transaction decodes with a single header allocation instead of a
+	// fresh make([]byte, ...) per field.
+	scratch := make([]byte, 32)
+
+	n, err := io.ReadFull(r, scratch[:4])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, err
 	}
 
-	tx.Version = binary.LittleEndian.Uint32(version)
+	tx.Version = binary.LittleEndian.Uint32(scratch[:4])
 
 	extended := false
 
-	var inputCount util.VarInt
+	var inputCount uint64
 
-	n64, err = inputCount.ReadFrom(r)
+	inputCount, n64, err = readVarInt(r, scratch)
 	bytesRead += n64
 	if err != nil {
 		return bytesRead, err
 	}
 
-	var outputCount util.VarInt
-	locktime := make([]byte, 4)
+	var outputCount uint64
 
 	// ----------------------------------------------------------------------------------
 	// If the inputCount is 0, we may be parsing an incomplete transaction, or we may be
 	// both of these cases without needing to rewind (peek) the incoming stream of bytes.
 	// ----------------------------------------------------------------------------------
 	if inputCount == 0 {
-		n64, err = outputCount.ReadFrom(r)
+		outputCount, n64, err = readVarInt(r, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
@@ -121,20 +127,20 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 
 		if outputCount == 0 {
 			// Read in lock time
-			n, err = io.ReadFull(r, locktime)
+			n, err = io.ReadFull(r, scratch[:4])
 			bytesRead += int64(n)
 			if err != nil {
 				return bytesRead, err
 			}
 
-			if binary.BigEndian.Uint32(locktime) != 0xEF {
-				tx.LockTime = binary.LittleEndian.Uint32(locktime)
+			if binary.BigEndian.Uint32(scratch[:4]) != 0xEF {
+				tx.LockTime = binary.LittleEndian.Uint32(scratch[:4])
 				return bytesRead, nil
 			}
 
 			extended = true
 
-			n64, err = inputCount.ReadFrom(r)
+			inputCount, n64, err = readVarInt(r, scratch)
 			bytesRead += n64
 			if err != nil {
 				return bytesRead, err
@@ -148,9 +154,21 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 	// ----------------------------------------------------------------------------------
 
 	// create Inputs
-	for i := uint64(0); i < uint64(inputCount); i++ {
+	if _, ok := r.(byteLenReader); ok {
+		// In-memory reader (the untrusted-binary parse entry points wrap their
+		// input in a *bytes.Reader): pre-size the slice, first guarding the
+		// attacker-controlled count against the bytes that remain (min 41 per
+		// input) so make() cannot be handed an oversized length. Streaming
+		// readers, which cannot report a remaining length, keep appending
+		// unchanged.
+		if err = guardParseCount(r, inputCount, minInputParseBytes, "inputs"); err != nil {
+			return bytesRead, err
+		}
+		tx.Inputs = make([]*TransactionInput, 0, inputCount)
+	}
+	for i := uint64(0); i < inputCount; i++ {
 		input := &TransactionInput{}
-		n64, err = input.readFrom(r, extended)
+		n64, err = input.readFrom(r, extended, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
@@ -160,16 +178,22 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 
 	if inputCount > 0 || extended {
 		// Re-read the actual output count...
-		n64, err = outputCount.ReadFrom(r)
+		outputCount, n64, err = readVarInt(r, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
 		}
 	}
 
-	for i := uint64(0); i < uint64(outputCount); i++ {
+	if _, ok := r.(byteLenReader); ok {
+		if err = guardParseCount(r, outputCount, minOutputParseBytes, "outputs"); err != nil {
+			return bytesRead, err
+		}
+		tx.Outputs = make([]*TransactionOutput, 0, outputCount)
+	}
+	for i := uint64(0); i < outputCount; i++ {
 		output := new(TransactionOutput)
-		n64, err = output.ReadFrom(r)
+		n64, err = output.readFrom(r, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
@@ -178,12 +202,12 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 		tx.Outputs = append(tx.Outputs, output)
 	}
 
-	n, err = io.ReadFull(r, locktime)
+	n, err = io.ReadFull(r, scratch[:4])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, err
 	}
-	tx.LockTime = binary.LittleEndian.Uint32(locktime)
+	tx.LockTime = binary.LittleEndian.Uint32(scratch[:4])
 
 	return bytesRead, nil
 }
