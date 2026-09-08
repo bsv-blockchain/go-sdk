@@ -65,7 +65,7 @@ func TestInput_String(t *testing.T) {
 		i := &TransactionInput{}
 		var s int64
 
-		s, err = i.readFrom(bytes.NewReader(b), false, make([]byte, 32))
+		s, err = i.ReadFrom(bytes.NewReader(b))
 		require.NoError(t, err)
 		require.NotNil(t, i)
 		require.Equal(t, int64(148), s)
