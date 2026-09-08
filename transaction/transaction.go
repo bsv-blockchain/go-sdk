@@ -23,6 +23,13 @@ type Transaction struct {
 	Outputs    []*TransactionOutput `json:"outputs"`
 	LockTime   uint32               `json:"locktime"`
 	MerklePath *MerklePath          `json:"merklePath"`
+
+	// cachedTxID is an optional, caller-populated txid cache. It is set ONLY via
+	// SetTxHash and is never auto-populated by TxID(), so a read can never leave
+	// a value that later goes stale on its own; the caller opts in and owns
+	// invalidation. Unexported, so it is ignored by JSON and does not affect the
+	// public API.
+	cachedTxID *chainhash.Hash
 }
 
 // Transactions a collection of *transaction.Transaction.
@@ -268,8 +275,23 @@ func (tx *Transaction) IsCoinbase() bool {
 }
 
 func (tx *Transaction) TxID() *chainhash.Hash {
+	if tx.cachedTxID != nil {
+		return tx.cachedTxID
+	}
 	txid, _ := chainhash.NewHash(crypto.Sha256d(tx.Bytes()))
 	return txid
+}
+
+// SetTxHash sets an optional cached transaction ID that TxID returns without
+// recomputation. Use it only when the txid is already known and the transaction
+// will not change afterwards -- e.g. a transaction parsed from a trusted source
+// that is then read many times, or shared read-only across goroutines after the
+// hash is set. TxID never populates or invalidates this cache itself, so a later
+// mutation of the transaction would leave a stale value; the caller owns
+// invalidation. Pass nil to clear the cache. The returned hash must not be
+// mutated. Not safe to call concurrently with TxID on the same transaction.
+func (tx *Transaction) SetTxHash(hash *chainhash.Hash) {
+	tx.cachedTxID = hash
 }
 
 // // TxID returns the transaction ID of the transaction
