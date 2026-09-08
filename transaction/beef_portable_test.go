@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -26,16 +27,35 @@ type portableBeefRecord struct {
 }
 
 func portableBeefSnapshot(b *Beef) ([]byte, error) {
-	entries := make(map[string]*BeefTx, len(b.Transactions))
+	type txSnap struct {
+		TxID string `json:"txid"`
+		Raw  string `json:"raw"`
+		Only bool   `json:"only"`
+		Bump int    `json:"bump"`
+	}
+	txs := make([]txSnap, 0, len(b.Transactions))
 	for id, entry := range b.Transactions {
-		entries[id.String()] = entry
+		item := txSnap{TxID: id.String(), Bump: entry.BumpIndex, Only: entry.DataFormat == TxIDOnly}
+		if entry.Transaction != nil {
+			item.Raw = entry.Transaction.Hex()
+		}
+		txs = append(txs, item)
+	}
+	sort.Slice(txs, func(i, j int) bool { return txs[i].TxID < txs[j].TxID })
+	bumps := make([]string, 0, len(b.BUMPs))
+	for _, proof := range b.BUMPs {
+		bumps = append(bumps, proof.Hex())
+	}
+	newest := ""
+	if b.NewestTxID != nil {
+		newest = b.NewestTxID.String()
 	}
 	return json.Marshal(struct {
-		Version      uint32             `json:"version"`
-		Newest       *chainhash.Hash    `json:"newest"`
-		BUMPs        []*MerklePath      `json:"bumps"`
-		Transactions map[string]*BeefTx `json:"transactions"`
-	}{b.Version, b.NewestTxID, b.BUMPs, entries})
+		Version      uint32   `json:"version"`
+		Newest       string   `json:"newest"`
+		Bumps        []string `json:"bumps"`
+		Transactions []txSnap `json:"transactions"`
+	}{b.Version, newest, bumps, txs})
 }
 
 func assertPortableBeef(t *testing.T, actual *Beef, expected portableBeefRecord) {

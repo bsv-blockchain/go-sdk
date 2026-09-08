@@ -65,7 +65,7 @@ func record(b *transaction.Beef, bytes []byte) beefRecord {
 
 func main() {
 	if len(os.Args) != 2 {
-		panic("usage: go-beef-probe.go /path/to/ts-interop-fixtures.json")
+		panic("usage: go run ./transaction/testdata/beef-compatibility/forward <fixtures.json>")
 	}
 	contents, err := os.ReadFile(os.Args[1])
 	if err != nil {

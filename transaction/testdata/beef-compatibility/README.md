@@ -74,8 +74,8 @@ node transaction/testdata/beef-compatibility/generate-ts-interop-fixtures.mjs > 
 cmp "$TS_INTEROP_FIXTURES" /tmp/regenerated-beef.json
 export GO_BEEF_PROBE_OUTPUT=/tmp/go-beef-forward.json
 export GO_REVERSE_OUTPUT=/tmp/go-beef-reverse.json
-GOTOOLCHAIN=go1.26.8 go run transaction/testdata/beef-compatibility/go-beef-probe.go "$TS_INTEROP_FIXTURES" > "$GO_BEEF_PROBE_OUTPUT"
-GOTOOLCHAIN=go1.26.8 go run transaction/testdata/beef-compatibility/go-beef-reverse-probe.go "$TS_INTEROP_FIXTURES" > "$GO_REVERSE_OUTPUT"
+GOTOOLCHAIN=go1.26.8 go run ./transaction/testdata/beef-compatibility/forward "$TS_INTEROP_FIXTURES" > "$GO_BEEF_PROBE_OUTPUT"
+GOTOOLCHAIN=go1.26.8 go run ./transaction/testdata/beef-compatibility/reverse "$TS_INTEROP_FIXTURES" > "$GO_REVERSE_OUTPUT"
 node transaction/testdata/beef-compatibility/check-go-output-with-ts.mjs
 node transaction/testdata/beef-compatibility/check-go-reverse-with-ts.mjs
 ```

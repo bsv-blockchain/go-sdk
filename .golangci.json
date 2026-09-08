@@ -13,7 +13,8 @@
                 ".vscode",
                 "dist",
                 "third_party$",
-                "builtin$"
+                "builtin$",
+                "testdata"
             ]
         },
         "settings": {
@@ -112,6 +113,9 @@
             "zerologlint"
         ],
         "exclusions": {
+            "paths": [
+                "testdata"
+            ],
             "rules": [
                 {
                     "linters": [

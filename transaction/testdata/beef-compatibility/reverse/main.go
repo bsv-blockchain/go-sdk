@@ -46,7 +46,7 @@ func must(err error) {
 func digest(b []byte) string { h := sha256.Sum256(b); return hex.EncodeToString(h[:]) }
 func main() {
 	if len(os.Args) != 2 {
-		panic("usage: go-beef-reverse-probe.go matrix.json")
+		panic("usage: go run ./transaction/testdata/beef-compatibility/reverse <matrix.json>")
 	}
 	raw, err := os.ReadFile(os.Args[1])
 	must(err)
