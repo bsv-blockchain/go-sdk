@@ -206,6 +206,16 @@ func (i *TransactionInput) Bytes(clearScript bool) []byte {
 	return h
 }
 
+// size returns the serialized length of the input in bytes, matching
+// Bytes(clearScript), without allocating.
+func (i *TransactionInput) size(clearScript bool) int {
+	if clearScript || i.UnlockingScript == nil {
+		return 32 + 4 + 1 + 4 // txid + index + empty-script varint + sequence
+	}
+	scriptLen := len(*i.UnlockingScript)
+	return 32 + 4 + util.VarInt(uint64(scriptLen)).Length() + scriptLen + 4
+}
+
 func (i *TransactionInput) SetSourceTxOutput(txo *TransactionOutput) {
 	i.sourceOutput = txo
 }

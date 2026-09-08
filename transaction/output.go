@@ -90,6 +90,13 @@ func (o *TransactionOutput) Bytes() []byte {
 	return h
 }
 
+// size returns the serialized length of the output in bytes, matching
+// Bytes(), without allocating.
+func (o *TransactionOutput) size() int {
+	scriptLen := len(*o.LockingScript)
+	return 8 + util.VarInt(uint64(scriptLen)).Length() + scriptLen
+}
+
 // BytesForSigHash returns the proper serialization
 // of an output to be hashed and signed (sighash).
 func (o *TransactionOutput) BytesForSigHash() []byte {

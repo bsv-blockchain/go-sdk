@@ -488,7 +488,20 @@ func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended b
 
 // Size will return the size of tx in bytes.
 func (tx *Transaction) Size() int {
-	return len(tx.Bytes())
+	// Compute the serialized length arithmetically instead of serializing the
+	// whole transaction. This mirrors the raw byte layout produced by Bytes()
+	// (toBytesHelper with a nil locking script, non-extended) and allocates
+	// nothing. TestSizeMatchesSerializedLength locks Size() == len(Bytes()).
+	size := 8 // version (4) + locktime (4)
+	size += util.VarInt(uint64(len(tx.Inputs))).Length()
+	for _, in := range tx.Inputs {
+		size += in.size(false)
+	}
+	size += util.VarInt(uint64(len(tx.Outputs))).Length()
+	for _, out := range tx.Outputs {
+		size += out.size()
+	}
+	return size
 }
 
 func (tx *Transaction) AddMerkleProof(bump *MerklePath) error {
