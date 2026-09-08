@@ -388,120 +388,96 @@ func (tx *Transaction) ShallowClone() *Transaction {
 }
 
 func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended bool) []byte {
-	// First pass: calculate total size
-	totalLen := 4 // version
-	if extended {
-		totalLen += 6 // extended header
-	}
-	totalLen += util.VarInt(uint64(len(tx.Inputs))).Length()
+	// Pre-size the buffer exactly, then append each field directly into it.
+	// This avoids the per-input/per-output throwaway []byte allocations the
+	// previous two-pass implementation made (one Bytes() per element, copied
+	// in and discarded). Output bytes are identical; guarded by the golden
+	// raw/EF hex tests and the parser fuzz round-trips.
+	h := make([]byte, 0, tx.serializedSize(index, lockingScript, extended))
 
-	// Pre-calculate input sizes
-	inputBytes := make([][]byte, len(tx.Inputs))
+	h = binary.LittleEndian.AppendUint32(h, tx.Version)
+
+	if extended {
+		h = append(h, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEF)
+	}
+
+	h = appendVarInt(h, uint64(len(tx.Inputs)))
 	for i, in := range tx.Inputs {
-		inputBytes[i] = in.Bytes(lockingScript != nil)
 		if i == index && lockingScript != nil {
-			totalLen += util.VarInt(uint64(len(lockingScript))).Length() + len(lockingScript)
+			h = appendVarInt(h, uint64(len(lockingScript)))
+			h = append(h, lockingScript...)
 		} else {
-			totalLen += len(inputBytes[i])
+			h = in.appendTo(h, lockingScript != nil)
 		}
+
 		if extended {
-			totalLen += 8 // satoshis
-			sourceTxOut := in.SourceTxOutput()
-			if sourceTxOut != nil {
-				scriptLen := len(*sourceTxOut.LockingScript)
-				totalLen += util.VarInt(uint64(scriptLen)).Length() + scriptLen
+			if sourceTxOut := in.SourceTxOutput(); sourceTxOut != nil {
+				h = binary.LittleEndian.AppendUint64(h, sourceTxOut.Satoshis)
+				h = appendVarInt(h, uint64(len(*sourceTxOut.LockingScript)))
+				h = append(h, *sourceTxOut.LockingScript...)
 			} else {
-				totalLen += 1 // zero length varint
+				h = binary.LittleEndian.AppendUint64(h, 0)
+				h = append(h, 0x00)
 			}
 		}
 	}
 
-	totalLen += util.VarInt(uint64(len(tx.Outputs))).Length()
+	h = appendVarInt(h, uint64(len(tx.Outputs)))
 	for _, out := range tx.Outputs {
-		scriptLen := len(*out.LockingScript)
-		totalLen += 8 + util.VarInt(uint64(scriptLen)).Length() + scriptLen
-	}
-	totalLen += 4 // locktime
-
-	// Second pass: write data
-	h := make([]byte, totalLen)
-	offset := 0
-
-	binary.LittleEndian.PutUint32(h[offset:], tx.Version)
-	offset += 4
-
-	if extended {
-		copy(h[offset:], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0xEF})
-		offset += 6
+		h = out.appendTo(h)
 	}
 
-	inputCountBytes := util.VarInt(uint64(len(tx.Inputs))).Bytes()
-	copy(h[offset:], inputCountBytes)
-	offset += len(inputCountBytes)
-
-	for i, in := range tx.Inputs {
-		if i == index && lockingScript != nil {
-			scriptLenBytes := util.VarInt(uint64(len(lockingScript))).Bytes()
-			copy(h[offset:], scriptLenBytes)
-			offset += len(scriptLenBytes)
-			copy(h[offset:], lockingScript)
-			offset += len(lockingScript)
-		} else {
-			copy(h[offset:], inputBytes[i])
-			offset += len(inputBytes[i])
-		}
-
-		if extended {
-			sourceTxOut := in.SourceTxOutput()
-			if sourceTxOut != nil {
-				binary.LittleEndian.PutUint64(h[offset:], sourceTxOut.Satoshis)
-				offset += 8
-				scriptLen := uint64(len(*sourceTxOut.LockingScript))
-				scriptLenBytes := util.VarInt(scriptLen).Bytes()
-				copy(h[offset:], scriptLenBytes)
-				offset += len(scriptLenBytes)
-				copy(h[offset:], *sourceTxOut.LockingScript)
-				offset += int(scriptLen) //nolint:gosec // G115 -- scriptLen is derived from an existing slice length, already bounded by int range
-			} else {
-				binary.LittleEndian.PutUint64(h[offset:], 0)
-				offset += 8
-				h[offset] = 0x00
-				offset++
-			}
-		}
-	}
-
-	outputCountBytes := util.VarInt(uint64(len(tx.Outputs))).Bytes()
-	copy(h[offset:], outputCountBytes)
-	offset += len(outputCountBytes)
-
-	for _, out := range tx.Outputs {
-		outBytes := out.Bytes()
-		copy(h[offset:], outBytes)
-		offset += len(outBytes)
-	}
-
-	binary.LittleEndian.PutUint32(h[offset:], tx.LockTime)
+	h = binary.LittleEndian.AppendUint32(h, tx.LockTime)
 
 	return h
 }
 
 // Size will return the size of tx in bytes.
 func (tx *Transaction) Size() int {
-	// Compute the serialized length arithmetically instead of serializing the
-	// whole transaction. This mirrors the raw byte layout produced by Bytes()
-	// (toBytesHelper with a nil locking script, non-extended) and allocates
-	// nothing. TestSizeMatchesSerializedLength locks Size() == len(Bytes()).
-	size := 8 // version (4) + locktime (4)
+	return tx.serializedSize(0, nil, false)
+}
+
+// serializedSize returns the exact number of bytes toBytesHelper will produce
+// for the given mode, computed arithmetically without allocating. It is used to
+// pre-size the serialization buffer and to implement Size(). The result mirrors
+// the raw byte layout of toBytesHelper; TestSizeMatchesSerializedLength locks
+// Size() == len(Bytes()).
+func (tx *Transaction) serializedSize(index int, lockingScript []byte, extended bool) int {
+	size := 4 // version
+	if extended {
+		size += 6 // extended marker
+	}
 	size += util.VarInt(uint64(len(tx.Inputs))).Length()
-	for _, in := range tx.Inputs {
-		size += in.size(false)
+	for i, in := range tx.Inputs {
+		if i == index && lockingScript != nil {
+			size += util.VarInt(uint64(len(lockingScript))).Length() + len(lockingScript)
+		} else {
+			size += in.size(lockingScript != nil)
+		}
+		if extended {
+			size += 8 // source satoshis
+			if sourceTxOut := in.SourceTxOutput(); sourceTxOut != nil {
+				scriptLen := len(*sourceTxOut.LockingScript)
+				size += util.VarInt(uint64(scriptLen)).Length() + scriptLen
+			} else {
+				size++ // zero-length source script varint
+			}
+		}
 	}
 	size += util.VarInt(uint64(len(tx.Outputs))).Length()
 	for _, out := range tx.Outputs {
 		size += out.size()
 	}
+	size += 4 // locktime
 	return size
+}
+
+// appendVarInt appends v in Bitcoin VarInt encoding to dst using a stack buffer
+// (no allocation). Byte-identical to util.VarInt(v).Bytes().
+func appendVarInt(dst []byte, v uint64) []byte {
+	var b [9]byte
+	n := util.VarInt(v).PutBytes(b[:])
+	return append(dst, b[:n]...)
 }
 
 func (tx *Transaction) AddMerkleProof(bump *MerklePath) error {

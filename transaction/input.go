@@ -171,39 +171,24 @@ sequence:     %x
 	)
 }
 
-// Bytes encodes the Input into a hex byte array.
+// Bytes encodes the Input into a byte array.
 func (i *TransactionInput) Bytes(clearScript bool) []byte {
-	// Calculate total size: 32 (txid) + 4 (index) + varint + script + 4 (sequence)
-	var scriptLen int
-	var varInt util.VarInt
-	var varIntLen int
+	return i.appendTo(make([]byte, 0, i.size(clearScript)), clearScript)
+}
+
+// appendTo appends the serialized input to buf and returns the extended slice,
+// matching Bytes(clearScript). It performs no allocation when buf has capacity.
+func (i *TransactionInput) appendTo(buf []byte, clearScript bool) []byte {
+	buf = append(buf, i.SourceTXID[:]...)
+	buf = binary.LittleEndian.AppendUint32(buf, i.SourceTxOutIndex)
 	if clearScript || i.UnlockingScript == nil {
-		varIntLen = 1
-		scriptLen = 0
+		buf = append(buf, 0x00)
 	} else {
-		scriptLen = len(*i.UnlockingScript)
-		varInt = util.VarInt(uint64(scriptLen))
-		varIntLen = varInt.Length()
+		buf = appendVarInt(buf, uint64(len(*i.UnlockingScript)))
+		buf = append(buf, *i.UnlockingScript...)
 	}
-	totalLen := 32 + 4 + varIntLen + scriptLen + 4
-
-	h := make([]byte, totalLen)
-	copy(h[0:32], i.SourceTXID.CloneBytes())
-	binary.LittleEndian.PutUint32(h[32:36], i.SourceTxOutIndex)
-
-	offset := 36
-	if clearScript || i.UnlockingScript == nil {
-		h[offset] = 0x00
-		offset++
-	} else {
-		varInt.PutBytes(h[offset:])
-		offset += varIntLen
-		copy(h[offset:], *i.UnlockingScript)
-		offset += scriptLen
-	}
-
-	binary.LittleEndian.PutUint32(h[offset:], i.SequenceNumber)
-	return h
+	buf = binary.LittleEndian.AppendUint32(buf, i.SequenceNumber)
+	return buf
 }
 
 // size returns the serialized length of the input in bytes, matching

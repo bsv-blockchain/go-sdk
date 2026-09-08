@@ -77,17 +77,16 @@ script:    %s
 
 // Bytes encodes the Output into a byte array.
 func (o *TransactionOutput) Bytes() []byte {
-	scriptLen := len(*o.LockingScript)
-	varInt := util.VarInt(uint64(scriptLen))
-	varIntLen := varInt.Length()
-	totalLen := 8 + varIntLen + scriptLen
+	return o.appendTo(make([]byte, 0, o.size()))
+}
 
-	h := make([]byte, totalLen)
-	binary.LittleEndian.PutUint64(h[0:8], o.Satoshis)
-	varInt.PutBytes(h[8:])
-	copy(h[8+varIntLen:], *o.LockingScript)
-
-	return h
+// appendTo appends the serialized output to buf and returns the extended slice,
+// matching Bytes(). It performs no allocation when buf has capacity.
+func (o *TransactionOutput) appendTo(buf []byte) []byte {
+	buf = binary.LittleEndian.AppendUint64(buf, o.Satoshis)
+	buf = appendVarInt(buf, uint64(len(*o.LockingScript)))
+	buf = append(buf, *o.LockingScript...)
+	return buf
 }
 
 // size returns the serialized length of the output in bytes, matching
