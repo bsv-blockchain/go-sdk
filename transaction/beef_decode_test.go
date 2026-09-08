@@ -209,6 +209,8 @@ func FuzzNewBeefFromBytesDoesNotPanic(f *testing.F) {
 		if len(beef) > 64*1024 {
 			return
 		}
+		var receiver Transaction
+		assert.NotPanics(t, func() { _ = receiver.FromBEEF(beef) })
 		assert.NotPanics(t, func() {
 			_, _ = NewBeefFromBytes(beef)
 		})

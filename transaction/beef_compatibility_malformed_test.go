@@ -299,3 +299,11 @@ func TestBEEFCompatibilityFixtureUsesPermissiveVarInts(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, append(binary.LittleEndian.AppendUint32(nil, BEEF_V2), util.VarInt(0).Bytes()...), encoded[:5])
 }
+
+func TestFromBEEFEmptyPreservesReceiver(t *testing.T) {
+	tx := benchTx(10)
+	before := tx.Bytes()
+	err := tx.FromBEEF([]byte{1, 0, 0xbe, 0xef, 0, 0})
+	require.ErrorContains(t, err, "no raw transaction")
+	require.Equal(t, before, tx.Bytes())
+}

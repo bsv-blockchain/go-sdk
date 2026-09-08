@@ -101,6 +101,9 @@ func (t *Transaction) FromBEEF(beef []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse BEEF bytes: %w", err)
 	}
+	if tx == nil {
+		return fmt.Errorf("BEEF contains no raw transaction")
+	}
 	*t = *tx
 	return nil
 }
