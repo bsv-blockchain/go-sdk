@@ -12,25 +12,39 @@ a win within the measurement noise. Each needs its own review before landing.
 
 <br>
 
-## 1. Guarded pre-sizing of `Transaction.ReadFrom` slices
+## 1. Deserialization scratch reuse + guarded slice pre-sizing
 
-**Current** (`transaction.go` `ReadFrom`): `tx.Inputs`/`tx.Outputs` are grown
-with `append` in the parse loops, with no pre-allocation. The loop is already
-DoS-safe because it reads one element at a time and stops when the reader is
-exhausted.
+*Implemented on this branch.* Two related parse-path allocation reductions.
 
-**Proposed:** call `guardParseCount(r, count, minBytesPerElem, ...)` (min 41 for
-an input, 9 for an output) and then `make([]*T, 0, count)` before each loop,
-mirroring `merklepath.go`/`beef.go`.
+- **One reusable header scratch.** `Transaction.ReadFrom` allocates a single
+  32-byte scratch and threads it through `input.readFrom` / `output.readFrom`
+  (the exported `TransactionOutput.ReadFrom` delegates with its own buffer, so its
+  signature is unchanged). Each fixed-size field (version, txid, index, sequence,
+  satoshis, locktime) is read into the scratch and parsed immediately —
+  `chainhash.NewHash` copies and `binary.LittleEndian` reads in place — instead of
+  a fresh `make([]byte, 32/4/4/8)` per field. Length prefixes use a new unexported
+  `readVarInt(r, scratch)` (`parse_guard.go`) that decodes into the same scratch,
+  removing the per-call `make([]byte, 1)` that `util.VarInt.ReadFrom` does on every
+  varint. The scratch escapes once (like `WriteTo`'s reused buffer), so a whole
+  transaction parses with ~1 header allocation instead of ~4 per input.
+- **Guarded slice pre-sizing.** For in-memory readers (every untrusted-binary
+  entry point wraps its input in a `*bytes.Reader`), `guardParseCount(r, count,
+  min, ...)` (min 41/input, 9/output) rejects a count the remaining bytes cannot
+  satisfy, then `make([]*T, 0, count)` avoids the append regrowth. Streaming
+  readers keep growing by append, so their behavior is unchanged.
 
-**Why deferred:** the only saving is the handful of slice-regrowth reallocations
-(~1–2% of parse allocations at 64 inputs; per-element allocations dominate), which
-is within the run-to-run noise band, so it fails acceptance-gate #4. Pre-sizing an
-attacker-controlled count is only safe *after* the guard, so it adds guard
-plumbing and `//nolint:gosec` conversions to fuzzed, consensus-critical code for
-a sub-noise gain. Revisit if parse throughput becomes a measured bottleneck.
+**Result** (`-benchtime=100ms -count=10`, Apple M4): `NewTransactionFromBytes/64`
+537 → **267 allocs** (−50%), 5.44µs → **4.03µs** (−26%); `ReadFrom/64` 535 → 265;
+`NewTransactionFromBytesEF/64` 859 → 459. The scratch reuse alone is parse geomean
+−45% allocs / −24% sec/op; the pre-size adds a further −6% allocs / −4% sec/op
+(above the noise band, unlike the pre-fork estimate below anticipated). Byte-
+identical: guarded by `FuzzNewTransactionFromBytes` (parse→bytes→parse identity),
+`FuzzNewTransactionFromBEEF`, the new `TestParseRoundTripVarIntBoundaries` and
+`TestReadVarInt` (which pins `readVarInt` ≡ `util.VarInt.ReadFrom`), and the golden
+txid/hex tests.
 
-**Risk:** Low, but non-zero (parser). Guarded by the parser fuzz targets.
+**Risk:** Low (parser) — landed; pre-sizing is gated to in-memory readers so
+streaming behavior is untouched.
 
 <br>
 
@@ -172,7 +186,7 @@ the algorithmic parts remain.
 
 | # | Candidate | Kind | Risk |
 |---|-----------|------|------|
-| 1 | Guarded `ReadFrom` pre-size | pure internal | Low (sub-noise win) |
+| 1 | Deserialization scratch reuse + guarded pre-size — *implemented* | pure internal | Low |
 | 2 | Legacy sighash preimage | pure internal | Medium (under-pinned) |
 | 3 | `SetTxHash` opt-in txid cache — *implemented* | additive | Medium (staleness) |
 | 4 | `AppendBytes`/`WriteTo` — *implemented* | additive | Low |

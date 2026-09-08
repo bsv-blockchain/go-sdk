@@ -94,11 +94,32 @@ d372686 perf(transaction): buffer reuse in MerkleTreeParent and MerklePath.Bytes
 
 <br>
 
+## Continuation (this PR, after the summary above)
+
+Baseline = branch tip before these commits; `-benchtime=100ms -count=10`, Apple M4.
+Byte-identical; guarded by the parser fuzzers, golden txid/hex tests, and new
+parse round-trip / `readVarInt`-equivalence tests.
+
+### Deserialization scratch reuse + guarded slice pre-size
+
+`Transaction.ReadFrom` threads one 32-byte scratch through input/output parsing
+(fixed-size fields read into it and parsed in place) and reads length prefixes
+via an allocation-free `readVarInt`, then pre-sizes the input/output slices for
+in-memory readers behind `guardParseCount`.
+
+| Benchmark | sec/op | allocs/op |
+|---|---|---|
+| `NewTransactionFromBytes/64` | 5443n → 4029n (**−26%**) | 537 → **267** (−50%) |
+| `ReadFrom/64` | 5644n → 3996n (**−29%**) | 535 → **265** (−50%) |
+| `NewTransactionFromBytesEF/64` | 8425n → 6248n (−26%) | 859 → **459** (−47%) |
+
+Parse geomean: scratch reuse −45% allocs / −24% sec/op; the pre-size adds a
+further −6% allocs / −4% sec/op (measurably above noise, `p ≤ 0.001`).
+
 ## Still deferred
 
 See [`proposals/transaction-performance-deferred.md`](proposals/transaction-performance-deferred.md):
 
-- Guarded `ReadFrom` slice pre-size (sub-noise win)
 - Legacy (non-FORKID) sighash preimage (needs a legacy golden characterization test first)
 - `ComputeRoot` per-level index maps + redundant `Beef.Bytes`/`AtomicBytes` copies (algorithmic; medium byte-identity risk)
 - Arena allocator for batch deserialization; `Clone()` field-copy rewrite; opcodeparser bench normalization; PushDrop cache adoption
