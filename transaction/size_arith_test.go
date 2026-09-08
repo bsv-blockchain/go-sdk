@@ -70,3 +70,37 @@ func TestSizeNilUnlockingScript(t *testing.T) {
 	}
 	require.Equal(t, len(tx.Bytes()), tx.Size())
 }
+
+// TestBytesForSigHashEqualsBytes locks the invariant (relied on by OutputsHash)
+// that an output's sighash serialization is byte-identical to Bytes().
+func TestBytesForSigHashEqualsBytes(t *testing.T) {
+	for _, scriptLen := range []int{0, 25, 253, 65536} {
+		out := &TransactionOutput{
+			Satoshis:      123456,
+			LockingScript: script.NewFromBytes(make([]byte, scriptLen)),
+		}
+		require.Equal(t, out.Bytes(), out.BytesForSigHash(),
+			"BytesForSigHash must equal Bytes (scriptLen=%d)", scriptLen)
+	}
+}
+
+// TestSerializedSizeMatchesAllModes locks that the arithmetic serializedSize
+// used to pre-size the serialization buffer matches the actual byte length
+// produced by toBytesHelper in every mode: raw, cleared-input (signing), and
+// extended (EF). An over- or under-estimate would silently reintroduce a buffer
+// reallocation.
+func TestSerializedSizeMatchesAllModes(t *testing.T) {
+	tx := sizeTestTx(3, 2, 50, 25)
+	require.Equal(t, len(tx.Bytes()), tx.serializedSize(0, nil, false), "raw")
+
+	lockingScript := make([]byte, 40)
+	require.Equal(t, len(tx.BytesWithClearedInputs(1, lockingScript)),
+		tx.serializedSize(1, lockingScript, false), "cleared-input")
+
+	// Extended format needs each input's source output, which benchTx wires up
+	// via SourceTransaction.
+	ext := benchTx(3, benchTx(0), benchTx(1))
+	efBytes, err := ext.EF()
+	require.NoError(t, err)
+	require.Equal(t, len(efBytes), ext.serializedSize(0, nil, true), "extended")
+}

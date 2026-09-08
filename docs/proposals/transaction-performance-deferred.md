@@ -148,11 +148,12 @@ benchmarks and the BEEF golden round-trips as guards.
 
 ## 8. Smaller, independent follow-ups
 
-- **Hoist redundant `TxID()` within a single operation.** `AtomicBEEF`
-  (`transaction.go`) and several `beef.go` loops (notably the `NewBeefFromBytes`
-  V1 path, which calls `tx.TxID()` inside a nested BUMP×leaf loop) re-serialize
-  the same transaction multiple times. Computing `txid := tx.TxID()` once and
-  reusing it is a pure, non-caching win — safe and worth doing on its own.
+- **Hoist redundant `TxID()` within a single operation** — *implemented on this
+  branch* for `AddMerkleProof`, the `NewBeefFromBytes` V1 nested BUMP×leaf loop,
+  `AtomicBEEF`, and `collectAncestors`. A residual opportunity remains in
+  `ValidateTransactions`, where a validated txid is recomputed across the
+  separate result-collection loops; hoisting it would need a per-tx map and is
+  lower value.
 - **PushDrop cache adoption.** `pushdrop.Unlocker.Sign(tx, inputIndex int)` does
   not implement `UnlockingScriptTemplate` (it takes `int`, and `EstimateLength`
   takes no args), so it is driven manually rather than by `tx.Sign()` and does
@@ -175,10 +176,9 @@ benchmarks and the BEEF golden round-trips as guards.
 | 5 | Arena allocator | additive | Medium (lifetime) |
 | 6 | `Clone()` rewrite | behavior/signature | Medium |
 | 7 | Merkle/BEEF deep opt | pure internal | Medium (correctness) |
-| 8 | TxID hoisting, PushDrop cache, bench normalize | mixed | Low |
+| 8 | PushDrop cache, bench normalize (+ residual `ValidateTransactions` txid) | mixed | Low |
 
-**Recommended sequencing:** item 8 (TxID hoisting) first — it is a pure win with
-no API or behavior change. Then the additive APIs (4, 3) behind a reviewed
-minor release, then the higher-risk internal refactors (2, 7) each with a
+**Recommended sequencing:** the additive APIs (4, 3) behind a reviewed minor
+release, then the higher-risk internal refactors (2, 7) each with a
 characterization test added first, and finally 5 and 6 as separate reviewed
 changes.
