@@ -96,9 +96,9 @@ func (tx *Transaction) CalcInputSignatureHashWithCache(inputNumber uint32, sigHa
 	if err != nil {
 		return nil, err
 	}
-	if bytes.Equal(defaultHex, buf) {
-		return buf, nil
-	}
+	// The FORKID preimage is always a full buffer (>=157 bytes), never the
+	// 32-byte legacy defaultHex sentinel, so unlike CalcInputSignatureHash no
+	// special-case check is needed before double-hashing.
 	return crypto.Sha256d(buf), nil
 }
 

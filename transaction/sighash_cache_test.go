@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
@@ -87,5 +88,54 @@ func BenchmarkPreimageAllInputs(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+// noCacheTemplate implements only UnlockingScriptTemplate (no SignWithCache), to
+// exercise Transaction.Sign's backward-compatible fallback for external
+// templates that predate the cache interface.
+type noCacheTemplate struct{ signs *int }
+
+func (n noCacheTemplate) Sign(_ *transaction.Transaction, _ uint32) (*script.Script, error) {
+	*n.signs++
+	return &script.Script{}, nil
+}
+
+func (n noCacheTemplate) EstimateLength(_ *transaction.Transaction, _ uint32) uint32 { return 0 }
+
+// TestSignFallsBackForNonCacheTemplate verifies Transaction.Sign still drives a
+// template that does not implement UnlockingScriptTemplateWithCache.
+func TestSignFallsBackForNonCacheTemplate(t *testing.T) {
+	var signs int
+	tx := transaction.NewTransaction()
+	for i := range 3 {
+		src := transaction.NewTransaction()
+		src.LockTime = uint32(i)
+		src.AddOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: &script.Script{}})
+		tx.AddInputFromTx(src, 0, noCacheTemplate{signs: &signs})
+	}
+	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 2000, LockingScript: &script.Script{}})
+
+	require.NoError(t, tx.Sign())
+	require.Equal(t, 3, signs, "each input signed via the fallback Sign path")
+	for i, in := range tx.Inputs {
+		require.NotNil(t, in.UnlockingScript, "input %d unlocking script set", i)
+	}
+}
+
+// TestCalcInputSignatureHashWithCacheLegacyFallback verifies the cached API
+// falls back to the legacy (pre-fork) algorithm for non-FORKID flags,
+// byte-identically to CalcInputSignatureHash.
+func TestCalcInputSignatureHashWithCacheLegacyFallback(t *testing.T) {
+	tx := benchP2PKHTx(t, 2)
+	cache := tx.NewSigHashCache()
+	for _, f := range []sighash.Flag{sighash.All, sighash.None, sighash.Single} {
+		for vin := range 2 {
+			want, err := tx.CalcInputSignatureHash(uint32(vin), f)
+			require.NoError(t, err)
+			got, err := tx.CalcInputSignatureHashWithCache(uint32(vin), f, cache)
+			require.NoError(t, err)
+			require.Equal(t, want, got, "legacy flag=%v input=%d", f, vin)
+		}
 	}
 }
