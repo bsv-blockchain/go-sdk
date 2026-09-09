@@ -1633,20 +1633,27 @@ func beefEntryID(tx *BeefTx) (*chainhash.Hash, error) {
 		if tx.Transaction == nil {
 			return nil, fmt.Errorf("transaction is nil")
 		}
-		for _, input := range tx.Transaction.Inputs {
-			if input == nil || input.SourceTXID == nil {
-				return nil, fmt.Errorf("BEEF transaction input or source txid is nil")
-			}
-		}
-		for _, output := range tx.Transaction.Outputs {
-			if output == nil || output.LockingScript == nil {
-				return nil, fmt.Errorf("BEEF transaction output or locking script is nil")
-			}
+		if err := validateBeefTxIO(tx.Transaction); err != nil {
+			return nil, err
 		}
 		return tx.Transaction.TxID(), nil
 	default:
 		return nil, fmt.Errorf("invalid BEEF data format: %d", tx.DataFormat)
 	}
+}
+
+func validateBeefTxIO(tx *Transaction) error {
+	for _, input := range tx.Inputs {
+		if input == nil || input.SourceTXID == nil {
+			return fmt.Errorf("BEEF transaction input or source txid is nil")
+		}
+	}
+	for _, output := range tx.Outputs {
+		if output == nil || output.LockingScript == nil {
+			return fmt.Errorf("BEEF transaction output or locking script is nil")
+		}
+	}
+	return nil
 }
 
 // validateBeefBump checks representability only, not Merkle proof validity.
@@ -1690,6 +1697,24 @@ func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
 	if txid == nil {
 		return nil, fmt.Errorf("atomic BEEF txid is nil")
 	}
+	selected, err := b.selectAtomicBeef(txid)
+	if err != nil {
+		return nil, err
+	}
+	beef, err := selected.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]byte, 4+chainhash.HashSize+len(beef))
+	binary.LittleEndian.PutUint32(result[0:4], ATOMIC_BEEF)
+	copy(result[4:4+chainhash.HashSize], txid[:])
+	copy(result[4+chainhash.HashSize:], beef)
+	return result, nil
+}
+
+// selectAtomicBeef copies the subject and available ancestry, remapping BUMP
+// indexes and stopping at txid-only entries or a matching BUMP leaf.
+func (b *Beef) selectAtomicBeef(txid *chainhash.Hash) (*Beef, error) {
 	if _, ok := b.Transactions[*txid]; !ok {
 		return nil, fmt.Errorf("atomic BEEF subject %s is missing", txid.String())
 	}
@@ -1703,61 +1728,80 @@ func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
 		if _, ok := selected.Transactions[id]; ok {
 			continue
 		}
-		tx := b.Transactions[id]
-		actual, err := beefEntryID(tx)
+		tx, err := b.beefTxAt(id)
 		if err != nil {
 			return nil, err
 		}
-		if id != *actual {
-			return nil, fmt.Errorf("BEEF map key %s does not match transaction %s", id.String(), actual.String())
-		}
 		copyTx := *tx
 		selected.Transactions[id] = &copyTx
-		if tx.DataFormat == TxIDOnly {
-			continue
+		stop, err := b.includeAtomicBump(&copyTx, id, selected, bumpIndexes)
+		if err != nil {
+			return nil, err
 		}
-		if tx.DataFormat == RawTxAndBumpIndex {
-			if tx.BumpIndex < 0 || tx.BumpIndex >= len(b.BUMPs) || b.BUMPs[tx.BumpIndex] == nil {
-				return nil, fmt.Errorf("invalid BEEF BUMP index: %d", tx.BumpIndex)
-			}
-			if err := validateBeefBump(b.BUMPs[tx.BumpIndex]); err != nil {
-				return nil, err
-			}
-			index, ok := bumpIndexes[tx.BumpIndex]
-			if !ok {
-				index = len(selected.BUMPs)
-				bumpIndexes[tx.BumpIndex] = index
-				selected.BUMPs = append(selected.BUMPs, b.BUMPs[tx.BumpIndex])
-			}
-			copyTx.BumpIndex = index
-			matched := false
-			if bump := b.BUMPs[tx.BumpIndex]; len(bump.Path) > 0 {
-				for _, leaf := range bump.Path[0] {
-					if leaf.Hash != nil && (leaf.Duplicate == nil || !*leaf.Duplicate) && *leaf.Hash == id {
-						matched = true
-						break
-					}
-				}
-			}
-			if matched {
-				continue
-			}
-		}
-		for _, input := range tx.Transaction.Inputs {
-			if _, ok := b.Transactions[*input.SourceTXID]; ok {
-				stack = append(stack, *input.SourceTXID)
-			}
+		if !stop {
+			stack = b.appendAtomicAncestry(tx, stack)
 		}
 	}
-	beef, err := selected.Bytes()
+	return selected, nil
+}
+
+func (b *Beef) beefTxAt(id chainhash.Hash) (*BeefTx, error) {
+	tx := b.Transactions[id]
+	actual, err := beefEntryID(tx)
 	if err != nil {
 		return nil, err
 	}
-	result := make([]byte, 4+chainhash.HashSize+len(beef))
-	binary.LittleEndian.PutUint32(result[0:4], ATOMIC_BEEF)
-	copy(result[4:4+chainhash.HashSize], txid[:])
-	copy(result[4+chainhash.HashSize:], beef)
-	return result, nil
+	if id != *actual {
+		return nil, fmt.Errorf("BEEF map key %s does not match transaction %s", id.String(), actual.String())
+	}
+	return tx, nil
+}
+
+// includeAtomicBump remaps a referenced BUMP into selected. stop is true for
+// txid-only entries and for a matching non-duplicate leaf.
+func (b *Beef) includeAtomicBump(tx *BeefTx, id chainhash.Hash, selected *Beef, bumpIndexes map[int]int) (bool, error) {
+	if tx.DataFormat == TxIDOnly {
+		return true, nil
+	}
+	if tx.DataFormat != RawTxAndBumpIndex {
+		return false, nil
+	}
+	if tx.BumpIndex < 0 || tx.BumpIndex >= len(b.BUMPs) || b.BUMPs[tx.BumpIndex] == nil {
+		return false, fmt.Errorf("invalid BEEF BUMP index: %d", tx.BumpIndex)
+	}
+	bump := b.BUMPs[tx.BumpIndex]
+	if err := validateBeefBump(bump); err != nil {
+		return false, err
+	}
+	index, ok := bumpIndexes[tx.BumpIndex]
+	if !ok {
+		index = len(selected.BUMPs)
+		bumpIndexes[tx.BumpIndex] = index
+		selected.BUMPs = append(selected.BUMPs, bump)
+	}
+	tx.BumpIndex = index
+	return bumpHasMatchingLeaf(bump, id), nil
+}
+
+func bumpHasMatchingLeaf(bump *MerklePath, id chainhash.Hash) bool {
+	if len(bump.Path) == 0 {
+		return false
+	}
+	for _, leaf := range bump.Path[0] {
+		if leaf.Hash != nil && (leaf.Duplicate == nil || !*leaf.Duplicate) && *leaf.Hash == id {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *Beef) appendAtomicAncestry(tx *BeefTx, stack []chainhash.Hash) []chainhash.Hash {
+	for _, input := range tx.Transaction.Inputs {
+		if _, ok := b.Transactions[*input.SourceTXID]; ok {
+			stack = append(stack, *input.SourceTXID)
+		}
+	}
+	return stack
 }
 
 func (b *Beef) TxidOnly() (*Beef, error) {
