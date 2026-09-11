@@ -237,23 +237,27 @@ func NewBeefFromBytes(beef []byte) (*Beef, error) {
 		// run through the txs map and convert to BeefTx
 		beefTxs := make(map[chainhash.Hash]*BeefTx, len(txs))
 		for _, tx := range txs {
+			// Compute the txid once per transaction and reuse it; the tx is not
+			// mutated in this loop, and TxID() re-serializes + double-hashes the
+			// whole transaction on every call.
+			txid := tx.TxID()
 			if tx.MerklePath != nil {
 				// find which bump index this tx is in
 				idx := -1
 				for i, bump := range BUMPs {
 					for _, leaf := range bump.Path[0] {
-						if leaf.Hash != nil && tx.TxID().Equal(*leaf.Hash) {
+						if leaf.Hash != nil && txid.Equal(*leaf.Hash) {
 							idx = i
 						}
 					}
 				}
-				beefTxs[*tx.TxID()] = &BeefTx{
+				beefTxs[*txid] = &BeefTx{
 					DataFormat:  RawTxAndBumpIndex,
 					Transaction: tx,
 					BumpIndex:   idx,
 				}
 			} else {
-				beefTxs[*tx.TxID()] = &BeefTx{
+				beefTxs[*txid] = &BeefTx{
 					DataFormat:  RawTx,
 					Transaction: tx,
 				}
@@ -554,7 +558,7 @@ func (t *Transaction) collectAncestors(txid *chainhash.Hash, txns map[chainhash.
 			if allowPartial {
 				continue
 			} else {
-				return nil, fmt.Errorf("missing previous transaction for %s", t.TxID())
+				return nil, fmt.Errorf("missing previous transaction for %s", txid)
 			}
 		}
 		txns[*input.SourceTXID] = input.SourceTransaction
@@ -1481,64 +1485,31 @@ func (b *Beef) AddComputedLeaves() {
 
 // Bytes returns the BEEF BRC-96 as a byte slice.
 func (b *Beef) Bytes() ([]byte, error) {
-	// First pass: collect all transaction bytes in order and calculate total size
-	txs := make(map[chainhash.Hash]struct{}, len(b.Transactions))
-	var orderedTxBytes [][]byte
+	return b.appendBytes(nil)
+}
 
-	var collectTx func(tx *BeefTx) error
-	collectTx = func(tx *BeefTx) error {
-		var txid chainhash.Hash
-		if tx.DataFormat == TxIDOnly {
-			if tx.KnownTxID == nil {
-				return fmt.Errorf("txid is nil")
-			}
-			txid = *tx.KnownTxID
-		} else if tx.Transaction == nil {
-			return fmt.Errorf("transaction is nil")
-		} else {
-			txid = *tx.Transaction.TxID()
-		}
-		if _, ok := txs[txid]; ok {
-			return nil
-		}
-		if tx.DataFormat == TxIDOnly {
-			txBytes := make([]byte, 1+chainhash.HashSize)
-			txBytes[0] = byte(tx.DataFormat)
-			copy(txBytes[1:], tx.KnownTxID[:])
-			orderedTxBytes = append(orderedTxBytes, txBytes)
-		} else {
-			for _, txin := range tx.Transaction.Inputs {
-				if parentTx := b.findTxid(txin.SourceTXID); parentTx != nil {
-					if err := collectTx(parentTx); err != nil {
-						return err
-					}
-				}
-			}
-			rawTxBytes := tx.Transaction.Bytes()
-			var txBytes []byte
-			if tx.DataFormat == RawTxAndBumpIndex {
-				bumpIndexBytes := util.VarInt(tx.BumpIndex).Bytes() //nolint:gosec // G115 -- bump index is bounded by number of BUMPs, always non-negative
-				txBytes = make([]byte, 1+len(bumpIndexBytes)+len(rawTxBytes))
-				txBytes[0] = byte(tx.DataFormat)
-				copy(txBytes[1:], bumpIndexBytes)
-				copy(txBytes[1+len(bumpIndexBytes):], rawTxBytes)
-			} else {
-				txBytes = make([]byte, 1+len(rawTxBytes))
-				txBytes[0] = byte(tx.DataFormat) //nolint:gosec // G115 -- DataFormat is a small enum with only a few possible values
-				copy(txBytes[1:], rawTxBytes)
-			}
-			orderedTxBytes = append(orderedTxBytes, txBytes)
-		}
-		txs[txid] = struct{}{}
-		return nil
-	}
-	for _, tx := range b.Transactions {
-		if err := collectTx(tx); err != nil {
-			return nil, err
-		}
+// AtomicBytes returns the BRC-95 Atomic BEEF for the subject txid: the atomic
+// magic, the subject txid, then the BEEF body. The body is serialized straight
+// into the same buffer via appendBytes, so it is never copied a second time.
+func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
+	prefix := make([]byte, 4+chainhash.HashSize)
+	binary.LittleEndian.PutUint32(prefix[0:4], ATOMIC_BEEF)
+	copy(prefix[4:], txid[:])
+	return b.appendBytes(prefix)
+}
+
+// appendBytes appends the BEEF (BRC-96) serialization to dst and returns the
+// extended slice. Each transaction is serialized exactly once, directly into the
+// destination via Transaction.AppendBytes, instead of through a throwaway
+// tx.Bytes() slice plus a per-transaction temporary plus a final copy; the buffer
+// is grown once to its final size. dst lets AtomicBytes prepend its atomic header
+// and share the same buffer rather than re-copying the whole BEEF.
+func (b *Beef) appendBytes(dst []byte) ([]byte, error) {
+	ordered, txListLen, err := b.orderedTxsForSerialization()
+	if err != nil {
+		return nil, err
 	}
 
-	// Calculate bump bytes
 	bumpBytes := make([][]byte, len(b.BUMPs))
 	bumpsTotalLen := 0
 	for i, bump := range b.BUMPs {
@@ -1546,53 +1517,120 @@ func (b *Beef) Bytes() ([]byte, error) {
 		bumpsTotalLen += len(bumpBytes[i])
 	}
 
-	// Calculate total size
-	totalLen := 4 // version
-	totalLen += util.VarInt(len(b.BUMPs)).Length() + bumpsTotalLen
-	totalLen += util.VarInt(len(b.Transactions)).Length()
-	for _, txBytes := range orderedTxBytes {
-		totalLen += len(txBytes)
+	totalLen := 4 + // version
+		util.VarInt(uint64(len(b.BUMPs))).Length() + bumpsTotalLen +
+		util.VarInt(uint64(len(b.Transactions))).Length() + txListLen
+
+	// Grow dst to its final size once so none of the appends below reallocate.
+	if cap(dst)-len(dst) < totalLen {
+		grown := make([]byte, len(dst), len(dst)+totalLen)
+		copy(grown, dst)
+		dst = grown
 	}
 
-	// Second pass: write to pre-allocated buffer
-	beef := make([]byte, totalLen)
-	offset := 0
-
-	binary.LittleEndian.PutUint32(beef[offset:], b.Version)
-	offset += 4
-
-	bumpCountBytes := util.VarInt(len(b.BUMPs)).Bytes()
-	copy(beef[offset:], bumpCountBytes)
-	offset += len(bumpCountBytes)
-
+	dst = binary.LittleEndian.AppendUint32(dst, b.Version)
+	dst = appendVarInt(dst, uint64(len(b.BUMPs)))
 	for _, bb := range bumpBytes {
-		copy(beef[offset:], bb)
-		offset += len(bb)
+		dst = append(dst, bb...)
+	}
+	dst = appendVarInt(dst, uint64(len(b.Transactions)))
+	for _, tx := range ordered {
+		dst = append(dst, byte(tx.DataFormat)) //nolint:gosec // G115 -- DataFormat is a small enum
+		if tx.DataFormat == TxIDOnly {
+			dst = append(dst, tx.KnownTxID[:]...)
+			continue
+		}
+		if tx.DataFormat == RawTxAndBumpIndex {
+			dst = appendVarInt(dst, uint64(tx.BumpIndex)) //nolint:gosec // G115 -- BumpIndex is a non-negative index into BUMPs
+		}
+		dst = tx.Transaction.AppendBytes(dst)
 	}
 
-	txCountBytes := util.VarInt(len(b.Transactions)).Bytes()
-	copy(beef[offset:], txCountBytes)
-	offset += len(txCountBytes)
-
-	for _, txBytes := range orderedTxBytes {
-		copy(beef[offset:], txBytes)
-		offset += len(txBytes)
-	}
-
-	return beef, nil
+	return dst, nil
 }
 
-func (b *Beef) AtomicBytes(txid *chainhash.Hash) ([]byte, error) {
-	beef, err := b.Bytes()
-	if err != nil {
-		return nil, err
-	}
-	result := make([]byte, 4+chainhash.HashSize+len(beef))
-	binary.LittleEndian.PutUint32(result[0:4], ATOMIC_BEEF)
-	copy(result[4:4+chainhash.HashSize], txid[:])
-	copy(result[4+chainhash.HashSize:], beef)
+// orderedTxsForSerialization walks the transactions in dependency order (parents
+// before children), de-duplicating by txid, and returns the ordered entries plus
+// the exact serialized length of the transaction list (a format byte, an optional
+// bump-index varint and the raw transaction; or 1 + 32 for a TxIDOnly entry). The
+// traversal matches the historical Bytes() first pass, so the serialized order is
+// unchanged (Beef.Transactions is a map, so that order is not otherwise fixed).
+func (b *Beef) orderedTxsForSerialization() ([]*BeefTx, int, error) {
+	seen := make(map[chainhash.Hash]struct{}, len(b.Transactions))
+	ordered := make([]*BeefTx, 0, len(b.Transactions))
+	txListLen := 0
 
-	return result, nil
+	var collect func(tx *BeefTx) error
+	collect = func(tx *BeefTx) error {
+		txid, err := beefTxID(tx)
+		if err != nil {
+			return err
+		}
+		if _, ok := seen[txid]; ok {
+			return nil
+		}
+		if err := b.collectParents(tx, collect); err != nil {
+			return err
+		}
+		txListLen += beefTxSerializedLen(tx)
+		seen[txid] = struct{}{}
+		ordered = append(ordered, tx)
+		return nil
+	}
+	for _, tx := range b.Transactions {
+		if err := collect(tx); err != nil {
+			return nil, 0, err
+		}
+	}
+	return ordered, txListLen, nil
+}
+
+// beefTxID returns the txid identifying a BeefTx entry: its KnownTxID for a
+// TxIDOnly entry, otherwise the contained transaction's id.
+func beefTxID(tx *BeefTx) (chainhash.Hash, error) {
+	if tx.DataFormat == TxIDOnly {
+		if tx.KnownTxID == nil {
+			return chainhash.Hash{}, fmt.Errorf("txid is nil")
+		}
+		return *tx.KnownTxID, nil
+	}
+	if tx.Transaction == nil {
+		return chainhash.Hash{}, fmt.Errorf("transaction is nil")
+	}
+	return *tx.Transaction.TxID(), nil
+}
+
+// collectParents visits, via collect, the BEEF entries that fund tx's inputs so
+// each parent is serialized before the child that spends it. TxIDOnly entries
+// have no inputs to follow.
+func (b *Beef) collectParents(tx *BeefTx, collect func(*BeefTx) error) error {
+	if tx.DataFormat == TxIDOnly {
+		return nil
+	}
+	for _, txin := range tx.Transaction.Inputs {
+		parentTx := b.findTxid(txin.SourceTXID)
+		if parentTx == nil {
+			continue
+		}
+		if err := collect(parentTx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// beefTxSerializedLen is the serialized length of one transaction-list entry: a
+// format byte plus either the 32-byte txid (TxIDOnly) or the raw transaction and
+// an optional bump-index varint.
+func beefTxSerializedLen(tx *BeefTx) int {
+	if tx.DataFormat == TxIDOnly {
+		return 1 + chainhash.HashSize
+	}
+	n := 1 + tx.Transaction.Size()
+	if tx.DataFormat == RawTxAndBumpIndex {
+		n += util.VarInt(uint64(tx.BumpIndex)).Length() //nolint:gosec // G115 -- BumpIndex is a non-negative index into BUMPs
+	}
+	return n
 }
 
 func (b *Beef) TxidOnly() (*Beef, error) {

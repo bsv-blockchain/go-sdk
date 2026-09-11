@@ -18,7 +18,7 @@ func TestNewInputFromReader(t *testing.T) {
 
 		i := &TransactionInput{}
 		var s int64
-		s, err = i.readFrom(bytes.NewReader(b), false)
+		s, err = i.readFrom(bytes.NewReader(b), false, make([]byte, 32))
 
 		require.NoError(t, err)
 		require.NotNil(t, i)
@@ -31,21 +31,21 @@ func TestNewInputFromReader(t *testing.T) {
 	t.Run("empty bytes", func(t *testing.T) {
 		i := &TransactionInput{}
 
-		s, err := i.readFrom(bytes.NewReader([]byte("")), false)
+		s, err := i.readFrom(bytes.NewReader([]byte("")), false, make([]byte, 32))
 		require.Error(t, err)
 		require.Equal(t, int64(0), s)
 	})
 
 	t.Run("invalid input, too short", func(t *testing.T) {
 		i := &TransactionInput{}
-		s, err := i.readFrom(bytes.NewReader([]byte("invalid")), false)
+		s, err := i.readFrom(bytes.NewReader([]byte("invalid")), false, make([]byte, 32))
 		require.Error(t, err)
 		require.Equal(t, int64(7), s)
 	})
 
 	t.Run("invalid input, too short + script", func(t *testing.T) {
 		i := &TransactionInput{}
-		s, err := i.readFrom(bytes.NewReader([]byte("000000000000000000000000000000000000000000000000000000000000000000000000")), false)
+		s, err := i.readFrom(bytes.NewReader([]byte("000000000000000000000000000000000000000000000000000000000000000000000000")), false, make([]byte, 32))
 		require.Error(t, err)
 		// The script-length guard rejects a claimed length larger than the
 		// bytes that remain before allocating, so parsing stops right after the
@@ -65,7 +65,7 @@ func TestInput_String(t *testing.T) {
 		i := &TransactionInput{}
 		var s int64
 
-		s, err = i.readFrom(bytes.NewReader(b), false)
+		s, err = i.ReadFrom(bytes.NewReader(b))
 		require.NoError(t, err)
 		require.NotNil(t, i)
 		require.Equal(t, int64(148), s)

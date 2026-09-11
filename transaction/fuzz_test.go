@@ -1,6 +1,7 @@
 package transaction_test
 
 import (
+	"bytes"
 	"encoding/hex"
 	"testing"
 
@@ -42,6 +43,14 @@ func FuzzNewTransactionFromBytes(f *testing.F) {
 		tx2, err := transaction.NewTransactionFromBytes(out)
 		require.NoError(t, err)
 		require.Equal(t, out, tx2.Bytes())
+
+		// AppendBytes and WriteTo must produce bytes identical to Bytes().
+		require.Equal(t, out, tx.AppendBytes(nil))
+		var buf bytes.Buffer
+		n, werr := tx.WriteTo(&buf)
+		require.NoError(t, werr)
+		require.Equal(t, out, buf.Bytes())
+		require.Equal(t, int64(len(out)), n)
 	})
 }
 

@@ -68,84 +68,83 @@ func (i *TransactionInput) SourceTxSatoshis() *uint64 {
 
 // ReadFrom reads from the `io.Reader` into the `transaction.TransactionInput`.
 func (i *TransactionInput) ReadFrom(r io.Reader) (int64, error) {
-	return i.readFrom(r, false)
+	return i.readFrom(r, false, make([]byte, 32))
 }
 
 // ReadFromExtended reads the `io.Reader` into the `transaction.TransactionInput` when the reader is
 // consuming an extended format transaction.
 func (i *TransactionInput) ReadFromExtended(r io.Reader) (int64, error) {
-	return i.readFrom(r, true)
+	return i.readFrom(r, true, make([]byte, 32))
 }
 
-func (i *TransactionInput) readFrom(r io.Reader, extended bool) (int64, error) {
+// readFrom decodes a single input from r. scratch (len >= 32) is a reusable
+// buffer, supplied by the caller so a whole transaction parses with one header
+// allocation: each fixed-size field is read into it and parsed immediately
+// (chainhash.NewHash copies, binary.LittleEndian reads in place) before the next
+// read reuses it. Script bytes get their own retained allocation because
+// script.NewFromBytes aliases them.
+func (i *TransactionInput) readFrom(r io.Reader, extended bool, scratch []byte) (int64, error) {
 	*i = TransactionInput{}
 	var bytesRead int64
 
-	previousTxID := make([]byte, 32)
-	n, err := io.ReadFull(r, previousTxID)
+	n, err := io.ReadFull(r, scratch[:32])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, errors.Wrapf(err, "previousTxID(32): got %d bytes", n)
 	}
+	if i.SourceTXID, err = chainhash.NewHash(scratch[:32]); err != nil {
+		return bytesRead, errors.Wrap(err, "failed to create chainhash from previousTxID")
+	}
 
-	prevIndex := make([]byte, 4)
-	n, err = io.ReadFull(r, prevIndex)
+	n, err = io.ReadFull(r, scratch[:4])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, errors.Wrapf(err, "previousTxID(4): got %d bytes", n)
 	}
+	i.SourceTxOutIndex = binary.LittleEndian.Uint32(scratch[:4])
 
-	var l util.VarInt
-	n64, err := l.ReadFrom(r)
+	scriptLen, n64, err := readVarInt(r, scratch)
 	bytesRead += n64
 	if err != nil {
 		return bytesRead, err
 	}
-
-	scriptBytes, n, err := readGuardedBytes(r, uint64(l), "input script")
+	scriptBytes, n, err := readGuardedBytes(r, scriptLen, "input script")
 	bytesRead += int64(n)
 	if err != nil {
-		return bytesRead, errors.Wrapf(err, "script(%d): got %d bytes", l, n)
+		return bytesRead, errors.Wrapf(err, "script(%d): got %d bytes", scriptLen, n)
 	}
+	i.UnlockingScript = script.NewFromBytes(scriptBytes)
 
-	sequence := make([]byte, 4)
-	n, err = io.ReadFull(r, sequence)
+	n, err = io.ReadFull(r, scratch[:4])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, errors.Wrapf(err, "sequence(4): got %d bytes", n)
 	}
-
-	if i.SourceTXID, err = chainhash.NewHash(previousTxID); err != nil {
-		return bytesRead, errors.Wrap(err, "failed to create chainhash from previousTxID")
-	}
-	i.SourceTxOutIndex = binary.LittleEndian.Uint32(prevIndex)
-	i.UnlockingScript = script.NewFromBytes(scriptBytes)
-	i.SequenceNumber = binary.LittleEndian.Uint32(sequence)
+	i.SequenceNumber = binary.LittleEndian.Uint32(scratch[:4])
 
 	if extended {
-		prevSatoshis := make([]byte, 8)
-		n, err = io.ReadFull(r, prevSatoshis)
+		n, err = io.ReadFull(r, scratch[:8])
 		bytesRead += int64(n)
 		if err != nil {
 			return bytesRead, errors.Wrapf(err, "prevSatoshis(8): got %d bytes", n)
 		}
+		satoshis := binary.LittleEndian.Uint64(scratch[:8])
 
 		// Read in the prevTxLockingScript
-		var scriptLen util.VarInt
-		n64, err := scriptLen.ReadFrom(r)
+		srcScriptLen, n64, err := readVarInt(r, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
 		}
 
-		scriptBytes, n, err := readGuardedBytes(r, uint64(scriptLen), "input source script")
+		scriptBytes, n, err := readGuardedBytes(r, srcScriptLen, "input source script")
 		bytesRead += int64(n)
 		if err != nil {
-			return bytesRead, errors.Wrapf(err, "script(%d): got %d bytes", scriptLen.Length(), n)
+			return bytesRead, errors.Wrapf(err, "script(%d): got %d bytes", util.VarInt(srcScriptLen).Length(), n)
 		}
 
 		i.SetSourceTxOutput(&TransactionOutput{
-			Satoshis:      binary.LittleEndian.Uint64(prevSatoshis),
+			Satoshis:      satoshis,
 			LockingScript: script.NewFromBytes(scriptBytes),
 		})
 	}
@@ -171,39 +170,62 @@ sequence:     %x
 	)
 }
 
-// Bytes encodes the Input into a hex byte array.
+// Bytes encodes the Input into a byte array.
 func (i *TransactionInput) Bytes(clearScript bool) []byte {
-	// Calculate total size: 32 (txid) + 4 (index) + varint + script + 4 (sequence)
-	var scriptLen int
-	var varInt util.VarInt
-	var varIntLen int
+	return i.appendTo(make([]byte, 0, i.size(clearScript)), clearScript)
+}
+
+// appendTo appends the serialized input to buf and returns the extended slice,
+// matching Bytes(clearScript). It performs no allocation when buf has capacity.
+func (i *TransactionInput) appendTo(buf []byte, clearScript bool) []byte {
+	buf = append(buf, i.SourceTXID[:]...)
+	buf = binary.LittleEndian.AppendUint32(buf, i.SourceTxOutIndex)
 	if clearScript || i.UnlockingScript == nil {
-		varIntLen = 1
-		scriptLen = 0
+		buf = append(buf, 0x00)
 	} else {
-		scriptLen = len(*i.UnlockingScript)
-		varInt = util.VarInt(uint64(scriptLen))
-		varIntLen = varInt.Length()
+		buf = appendVarInt(buf, uint64(len(*i.UnlockingScript)))
+		buf = append(buf, *i.UnlockingScript...)
 	}
-	totalLen := 32 + 4 + varIntLen + scriptLen + 4
+	buf = binary.LittleEndian.AppendUint32(buf, i.SequenceNumber)
+	return buf
+}
 
-	h := make([]byte, totalLen)
-	copy(h[0:32], i.SourceTXID.CloneBytes())
-	binary.LittleEndian.PutUint32(h[32:36], i.SourceTxOutIndex)
+// writeTo streams the raw serialized input to w (matching Bytes(false)) using
+// scratch (len >= 9) as a stack buffer, adding the bytes written to *total.
+func (i *TransactionInput) writeTo(w io.Writer, scratch []byte, total *int64) error {
+	if err := writeAll(w, i.SourceTXID[:], total); err != nil {
+		return err
+	}
+	binary.LittleEndian.PutUint32(scratch[:4], i.SourceTxOutIndex)
+	if err := writeAll(w, scratch[:4], total); err != nil {
+		return err
+	}
+	if i.UnlockingScript == nil {
+		scratch[0] = 0x00
+		if err := writeAll(w, scratch[:1], total); err != nil {
+			return err
+		}
+	} else {
+		n := util.VarInt(uint64(len(*i.UnlockingScript))).PutBytes(scratch)
+		if err := writeAll(w, scratch[:n], total); err != nil {
+			return err
+		}
+		if err := writeAll(w, *i.UnlockingScript, total); err != nil {
+			return err
+		}
+	}
+	binary.LittleEndian.PutUint32(scratch[:4], i.SequenceNumber)
+	return writeAll(w, scratch[:4], total)
+}
 
-	offset := 36
+// size returns the serialized length of the input in bytes, matching
+// Bytes(clearScript), without allocating.
+func (i *TransactionInput) size(clearScript bool) int {
 	if clearScript || i.UnlockingScript == nil {
-		h[offset] = 0x00
-		offset++
-	} else {
-		varInt.PutBytes(h[offset:])
-		offset += varIntLen
-		copy(h[offset:], *i.UnlockingScript)
-		offset += scriptLen
+		return 32 + 4 + 1 + 4 // txid + index + empty-script varint + sequence
 	}
-
-	binary.LittleEndian.PutUint32(h[offset:], i.SequenceNumber)
-	return h
+	scriptLen := len(*i.UnlockingScript)
+	return 32 + 4 + util.VarInt(uint64(scriptLen)).Length() + scriptLen + 4
 }
 
 func (i *TransactionInput) SetSourceTxOutput(txo *TransactionOutput) {
