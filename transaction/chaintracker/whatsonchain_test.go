@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	woc "github.com/mrz1836/go-whatsonchain"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -23,13 +24,16 @@ import (
 // chaintracker, so a white-box chaintracker test cannot import util/test_util
 // without an import cycle.
 type mockHTTPClient struct {
-	status int
-	body   string
-	err    error
+	status   int
+	body     string
+	err      error
+	requests []*http.Request // recorded for endpoint/method/header assertions
 }
 
-// Do returns the mock's canned error, or a response built from status and body.
-func (m *mockHTTPClient) Do(_ *http.Request) (*http.Response, error) {
+// Do records req and returns the mock's canned error, or a response built from
+// status and body.
+func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	m.requests = append(m.requests, req)
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -39,6 +43,14 @@ func (m *mockHTTPClient) Do(_ *http.Request) (*http.Response, error) {
 		Body:       io.NopCloser(strings.NewReader(m.body)),
 		Header:     make(http.Header),
 	}, nil
+}
+
+// lastRequest returns the most recently recorded request.
+func (m *mockHTTPClient) lastRequest() *http.Request {
+	if len(m.requests) == 0 {
+		return nil
+	}
+	return m.requests[len(m.requests)-1]
 }
 
 // mustJSON JSON-encodes v, failing the test if encoding fails.
@@ -83,7 +95,8 @@ func TestWhatsOnChainGetBlockHeaderSuccess(t *testing.T) {
 		PreviousBlockHash: prevHash.String(),
 	}
 
-	wc := newTestWOC(jsonClient(t, info))
+	mock := jsonClient(t, info)
+	wc := newTestWOC(mock)
 
 	header, err := wc.GetBlockHeader(t.Context(), 100)
 	require.NoError(t, err)
@@ -96,6 +109,13 @@ func TestWhatsOnChainGetBlockHeaderSuccess(t *testing.T) {
 	require.True(t, header.Hash.IsEqual(&hash))
 	require.True(t, header.MerkleRoot.IsEqual(&merkleRoot))
 	require.True(t, header.PrevHash.IsEqual(&prevHash))
+
+	// Verify the outgoing request: method, endpoint, and API-key header.
+	req := mock.lastRequest()
+	require.NotNil(t, req)
+	assert.Equal(t, http.MethodGet, req.Method)
+	assert.Equal(t, "/v1/bsv/main/block/height/100", req.URL.Path)
+	assert.Equal(t, "testapikey", req.Header.Get("woc-api-key"))
 }
 
 func TestWhatsOnChainGetBlockHeaderEmptyPrevHash(t *testing.T) {
@@ -177,9 +197,45 @@ func TestWhatsOnChainIsValidRootForHeightInvalidRoot(t *testing.T) {
 func TestWhatsOnChainCurrentHeight(t *testing.T) {
 	t.Parallel()
 
-	wc := newTestWOC(jsonClient(t, woc.ChainInfo{Blocks: 800000}))
+	mock := jsonClient(t, woc.ChainInfo{Blocks: 800000})
+	wc := newTestWOC(mock)
 
 	height, err := wc.CurrentHeight(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, uint32(800000), height)
+
+	req := mock.lastRequest()
+	require.NotNil(t, req)
+	assert.Equal(t, http.MethodGet, req.Method)
+	assert.Equal(t, "/v1/bsv/main/chain/info", req.URL.Path)
+}
+
+func TestWhatsOnChainGetBlockHeaderNotFoundWithBody(t *testing.T) {
+	t.Parallel()
+
+	// A 404 with a non-empty body still maps to (nil, nil): the status code is
+	// checked via the client's last request, not the decode result.
+	wc := newTestWOC(statusClient(http.StatusNotFound, "Block not found"))
+
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.NoError(t, err)
+	require.Nil(t, header)
+}
+
+func TestWhatsOnChainGetBlockHeaderNumericOverflow(t *testing.T) {
+	t.Parallel()
+
+	// A height that does not fit in uint32 is rejected rather than silently
+	// truncated.
+	info := woc.BlockInfo{
+		Hash:       chainhash.HashH([]byte("hash")).String(),
+		MerkleRoot: chainhash.HashH([]byte("merkle")).String(),
+		Height:     int64(1) << 40,
+	}
+	wc := newTestWOC(jsonClient(t, info))
+
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.Error(t, err)
+	require.Nil(t, header)
+	require.Contains(t, err.Error(), "out of uint32 range")
 }

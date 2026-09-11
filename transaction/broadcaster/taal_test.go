@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -175,4 +177,36 @@ func TestTAALBroadcastNilClient(t *testing.T) {
 	require.Nil(t, failure)
 	require.NotNil(t, success)
 	require.Equal(t, tx.TxID().String(), success.Txid)
+
+	// The nil-Client fallback must not mutate the shared field, so a broadcaster
+	// reused across goroutines does not race on the assignment.
+	require.Nil(t, b.Client)
+}
+
+// TestTAALBroadcastNilClientConcurrent exercises the nil-Client fallback from many
+// goroutines under -race; a fallback that wrote to b.Client would be flagged.
+func TestTAALBroadcastNilClientConcurrent(t *testing.T) {
+	tu.WithStubTransport(t, func(_ *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(`{"txid":"4d76b00f29e480e0a933cef9d9ffe303d6ab919e2cdb265dd2cea41089baa85a","status":1,"error":""}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	tx, err := transaction.NewTransactionFromHex(testTxHex)
+	require.NoError(t, err)
+
+	b := &TAALBroadcast{} // shared, nil Client
+
+	var wg sync.WaitGroup
+	for range 16 {
+		wg.Go(func() {
+			success, failure := b.Broadcast(tx)
+			assert.Nil(t, failure)
+			assert.NotNil(t, success)
+		})
+	}
+	wg.Wait()
+	require.Nil(t, b.Client)
 }

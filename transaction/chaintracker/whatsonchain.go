@@ -2,8 +2,9 @@ package chaintracker
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"math"
+	"net/http"
 
 	woc "github.com/mrz1836/go-whatsonchain"
 
@@ -32,6 +33,10 @@ var (
 // WhatsOnChain is a chain tracker backed by the WhatsOnChain API. It delegates
 // its HTTP calls to github.com/mrz1836/go-whatsonchain, which centralizes URL
 // building, API-key handling, and response parsing.
+//
+// API key resolution: when ApiKey is empty, go-whatsonchain falls back to the
+// WHATS_ON_CHAIN_API_KEY environment variable if it is set. Set ApiKey explicitly
+// to control the credential; leave both unset for unauthenticated requests.
 type WhatsOnChain struct {
 	Network Network
 	ApiKey  string
@@ -81,16 +86,21 @@ func NewWhatsOnChain(network Network, apiKey string, opts ...func(*WhatsOnChainO
 
 // client builds the underlying go-whatsonchain client, threading the caller's
 // context. Construction performs no I/O, so building it per call is cheap and
-// keeps context propagation intact.
+// keeps context propagation intact. A concrete HTTP client is always supplied
+// (defaulting to http.DefaultClient) so go-whatsonchain reuses a shared,
+// connection-pooled transport instead of allocating a new one per call.
 func (w *WhatsOnChain) client(ctx context.Context) (woc.ClientInterface, error) {
+	httpClient := w.httpClient
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+
 	clientOpts := []woc.ClientOption{
 		woc.WithNetwork(woc.NetworkType(w.Network)),
+		woc.WithHTTPClient(httpClient),
 	}
 	if w.ApiKey != "" {
 		clientOpts = append(clientOpts, woc.WithAPIKey(w.ApiKey))
-	}
-	if w.httpClient != nil {
-		clientOpts = append(clientOpts, woc.WithHTTPClient(w.httpClient))
 	}
 	return woc.NewClient(ctx, clientOpts...)
 }
@@ -105,7 +115,11 @@ func (w *WhatsOnChain) GetBlockHeader(ctx context.Context, height uint32) (*Bloc
 
 	info, err := client.GetBlockByHeight(ctx, int64(height))
 	if err != nil {
-		if errors.Is(err, woc.ErrBlockNotFound) {
+		// Any 404 means no block at this height; return (nil, nil) regardless of
+		// whether the body was empty (ErrBlockNotFound) or non-empty (a decode
+		// error), matching the previous /block/{height}/header behavior. The status
+		// code is read from the client's last request rather than the error string.
+		if last := client.LastRequest(); last != nil && last.StatusCode == http.StatusNotFound {
 			return nil, nil //nolint:nilnil // no block at this height is not an error
 		}
 		return nil, fmt.Errorf("failed to get block header for height %d: %w", height, err)
@@ -134,7 +148,7 @@ func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err er
 		return 0, fmt.Errorf("failed to get chain info for network %s: %w", w.Network, err)
 	}
 
-	return uint32(info.Blocks), nil //nolint:gosec // G115 -- block height fits in uint32
+	return toUint32(info.Blocks, "block height")
 }
 
 // blockInfoToHeader converts a go-whatsonchain BlockInfo into the SDK BlockHeader.
@@ -151,14 +165,30 @@ func blockInfoToHeader(info *woc.BlockInfo) (*BlockHeader, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid previous block hash: %w", err)
 	}
+	height, err := toUint32(info.Height, "height")
+	if err != nil {
+		return nil, err
+	}
+	version, err := toUint32(info.Version, "version")
+	if err != nil {
+		return nil, err
+	}
+	blockTime, err := toUint32(info.Time, "time")
+	if err != nil {
+		return nil, err
+	}
+	nonce, err := toUint32(info.Nonce, "nonce")
+	if err != nil {
+		return nil, err
+	}
 
 	return &BlockHeader{
 		Hash:       hash,
-		Height:     uint32(info.Height),  //nolint:gosec // G115 -- block height fits in uint32
-		Version:    uint32(info.Version), //nolint:gosec // G115 -- block version fits in uint32
+		Height:     height,
+		Version:    version,
 		MerkleRoot: merkleRoot,
-		Time:       uint32(info.Time),  //nolint:gosec // G115 -- block time fits in uint32
-		Nonce:      uint32(info.Nonce), //nolint:gosec // G115 -- nonce fits in uint32
+		Time:       blockTime,
+		Nonce:      nonce,
 		Bits:       info.Bits,
 		PrevHash:   prevHash,
 	}, nil
@@ -170,4 +200,13 @@ func hashFromHex(s string) (*chainhash.Hash, error) {
 		return nil, nil //nolint:nilnil // an absent hash (e.g. genesis prev-hash) is not an error
 	}
 	return chainhash.NewHashFromHex(s)
+}
+
+// toUint32 converts a go-whatsonchain int64 field to uint32, returning an error
+// (named for the field) rather than silently truncating an out-of-range value.
+func toUint32(v int64, field string) (uint32, error) {
+	if v < 0 || v > math.MaxUint32 {
+		return 0, fmt.Errorf("%s value %d out of uint32 range", field, v)
+	}
+	return uint32(v), nil
 }

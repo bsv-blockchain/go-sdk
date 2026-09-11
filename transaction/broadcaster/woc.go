@@ -22,6 +22,10 @@ var (
 // building, API-key handling, and response parsing. A custom util.HTTPClient can
 // be supplied via Client (it satisfies go-whatsonchain's HTTPInterface); when nil
 // it defaults to http.DefaultClient.
+//
+// API key resolution: when ApiKey is empty, go-whatsonchain falls back to the
+// WHATS_ON_CHAIN_API_KEY environment variable if it is set. Set ApiKey explicitly
+// to control the credential; leave both unset for unauthenticated requests.
 type WhatsOnChain struct {
 	Network WOCNetwork
 	ApiKey  string
@@ -46,19 +50,23 @@ func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transact
 		}
 	}
 
-	if b.Client == nil {
-		b.Client = http.DefaultClient
+	// Resolve the client into a local variable rather than assigning to b.Client,
+	// so a broadcaster shared across goroutines with a nil Client does not race on
+	// the field. http.DefaultClient reuses a shared, connection-pooled transport.
+	client := b.Client
+	if client == nil {
+		client = http.DefaultClient
 	}
 
 	clientOpts := []woc.ClientOption{
 		woc.WithNetwork(woc.NetworkType(b.Network)),
-		woc.WithHTTPClient(b.Client),
+		woc.WithHTTPClient(client),
 	}
 	if b.ApiKey != "" {
 		clientOpts = append(clientOpts, woc.WithAPIKey(b.ApiKey))
 	}
 
-	client, err := woc.NewClient(ctx, clientOpts...)
+	wocClient, err := woc.NewClient(ctx, clientOpts...)
 	if err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
@@ -66,7 +74,7 @@ func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transact
 		}
 	}
 
-	if _, err = client.BroadcastTx(ctx, t.Hex()); err != nil {
+	if _, err = wocClient.BroadcastTx(ctx, t.Hex()); err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
 			Description: err.Error(),

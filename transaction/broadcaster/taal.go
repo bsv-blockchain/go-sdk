@@ -50,10 +50,14 @@ func (b *TAALBroadcast) BroadcastCtx(ctx context.Context, t *transaction.Transac
 	if b.ApiKey != "" {
 		req.Header.Set("Authorization", b.ApiKey)
 	}
-	if b.Client == nil {
-		b.Client = http.DefaultClient
+	// Resolve the client into a local variable rather than assigning to b.Client,
+	// so a broadcaster shared across goroutines with a nil Client does not race on
+	// the field.
+	client := b.Client
+	if client == nil {
+		client = http.DefaultClient
 	}
-	if resp, err := b.Client.Do(req); err != nil {
+	if resp, err := client.Do(req); err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
 			Description: err.Error(),

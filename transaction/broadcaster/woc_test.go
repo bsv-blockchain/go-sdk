@@ -265,6 +265,10 @@ func TestWhatsOnChainBroadcastNilClient(t *testing.T) {
 	require.Nil(t, failure)
 	require.NotNil(t, success)
 	require.Equal(t, tx.TxID().String(), success.Txid)
+
+	// The nil-Client fallback must not mutate the shared field, so a broadcaster
+	// reused across goroutines does not race on the assignment.
+	require.Nil(t, b.Client)
 }
 
 func TestWhatsOnChainBroadcastTestnet(t *testing.T) {
