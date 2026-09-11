@@ -5,10 +5,11 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
-	"github.com/bsv-blockchain/go-sdk/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 func malformedRawBumpBEEF(t *testing.T, bump *MerklePath, bumpIndex int) (*Beef, *chainhash.Hash) {

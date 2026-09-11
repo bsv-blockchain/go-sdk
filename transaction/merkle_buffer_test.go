@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
-	"github.com/stretchr/testify/require"
 )
 
 // TestMerkleTreeParentByteIdentity locks the optimized MerkleTreeParent to the

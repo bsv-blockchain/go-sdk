@@ -229,7 +229,8 @@ func TestGoldenP2PKHSignedTransaction(t *testing.T) {
 	tx := transaction.NewTransaction()
 	require.NoError(t, tx.AddInputFrom(
 		"45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d", 0,
-		goldenLockHex, 100_000, unlocker))
+		goldenLockHex, 100_000, unlocker,
+	))
 	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 99_000, LockingScript: lock})
 	require.NoError(t, tx.Sign())
 
@@ -250,10 +251,12 @@ func fixedTwoInputTx(t *testing.T) *transaction.Transaction {
 	tx := transaction.NewTransaction()
 	require.NoError(t, tx.AddInputFrom(
 		"45be95d2f2c64e99518ffbbce03fb15a7758f20ee5eecf0df07938d977add71d", 0,
-		lock.String(), 100_000, unlocker))
+		lock.String(), 100_000, unlocker,
+	))
 	require.NoError(t, tx.AddInputFrom(
 		"64faeaa2e3cbadaf82d8fa8c7ded508cb043c5d101671f43c084be2ac6163148", 1,
-		lock.String(), 200_000, unlocker))
+		lock.String(), 200_000, unlocker,
+	))
 	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 90_000, LockingScript: lock})
 	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 200_000, LockingScript: lock})
 	return tx

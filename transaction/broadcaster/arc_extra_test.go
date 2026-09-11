@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
-
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 

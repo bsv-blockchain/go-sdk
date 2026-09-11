@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 // leafPathContaining builds a single-level merkle path whose Path[0] has n
