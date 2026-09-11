@@ -3,6 +3,7 @@ package transaction
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"testing"
 
@@ -63,6 +64,56 @@ func TestGuardParseCountUnboundedReader(t *testing.T) {
 
 	// A modest count is still allowed on an unbounded reader.
 	require.NoError(t, guardParseCount(r, 1024, 1, "thing"))
+}
+
+// TestReadVarInt locks that the allocation-free readVarInt is byte-for-byte
+// semantically identical to util.VarInt.ReadFrom: for the same input bytes it
+// must return the same value, the same number of bytes read, and agree on
+// whether the read errored. It covers every CompactSize size class, non-minimal
+// encodings (which both decoders accept unchanged), and truncated inputs.
+func TestReadVarInt(t *testing.T) {
+	// Canonical encodings across every size-class boundary.
+	values := []uint64{
+		0, 1, 252, // 1-byte
+		253, 65535, // 3-byte (0xfd)
+		65536, 4294967295, // 5-byte (0xfe)
+		4294967296, math.MaxUint64, // 9-byte (0xff)
+	}
+	inputs := make([][]byte, 0, len(values)+8) // canonical + 4 non-minimal + 4 truncated
+	for _, v := range values {
+		inputs = append(inputs, util.VarInt(v).Bytes())
+	}
+	// Non-minimal encodings: a value written with a wider prefix than needed.
+	// Neither decoder enforces minimality, so both must accept these identically.
+	inputs = append(inputs,
+		[]byte{0xfd, 0x01, 0x00},                                     // 1 as 3-byte
+		[]byte{0xfe, 0x01, 0x00, 0x00, 0x00},                         // 1 as 5-byte
+		[]byte{0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // 1 as 9-byte
+		[]byte{0xfd, 0xfc, 0x00},                                     // 252 as 3-byte
+	)
+	// Truncated inputs: an empty read and wide prefixes with too few value bytes.
+	inputs = append(inputs,
+		[]byte{},
+		[]byte{0xff, 0x01},
+		[]byte{0xfe},
+		[]byte{0xfd, 0x00},
+	)
+
+	scratch := make([]byte, 32)
+	for _, in := range inputs {
+		t.Run(fmt.Sprintf("len%d_%x", len(in), in), func(t *testing.T) {
+			gotVal, gotN, gotErr := readVarInt(bytes.NewReader(in), scratch)
+
+			var want util.VarInt
+			wantN, wantErr := want.ReadFrom(bytes.NewReader(in))
+
+			require.Equal(t, wantN, gotN, "bytes read must match util.VarInt.ReadFrom")
+			require.Equal(t, wantErr != nil, gotErr != nil, "error presence must match")
+			if wantErr == nil {
+				require.Equal(t, uint64(want), gotVal, "decoded value must match")
+			}
+		})
+	}
 }
 
 // TestNewTransactionFromBEEFBumpIndexGuard is a regression test for the BEEF

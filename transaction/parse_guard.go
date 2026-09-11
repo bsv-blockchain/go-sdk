@@ -1,8 +1,11 @@
 package transaction
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 // byteLenReader is implemented by the in-memory readers the binary parsers are
@@ -37,6 +40,20 @@ type byteLenReader interface {
 // enough that the resulting make() cannot exceed the runtime's maximum slice
 // size and panic with "makeslice: len out of range".
 const maxParseAllocBytes uint64 = 1 << 32 // 4 GiB
+
+const (
+	// minInputParseBytes is the smallest number of bytes a serialized transaction
+	// input can occupy: 32-byte previous txid + 4-byte output index + 1-byte
+	// empty-script varint + 4-byte sequence. It bounds input-count pre-sizing and
+	// must never exceed the true per-element minimum, or a valid count would be
+	// rejected (extended-format inputs are larger, so this remains a safe lower
+	// bound for them too).
+	minInputParseBytes = 41
+	// minOutputParseBytes is the smallest number of bytes a serialized transaction
+	// output can occupy: 8-byte value + 1-byte empty-script varint. It bounds
+	// output-count pre-sizing.
+	minOutputParseBytes = 9
+)
 
 func guardParseCount(r io.Reader, count uint64, minBytesPerElem int, what string) error {
 	if minBytesPerElem < 1 {
@@ -80,4 +97,40 @@ func readGuardedBytes(r io.Reader, l uint64, what string) ([]byte, int, error) {
 	buf := make([]byte, l)
 	n, err := io.ReadFull(r, buf)
 	return buf, n, err
+}
+
+// readVarInt reads a CompactSize varint from r into scratch (len >= 8) and
+// returns its value together with the number of bytes read. It is the
+// allocation-free counterpart of util.VarInt.ReadFrom for the parse hot path: the
+// caller's reusable scratch removes the per-call make([]byte, ...) that
+// VarInt.ReadFrom performs on every invocation. The decoding — including
+// acceptance of non-minimal encodings and the 1/3/5/9 byte counts returned
+// (including on a short read) — is identical to util.VarInt.ReadFrom.
+func readVarInt(r io.Reader, scratch []byte) (uint64, int64, error) {
+	if _, err := io.ReadFull(r, scratch[:1]); err != nil {
+		return 0, 0, errors.Wrap(err, "could not read varint type")
+	}
+
+	switch scratch[0] {
+	case 0xff:
+		if n, err := io.ReadFull(r, scratch[:8]); err != nil {
+			return 0, 9, errors.Wrapf(err, "varint(8): got %d bytes", n)
+		}
+		return binary.LittleEndian.Uint64(scratch[:8]), 9, nil
+
+	case 0xfe:
+		if n, err := io.ReadFull(r, scratch[:4]); err != nil {
+			return 0, 5, errors.Wrapf(err, "varint(4): got %d bytes", n)
+		}
+		return uint64(binary.LittleEndian.Uint32(scratch[:4])), 5, nil
+
+	case 0xfd:
+		if n, err := io.ReadFull(r, scratch[:2]); err != nil {
+			return 0, 3, errors.Wrapf(err, "varint(2): got %d bytes", n)
+		}
+		return uint64(binary.LittleEndian.Uint16(scratch[:2])), 3, nil
+
+	default:
+		return uint64(scratch[0]), 1, nil
+	}
 }

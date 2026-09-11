@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -50,12 +51,13 @@ func flipTwoArrays(a, b []byte) []byte {
 // MerkleTreeParent returns the Merkle Tree parent of two Merkle Tree children.
 // The expectation is that the bytes are not reversed.
 func MerkleTreeParent(l, r *chainhash.Hash) *chainhash.Hash {
-	concatenated := make([]byte, len(l)+len(r))
-	copy(concatenated, l[:])
-	copy(concatenated[len(l):], r[:])
-	hash, err := chainhash.NewHash(crypto.Sha256d(concatenated))
-	if err != nil {
-		return &chainhash.Hash{}
-	}
-	return hash
+	// Double-SHA256 of l||r using a stack buffer, avoiding the per-call
+	// concatenation and intermediate hash allocations. Byte-identical to
+	// chainhash.NewHash(crypto.Sha256d(l||r)).
+	var buf [chainhash.HashSize * 2]byte
+	copy(buf[:chainhash.HashSize], l[:])
+	copy(buf[chainhash.HashSize:], r[:])
+	first := sha256.Sum256(buf[:])
+	parent := chainhash.Hash(sha256.Sum256(first[:]))
+	return &parent
 }

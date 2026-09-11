@@ -31,10 +31,22 @@ ignore:
   - ".mage-cache/**"
   - ".vscode/**"
   - "bin/**"
+  - "docs/**" # example programs — no tests, always 0% (matches Sonar coverage exclusion)
   - "example/**"
   - "examples/**"
   - "mocks/**"
   - "testing/**"
+  # Test infrastructure & fixtures. These live in non-_test.go files so the helpers can be
+  # shared across packages' tests (e.g. wallet.NewTestWalletForRandomKey, registry.MockRegistry),
+  # which is why go/codecov instrument them. Sonar already excludes all of these via its
+  # `**test**` glob (sonar-project.properties); this mirrors that policy for Codecov.
+  - "**/testdata/**"
+  - "**/test_util/**"
+  - "**/test_cert_util/**"
+  - "**/testcertificates/**"
+  - "**/test_wallet.go"
+  - "**/test_logger.go"
+  - "**/mock.go"
 
 # Parsers
 # --------------

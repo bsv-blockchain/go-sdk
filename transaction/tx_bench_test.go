@@ -221,19 +221,34 @@ func BenchmarkCalcInputPreimage(b *testing.B) {
 }
 
 // BenchmarkCalcInputPreimageLegacy measures the pre-fork sighash preimage
-// (signaturehash.go:155), which clones the transaction via ShallowClone.
+// (signaturehash.go CalcInputPreimageLegacy), which ShallowClones the
+// transaction and, depending on the flag, empties or blanks outputs (None /
+// Single) or slices to the single signing input (AnyOneCanPay) before
+// serializing. It scales over input count and the mutation flags so the
+// serialization is exercised on every branch.
 func BenchmarkCalcInputPreimageLegacy(b *testing.B) {
+	flags := []struct {
+		name string
+		f    sighash.Flag
+	}{
+		{"All", sighash.All},
+		{"None", sighash.None},
+		{"Single", sighash.Single},
+		{"AllAnyOneCanPay", sighash.All | sighash.AnyOneCanPay},
+	}
 	for _, n := range []int{1, 16, 64} {
-		b.Run(fmt.Sprintf("inputs=%d", n), func(b *testing.B) {
-			tx := benchP2PKHTx(b, n)
+		for _, fl := range flags {
+			b.Run(fmt.Sprintf("inputs=%d/%s", n, fl.name), func(b *testing.B) {
+				tx := benchP2PKHTx(b, n)
 
-			b.ReportAllocs()
-			for b.Loop() {
-				if _, err := tx.CalcInputPreimageLegacy(0, sighash.All); err != nil {
-					b.Fatal(err)
+				b.ReportAllocs()
+				for b.Loop() {
+					if _, err := tx.CalcInputPreimageLegacy(0, fl.f); err != nil {
+						b.Fatal(err)
+					}
 				}
-			}
-		})
+			})
+		}
 	}
 }
 

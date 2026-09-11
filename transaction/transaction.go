@@ -23,6 +23,13 @@ type Transaction struct {
 	Outputs    []*TransactionOutput `json:"outputs"`
 	LockTime   uint32               `json:"locktime"`
 	MerklePath *MerklePath          `json:"merklePath"`
+
+	// cachedTxID is an optional, caller-populated txid cache. It is set ONLY via
+	// SetTxHash and is never auto-populated by TxID(), so a read can never leave
+	// a value that later goes stale on its own; the caller opts in and owns
+	// invalidation. Unexported, so it is ignored by JSON and does not affect the
+	// public API.
+	cachedTxID *chainhash.Hash
 }
 
 // Transactions a collection of *transaction.Transaction.
@@ -79,34 +86,40 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 	var n64 int64
 	var err error
 
-	version := make([]byte, 4)
-	n, err := io.ReadFull(r, version)
+	// One reusable scratch buffer for every fixed-size field and length prefix
+	// in this parse: large enough for the 32-byte previous-txid, and threaded
+	// into input/output parsing. Slices of it feed binary.LittleEndian and
+	// chainhash.NewHash (which read/copy immediately) and readVarInt, so the
+	// whole transaction decodes with a single header allocation instead of a
+	// fresh make([]byte, ...) per field.
+	scratch := make([]byte, 32)
+
+	n, err := io.ReadFull(r, scratch[:4])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, err
 	}
 
-	tx.Version = binary.LittleEndian.Uint32(version)
+	tx.Version = binary.LittleEndian.Uint32(scratch[:4])
 
 	extended := false
 
-	var inputCount util.VarInt
+	var inputCount uint64
 
-	n64, err = inputCount.ReadFrom(r)
+	inputCount, n64, err = readVarInt(r, scratch)
 	bytesRead += n64
 	if err != nil {
 		return bytesRead, err
 	}
 
-	var outputCount util.VarInt
-	locktime := make([]byte, 4)
+	var outputCount uint64
 
 	// ----------------------------------------------------------------------------------
 	// If the inputCount is 0, we may be parsing an incomplete transaction, or we may be
 	// both of these cases without needing to rewind (peek) the incoming stream of bytes.
 	// ----------------------------------------------------------------------------------
 	if inputCount == 0 {
-		n64, err = outputCount.ReadFrom(r)
+		outputCount, n64, err = readVarInt(r, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
@@ -114,20 +127,20 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 
 		if outputCount == 0 {
 			// Read in lock time
-			n, err = io.ReadFull(r, locktime)
+			n, err = io.ReadFull(r, scratch[:4])
 			bytesRead += int64(n)
 			if err != nil {
 				return bytesRead, err
 			}
 
-			if binary.BigEndian.Uint32(locktime) != 0xEF {
-				tx.LockTime = binary.LittleEndian.Uint32(locktime)
+			if binary.BigEndian.Uint32(scratch[:4]) != 0xEF {
+				tx.LockTime = binary.LittleEndian.Uint32(scratch[:4])
 				return bytesRead, nil
 			}
 
 			extended = true
 
-			n64, err = inputCount.ReadFrom(r)
+			inputCount, n64, err = readVarInt(r, scratch)
 			bytesRead += n64
 			if err != nil {
 				return bytesRead, err
@@ -141,9 +154,21 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 	// ----------------------------------------------------------------------------------
 
 	// create Inputs
-	for i := uint64(0); i < uint64(inputCount); i++ {
+	if _, ok := r.(byteLenReader); ok {
+		// In-memory reader (the untrusted-binary parse entry points wrap their
+		// input in a *bytes.Reader): pre-size the slice, first guarding the
+		// attacker-controlled count against the bytes that remain (min 41 per
+		// input) so make() cannot be handed an oversized length. Streaming
+		// readers, which cannot report a remaining length, keep appending
+		// unchanged.
+		if err = guardParseCount(r, inputCount, minInputParseBytes, "inputs"); err != nil {
+			return bytesRead, err
+		}
+		tx.Inputs = make([]*TransactionInput, 0, inputCount)
+	}
+	for i := uint64(0); i < inputCount; i++ {
 		input := &TransactionInput{}
-		n64, err = input.readFrom(r, extended)
+		n64, err = input.readFrom(r, extended, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
@@ -153,16 +178,22 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 
 	if inputCount > 0 || extended {
 		// Re-read the actual output count...
-		n64, err = outputCount.ReadFrom(r)
+		outputCount, n64, err = readVarInt(r, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
 		}
 	}
 
-	for i := uint64(0); i < uint64(outputCount); i++ {
+	if _, ok := r.(byteLenReader); ok {
+		if err = guardParseCount(r, outputCount, minOutputParseBytes, "outputs"); err != nil {
+			return bytesRead, err
+		}
+		tx.Outputs = make([]*TransactionOutput, 0, outputCount)
+	}
+	for i := uint64(0); i < outputCount; i++ {
 		output := new(TransactionOutput)
-		n64, err = output.ReadFrom(r)
+		n64, err = output.readFrom(r, scratch)
 		bytesRead += n64
 		if err != nil {
 			return bytesRead, err
@@ -171,12 +202,12 @@ func (tx *Transaction) ReadFrom(r io.Reader) (int64, error) {
 		tx.Outputs = append(tx.Outputs, output)
 	}
 
-	n, err = io.ReadFull(r, locktime)
+	n, err = io.ReadFull(r, scratch[:4])
 	bytesRead += int64(n)
 	if err != nil {
 		return bytesRead, err
 	}
-	tx.LockTime = binary.LittleEndian.Uint32(locktime)
+	tx.LockTime = binary.LittleEndian.Uint32(scratch[:4])
 
 	return bytesRead, nil
 }
@@ -268,8 +299,23 @@ func (tx *Transaction) IsCoinbase() bool {
 }
 
 func (tx *Transaction) TxID() *chainhash.Hash {
+	if tx.cachedTxID != nil {
+		return tx.cachedTxID
+	}
 	txid, _ := chainhash.NewHash(crypto.Sha256d(tx.Bytes()))
 	return txid
+}
+
+// SetTxHash sets an optional cached transaction ID that TxID returns without
+// recomputation. Use it only when the txid is already known and the transaction
+// will not change afterwards -- e.g. a transaction parsed from a trusted source
+// that is then read many times, or shared read-only across goroutines after the
+// hash is set. TxID never populates or invalidates this cache itself, so a later
+// mutation of the transaction would leave a stale value; the caller owns
+// invalidation. Pass nil to clear the cache. The returned hash must not be
+// mutated. Not safe to call concurrently with TxID on the same transaction.
+func (tx *Transaction) SetTxHash(hash *chainhash.Hash) {
+	tx.cachedTxID = hash
 }
 
 // // TxID returns the transaction ID of the transaction
@@ -388,112 +434,170 @@ func (tx *Transaction) ShallowClone() *Transaction {
 }
 
 func (tx *Transaction) toBytesHelper(index int, lockingScript []byte, extended bool) []byte {
-	// First pass: calculate total size
-	totalLen := 4 // version
-	if extended {
-		totalLen += 6 // extended header
-	}
-	totalLen += util.VarInt(uint64(len(tx.Inputs))).Length()
+	// Pre-size the buffer exactly, then append each field directly into it via
+	// appendBytesHelper. This avoids the per-input/per-output throwaway []byte
+	// allocations the previous two-pass implementation made (one Bytes() per
+	// element, copied in and discarded). Output bytes are identical; guarded by
+	// the golden raw/EF hex tests and the parser fuzz round-trips.
+	return tx.appendBytesHelper(make([]byte, 0, tx.serializedSize(index, lockingScript, extended)), index, lockingScript, extended)
+}
 
-	// Pre-calculate input sizes
-	inputBytes := make([][]byte, len(tx.Inputs))
+// appendBytesHelper appends the serialized transaction to h and returns the
+// extended slice. It performs no allocation when h has sufficient capacity.
+func (tx *Transaction) appendBytesHelper(h []byte, index int, lockingScript []byte, extended bool) []byte {
+	h = binary.LittleEndian.AppendUint32(h, tx.Version)
+
+	if extended {
+		h = append(h, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEF)
+	}
+
+	h = appendVarInt(h, uint64(len(tx.Inputs)))
 	for i, in := range tx.Inputs {
-		inputBytes[i] = in.Bytes(lockingScript != nil)
 		if i == index && lockingScript != nil {
-			totalLen += util.VarInt(uint64(len(lockingScript))).Length() + len(lockingScript)
+			h = appendVarInt(h, uint64(len(lockingScript)))
+			h = append(h, lockingScript...)
 		} else {
-			totalLen += len(inputBytes[i])
+			h = in.appendTo(h, lockingScript != nil)
 		}
+
 		if extended {
-			totalLen += 8 // satoshis
-			sourceTxOut := in.SourceTxOutput()
-			if sourceTxOut != nil {
-				scriptLen := len(*sourceTxOut.LockingScript)
-				totalLen += util.VarInt(uint64(scriptLen)).Length() + scriptLen
+			if sourceTxOut := in.SourceTxOutput(); sourceTxOut != nil {
+				h = binary.LittleEndian.AppendUint64(h, sourceTxOut.Satoshis)
+				h = appendVarInt(h, uint64(len(*sourceTxOut.LockingScript)))
+				h = append(h, *sourceTxOut.LockingScript...)
 			} else {
-				totalLen += 1 // zero length varint
+				h = binary.LittleEndian.AppendUint64(h, 0)
+				h = append(h, 0x00)
 			}
 		}
 	}
 
-	totalLen += util.VarInt(uint64(len(tx.Outputs))).Length()
+	h = appendVarInt(h, uint64(len(tx.Outputs)))
 	for _, out := range tx.Outputs {
-		scriptLen := len(*out.LockingScript)
-		totalLen += 8 + util.VarInt(uint64(scriptLen)).Length() + scriptLen
-	}
-	totalLen += 4 // locktime
-
-	// Second pass: write data
-	h := make([]byte, totalLen)
-	offset := 0
-
-	binary.LittleEndian.PutUint32(h[offset:], tx.Version)
-	offset += 4
-
-	if extended {
-		copy(h[offset:], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0xEF})
-		offset += 6
+		h = out.appendTo(h)
 	}
 
-	inputCountBytes := util.VarInt(uint64(len(tx.Inputs))).Bytes()
-	copy(h[offset:], inputCountBytes)
-	offset += len(inputCountBytes)
+	return binary.LittleEndian.AppendUint32(h, tx.LockTime)
+}
 
-	for i, in := range tx.Inputs {
-		if i == index && lockingScript != nil {
-			scriptLenBytes := util.VarInt(uint64(len(lockingScript))).Bytes()
-			copy(h[offset:], scriptLenBytes)
-			offset += len(scriptLenBytes)
-			copy(h[offset:], lockingScript)
-			offset += len(lockingScript)
-		} else {
-			copy(h[offset:], inputBytes[i])
-			offset += len(inputBytes[i])
-		}
+// AppendBytes appends the raw serialized transaction to dst and returns the
+// extended slice. When dst has sufficient spare capacity -- e.g. pre-allocated
+// with make([]byte, 0, tx.Size()) -- this performs no heap allocation, letting
+// callers serialize many transactions into one reused buffer. The appended
+// bytes are identical to Bytes().
+func (tx *Transaction) AppendBytes(dst []byte) []byte {
+	return tx.appendBytesHelper(dst, 0, nil, false)
+}
 
-		if extended {
-			sourceTxOut := in.SourceTxOutput()
-			if sourceTxOut != nil {
-				binary.LittleEndian.PutUint64(h[offset:], sourceTxOut.Satoshis)
-				offset += 8
-				scriptLen := uint64(len(*sourceTxOut.LockingScript))
-				scriptLenBytes := util.VarInt(scriptLen).Bytes()
-				copy(h[offset:], scriptLenBytes)
-				offset += len(scriptLenBytes)
-				copy(h[offset:], *sourceTxOut.LockingScript)
-				offset += int(scriptLen) //nolint:gosec // G115 -- scriptLen is derived from an existing slice length, already bounded by int range
-			} else {
-				binary.LittleEndian.PutUint64(h[offset:], 0)
-				offset += 8
-				h[offset] = 0x00
-				offset++
-			}
+// WriteTo streams the raw serialized transaction to w, implementing io.WriterTo.
+// It writes field by field using only a small stack buffer, so it never
+// allocates a copy of the whole transaction (wrap w in a bufio.Writer if it is
+// unbuffered). The bytes written are identical to Bytes().
+func (tx *Transaction) WriteTo(w io.Writer) (int64, error) {
+	var total int64
+	var scratch [9]byte
+
+	binary.LittleEndian.PutUint32(scratch[:4], tx.Version)
+	if err := writeAll(w, scratch[:4], &total); err != nil {
+		return total, err
+	}
+
+	n := util.VarInt(uint64(len(tx.Inputs))).PutBytes(scratch[:])
+	if err := writeAll(w, scratch[:n], &total); err != nil {
+		return total, err
+	}
+	for _, in := range tx.Inputs {
+		if err := in.writeTo(w, scratch[:], &total); err != nil {
+			return total, err
 		}
 	}
 
-	outputCountBytes := util.VarInt(uint64(len(tx.Outputs))).Bytes()
-	copy(h[offset:], outputCountBytes)
-	offset += len(outputCountBytes)
-
+	n = util.VarInt(uint64(len(tx.Outputs))).PutBytes(scratch[:])
+	if err := writeAll(w, scratch[:n], &total); err != nil {
+		return total, err
+	}
 	for _, out := range tx.Outputs {
-		outBytes := out.Bytes()
-		copy(h[offset:], outBytes)
-		offset += len(outBytes)
+		if err := out.writeTo(w, scratch[:], &total); err != nil {
+			return total, err
+		}
 	}
 
-	binary.LittleEndian.PutUint32(h[offset:], tx.LockTime)
+	binary.LittleEndian.PutUint32(scratch[:4], tx.LockTime)
+	err := writeAll(w, scratch[:4], &total)
+	return total, err
+}
 
-	return h
+// writeAll writes all of b to w, adding the number of bytes written to *total.
+// It loops until every byte is written or an error occurs, and returns
+// io.ErrShortWrite if the writer accepts no bytes without reporting an error, so
+// WriteTo stays correct across writers that only accept partial writes.
+func writeAll(w io.Writer, b []byte, total *int64) error {
+	for len(b) > 0 {
+		n, err := w.Write(b)
+		*total += int64(n)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return io.ErrShortWrite
+		}
+		b = b[n:]
+	}
+	return nil
 }
 
 // Size will return the size of tx in bytes.
 func (tx *Transaction) Size() int {
-	return len(tx.Bytes())
+	return tx.serializedSize(0, nil, false)
+}
+
+// serializedSize returns the exact number of bytes toBytesHelper will produce
+// for the given mode, computed arithmetically without allocating. It is used to
+// pre-size the serialization buffer and to implement Size(). The result mirrors
+// the raw byte layout of toBytesHelper; TestSizeMatchesSerializedLength locks
+// Size() == len(Bytes()).
+func (tx *Transaction) serializedSize(index int, lockingScript []byte, extended bool) int {
+	size := 4 // version
+	if extended {
+		size += 6 // extended marker
+	}
+	size += util.VarInt(uint64(len(tx.Inputs))).Length()
+	for i, in := range tx.Inputs {
+		if i == index && lockingScript != nil {
+			size += util.VarInt(uint64(len(lockingScript))).Length() + len(lockingScript)
+		} else {
+			size += in.size(lockingScript != nil)
+		}
+		if extended {
+			size += 8 // source satoshis
+			if sourceTxOut := in.SourceTxOutput(); sourceTxOut != nil {
+				scriptLen := len(*sourceTxOut.LockingScript)
+				size += util.VarInt(uint64(scriptLen)).Length() + scriptLen
+			} else {
+				size++ // zero-length source script varint
+			}
+		}
+	}
+	size += util.VarInt(uint64(len(tx.Outputs))).Length()
+	for _, out := range tx.Outputs {
+		size += out.size()
+	}
+	size += 4 // locktime
+	return size
+}
+
+// appendVarInt appends v in Bitcoin VarInt encoding to dst using a stack buffer
+// (no allocation). Byte-identical to util.VarInt(v).Bytes().
+func appendVarInt(dst []byte, v uint64) []byte {
+	var b [9]byte
+	n := util.VarInt(v).PutBytes(b[:])
+	return append(dst, b[:n]...)
 }
 
 func (tx *Transaction) AddMerkleProof(bump *MerklePath) error {
+	txid := tx.TxID()
 	if !slices.ContainsFunc(bump.Path[0], func(v *PathElement) bool {
-		return v.Hash.Equal(*tx.TxID())
+		return v.Hash.Equal(*txid)
 	}) {
 		return ErrBadMerkleProof
 	}
@@ -507,14 +611,16 @@ func (tx *Transaction) Sign() error {
 	if err != nil {
 		return err
 	}
+	var cache *SigHashCache
 	for vin, i := range tx.Inputs {
-		if i.UnlockingScriptTemplate != nil {
-			unlock, err := i.UnlockingScriptTemplate.Sign(tx, uint32(vin))
-			if err != nil {
-				return err
-			}
-			i.UnlockingScript = unlock
+		if i.UnlockingScriptTemplate == nil {
+			continue
 		}
+		unlock, err := tx.signWithTemplate(i, uint32(vin), &cache)
+		if err != nil {
+			return err
+		}
+		i.UnlockingScript = unlock
 	}
 	return nil
 }
@@ -525,18 +631,33 @@ func (tx *Transaction) SignUnsigned() error {
 	if err != nil {
 		return err
 	}
+	var cache *SigHashCache
 	for vin, i := range tx.Inputs {
-		if i.UnlockingScript == nil {
-			if i.UnlockingScriptTemplate != nil {
-				unlock, err := i.UnlockingScriptTemplate.Sign(tx, uint32(vin))
-				if err != nil {
-					return err
-				}
-				i.UnlockingScript = unlock
+		if i.UnlockingScript == nil && i.UnlockingScriptTemplate != nil {
+			unlock, err := tx.signWithTemplate(i, uint32(vin), &cache)
+			if err != nil {
+				return err
 			}
+			i.UnlockingScript = unlock
 		}
 	}
 	return nil
+}
+
+// signWithTemplate signs input in with its unlocking-script template. When the
+// template implements UnlockingScriptTemplateWithCache the shared BIP143
+// SigHashCache is used, built lazily on first use via cache and reused for the
+// rest of the signing pass. The cache stays valid across the pass because the
+// midstate hashes depend only on the prevouts, sequences and outputs, not on the
+// unlocking scripts being assigned as signing proceeds.
+func (tx *Transaction) signWithTemplate(in *TransactionInput, vin uint32, cache **SigHashCache) (*script.Script, error) {
+	if wc, ok := in.UnlockingScriptTemplate.(UnlockingScriptTemplateWithCache); ok {
+		if *cache == nil {
+			*cache = tx.NewSigHashCache()
+		}
+		return wc.SignWithCache(tx, vin, *cache)
+	}
+	return in.UnlockingScriptTemplate.Sign(tx, vin)
 }
 
 func (tx *Transaction) checkFeeComputed() error {
