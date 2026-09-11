@@ -140,3 +140,16 @@ func TestTransmitToWallet_HTTPErrors(t *testing.T) {
 	require.Error(t, err, "expected HTTP error")
 	require.EqualError(t, err, "HTTP request failed with status: 500 Internal Server Error", "error message mismatch")
 }
+
+func TestTransmitToWallet_DoError(t *testing.T) {
+	// An unsupported URL scheme makes httpClient.Do fail without any network access.
+	message := []byte{
+		byte(CallCreateAction),            // call code
+		0,                                 // no originator
+		'p', 'a', 'y', 'l', 'o', 'a', 'd', // payload
+	}
+
+	wire := NewHTTPWalletWire("app.test", "htp://invalid-scheme", &http.Client{})
+	_, err := wire.TransmitToWallet(t.Context(), message)
+	require.Error(t, err, "expected transport error")
+}
