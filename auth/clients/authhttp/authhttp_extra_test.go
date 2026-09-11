@@ -36,7 +36,11 @@ const (
 // newAuthFetch creates a default AuthFetch backed by a fresh random-key wallet.
 func newAuthFetch(t *testing.T) *AuthFetch {
 	t.Helper()
-	return New(wallet.NewTestWalletForRandomKey(t))
+	// Use a discard logger for the wallet rather than the default t-bound logger:
+	// Fetch spawns a handshake goroutine that, on context cancellation, can outlive
+	// the test and log through the wallet. A t-bound logger would then race with
+	// test teardown under -race. The tests do not assert on wallet logs.
+	return New(wallet.NewTestWalletForRandomKey(t, wallet.WithTestWalletLogger(slog.New(slog.DiscardHandler))))
 }
 
 // make402Response builds a minimal *http.Response with status 402 and no body.
