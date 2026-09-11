@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 // MockTAALFailureClient simulates a failed API response.
@@ -146,4 +147,32 @@ func TestTAALBroadcast(t *testing.T) {
 	require.NotNil(t, success, "Expected success when client succeeds")
 	require.Nil(t, failure, "Expected no failure when client succeeds")
 	require.Equal(t, tx.TxID().String(), success.Txid, "Txid mismatch")
+}
+
+// TestTAALBroadcastNilClient verifies that a nil Client defaults to
+// http.DefaultClient instead of panicking, matching the WhatsOnChain and Arc
+// broadcasters. It stubs http.DefaultTransport so the fallback path is exercised
+// without reaching api.taal.com. Because it mutates a process-global it must not
+// call t.Parallel().
+func TestTAALBroadcastNilClient(t *testing.T) {
+	tu.WithStubTransport(t, func(_ *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(`{"txid":"4d76b00f29e480e0a933cef9d9ffe303d6ab919e2cdb265dd2cea41089baa85a","status":1,"error":""}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	tx, err := transaction.NewTransactionFromHex(testTxHex)
+	require.NoError(t, err)
+
+	b := &TAALBroadcast{
+		ApiKey: "",
+		// Client intentionally left nil -> falls back to http.DefaultClient.
+	}
+
+	success, failure := b.Broadcast(tx)
+	require.Nil(t, failure)
+	require.NotNil(t, success)
+	require.Equal(t, tx.TxID().String(), success.Txid)
 }

@@ -50,6 +50,9 @@ func (b *TAALBroadcast) BroadcastCtx(ctx context.Context, t *transaction.Transac
 	if b.ApiKey != "" {
 		req.Header.Set("Authorization", b.ApiKey)
 	}
+	if b.Client == nil {
+		b.Client = http.DefaultClient
+	}
 	if resp, err := b.Client.Do(req); err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
