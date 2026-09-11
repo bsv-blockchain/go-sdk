@@ -39,10 +39,11 @@ func beefTxidFormats(b *Beef) map[chainhash.Hash]DataFormat {
 // TestBeefBytesCharacterization locks the serialization of a known
 // multi-transaction V2 BEEF across a parse -> Bytes -> parse round-trip: the
 // re-parsed BEEF must carry the same version, the same BUMP set and the same
-// txid/format set, and AtomicBytes must be exactly ATOMIC_BEEF || txid || <a
-// Beef.Bytes()>. This guards the direct-append rewrite of both serializers. It
-// does not pin an exact byte string because Beef.Transactions is a map and the
-// transaction order is therefore not deterministic across runs.
+// txid/format set, and AtomicBytes must be ATOMIC_BEEF || subject txid || <a
+// BEEF body limited to the subject transaction and its ancestry>. This guards
+// the direct-append rewrite of both serializers. It does not pin an exact byte
+// string because Beef.Transactions is a map and the transaction order is
+// therefore not deterministic across runs.
 func TestBeefBytesCharacterization(t *testing.T) {
 	beefBytes, err := hex.DecodeString(BEEFSet)
 	require.NoError(t, err)
@@ -64,7 +65,10 @@ func TestBeefBytesCharacterization(t *testing.T) {
 	// structurally similar.
 	require.True(t, reparsed.IsValid(true), "re-serialized BEEF must validate")
 
-	// AtomicBytes is the atomic magic + subject txid + a Beef.Bytes() body.
+	// AtomicBytes is the atomic magic + subject txid + a BEEF body carrying only
+	// the subject transaction and its ancestry (BRC-95 atomic selection), so its
+	// body is no larger than the full BEEF and its txid/format set is a subset of
+	// the full BEEF that always contains the subject.
 	var txid *chainhash.Hash
 	for _, bt := range beef.Transactions {
 		if bt.Transaction != nil {
@@ -75,13 +79,19 @@ func TestBeefBytesCharacterization(t *testing.T) {
 	require.NotNil(t, txid)
 	atomic, err := beef.AtomicBytes(txid)
 	require.NoError(t, err)
-	require.Len(t, atomic, 4+chainhash.HashSize+len(out))
+	require.LessOrEqual(t, len(atomic), 4+chainhash.HashSize+len(out))
 	require.Equal(t, ATOMIC_BEEF, binary.LittleEndian.Uint32(atomic[:4]))
 	require.Equal(t, txid[:], atomic[4:4+chainhash.HashSize])
-	// The stripped body must itself be a valid BEEF with the same txid/format set.
+	// The stripped body must itself be a valid BEEF whose txid/format set is a
+	// subset of the full BEEF and always contains the subject.
 	body, err := NewBeefFromBytes(atomic[4+chainhash.HashSize:])
 	require.NoError(t, err)
-	require.Equal(t, beefTxidFormats(beef), beefTxidFormats(body))
+	fullFormats := beefTxidFormats(beef)
+	require.Contains(t, beefTxidFormats(body), *txid, "atomic body must contain the subject")
+	for id, format := range beefTxidFormats(body) {
+		require.Contains(t, fullFormats, id, "atomic body must be a subset of the full BEEF")
+		require.Equal(t, fullFormats[id], format, "atomic body entry format must match the full BEEF")
+	}
 }
 
 func TestFromBEEF(t *testing.T) {

@@ -263,7 +263,10 @@ func TestNewBeefFromHexInvalid(t *testing.T) {
 
 func TestBeefAtomicBytes(t *testing.T) {
 	b := NewBeefV2()
-	hash, _ := chainhash.NewHashFromHex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+	tx := benchTx(42)
+	hash := tx.TxID()
+	_, err := b.MergeRawTx(tx.Bytes(), nil)
+	require.NoError(t, err)
 	result, err := b.AtomicBytes(hash)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -600,7 +603,10 @@ func TestParseBeefWithAtomicBEEF(t *testing.T) {
 	// ParseBeef handles ATOMIC_BEEF, V1, V2
 	// Test ATOMIC_BEEF branch by creating an AtomicBEEF
 	b := NewBeefV2()
-	hash, _ := chainhash.NewHashFromHex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+	tx := benchTx(42)
+	hash := tx.TxID()
+	_, err := b.MergeRawTx(tx.Bytes(), nil)
+	require.NoError(t, err)
 	atomicBytes, err := b.AtomicBytes(hash)
 	require.NoError(t, err)
 
