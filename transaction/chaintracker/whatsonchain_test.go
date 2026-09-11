@@ -4,210 +4,268 @@ package chaintracker
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 
+	woc "github.com/mrz1836/go-whatsonchain"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
+// mockHTTPClient is a socket-free util.HTTPClient (and go-whatsonchain
+// HTTPInterface) for the chaintracker tests. It builds the canned response inside
+// Do (rather than accepting a response-producing closure) so no *http.Response is
+// constructed at a call site the bodyclose linter watches. It lives in the test
+// package rather than reusing util/test_util because transaction imports
+// chaintracker, so a white-box chaintracker test cannot import util/test_util
+// without an import cycle.
+type mockHTTPClient struct {
+	status   int
+	body     string
+	err      error
+	requests []*http.Request // recorded for endpoint/method/header assertions
+}
+
+// Do records req and returns the mock's canned error, or a response built from
+// status and body.
+func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	m.requests = append(m.requests, req)
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &http.Response{
+		StatusCode: m.status,
+		Status:     http.StatusText(m.status),
+		Body:       io.NopCloser(strings.NewReader(m.body)),
+		Header:     make(http.Header),
+	}, nil
+}
+
+// lastRequest returns the most recently recorded request.
+func (m *mockHTTPClient) lastRequest() *http.Request {
+	if len(m.requests) == 0 {
+		return nil
+	}
+	return m.requests[len(m.requests)-1]
+}
+
+// mustJSON JSON-encodes v, failing the test if encoding fails.
+func mustJSON(t testing.TB, v any) string {
+	t.Helper()
+	b, err := json.Marshal(v)
+	require.NoError(t, err)
+	return string(b)
+}
+
+// jsonClient returns a mock answering every request with a 200 JSON encoding of v.
+func jsonClient(t testing.TB, v any) *mockHTTPClient {
+	return &mockHTTPClient{status: http.StatusOK, body: mustJSON(t, v)}
+}
+
+// statusClient returns a mock answering every request with the given status/body.
+func statusClient(status int, body string) *mockHTTPClient {
+	return &mockHTTPClient{status: status, body: body}
+}
+
+// newTestWOC builds a WhatsOnChain wired to an injected mock HTTP client, so tests
+// never touch the network.
+func newTestWOC(mock *mockHTTPClient) *WhatsOnChain {
+	return NewWhatsOnChain(MainNet, "testapikey", WithHTTPClient(mock))
+}
+
 func TestWhatsOnChainGetBlockHeaderSuccess(t *testing.T) {
-	// Mock BlockHeader data
-	expectedHeader := &BlockHeader{
-		Hash:       &chainhash.Hash{},
-		Height:     100,
-		Version:    1,
-		MerkleRoot: &chainhash.Hash{},
-		Time:       1234567890,
-		Nonce:      0,
-		Bits:       "1d00ffff",
-		PrevHash:   &chainhash.Hash{},
+	t.Parallel()
+
+	hash := chainhash.HashH([]byte("block hash"))
+	merkleRoot := chainhash.HashH([]byte("merkle root"))
+	prevHash := chainhash.HashH([]byte("prev hash"))
+
+	info := woc.BlockInfo{
+		Hash:              hash.String(),
+		Height:            100,
+		Version:           1,
+		MerkleRoot:        merkleRoot.String(),
+		Time:              1234567890,
+		Nonce:             42,
+		Bits:              "1d00ffff",
+		PreviousBlockHash: prevHash.String(),
 	}
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check the request method and path
-		if r.Method != http.MethodGet {
-			t.Fatalf("expected GET method, got %s", r.Method)
-		}
-		expectedPath := "/block/100/header"
-		if r.URL.Path != expectedPath {
-			t.Fatalf("expected path %s, got %s", expectedPath, r.URL.Path)
-		}
-		// Set the Authorization header if needed
-		if auth := r.Header.Get("Authorization"); auth != "testapikey" {
-			t.Fatalf("expected Authorization header 'testapikey', got '%s'", auth)
-		}
-		// Write the mock response
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(expectedHeader)
-	}))
-	defer ts.Close()
+	mock := jsonClient(t, info)
+	wc := newTestWOC(mock)
 
-	// Initialize WhatsOnChain with the test server URL and client
-	woc := &WhatsOnChain{
-		Network: "main",
-		ApiKey:  "testapikey",
-		baseURL: ts.URL,
-		client:  ts.Client(),
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.NoError(t, err)
+	require.NotNil(t, header)
+	require.Equal(t, uint32(100), header.Height)
+	require.Equal(t, uint32(1), header.Version)
+	require.Equal(t, uint32(1234567890), header.Time)
+	require.Equal(t, uint32(42), header.Nonce)
+	require.Equal(t, "1d00ffff", header.Bits)
+	require.True(t, header.Hash.IsEqual(&hash))
+	require.True(t, header.MerkleRoot.IsEqual(&merkleRoot))
+	require.True(t, header.PrevHash.IsEqual(&prevHash))
+
+	// Verify the outgoing request: method, endpoint, and API-key header.
+	req := mock.lastRequest()
+	require.NotNil(t, req)
+	assert.Equal(t, http.MethodGet, req.Method)
+	assert.Equal(t, "/v1/bsv/main/block/height/100", req.URL.Path)
+	assert.Equal(t, "testapikey", req.Header.Get("woc-api-key"))
+}
+
+func TestWhatsOnChainGetBlockHeaderEmptyPrevHash(t *testing.T) {
+	t.Parallel()
+
+	// A genesis-style block reports an empty previousblockhash, which maps to a nil
+	// PrevHash rather than a parse error.
+	merkleRoot := chainhash.HashH([]byte("merkle root"))
+	info := woc.BlockInfo{
+		Hash:              chainhash.HashH([]byte("hash")).String(),
+		Height:            0,
+		MerkleRoot:        merkleRoot.String(),
+		PreviousBlockHash: "",
 	}
 
-	ctx := t.Context()
-	header, err := woc.GetBlockHeader(ctx, 100)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-		return // Add this return statement
-	}
-	if header == nil {
-		t.Fatalf("expected header, got nil")
-		return // Add this return statement
-	}
-	if header.Height != expectedHeader.Height {
-		t.Errorf("expected height %d, got %d", expectedHeader.Height, header.Height)
-	}
+	wc := newTestWOC(jsonClient(t, info))
+
+	header, err := wc.GetBlockHeader(t.Context(), 0)
+	require.NoError(t, err)
+	require.NotNil(t, header)
+	require.Nil(t, header.PrevHash)
 }
 
 func TestWhatsOnChainGetBlockHeaderNotFound(t *testing.T) {
-	// Create a test server that returns 404
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer ts.Close()
+	t.Parallel()
 
-	woc := &WhatsOnChain{
-		Network: "main",
-		ApiKey:  "testapikey",
-		baseURL: ts.URL,
-		client:  ts.Client(),
-	}
+	// A 404 with an empty body maps to go-whatsonchain's ErrBlockNotFound, which
+	// GetBlockHeader translates to (nil, nil).
+	wc := newTestWOC(statusClient(http.StatusNotFound, ""))
 
-	ctx := t.Context()
-	header, err := woc.GetBlockHeader(ctx, 100)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if header != nil {
-		t.Fatalf("expected nil header, got %v", header)
-	}
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.NoError(t, err)
+	require.Nil(t, header)
 }
 
 func TestWhatsOnChainGetBlockHeaderErrorResponse(t *testing.T) {
-	// Create a test server that returns 500 Internal Server Error
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte("Internal Server Error"))
-	}))
-	defer ts.Close()
+	t.Parallel()
 
-	woc := &WhatsOnChain{
-		Network: "main",
-		ApiKey:  "testapikey",
-		baseURL: ts.URL,
-		client:  ts.Client(),
-	}
+	wc := newTestWOC(statusClient(http.StatusInternalServerError, "Internal Server Error"))
 
-	ctx := t.Context()
-	header, err := woc.GetBlockHeader(ctx, 100)
-	if err == nil {
-		t.Fatalf("expected error, got nil")
-	}
-	if header != nil {
-		t.Fatalf("expected nil header, got %v", header)
-	}
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.Error(t, err)
+	require.Nil(t, header)
 }
 
 func TestWhatsOnChainIsValidRootForHeightSuccess(t *testing.T) {
-	// Mock BlockHeader data with a known MerkleRoot
-	merkleRootHash := chainhash.HashH([]byte("test merkle root"))
-	expectedHeader := &BlockHeader{
-		MerkleRoot: &merkleRootHash,
+	t.Parallel()
+
+	merkleRoot := chainhash.HashH([]byte("test merkle root"))
+	info := woc.BlockInfo{
+		Hash:       chainhash.HashH([]byte("hash")).String(),
+		MerkleRoot: merkleRoot.String(),
 	}
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		err := json.NewEncoder(w).Encode(expectedHeader)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+	wc := newTestWOC(jsonClient(t, info))
 
-	woc := &WhatsOnChain{
-		Network: "main",
-		ApiKey:  "testapikey",
-		baseURL: ts.URL,
-		client:  ts.Client(),
-	}
-
-	ctx := t.Context()
-	isValid, err := woc.IsValidRootForHeight(ctx, &merkleRootHash, 100)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if !isValid {
-		t.Fatalf("expected isValid to be true, got false")
-	}
+	isValid, err := wc.IsValidRootForHeight(t.Context(), &merkleRoot, 100)
+	require.NoError(t, err)
+	require.True(t, isValid)
 }
 
 func TestWhatsOnChainIsValidRootForHeightInvalidRoot(t *testing.T) {
-	// Mock BlockHeader data with a different MerkleRoot
-	merkleRootHash := chainhash.HashH([]byte("test merkle root"))
-	differentMerkleRootHash := chainhash.HashH([]byte("different merkle root"))
-	expectedHeader := &BlockHeader{
-		MerkleRoot: &merkleRootHash,
+	t.Parallel()
+
+	merkleRoot := chainhash.HashH([]byte("test merkle root"))
+	differentMerkleRoot := chainhash.HashH([]byte("different merkle root"))
+	info := woc.BlockInfo{
+		Hash:       chainhash.HashH([]byte("hash")).String(),
+		MerkleRoot: merkleRoot.String(),
 	}
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		err := json.NewEncoder(w).Encode(expectedHeader)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+	wc := newTestWOC(jsonClient(t, info))
 
-	woc := &WhatsOnChain{
-		Network: "main",
-		ApiKey:  "testapikey",
-		baseURL: ts.URL,
-		client:  ts.Client(),
-	}
-
-	ctx := t.Context()
-	isValid, err := woc.IsValidRootForHeight(ctx, &differentMerkleRootHash, 100)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if isValid {
-		t.Fatalf("expected isValid to be false, got true")
-	}
+	isValid, err := wc.IsValidRootForHeight(t.Context(), &differentMerkleRoot, 100)
+	require.NoError(t, err)
+	require.False(t, isValid)
 }
 
 func TestWhatsOnChainCurrentHeight(t *testing.T) {
-	// Mock ChainInfo data
-	expectedBlocks := uint32(800000)
+	t.Parallel()
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		info := &ChainInfo{Blocks: expectedBlocks}
-		err := json.NewEncoder(w).Encode(info)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+	mock := jsonClient(t, woc.ChainInfo{Blocks: 800000})
+	wc := newTestWOC(mock)
 
-	woc := &WhatsOnChain{
-		Network: "main",
-		ApiKey:  "testapikey",
-		baseURL: ts.URL,
-		client:  ts.Client(),
-	}
+	height, err := wc.CurrentHeight(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, uint32(800000), height)
 
-	height, err := woc.CurrentHeight(t.Context())
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	req := mock.lastRequest()
+	require.NotNil(t, req)
+	assert.Equal(t, http.MethodGet, req.Method)
+	assert.Equal(t, "/v1/bsv/main/chain/info", req.URL.Path)
+}
+
+func TestWhatsOnChainGetBlockHeaderNotFoundWithBody(t *testing.T) {
+	t.Parallel()
+
+	// A 404 with a non-empty body still maps to (nil, nil): the status code is
+	// checked via the client's last request, not the decode result.
+	wc := newTestWOC(statusClient(http.StatusNotFound, "Block not found"))
+
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.NoError(t, err)
+	require.Nil(t, header)
+}
+
+func TestWhatsOnChainGetBlockHeaderNotFoundWithValidJSONBody(t *testing.T) {
+	t.Parallel()
+
+	// A 404 whose body is valid BlockInfo JSON must still map to (nil, nil): the
+	// status code is authoritative, not whether the body decodes.
+	body := mustJSON(t, woc.BlockInfo{
+		Hash:   chainhash.HashH([]byte("hash")).String(),
+		Height: 100,
+	})
+	wc := newTestWOC(statusClient(http.StatusNotFound, body))
+
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.NoError(t, err)
+	require.Nil(t, header)
+}
+
+func TestWhatsOnChainCurrentHeightNotFoundWithJSONBody(t *testing.T) {
+	t.Parallel()
+
+	// A 404 whose body decodes to ChainInfo{Blocks:0} must be an error, not
+	// (0, nil): the previous implementation rejected every non-200 response.
+	body := mustJSON(t, woc.ChainInfo{Blocks: 0})
+	wc := newTestWOC(statusClient(http.StatusNotFound, body))
+
+	height, err := wc.CurrentHeight(t.Context())
+	require.Error(t, err)
+	require.Zero(t, height)
+	require.Contains(t, err.Error(), "chain info not found")
+}
+
+func TestWhatsOnChainGetBlockHeaderNumericOverflow(t *testing.T) {
+	t.Parallel()
+
+	// A height that does not fit in uint32 is rejected rather than silently
+	// truncated.
+	info := woc.BlockInfo{
+		Hash:       chainhash.HashH([]byte("hash")).String(),
+		MerkleRoot: chainhash.HashH([]byte("merkle")).String(),
+		Height:     int64(1) << 40,
 	}
-	if height != expectedBlocks {
-		t.Fatalf("expected height %d, got %d", expectedBlocks, height)
-	}
+	wc := newTestWOC(jsonClient(t, info))
+
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.Error(t, err)
+	require.Nil(t, header)
+	require.Contains(t, err.Error(), "out of uint32 range")
 }

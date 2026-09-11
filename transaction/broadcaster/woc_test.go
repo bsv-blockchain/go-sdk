@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
-
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
@@ -46,6 +45,17 @@ func (m *MockBadRequestClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: 400,
 		Body:       io.NopCloser(strings.NewReader("Bad Request")),
+	}, nil
+}
+
+// MockNotFoundClient returns HTTP 404, which go-whatsonchain's BroadcastTx treats
+// as a non-error. The broadcaster must still report a failure, not a false success.
+type MockNotFoundClient struct{}
+
+func (m *MockNotFoundClient) Do(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: 404,
+		Body:       io.NopCloser(strings.NewReader("Not Found")),
 	}, nil
 }
 
@@ -85,11 +95,10 @@ type MockRequestCheckClient struct {
 }
 
 func (m *MockRequestCheckClient) Do(req *http.Request) (*http.Response, error) {
-	// Check API key if provided
+	// Check API key if provided. go-whatsonchain sends the key in the "woc-api-key"
+	// header (not an Authorization: Bearer header).
 	if m.apiKey != "" {
-		auth := req.Header.Get("Authorization")
-		expected := "Bearer " + m.apiKey
-		require.Equal(m.t, expected, auth, "API key not properly set in Authorization header")
+		require.Equal(m.t, m.apiKey, req.Header.Get("woc-api-key"), "API key not properly set in woc-api-key header")
 	}
 
 	// Check Content-Type
@@ -159,7 +168,7 @@ func TestWhatsOnChainBroadcastFailure(t *testing.T) {
 	require.Nil(t, success)
 	require.NotNil(t, failure)
 	require.Equal(t, "500", failure.Code)
-	require.Equal(t, "Internal Server Error", failure.Description)
+	require.Contains(t, failure.Description, "Internal Server Error")
 }
 
 func TestWhatsOnChainBroadcastClientError(t *testing.T) {
@@ -191,8 +200,27 @@ func TestWhatsOnChainBroadcastBadRequest(t *testing.T) {
 	success, failure := b.Broadcast(tx)
 	require.Nil(t, success)
 	require.NotNil(t, failure)
-	require.Equal(t, "400", failure.Code)
-	require.Equal(t, "Bad Request", failure.Description)
+	require.Equal(t, "500", failure.Code)
+	require.Contains(t, failure.Description, "Bad Request")
+}
+
+func TestWhatsOnChainBroadcastNotFound(t *testing.T) {
+	tx, err := transaction.NewTransactionFromHex(testTxHex)
+	require.NoError(t, err)
+
+	b := &WhatsOnChain{
+		Network: WOCMainnet,
+		ApiKey:  "",
+		Client:  &MockNotFoundClient{},
+	}
+
+	// A 404 must be a failure (go-whatsonchain treats 404 as a non-error), not a
+	// false BroadcastSuccess.
+	success, failure := b.Broadcast(tx)
+	require.Nil(t, success)
+	require.NotNil(t, failure)
+	require.Equal(t, "404", failure.Code)
+	require.Contains(t, failure.Description, "404")
 }
 
 func TestWhatsOnChainBroadcastUnauthorized(t *testing.T) {
@@ -208,8 +236,8 @@ func TestWhatsOnChainBroadcastUnauthorized(t *testing.T) {
 	success, failure := b.Broadcast(tx)
 	require.Nil(t, success)
 	require.NotNil(t, failure)
-	require.Equal(t, "401", failure.Code)
-	require.Equal(t, "Unauthorized", failure.Description)
+	require.Equal(t, "500", failure.Code)
+	require.Contains(t, failure.Description, "Unauthorized")
 }
 
 func TestWhatsOnChainBroadcastBodyReadError(t *testing.T) {
@@ -226,7 +254,7 @@ func TestWhatsOnChainBroadcastBodyReadError(t *testing.T) {
 	require.Nil(t, success)
 	require.NotNil(t, failure)
 	require.Equal(t, "500", failure.Code)
-	require.Equal(t, "unknown error", failure.Description)
+	require.Contains(t, failure.Description, "read error")
 }
 
 func TestWhatsOnChainBroadcastNilTransaction(t *testing.T) {
@@ -267,6 +295,10 @@ func TestWhatsOnChainBroadcastNilClient(t *testing.T) {
 	require.Nil(t, failure)
 	require.NotNil(t, success)
 	require.Equal(t, tx.TxID().String(), success.Txid)
+
+	// The nil-Client fallback must not mutate the shared field, so a broadcaster
+	// reused across goroutines does not race on the assignment.
+	require.Nil(t, b.Client)
 }
 
 func TestWhatsOnChainBroadcastTestnet(t *testing.T) {

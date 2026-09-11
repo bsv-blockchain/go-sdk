@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/wallet"
-
-	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 // setupMockWalletForAuth creates a mock wallet with the required methods for auth operations
@@ -27,6 +25,7 @@ func setupMockWalletForAuth(t *testing.T) *wallet.TestWallet {
 }
 
 func TestNewUploader(t *testing.T) {
+	t.Parallel()
 	// Test with valid config
 	mockWallet := wallet.NewTestWalletForRandomKey(t)
 	config := UploaderConfig{
@@ -64,15 +63,14 @@ func TestNewUploader(t *testing.T) {
 }
 
 func TestStorageUploader_PublishFile(t *testing.T) {
-	// Intercept the auth client's default HTTP transport so the request fails
-	// immediately instead of reaching the configured StorageURL over the network.
-	tu.WithUnreachableTransport(t)
-
+	t.Parallel()
+	// Inject an AuthFetcher that fails so the request errors out without touching
+	// the network, verifying the uploader is wired past config validation.
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "https://example.com/storage",
 		Wallet:     mockWallet,
-	})
+	}, WithAuthFetcher(erroringFetcher(assert.AnError)))
 	require.NoError(t, err)
 	assert.NotNil(t, uploader)
 	assert.Equal(t, "https://example.com/storage", uploader.baseURL)
@@ -84,41 +82,32 @@ func TestStorageUploader_PublishFile(t *testing.T) {
 		Type: "text/plain",
 	}
 
-	// This will fail due to network error since we're not connecting to a real server
-	// But we can verify the uploader is properly configured
+	// This fails at the injected auth fetch, not at configuration validation.
 	_, err = uploader.PublishFile(context.Background(), testFile, 60)
-	require.Error(t, err) // Expected to fail due to network/auth issues
-
-	// The error should be related to network/auth, not configuration
+	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "storage URL is required")
 	assert.NotContains(t, err.Error(), "wallet is required")
 }
 
 func TestStorageUploader_FindFile(t *testing.T) {
-	// Intercept the auth client's default HTTP transport so the request fails
-	// immediately instead of reaching the configured StorageURL over the network.
-	tu.WithUnreachableTransport(t)
-
+	t.Parallel()
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "https://example.com/storage",
 		Wallet:     mockWallet,
-	})
+	}, WithAuthFetcher(erroringFetcher(assert.AnError)))
 	require.NoError(t, err)
 	assert.NotNil(t, uploader)
 
-	// This will fail due to network error since we're not connecting to a real server
-	// But we can verify the uploader is properly configured
 	_, err = uploader.FindFile(context.Background(), "uhrp://test123")
-	require.Error(t, err) // Expected to fail due to network/auth issues
-
-	// The error should be related to network/auth, not configuration
+	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "storage URL is required")
 	assert.NotContains(t, err.Error(), "wallet is required")
 }
 
 // TestUploadFileResult tests the file upload result structure
 func TestUploadFileResult(t *testing.T) {
+	t.Parallel()
 	// Test creating upload result
 	result := UploadFileResult{
 		Published: true,
@@ -131,6 +120,7 @@ func TestUploadFileResult(t *testing.T) {
 
 // TestFindFileData tests the find file data structure
 func TestFindFileData(t *testing.T) {
+	t.Parallel()
 	// Test creating find result
 	result := FindFileData{
 		Name:       "test.txt",
@@ -146,45 +136,31 @@ func TestFindFileData(t *testing.T) {
 }
 
 func TestStorageUploader_ListUploads(t *testing.T) {
-	// Intercept the auth client's default HTTP transport so the request fails
-	// immediately instead of reaching the configured StorageURL over the network.
-	tu.WithUnreachableTransport(t)
-
+	t.Parallel()
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "https://example.com/storage",
 		Wallet:     mockWallet,
-	})
+	}, WithAuthFetcher(erroringFetcher(assert.AnError)))
 	require.NoError(t, err)
 
-	// This will fail due to network error since we're not connecting to a real server
-	// But we can verify the uploader is properly configured
 	_, err = uploader.ListUploads(context.Background())
-	require.Error(t, err) // Expected to fail due to network/auth issues
-
-	// The error should be related to network/auth, not configuration
+	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "storage URL is required")
 	assert.NotContains(t, err.Error(), "wallet is required")
 }
 
 func TestStorageUploader_RenewFile(t *testing.T) {
-	// Intercept the auth client's default HTTP transport so the request fails
-	// immediately instead of reaching the configured StorageURL over the network.
-	tu.WithUnreachableTransport(t)
-
+	t.Parallel()
 	mockWallet := setupMockWalletForAuth(t)
 	uploader, err := NewUploader(UploaderConfig{
 		StorageURL: "https://example.com/storage",
 		Wallet:     mockWallet,
-	})
+	}, WithAuthFetcher(erroringFetcher(assert.AnError)))
 	require.NoError(t, err)
 
-	// This will fail due to network error since we're not connecting to a real server
-	// But we can verify the uploader is properly configured
 	_, err = uploader.RenewFile(context.Background(), "uhrp://test123", 60)
-	require.Error(t, err) // Expected to fail due to network/auth issues
-
-	// The error should be related to network/auth, not configuration
+	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "storage URL is required")
 	assert.NotContains(t, err.Error(), "wallet is required")
 }

@@ -2,6 +2,7 @@ package transports
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -22,14 +23,16 @@ type testWsServer struct {
 	mu      sync.Mutex
 	conns   map[*websocket.Conn]bool
 	handler func(*websocket.Conn, []byte)
-	t       *testing.T // Add testing.T for logging
 }
 
-// newTestWsServer creates and starts a new test WebSocket server
+// newTestWsServer creates and starts a new test WebSocket server. Diagnostic
+// logging goes to the standard log package rather than *testing.T because the
+// server handler runs on a goroutine that can outlive the test, and logging to
+// *testing.T after the test returns races with test teardown under -race.
 func newTestWsServer(t *testing.T) *testWsServer {
+	t.Helper()
 	s := &testWsServer{
 		conns: make(map[*websocket.Conn]bool),
-		t:     t, // Store testing.T
 	}
 
 	s.server = httptest.NewServer(http.HandlerFunc(s.handleWs))
@@ -59,7 +62,7 @@ func (s *testWsServer) handleWs(w http.ResponseWriter, r *http.Request) {
 					strings.Contains(err.Error(), "EOF") {
 					// Normal disconnection, no need to log
 				} else {
-					s.t.Logf("Test WS server read error: %v", err)
+					log.Printf("Test WS server read error: %v", err)
 				}
 				break // Exit loop on any error or closure
 			}
@@ -68,7 +71,7 @@ func (s *testWsServer) handleWs(w http.ResponseWriter, r *http.Request) {
 			} else {
 				// Default echo handler if none provided
 				if err := websocket.Message.Send(conn, data); err != nil {
-					s.t.Logf("Test WS server write error: %v", err)
+					log.Printf("Test WS server write error: %v", err)
 					break
 				}
 			}

@@ -3,9 +3,10 @@ package transaction
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/stretchr/testify/require"
 )
 
 func sizeTestTx(nIn, nOut, inScriptLen, outScriptLen int) *Transaction {

@@ -8,11 +8,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 // MockTAALFailureClient simulates a failed API response.
@@ -146,4 +149,64 @@ func TestTAALBroadcast(t *testing.T) {
 	require.NotNil(t, success, "Expected success when client succeeds")
 	require.Nil(t, failure, "Expected no failure when client succeeds")
 	require.Equal(t, tx.TxID().String(), success.Txid, "Txid mismatch")
+}
+
+// TestTAALBroadcastNilClient verifies that a nil Client defaults to
+// http.DefaultClient instead of panicking, matching the WhatsOnChain and Arc
+// broadcasters. It stubs http.DefaultTransport so the fallback path is exercised
+// without reaching api.taal.com. Because it mutates a process-global it must not
+// call t.Parallel().
+func TestTAALBroadcastNilClient(t *testing.T) {
+	tu.WithStubTransport(t, func(_ *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(`{"txid":"4d76b00f29e480e0a933cef9d9ffe303d6ab919e2cdb265dd2cea41089baa85a","status":1,"error":""}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	tx, err := transaction.NewTransactionFromHex(testTxHex)
+	require.NoError(t, err)
+
+	b := &TAALBroadcast{
+		ApiKey: "",
+		// Client intentionally left nil -> falls back to http.DefaultClient.
+	}
+
+	success, failure := b.Broadcast(tx)
+	require.Nil(t, failure)
+	require.NotNil(t, success)
+	require.Equal(t, tx.TxID().String(), success.Txid)
+
+	// The nil-Client fallback must not mutate the shared field, so a broadcaster
+	// reused across goroutines does not race on the assignment.
+	require.Nil(t, b.Client)
+}
+
+// TestTAALBroadcastNilClientConcurrent exercises the nil-Client fallback from many
+// goroutines under -race; a fallback that wrote to b.Client would be flagged.
+func TestTAALBroadcastNilClientConcurrent(t *testing.T) {
+	tu.WithStubTransport(t, func(_ *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(`{"txid":"4d76b00f29e480e0a933cef9d9ffe303d6ab919e2cdb265dd2cea41089baa85a","status":1,"error":""}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	tx, err := transaction.NewTransactionFromHex(testTxHex)
+	require.NoError(t, err)
+
+	b := &TAALBroadcast{} // shared, nil Client
+
+	var wg sync.WaitGroup
+	for range 16 {
+		wg.Go(func() {
+			success, failure := b.Broadcast(tx)
+			assert.Nil(t, failure)
+			assert.NotNil(t, success)
+		})
+	}
+	wg.Wait()
+	require.Nil(t, b.Client)
 }

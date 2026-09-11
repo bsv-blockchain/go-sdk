@@ -1,137 +1,128 @@
 package storage
 
-// storage_uploader_extra_test.go – tests for uploader methods that bypass the BSV
-// mutual-auth barrier.
+// storage_uploader_extra_test.go – socket-free tests for the authenticated
+// uploader endpoints (getUploadInfo, FindFile, ListUploads, RenewFile) and the
+// presigned-URL PUT path.
 //
-// The AuthFetch.Fetch method normally requires a full BSV mutual-auth handshake.
-// When the peers sync.Map already holds an entry with SupportsMutualAuth = &false
-// for a given base URL, Fetch routes through handleFetchAndValidate which makes a
-// plain HTTP request with NO BSV auth headers.
-//
-// We use reflect + unsafe to write directly into the unexported peers sync.Map field
-// of AuthFetch, enabling us to test all the post-auth code paths in getUploadInfo,
-// FindFile, ListUploads, and RenewFile using httptest servers.
+// Instead of standing up a local test server and reaching through a real BSV
+// mutual-auth handshake, we inject a mockAuthFetcher (via WithAuthFetcher) that
+// returns canned *http.Response values, and a *tu.MockHTTPClient (via
+// WithUploaderClient) for the PUT upload. This exercises every post-fetch code
+// path – JSON decode, checkAPIError, HTTP-status and pointer-field branches –
+// with no network I/O, so the tests are safe to run with t.Parallel().
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"reflect"
-	"sync"
 	"testing"
-	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 	"github.com/bsv-blockchain/go-sdk/wallet"
 )
 
-const (
-	headerContentType = "Content-Type"
-	contentTypeJSON   = "application/json"
-)
+const testStorageURL = "https://storage.test"
 
-// bypassAuthForUploader injects a non-mutual-auth peer entry into the AuthFetch peers
-// map for the given base URL, causing subsequent Fetch calls to use plain HTTP.
-func bypassAuthForUploader(t *testing.T, uploader *Uploader, baseURL string) {
-	t.Helper()
-
-	notSupported := false
-	peer := &authhttp.AuthPeer{
-		SupportsMutualAuth: &notSupported,
-	}
-
-	// Access the unexported peers sync.Map field of AuthFetch via unsafe pointer.
-	af := uploader.authFetch
-	rv := reflect.ValueOf(af).Elem()
-	peersField := rv.FieldByName("peers")
-	require.True(t, peersField.IsValid(), "peers field not found on AuthFetch")
-
-	peersPtr := (*sync.Map)(unsafe.Pointer(peersField.UnsafeAddr())) //nolint:gosec // G103 -- test-only reflection to access unexported field
-	peersPtr.Store(baseURL, peer)
+// mockAuthFetcher is a socket-free AuthFetcher that returns whatever fetchFunc
+// produces. *authhttp.AuthFetch satisfies the same interface, but this stand-in
+// performs no mutual-auth handshake and no I/O. Tests assert on the outgoing URL,
+// method, and body directly inside fetchFunc.
+type mockAuthFetcher struct {
+	fetchFunc func(ctx context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error)
 }
 
-// newBypassedUploader creates an Uploader whose AuthFetch is pre-configured to skip
-// BSV mutual auth for requests to the given httptest server.
-func newBypassedUploader(t *testing.T, ts *httptest.Server) *Uploader {
+// Fetch delegates to fetchFunc. It satisfies AuthFetcher.
+func (m *mockAuthFetcher) Fetch(ctx context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+	return m.fetchFunc(ctx, url, config)
+}
+
+// stringFetcher builds a mockAuthFetcher whose every Fetch call returns a fresh
+// response with the given status and body (and no error).
+func stringFetcher(status int, body string) *mockAuthFetcher {
+	return &mockAuthFetcher{
+		fetchFunc: func(context.Context, string, *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return tu.StringResponse(status, body), nil
+		},
+	}
+}
+
+// erroringFetcher builds a mockAuthFetcher whose every Fetch call fails with err,
+// standing in for a transport-level failure without any real network.
+func erroringFetcher(err error) *mockAuthFetcher {
+	return &mockAuthFetcher{
+		fetchFunc: func(context.Context, string, *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return nil, err
+		},
+	}
+}
+
+// newMockUploader builds an Uploader against a fixed fake base URL with the given
+// options applied (typically WithAuthFetcher and/or WithUploaderClient).
+func newMockUploader(t *testing.T, opts ...func(*UploaderOptions)) *Uploader {
 	t.Helper()
 	w := wallet.NewTestWalletForRandomKey(t)
-	uploader, err := NewUploader(UploaderConfig{
-		StorageURL: ts.URL,
-		Wallet:     w,
-	})
+	u, err := NewUploader(UploaderConfig{StorageURL: testStorageURL, Wallet: w}, opts...)
 	require.NoError(t, err)
-
-	// baseURL is scheme://host (no path)
-	parsed := fmt.Sprintf("%s://%s", "http", ts.Listener.Addr().String())
-	bypassAuthForUploader(t, uploader, parsed)
-	return uploader
+	return u
 }
 
-// ---- getUploadInfo ----
+// ---- getUploadInfo ----------------------------------------------------------
 
 func TestGetUploadInfoNonOKStatus(t *testing.T) {
-	// handleFetchAndValidate returns (resp, nil) for 2xx statuses.
-	// getUploadInfo checks resp.StatusCode != 200, so use 201 to trigger line 102.
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusCreated) // 201 - passes handleFetchAndValidate but not getUploadInfo check
-	}))
-	defer ts.Close()
+	t.Parallel()
+	// A 2xx status other than 200 must trigger the status-check error branch.
+	af := stringFetcher(http.StatusCreated, "")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.getUploadInfo(context.Background(), 100, 60)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "upload info request failed: HTTP 201")
 }
 
 func TestGetUploadInfoInvalidJSON(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("not valid json"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := stringFetcher(http.StatusOK, "not valid json")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.getUploadInfo(context.Background(), 100, 60)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode upload info response")
 }
 
 func TestGetUploadInfoErrorStatus(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": StatusError})
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, _ string, _ *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return tu.JSONResponse(t, http.StatusOK, map[string]string{"status": StatusError}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.getUploadInfo(context.Background(), 100, 60)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "upload route returned an error")
 }
 
 func TestGetUploadInfoSuccess(t *testing.T) {
+	t.Parallel()
 	uploadURL := "https://s3.example.com/upload"
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		resp := map[string]interface{}{
-			"status":    StatusSuccess,
-			"uploadURL": uploadURL,
-			"requiredHeaders": map[string]string{
-				"x-amz-acl": "public-read",
-			},
-		}
-		_ = json.NewEncoder(w).Encode(resp)
-	}))
-	defer ts.Close()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			assert.Equal(t, testStorageURL+"/upload", url)
+			assert.Equal(t, "POST", config.Method)
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status":          StatusSuccess,
+				"uploadURL":       uploadURL,
+				"requiredHeaders": map[string]string{"x-amz-acl": "public-read"},
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	info, err := uploader.getUploadInfo(context.Background(), 1024, 30)
 	require.NoError(t, err)
 	assert.Equal(t, uploadURL, info.UploadURL)
@@ -139,215 +130,195 @@ func TestGetUploadInfoSuccess(t *testing.T) {
 	assert.Equal(t, "public-read", info.RequiredHeaders["x-amz-acl"])
 }
 
-// ---- FindFile ----
+// ---- FindFile ---------------------------------------------------------------
 
 func TestFindFileNonOKStatus(t *testing.T) {
-	// Use 202 Accepted (2xx but not 200) to bypass handleFetchAndValidate's error check
-	// while triggering FindFile's internal status != 200 check.
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/find", r.URL.Path)
-		w.WriteHeader(http.StatusAccepted) // 202
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := stringFetcher(http.StatusAccepted, "")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.FindFile(context.Background(), testUHRPURL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "findFile request failed: HTTP 202")
 }
 
 func TestFindFileInvalidJSON(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("{invalid}"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := stringFetcher(http.StatusOK, "{invalid}")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.FindFile(context.Background(), testUHRPURL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode findFile response")
 }
 
 func TestFindFileErrorStatus(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":      StatusError,
-			"code":        "FILE_NOT_FOUND",
-			"description": "file does not exist",
-		})
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, _ *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status":      StatusError,
+				"code":        "FILE_NOT_FOUND",
+				"description": "file does not exist",
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.FindFile(context.Background(), testUHRPURL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "FILE_NOT_FOUND")
 }
 
 func TestFindFileSuccess(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, testUHRPURL, r.URL.Query().Get("uhrpUrl"))
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": StatusSuccess,
-			"data": map[string]interface{}{
-				"name":       "test.txt",
-				"size":       "100 bytes",
-				"mimeType":   testMimeTypeTextPlain,
-				"expiryTime": 9999999999,
-			},
-		})
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			assert.Contains(t, url, testStorageURL+"/find")
+			assert.Contains(t, url, "uhrpUrl=")
+			assert.Equal(t, "GET", config.Method)
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status": StatusSuccess,
+				"data": map[string]any{
+					"name":       "test.txt",
+					"size":       "100 bytes",
+					"mimeType":   testMimeTypeTextPlain,
+					"expiryTime": 9999999999,
+				},
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	data, err := uploader.FindFile(context.Background(), testUHRPURL)
 	require.NoError(t, err)
 	assert.Equal(t, "test.txt", data.Name)
 	assert.Equal(t, testMimeTypeTextPlain, data.MimeType)
 }
 
-// ---- ListUploads ----
+// ---- ListUploads ------------------------------------------------------------
 
 func TestListUploadsNonOKStatus(t *testing.T) {
-	// Use 202 Accepted (2xx but not 200) to bypass handleFetchAndValidate's error check
-	// while triggering ListUploads' internal status != 200 check.
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/list", r.URL.Path)
-		w.WriteHeader(http.StatusAccepted) // 202
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := stringFetcher(http.StatusAccepted, "")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.ListUploads(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "listUploads request failed: HTTP 202")
 }
 
 func TestListUploadsInvalidJSON(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("bad json"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := stringFetcher(http.StatusOK, "bad json")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.ListUploads(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode listUploads response")
 }
 
 func TestListUploadsErrorStatus(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":      StatusError,
-			"code":        "ACCESS_DENIED",
-			"description": "not authorized",
-		})
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, _ *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status":      StatusError,
+				"code":        "ACCESS_DENIED",
+				"description": "not authorized",
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.ListUploads(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "ACCESS_DENIED")
 }
 
 func TestListUploadsSuccess(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":  StatusSuccess,
-			"uploads": []interface{}{"file1", "file2"},
-		})
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			assert.Equal(t, testStorageURL+"/list", url)
+			assert.Equal(t, "GET", config.Method)
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status":  StatusSuccess,
+				"uploads": []any{"file1", "file2"},
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	result, err := uploader.ListUploads(context.Background())
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 }
 
-// ---- RenewFile ----
+// ---- RenewFile --------------------------------------------------------------
 
 func TestRenewFileNonOKStatus(t *testing.T) {
-	// Use 202 Accepted (2xx but not 200) to bypass handleFetchAndValidate's error check
-	// while triggering RenewFile's internal status != 200 check.
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/renew", r.URL.Path)
-		w.WriteHeader(http.StatusAccepted) // 202
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := stringFetcher(http.StatusAccepted, "")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.RenewFile(context.Background(), testUHRPURL, 60)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "renewFile request failed: HTTP 202")
 }
 
 func TestRenewFileInvalidJSON(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("{not json}"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := stringFetcher(http.StatusOK, "{not json}")
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.RenewFile(context.Background(), testUHRPURL, 30)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode renewFile response")
 }
 
 func TestRenewFileErrorStatus(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":      StatusError,
-			"code":        "UHRP_NOT_FOUND",
-			"description": "UHRP URL not found",
-		})
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, _ *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status":      StatusError,
+				"code":        "UHRP_NOT_FOUND",
+				"description": "UHRP URL not found",
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-	uploader := newBypassedUploader(t, ts)
 	_, err := uploader.RenewFile(context.Background(), testUHRPURL, 60)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "UHRP_NOT_FOUND")
 }
 
 func TestRenewFileSuccess(t *testing.T) {
+	t.Parallel()
 	prevExpiry := int64(1000000)
 	newExpiry := int64(2000000)
 	amount := int64(500)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify request body contains uhrpUrl and additionalMinutes
-		var body map[string]interface{}
-		_ = json.NewDecoder(r.Body).Decode(&body)
-		assert.Equal(t, "uhrp://myfile", body["uhrpUrl"])
-		assert.InDelta(t, float64(120), body["additionalMinutes"], 0.0001)
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			assert.Equal(t, testStorageURL+"/renew", url)
+			assert.Equal(t, "POST", config.Method)
+			var body map[string]any
+			require.NoError(t, json.Unmarshal(config.Body, &body))
+			assert.Equal(t, "uhrp://myfile", body["uhrpUrl"])
+			assert.InDelta(t, float64(120), body["additionalMinutes"], 0.0001)
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status":         StatusSuccess,
+				"prevExpiryTime": prevExpiry,
+				"newExpiryTime":  newExpiry,
+				"amount":         amount,
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":         StatusSuccess,
-			"prevExpiryTime": prevExpiry,
-			"newExpiryTime":  newExpiry,
-			"amount":         amount,
-		})
-	}))
-	defer ts.Close()
-
-	uploader := newBypassedUploader(t, ts)
 	result, err := uploader.RenewFile(context.Background(), "uhrp://myfile", 120)
 	require.NoError(t, err)
 	assert.Equal(t, StatusSuccess, result.Status)
@@ -356,21 +327,37 @@ func TestRenewFileSuccess(t *testing.T) {
 	assert.Equal(t, amount, result.Amount)
 }
 
-// ---- uploadFile – client.Do error path ----
+func TestRenewFileSuccessNilOptionals(t *testing.T) {
+	t.Parallel()
+	// When PrevExpiryTime, NewExpiryTime, Amount are omitted, they default to 0.
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, _ *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
+				"status": StatusSuccess,
+			}), nil
+		},
+	}
+	uploader := newMockUploader(t, WithAuthFetcher(af))
 
-// TestUploadFileConnectionRefused exercises the client.Do error path (line 136-138)
-// by using a URL that refuses connections.
-func TestUploadFileConnectionRefused(t *testing.T) {
-	mockWallet := wallet.NewTestWalletForRandomKey(t)
-	uploader, err := NewUploader(UploaderConfig{
-		StorageURL: "http://localhost:9",
-		Wallet:     mockWallet,
-	})
+	result, err := uploader.RenewFile(context.Background(), testUHRPURL, 30)
 	require.NoError(t, err)
+	assert.Equal(t, int64(0), result.PrevExpiryTime)
+	assert.Equal(t, int64(0), result.NewExpiryTime)
+	assert.Equal(t, int64(0), result.Amount)
+}
 
-	// Port 9 (discard protocol) is typically blocked or connection-refused.
-	// We use a TCP address guaranteed to refuse connections.
-	_, err = uploader.uploadFile(context.Background(), "http://127.0.0.1:1/upload", UploadableFile{
+// ---- uploadFile – client.Do error path --------------------------------------
+
+// TestUploadFileConnectionRefused exercises the client.Do error branch by
+// injecting a client whose transport always fails.
+func TestUploadFileConnectionRefused(t *testing.T) {
+	t.Parallel()
+	mc := &tu.MockHTTPClient{DoFunc: func(*http.Request) (*http.Response, error) {
+		return nil, assert.AnError
+	}}
+	uploader := newMockUploader(t, WithUploaderClient(mc))
+
+	_, err := uploader.uploadFile(context.Background(), testStorageURL+"/upload", UploadableFile{
 		Data: []byte("test data"),
 		Type: testMimeTypeTextPlain,
 	}, nil)
@@ -378,35 +365,35 @@ func TestUploadFileConnectionRefused(t *testing.T) {
 	assert.Contains(t, err.Error(), "file upload failed")
 }
 
-// ---- PublishFile – full success path ----
+// ---- PublishFile – full success path ----------------------------------------
 
-// TestPublishFileFullSuccess tests the complete PublishFile flow (getUploadInfo → uploadFile)
-// using the auth bypass and a httptest server that handles both endpoints.
+// TestPublishFileFullSuccess tests the complete PublishFile flow
+// (getUploadInfo via AuthFetcher → uploadFile via injected client).
 func TestPublishFileFullSuccess(t *testing.T) {
+	t.Parallel()
 	fileData := []byte("test file for publish")
+	putURL := "https://s3.example.com/put-target"
 
-	var ts *httptest.Server
-	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.Method == "POST" && r.URL.Path == "/upload":
-			// getUploadInfo: return a presigned URL pointing to this same server
-			w.Header().Set(headerContentType, contentTypeJSON)
-			w.WriteHeader(http.StatusOK)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			assert.Equal(t, testStorageURL+"/upload", url)
+			assert.Equal(t, "POST", config.Method)
+			return tu.JSONResponse(t, http.StatusOK, map[string]any{
 				"status":          StatusSuccess,
-				"uploadURL":       ts.URL + "/put-target",
-				"requiredHeaders": map[string]string{},
-			})
-		case r.Method == "PUT" && r.URL.Path == "/put-target":
-			// uploadFile: accept the PUT
-			w.WriteHeader(http.StatusOK)
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	defer ts.Close()
+				"uploadURL":       putURL,
+				"requiredHeaders": map[string]string{"x-amz-acl": "public-read"},
+			}), nil
+		},
+	}
+	mc := &tu.MockHTTPClient{DoFunc: func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodPut, req.Method)
+		assert.Equal(t, putURL, req.URL.String())
+		assert.Equal(t, testMimeTypeTextPlain, req.Header.Get("Content-Type"))
+		assert.Equal(t, "public-read", req.Header.Get("x-amz-acl"))
+		return tu.StringResponse(http.StatusOK, ""), nil
+	}}
 
-	uploader := newBypassedUploader(t, ts)
+	uploader := newMockUploader(t, WithAuthFetcher(af), WithUploaderClient(mc))
 	result, err := uploader.PublishFile(context.Background(), UploadableFile{
 		Data: fileData,
 		Type: testMimeTypeTextPlain,
@@ -414,24 +401,4 @@ func TestPublishFileFullSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, result.Published)
 	assert.NotEmpty(t, result.UhrpURL)
-}
-
-func TestRenewFileSuccessNilOptionals(t *testing.T) {
-	// When PrevExpiryTime, NewExpiryTime, Amount are omitted, they default to 0.
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(headerContentType, contentTypeJSON)
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": StatusSuccess,
-			// omit all optional fields
-		})
-	}))
-	defer ts.Close()
-
-	uploader := newBypassedUploader(t, ts)
-	result, err := uploader.RenewFile(context.Background(), testUHRPURL, 30)
-	require.NoError(t, err)
-	assert.Equal(t, int64(0), result.PrevExpiryTime)
-	assert.Equal(t, int64(0), result.NewExpiryTime)
-	assert.Equal(t, int64(0), result.Amount)
 }

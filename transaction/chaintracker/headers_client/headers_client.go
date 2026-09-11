@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type Header struct {
@@ -37,14 +38,47 @@ type Client struct {
 	Ctx        context.Context //nolint:containedctx // kept for backward compatibility; per-call context.Context parameters are used instead
 	Url        string
 	ApiKey     string
-	httpClient *http.Client
+	httpClient util.HTTPClient
 }
 
-func (c *Client) getHTTPClient() *http.Client {
+// ClientOptions configures a Client constructed with NewClient.
+type ClientOptions struct {
+	// HTTPClient is the util.HTTPClient used for every request. When nil, the
+	// Client falls back to http.DefaultClient.
+	HTTPClient util.HTTPClient
+}
+
+// WithHTTPClient injects a custom util.HTTPClient into the Client, enabling
+// timeouts, tracing, retries, and test doubles. The provided client cannot be nil.
+func WithHTTPClient(client util.HTTPClient) func(*ClientOptions) {
+	if client == nil {
+		panic("httpClient cannot be set to nil")
+	}
+	return func(opts *ClientOptions) {
+		opts.HTTPClient = client
+	}
+}
+
+// NewClient constructs a headers-service Client for the given base URL and API
+// key. Additional behavior (such as a custom HTTP client) can be supplied through
+// functional options.
+func NewClient(url, apiKey string, opts ...func(*ClientOptions)) *Client {
+	options := &ClientOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return &Client{
+		Url:        url,
+		ApiKey:     apiKey,
+		httpClient: options.HTTPClient,
+	}
+}
+
+func (c *Client) getHTTPClient() util.HTTPClient {
 	if c.httpClient != nil {
 		return c.httpClient
 	}
-	return &http.Client{}
+	return http.DefaultClient
 }
 
 func (c *Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
@@ -67,8 +101,7 @@ func (c *Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.getHTTPClient().Do(req)
 	if err != nil {
 		return false, fmt.Errorf("error sending request: %w", err)
 	}
@@ -93,14 +126,13 @@ func (c *Client) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash,
 
 func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, error) {
 	headers := []Header{}
-	client := &http.Client{}
 	url := fmt.Sprintf("%s/api/v1/chain/header/byHeight?height=%d", c.Url, height)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
-	if res, err := client.Do(req); err != nil {
+	if res, err := c.getHTTPClient().Do(req); err != nil {
 		return nil, err
 	} else {
 		defer func() { _ = res.Body.Close() }()
@@ -127,13 +159,12 @@ func (c *Client) BlockByHeight(ctx context.Context, height uint32) (*Header, err
 
 func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error) {
 	headerState := &State{}
-	client := &http.Client{}
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/v1/chain/header/state/%s", c.Url, hash), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
-	if res, err := client.Do(req); err != nil {
+	if res, err := c.getHTTPClient().Do(req); err != nil {
 		return nil, err
 	} else {
 		defer func() { _ = res.Body.Close() }()
@@ -146,13 +177,12 @@ func (c *Client) GetBlockState(ctx context.Context, hash string) (*State, error)
 
 func (c *Client) GetChaintip(ctx context.Context) (*State, error) {
 	headerState := &State{}
-	client := &http.Client{}
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/v1/chain/tip/longest", c.Url), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
-	if res, err := client.Do(req); err != nil {
+	if res, err := c.getHTTPClient().Do(req); err != nil {
 		return nil, err
 	} else {
 		defer func() { _ = res.Body.Close() }()

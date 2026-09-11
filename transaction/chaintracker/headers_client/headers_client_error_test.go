@@ -3,44 +3,42 @@ package headers_client
 import (
 	"context"
 	"errors"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
-// errRoundTripper fails every request, standing in for a transport-level
-// network error without any real DNS/HTTP.
-type errRoundTripper struct{}
-
-func (errRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
-	return nil, errors.New("transport failure")
-}
-
-// withErrTransport swaps http.DefaultTransport (used by the inline &http.Client{}
-// and getHTTPClient() fallbacks) for one that always errors, and restores it via
-// t.Cleanup. It must not be used with t.Parallel().
-func withErrTransport(t *testing.T) {
-	t.Helper()
-	prev := http.DefaultTransport
-	http.DefaultTransport = errRoundTripper{}
-	t.Cleanup(func() { http.DefaultTransport = prev })
-}
-
 // TestHeadersClientTransportErrors covers the client.Do error branch of every
-// request method by making the transport fail.
+// request method by injecting a mock HTTP client that always fails at the
+// transport level.
 func TestHeadersClientTransportErrors(t *testing.T) {
-	withErrTransport(t)
-	requireAllRequestMethodsError(t, &Client{Url: "http://headers.test", ApiKey: testAPIKey})
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		//nolint:bodyclose // ErrorResponder always returns (nil, err); there is no response body to close
+		DoFunc: tu.ErrorResponder(errors.New("transport failure")),
+	}
+	requireAllRequestMethodsError(t, &Client{
+		Url:        "https://headers.test",
+		ApiKey:     testAPIKey,
+		httpClient: mock,
+	})
 }
 
 // TestHeadersClientRequestCreationErrors covers the "error creating request"
 // branch by using a URL containing a control character that http.NewRequest
-// rejects.
+// rejects. This fails before any Do call, so the injected mock is never invoked.
 func TestHeadersClientRequestCreationErrors(t *testing.T) {
-	requireAllRequestMethodsError(t, &Client{Url: "http://headers.test/\x7f", ApiKey: testAPIKey})
+	t.Parallel()
+
+	requireAllRequestMethodsError(t, &Client{
+		Url:        "http://headers.test/\x7f",
+		ApiKey:     testAPIKey,
+		httpClient: &tu.MockHTTPClient{},
+	})
 }
 
 // requireAllRequestMethodsError asserts that every request-issuing method on c

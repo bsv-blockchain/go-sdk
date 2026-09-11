@@ -7,8 +7,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 type portableBeefRecord struct {
