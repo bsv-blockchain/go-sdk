@@ -1,27 +1,22 @@
 package storage
 
-// storage_methods_extra_test.go – additional tests to push storage coverage above 70%.
+// storage_methods_extra_test.go – socket-free tests for Resolve output-processing
+// and the full Download HTTP loop.
 //
-// Architectural barriers:
-//   - getUploadInfo, FindFile, ListUploads, RenewFile all call authFetch.Fetch()
-//     which requires a full BSV mutual-auth handshake with the server. Without
-//     implementing the full server-side auth protocol, those code paths are
-//     unreachable from tests. The paths after the auth call (JSON decode,
-//     checkAPIError, pointer field conversions) therefore remain blocked.
+// Resolve is driven with a mockLookupFacilitator that returns hand-built BEEF
+// outputs (too-few pushdrop fields, expired timestamp, empty host URL, valid host
+// URL, out-of-range index, non-pushdrop script, mixed batches).
 //
-// Reachable paths targeted here:
-//   1. Resolve – BEEF outputs with: too-few pushdrop fields, expired timestamp,
-//      empty host URL, valid host URL (all added to coverage).
-//   2. Download – full HTTP happy path (httptest server + correct content hash),
-//      HTTP >= 400 error path, read-body error (via bad response), hash mismatch,
-//      context cancellation, all-hosts-fail exhaustion.
+// Download is driven by injecting a *tu.MockHTTPClient (via WithDownloaderClient)
+// whose DoFunc returns canned responses. The BEEF carries a fake host URL; no
+// local test server or real socket is involved. For the hash-match tests the
+// uhrpURL is derived from the exact bytes the mock returns, so
+// crypto.Sha256(body) == hash.
 
 import (
 	"context"
 	"errors"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -34,12 +29,24 @@ import (
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
-	"github.com/bsv-blockchain/go-sdk/wallet"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
-const errUnableToDownload = "unable to download content"
+const (
+	errUnableToDownload = "unable to download content"
+	// fakeHost is a syntactically valid host URL that is never dialed – the
+	// injected mock client answers every request without any real network I/O.
+	fakeHost = "https://host.test/file"
+)
 
 // ---- helpers ----------------------------------------------------------------
+
+// errReadCloser is a response body that always fails on Read, exercising the
+// io.ReadAll error branch in Download.
+type errReadCloser struct{}
+
+func (errReadCloser) Read([]byte) (int, error) { return 0, errors.New("simulated read error") }
+func (errReadCloser) Close() error             { return nil }
 
 // buildMinimalBeef creates a parent→child BEEF with the given locking script.
 func buildMinimalBeef(t *testing.T, lockingScript *script.Script) []byte {
@@ -100,7 +107,13 @@ func buildUhrpPushDropScript(t *testing.T, hash []byte, uhrpURL, hostURL string,
 }
 
 // newDownloaderWithFacilitator creates a StorageDownloader from a raw facilitator.
-func newDownloaderWithFacilitator(facilitator lookup.Facilitator) *StorageDownloader {
+// An optional HTTP client can be supplied for the Download path; when omitted a
+// default socket-free mock client is used (sufficient for Resolve-only tests).
+func newDownloaderWithFacilitator(facilitator lookup.Facilitator, client ...util.HTTPClient) *StorageDownloader {
+	var c util.HTTPClient = &tu.MockHTTPClient{}
+	if len(client) > 0 {
+		c = client[0]
+	}
 	resolver := &lookup.LookupResolver{
 		Facilitator: facilitator,
 		HostOverrides: map[string][]string{
@@ -108,7 +121,28 @@ func newDownloaderWithFacilitator(facilitator lookup.Facilitator) *StorageDownlo
 		},
 		AdditionalHosts: map[string][]string{},
 	}
-	return &StorageDownloader{resolver: resolver}
+	return NewStorageDownloader(DownloaderConfig{},
+		WithLookupResolver(resolver),
+		WithDownloaderClient(c),
+	)
+}
+
+// multiHostFacilitator builds a mockLookupFacilitator advertising the given hosts
+// (each in its own non-expired BEEF output) for a single uhrpURL/hash.
+func multiHostFacilitator(t *testing.T, hash []byte, uhrpURL string, hosts ...string) *mockLookupFacilitator {
+	t.Helper()
+	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
+	outputs := make([]*lookup.OutputListItem, 0, len(hosts))
+	for _, h := range hosts {
+		s := buildUhrpPushDropScript(t, hash, uhrpURL, h, futureExpiry)
+		outputs = append(outputs, &lookup.OutputListItem{Beef: buildMinimalBeef(t, s), OutputIndex: 0})
+	}
+	return &mockLookupFacilitator{
+		answer: &lookup.LookupAnswer{
+			Type:    lookup.AnswerTypeOutputList,
+			Outputs: outputs,
+		},
+	}
 }
 
 // testPushDropPubKeyBytes is the compressed public key used in pushdrop scripts for tests.
@@ -125,6 +159,7 @@ var testPushDropPubKeyBytes = []byte{
 // TestResolveTooFewPushDropFields tests that outputs with < 4 pushdrop fields
 // are silently skipped.
 func TestResolveTooFewPushDropFields(t *testing.T) {
+	t.Parallel()
 	// Build a pushdrop script with only 2 data fields (fewer than required 4).
 	s := &script.Script{}
 	require.NoError(t, s.AppendPushData(testPushDropPubKeyBytes))
@@ -148,6 +183,7 @@ func TestResolveTooFewPushDropFields(t *testing.T) {
 
 // TestResolveExpiredOutput tests that an output with an expired timestamp is skipped.
 func TestResolveExpiredOutput(t *testing.T) {
+	t.Parallel()
 	content := []byte("test content for expired output")
 	hash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
@@ -172,22 +208,14 @@ func TestResolveExpiredOutput(t *testing.T) {
 
 // TestResolveValidHostURL tests that a valid, non-expired output adds a host URL.
 func TestResolveValidHostURL(t *testing.T) {
+	t.Parallel()
 	content := []byte("test content for valid host url")
 	hash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	hostURL := "https://valid-host.example.com/file"
-	s := buildUhrpPushDropScript(t, hash, uhrpURL, hostURL, futureExpiry)
-	beef := buildMinimalBeef(t, s)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type:    lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
-		},
-	}
+	facilitator := multiHostFacilitator(t, hash, uhrpURL, hostURL)
 	d := newDownloaderWithFacilitator(facilitator)
 	hosts, err := d.Resolve(context.Background(), uhrpURL)
 	require.NoError(t, err)
@@ -197,6 +225,7 @@ func TestResolveValidHostURL(t *testing.T) {
 
 // TestResolveEmptyHostURL tests that a valid output with an empty host URL is skipped.
 func TestResolveEmptyHostURL(t *testing.T) {
+	t.Parallel()
 	content := []byte("test content for empty host url")
 	hash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
@@ -221,6 +250,7 @@ func TestResolveEmptyHostURL(t *testing.T) {
 // TestResolveOutputIndexOutOfRange tests that an output with an out-of-bounds
 // index is silently skipped.
 func TestResolveOutputIndexOutOfRange(t *testing.T) {
+	t.Parallel()
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
 	s := buildUhrpPushDropScript(t, make([]byte, 32), "url", "http://host", futureExpiry)
 	beef := buildMinimalBeef(t, s)
@@ -240,6 +270,7 @@ func TestResolveOutputIndexOutOfRange(t *testing.T) {
 // TestResolveMultipleOutputsMixed tests that valid and invalid outputs in the
 // same answer are handled correctly (valid added, expired skipped).
 func TestResolveMultipleOutputsMixed(t *testing.T) {
+	t.Parallel()
 	content1 := []byte("content for host 1")
 	hash1 := crypto.Sha256(content1)
 	uhrpURL1, err := GetURLForFile(content1)
@@ -279,32 +310,24 @@ func TestResolveMultipleOutputsMixed(t *testing.T) {
 // ---- Download – full HTTP path tests ----------------------------------------
 
 // TestDownloadSuccessfulHashMatch tests the happy path where download succeeds
-// with a matching content hash.
+// with a matching content hash and the MimeType comes from the Content-Type header.
 func TestDownloadSuccessfulHashMatch(t *testing.T) {
+	t.Parallel()
 	content := []byte("exact content to download and verify")
 	contentHash := crypto.Sha256(content)
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 
-	// Start httptest server that returns the content with correct hash
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(content)
-	}))
-	defer ts.Close()
+	mc := &tu.MockHTTPClient{DoFunc: func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodGet, req.Method)
+		assert.Equal(t, fakeHost, req.URL.String())
+		resp := tu.StringResponse(http.StatusOK, string(content))
+		resp.Header.Set("Content-Type", "application/octet-stream")
+		return resp, nil
+	}}
 
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef := buildMinimalBeef(t, s)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type:    lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
-		},
-	}
-	d := newDownloaderWithFacilitator(facilitator)
+	facilitator := multiHostFacilitator(t, contentHash, uhrpURL, fakeHost)
+	d := newDownloaderWithFacilitator(facilitator, mc)
 	result, err := d.Download(context.Background(), uhrpURL)
 	require.NoError(t, err)
 	assert.Equal(t, content, result.Data)
@@ -314,27 +337,18 @@ func TestDownloadSuccessfulHashMatch(t *testing.T) {
 // TestDownloadHTTPErrorStatus tests that a >= 400 HTTP status causes the host
 // to be skipped and ultimately returns an error.
 func TestDownloadHTTPErrorStatus(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for 404 test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 	contentHash := crypto.Sha256(content)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer ts.Close()
+	mc := &tu.MockHTTPClient{DoFunc: func(*http.Request) (*http.Response, error) {
+		return tu.StringResponse(http.StatusNotFound, "not found"), nil
+	}}
 
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef := buildMinimalBeef(t, s)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type:    lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
-		},
-	}
-	d := newDownloaderWithFacilitator(facilitator)
+	facilitator := multiHostFacilitator(t, contentHash, uhrpURL, fakeHost)
+	d := newDownloaderWithFacilitator(facilitator, mc)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), errUnableToDownload)
@@ -342,29 +356,19 @@ func TestDownloadHTTPErrorStatus(t *testing.T) {
 
 // TestDownloadHashMismatch tests that content with mismatched hash is rejected.
 func TestDownloadHashMismatch(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for hash mismatch test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 	contentHash := crypto.Sha256(content)
 
-	// Server returns different content
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("this is different content that won't match the hash"))
-	}))
-	defer ts.Close()
+	mc := &tu.MockHTTPClient{DoFunc: func(*http.Request) (*http.Response, error) {
+		// Return different content so the hash will not match.
+		return tu.StringResponse(http.StatusOK, "this is different content that won't match the hash"), nil
+	}}
 
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef := buildMinimalBeef(t, s)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type:    lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
-		},
-	}
-	d := newDownloaderWithFacilitator(facilitator)
+	facilitator := multiHostFacilitator(t, contentHash, uhrpURL, fakeHost)
+	d := newDownloaderWithFacilitator(facilitator, mc)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), errUnableToDownload)
@@ -373,91 +377,69 @@ func TestDownloadHashMismatch(t *testing.T) {
 // TestDownloadAllHostsFailWithLastErr tests the path where all hosts fail and
 // lastErr is set (exercises the "unable to download content: %w" branch).
 func TestDownloadAllHostsFailWithLastErr(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for all-hosts-fail test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 	contentHash := crypto.Sha256(content)
 
-	// Serve two hosts that both return 500
-	ts1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "server error", http.StatusInternalServerError)
-	}))
-	defer ts1.Close()
+	const host1 = "https://host1.test/file"
+	const host2 = "https://host2.test/file"
 
-	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "also broken", http.StatusServiceUnavailable)
-	}))
-	defer ts2.Close()
+	mc := &tu.MockHTTPClient{DoFunc: func(req *http.Request) (*http.Response, error) {
+		// Branch on the outgoing host: both fail, exercising the loop over hosts.
+		if req.URL.String() == host1 {
+			return tu.StringResponse(http.StatusInternalServerError, "server error"), nil
+		}
+		return tu.StringResponse(http.StatusServiceUnavailable, "also broken"), nil
+	}}
 
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	s1 := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts1.URL, futureExpiry)
-	s2 := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts2.URL, futureExpiry)
-	beef1 := buildMinimalBeef(t, s1)
-	beef2 := buildMinimalBeef(t, s2)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type: lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{
-				{Beef: beef1, OutputIndex: 0},
-				{Beef: beef2, OutputIndex: 0},
-			},
-		},
-	}
-	d := newDownloaderWithFacilitator(facilitator)
+	facilitator := multiHostFacilitator(t, contentHash, uhrpURL, host1, host2)
+	d := newDownloaderWithFacilitator(facilitator, mc)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), errUnableToDownload)
+	assert.Len(t, mc.Requests, 2) // both hosts were tried
 }
 
 // TestDownloadContextCancelled tests that cancelling the context during download
-// triggers the request error path.
+// triggers the request-error path.
 func TestDownloadContextCancelled(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for context cancel test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 	contentHash := crypto.Sha256(content)
 
-	// Slow server that blocks until cancelled
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		select {
-		case <-r.Context().Done():
-			return
-		case <-time.After(30 * time.Second):
-			w.WriteHeader(http.StatusOK)
-		}
-	}))
-	defer ts.Close()
-
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef := buildMinimalBeef(t, s)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type:    lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
-		},
-	}
-	d := newDownloaderWithFacilitator(facilitator)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	mc := &tu.MockHTTPClient{DoFunc: func(req *http.Request) (*http.Response, error) {
+		// Cancel once the download request is in flight, then report the
+		// context error just like a real transport would.
+		cancel()
+		<-req.Context().Done()
+		return nil, req.Context().Err()
+	}}
+
+	facilitator := multiHostFacilitator(t, contentHash, uhrpURL, fakeHost)
+	d := newDownloaderWithFacilitator(facilitator, mc)
 
 	_, err = d.Download(ctx, uhrpURL)
 	require.Error(t, err)
 }
 
-// TestDownloadBadRequestURL tests the path where http.NewRequestWithContext fails
-// (invalid URL for host).
+// TestDownloadBadRequestURL tests a host URL that Resolve rejects, leaving no
+// usable hosts (an early return before the client is ever exercised).
 func TestDownloadBadRequestURL(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for bad url test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 	contentHash := crypto.Sha256(content)
 
 	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	// Use a URL that will fail request creation (invalid scheme/host combo)
+	// A URL that fails url.Parse, so Resolve discards it and no hosts remain.
 	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, "://bad-url-scheme", futureExpiry)
 	beef := buildMinimalBeef(t, s)
 
@@ -469,12 +451,12 @@ func TestDownloadBadRequestURL(t *testing.T) {
 	}
 	d := newDownloaderWithFacilitator(facilitator)
 	_, err = d.Download(context.Background(), uhrpURL)
-	// Either fails at request creation or exhausts all hosts
 	require.Error(t, err)
 }
 
 // TestDownloadResolveError tests that a Resolve error propagates.
 func TestDownloadResolveError(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for resolve error test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
@@ -483,118 +465,53 @@ func TestDownloadResolveError(t *testing.T) {
 	d := newDownloaderWithFacilitator(facilitator)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
-	// The error is wrapped by the resolve path; contains "resolve" in the chain
 	assert.Contains(t, err.Error(), "failed to resolve UHRP URL")
 }
 
-// TestDownloadTruncatedBodyError tests the body-read error path.
+// TestDownloadTruncatedBodyError tests that a short/truncated body fails the hash
+// check and is rejected.
 func TestDownloadTruncatedBodyError(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for truncated body test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 	contentHash := crypto.Sha256(content)
 
-	// Server sends headers then closes connection abruptly
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Length", "9999") // Lie about content length
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("short")) // Write less than claimed
-		// Connection closes automatically, causing a read error on client
-	}))
-	defer ts.Close()
+	mc := &tu.MockHTTPClient{DoFunc: func(*http.Request) (*http.Response, error) {
+		// Return fewer bytes than the advertised content, so the hash mismatches.
+		return tu.StringResponse(http.StatusOK, "short"), nil
+	}}
 
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef := buildMinimalBeef(t, s)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type:    lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
-		},
-	}
-	d := newDownloaderWithFacilitator(facilitator)
-	// This may succeed (if Go reads the short body) or fail with a hash mismatch.
-	// Either path is acceptable; what matters is the code runs.
-	_, _ = d.Download(context.Background(), uhrpURL)
-}
-
-// ---- checkAPIError – additional branch (status == "error", empty code/desc) -
-
-func TestCheckAPIErrorErrorStatusEmptyBoth(t *testing.T) {
-	err := checkAPIError(StatusError, "", "", "myOp")
+	facilitator := multiHostFacilitator(t, contentHash, uhrpURL, fakeHost)
+	d := newDownloaderWithFacilitator(facilitator, mc)
+	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown-code")
-	assert.Contains(t, err.Error(), "no-description")
-	assert.Contains(t, err.Error(), "myOp")
+	assert.Contains(t, err.Error(), errUnableToDownload)
 }
 
-// ---- getUploadInfo – JSON marshal error (unreachable in practice but covered via
-// indirect path): exercise the success branch of getUploadInfo indirectly via
-// PublishFile. The auth handshake will fail, which means getUploadInfo cannot be
-// fully exercised without a live BSV auth server. Document what is blocked.
-//
-// The uncovered lines 83-114 in uploader.go all live inside getUploadInfo after
-// the authFetch.Fetch() call. Similarly, FindFile lines 196-219, ListUploads
-// lines 235-258, and RenewFile lines 286-328 are all beyond the auth barrier.
-// These paths require a server implementing the BSV mutual-auth protocol, which
-// is outside the scope of unit tests.
-//
-// The following test simply documents the expected failure mode.
-func TestGetUploadInfoAuthBarrier(t *testing.T) {
-	mw := wallet.NewTestWalletForRandomKey(t)
-	uploader, err := NewUploader(UploaderConfig{
-		StorageURL: "http://localhost:0", // guaranteed no server
-		Wallet:     mw,
-	})
-	require.NoError(t, err)
-
-	// Will fail at authFetch.Fetch; all lines after auth call are unreachable.
-	_, err = uploader.getUploadInfo(context.Background(), 100, 60)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get upload info")
-}
-
-// ---- Ensure correct import of wallet package --------------------------------
-
-// We import wallet via uploader_test.go's setupMockWalletForAuth, but we
-// reference wallet.NewTestWalletForRandomKey directly above.
-
-// TestDownloadReadBodyError directly exercises the body-read error path by
-// using a custom HTTP transport that returns a response whose body errors on
-// read.
+// TestDownloadReadBodyError exercises the body-read error path by returning a
+// response whose Body always fails on Read.
 func TestDownloadReadBodyError(t *testing.T) {
+	t.Parallel()
 	content := []byte("content for read body error test")
 	uhrpURL, err := GetURLForFile(content)
 	require.NoError(t, err)
 	contentHash := crypto.Sha256(content)
 
-	futureExpiry := time.Now().Add(24 * time.Hour).Unix()
-	// Use an httptest server whose body deliberately fails mid-read
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Hijack the connection to write a partial response
-		// Simulated by sending a valid status but then closing
-		w.WriteHeader(http.StatusOK)
-		// Don't write body - the connection close will cause EOF
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
-		}
-	}))
-	defer ts.Close()
+	mc := &tu.MockHTTPClient{DoFunc: func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     http.StatusText(http.StatusOK),
+			Body:       errReadCloser{},
+			Header:     make(http.Header),
+		}, nil
+	}}
 
-	s := buildUhrpPushDropScript(t, contentHash, uhrpURL, ts.URL, futureExpiry)
-	beef := buildMinimalBeef(t, s)
-
-	facilitator := &mockLookupFacilitator{
-		answer: &lookup.LookupAnswer{
-			Type:    lookup.AnswerTypeOutputList,
-			Outputs: []*lookup.OutputListItem{{Beef: beef, OutputIndex: 0}},
-		},
-	}
-	d := newDownloaderWithFacilitator(facilitator)
-	// Body is empty → hash mismatch → error errUnableToDownload
+	facilitator := multiHostFacilitator(t, contentHash, uhrpURL, fakeHost)
+	d := newDownloaderWithFacilitator(facilitator, mc)
 	_, err = d.Download(context.Background(), uhrpURL)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error reading response body")
 }
 
 // ---- NoPushdropDecoded – nil pushdrop (not a pushdrop script at all) --------
@@ -602,6 +519,7 @@ func TestDownloadReadBodyError(t *testing.T) {
 // TestResolveNilPushDrop tests that an output with a non-pushdrop script
 // (pd == nil) is skipped. The OP_RETURN script is not a valid pushdrop.
 func TestResolveNilPushDrop(t *testing.T) {
+	t.Parallel()
 	// Build an OP_RETURN script that is not a pushdrop
 	s := &script.Script{}
 	require.NoError(t, s.AppendOpcodes(script.OpFALSE))
@@ -622,6 +540,24 @@ func TestResolveNilPushDrop(t *testing.T) {
 	assert.Empty(t, hosts)
 }
 
-// ---- Ensure unused imports do not break compilation ------------------------
+// ---- checkAPIError – additional branch (status == "error", empty code/desc) -
 
-var _ = strings.Contains
+func TestCheckAPIErrorErrorStatusEmptyBoth(t *testing.T) {
+	t.Parallel()
+	err := checkAPIError(StatusError, "", "", "myOp")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown-code")
+	assert.Contains(t, err.Error(), "no-description")
+	assert.Contains(t, err.Error(), "myOp")
+}
+
+// TestGetUploadInfoAuthBarrier verifies getUploadInfo surfaces a fetch failure
+// from the auth client (socket-free via an injected erroring AuthFetcher).
+func TestGetUploadInfoAuthBarrier(t *testing.T) {
+	t.Parallel()
+	uploader := newMockUploader(t, WithAuthFetcher(erroringFetcher(errors.New("network disabled"))))
+
+	_, err := uploader.getUploadInfo(context.Background(), 100, 60)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get upload info")
+}

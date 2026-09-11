@@ -22,14 +22,65 @@ import (
 // StorageDownloader handles resolving and downloading files via UHRP URLs.
 type StorageDownloader struct {
 	resolver *lookup.LookupResolver
+	client   util.HTTPClient
+}
+
+// DownloaderOptions configures a StorageDownloader constructed with
+// NewStorageDownloader.
+type DownloaderOptions struct {
+	// HTTPClient is used for the host-download loop in Download. When nil, it
+	// defaults to &http.Client{Timeout: 30 * time.Second}.
+	HTTPClient util.HTTPClient
+	// Resolver overrides the lookup resolver used by Resolve. When nil, a resolver
+	// is built from the config's Network. Supply a resolver whose Facilitator holds
+	// a custom util.HTTPClient to make the Resolve path injectable/hermetic.
+	Resolver *lookup.LookupResolver
+}
+
+// WithDownloaderClient injects the util.HTTPClient used by Download, enabling
+// custom timeouts, transports, tracing, and test doubles. The client cannot be nil.
+func WithDownloaderClient(client util.HTTPClient) func(*DownloaderOptions) {
+	if client == nil {
+		panic("httpClient cannot be set to nil")
+	}
+	return func(opts *DownloaderOptions) {
+		opts.HTTPClient = client
+	}
+}
+
+// WithLookupResolver injects the lookup resolver used by Resolve. The resolver
+// cannot be nil.
+func WithLookupResolver(resolver *lookup.LookupResolver) func(*DownloaderOptions) {
+	if resolver == nil {
+		panic("resolver cannot be set to nil")
+	}
+	return func(opts *DownloaderOptions) {
+		opts.Resolver = resolver
+	}
 }
 
 // NewStorageDownloader creates a new StorageDownloader with the given config.
-func NewStorageDownloader(cfg DownloaderConfig) *StorageDownloader {
-	resolver := lookup.NewLookupResolver(&lookup.LookupResolver{
-		NetworkPreset: cfg.Network,
-	})
-	return &StorageDownloader{resolver: resolver}
+// Additional behavior (a custom HTTP client or lookup resolver) can be supplied
+// through functional options.
+func NewStorageDownloader(cfg DownloaderConfig, opts ...func(*DownloaderOptions)) *StorageDownloader {
+	options := &DownloaderOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	resolver := options.Resolver
+	if resolver == nil {
+		resolver = lookup.NewLookupResolver(&lookup.LookupResolver{
+			NetworkPreset: cfg.Network,
+		})
+	}
+
+	client := options.HTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: 30 * time.Second}
+	}
+
+	return &StorageDownloader{resolver: resolver, client: client}
 }
 
 // Resolve fetches host URLs for the given UHRP URL by querying lookup services.
@@ -122,11 +173,6 @@ func (d *StorageDownloader) Download(ctx context.Context, uhrpURL string) (Downl
 		return DownloadResult{}, errors.New("no one currently hosts this file")
 	}
 
-	// Try each host
-	client := &http.Client{
-		Timeout: time.Second * 30,
-	}
-
 	var lastErr error
 	for _, host := range hosts {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, host, nil)
@@ -135,7 +181,7 @@ func (d *StorageDownloader) Download(ctx context.Context, uhrpURL string) (Downl
 			continue
 		}
 
-		resp, err := client.Do(req)
+		resp, err := d.client.Do(req)
 		if err != nil {
 			lastErr = err
 			continue

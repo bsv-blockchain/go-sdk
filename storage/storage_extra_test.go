@@ -2,19 +2,21 @@ package storage
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 const testMimeTypeTextPlain = "text/plain"
 
 // TestCheckAPIError tests the checkAPIError helper function.
 func TestCheckAPIError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		status      string
@@ -76,6 +78,7 @@ func TestCheckAPIError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := checkAPIError(tt.status, tt.code, tt.description, tt.operation)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -91,24 +94,20 @@ func TestCheckAPIError(t *testing.T) {
 
 // TestUploadFileSuccess tests that uploadFile correctly calls the PUT endpoint.
 func TestUploadFileSuccess(t *testing.T) {
+	t.Parallel()
 	fileData := []byte("hello test content for upload")
+	putURL := testStorageURL + "/put-target"
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "PUT", r.Method)
-		assert.Equal(t, testMimeTypeTextPlain, r.Header.Get("Content-Type"))
-		assert.Equal(t, "val1", r.Header.Get("X-Custom"))
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer ts.Close()
+	mc := &tu.MockHTTPClient{DoFunc: func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodPut, req.Method)
+		assert.Equal(t, putURL, req.URL.String())
+		assert.Equal(t, testMimeTypeTextPlain, req.Header.Get("Content-Type"))
+		assert.Equal(t, "val1", req.Header.Get("X-Custom"))
+		return tu.StringResponse(http.StatusOK, ""), nil
+	}}
 
-	mockWallet := setupMockWalletForAuth(t)
-	uploader, err := NewUploader(UploaderConfig{
-		StorageURL: ts.URL,
-		Wallet:     mockWallet,
-	})
-	require.NoError(t, err)
-
-	result, err := uploader.uploadFile(context.Background(), ts.URL, UploadableFile{
+	uploader := newMockUploader(t, WithUploaderClient(mc))
+	result, err := uploader.uploadFile(context.Background(), putURL, UploadableFile{
 		Data: fileData,
 		Type: testMimeTypeTextPlain,
 	}, map[string]string{"X-Custom": "val1"})
@@ -120,19 +119,13 @@ func TestUploadFileSuccess(t *testing.T) {
 
 // TestUploadFileHTTPError tests that uploadFile returns error on HTTP error response.
 func TestUploadFileHTTPError(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-	}))
-	defer ts.Close()
+	t.Parallel()
+	mc := &tu.MockHTTPClient{DoFunc: func(*http.Request) (*http.Response, error) {
+		return tu.StringResponse(http.StatusForbidden, "forbidden"), nil
+	}}
 
-	mockWallet := setupMockWalletForAuth(t)
-	uploader, err := NewUploader(UploaderConfig{
-		StorageURL: ts.URL,
-		Wallet:     mockWallet,
-	})
-	require.NoError(t, err)
-
-	_, err = uploader.uploadFile(context.Background(), ts.URL, UploadableFile{
+	uploader := newMockUploader(t, WithUploaderClient(mc))
+	_, err := uploader.uploadFile(context.Background(), testStorageURL+"/put-target", UploadableFile{
 		Data: []byte("data"),
 		Type: testMimeTypeTextPlain,
 	}, nil)
@@ -141,49 +134,46 @@ func TestUploadFileHTTPError(t *testing.T) {
 	assert.Contains(t, err.Error(), "403")
 }
 
-// TestUploadFileInvalidURL tests that uploadFile fails with an invalid URL.
+// TestUploadFileInvalidURL tests that uploadFile fails with an invalid URL
+// (request creation fails before the client is ever called).
 func TestUploadFileInvalidURL(t *testing.T) {
-	mockWallet := setupMockWalletForAuth(t)
-	uploader, err := NewUploader(UploaderConfig{
-		StorageURL: "http://localhost",
-		Wallet:     mockWallet,
-	})
-	require.NoError(t, err)
+	t.Parallel()
+	mc := &tu.MockHTTPClient{}
+	uploader := newMockUploader(t, WithUploaderClient(mc))
 
-	// Use an invalid URL that will fail at request creation
-	_, err = uploader.uploadFile(context.Background(), "://bad-url", UploadableFile{
+	_, err := uploader.uploadFile(context.Background(), "://bad-url", UploadableFile{
 		Data: []byte("data"),
 		Type: testMimeTypeTextPlain,
 	}, nil)
 
 	require.Error(t, err)
+	assert.Empty(t, mc.Requests) // never reached the client
 }
 
-// TestGetUploadInfoErrorResponse tests getUploadInfo when server returns error status.
+// TestGetUploadInfoErrorResponse tests that PublishFile propagates the
+// error-status upload-info response (getUploadInfo -> "upload route returned an error").
 func TestGetUploadInfoErrorResponse(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := map[string]interface{}{
-			"status": StatusError,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(resp)
-	}))
-	defer ts.Close()
+	t.Parallel()
+	af := &mockAuthFetcher{
+		fetchFunc: func(_ context.Context, _ string, _ *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error) {
+			return tu.JSONResponse(t, http.StatusOK, map[string]string{"status": StatusError}), nil
+		},
+	}
+	mc := &tu.MockHTTPClient{}
+	uploader := newMockUploader(t, WithAuthFetcher(af), WithUploaderClient(mc))
 
-	mockWallet := setupMockWalletForAuth(t)
-	uploader, err := NewUploader(UploaderConfig{
-		StorageURL: ts.URL,
-		Wallet:     mockWallet,
-	})
-	require.NoError(t, err)
-
-	// getUploadInfo calls authFetch, which does auth handshake - will fail
-	// but we can test checkAPIError directly above
-	_ = uploader
+	_, err := uploader.PublishFile(context.Background(), UploadableFile{
+		Data: []byte("data"),
+		Type: testMimeTypeTextPlain,
+	}, 60)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "upload route returned an error")
+	assert.Empty(t, mc.Requests) // PUT never attempted because getUploadInfo failed
 }
 
 // TestStorageConstants verifies status constants are correct.
 func TestStorageConstants(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "success", StatusSuccess)
 	assert.Equal(t, "error", StatusError)
 }

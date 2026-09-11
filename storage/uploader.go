@@ -15,6 +15,7 @@ import (
 	"net/url"
 
 	authhttp "github.com/bsv-blockchain/go-sdk/auth/clients/authhttp"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // API response status constants
@@ -39,14 +40,58 @@ func checkAPIError(status, code, description, operation string) error {
 	return nil
 }
 
-// Uploader implements the StorageUploaderInterface
-type Uploader struct {
-	baseURL   string              // Base URL of the storage service
-	authFetch *authhttp.AuthFetch // Authenticated HTTP client for API requests
+// AuthFetcher is the small consumer-side seam over the authenticated HTTP client
+// used for the storage service's API endpoints. *authhttp.AuthFetch satisfies it.
+// Injecting a custom implementation makes the authenticated endpoints
+// (getUploadInfo, FindFile, ListUploads, RenewFile) testable without performing a
+// real mutual-auth handshake.
+type AuthFetcher interface {
+	Fetch(ctx context.Context, url string, config *authhttp.SimplifiedFetchRequestOptions) (*http.Response, error)
 }
 
-// NewUploader creates a new uploader instance
-func NewUploader(config UploaderConfig) (*Uploader, error) {
+// Uploader implements the StorageUploaderInterface
+type Uploader struct {
+	baseURL   string          // Base URL of the storage service
+	authFetch AuthFetcher     // Authenticated HTTP client for API requests
+	client    util.HTTPClient // HTTP client for the presigned-URL file upload (PUT)
+}
+
+// UploaderOptions configures an Uploader constructed with NewUploader.
+type UploaderOptions struct {
+	// HTTPClient is used for the presigned-URL file upload (PUT) in uploadFile.
+	// When nil, it defaults to &http.Client{}.
+	HTTPClient util.HTTPClient
+	// AuthFetcher performs authenticated requests to the storage API. When nil, it
+	// defaults to authhttp.New(config.Wallet).
+	AuthFetcher AuthFetcher
+}
+
+// WithUploaderClient injects the util.HTTPClient used for the presigned-URL file
+// upload, enabling custom timeouts, transports, and test doubles. The client
+// cannot be nil.
+func WithUploaderClient(client util.HTTPClient) func(*UploaderOptions) {
+	if client == nil {
+		panic("httpClient cannot be set to nil")
+	}
+	return func(opts *UploaderOptions) {
+		opts.HTTPClient = client
+	}
+}
+
+// WithAuthFetcher injects the AuthFetcher used for authenticated storage API
+// requests. The fetcher cannot be nil.
+func WithAuthFetcher(fetcher AuthFetcher) func(*UploaderOptions) {
+	if fetcher == nil {
+		panic("authFetcher cannot be set to nil")
+	}
+	return func(opts *UploaderOptions) {
+		opts.AuthFetcher = fetcher
+	}
+}
+
+// NewUploader creates a new uploader instance. Additional behavior (a custom
+// upload client or auth fetcher) can be supplied through functional options.
+func NewUploader(config UploaderConfig, opts ...func(*UploaderOptions)) (*Uploader, error) {
 	if config.StorageURL == "" {
 		return nil, errors.New("storage URL is required")
 	}
@@ -54,12 +99,25 @@ func NewUploader(config UploaderConfig) (*Uploader, error) {
 		return nil, errors.New("wallet is required for authentication")
 	}
 
-	// Create auth fetch client
-	authClient := authhttp.New(config.Wallet)
+	options := &UploaderOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	authClient := options.AuthFetcher
+	if authClient == nil {
+		authClient = authhttp.New(config.Wallet)
+	}
+
+	client := options.HTTPClient
+	if client == nil {
+		client = &http.Client{}
+	}
 
 	return &Uploader{
 		baseURL:   config.StorageURL,
 		authFetch: authClient,
+		client:    client,
 	}, nil
 }
 
@@ -116,9 +174,6 @@ func (u *Uploader) getUploadInfo(ctx context.Context, fileSize, retentionPeriod 
 
 // uploadFile performs the file upload to the presigned URL
 func (u *Uploader) uploadFile(ctx context.Context, uploadURL string, file UploadableFile, requiredHeaders map[string]string) (UploadFileResult, error) {
-	// Create HTTP client
-	client := &http.Client{}
-
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "PUT", uploadURL, bytes.NewReader(file.Data))
 	if err != nil {
@@ -132,7 +187,7 @@ func (u *Uploader) uploadFile(ctx context.Context, uploadURL string, file Upload
 	}
 
 	// Execute request
-	resp, err := client.Do(req)
+	resp, err := u.client.Do(req)
 	if err != nil {
 		return UploadFileResult{}, fmt.Errorf("file upload failed: %w", err)
 	}

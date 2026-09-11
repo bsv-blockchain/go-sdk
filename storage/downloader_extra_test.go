@@ -11,6 +11,7 @@ import (
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/overlay/lookup"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 const (
@@ -28,7 +29,10 @@ func (m *mockLookupFacilitator) Lookup(ctx context.Context, url string, question
 	return m.answer, m.err
 }
 
-// newDownloaderWithMockFacilitator creates a StorageDownloader with a mock lookup facilitator.
+// newDownloaderWithMockFacilitator creates a StorageDownloader with a mock lookup
+// facilitator and a socket-free HTTP client. The tests exercising this helper only
+// reach Resolve (or Download paths that return before touching the client), but a
+// non-nil client is supplied so Download never panics on a nil client.
 func newDownloaderWithMockFacilitator(facilitator lookup.Facilitator, hosts []string) *StorageDownloader {
 	resolver := &lookup.LookupResolver{
 		Facilitator: facilitator,
@@ -37,11 +41,15 @@ func newDownloaderWithMockFacilitator(facilitator lookup.Facilitator, hosts []st
 		},
 		AdditionalHosts: map[string][]string{},
 	}
-	return &StorageDownloader{resolver: resolver}
+	return NewStorageDownloader(DownloaderConfig{},
+		WithLookupResolver(resolver),
+		WithDownloaderClient(&tu.MockHTTPClient{}),
+	)
 }
 
 // TestResolveLookupError tests Resolve when the lookup service returns an error.
 func TestResolveLookupError(t *testing.T) {
+	t.Parallel()
 	facilitator := &mockLookupFacilitator{err: assert.AnError}
 	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
 
@@ -52,6 +60,7 @@ func TestResolveLookupError(t *testing.T) {
 
 // TestResolveWrongAnswerType tests Resolve when the lookup answer is not output-list.
 func TestResolveWrongAnswerType(t *testing.T) {
+	t.Parallel()
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type:   lookup.AnswerTypeFreeform,
@@ -67,6 +76,7 @@ func TestResolveWrongAnswerType(t *testing.T) {
 
 // TestResolveEmptyOutputList tests Resolve when lookup returns no outputs.
 func TestResolveEmptyOutputList(t *testing.T) {
+	t.Parallel()
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type:    lookup.AnswerTypeOutputList,
@@ -82,6 +92,7 @@ func TestResolveEmptyOutputList(t *testing.T) {
 
 // TestResolveInvalidBEEF tests Resolve when lookup output has invalid BEEF.
 func TestResolveInvalidBEEF(t *testing.T) {
+	t.Parallel()
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type: lookup.AnswerTypeOutputList,
@@ -100,6 +111,7 @@ func TestResolveInvalidBEEF(t *testing.T) {
 
 // TestDownloadNoHosts tests Download when Resolve returns no hosts.
 func TestDownloadNoHosts(t *testing.T) {
+	t.Parallel()
 	facilitator := &mockLookupFacilitator{
 		answer: &lookup.LookupAnswer{
 			Type:    lookup.AnswerTypeOutputList,
@@ -120,6 +132,7 @@ func TestDownloadNoHosts(t *testing.T) {
 
 // TestDownloadInvalidURLRejection tests that Download rejects non-UHRP URLs.
 func TestDownloadInvalidURLRejection(t *testing.T) {
+	t.Parallel()
 	d := NewStorageDownloader(DownloaderConfig{Network: overlay.NetworkMainnet})
 	_, err := d.Download(context.Background(), "invalid-url")
 	require.Error(t, err)
@@ -132,6 +145,7 @@ func TestDownloadInvalidURLRejection(t *testing.T) {
 
 // TestDownloadHashVerification verifies that UHRP URL hash extraction works correctly.
 func TestDownloadHashVerification(t *testing.T) {
+	t.Parallel()
 	content := []byte("test content for hash verification")
 	contentHash := crypto.Sha256(content)
 
@@ -147,6 +161,7 @@ func TestDownloadHashVerification(t *testing.T) {
 
 // TestNewStorageDownloader tests that NewStorageDownloader initializes correctly.
 func TestNewStorageDownloaderTestnet(t *testing.T) {
+	t.Parallel()
 	d := NewStorageDownloader(DownloaderConfig{Network: overlay.NetworkTestnet})
 	assert.NotNil(t, d)
 	assert.NotNil(t, d.resolver)
@@ -154,6 +169,7 @@ func TestNewStorageDownloaderTestnet(t *testing.T) {
 
 // TestResolveContextTimeout tests that Resolve respects context timeout.
 func TestResolveContextTimeout(t *testing.T) {
+	t.Parallel()
 	// Create a facilitator that hangs
 	facilitator := &slowDownloadFacilitator{}
 	d := newDownloaderWithMockFacilitator(facilitator, []string{testHostURL})
