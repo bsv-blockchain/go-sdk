@@ -60,6 +60,38 @@ func (ip IndexedPath) GetOffsetLeaf(layer int, offset uint64) *PathElement {
 	return nil
 }
 
+// getOffsetLeaf returns the PathElement at (layer, offset), synthesizing a
+// missing interior node from its two children when necessary. It is the
+// allocation-free equivalent of building an IndexedPath and calling
+// GetOffsetLeaf: it looks each node up directly in the (already-populated)
+// Path via FindLeafByOffset rather than first copying every node into one
+// map per level. The lookup is order-independent, so it does not rely on the
+// levels being sorted. Byte-identical to IndexedPath.GetOffsetLeaf.
+func (mp *MerklePath) getOffsetLeaf(layer int, offset uint64) *PathElement {
+	if leaf := mp.FindLeafByOffset(layer, offset); leaf != nil {
+		return leaf
+	}
+	if layer == 0 {
+		return nil
+	}
+
+	prevOffset := offset * 2
+	left := mp.getOffsetLeaf(layer-1, prevOffset)
+	right := mp.getOffsetLeaf(layer-1, prevOffset+1)
+	if left != nil && right != nil {
+		pathElement := &PathElement{
+			Offset: offset,
+		}
+		if right.Duplicate != nil && *right.Duplicate {
+			pathElement.Hash = MerkleTreeParent(left.Hash, left.Hash)
+		} else {
+			pathElement.Hash = MerkleTreeParent(left.Hash, right.Hash)
+		}
+		return pathElement
+	}
+	return nil
+}
+
 // Clone creates a deep copy of the MerklePath by serializing and deserializing.
 func (mp *MerklePath) Clone() *MerklePath {
 	if mp == nil {
@@ -251,15 +283,6 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 			return txid, nil
 		}
 	}
-	indexedPath := make(IndexedPath, len(mp.Path))
-	for h := 0; h < len(mp.Path); h++ {
-		path := map[uint64]*PathElement{}
-		for l := 0; l < len(mp.Path[h]); l++ {
-			path[mp.Path[h][l].Offset] = mp.Path[h][l]
-		}
-		indexedPath[h] = path
-	}
-
 	// Find the index of the txid at the lowest level of the Merkle tree
 	var txLeaf *PathElement
 	for _, l := range mp.Path[0] {
@@ -290,7 +313,7 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 
 	for height := 0; height < effectiveHeight; height++ {
 		offset := (index >> height) ^ 1
-		leaf := indexedPath.GetOffsetLeaf(height, offset)
+		leaf := mp.getOffsetLeaf(height, offset)
 		if leaf == nil {
 			return nil, fmt.Errorf("we do not have a hash for this index at height: %v", height)
 		}
