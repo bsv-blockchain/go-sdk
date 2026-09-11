@@ -107,8 +107,8 @@ as pure internal changes:
 
 Changes that would alter an existing signature or observable behavior, or that
 rely on caching on an exported mutable struct, do **not** go through this gate —
-they are captured in `transaction-performance-deferred.md` for a separate,
-coordinated review.
+they are held for a separate, coordinated review (see the **Still deferred**
+section of `../transaction-performance-results.md`).
 
 <br>
 

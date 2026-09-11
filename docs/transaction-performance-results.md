@@ -9,8 +9,8 @@ legacy-sighash commits.
 additive (semver-minor) opt-in APIs. Every change is byte-identical on existing
 behavior and went through the acceptance gate in
 [`proposals/go-bt-porting-procedure.md`](proposals/go-bt-porting-procedure.md).
-Deferred follow-ups are tracked in
-[`proposals/transaction-performance-deferred.md`](proposals/transaction-performance-deferred.md).
+Remaining non-breaking follow-ups are listed in the **Still deferred** section at
+the end of this document.
 
 <br>
 
@@ -155,9 +155,94 @@ not touch — `TxID`, `SerializeRaw`/`Extended`, `Size`, the FORKID
 and allocs). `BEEFRoundTrip/issue96` improved as a side effect of the faster
 parse it round-trips through: 933 → **656 allocs (−30%)**, −8.8% sec/op.
 
+<br>
+
+## Continuation 2 — core primitives + `ComputeRoot` maps
+
+Baseline = branch tip before these commits; `-benchtime=100ms -count=10`, Apple
+M4. Same acceptance gate: byte-identical, benchstat-proven, full suite + fuzzers
+green, lint clean. This pass targeted the shared primitives that sit *under*
+every package and the last non-breaking merkle candidate. Two changes proved
+out; two more were measured and found **already optimal** and are recorded here
+so they are not re-investigated.
+
+### Zero-alloc varint reads (`util.Reader.ReadVarInt`)
+
+`Reader.ReadVarInt` routed through `VarInt.ReadFrom`, which passes scratch
+buffers to `io.ReadFull`; crossing the `io.Reader` interface boundary forces
+them to the heap, so every length prefix / count read cost 1–2 allocations.
+It now decodes straight from the reader's backing slice via the existing
+zero-alloc `NewVarIntFromBytes` (bounds-checked by on-wire width).
+`VarInt.ReadFrom` is unchanged for external streaming callers. Backs every
+count/length in `wallet/`, `auth/`, `overlay/`, `message/`, `compat/`.
+
+| Benchmark | sec/op | allocs/op |
+|---|---|---|
+| `ReadVarInt/1byte` | 9.00n → **1.74n** (−81%) | 1 → **0** |
+| `ReadVarInt/3byte` | 17.14n → **1.70n** (−90%) | 2 → **0** |
+| `ReadVarInt/5byte` | 16.94n → **1.71n** (−90%) | 2 → **0** |
+| `ReadVarInt/9byte` | 16.66n → **1.88n** (−89%) | 2 → **0** |
+
+Byte-identical: pinned by a differential test against `ReadFrom` (value,
+bytes-consumed, error parity), boundary/truncation tests, and the existing
+`FuzzReadVarInt`/`FuzzReader` targets.
+
+### Merkle root without per-level index maps (`ComputeRoot`)
+
+`MerklePath.ComputeRoot` built one `map[uint64]*PathElement` per tree level
+(inserting every node) before climbing. It now looks each node up directly in
+the already-populated `Path` via the existing `FindLeafByOffset` (order-
+independent, so no sort assumption). The exported `IndexedPath`/`GetOffsetLeaf`
+are retained unchanged for API compatibility, just no longer used internally.
+
+| Benchmark | sec/op | B/op | allocs/op |
+|---|---|---|---|
+| `ComputeRoot_LargePath/leaves=256` | 16.50µs → **0.96µs** (−94%) | 37.6Ki → **256** | 70 → **8** |
+| `ComputeRoot_LargePath/leaves=1024` | 65.20µs → **1.53µs** (−98%) | 149.6Ki → **320** | 111 → **10** |
+
+Byte-identical root (same `MerkleTreeParent` inputs in the same order): pinned by
+the `BRC74Root` golden tests, `TestMerklePathSingleLevelCompound`,
+`FuzzMerklePathFromBinary`, and a new `TestComputeRootCharacterization` that
+cross-checks every leaf of fully-populated and sparse BUMPs (sizes 2…1024)
+against an independent bottom-up reference root.
+
+### Investigated, already optimal — no change (benchmarks added to lock it in)
+
+- **`primitives/hash.Sha256d` / `Hash160`** read statically as if they allocate a
+  throwaway intermediate, but benchstat shows **1 alloc** (the returned hash)
+  and identical timing either way: the compiler already inlines and
+  stack-allocates the intermediate `[32]byte`. An explicit `sha256.Sum256`
+  stack rewrite did not beat noise, so it was **not committed**
+  (`BenchmarkSha256d`/`BenchmarkHash160`).
+- **`util.Writer.WriteVarInt` / `WriteString` / `WriteBytesReverse`** are already
+  **0 alloc / 0 B**: escape analysis stack-allocates the encode scratch because
+  it only flows into `append`. New `BenchmarkWriteVarInt`/`WriteString`/
+  `WriteBytesReverse` document this and guard against regression.
+
+<br>
+
 ## Still deferred
 
-See [`proposals/transaction-performance-deferred.md`](proposals/transaction-performance-deferred.md):
+Non-breaking, byte-identical follow-ups discovered during the broad sweep but
+left for a separate reviewed pass:
 
-- `ComputeRoot` per-level index maps (algorithmic; medium byte-identity risk)
-- Arena allocator for batch deserialization; `Clone()` field-copy rewrite; opcodeparser bench normalization; PushDrop cache adoption
+- **Script interpreter (medium value):** `MakeScriptNumber` little-endian decode
+  → int64 accumulator (`script/interpreter/number.go`); `ScriptNumber.Bytes()`
+  redundant `Val.Bytes()`/`big.Int` copy; hoist the loop-invariant `Unparse(scr)`
+  out of `opcodeCheckMultiSig` (`operations.go`); pre-size `DecodeScript`/
+  `ParseOps` (`script_chunk.go`). Normalize `opcodeparser_bench_test.go` to
+  `b.Loop()`+`b.ReportAllocs()` first so these are measurable.
+- **Long tail:** `chainhash.MarshalTo` throwaway `CloneBytes` and `String()`
+  stack buffer; `base58.Encode` hoist `new(big.Int)` out of the loop;
+  `block/header.go` pre-sized `Bytes`/`Read`; `compat/ecies`,
+  `message/encrypted|signed`, `compat/bsm` append pre-sizing; `primitives/ec`
+  `decompressPoint` `PutBytes`.
+- **`transaction` (needs a benchmark first):** `ValidateTransactions` recomputes
+  a validated txid across its result-collection loops; `AtomicBEEF` computes
+  `TxID()` twice.
+- **Correctness (non-perf, flag separately):** `chainhash.Hash.MarshalTo` returns
+  `16` for a 32-byte hash — looks like a latent bug, unrelated to this work.
+- **Breaking (separate decision, out of scope here):** the arena allocator for
+  batch deserialization; the `Clone()` field-copy rewrite (drops `log.Fatal`);
+  migrating PushDrop `Unlocker` to the standard `UnlockingScriptTemplate` +
+  `SignWithCache` (changes exported `Sign`/`EstimateLength` signatures).
