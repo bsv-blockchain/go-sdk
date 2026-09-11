@@ -1,12 +1,10 @@
 package broadcaster
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
+
+	woc "github.com/mrz1836/go-whatsonchain"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -19,6 +17,11 @@ var (
 	WOCTestnet WOCNetwork = "test"
 )
 
+// WhatsOnChain broadcasts transactions through the WhatsOnChain API. It delegates
+// its HTTP call to github.com/mrz1836/go-whatsonchain, which centralizes URL
+// building, API-key handling, and response parsing. A custom util.HTTPClient can
+// be supplied via Client (it satisfies go-whatsonchain's HTTPInterface); when nil
+// it defaults to http.DefaultClient.
 type WhatsOnChain struct {
 	Network WOCNetwork
 	ApiKey  string
@@ -47,57 +50,30 @@ func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transact
 		b.Client = http.DefaultClient
 	}
 
-	bodyMap := map[string]any{
-		"txhex": t.Hex(),
+	clientOpts := []woc.ClientOption{
+		woc.WithNetwork(woc.NetworkType(b.Network)),
+		woc.WithHTTPClient(b.Client),
 	}
-	if body, err := json.Marshal(bodyMap); err != nil {
+	if b.ApiKey != "" {
+		clientOpts = append(clientOpts, woc.WithAPIKey(b.ApiKey))
+	}
+
+	client, err := woc.NewClient(ctx, clientOpts...)
+	if err != nil {
 		return nil, &transaction.BroadcastFailure{
 			Code:        "500",
 			Description: err.Error(),
 		}
-	} else {
-		url := fmt.Sprintf("https://api.whatsonchain.com/v1/bsv/%s/tx/raw", b.Network)
-		req, err := http.NewRequestWithContext(
-			ctx,
-			"POST",
-			url,
-			bytes.NewBuffer(body),
-		)
-		if err != nil {
-			return nil, &transaction.BroadcastFailure{
-				Code:        "500",
-				Description: err.Error(),
-			}
-		}
-		req.Header.Set("Content-Type", "application/json")
-		if b.ApiKey != "" {
-			req.Header.Set("Authorization", "Bearer "+b.ApiKey)
-		}
+	}
 
-		if resp, err := b.Client.Do(req); err != nil {
-			return nil, &transaction.BroadcastFailure{
-				Code:        "500",
-				Description: err.Error(),
-			}
-		} else {
-			defer func() { _ = resp.Body.Close() }()
-			if resp.StatusCode != 200 {
-				if body, err := io.ReadAll(resp.Body); err != nil {
-					return nil, &transaction.BroadcastFailure{
-						Code:        fmt.Sprintf("%d", resp.StatusCode),
-						Description: "unknown error",
-					}
-				} else {
-					return nil, &transaction.BroadcastFailure{
-						Code:        fmt.Sprintf("%d", resp.StatusCode),
-						Description: string(body),
-					}
-				}
-			} else {
-				return &transaction.BroadcastSuccess{
-					Txid: t.TxID().String(),
-				}, nil
-			}
+	if _, err = client.BroadcastTx(ctx, t.Hex()); err != nil {
+		return nil, &transaction.BroadcastFailure{
+			Code:        "500",
+			Description: err.Error(),
 		}
 	}
+
+	return &transaction.BroadcastSuccess{
+		Txid: t.TxID().String(),
+	}, nil
 }

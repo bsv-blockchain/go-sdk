@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
-
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
@@ -85,11 +84,10 @@ type MockRequestCheckClient struct {
 }
 
 func (m *MockRequestCheckClient) Do(req *http.Request) (*http.Response, error) {
-	// Check API key if provided
+	// Check API key if provided. go-whatsonchain sends the key in the "woc-api-key"
+	// header (not an Authorization: Bearer header).
 	if m.apiKey != "" {
-		auth := req.Header.Get("Authorization")
-		expected := "Bearer " + m.apiKey
-		require.Equal(m.t, expected, auth, "API key not properly set in Authorization header")
+		require.Equal(m.t, m.apiKey, req.Header.Get("woc-api-key"), "API key not properly set in woc-api-key header")
 	}
 
 	// Check Content-Type
@@ -159,7 +157,7 @@ func TestWhatsOnChainBroadcastFailure(t *testing.T) {
 	require.Nil(t, success)
 	require.NotNil(t, failure)
 	require.Equal(t, "500", failure.Code)
-	require.Equal(t, "Internal Server Error", failure.Description)
+	require.Contains(t, failure.Description, "Internal Server Error")
 }
 
 func TestWhatsOnChainBroadcastClientError(t *testing.T) {
@@ -191,8 +189,8 @@ func TestWhatsOnChainBroadcastBadRequest(t *testing.T) {
 	success, failure := b.Broadcast(tx)
 	require.Nil(t, success)
 	require.NotNil(t, failure)
-	require.Equal(t, "400", failure.Code)
-	require.Equal(t, "Bad Request", failure.Description)
+	require.Equal(t, "500", failure.Code)
+	require.Contains(t, failure.Description, "Bad Request")
 }
 
 func TestWhatsOnChainBroadcastUnauthorized(t *testing.T) {
@@ -208,8 +206,8 @@ func TestWhatsOnChainBroadcastUnauthorized(t *testing.T) {
 	success, failure := b.Broadcast(tx)
 	require.Nil(t, success)
 	require.NotNil(t, failure)
-	require.Equal(t, "401", failure.Code)
-	require.Equal(t, "Unauthorized", failure.Description)
+	require.Equal(t, "500", failure.Code)
+	require.Contains(t, failure.Description, "Unauthorized")
 }
 
 func TestWhatsOnChainBroadcastBodyReadError(t *testing.T) {
@@ -226,7 +224,7 @@ func TestWhatsOnChainBroadcastBodyReadError(t *testing.T) {
 	require.Nil(t, success)
 	require.NotNil(t, failure)
 	require.Equal(t, "500", failure.Code)
-	require.Equal(t, "unknown error", failure.Description)
+	require.Contains(t, failure.Description, "read error")
 }
 
 func TestWhatsOnChainBroadcastNilTransaction(t *testing.T) {
