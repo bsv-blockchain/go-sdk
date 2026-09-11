@@ -2,6 +2,8 @@ github.com/bitcoin-sv/bdk/module/gobdk v1.2.4 h1:xuAJTgeCvgtiqRM+C8QWVVDquc/Ik2J
 github.com/bitcoin-sv/bdk/module/gobdk v1.2.4/go.mod h1:6maRlx9FmnAD5vxzSrjOQRyZUV39nbVr/4Tx7hlPlAU=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/mrz1836/go-whatsonchain v1.1.0 h1:m/bVHDx8t5zDcuV/l4h6ZXPcu0DQ7ZZB/p+Oy/llC1c=
+github.com/mrz1836/go-whatsonchain v1.1.0/go.mod h1:SAMQltVzWjjBSSIM9KBoLRTFuv9fIrejyEUK95qPDZI=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
