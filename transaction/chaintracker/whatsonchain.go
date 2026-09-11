@@ -114,26 +114,33 @@ func (w *WhatsOnChain) GetBlockHeader(ctx context.Context, height uint32) (*Bloc
 	}
 
 	info, err := client.GetBlockByHeight(ctx, int64(height))
+
+	// Check the HTTP status first: go-whatsonchain treats 404 as a non-error, so a
+	// 404 can arrive either as an error (empty/undecodable body) or as a decoded
+	// value. Any 404 means no block at this height -> (nil, nil), matching the
+	// previous /block/{height}/header behavior.
+	if statusCode(client) == http.StatusNotFound {
+		return nil, nil //nolint:nilnil // no block at this height is not an error
+	}
 	if err != nil {
-		// Any 404 means no block at this height; return (nil, nil) regardless of
-		// whether the body was empty (ErrBlockNotFound) or non-empty (a decode
-		// error), matching the previous /block/{height}/header behavior. The status
-		// code is read from the client's last request rather than the error string.
-		if last := client.LastRequest(); last != nil && last.StatusCode == http.StatusNotFound {
-			return nil, nil //nolint:nilnil // no block at this height is not an error
-		}
 		return nil, fmt.Errorf("failed to get block header for height %d: %w", height, err)
 	}
 
 	return blockInfoToHeader(info)
 }
 
+// IsValidRootForHeight reports whether root is the merkle root of the block at the
+// given height. When no block exists at that height it returns (false, nil) rather
+// than dereferencing a nil header.
 func (w *WhatsOnChain) IsValidRootForHeight(ctx context.Context, root *chainhash.Hash, height uint32) (bool, error) {
-	if header, err := w.GetBlockHeader(ctx, height); err != nil {
+	header, err := w.GetBlockHeader(ctx, height)
+	if err != nil {
 		return false, err
-	} else {
-		return header.MerkleRoot.IsEqual(root), nil
 	}
+	if header == nil || header.MerkleRoot == nil {
+		return false, nil
+	}
+	return header.MerkleRoot.IsEqual(root), nil
 }
 
 // CurrentHeight returns the height of the longest chain.
@@ -147,8 +154,23 @@ func (w *WhatsOnChain) CurrentHeight(ctx context.Context) (height uint32, err er
 	if err != nil {
 		return 0, fmt.Errorf("failed to get chain info for network %s: %w", w.Network, err)
 	}
+	// go-whatsonchain treats 404 as a non-error and may decode a not-found body
+	// into a zero ChainInfo; reject any non-200 status, matching the previous
+	// implementation which rejected every non-200 response.
+	if code := statusCode(client); code != http.StatusOK {
+		return 0, fmt.Errorf("chain info not found for network %s: HTTP %d", w.Network, code)
+	}
 
 	return toUint32(info.Blocks, "block height")
+}
+
+// statusCode returns the HTTP status code of the client's most recent request, or
+// 0 if unavailable.
+func statusCode(client woc.ClientInterface) int {
+	if last := client.LastRequest(); last != nil {
+		return last.StatusCode
+	}
+	return 0
 }
 
 // blockInfoToHeader converts a go-whatsonchain BlockInfo into the SDK BlockHeader.

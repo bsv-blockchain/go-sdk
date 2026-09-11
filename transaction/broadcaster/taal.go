@@ -42,7 +42,7 @@ func (b *TAALBroadcast) BroadcastCtx(ctx context.Context, t *transaction.Transac
 	)
 	if err != nil {
 		return nil, &transaction.BroadcastFailure{
-			Code:        "500",
+			Code:        strconv.Itoa(http.StatusInternalServerError),
 			Description: err.Error(),
 		}
 	}
@@ -59,7 +59,7 @@ func (b *TAALBroadcast) BroadcastCtx(ctx context.Context, t *transaction.Transac
 	}
 	if resp, err := client.Do(req); err != nil {
 		return nil, &transaction.BroadcastFailure{
-			Code:        "500",
+			Code:        strconv.Itoa(http.StatusInternalServerError),
 			Description: err.Error(),
 		}
 	} else {

@@ -222,6 +222,36 @@ func TestWhatsOnChainGetBlockHeaderNotFoundWithBody(t *testing.T) {
 	require.Nil(t, header)
 }
 
+func TestWhatsOnChainGetBlockHeaderNotFoundWithValidJSONBody(t *testing.T) {
+	t.Parallel()
+
+	// A 404 whose body is valid BlockInfo JSON must still map to (nil, nil): the
+	// status code is authoritative, not whether the body decodes.
+	body := mustJSON(t, woc.BlockInfo{
+		Hash:   chainhash.HashH([]byte("hash")).String(),
+		Height: 100,
+	})
+	wc := newTestWOC(statusClient(http.StatusNotFound, body))
+
+	header, err := wc.GetBlockHeader(t.Context(), 100)
+	require.NoError(t, err)
+	require.Nil(t, header)
+}
+
+func TestWhatsOnChainCurrentHeightNotFoundWithJSONBody(t *testing.T) {
+	t.Parallel()
+
+	// A 404 whose body decodes to ChainInfo{Blocks:0} must be an error, not
+	// (0, nil): the previous implementation rejected every non-200 response.
+	body := mustJSON(t, woc.ChainInfo{Blocks: 0})
+	wc := newTestWOC(statusClient(http.StatusNotFound, body))
+
+	height, err := wc.CurrentHeight(t.Context())
+	require.Error(t, err)
+	require.Zero(t, height)
+	require.Contains(t, err.Error(), "chain info not found")
+}
+
 func TestWhatsOnChainGetBlockHeaderNumericOverflow(t *testing.T) {
 	t.Parallel()
 

@@ -48,6 +48,17 @@ func (m *MockBadRequestClient) Do(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
+// MockNotFoundClient returns HTTP 404, which go-whatsonchain's BroadcastTx treats
+// as a non-error. The broadcaster must still report a failure, not a false success.
+type MockNotFoundClient struct{}
+
+func (m *MockNotFoundClient) Do(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: 404,
+		Body:       io.NopCloser(strings.NewReader("Not Found")),
+	}, nil
+}
+
 type MockUnauthorizedClient struct{}
 
 func (m *MockUnauthorizedClient) Do(req *http.Request) (*http.Response, error) {
@@ -191,6 +202,25 @@ func TestWhatsOnChainBroadcastBadRequest(t *testing.T) {
 	require.NotNil(t, failure)
 	require.Equal(t, "500", failure.Code)
 	require.Contains(t, failure.Description, "Bad Request")
+}
+
+func TestWhatsOnChainBroadcastNotFound(t *testing.T) {
+	tx, err := transaction.NewTransactionFromHex(testTxHex)
+	require.NoError(t, err)
+
+	b := &WhatsOnChain{
+		Network: WOCMainnet,
+		ApiKey:  "",
+		Client:  &MockNotFoundClient{},
+	}
+
+	// A 404 must be a failure (go-whatsonchain treats 404 as a non-error), not a
+	// false BroadcastSuccess.
+	success, failure := b.Broadcast(tx)
+	require.Nil(t, success)
+	require.NotNil(t, failure)
+	require.Equal(t, "404", failure.Code)
+	require.Contains(t, failure.Description, "404")
 }
 
 func TestWhatsOnChainBroadcastUnauthorized(t *testing.T) {

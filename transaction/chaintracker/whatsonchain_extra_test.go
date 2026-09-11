@@ -75,15 +75,15 @@ func TestIsValidRootForHeightError(t *testing.T) {
 func TestIsValidRootForHeightNilHeader(t *testing.T) {
 	t.Parallel()
 
-	// When GetBlockHeader returns nil (404), IsValidRootForHeight panics trying to
-	// call .IsEqual on a nil MerkleRoot. The method does not guard against nil, so
-	// we assert the panic behavior.
+	// When GetBlockHeader returns (nil, nil) for a missing block (404),
+	// IsValidRootForHeight returns (false, nil) instead of dereferencing the nil
+	// header.
 	wc := newTestWOC(statusClient(http.StatusNotFound, ""))
 
 	hash := chainhash.HashH([]byte("test"))
-	require.Panics(t, func() {
-		_, _ = wc.IsValidRootForHeight(t.Context(), &hash, 100)
-	})
+	valid, err := wc.IsValidRootForHeight(t.Context(), &hash, 100)
+	require.NoError(t, err)
+	require.False(t, valid)
 }
 
 func TestCurrentHeightNotFound(t *testing.T) {
