@@ -74,10 +74,31 @@ func (r *Reader) ReadIntBytes() ([]byte, error) {
 }
 
 func (r *Reader) ReadVarInt() (uint64, error) {
-	var varInt VarInt
-	if _, err := varInt.ReadFrom(r); err != nil {
-		return 0, fmt.Errorf("error reading varint: %w", err)
+	if r.Pos >= len(r.Data) {
+		return 0, fmt.Errorf("error reading varint: %w", errors.New("read past end of data"))
 	}
+	// Decode directly from the backing slice. Determine the on-wire width from
+	// the prefix byte, bounds-check it, then hand the slice to the zero-alloc
+	// NewVarIntFromBytes. This avoids the per-read heap allocations that
+	// VarInt.ReadFrom incurs by passing scratch buffers across the io.Reader
+	// interface boundary (which forces them to escape). Byte-for-byte identical
+	// decode; VarInt.ReadFrom is retained for external streaming callers.
+	var size int
+	switch r.Data[r.Pos] {
+	case 0xff:
+		size = 9
+	case 0xfe:
+		size = 5
+	case 0xfd:
+		size = 3
+	default:
+		size = 1
+	}
+	if r.Pos+size > len(r.Data) {
+		return 0, fmt.Errorf("error reading varint: %w", errors.New("read past end of data"))
+	}
+	varInt, _ := NewVarIntFromBytes(r.Data[r.Pos:])
+	r.Pos += size
 	return uint64(varInt), nil
 }
 
