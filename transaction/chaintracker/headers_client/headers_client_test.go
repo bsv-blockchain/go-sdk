@@ -4,16 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
 func TestGetMerkleRootsSuccess(t *testing.T) {
+	t.Parallel()
+
 	// Create mock merkle root data
 	mockHash1, _ := chainhash.NewHashFromHex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
 	mockHash2, _ := chainhash.NewHashFromHex("00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048")
@@ -29,40 +31,37 @@ func TestGetMerkleRootsSuccess(t *testing.T) {
 		},
 	}
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify request method and path
-		assert.Equal(t, http.MethodGet, r.Method)
-		assert.Equal(t, "/api/v1/chain/merkleroot", r.URL.Path)
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Verify request method and path
+			assert.Equal(t, http.MethodGet, req.Method)
+			assert.Equal(t, "/api/v1/chain/merkleroot", req.URL.Path)
 
-		// Verify query parameters
-		batchSize := r.URL.Query().Get("batchSize")
-		assert.Equal(t, "10", batchSize)
+			// Verify query parameters
+			batchSize := req.URL.Query().Get("batchSize")
+			assert.Equal(t, "10", batchSize)
 
-		// Verify Authorization header
-		auth := r.Header.Get("Authorization")
-		assert.Equal(t, "Bearer test-api-key", auth)
+			// Verify Authorization header
+			auth := req.Header.Get("Authorization")
+			assert.Equal(t, "Bearer test-api-key", auth)
 
-		// Write mock response
-		w.WriteHeader(http.StatusOK)
-		response := struct {
-			Content []MerkleRootInfo `json:"content"`
-			Page    struct {
-				LastEvaluatedKey string `json:"lastEvaluatedKey"`
-			} `json:"page"`
-		}{
-			Content: expectedRoots,
-		}
-		err := json.NewEncoder(w).Encode(response)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+			// Write mock response
+			response := struct {
+				Content []MerkleRootInfo `json:"content"`
+				Page    struct {
+					LastEvaluatedKey string `json:"lastEvaluatedKey"`
+				} `json:"page"`
+			}{
+				Content: expectedRoots,
+			}
+			return tu.JSONResponse(t, http.StatusOK, response), nil
+		},
+	}
 
-	// Initialize Client with test server
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -74,32 +73,32 @@ func TestGetMerkleRootsSuccess(t *testing.T) {
 }
 
 func TestGetMerkleRootsWithLastEvaluatedKey(t *testing.T) {
+	t.Parallel()
+
 	lastKey, _ := chainhash.NewHashFromHex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify lastEvaluatedKey is included
-		lastEvalKey := r.URL.Query().Get("lastEvaluatedKey")
-		assert.Equal(t, lastKey.String(), lastEvalKey)
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Verify lastEvaluatedKey is included
+			lastEvalKey := req.URL.Query().Get("lastEvaluatedKey")
+			assert.Equal(t, lastKey.String(), lastEvalKey)
 
-		w.WriteHeader(http.StatusOK)
-		response := struct {
-			Content []MerkleRootInfo `json:"content"`
-			Page    struct {
-				LastEvaluatedKey string `json:"lastEvaluatedKey"`
-			} `json:"page"`
-		}{
-			Content: []MerkleRootInfo{},
-		}
-		err := json.NewEncoder(w).Encode(response)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+			response := struct {
+				Content []MerkleRootInfo `json:"content"`
+				Page    struct {
+					LastEvaluatedKey string `json:"lastEvaluatedKey"`
+				} `json:"page"`
+			}{
+				Content: []MerkleRootInfo{},
+			}
+			return tu.JSONResponse(t, http.StatusOK, response), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -108,17 +107,18 @@ func TestGetMerkleRootsWithLastEvaluatedKey(t *testing.T) {
 }
 
 func TestGetMerkleRootsError(t *testing.T) {
-	// Create a test server that returns error
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte("Internal Server Error"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			return tu.StringResponse(http.StatusInternalServerError, "Internal Server Error"), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -127,6 +127,8 @@ func TestGetMerkleRootsError(t *testing.T) {
 }
 
 func TestRegisterWebhookSuccess(t *testing.T) {
+	t.Parallel()
+
 	expectedWebhook := Webhook{
 		URL:               "https://example.com/webhook",
 		CreatedAt:         "2025-09-19T22:27:00Z",
@@ -136,38 +138,35 @@ func TestRegisterWebhookSuccess(t *testing.T) {
 		Active:            true,
 	}
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify request method and path
-		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/api/v1/webhook", r.URL.Path)
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Verify request method and path
+			assert.Equal(t, http.MethodPost, req.Method)
+			assert.Equal(t, "/api/v1/webhook", req.URL.Path)
 
-		// Verify headers
-		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+			// Verify headers
+			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			assert.Equal(t, "Bearer test-api-key", req.Header.Get("Authorization"))
 
-		// Verify request body
-		var webhookReq WebhookRequest
-		err := json.NewDecoder(r.Body).Decode(&webhookReq)
-		if !assert.NoError(t, err) {
-			return
-		}
-		assert.Equal(t, "https://example.com/webhook", webhookReq.URL)
-		assert.Equal(t, "Bearer", webhookReq.RequiredAuth.Type)
-		assert.Equal(t, "webhook-auth-token", webhookReq.RequiredAuth.Token)
-		assert.Equal(t, "Authorization", webhookReq.RequiredAuth.Header)
+			// Verify request body
+			var webhookReq WebhookRequest
+			if err := json.NewDecoder(req.Body).Decode(&webhookReq); !assert.NoError(t, err) {
+				return tu.StringResponse(http.StatusOK, ""), nil
+			}
+			assert.Equal(t, "https://example.com/webhook", webhookReq.URL)
+			assert.Equal(t, "Bearer", webhookReq.RequiredAuth.Type)
+			assert.Equal(t, "webhook-auth-token", webhookReq.RequiredAuth.Token)
+			assert.Equal(t, "Authorization", webhookReq.RequiredAuth.Header)
 
-		// Write mock response
-		w.WriteHeader(http.StatusOK)
-		err = json.NewEncoder(w).Encode(expectedWebhook)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+			// Write mock response
+			return tu.JSONResponse(t, http.StatusOK, expectedWebhook), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -179,17 +178,18 @@ func TestRegisterWebhookSuccess(t *testing.T) {
 }
 
 func TestRegisterWebhookError(t *testing.T) {
-	// Create a test server that returns error
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte("Invalid webhook URL"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			return tu.StringResponse(http.StatusBadRequest, "Invalid webhook URL"), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -200,30 +200,32 @@ func TestRegisterWebhookError(t *testing.T) {
 }
 
 func TestUnregisterWebhookSuccess(t *testing.T) {
+	t.Parallel()
+
 	callbackURL := "https://example.com/webhook"
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify request method and path
-		assert.Equal(t, http.MethodDelete, r.Method)
-		assert.Equal(t, "/api/v1/webhook", r.URL.Path)
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Verify request method and path
+			assert.Equal(t, http.MethodDelete, req.Method)
+			assert.Equal(t, "/api/v1/webhook", req.URL.Path)
 
-		// Verify query parameter
-		urlParam := r.URL.Query().Get("url")
-		assert.Equal(t, callbackURL, urlParam)
+			// Verify query parameter
+			urlParam := req.URL.Query().Get("url")
+			assert.Equal(t, callbackURL, urlParam)
 
-		// Verify Authorization header
-		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+			// Verify Authorization header
+			assert.Equal(t, "Bearer test-api-key", req.Header.Get("Authorization"))
 
-		// Write success response
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer ts.Close()
+			// Write success response
+			return tu.StringResponse(http.StatusOK, ""), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -232,17 +234,18 @@ func TestUnregisterWebhookSuccess(t *testing.T) {
 }
 
 func TestUnregisterWebhookError(t *testing.T) {
-	// Create a test server that returns error
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte("Webhook not found"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			return tu.StringResponse(http.StatusNotFound, "Webhook not found"), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -252,6 +255,8 @@ func TestUnregisterWebhookError(t *testing.T) {
 }
 
 func TestGetWebhookSuccess(t *testing.T) {
+	t.Parallel()
+
 	expectedWebhook := Webhook{
 		URL:               "https://example.com/webhook",
 		CreatedAt:         "2025-09-19T22:27:00Z",
@@ -261,30 +266,28 @@ func TestGetWebhookSuccess(t *testing.T) {
 		Active:            true,
 	}
 
-	// Create a test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify request method and path
-		assert.Equal(t, http.MethodGet, r.Method)
-		assert.Equal(t, "/api/v1/webhook", r.URL.Path)
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Verify request method and path
+			assert.Equal(t, http.MethodGet, req.Method)
+			assert.Equal(t, "/api/v1/webhook", req.URL.Path)
 
-		// Verify query parameter
-		urlParam := r.URL.Query().Get("url")
-		assert.Equal(t, expectedWebhook.URL, urlParam)
+			// Verify query parameter
+			urlParam := req.URL.Query().Get("url")
+			assert.Equal(t, expectedWebhook.URL, urlParam)
 
-		// Verify Authorization header
-		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+			// Verify Authorization header
+			assert.Equal(t, "Bearer test-api-key", req.Header.Get("Authorization"))
 
-		// Write mock response
-		w.WriteHeader(http.StatusOK)
-		err := json.NewEncoder(w).Encode(expectedWebhook)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+			// Write mock response
+			return tu.JSONResponse(t, http.StatusOK, expectedWebhook), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -297,17 +300,18 @@ func TestGetWebhookSuccess(t *testing.T) {
 }
 
 func TestGetWebhookNotFound(t *testing.T) {
-	// Create a test server that returns 404
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte("Webhook not found"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			return tu.StringResponse(http.StatusNotFound, "Webhook not found"), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -318,17 +322,18 @@ func TestGetWebhookNotFound(t *testing.T) {
 }
 
 func TestGetWebhookInvalidJSON(t *testing.T) {
-	// Create a test server that returns invalid JSON
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("invalid json"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			return tu.StringResponse(http.StatusOK, "invalid json"), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -339,17 +344,18 @@ func TestGetWebhookInvalidJSON(t *testing.T) {
 }
 
 func TestRegisterWebhookInvalidJSON(t *testing.T) {
-	// Create a test server that returns invalid JSON
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("invalid json"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			return tu.StringResponse(http.StatusOK, "invalid json"), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -360,17 +366,18 @@ func TestRegisterWebhookInvalidJSON(t *testing.T) {
 }
 
 func TestGetMerkleRootsInvalidJSON(t *testing.T) {
-	// Create a test server that returns invalid JSON
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("invalid json"))
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			return tu.StringResponse(http.StatusOK, "invalid json"), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -380,26 +387,26 @@ func TestGetMerkleRootsInvalidJSON(t *testing.T) {
 }
 
 func TestGetMerkleRootsEmptyResponse(t *testing.T) {
-	// Test with empty content array
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		response := struct {
-			Content []MerkleRootInfo `json:"content"`
-			Page    struct {
-				LastEvaluatedKey string `json:"lastEvaluatedKey"`
-			} `json:"page"`
-		}{
-			Content: []MerkleRootInfo{},
-		}
-		err := json.NewEncoder(w).Encode(response)
-		assert.NoError(t, err)
-	}))
-	defer ts.Close()
+	t.Parallel()
+
+	mock := &tu.MockHTTPClient{
+		DoFunc: func(_ *http.Request) (*http.Response, error) {
+			response := struct {
+				Content []MerkleRootInfo `json:"content"`
+				Page    struct {
+					LastEvaluatedKey string `json:"lastEvaluatedKey"`
+				} `json:"page"`
+			}{
+				Content: []MerkleRootInfo{},
+			}
+			return tu.JSONResponse(t, http.StatusOK, response), nil
+		},
+	}
 
 	client := &Client{
-		Url:        ts.URL,
+		Url:        "https://headers.test",
 		ApiKey:     "test-api-key",
-		httpClient: ts.Client(),
+		httpClient: mock,
 	}
 
 	ctx := context.Background()
@@ -409,6 +416,8 @@ func TestGetMerkleRootsEmptyResponse(t *testing.T) {
 }
 
 func TestWebhookWithMultipleErrorCounts(t *testing.T) {
+	t.Parallel()
+
 	// Test webhook with various error counts
 	testCases := []struct {
 		name        string
@@ -423,6 +432,8 @@ func TestWebhookWithMultipleErrorCounts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			expectedWebhook := Webhook{
 				URL:            "https://example.com/webhook",
 				ErrorsCount:    tc.errorsCount,
@@ -430,17 +441,16 @@ func TestWebhookWithMultipleErrorCounts(t *testing.T) {
 				Active:         tc.active,
 			}
 
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				err := json.NewEncoder(w).Encode(expectedWebhook)
-				assert.NoError(t, err)
-			}))
-			defer ts.Close()
+			mock := &tu.MockHTTPClient{
+				DoFunc: func(_ *http.Request) (*http.Response, error) {
+					return tu.JSONResponse(t, http.StatusOK, expectedWebhook), nil
+				},
+			}
 
 			client := &Client{
-				Url:        ts.URL,
+				Url:        "https://headers.test",
 				ApiKey:     "test-api-key",
-				httpClient: ts.Client(),
+				httpClient: mock,
 			}
 
 			ctx := context.Background()
