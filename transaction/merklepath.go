@@ -60,6 +60,58 @@ func (ip IndexedPath) GetOffsetLeaf(layer int, offset uint64) *PathElement {
 	return nil
 }
 
+// getOffsetLeaf returns the PathElement at (layer, offset), synthesizing a
+// missing interior node from its two children when necessary. It reproduces
+// IndexedPath.GetOffsetLeaf byte-for-byte — including its last-wins handling of
+// duplicate offsets — without the eager per-level map allocation.
+//
+// The common case (a fully-populated or sparse proof BUMP) is served by a
+// direct, allocation-free scan of the already-populated level and never
+// synthesizes. Only when a node is genuinely missing and must be rebuilt from
+// its children does it fall back to a per-level index, built once and lazily
+// and threaded through *index, so the recursive synthesis stays O(1) per lookup
+// and the whole climb stays O(N) even for compound/pruned paths (a plain
+// linear-scan recursion would be O(N^2) for those). Fully-populated and proof
+// paths never synthesize, so they never allocate the index.
+func (mp *MerklePath) getOffsetLeaf(layer int, offset uint64, index *IndexedPath) *PathElement {
+	// Direct last-wins lookup, matching the old map build's path[offset] = el
+	// (a later entry overwrites an earlier one for the same offset).
+	if layer < len(mp.Path) {
+		level := mp.Path[layer]
+		for i := len(level) - 1; i >= 0; i-- {
+			if level[i].Offset == offset {
+				return level[i]
+			}
+		}
+	}
+	if layer == 0 {
+		return nil
+	}
+
+	// The node is missing and must be synthesized from its children. Build the
+	// per-level index once so the recursive child lookups are O(1), then defer
+	// to the existing (map-backed) synthesis.
+	if *index == nil {
+		*index = mp.buildIndexedPath()
+	}
+	return index.GetOffsetLeaf(layer, offset)
+}
+
+// buildIndexedPath builds the per-level offset->element index that ComputeRoot
+// previously constructed eagerly. Later entries win for duplicate offsets,
+// matching Go map-assignment semantics (and thus getOffsetLeaf's direct path).
+func (mp *MerklePath) buildIndexedPath() IndexedPath {
+	indexedPath := make(IndexedPath, len(mp.Path))
+	for h, level := range mp.Path {
+		m := make(map[uint64]*PathElement, len(level))
+		for _, el := range level {
+			m[el.Offset] = el
+		}
+		indexedPath[h] = m
+	}
+	return indexedPath
+}
+
 // Clone creates a deep copy of the MerklePath by serializing and deserializing.
 func (mp *MerklePath) Clone() *MerklePath {
 	if mp == nil {
@@ -251,15 +303,6 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 			return txid, nil
 		}
 	}
-	indexedPath := make(IndexedPath, len(mp.Path))
-	for h := 0; h < len(mp.Path); h++ {
-		path := map[uint64]*PathElement{}
-		for l := 0; l < len(mp.Path[h]); l++ {
-			path[mp.Path[h][l].Offset] = mp.Path[h][l]
-		}
-		indexedPath[h] = path
-	}
-
 	// Find the index of the txid at the lowest level of the Merkle tree
 	var txLeaf *PathElement
 	for _, l := range mp.Path[0] {
@@ -288,9 +331,10 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 		effectiveHeight = bitsNeeded
 	}
 
+	var indexedPath IndexedPath // built lazily, only if a node must be synthesized
 	for height := 0; height < effectiveHeight; height++ {
 		offset := (index >> height) ^ 1
-		leaf := indexedPath.GetOffsetLeaf(height, offset)
+		leaf := mp.getOffsetLeaf(height, offset, &indexedPath)
 		if leaf == nil {
 			return nil, fmt.Errorf("we do not have a hash for this index at height: %v", height)
 		}
