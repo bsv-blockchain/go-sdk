@@ -1,7 +1,6 @@
 package util_test
 
 import (
-	"bytes"
 	"math"
 	"testing"
 
@@ -10,16 +9,16 @@ import (
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
-// readVarIntReference decodes a varint the way Reader.ReadVarInt used to:
-// through VarInt.ReadFrom over an io.Reader. It returns the decoded value and
-// the number of bytes consumed, or an error on truncated input.
-func readVarIntReference(data []byte) (uint64, int, error) {
+// readVarIntReference decodes a varint the way Reader.ReadVarInt used to: via
+// VarInt.ReadFrom over the *util.Reader itself. Run on a fresh reader over the
+// same bytes it reproduces the exact pre-change value, error, and cursor (Pos)
+// behavior, so it is the ground truth for the differential test below. It
+// returns the decoded value, the resulting cursor position, and any error.
+func readVarIntReference(data []byte) (val uint64, pos int, err error) {
+	r := util.NewReader(data)
 	var vi util.VarInt
-	n, err := vi.ReadFrom(bytes.NewReader(data))
-	if err != nil {
-		return 0, 0, err
-	}
-	return uint64(vi), int(n), nil
+	_, err = vi.ReadFrom(r)
+	return uint64(vi), r.Pos, err
 }
 
 // TestReadVarIntBoundaries pins Reader.ReadVarInt over every width boundary:
@@ -49,19 +48,25 @@ func TestReadVarIntTruncatedErrors(t *testing.T) {
 
 	for _, v := range []uint64{0xffff, 0xffffffff, math.MaxUint64} {
 		enc := util.VarInt(v).Bytes()
-		r := util.NewReader(enc[:len(enc)-1]) // drop the last byte
+		truncated := enc[:len(enc)-1] // drop the last byte
+		r := util.NewReader(truncated)
 		_, err := r.ReadVarInt()
 		require.Errorf(t, err, "value %#x truncated", v)
+		// The cursor must be drained to end-of-data, matching ReadFrom.
+		require.Equalf(t, len(truncated), r.Pos, "value %#x cursor", v)
 	}
 
-	// Empty buffer also errors.
-	_, err := util.NewReader(nil).ReadVarInt()
+	// Empty buffer also errors and leaves the cursor at end-of-data.
+	r := util.NewReader(nil)
+	_, err := r.ReadVarInt()
 	require.Error(t, err)
+	require.Equal(t, 0, r.Pos)
 }
 
 // TestReadVarIntMatchesReadFrom is a differential test: for arbitrary bytes,
 // Reader.ReadVarInt must agree with the old VarInt.ReadFrom path on the decoded
-// value, the number of bytes consumed, and whether it errors.
+// value, whether it errors, and the resulting cursor position (Pos) — the last
+// checked on both the success and the error paths.
 func TestReadVarIntMatchesReadFrom(t *testing.T) {
 	t.Parallel()
 
@@ -82,12 +87,12 @@ func TestReadVarIntMatchesReadFrom(t *testing.T) {
 		r := util.NewReader(data)
 		got, gotErr := r.ReadVarInt()
 
-		refVal, refN, refErr := readVarIntReference(data)
+		refVal, refPos, refErr := readVarIntReference(data)
 
 		require.Equalf(t, refErr != nil, gotErr != nil, "error parity for %x", data)
+		require.Equalf(t, refPos, r.Pos, "cursor parity for %x", data)
 		if refErr == nil {
 			require.Equalf(t, refVal, got, "value for %x", data)
-			require.Equalf(t, refN, r.Pos, "consumed for %x", data)
 		}
 	}
 }

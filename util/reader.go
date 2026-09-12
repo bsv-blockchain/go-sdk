@@ -75,7 +75,9 @@ func (r *Reader) ReadIntBytes() ([]byte, error) {
 
 func (r *Reader) ReadVarInt() (uint64, error) {
 	if r.Pos >= len(r.Data) {
-		return 0, fmt.Errorf("error reading varint: %w", errors.New("read past end of data"))
+		// No prefix byte available. VarInt.ReadFrom reads nothing here and
+		// leaves the cursor at end-of-data, so we do too.
+		return 0, errors.New("error reading varint: could not read prefix: read past end of data")
 	}
 	// Decode directly from the backing slice. Determine the on-wire width from
 	// the prefix byte, bounds-check it, then hand the slice to the zero-alloc
@@ -95,7 +97,12 @@ func (r *Reader) ReadVarInt() (uint64, error) {
 		size = 1
 	}
 	if r.Pos+size > len(r.Data) {
-		return 0, fmt.Errorf("error reading varint: %w", errors.New("read past end of data"))
+		// Truncated payload. VarInt.ReadFrom's io.ReadFull consumes every
+		// remaining byte before returning, so advance the cursor to
+		// end-of-data to keep the observable reader state identical.
+		avail := len(r.Data) - r.Pos
+		r.Pos = len(r.Data)
+		return 0, fmt.Errorf("error reading varint(%d): have %d of %d bytes", size, avail, size)
 	}
 	varInt, _ := NewVarIntFromBytes(r.Data[r.Pos:])
 	r.Pos += size
