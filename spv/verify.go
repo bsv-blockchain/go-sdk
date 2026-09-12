@@ -69,10 +69,14 @@ func Verify(ctx context.Context, t *transaction.Transaction,
 				}
 			}
 
+			// Chronicle is active on BSV mainnet, so scripts are verified
+			// under post-Chronicle rules (re-enabled opcodes such as OP_2MUL).
+			// UTXOAfterChronicle requires UTXOAfterGenesis.
 			if err := interpreter.NewEngine().Execute(
 				interpreter.WithTx(tx, vin, sourceOutput),
 				interpreter.WithForkID(),
 				interpreter.WithAfterGenesis(),
+				interpreter.WithAfterChronicle(),
 			); err != nil {
 				return false, fmt.Errorf("%w: %w", ErrScriptVerificationFailed, err)
 			}

@@ -140,3 +140,23 @@ func TestSPVVerifyFeeErrorWithMissingSource(t *testing.T) {
 	require.Error(t, err)
 	require.False(t, verified)
 }
+
+// TestSPVVerifyChronicleOpcodes covers script verification under Chronicle
+// rules: an input whose locking script uses a Chronicle re-enabled opcode
+// (OP_2MUL) must verify, as it does on the network.
+func TestSPVVerifyChronicleOpcodes(t *testing.T) {
+	// OP_2 OP_2MUL OP_4 OP_EQUAL → 2*2 == 4 → true, with an empty unlocking script.
+	lock := &script.Script{}
+	require.NoError(t, lock.AppendOpcodes(script.Op2, script.Op2MUL, script.Op4, script.OpEQUAL))
+
+	tx := transaction.NewTransaction()
+	src := transaction.NewTransaction()
+	src.AddOutput(&transaction.TransactionOutput{Satoshis: 100_000, LockingScript: lock})
+	tx.AddInputFromTx(src, 0, nil)
+	tx.Inputs[0].UnlockingScript = &script.Script{}
+	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: lock})
+
+	verified, err := Verify(t.Context(), tx, &GullibleHeadersClient{}, nil)
+	require.NoError(t, err)
+	require.True(t, verified)
+}
