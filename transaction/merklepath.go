@@ -129,6 +129,30 @@ func NewMerklePath(blockHeight uint32, path [][]*PathElement) *MerklePath {
 	}
 }
 
+// NewMerklePathFromCoinbaseTxid creates a MerklePath for a transaction that is
+// the only transaction in its block (typically a coinbase in an otherwise empty
+// block). The merkle root equals the txid itself: a tree of height 1 with a
+// single offset-0 leaf. This matches @bsv/sdk MerklePath.fromCoinbaseTxidAndHeight.
+//
+// Parameters:
+// - txid: The transaction ID that is the sole leaf (and therefore the merkle root)
+// - blockHeight: The height of the block that contains only this transaction
+//
+// Returns:
+// - A MerklePath whose ComputeRoot equals txid, or an error if txid is nil
+func NewMerklePathFromCoinbaseTxid(txid *chainhash.Hash, blockHeight uint32) (*MerklePath, error) {
+	if txid == nil {
+		return nil, errors.New("txid is required")
+	}
+	txidFlag := true
+	return &MerklePath{
+		BlockHeight: blockHeight,
+		Path: [][]*PathElement{{
+			{Offset: 0, Hash: txid, Txid: &txidFlag},
+		}},
+	}, nil
+}
+
 // NewMerklePathFromHex creates a new MerklePath with the given hex data
 func NewMerklePathFromHex(hexData string) (*MerklePath, error) {
 	bin, err := hex.DecodeString(hexData)
@@ -289,6 +313,9 @@ func (mp *MerklePath) ComputeRootHex(txidStr *string) (string, error) {
 
 // ComputeRoot computes the Merkle root from a given transaction ID
 func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error) {
+	if mp == nil || len(mp.Path) == 0 || len(mp.Path[0]) == 0 {
+		return nil, errors.New("merkle path has no leaves")
+	}
 	if txid == nil {
 		for _, l := range mp.Path[0] {
 			if l.Hash != nil {
@@ -297,9 +324,16 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 			}
 		}
 	}
+	if txid == nil {
+		return nil, errors.New("no valid leaf found in the Merkle Path")
+	}
 	if len(mp.Path) == 1 {
 		// if there is only one txid in the block then the root is the txid.
 		if len(mp.Path[0]) == 1 {
+			leaf := mp.Path[0][0]
+			if leaf.Hash == nil || !leaf.Hash.Equal(*txid) {
+				return nil, fmt.Errorf("the BUMP does not contain the txid: %s", *txid)
+			}
 			return txid, nil
 		}
 	}
