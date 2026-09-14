@@ -322,6 +322,127 @@ func TestMerklePathClone(t *testing.T) {
 	})
 }
 
+// TestMerklePathSingleLeafCoinbaseOnly pins the BRC-74 encoding and root for a
+// block that contains only one transaction (typically just the coinbase). This
+// matches @bsv/sdk: `new MerklePath(height, [[{ offset: 0, txid: true, hash }]])`
+// and `MerklePath.fromCoinbaseTxidAndHeight`, including the WhatsOnChain testnet
+// vector from https://github.com/bsv-blockchain/go-sdk/issues/348.
+func TestMerklePathSingleLeafCoinbaseOnly(t *testing.T) {
+	t.Parallel()
+
+	const (
+		issueHash      = "114841ffac6016121540e38c797257e0b19b7a562118499707093e9605a683ad"
+		wocTxid        = "fb96c998cef0494de452faa0510205ad04248802a5a429e328a01576060ecd3d"
+		wocBumpHex     = "fe09831a00010100023dcd0e067615a028e329a4a502882404ad050251a0fa52e44d49f0ce98c996fb"
+		wocBeefHex     = "0100beef01fe09831a00010100023dcd0e067615a028e329a4a502882404ad050251a0fa52e44d49f0ce98c996fb0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff140309831a0f2f546572616e6f64652065752d312fffffffff01f2052a01000000001976a9140e84c845ae3af3ba20e8da29a4827abe93b639a488ac000000000100"
+		wocBlockHeight = uint32(1737481)
+		tsSDKBumpHex   = "fdd2040101000202ef57aa9f29c8141ae17935c88434457b2117890f23efba0d0e0cba7a7a37d5"
+		tsSDKTxid      = "d5377a7aba0c0e0dbaef230f8917217b453484c83579e11a14c8299faa57ef02"
+		tsSDKHeight    = uint32(1234)
+	)
+
+	requireSingleLeafRoot := func(t *testing.T, mp *MerklePath, wantHash *chainhash.Hash, wantHeight uint32) {
+		t.Helper()
+		require.Equal(t, wantHeight, mp.BlockHeight)
+		require.Len(t, mp.Path, 1)
+		require.Len(t, mp.Path[0], 1)
+		require.Equal(t, uint64(0), mp.Path[0][0].Offset)
+		require.NotNil(t, mp.Path[0][0].Hash)
+		require.True(t, mp.Path[0][0].Hash.Equal(*wantHash))
+		require.NotNil(t, mp.Path[0][0].Txid)
+		require.True(t, *mp.Path[0][0].Txid)
+
+		root, err := mp.ComputeRoot(nil)
+		require.NoError(t, err)
+		require.True(t, root.Equal(*wantHash))
+
+		root, err = mp.ComputeRoot(wantHash)
+		require.NoError(t, err)
+		require.True(t, root.Equal(*wantHash))
+
+		rootHex, err := mp.ComputeRootHex(nil)
+		require.NoError(t, err)
+		require.Equal(t, wantHash.String(), rootHex)
+	}
+
+	t.Run("constructs height plus single leaf matching TypeScript SDK", func(t *testing.T) {
+		hash := hexToChainhash(issueHash)
+		txid := true
+		mp := NewMerklePath(1, [][]*PathElement{{{
+			Offset: 0,
+			Txid:   &txid,
+			Hash:   hash,
+		}}})
+		requireSingleLeafRoot(t, mp, hash, 1)
+
+		decoded, err := NewMerklePathFromHex(mp.Hex())
+		require.NoError(t, err)
+		requireSingleLeafRoot(t, decoded, hash, 1)
+		require.Equal(t, mp.Hex(), decoded.Hex())
+	})
+
+	t.Run("fromCoinbaseTxid matches TypeScript fromCoinbaseTxidAndHeight", func(t *testing.T) {
+		hash := hexToChainhash(issueHash)
+		mp, err := NewMerklePathFromCoinbaseTxid(hash, 1)
+		require.NoError(t, err)
+		requireSingleLeafRoot(t, mp, hash, 1)
+
+		_, err = NewMerklePathFromCoinbaseTxid(nil, 1)
+		require.Error(t, err)
+	})
+
+	t.Run("parses WhatsOnChain testnet single-tx BUMP from issue 348", func(t *testing.T) {
+		hash := hexToChainhash(wocTxid)
+		mp, err := NewMerklePathFromHex(wocBumpHex)
+		require.NoError(t, err)
+		requireSingleLeafRoot(t, mp, hash, wocBlockHeight)
+		require.Equal(t, wocBumpHex, mp.Hex())
+
+		constructed, err := NewMerklePathFromCoinbaseTxid(hash, wocBlockHeight)
+		require.NoError(t, err)
+		require.Equal(t, wocBumpHex, constructed.Hex())
+	})
+
+	t.Run("parses TypeScript SDK one-transaction block vector", func(t *testing.T) {
+		hash := hexToChainhash(tsSDKTxid)
+		mp, err := NewMerklePathFromHex(tsSDKBumpHex)
+		require.NoError(t, err)
+		requireSingleLeafRoot(t, mp, hash, tsSDKHeight)
+		require.Equal(t, tsSDKBumpHex, mp.Hex())
+	})
+
+	t.Run("parses WhatsOnChain testnet coinbase-only BEEF from issue 348", func(t *testing.T) {
+		hash := hexToChainhash(wocTxid)
+		tx, err := NewTransactionFromBEEFHex(wocBeefHex)
+		require.NoError(t, err)
+		require.Equal(t, wocTxid, tx.TxID().String())
+		require.NotNil(t, tx.MerklePath)
+		requireSingleLeafRoot(t, tx.MerklePath, hash, wocBlockHeight)
+
+		beef, err := NewBeefFromHex(wocBeefHex)
+		require.NoError(t, err)
+		require.Len(t, beef.BUMPs, 1)
+		requireSingleLeafRoot(t, beef.BUMPs[0], hash, wocBlockHeight)
+	})
+
+	t.Run("rejects a txid that is not the single leaf", func(t *testing.T) {
+		mp, err := NewMerklePathFromCoinbaseTxid(hexToChainhash(issueHash), 1)
+		require.NoError(t, err)
+		_, err = mp.ComputeRoot(hexToChainhash(wocTxid))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not contain the txid")
+	})
+
+	t.Run("returns an error instead of panicking on an empty path", func(t *testing.T) {
+		_, err := (*MerklePath)(nil).ComputeRoot(nil)
+		require.Error(t, err)
+
+		empty := &MerklePath{BlockHeight: 1}
+		_, err = empty.ComputeRoot(nil)
+		require.Error(t, err)
+	})
+}
+
 func TestMerklePathSingleLevelCompound(t *testing.T) {
 	t.Parallel()
 
