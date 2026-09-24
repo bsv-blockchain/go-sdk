@@ -1068,39 +1068,122 @@ func TestScriptAppendPushDataArray(t *testing.T) {
 func TestScriptAppendBigInt(t *testing.T) {
 	t.Parallel()
 
+	// A value outside the OP_0/OP_1NEGATE/OP_1-OP_16 range is pushed as its
+	// minimally-encoded (little-endian, sign-in-top-bit) byte string: for
+	// 1234567890 (0x499602D2) the top bit of the top byte is already clear,
+	// so no extra sign byte is needed.
 	s := &script.Script{}
-
 	var bInt big.Int
 	bInt.SetInt64(1234567890)
-
 	err := s.AppendBigInt(bInt)
 	require.NoError(t, err)
+	require.Equal(t, "04d2029649", s.String())
 
-	// The script should contain the correct PUSHDATA prefix and data
-	data := bInt.Bytes()
-	dataLen := len(data)
-	expectedScriptBytes := append([]byte{byte(dataLen)}, data...) //nolint:gosec // G115 -- value is bounded by domain constraints
-	expectedScriptHex := hex.EncodeToString(expectedScriptBytes)
-	require.Equal(t, expectedScriptHex, s.String())
-
-	// Test with zero
+	// Zero is represented as OP_0 (0x00).
 	bInt.SetInt64(0)
 	s = &script.Script{}
 	err = s.AppendBigInt(bInt)
 	require.NoError(t, err)
-	// Zero should be represented as OP_0 (0x00)
 	require.Equal(t, "00", s.String())
 
-	// Test with a negative big.Int
+	// -1 is represented as OP_1NEGATE (0x4f).
+	bInt.SetInt64(-1)
+	s = &script.Script{}
+	err = s.AppendBigInt(bInt)
+	require.NoError(t, err)
+	require.Equal(t, "4f", s.String())
+
+	// 1..16 are represented as OP_1 (0x51) .. OP_16 (0x60).
+	for n := int64(1); n <= 16; n++ {
+		bInt.SetInt64(n)
+		s = &script.Script{}
+		err = s.AppendBigInt(bInt)
+		require.NoError(t, err)
+		require.Equal(t, hex.EncodeToString([]byte{byte(0x50 + n)}), s.String())
+	}
+
+	// A negative value whose magnitude's top bit is clear gets the sign bit
+	// set directly on the top byte rather than an extra byte: -123456
+	// (magnitude 0x01E240, little-endian 40 E2 01) becomes 40 E2 81.
 	bInt.SetInt64(-123456)
 	s = &script.Script{}
 	err = s.AppendBigInt(bInt)
 	require.NoError(t, err)
-	data = bInt.Bytes() // Negative numbers are represented in two's complement
-	dataLen = len(data)
-	expectedScriptBytes = append([]byte{byte(dataLen)}, data...) //nolint:gosec // G115 -- value is bounded by domain constraints
-	expectedScriptHex = hex.EncodeToString(expectedScriptBytes)
-	require.Equal(t, expectedScriptHex, s.String())
+	require.Equal(t, "0340e281", s.String())
+}
+
+func TestScriptFindAndDelete(t *testing.T) {
+	t.Parallel()
+
+	data := bytes.Repeat([]byte{0xab}, 76) // 76 bytes forces OP_PUSHDATA1 encoding
+
+	source := &script.Script{}
+	require.NoError(t, source.AppendPushData(data))
+	require.NoError(t, source.AppendPushData(data))
+	require.NoError(t, source.AppendOpcodes(script.Op1))
+
+	needle := &script.Script{}
+	require.NoError(t, needle.AppendPushData(data))
+
+	result, err := source.FindAndDelete(needle)
+	require.NoError(t, err)
+
+	chunks, err := result.Chunks()
+	require.NoError(t, err)
+	require.Len(t, chunks, 1)
+	require.Equal(t, script.Op1, chunks[0].Op)
+
+	// An empty needle deletes nothing and returns a copy of the source.
+	unchanged, err := source.FindAndDelete(&script.Script{})
+	require.NoError(t, err)
+	require.True(t, unchanged.Equals(source))
+}
+
+// TestScriptRemoveCodeSeparators mirrors ts-stack's Script.removeCodeseparators
+// test coverage: every OP_CODESEPARATOR is stripped, including one that
+// appears after an OP_RETURN (RemoveCodeSeparators must not use Chunks, whose
+// OP_RETURN handling would otherwise hide an OP_CODESEPARATOR inside that
+// chunk's absorbed data — see script_chunk_test.go's OP_RETURN coverage).
+func TestScriptRemoveCodeSeparators(t *testing.T) {
+	t.Parallel()
+
+	t.Run("strips a plain code separator", func(t *testing.T) {
+		s, err := script.NewFromHex("51ab52")
+		require.NoError(t, err)
+		stripped, err := s.RemoveCodeSeparators()
+		require.NoError(t, err)
+		require.Equal(t, "5152", stripped.String())
+	})
+
+	t.Run("strips every occurrence", func(t *testing.T) {
+		s, err := script.NewFromHex("ababab")
+		require.NoError(t, err)
+		stripped, err := s.RemoveCodeSeparators()
+		require.NoError(t, err)
+		require.Empty(t, stripped.Bytes())
+	})
+
+	t.Run("no code separator is a no-op", func(t *testing.T) {
+		s, err := script.NewFromHex("5152")
+		require.NoError(t, err)
+		stripped, err := s.RemoveCodeSeparators()
+		require.NoError(t, err)
+		require.Equal(t, s.String(), stripped.String())
+	})
+
+	// script_hex "6a53ac6365ab" (node.sighash.bitcoin-sv.0020's subscript):
+	// OP_RETURN OP_3 OP_CHECKSIG OP_IF OP_VER OP_CODESEPARATOR. Chunks/
+	// DecodeScript folds everything after OP_RETURN into one chunk's data,
+	// which would hide this OP_CODESEPARATOR from a Chunks-based
+	// implementation; ParseOps (used by RemoveCodeSeparators) parses every
+	// opcode uniformly, matching ts-stack's #removeOpcodeBytes.
+	t.Run("finds a code separator after OP_RETURN", func(t *testing.T) {
+		s, err := script.NewFromHex("6a53ac6365ab")
+		require.NoError(t, err)
+		stripped, err := s.RemoveCodeSeparators()
+		require.NoError(t, err)
+		require.Equal(t, "6a53ac6365", stripped.String())
+	})
 }
 
 func TestScriptAppendPushDataStrings(t *testing.T) {

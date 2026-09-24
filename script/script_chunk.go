@@ -259,7 +259,13 @@ func DecodeScript(b []byte, options ...DecodeOptions) ([]*ScriptChunk, error) {
 			if slices.Contains(options, DecodeOptionsParseOpReturn) || conditionalBlock > 0 {
 				b = b[1:]
 			} else {
-				op.Data = b
+				// Everything after the OP_RETURN opcode itself becomes this
+				// chunk's Data (matching ts-stack's Script.#parseChunks,
+				// whose OP_RETURN branch also captures bytes only from the
+				// position just past the opcode). NewScriptFromScriptOps
+				// re-adds the opcode byte on reconstruction, so including it
+				// here too would duplicate it.
+				op.Data = b[1:]
 				b = nil
 			}
 		case OpPUSHDATA1:

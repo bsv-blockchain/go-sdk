@@ -143,4 +143,38 @@ func TestDecodeScript(t *testing.T) {
 		require.Error(t, err)
 		require.Empty(t, decoded)
 	})
+
+	// OP_RETURN's chunk absorbs every byte that follows it into that one
+	// chunk's Data (matching ts-stack's Script.#parseChunks), so Data must
+	// start right after the opcode, not include it. Regression for a bug
+	// where DecodeScript captured the OP_RETURN byte itself as the first
+	// byte of Data, so NewScriptFromScriptOps duplicated it on rebuild.
+	t.Run("OP_RETURN chunk data excludes the opcode itself", func(t *testing.T) {
+		s, err := script.NewFromHex("6a5352")
+		require.NoError(t, err)
+
+		chunks, err := s.Chunks()
+		require.NoError(t, err)
+		require.Len(t, chunks, 1)
+		require.Equal(t, script.OpRETURN, chunks[0].Op)
+		require.Equal(t, []byte{0x53, 0x52}, chunks[0].Data)
+
+		rebuilt, err := script.NewScriptFromScriptOps(chunks)
+		require.NoError(t, err)
+		require.Equal(t, s.String(), rebuilt.String())
+	})
+
+	t.Run("OP_RETURN chunk with no trailing data round-trips", func(t *testing.T) {
+		s, err := script.NewFromHex("6a")
+		require.NoError(t, err)
+
+		chunks, err := s.Chunks()
+		require.NoError(t, err)
+		require.Len(t, chunks, 1)
+		require.Empty(t, chunks[0].Data)
+
+		rebuilt, err := script.NewScriptFromScriptOps(chunks)
+		require.NoError(t, err)
+		require.Equal(t, s.String(), rebuilt.String())
+	})
 }
