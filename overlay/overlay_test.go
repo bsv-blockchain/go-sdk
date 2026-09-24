@@ -1,10 +1,65 @@
 package overlay
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+// TestAdmittanceInstructionsWireShape locks in the lowercase/camelCase JSON
+// keys the TypeScript reference SDK's STEAK type expects
+// (outputsToAdmit/coinsToRetain/coinsRemoved). Without explicit struct tags,
+// Go's default field-name marshaling would emit PascalCase keys that a
+// strict TS client rejects as unexpected instruction fields.
+func TestAdmittanceInstructionsWireShape(t *testing.T) {
+	instructions := &AdmittanceInstructions{
+		OutputsToAdmit: []uint32{0, 2},
+		CoinsToRetain:  []uint32{1},
+		CoinsRemoved:   []uint32{3},
+	}
+
+	data, err := json.Marshal(instructions)
+	require.NoError(t, err)
+
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(data, &decoded))
+
+	require.Contains(t, decoded, "outputsToAdmit")
+	require.Contains(t, decoded, "coinsToRetain")
+	require.Contains(t, decoded, "coinsRemoved")
+	require.NotContains(t, decoded, "OutputsToAdmit")
+	require.NotContains(t, decoded, "CoinsToRetain")
+	require.NotContains(t, decoded, "CoinsRemoved")
+}
+
+// TestAdmittanceInstructionsOmitsOptionalFields confirms coinsRemoved and
+// ancillaryTxids (both optional/Go-only extensions) are omitted rather than
+// emitted as null when unset, keeping output minimal like the reference type.
+func TestAdmittanceInstructionsOmitsOptionalFields(t *testing.T) {
+	instructions := &AdmittanceInstructions{OutputsToAdmit: []uint32{0}}
+
+	data, err := json.Marshal(instructions)
+	require.NoError(t, err)
+
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(data, &decoded))
+
+	require.NotContains(t, decoded, "coinsRemoved")
+	require.NotContains(t, decoded, "ancillaryTxids")
+}
+
+// TestAdmittanceInstructionsDecodesLowercaseWire confirms decoding a real
+// STEAK response (lowercase keys, as an overlay server actually sends) still
+// populates the Go struct correctly.
+func TestAdmittanceInstructionsDecodesLowercaseWire(t *testing.T) {
+	var instructions AdmittanceInstructions
+	require.NoError(t, json.Unmarshal([]byte(`{"outputsToAdmit":[0,1],"coinsToRetain":[2],"coinsRemoved":[3]}`), &instructions))
+
+	require.Equal(t, []uint32{0, 1}, instructions.OutputsToAdmit)
+	require.Equal(t, []uint32{2}, instructions.CoinsToRetain)
+	require.Equal(t, []uint32{3}, instructions.CoinsRemoved)
+}
 
 func TestProtocolIDSHIP(t *testing.T) {
 	got := ProtocolSHIP.ID()
