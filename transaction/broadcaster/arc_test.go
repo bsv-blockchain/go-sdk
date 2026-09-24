@@ -38,7 +38,7 @@ func (m *MockArcSuccessClient) Do(req *http.Request) (*http.Response, error) {
 			"status":200,
 			"timestamp":"2023-01-01T00:00:00Z",
 			"title":"Broadcast Success",
-			"txStatus":"7",
+			"txStatus":"SEEN_ON_NETWORK",
 			"instance":"instance1",
 			"txid":"4d76b00f29e480e0a933cef9d9ffe303d6ab919e2cdb265dd2cea41089baa85a",
 			"detail":"detail info"
@@ -65,7 +65,9 @@ func TestArcBroadcast(t *testing.T) {
 	require.Nil(t, success, "Expected no success when client fails")
 	require.NotNil(t, failure, "Expected failure when client fails")
 	require.Equal(t, "500", failure.Code, "Failure code mismatch")
-	require.Equal(t, "Internal Server Error", failure.Description, "Failure description mismatch")
+	// ts-sdk's failedArcResponse defaults to "Unknown error" and never falls
+	// back to the response's "title" field when "detail" is absent/empty.
+	require.Equal(t, "Unknown error", failure.Description, "Failure description mismatch")
 
 	// Initialize Arc with a success client.
 	a.Client = &MockArcSuccessClient{}
@@ -75,5 +77,6 @@ func TestArcBroadcast(t *testing.T) {
 	require.NotNil(t, success, "Expected success when client succeeds")
 	require.Nil(t, failure, "Expected no failure when client succeeds")
 	require.Equal(t, tx.TxID().String(), success.Txid, "Txid mismatch")
-	require.Equal(t, "Broadcast Success", success.Message, "Message mismatch")
+	// ts-sdk: message: `${txStatus} ${extraInfo ?? ''}`.trim()
+	require.Equal(t, "SEEN_ON_NETWORK extra", success.Message, "Message mismatch")
 }
