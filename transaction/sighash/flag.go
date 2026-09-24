@@ -25,6 +25,13 @@ const (
 
 	ForkID Flag = 0x40
 
+	// Chronicle is the historical SIGHASH_CHRONICLE bit (bitcoin-sv's Chronicle
+	// upgrade). When set together with ForkID, ts-stack's reference SDK
+	// (TransactionSignature.formatBytes) treats it as forcing the legacy/OTDA
+	// preimage rather than BIP143 — see sighash.Flag's use in
+	// transaction/signaturehash.go's usesBip143Preimage.
+	Chronicle Flag = 0x20
+
 	// Mask defines the number of bits of the hash type which is used
 	// to identify which outputs are signed.
 	Mask = 0x1f

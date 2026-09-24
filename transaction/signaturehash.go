@@ -13,17 +13,20 @@ import (
 // defaultHex is used to fix a bug in the original client (see if statement in the CalcInputSignatureHash func)
 var defaultHex = []byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-type sigHashFunc func(inputIdx uint32, shf sighash.Flag) ([]byte, error)
-
-// sigStrat will decide which tx serialization to use.
-// The legacy serialization will be used for txs pre-fork
-// whereas the new serialization will be used for post-fork
-// txs (and they should include the sighash_forkid flag).
-func (tx *Transaction) sigStrat(shf sighash.Flag) sigHashFunc {
-	if shf.Has(sighash.ForkID) {
-		return tx.CalcInputPreimage
-	}
-	return tx.CalcInputPreimageLegacy
+// usesBip143Preimage mirrors ts-stack's TransactionSignature.formatBytes: the
+// BIP143 preimage is used only when SIGHASH_FORKID is set and the historical
+// SIGHASH_CHRONICLE bit (0x20) is not treated as set — either because it is
+// clear, or because ignoreChronicle is true, mirroring formatBytes'
+// ignoreChronicle parameter ("Supports running bitcoin-abc test vectors which
+// reuses the CHRONICLE bit"). Every other combination uses the legacy/OTDA
+// preimage, exactly as formatBytes does:
+//
+//	hasForkId && !hasChronicle -> bip143
+//	otherwise                  -> OTDA
+func usesBip143Preimage(shf sighash.Flag, ignoreChronicle bool) bool {
+	hasForkID := shf.Has(sighash.ForkID)
+	hasChronicle := !ignoreChronicle && shf.Has(sighash.Chronicle)
+	return hasForkID && !hasChronicle
 }
 
 // CalcInputSignatureHash serialized the transaction and returns the hash digest
@@ -32,8 +35,42 @@ func (tx *Transaction) sigStrat(shf sighash.Flag) sigHashFunc {
 //
 // see https://github.com/bitcoin-sv/bitcoin-sv/blob/master/doc/abc/replay-protected-sighash.md#digest-algorithm
 func (tx *Transaction) CalcInputSignatureHash(inputNumber uint32, sigHashFlag sighash.Flag) ([]byte, error) {
-	sigHashFn := tx.sigStrat(sigHashFlag)
-	buf, err := sigHashFn(inputNumber, sigHashFlag)
+	return tx.calcInputSignatureHash(inputNumber, uint32(sigHashFlag), false)
+}
+
+// CalcInputSignatureHashFull is CalcInputSignatureHash using the complete
+// original 32-bit sighash type ("nHashType") rather than sighash.Flag's
+// well-known low-byte combinations. It matches ts-stack's
+// TransactionSignature.format/formatBytes exactly: the trailing 4-byte
+// nHashType field of the preimage carries hashType verbatim (the historical
+// Satoshi-client behaviour ts-stack's reference SDK reproduces), while the
+// BIP143-vs-legacy decision and all other flag-driven branching still uses
+// only hashType's low byte (every relevant bit — the base ALL/NONE/SINGLE
+// mask, ForkID, Chronicle, and AnyOneCanPay — fits within it).
+//
+// ignoreChronicle mirrors TransactionSignature.formatBytes' ignoreChronicle
+// parameter: when true, the historical SIGHASH_CHRONICLE bit (0x20) is not
+// treated as forcing the legacy/OTDA preimage, matching ts-stack's handling
+// of bitcoin-abc-derived fixtures that reuse that bit for an unrelated
+// purpose.
+//
+// Every sighash.Flag combination is below 256, so
+// CalcInputSignatureHash(idx, flag) is exactly
+// CalcInputSignatureHashFull(idx, uint32(flag), false).
+func (tx *Transaction) CalcInputSignatureHashFull(inputNumber uint32, hashType uint32, ignoreChronicle bool) ([]byte, error) {
+	return tx.calcInputSignatureHash(inputNumber, hashType, ignoreChronicle)
+}
+
+func (tx *Transaction) calcInputSignatureHash(inputNumber uint32, hashType uint32, ignoreChronicle bool) ([]byte, error) {
+	flag := sighash.Flag(uint8(hashType)) //nolint:gosec // G115 -- intentional narrowing: only the low byte carries flag semantics, see CalcInputSignatureHashFull
+
+	var buf []byte
+	var err error
+	if usesBip143Preimage(flag, ignoreChronicle) {
+		buf, err = tx.preimage(inputNumber, hashType, nil)
+	} else {
+		buf, err = tx.calcInputPreimageLegacy(inputNumber, hashType)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +125,7 @@ func (tx *Transaction) NewSigHashCache() *SigHashCache {
 // returned digest is byte-identical to CalcInputSignatureHash for the same input
 // and flag; a nil cache is equivalent to CalcInputSignatureHash.
 func (tx *Transaction) CalcInputSignatureHashWithCache(inputNumber uint32, sigHashFlag sighash.Flag, cache *SigHashCache) ([]byte, error) {
-	if !sigHashFlag.Has(sighash.ForkID) {
+	if !usesBip143Preimage(sigHashFlag, false) {
 		return tx.CalcInputSignatureHash(inputNumber, sigHashFlag)
 	}
 
@@ -111,7 +148,7 @@ func (tx *Transaction) CalcInputSignatureHashWithCache(inputNumber uint32, sigHa
 //
 // see https://github.com/bitcoin-sv/bitcoin-sv/blob/master/doc/abc/replay-protected-sighash.md#digest-algorithm
 func (tx *Transaction) CalcInputPreimage(inputNumber uint32, sigHashFlag sighash.Flag) ([]byte, error) {
-	return tx.preimage(inputNumber, sigHashFlag, nil)
+	return tx.preimage(inputNumber, uint32(sigHashFlag), nil)
 }
 
 // CalcInputPreimageWithCache is CalcInputPreimage using pre-computed BIP143
@@ -119,14 +156,29 @@ func (tx *Transaction) CalcInputPreimage(inputNumber uint32, sigHashFlag sighash
 // The returned preimage is byte-identical to CalcInputPreimage for the same
 // input and flag.
 func (tx *Transaction) CalcInputPreimageWithCache(inputNumber uint32, sigHashFlag sighash.Flag, cache *SigHashCache) ([]byte, error) {
-	return tx.preimage(inputNumber, sigHashFlag, cache)
+	return tx.preimage(inputNumber, uint32(sigHashFlag), cache)
+}
+
+// CalcInputPreimageFull is CalcInputPreimage using the complete original
+// 32-bit sighash type ("nHashType") rather than sighash.Flag's well-known
+// low-byte combinations: the trailing 4-byte nHashType field of the preimage
+// carries hashType verbatim, matching ts-stack's TransactionSignature.formatBip143.
+// All other flag-driven branching still uses only hashType's low byte (see
+// CalcInputSignatureHashFull). Every sighash.Flag combination is below 256,
+// so CalcInputPreimage(idx, flag) is exactly
+// CalcInputPreimageFull(idx, uint32(flag)).
+func (tx *Transaction) CalcInputPreimageFull(inputNumber uint32, hashType uint32) ([]byte, error) {
+	return tx.preimage(inputNumber, hashType, nil)
 }
 
 // preimage builds the BIP143 sighash preimage for inputNumber. When cache is
 // non-nil its pre-computed midstate hashes are used; otherwise they are computed
 // on demand exactly as the flags require, so the nil path is identical in both
-// bytes and work to the historical implementation.
-func (tx *Transaction) preimage(inputNumber uint32, sigHashFlag sighash.Flag, cache *SigHashCache) ([]byte, error) {
+// bytes and work to the historical implementation. hashType is the full
+// 32-bit sighash type; only its low byte (as sighash.Flag) drives branching,
+// but the complete value is what gets written into the preimage trailer by
+// assemblePreimage.
+func (tx *Transaction) preimage(inputNumber uint32, hashType uint32, cache *SigHashCache) ([]byte, error) {
 	in := tx.InputIdx(int(inputNumber))
 	if in == nil {
 		return nil, ErrInputNoExist
@@ -137,6 +189,8 @@ func (tx *Transaction) preimage(inputNumber uint32, sigHashFlag sighash.Flag, ca
 	if in.SourceTxOutput() == nil {
 		return nil, ErrEmptyPreviousTx
 	}
+
+	sigHashFlag := sighash.Flag(uint8(hashType)) //nolint:gosec // G115 -- intentional narrowing; only the low byte carries flag semantics, see CalcInputSignatureHashFull
 
 	var zero [32]byte
 	hashPreviousOuts, hashSequence, hashOutputs := zero[:], zero[:], zero[:]
@@ -158,7 +212,7 @@ func (tx *Transaction) preimage(inputNumber uint32, sigHashFlag sighash.Flag, ca
 		hashOutputs = tx.OutputsHash(int32(inputNumber)) //nolint:gosec // G115 -- inputNumber is bounded by the number of transaction outputs (checked above)
 	}
 
-	return tx.assemblePreimage(in, sigHashFlag, hashPreviousOuts, hashSequence, hashOutputs), nil
+	return tx.assemblePreimage(in, hashType, hashPreviousOuts, hashSequence, hashOutputs), nil
 }
 
 // prevoutsMidstate returns the BIP143 hashPrevouts, reusing the cache when set.
@@ -190,8 +244,11 @@ func (tx *Transaction) outputsMidstate(cache *SigHashCache) []byte {
 // pre-sized buffer. hashPreviousOuts, hashSequence and hashOutputs must each be
 // 32 bytes. The byte layout is identical to the historical CalcInputPreimage;
 // the change is that the per-field scratch slices are gone and the buffer is
-// sized up front.
-func (tx *Transaction) assemblePreimage(in *TransactionInput, sigHashFlag sighash.Flag, hashPreviousOuts, hashSequence, hashOutputs []byte) []byte {
+// sized up front. hashType is written verbatim into the trailing 4-byte
+// nHashType field (see CalcInputPreimageFull); for Flag-based callers this is
+// always uint32(flag), so the trailer is byte-identical to the historical
+// implementation.
+func (tx *Transaction) assemblePreimage(in *TransactionInput, hashType uint32, hashPreviousOuts, hashSequence, hashOutputs []byte) []byte {
 	scriptCode := *in.SourceTxScript()
 
 	// 4 (version) + 32 (prevouts) + 32 (sequence) + 32 (outpoint txid) +
@@ -214,7 +271,7 @@ func (tx *Transaction) assemblePreimage(in *TransactionInput, sigHashFlag sighas
 	buf = binary.LittleEndian.AppendUint32(buf, in.SequenceNumber)
 	buf = append(buf, hashOutputs...)
 	buf = binary.LittleEndian.AppendUint32(buf, tx.LockTime)
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(sigHashFlag))
+	buf = binary.LittleEndian.AppendUint32(buf, hashType)
 
 	return buf
 }
@@ -224,6 +281,24 @@ func (tx *Transaction) assemblePreimage(in *TransactionInput, sigHashFlag sighas
 //
 // see https://wiki.bitcoinsv.io/index.php/Legacy_Sighash_Algorithm
 func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.Flag) ([]byte, error) {
+	return tx.calcInputPreimageLegacy(inputNumber, uint32(shf))
+}
+
+// CalcInputPreimageLegacyFull is CalcInputPreimageLegacy using the complete
+// original 32-bit sighash type ("nHashType") rather than sighash.Flag's
+// well-known low-byte combinations: the trailing 4-byte nHashType field of
+// the preimage carries hashType verbatim, matching ts-stack's
+// TransactionSignature.formatOTDA. All other flag-driven branching still
+// uses only hashType's low byte (see CalcInputSignatureHashFull). Every
+// sighash.Flag combination is below 256, so
+// CalcInputPreimageLegacy(idx, flag) is exactly
+// CalcInputPreimageLegacyFull(idx, uint32(flag)).
+func (tx *Transaction) CalcInputPreimageLegacyFull(inputNumber uint32, hashType uint32) ([]byte, error) {
+	return tx.calcInputPreimageLegacy(inputNumber, hashType)
+}
+
+func (tx *Transaction) calcInputPreimageLegacy(inputNumber uint32, hashType uint32) ([]byte, error) {
+	shf := sighash.Flag(uint8(hashType)) //nolint:gosec // G115 -- intentional narrowing; only the low byte carries flag semantics, see CalcInputSignatureHashFull
 	if tx.InputIdx(int(inputNumber)) == nil {
 		return nil, ErrInputNoExist
 	}
@@ -260,11 +335,25 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 		return defaultHex, nil
 	}
 
+	// ts-stack's TransactionSignature.formatOTDA unconditionally strips every
+	// OP_CODESEPARATOR from the signing input's subscript before serializing
+	// it (Script.removeCodeseparators()) — unlike formatBip143, which embeds
+	// the subscript as given. Mirror that here so the legacy/OTDA preimage
+	// matches byte-for-byte whenever the subscript contains a code separator.
+	subscript := in.SourceTxScript()
+	if subscript != nil {
+		stripped, err := subscript.RemoveCodeSeparators()
+		if err != nil {
+			return nil, err
+		}
+		subscript = stripped
+	}
+
 	txCopy := tx.ShallowClone()
 
 	for i := range txCopy.Inputs {
 		if i == int(inputNumber) {
-			txCopy.Inputs[i].sourceOutput = in.SourceTxOutput()
+			txCopy.Inputs[i].sourceOutput = &TransactionOutput{LockingScript: subscript}
 		} else {
 			txCopy.Inputs[i].UnlockingScript = &script.Script{}
 			txCopy.Inputs[i].sourceOutput = &TransactionOutput{}
@@ -338,7 +427,7 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 		buf = append(buf, *out.LockingScript...)
 	}
 	buf = binary.LittleEndian.AppendUint32(buf, tx.LockTime)
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(shf))
+	buf = binary.LittleEndian.AppendUint32(buf, hashType)
 	return buf, nil
 }
 
