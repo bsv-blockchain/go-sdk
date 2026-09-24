@@ -35,7 +35,7 @@ func main() {
 	mockCreateActionTxId, _ := chainhash.NewHashFromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	mux.HandleFunc("/createAction", func(w http.ResponseWriter, r *http.Request) {
 		var args wallet.CreateActionArgs
-		if err := json.NewDecoder(r.Body).Decode(&args); err != nil { //nolint:musttag // wallet.CreateActionArgs is defined in the wallet package, not owned here
+		if err := json.NewDecoder(r.Body).Decode(&args); err != nil {
 			http.Error(w, "Failed to decode request for createAction", http.StatusBadRequest)
 			return
 		}
