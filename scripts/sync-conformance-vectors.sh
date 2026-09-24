@@ -27,6 +27,14 @@ fi
 mkdir -p "${dst}"
 rsync -a --delete --exclude README.md --exclude .DS_Store "${src}/" "${dst}/"
 
+# Upstream files do not always end with a newline; the repo's pre-commit eof
+# check requires one.
+find "${dst}" -type f -name '*.json' -print0 | while IFS= read -r -d '' f; do
+	if [[ -s "${f}" && -n "$(tail -c1 "${f}")" ]]; then
+		printf '\n' >>"${f}"
+	fi
+done
+
 cat >"${repo_root}/internal/conformance/testdata/SOURCE.json" <<EOF
 {
   "repository": "https://github.com/bsv-blockchain/ts-stack",
