@@ -149,18 +149,44 @@ func (m *AuthMessage) MarshalJSON() ([]byte, error) {
 		formattedCerts = append(formattedCerts, &certCopy)
 	}
 
-	return json.Marshal(&struct { //nolint:musttag // embedded Alias promotes utils.RequestedCertificateSet, which is defined in auth/utils and not owned by this package
+	// certificateResponse must always carry "certificates" as an array (the TS
+	// reference validator rejects it otherwise), even when there are none to
+	// report. Every other message type keeps it optional, matching the TS
+	// wire shape where an unset Certificates field is omitted rather than
+	// sent as null or []. A *slice (instead of a plain slice with
+	// ",omitempty") is used because omitempty on a plain slice hides on
+	// length, not nil-ness, which would drop an intentional empty array.
+	var certsOut *[]*certificates.VerifiableCertificate
+	if m.Certificates != nil || m.MessageType == MessageTypeCertificateResponse {
+		certsOut = &formattedCerts
+	}
+
+	// A "general" message must always carry "payload" as an array, even an
+	// empty one (an empty payload is a valid message body). Other message
+	// types keep payload optional and omitted when unset. As with
+	// Certificates above, a *wallet.BytesList is used so omitempty keys off
+	// nil-ness rather than length.
+	var payloadOut *wallet.BytesList
+	if m.Payload != nil || m.MessageType == MessageTypeGeneral {
+		payload := wallet.BytesList(m.Payload)
+		if payload == nil {
+			payload = wallet.BytesList{}
+		}
+		payloadOut = &payload
+	}
+
+	return json.Marshal(&struct {
 		*Alias
 
-		IdentityKey  string                                `json:"identityKey"`
-		Certificates []*certificates.VerifiableCertificate `json:"certificates,omitempty"`
-		Payload      wallet.BytesList                      `json:"payload,omitempty"`
-		Signature    wallet.BytesList                      `json:"signature,omitempty"`
+		IdentityKey  string                                 `json:"identityKey"`
+		Certificates *[]*certificates.VerifiableCertificate `json:"certificates,omitempty"`
+		Payload      *wallet.BytesList                      `json:"payload,omitempty"`
+		Signature    wallet.BytesList                       `json:"signature,omitempty"`
 	}{
 		Alias:        (*Alias)(m),
 		IdentityKey:  m.IdentityKey.ToDERHex(),
-		Certificates: formattedCerts,
-		Payload:      m.Payload,
+		Certificates: certsOut,
+		Payload:      payloadOut,
 		Signature:    m.Signature,
 	})
 }
@@ -180,7 +206,7 @@ func (m *AuthMessage) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(m),
 	}
 
-	if err := json.Unmarshal(data, &aux); err != nil { //nolint:musttag // embedded Alias promotes utils.RequestedCertificateSet, which is defined in auth/utils and not owned by this package
+	if err := json.Unmarshal(data, &aux); err != nil {
 		return fmt.Errorf("error unmarshaling AuthMessage: %w", err)
 	}
 

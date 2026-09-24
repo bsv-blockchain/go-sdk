@@ -27,13 +27,30 @@ type DefaultSessionManager struct {
 
 	// Maps identityKey -> Set of sessionNonces
 	identityKeyToNonces map[string]map[string]struct{}
+
+	// nonceClaims backs the BRC-103 replay protection (NonceClaimer) methods
+	// below.
+	nonceClaims *nonceClaims
 }
 
 // NewSessionManager creates a new session manager
 func NewSessionManager() *DefaultSessionManager {
 	return &DefaultSessionManager{
 		identityKeyToNonces: make(map[string]map[string]struct{}),
+		nonceClaims:         newNonceClaims(),
 	}
+}
+
+// ClaimMessageNonce implements NonceClaimer, atomically marking messageNonce
+// as consumed for the session identified by sessionNonce.
+func (sm *DefaultSessionManager) ClaimMessageNonce(sessionNonce, messageNonce string) bool {
+	return sm.nonceClaims.ClaimMessageNonce(sessionNonce, messageNonce)
+}
+
+// ClaimInitialRequestNonce implements NonceClaimer, atomically marking
+// initialNonce as consumed for the (unsigned) claimed identityKey.
+func (sm *DefaultSessionManager) ClaimInitialRequestNonce(identityKey, initialNonce string) bool {
+	return sm.nonceClaims.ClaimInitialRequestNonce(identityKey, initialNonce)
 }
 
 // AddSession adds a session to the manager, associating it with its sessionNonce,
@@ -123,6 +140,7 @@ func (sm *DefaultSessionManager) GetSession(identifier string) (*PeerSession, er
 func (sm *DefaultSessionManager) RemoveSession(session *PeerSession) {
 	if session.SessionNonce != "" {
 		sm.sessionNonceToSession.Delete(session.SessionNonce)
+		sm.nonceClaims.forgetSession(session.SessionNonce)
 	}
 
 	if session.PeerIdentityKey != nil {

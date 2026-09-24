@@ -21,6 +21,10 @@ import (
 var (
 	ErrAlreadySigned = errors.New("certificate has already been signed")
 	ErrNotSigned     = errors.New("certificate is not signed")
+
+	// ErrInvalidSignature is returned by Verify when the certificate's
+	// signature fails cryptographic verification.
+	ErrInvalidSignature = errors.New("certificate signature is not valid")
 )
 
 // Certificate represents an Identity Certificate as per the Wallet interface specifications.
@@ -186,11 +190,14 @@ func (c *Certificate) Verify(ctx context.Context) error {
 
 	verifyResult, err := verifier.VerifySignature(ctx, verifyArgs, "")
 	if err != nil {
+		if errors.Is(err, wallet.ErrInvalidSignature) {
+			return ErrInvalidSignature
+		}
 		return fmt.Errorf("signature verification failed: %w", err)
 	}
 
 	if !verifyResult.Valid {
-		return fmt.Errorf("invalid signature")
+		return ErrInvalidSignature
 	}
 
 	return nil
