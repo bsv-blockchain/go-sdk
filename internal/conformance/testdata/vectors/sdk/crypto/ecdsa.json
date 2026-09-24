@@ -1,0 +1,367 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.ecdsa",
+  "name": "ECDSA sign / verify",
+  "brc": ["BRC-42"],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.x (ECDSA)",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "ecdsa-001",
+      "description": "Sign and verify with deterministic DRBG k — key 0x1e5edd45, message 0xdeadbeef",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg"
+      },
+      "expected": {
+        "verify": true,
+        "der_length_bytes": 71,
+        "note": "DER length asserted in ECDSA.test.ts line 25: encoded.length === 71"
+      },
+      "tags": ["sign", "verify", "drbg"]
+    },
+    {
+      "id": "ecdsa-002",
+      "description": "Sign with custom k=1358 and verify — same key and message",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "0x054e"
+      },
+      "expected": {
+        "verify": true,
+        "note": "Asserted in ECDSA.test.ts: ECDSA.sign(msg, key, undefined, new BigNumber(1358)) verifies true"
+      },
+      "tags": ["sign", "verify", "custom-k"]
+    },
+    {
+      "id": "ecdsa-003",
+      "description": "Verify fails for wrong message — same key and signature",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "signed_message_hex": "deadbeef",
+        "verify_message_hex": "ba5aabbe1aa9b6ec1e2adb2df99699344345678901234567890abcdefabcdef02",
+        "k": "drbg"
+      },
+      "expected": {
+        "verify": false,
+        "note": "Asserted in ECDSA.test.ts: verify(wrongMessage, signature, pub) === false"
+      },
+      "tags": ["verify", "negative"]
+    },
+    {
+      "id": "ecdsa-004",
+      "description": "Verify fails for wrong public key — message and signature correct but pubkey mismatched",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "wrong_pubkey_scalar": "33",
+        "k": "drbg"
+      },
+      "expected": {
+        "verify": false,
+        "note": "Asserted in ECDSA.test.ts: verify(msg, signature, wrongPub) is falsy; wrongPub = curve.g.mul(new BigNumber(33))"
+      },
+      "tags": ["verify", "negative"]
+    },
+    {
+      "id": "ecdsa-005",
+      "description": "forceLowS — signature s value must be <= n/2",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "force_low_s": true,
+        "k": "drbg"
+      },
+      "expected": {
+        "s_lte_half_n": true,
+        "verify": true,
+        "note": "Asserted in ECDSA.test.ts: sign.s.cmp(curve.n.ushrn(1)) <= 0 is truthy"
+      },
+      "tags": ["sign", "low-s", "normalization"]
+    },
+    {
+      "id": "ecdsa-006",
+      "description": "k=1 is valid — boundary case",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "0x01"
+      },
+      "expected": {
+        "verify": true,
+        "note": "Asserted in ECDSA.test.ts: k=1 produces valid signature"
+      },
+      "tags": ["sign", "boundary", "custom-k"]
+    },
+    {
+      "id": "ecdsa-007",
+      "description": "k=n-1 is valid — boundary case",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140"
+      },
+      "expected": {
+        "verify": true,
+        "note": "Asserted in ECDSA.test.ts: k=n-1 produces valid signature"
+      },
+      "tags": ["sign", "boundary", "custom-k"]
+    },
+    {
+      "id": "ecdsa-008",
+      "description": "k=0 throws — invalid k below range",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "0x00"
+      },
+      "expected": {
+        "throws": true,
+        "note": "Asserted in ECDSA.test.ts: k=0 must throw"
+      },
+      "tags": ["sign", "negative", "boundary"]
+    },
+    {
+      "id": "ecdsa-009",
+      "description": "k=n throws — invalid k equal to order",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"
+      },
+      "expected": {
+        "throws": true,
+        "note": "Asserted in ECDSA.test.ts: k=n must throw (k > n-1)"
+      },
+      "tags": ["sign", "negative", "boundary"]
+    },
+    {
+      "id": "ecdsa-010",
+      "description": "DER hex encoding — signature encodes to 142 hex chars (71 bytes)",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg",
+        "encoding": "hex"
+      },
+      "expected": {
+        "der_hex_length_chars": 142,
+        "roundtrip_r_s_equal": true,
+        "note": "Asserted in ECDSA.test.ts: signature.toDER('hex').length === 142; fromDER round-trip r/s equal"
+      },
+      "tags": ["sign", "der", "encoding"]
+    },
+    {
+      "id": "ecdsa-011",
+      "description": "k·G + (−k·G) = point at infinity (TOB-25 negation identity)",
+      "input": {
+        "k_hex": "0123456789abcdef",
+        "operation": "point_add_negation"
+      },
+      "expected": {
+        "is_infinity": true,
+        "note": "ECDSA.test.ts TOB-25: curve.g.mul(k).add(curve.g.mul(k).neg()).isInfinity() === true"
+      },
+      "tags": ["curve", "infinity", "tob-25"]
+    },
+    {
+      "id": "ecdsa-012",
+      "description": "Scalar multiplication by zero returns point at infinity (TOB-25)",
+      "input": {
+        "k_hex": "00",
+        "operation": "scalar_mul_zero"
+      },
+      "expected": {
+        "is_infinity": true,
+        "note": "ECDSA.test.ts TOB-25: curve.g.mul(new BigNumber(0)).isInfinity() === true"
+      },
+      "tags": ["curve", "infinity", "tob-25"]
+    },
+    {
+      "id": "ecdsa-013",
+      "description": "ECDSA verify rejects point-at-infinity public key (TOB-25)",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "pubkey": "infinity"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid public key",
+        "note": "ECDSA.test.ts TOB-25: verify with Point(null, null) throws 'Invalid public key'"
+      },
+      "tags": ["verify", "negative", "tob-25"]
+    },
+    {
+      "id": "ecdsa-014",
+      "description": "Sign/verify with large private key near curve order (mulCT stress)",
+      "input": {
+        "privkey_hex": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036413f",
+        "message_hex": "deadbeef",
+        "k": "drbg"
+      },
+      "expected": {
+        "verify": true,
+        "note": "ECDSA.test.ts mulCT stress: large key near n-2 signs and verifies correctly"
+      },
+      "tags": ["sign", "verify", "stress", "boundary"]
+    },
+    {
+      "id": "ecdsa-015",
+      "description": "Signing a message larger than curve order bit length throws (TOB-22)",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_too_large": true,
+        "message_bits": 258
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "message is too large",
+        "note": "ECDSA.test.ts TOB-22: BigNumber(1).iushln(n.bitLength()+1) causes sign() to throw /message is too large/i"
+      },
+      "tags": ["sign", "negative", "tob-22"]
+    },
+    {
+      "id": "ecdsa-016",
+      "description": "verify returns false when signature r=0",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "signature_r": "00",
+        "signature_s": "01"
+      },
+      "expected": {
+        "verify": false,
+        "note": "ECDSA.additional.test.ts: Signature(r=0, s=1) → verify returns false"
+      },
+      "tags": ["verify", "negative", "out-of-range"]
+    },
+    {
+      "id": "ecdsa-017",
+      "description": "verify returns false when signature s=0",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "signature_r": "01",
+        "signature_s": "00"
+      },
+      "expected": {
+        "verify": false,
+        "note": "ECDSA.additional.test.ts: Signature(r=1, s=0) → verify returns false"
+      },
+      "tags": ["verify", "negative", "out-of-range"]
+    },
+    {
+      "id": "ecdsa-018",
+      "description": "verify returns false when r >= n",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "signature_r": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+        "signature_s": "01"
+      },
+      "expected": {
+        "verify": false,
+        "note": "ECDSA.additional.test.ts: r == n → verify returns false"
+      },
+      "tags": ["verify", "negative", "out-of-range"]
+    },
+    {
+      "id": "ecdsa-019",
+      "description": "verify returns false when s >= n",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "signature_r": "01",
+        "signature_s": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"
+      },
+      "expected": {
+        "verify": false,
+        "note": "ECDSA.additional.test.ts: s == n → verify returns false"
+      },
+      "tags": ["verify", "negative", "out-of-range"]
+    },
+    {
+      "id": "ecdsa-020",
+      "description": "verify returns false for message larger than curve order (TOB-22 verify path)",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_too_large": true,
+        "message_bits": 258,
+        "use_valid_signature": true
+      },
+      "expected": {
+        "verify": false,
+        "note": "ECDSA.test.ts TOB-22: verify(oversizedMsg, validSig, pub) === false"
+      },
+      "tags": ["verify", "negative", "tob-22"]
+    },
+    {
+      "id": "ecdsa-021",
+      "description": "msg = n-1 (truncateToN boundary) — sign and verify succeeds",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
+        "k": "drbg"
+      },
+      "expected": {
+        "verify": true,
+        "note": "ECDSA.additional.test.ts truncateToN: msg = n-1 signs and verifies correctly"
+      },
+      "tags": ["sign", "verify", "boundary", "truncateToN"]
+    },
+    {
+      "id": "ecdsa-022",
+      "description": "forceLowS across multiple messages — all s <= n/2",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "messages": [
+          "deadbeef",
+          "01deadbeef",
+          "02deadbeef",
+          "03deadbeef",
+          "04deadbeef"
+        ],
+        "force_low_s": true
+      },
+      "expected": {
+        "all_s_lte_half_n": true,
+        "note": "ECDSA.additional.test.ts forceLowS: for i in 1..10, all s <= n/2"
+      },
+      "tags": ["sign", "low-s", "normalization", "batch"]
+    },
+    {
+      "id": "ecdsa-023",
+      "description": "customK as function — accepts callable that returns BigNumber",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k_function": "returns_1358"
+      },
+      "expected": {
+        "verify": true,
+        "k_function_called": true,
+        "note": "ECDSA.additional.test.ts: customK as function called at least once; result verifies"
+      },
+      "tags": ["sign", "verify", "custom-k", "function-k"]
+    },
+    {
+      "id": "ecdsa-024",
+      "description": "customK function returning invalid k on first iteration retries",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k_function": "returns_invalid_then_1358"
+      },
+      "expected": {
+        "verify": true,
+        "k_function_called_at_least": 2,
+        "note": "ECDSA.additional.test.ts iterative k: k=0 on iter 0, k=1358 on iter 1; callCount >= 2"
+      },
+      "tags": ["sign", "verify", "custom-k", "function-k", "retry"]
+    }
+  ]
+}

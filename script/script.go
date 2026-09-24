@@ -103,8 +103,55 @@ func (s *Script) AppendPushDataArray(d [][]byte) error {
 	return nil
 }
 
+// AppendBigInt appends the minimal script-number encoding of bInt, matching
+// Bitcoin's script number push convention: zero becomes OP_0, -1 becomes
+// OP_1NEGATE, 1..16 become OP_1..OP_16, and any other value is pushed as its
+// minimally-encoded (little-endian, sign-and-magnitude) byte string.
 func (s *Script) AppendBigInt(bInt big.Int) error {
-	return s.AppendPushData(bInt.Bytes())
+	switch {
+	case bInt.Sign() == 0:
+		return s.AppendOpcodes(Op0)
+	case bInt.Cmp(big.NewInt(-1)) == 0:
+		return s.AppendOpcodes(Op1NEGATE)
+	case bInt.Sign() > 0 && bInt.Cmp(big.NewInt(16)) <= 0:
+		return s.AppendOpcodes(Op1 + byte(bInt.Int64()-1)) //nolint:gosec // G115 -- bInt is checked to be in [1,16] above
+	default:
+		return s.AppendPushData(minimalScriptNumBytes(&bInt))
+	}
+}
+
+// minimalScriptNumBytes serializes n as a minimally-encoded script number:
+// little-endian magnitude bytes with the sign carried in the top bit of the
+// last byte (adding a zero/0x80 byte first if that bit would otherwise
+// collide with a real magnitude bit). This is the standard CScriptNum
+// encoding used for numeric pushes outside the OP_0/OP_1NEGATE/OP_1-OP_16
+// range handled directly by AppendBigInt.
+func minimalScriptNumBytes(n *big.Int) []byte {
+	if n.Sign() == 0 {
+		return nil
+	}
+
+	neg := n.Sign() < 0
+	abs := new(big.Int).Abs(n)
+
+	var result []byte
+	byteMask := big.NewInt(0xff)
+	for abs.Sign() != 0 {
+		result = append(result, byte(new(big.Int).And(abs, byteMask).Int64())) //nolint:gosec // G115 -- masked to 0xff above
+		abs.Rsh(abs, 8)
+	}
+
+	if result[len(result)-1]&0x80 != 0 {
+		if neg {
+			result = append(result, 0x80)
+		} else {
+			result = append(result, 0x00)
+		}
+	} else if neg {
+		result[len(result)-1] |= 0x80
+	}
+
+	return result
 }
 
 // AppendPushDataStrings takes an array of strings and appends their
@@ -347,6 +394,68 @@ func MinPushSize(bb []byte) int {
 // Chunks extracts the decoded chunks from the script.
 func (s *Script) Chunks() ([]*ScriptChunk, error) {
 	return DecodeScript([]byte(*s))
+}
+
+// FindAndDelete returns a copy of the script with every chunk removed whose
+// entire serialised bytes (opcode plus any push-data prefix and data) match
+// needle's bytes exactly. This mirrors Bitcoin's historical FindAndDelete
+// operation, used to strip an exact byte sequence such as a signature out of
+// a subscript.
+func (s *Script) FindAndDelete(needle *Script) (*Script, error) {
+	targetBytes := needle.Bytes()
+	if len(targetBytes) == 0 {
+		cp := make(Script, len(*s))
+		copy(cp, *s)
+		return &cp, nil
+	}
+
+	chunks, err := s.Chunks()
+	if err != nil {
+		return nil, err
+	}
+
+	kept := make([]*ScriptChunk, 0, len(chunks))
+	for _, c := range chunks {
+		chunkScript, err := NewScriptFromScriptOps([]*ScriptChunk{c})
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Equal(chunkScript.Bytes(), targetBytes) {
+			kept = append(kept, c)
+		}
+	}
+
+	return NewScriptFromScriptOps(kept)
+}
+
+// RemoveCodeSeparators returns a copy of the script with every OP_CODESEPARATOR
+// opcode removed, matching ts-stack's Script.removeCodeseparators. This is used
+// to prepare a subscript for the legacy/OTDA signature-hash preimage (see
+// transaction/signaturehash.go's CalcInputPreimageLegacy), which ts-stack's
+// TransactionSignature.formatOTDA applies unconditionally before serializing
+// the subscript.
+//
+// This walks the script with ParseOps (which, like ts-stack's
+// removeCodeseparators/#removeOpcodeBytes, parses every opcode uniformly,
+// including whatever follows an OP_RETURN) rather than Chunks/DecodeScript
+// (which, like ts-stack's own chunks getter/#parseChunks, folds everything
+// after an OP_RETURN into that one chunk's data). Using Chunks here would
+// miss an OP_CODESEPARATOR occurring after an OP_RETURN in the same script.
+func (s *Script) RemoveCodeSeparators() (*Script, error) {
+	chunks, err := s.ParseOps()
+	if err != nil {
+		return nil, err
+	}
+
+	kept := make([]*ScriptChunk, 0, len(chunks))
+	for _, c := range chunks {
+		if c.Op == OpCODESEPARATOR {
+			continue
+		}
+		kept = append(kept, c)
+	}
+
+	return NewScriptFromScriptOps(kept)
 }
 
 // Address extracts the address from a P2PKH script.

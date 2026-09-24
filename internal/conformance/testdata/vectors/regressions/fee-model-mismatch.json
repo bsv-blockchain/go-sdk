@@ -1,0 +1,59 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "transactions",
+  "description": "The fee calculation formula must match the BSV node (CFeeRate::GetFee): fee = floor(size_bytes * satoshis_per_kb / 1000), with a minimum of 1 satoshi for any non-zero size when the rate is positive. The go-sdk pre-fix used ceil(size/1000) * rate, which over-estimates fees for sizes that are not exact multiples of 1000. The ts-sdk uses ceil(size/1000 * rate) which is also not identical to node but closer.",
+  "regression": {
+    "issue": "go-sdk#267",
+    "fixed_in": { "go": "v1.2.12" },
+    "symptom": "go-sdk computed higher fees than the BSV node for transactions between 1001-1999 bytes at 1 sat/KB rate, causing ARC to reject transactions as over-paying or compute incorrect change",
+    "root_cause": "go-sdk used ceil(size/1000) * rate_per_kb; node uses floor(size * rate_per_kb / 1000) — these differ whenever size is not a multiple of 1000"
+  },
+  "vectors": [
+    {
+      "id": "regression.transactions.fee-model-mismatch.0001",
+      "description": "1001 bytes at 1 sat/KB: node expects 1 sat, go-sdk pre-fix computed 2",
+      "parity_class": "required",
+      "input": {
+        "operation": "compute_fee",
+        "size_bytes": 1001,
+        "satoshis_per_kb": 1
+      },
+      "expected": {
+        "fee_satoshis": 1,
+        "formula": "floor(1001 * 1 / 1000) = floor(1.001) = 1"
+      },
+      "notes": "BSV node formula: nSize * nSatoshisPerK / 1000 (integer division). Pre-fix go-sdk: ceil(1001/1000)*1 = 2. Difference of 1 sat per transaction in the 1001–1999 byte range."
+    },
+    {
+      "id": "regression.transactions.fee-model-mismatch.0002",
+      "description": "999 bytes at 1 sat/KB: minimum fee is 1 satoshi for any nonzero transaction",
+      "parity_class": "required",
+      "input": {
+        "operation": "compute_fee",
+        "size_bytes": 999,
+        "satoshis_per_kb": 1
+      },
+      "expected": {
+        "fee_satoshis": 1,
+        "formula": "floor(999 * 1 / 1000) = 0, but minimum is 1 for nonzero size with positive rate"
+      },
+      "notes": "Node applies minimum-1 rule: if computed fee == 0 and size != 0 and rate > 0, return 1. Both go-sdk and ts-sdk must apply this floor."
+    },
+    {
+      "id": "regression.transactions.fee-model-mismatch.0003",
+      "description": "2000 bytes at 1 sat/KB: both formulas agree at exact multiples of 1000",
+      "parity_class": "required",
+      "input": {
+        "operation": "compute_fee",
+        "size_bytes": 2000,
+        "satoshis_per_kb": 1
+      },
+      "expected": {
+        "fee_satoshis": 2,
+        "formula": "floor(2000 * 1 / 1000) = 2"
+      },
+      "notes": "At exact multiples of 1000 bytes, floor and ceil agree. Regression guard: the fix must not change output for these cases."
+    }
+  ]
+}

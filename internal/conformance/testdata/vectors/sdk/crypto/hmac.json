@@ -1,0 +1,154 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.hmac",
+  "name": "HMAC-SHA256 and HMAC-SHA512",
+  "brc": [],
+  "version": "1.0.0",
+  "reference_impl": "ts-sdk@2.0.14",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sdk.crypto.hmac.1",
+      "description": "HMAC-SHA256 NIST vector 1: key length equals block length (64 bytes)",
+      "input": {
+        "algorithm": "hmac-sha256",
+        "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+        "key_encoding": "hex",
+        "message": "Sample message for keylen=blocklen",
+        "message_encoding": "utf8"
+      },
+      "expected": { "hmac": "8bb9a1db9806f20df7f77b82138c7914d174d59e13dc4d0169c9057b133e1d62" },
+      "tags": ["happy-path", "nist"]
+    },
+    {
+      "id": "sdk.crypto.hmac.2",
+      "description": "HMAC-SHA256 NIST vector 2: key length less than block length (32 bytes)",
+      "input": {
+        "algorithm": "hmac-sha256",
+        "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "key_encoding": "hex",
+        "message": "Sample message for keylen<blocklen",
+        "message_encoding": "utf8"
+      },
+      "expected": { "hmac": "a28cf43130ee696a98f14a37678b56bcfcbdd9e5cf69717fecf5480f0ebdf790" },
+      "tags": ["happy-path", "nist"]
+    },
+    {
+      "id": "sdk.crypto.hmac.3",
+      "description": "HMAC-SHA256 NIST vector 3: key length greater than block length (100 bytes, key is hashed)",
+      "input": {
+        "algorithm": "hmac-sha256",
+        "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f60616263",
+        "key_encoding": "hex",
+        "message": "Sample message for keylen=blocklen",
+        "message_encoding": "utf8"
+      },
+      "expected": { "hmac": "bdccb6c72ddeadb500ae768386cb38cc41c63dbb0878ddb9c7a38a431b78378d" },
+      "tags": ["happy-path", "nist"]
+    },
+    {
+      "id": "sdk.crypto.hmac.4",
+      "description": "HMAC-SHA256 NIST vector 4: key length less than block length with truncated tag (49 bytes)",
+      "input": {
+        "algorithm": "hmac-sha256",
+        "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f30",
+        "key_encoding": "hex",
+        "message": "Sample message for keylen<blocklen, with truncated tag",
+        "message_encoding": "utf8"
+      },
+      "expected": { "hmac": "27a8b157839efeac98df070b331d593618ddb985d403c0c786d23b5d132e57c7" },
+      "tags": ["happy-path", "nist"]
+    },
+    {
+      "id": "sdk.crypto.hmac.5",
+      "description": "HMAC-SHA256 regression vector: hex-encoded key and hex-encoded message",
+      "input": {
+        "algorithm": "hmac-sha256",
+        "key": "48f38d0c6a344959cc94502b7b5e8dffb6a5f41795d9066fc9a649557167ee2f",
+        "key_encoding": "hex",
+        "message": "1d495eef7761b65dccd0a983d2d7204fea28b5c81f1758046e062eb043755ea1",
+        "message_encoding": "hex"
+      },
+      "expected": { "hmac": "cf5ad5984f9e43917aa9087380dac46e410ddc8a7731859c84e9d0f31bd43655" },
+      "tags": ["happy-path", "regression"]
+    },
+    {
+      "id": "sdk.crypto.hmac.6",
+      "description": "HMAC-SHA512 RFC 4231 Test Case 1: 20-byte key, 8-byte message 'Hi There'",
+      "input": {
+        "algorithm": "hmac-sha512",
+        "key": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+        "key_encoding": "hex",
+        "message": "4869205468657265",
+        "message_encoding": "hex"
+      },
+      "expected": { "hmac": "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854" },
+      "tags": ["happy-path", "rfc4231"]
+    },
+    {
+      "id": "sdk.crypto.hmac.7",
+      "description": "HMAC-SHA512 RFC 4231 Test Case 2: key='Jefe', message='what do ya want for nothing?'",
+      "input": {
+        "algorithm": "hmac-sha512",
+        "key": "4a656665",
+        "key_encoding": "hex",
+        "message": "7768617420646f2079612077616e7420666f72206e6f7468696e673f",
+        "message_encoding": "hex"
+      },
+      "expected": { "hmac": "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a6b4b636e070a38bce737" },
+      "tags": ["happy-path", "rfc4231"]
+    },
+    {
+      "id": "sdk.crypto.hmac.8",
+      "description": "HMAC-SHA512 RFC 4231 Test Case 3: 20-byte 0xaa key, 50-byte 0xdd message",
+      "input": {
+        "algorithm": "hmac-sha512",
+        "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "key_encoding": "hex",
+        "message": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "message_encoding": "hex"
+      },
+      "expected": { "hmac": "fa73b0089d56a284efb0f0756c890be9b1b5dbdd8ee81a3655f83e33b2279d39bf3e848279a722c806b485a47e67c807b946a337bee8942674278859e13292fb" },
+      "tags": ["happy-path", "rfc4231"]
+    },
+    {
+      "id": "sdk.crypto.hmac.9",
+      "description": "HMAC-SHA512 RFC 4231 Test Case 4: key longer than block size (131 bytes)",
+      "input": {
+        "algorithm": "hmac-sha512",
+        "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "key_encoding": "hex",
+        "message": "54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374",
+        "message_encoding": "hex"
+      },
+      "expected": { "hmac": "80b24263c7c1a3ebb71493c1dd7be8b49b46d1f41b4aeec1121b013783f8f3526b56d037e05f2598bd0fd2215d6a1e5295e64f73f63f0aec8b915a985d786598" },
+      "tags": ["happy-path", "rfc4231"]
+    },
+    {
+      "id": "sdk.crypto.hmac.10",
+      "description": "HMAC-SHA256 with UTF-8 key 'key' and 'The quick brown fox jumps over the lazy dog'",
+      "input": {
+        "algorithm": "hmac-sha256",
+        "key": "6b6579",
+        "key_encoding": "hex",
+        "message": "The quick brown fox jumps over the lazy dog",
+        "message_encoding": "utf8"
+      },
+      "expected": { "hmac": "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.hmac.11",
+      "description": "HMAC-SHA256 with UTF-8 key 'secret' and message 'Hello World'",
+      "input": {
+        "algorithm": "hmac-sha256",
+        "key": "736563726574",
+        "key_encoding": "hex",
+        "message": "Hello World",
+        "message_encoding": "utf8"
+      },
+      "expected": { "hmac": "82ce0d2f821fa0ce5447b21306f214c99240fecc6387779d7515148bbdd0c415" },
+      "tags": ["happy-path"]
+    }
+  ]
+}

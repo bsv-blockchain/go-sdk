@@ -66,6 +66,9 @@ type Peer struct {
 	// message handlers; atomic so concurrent requests on one peer do not race.
 	lastInteractedWithPeer atomic.Pointer[ec.PublicKey]
 	logger                 *slog.Logger // Logger for debug messages
+	// nonceClaimer backs BRC-103 replay protection: the SessionManager when it
+	// implements NonceClaimer, otherwise a Peer-owned bounded in-memory cache.
+	nonceClaimer NonceClaimer
 }
 
 // PeerOptions contains configuration options for creating a new Peer instance.
@@ -99,6 +102,14 @@ func NewPeer(cfg *PeerOptions) *Peer {
 
 	if peer.sessionManager == nil {
 		peer.sessionManager = NewSessionManager()
+	}
+
+	if nc, ok := peer.sessionManager.(NonceClaimer); ok {
+		peer.nonceClaimer = nc
+	} else {
+		// A custom SessionManager written before NonceClaimer existed still gets
+		// replay protection, scoped to this Peer and bounded by session count.
+		peer.nonceClaimer = newBoundedNonceClaims(defaultMaxFallbackNonceSessions)
 	}
 
 	if cfg.AutoPersistLastSession == nil || *cfg.AutoPersistLastSession {
@@ -400,6 +411,54 @@ func (p *Peer) initiateHandshake(ctx context.Context, peerIdentityKey *ec.Public
 	}
 }
 
+// classifyVerifySignatureFailure turns a failed wallet.VerifySignature call
+// into ErrInvalidSignature when the wallet reports the signature itself was
+// invalid, and otherwise returns the failure unchanged so callers can still
+// tell a genuinely bad signature apart from an internal/wallet error (a
+// missing key, a transport failure, etc). A wallet may report an invalid
+// signature either by returning a non-nil error wrapping
+// wallet.ErrInvalidSignature (as wallet.ProtoWallet does, matching the TS
+// reference's ProtoWallet.verifySignature, which throws) or, for
+// wallet.Interface implementations that still follow the older convention,
+// by returning {Valid: false} with a nil error. It returns nil when the
+// signature verified successfully.
+func classifyVerifySignatureFailure(context string, result *wallet.VerifySignatureResult, err error) error {
+	if err != nil {
+		if errors.Is(err, wallet.ErrInvalidSignature) {
+			return fmt.Errorf("%s - %w", context, ErrInvalidSignature)
+		}
+		return fmt.Errorf("unable to verify signature in %s: %w", context, err)
+	}
+	if !result.Valid {
+		return fmt.Errorf("%s - %w", context, ErrInvalidSignature)
+	}
+	return nil
+}
+
+// claimMessageNonce atomically marks messageNonce as consumed for the
+// session identified by sessionNonce, mirroring the TS reference's
+// Peer#claimIncomingMessageNonce (backed by SessionManager.claimMessageNonce)
+// for BRC-103 replay protection.
+func (p *Peer) claimMessageNonce(sessionNonce, messageNonce, context string) error {
+	if messageNonce == "" {
+		return fmt.Errorf("%s - %w: message nonce is required", context, ErrInvalidNonce)
+	}
+	if !p.nonceClaimer.ClaimMessageNonce(sessionNonce, messageNonce) {
+		return fmt.Errorf("%s - %w", context, ErrReplayedNonce)
+	}
+	return nil
+}
+
+// claimInitialRequestNonce atomically marks initialNonce as consumed for the
+// (unsigned, not-yet-authenticated) claimed identityKey, mirroring the TS
+// reference's Peer#claimInitialRequestNonce.
+func (p *Peer) claimInitialRequestNonce(identityKey, initialNonce string) error {
+	if !p.nonceClaimer.ClaimInitialRequestNonce(identityKey, initialNonce) {
+		return fmt.Errorf("initial request - %w", ErrReplayedNonce)
+	}
+	return nil
+}
+
 // handleIncomingMessage processes incoming authentication messages
 func (p *Peer) handleIncomingMessage(ctx context.Context, message *AuthMessage) error {
 	if message == nil {
@@ -454,6 +513,15 @@ func (p *Peer) handleInitialRequest(ctx context.Context, message *AuthMessage, s
 	// Validate the request has an initial nonce
 	if message.InitialNonce == "" {
 		return ErrInvalidNonce
+	}
+
+	// Reject a replayed (unsigned) initial request before doing any wallet
+	// work, mirroring the TS reference's processInitialRequest.
+	if senderPublicKey == nil {
+		return fmt.Errorf("initial request - identity key is required - %w", ErrInvalidMessage)
+	}
+	if err := p.claimInitialRequestNonce(senderPublicKey.ToDERHex(), message.InitialNonce); err != nil {
+		return err
 	}
 
 	// Create our session nonce
@@ -600,10 +668,12 @@ func (p *Peer) handleInitialResponse(ctx context.Context, message *AuthMessage, 
 			},
 		},
 	}, "")
-	if err != nil {
-		return fmt.Errorf("unable to verify signature in initial response: %w", err)
-	} else if !verifyResult.Valid {
-		return ErrInvalidSignature
+	if verifyErr := classifyVerifySignatureFailure("initial response", verifyResult, err); verifyErr != nil {
+		return verifyErr
+	}
+
+	if claimErr := p.claimMessageNonce(session.SessionNonce, message.InitialNonce, "initial response"); claimErr != nil {
+		return claimErr
 	}
 
 	session.PeerNonce = message.InitialNonce
@@ -756,7 +826,7 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 	p.sessionManager.UpdateSession(session)
 
 	// Convert json of requested certificates to bytes for verification
-	certRequestData, err := json.Marshal(message.RequestedCertificates) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
+	certRequestData, err := json.Marshal(message.RequestedCertificates)
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
@@ -784,10 +854,12 @@ func (p *Peer) handleCertificateRequest(ctx context.Context, message *AuthMessag
 		Data:      certRequestData,
 		Signature: signature,
 	}, "")
-	if err != nil {
-		return fmt.Errorf("unable to verify signature in certificate request: %w", err)
-	} else if !verifyResult.Valid {
-		return fmt.Errorf("certificate request - %w", ErrInvalidSignature)
+	if verifyErr := classifyVerifySignatureFailure("certificate request", verifyResult, err); verifyErr != nil {
+		return verifyErr
+	}
+
+	if claimErr := p.claimMessageNonce(session.SessionNonce, message.Nonce, "certificate request"); claimErr != nil {
+		return claimErr
 	}
 
 	if len(message.RequestedCertificates.Certifiers) > 0 || len(message.RequestedCertificates.CertificateTypes) > 0 {
@@ -851,10 +923,12 @@ func (p *Peer) handleCertificateResponse(ctx context.Context, message *AuthMessa
 		Data:      certData,
 		Signature: signature,
 	}, "")
-	if err != nil {
-		return fmt.Errorf("unable to verify signature in certificate response: %w", err)
-	} else if !verifyResult.Valid {
-		return fmt.Errorf("certificate response - %w", ErrInvalidSignature)
+	if verifyErr := classifyVerifySignatureFailure("certificate response", verifyResult, err); verifyErr != nil {
+		return verifyErr
+	}
+
+	if claimErr := p.claimMessageNonce(session.SessionNonce, message.Nonce, "certificate response"); claimErr != nil {
+		return claimErr
 	}
 
 	// Process certificates if included
@@ -960,10 +1034,12 @@ func (p *Peer) handleGeneralMessage(ctx context.Context, message *AuthMessage, s
 		Signature: signature,
 	}
 	verifyResult, err := p.wallet.VerifySignature(ctx, verifySigArgs, "")
-	if err != nil {
-		return fmt.Errorf("unable to verify signature in general message: %w", err)
-	} else if !verifyResult.Valid {
-		return fmt.Errorf("general message - %w", ErrInvalidSignature)
+	if verifyErr := classifyVerifySignatureFailure("general message", verifyResult, err); verifyErr != nil {
+		return verifyErr
+	}
+
+	if claimErr := p.claimMessageNonce(session.SessionNonce, message.Nonce, "general message"); claimErr != nil {
+		return claimErr
 	}
 
 	// Update session timestamp
@@ -1001,13 +1077,12 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 		return fmt.Errorf("failed to get authenticated session: %w", err)
 	}
 
-	// Create a nonce for this request
-	requestNonce, err := utils.CreateNonce(ctx, p.wallet, wallet.Counterparty{
-		Type: wallet.CounterpartyTypeSelf,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create nonce: %w", err)
-	}
+	// Create a nonce for this request. Like a general message's nonce (and
+	// unlike the session-establishing initialNonce/yourNonce), this is a
+	// fresh 32-byte random value per request, matching the TS reference's
+	// requestCertificates (toBase64(Random(32))) and the wire's
+	// certificateRequest.nonce size (BRC-103 AuthMessageValidation).
+	requestNonce := string(utils.RandomBase64(32))
 
 	// Get identity key
 	identityKeyResult, err := p.wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
@@ -1017,18 +1092,21 @@ func (p *Peer) RequestCertificates(ctx context.Context, identityKey *ec.PublicKe
 		return fmt.Errorf("failed to get identity key: %w", err)
 	}
 
-	// Create certificate request message
+	// Create certificate request message. initialNonce carries our session
+	// nonce, as the TS reference does, so the recipient can look the session
+	// up the same way it does for a general message.
 	certRequest := &AuthMessage{
 		Version:               AUTH_VERSION,
 		MessageType:           MessageTypeCertificateRequest,
 		IdentityKey:           identityKeyResult.PublicKey,
 		Nonce:                 requestNonce,
+		InitialNonce:          peerSession.SessionNonce,
 		YourNonce:             peerSession.PeerNonce,
 		RequestedCertificates: certificateRequirements,
 	}
 
 	// Marshal the certificate requirements to match TypeScript
-	certRequestData, err := json.Marshal(certificateRequirements) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
+	certRequestData, err := json.Marshal(certificateRequirements)
 	if err != nil {
 		return fmt.Errorf("failed to serialize certificate request data: %w", err)
 	}
@@ -1081,13 +1159,11 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 		return fmt.Errorf("failed to get authenticated session: %w", err)
 	}
 
-	// Create a nonce for this response
-	responseNonce, err := utils.CreateNonce(ctx, p.wallet, wallet.Counterparty{
-		Type: wallet.CounterpartyTypeSelf,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create nonce: %w", err)
-	}
+	// Create a nonce for this response. Like a general message's nonce, this
+	// is a fresh 32-byte random value per response, matching the TS
+	// reference's sendCertificateResponse (toBase64(Random(32))) and the
+	// wire's certificateResponse.nonce size (BRC-103 AuthMessageValidation).
+	responseNonce := string(utils.RandomBase64(32))
 
 	// Get identity key
 	identityKeyResult, err := p.wallet.GetPublicKey(ctx, wallet.GetPublicKeyArgs{
@@ -1097,12 +1173,14 @@ func (p *Peer) SendCertificateResponse(ctx context.Context, identityKey *ec.Publ
 		return fmt.Errorf("failed to get identity key: %w", err)
 	}
 
-	// Create certificate response message
+	// Create certificate response message. initialNonce carries our session
+	// nonce, as the TS reference does.
 	certResponse := &AuthMessage{
 		Version:      AUTH_VERSION,
 		MessageType:  MessageTypeCertificateResponse,
 		IdentityKey:  identityKeyResult.PublicKey,
 		Nonce:        responseNonce,
+		InitialNonce: peerSession.SessionNonce,
 		YourNonce:    peerSession.PeerNonce,
 		Certificates: certificates,
 	}

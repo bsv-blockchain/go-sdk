@@ -221,7 +221,7 @@ func (t *SimplifiedHTTPTransport) authMessageFromGeneralMessageResponse(requestI
 
 	var requestedCertificates utils.RequestedCertificateSet
 	if requestedCertificatesJson != "" {
-		err = json.Unmarshal([]byte(requestedCertificatesJson), &requestedCertificates) //nolint:musttag // RequestedCertificateSet is defined in auth/utils, not owned by this package
+		err = json.Unmarshal([]byte(requestedCertificatesJson), &requestedCertificates)
 		if err != nil {
 			return nil, fmt.Errorf("invalid format of requested certificates in response: %w", err)
 		}

@@ -175,7 +175,7 @@ func TestHTTPWalletJSON_CreateAction(t *testing.T) {
 		assert.Equal(t, "/createAction", r.URL.Path)
 
 		var args wallet.CreateActionArgs
-		err := json.NewDecoder(r.Body).Decode(&args) //nolint:musttag // CreateActionArgs.Options (CreateActionOptions) is defined without JSON tags by design
+		err := json.NewDecoder(r.Body).Decode(&args)
 		assert.NoError(t, err)
 		assert.Equal(t, "test desc", args.Description)
 
@@ -203,7 +203,7 @@ func TestHTTPWalletJSON_SignAction(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		if !assert.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body)) { //nolint:musttag // SignActionArgs.Options (SignActionOptions) is defined without JSON tags by design
+		if !assert.NoError(t, json.Unmarshal(body, &args), "Body: %s", string(body)) {
 			return
 		}
 		assert.Equal(t, testRef, args.Reference)

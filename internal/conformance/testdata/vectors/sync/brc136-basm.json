@@ -1,0 +1,107 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sync.brc136-basm",
+  "name": "BRC-136 BASM anchor vectors",
+  "brc": ["BRC-136"],
+  "version": "1.0.0",
+  "reference_impl": "packages/overlays/overlay/src/BASM.ts",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sync.brc136-basm.1",
+      "description": "BASM root edge cases and odd-leaf duplication",
+      "input": {
+        "channel": "basm/root",
+        "cases": [
+          {
+            "name": "empty",
+            "txids": []
+          },
+          {
+            "name": "single",
+            "txids": ["0101010101010101010101010101010101010101010101010101010101010101"]
+          },
+          {
+            "name": "two",
+            "txids": [
+              "0101010101010101010101010101010101010101010101010101010101010101",
+              "0202020202020202020202020202020202020202020202020202020202020202"
+            ]
+          },
+          {
+            "name": "odd",
+            "txids": [
+              "0101010101010101010101010101010101010101010101010101010101010101",
+              "0202020202020202020202020202020202020202020202020202020202020202",
+              "0303030303030303030303030303030303030303030303030303030303030303"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "roots": {
+          "empty": "0000000000000000000000000000000000000000000000000000000000000000",
+          "single": "0101010101010101010101010101010101010101010101010101010101010101",
+          "two": "b4100303b9e99ada4b479b0bb93d9b549cb057a1c4be08896bc982debe20ce39",
+          "odd": "acbd47d5022a6c5e954ad677df8ec221c893f871889826df53f0f1ad3f023e22"
+        }
+      },
+      "tags": ["basm", "root", "byte-order", "odd-leaf"]
+    },
+    {
+      "id": "sync.brc136-basm.2",
+      "description": "TAC chaining uses display-order inputs but hashes internal bytes",
+      "input": {
+        "channel": "basm/tac",
+        "prevTac": "0000000000000000000000000000000000000000000000000000000000000000",
+        "blockHash": "0404040404040404040404040404040404040404040404040404040404040404",
+        "basmRoot": "acbd47d5022a6c5e954ad677df8ec221c893f871889826df53f0f1ad3f023e22"
+      },
+      "expected": {
+        "tac": "d0d3e770802c7c28ca1da59cc92263d59425f00e48d421ffebb02497b4702307"
+      },
+      "tags": ["basm", "tac", "byte-order"]
+    },
+    {
+      "id": "sync.brc136-basm.3",
+      "description": "BASM HTTP route shapes",
+      "input": {
+        "method": "POST",
+        "path": "/requestTopicAnchorTip",
+        "headers": {
+          "x-bsv-topic": "tm_example"
+        },
+        "body": {}
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "topic": "tm_example",
+          "blockHeight": 850000,
+          "tac": "d0d3e770802c7c28ca1da59cc92263d59425f00e48d421ffebb02497b4702307"
+        }
+      },
+      "tags": ["basm", "http", "tip"]
+    },
+    {
+      "id": "sync.brc136-basm.4",
+      "description": "Raw transaction response shape for BEEF-free BASM catch-up",
+      "input": {
+        "channel": "basm/rawTransactions",
+        "message": {
+          "transactions": [
+            {
+              "txid": "0101010101010101010101010101010101010101010101010101010101010101",
+              "rawTx": "01000000000000000000"
+            }
+          ],
+          "missing": []
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["basm", "raw-tx"]
+    }
+  ]
+}

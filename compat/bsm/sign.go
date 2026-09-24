@@ -12,18 +12,13 @@ import (
 
 const hBSV = "Bitcoin Signed Message:\n"
 
-// SignMessage signs a string with the provided PrivateKey using Bitcoin Signed Message encoding
-// sigRefCompressedKey bool determines whether the signature will reference a compressed or uncompresed key
-// Spec: https://github.com/bitcoin/bitcoin/pull/524
-func SignMessage(privateKey *ec.PrivateKey, message []byte) ([]byte, error) {
-	return SignMessageWithCompression(privateKey, message, true)
-}
-
-func SignMessageWithCompression(privateKey *ec.PrivateKey, message []byte, sigRefCompressedKey bool) ([]byte, error) {
-	if privateKey == nil {
-		return nil, errors.New("private key is required")
-	}
-
+// MagicHash computes the Bitcoin Signed Message digest: SHA-256d of the
+// varint-length-prefixed "Bitcoin Signed Message:\n" magic string followed
+// by the varint-length-prefixed message. This is the digest that
+// SignMessage signs and VerifyMessage checks against; it is exposed
+// standalone for callers that need it directly, mirroring the TS
+// reference's BSM.magicHash.
+func MagicHash(message []byte) []byte {
 	b := new(bytes.Buffer)
 
 	varInt := util.VarInt(len(hBSV))
@@ -38,11 +33,23 @@ func SignMessageWithCompression(privateKey *ec.PrivateKey, message []byte, sigRe
 	// append the data to buff
 	b.Write(message)
 
-	// Create the hash
-	messageHash := crypto.Sha256d(b.Bytes())
+	return crypto.Sha256d(b.Bytes())
+}
+
+// SignMessage signs a string with the provided PrivateKey using Bitcoin Signed Message encoding
+// sigRefCompressedKey bool determines whether the signature will reference a compressed or uncompresed key
+// Spec: https://github.com/bitcoin/bitcoin/pull/524
+func SignMessage(privateKey *ec.PrivateKey, message []byte) ([]byte, error) {
+	return SignMessageWithCompression(privateKey, message, true)
+}
+
+func SignMessageWithCompression(privateKey *ec.PrivateKey, message []byte, sigRefCompressedKey bool) ([]byte, error) {
+	if privateKey == nil {
+		return nil, errors.New("private key is required")
+	}
 
 	// Sign
-	return ec.SignCompact(ec.S256(), privateKey, messageHash, sigRefCompressedKey)
+	return ec.SignCompact(ec.S256(), privateKey, MagicHash(message), sigRefCompressedKey)
 }
 
 // SignMessageString signs the message and returns the signature as a base64-encoded string

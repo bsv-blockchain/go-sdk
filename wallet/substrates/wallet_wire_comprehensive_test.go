@@ -244,12 +244,17 @@ func TestTransceiverVerifySignature(t *testing.T) {
 	_, transceiver := buildTransceiverPair(t)
 	ctx := context.Background()
 
+	// Counterparty must be pinned explicitly: ProtoWallet defaults an unset
+	// counterparty to "anyone" for CreateSignature but "self" for
+	// VerifySignature (matching the TS reference SDK), so leaving it unset
+	// here would derive mismatched keys on each side.
 	args := wallet.EncryptionArgs{
 		ProtocolID: wallet.Protocol{
 			SecurityLevel: wallet.SecurityLevelEveryApp,
 			Protocol:      "testprotocol",
 		},
-		KeyID: "k1",
+		KeyID:        "k1",
+		Counterparty: wallet.Counterparty{Type: wallet.CounterpartyTypeSelf},
 	}
 	data := []byte("message to sign")
 

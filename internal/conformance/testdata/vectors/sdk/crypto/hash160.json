@@ -1,0 +1,82 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.hash160",
+  "name": "Hash160 (SHA-256 then RIPEMD-160)",
+  "brc": [],
+  "version": "1.0.0",
+  "reference_impl": "ts-sdk@2.0.14",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sdk.crypto.hash160.1",
+      "description": "Hash160 of compressed pubkey for secp256k1 generator point (privkey=1)",
+      "input": {
+        "pubkey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "encoding": "hex"
+      },
+      "expected": { "hash160": "751e76e8199196d454941c45d1b3a323f1433bd6" },
+      "tags": ["happy-path", "p2pkh"]
+    },
+    {
+      "id": "sdk.crypto.hash160.2",
+      "description": "Hash160 of compressed pubkey for privkey=2",
+      "input": {
+        "pubkey": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "encoding": "hex"
+      },
+      "expected": { "hash160": "06afd46bcdfd22ef94ac122aa11f241244a37ecc" },
+      "tags": ["happy-path", "p2pkh"]
+    },
+    {
+      "id": "sdk.crypto.hash160.3",
+      "description": "Hash160 of compressed pubkey for privkey=3",
+      "input": {
+        "pubkey": "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+        "encoding": "hex"
+      },
+      "expected": { "hash160": "7dd65592d0ab2fe0d0257d571abf032cd9db93dc" },
+      "tags": ["happy-path", "p2pkh"]
+    },
+    {
+      "id": "sdk.crypto.hash160.4",
+      "description": "Hash160 of uncompressed genesis coinbase pubkey (Satoshi's first block)",
+      "input": {
+        "pubkey": "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f",
+        "encoding": "hex"
+      },
+      "expected": { "hash160": "62e907b15cbf27d5425399ebf6f0fb50ebb88f18" },
+      "tags": ["happy-path", "p2pkh", "genesis"]
+    },
+    {
+      "id": "sdk.crypto.hash160.5",
+      "description": "Hash160 of empty string (edge case)",
+      "input": { "message": "", "encoding": "utf8" },
+      "expected": { "hash160": "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb" },
+      "tags": ["happy-path", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.hash160.6",
+      "description": "Hash160 of ASCII string 'abc'",
+      "input": { "message": "abc", "encoding": "utf8" },
+      "expected": { "hash160": "bb1be98c142444d7a56aa3981c3942a978e4dc33" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.hash160.7",
+      "description": "Hash160 of ASCII string 'Bitcoin'",
+      "input": { "message": "Bitcoin", "encoding": "utf8" },
+      "expected": { "hash160": "024f9137e731852f3570492545d6efb85cbcdf49" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.hash160.8",
+      "description": "Hash160 of compressed pubkey for privkey=4",
+      "input": {
+        "pubkey": "02e493dbf1c10d80f3581e4904930b1404cc6c13900ee0758474fa94abe8c4cd13",
+        "encoding": "hex"
+      },
+      "expected": { "hash160": "c42e7ef92fdb603af844d064faad95db9bcdfd3d" },
+      "tags": ["happy-path", "p2pkh"]
+    }
+  ]
+}

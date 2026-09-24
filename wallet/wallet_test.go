@@ -281,9 +281,10 @@ func TestCreateVerifySignature(t *testing.T) {
 			Signature:      verifyArgs.Signature,
 			Data:           append([]byte{0}, sampleData...),
 		}
-		result, innerErr := counterpartyWallet.VerifySignature(ctx, invalidVerifySignatureArgs, "example")
-		require.NoError(t, innerErr)
-		require.False(t, result.Valid)
+		// VerifySignature errors on an invalid signature rather than returning
+		// { Valid: false }, matching the TS reference SDK's ProtoWallet.
+		_, innerErr := counterpartyWallet.VerifySignature(ctx, invalidVerifySignatureArgs, "example")
+		require.Error(t, innerErr)
 	})
 
 	t.Run("fails to verify signature with wrong protocol", func(t *testing.T) {
@@ -572,38 +573,35 @@ func TestHMACCreateVerify(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, verifyHMACResult.Valid)
 
-	// Test error cases
+	// Test error cases. VerifyHMAC errors on a mismatched HMAC rather than
+	// returning { Valid: false }, matching the TS reference SDK's ProtoWallet.
 	t.Run("fails to verify HMAC with wrong data", func(t *testing.T) {
 		invalidVerifyHMACArgs := verifyHMACArgs
 		invalidVerifyHMACArgs.Data = append([]byte{0}, sampleData...)
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
-		require.NoError(t, err)
-		assert.False(t, valid.Valid)
+		_, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
+		assert.Error(t, err)
 	})
 
 	t.Run("fails to verify HMAC with wrong protocol", func(t *testing.T) {
 		invalidVerifyHMACArgs := verifyHMACArgs
 		invalidVerifyHMACArgs.ProtocolID.Protocol = "wrong"
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
-		require.NoError(t, err)
-		assert.False(t, valid.Valid)
+		_, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
+		assert.Error(t, err)
 	})
 
 	t.Run("fails to verify HMAC with wrong key ID", func(t *testing.T) {
 		invalidVerifyHMACArgs := verifyHMACArgs
 		invalidVerifyHMACArgs.KeyID = "wrong"
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
-		require.NoError(t, err)
-		assert.False(t, valid.Valid)
+		_, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
+		assert.Error(t, err)
 	})
 
 	t.Run("fails to verify HMAC with wrong counterparty", func(t *testing.T) {
 		invalidVerifyHMACArgs := verifyHMACArgs
 		wrongKey, _ := ec.NewPrivateKey()
 		invalidVerifyHMACArgs.Counterparty.Counterparty = wrongKey.PubKey()
-		valid, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
-		require.NoError(t, err)
-		assert.False(t, valid.Valid)
+		_, err := counterpartyWallet.VerifyHMAC(ctx, invalidVerifyHMACArgs, "example")
+		assert.Error(t, err)
 	})
 
 	t.Run("validates BRC-2 HMAC compliance vector", func(t *testing.T) {

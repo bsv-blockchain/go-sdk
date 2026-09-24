@@ -17,6 +17,8 @@
 #
 0ed3548d0482f674940779d3c120ad54eab178f8:auth/transports/simplified_http_transport_test.go:generic-api-key:68
 15362a9b993992d6944a56d22c4ec055a85d99ca:ec/encryption_test.go:generic-api-key:12
+1703d7cc8ab4ffb8f9cb37e31c06f41cc8aa3b18:internal/conformance/auth/brc31_handshake_conformance_test.go:generic-api-key:420
+1703d7cc8ab4ffb8f9cb37e31c06f41cc8aa3b18:internal/conformance/transactions/broadcast/broadcast_conformance_test.go:generic-api-key:296
 2701c6d93c41fc54f24ad771bd2d1d5e2cef5074:auth/transports/transports_extra_test.go:generic-api-key:169
 3da07be6b0039863196b27db68ca9b9123b54ba0:wallet/substrates/testdata/internalizeAction-simple-args.json:generic-api-key:22
 43f48e4da5c3f00ffb70fd1d308d4c6fa85a2c58:primitives/ec/testdata/BRC42.private.vectors.json:generic-api-key:10
@@ -158,6 +160,8 @@ e78c55a3f67c9c780c64b4c6811f80b0ca2a18ca:ec/testdata/SymmetricKey.vectors.json:g
 fdf5a2f99a6c7abed37860081d7be5e65693c47d:message/signed_test.go:generic-api-key:48
 identity/client_test.go:generic-api-key:180
 identity/client_test.go:generic-api-key:266
+internal/conformance/auth/brc31_handshake_conformance_test.go:generic-api-key:420
+internal/conformance/transactions/broadcast/broadcast_conformance_test.go:generic-api-key:296
 primitives/ec/testdata/BRC42.private.vectors.json:generic-api-key:10
 primitives/ec/testdata/BRC42.private.vectors.json:generic-api-key:11
 primitives/ec/testdata/BRC42.private.vectors.json:generic-api-key:16

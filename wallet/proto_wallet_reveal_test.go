@@ -231,25 +231,27 @@ func TestProtoWallet_RevealSpecificKeyLinkage_Errors(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "verifier public key is required")
 
-	// Test with "self" counterparty
-	_, err = proverWallet.RevealSpecificKeyLinkage(ctx, RevealSpecificKeyLinkageArgs{
+	// "self" and "anyone" are valid counterparties (matching the TS reference
+	// SDK), resolving to the prover's own identity key and the well-known
+	// "anyone" key respectively, rather than erroring.
+	selfResult, err := proverWallet.RevealSpecificKeyLinkage(ctx, RevealSpecificKeyLinkageArgs{
 		Counterparty: Counterparty{Type: CounterpartyTypeSelf},
 		Verifier:     proverKey.PubKey(),
-		ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "test"},
+		ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "tests1"},
 		KeyID:        "test",
 	}, "test")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot reveal specific key linkage for 'self'")
+	require.NoError(t, err)
+	assert.True(t, proverKey.PubKey().IsEqual(selfResult.Counterparty))
 
-	// Test with "anyone" counterparty
-	_, err = proverWallet.RevealSpecificKeyLinkage(ctx, RevealSpecificKeyLinkageArgs{
+	_, anyonePublicKey := AnyoneKey()
+	anyoneResult, err := proverWallet.RevealSpecificKeyLinkage(ctx, RevealSpecificKeyLinkageArgs{
 		Counterparty: Counterparty{Type: CounterpartyTypeAnyone},
 		Verifier:     proverKey.PubKey(),
-		ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "test"},
+		ProtocolID:   Protocol{SecurityLevel: 0, Protocol: "tests1"},
 		KeyID:        "test",
 	}, "test")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot reveal specific key linkage for 'anyone'")
+	require.NoError(t, err)
+	assert.True(t, anyonePublicKey.IsEqual(anyoneResult.Counterparty))
 }
 
 func TestSchnorrProofIntegration(t *testing.T) {

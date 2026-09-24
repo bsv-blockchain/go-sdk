@@ -1,0 +1,90 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.isauthenticated",
+  "name": "BRC-100 isauthenticated",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.isauthenticated.1",
+      "description": "isAuthenticated when user is authenticated",
+      "input": {
+        "args": {}
+      },
+      "expected": {
+        "authenticated": true
+      },
+      "tags": [
+        "brc-100",
+        "isAuthenticated",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "wallet.brc100.isauthenticated.2",
+      "description": "isAuthenticated with originator",
+      "input": {
+        "args": {},
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "authenticated": true
+      },
+      "tags": [
+        "brc-100",
+        "isAuthenticated",
+        "originator"
+      ]
+    },
+    {
+      "id": "wallet.brc100.isauthenticated.3",
+      "description": "isAuthenticated when not authenticated",
+      "input": {
+        "args": {},
+        "_scenario": "wallet locked or no active session"
+      },
+      "expected": {
+        "authenticated": false
+      },
+      "tags": [
+        "brc-100",
+        "isAuthenticated",
+        "unauthenticated"
+      ]
+    },
+    {
+      "id": "wallet.brc100.isauthenticated.4",
+      "description": "isAuthenticated returns AuthenticatedResult shape",
+      "input": {
+        "args": {},
+        "_schema_note": "result must have { authenticated: boolean }"
+      },
+      "expected": {
+        "authenticated": true
+      },
+      "tags": [
+        "brc-100",
+        "isAuthenticated",
+        "schema"
+      ]
+    },
+    {
+      "id": "wallet.brc100.isauthenticated.5",
+      "description": "isAuthenticated no args required",
+      "input": {
+        "args": {}
+      },
+      "expected": {
+        "authenticated": true
+      },
+      "tags": [
+        "brc-100",
+        "isAuthenticated"
+      ]
+    }
+  ]
+}

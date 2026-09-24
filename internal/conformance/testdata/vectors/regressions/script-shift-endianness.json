@@ -1,0 +1,59 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "script",
+  "description": "OP_LSHIFT and OP_RSHIFT must preserve the input endianness. The ts-sdk Spend interpreter (pre-fix) converted the stack value to BigNumber using big-endian, performed the shift correctly, but then serialised the result back as little-endian — reversing the byte order of the output. This caused shift results to be byte-swapped relative to what BSV nodes produce.",
+  "regression": {
+    "issue": "ts-sdk#377",
+    "fixed_in": { "ts": "v1.1.0" },
+    "symptom": "RSHIFT(0x0100, 1) produced stack value 0x8000 instead of 0x0080 — byte-swapped output",
+    "root_cause": "Spend.ts line 664 called toArray('le') explicitly after big-endian input on line 659; the fix removes the explicit endianness override so input and output use the same order"
+  },
+  "vectors": [
+    {
+      "id": "regression.script.shift-endianness.0001",
+      "description": "RSHIFT(0x0100, 1) — two-byte value right-shifted by 1 must produce 0x0080 not 0x8000",
+      "parity_class": "required",
+      "input": {
+        "operation": "op_rshift",
+        "value_hex": "0100",
+        "shift_bits": 1
+      },
+      "expected": {
+        "result_hex": "0080",
+        "result_length_bytes": 2
+      },
+      "notes": "The tx referenced in the bug (whatsonchain: 72b0be68042cdd1671784d0f79350d10ee21ea0864388baacf60e24548d0283a) uses OP_1 OP_RSHIFT against stack value 0x0100 and checks equality with 0x0080. Real BSV node accepts this script; the buggy SDK rejected it."
+    },
+    {
+      "id": "regression.script.shift-endianness.0002",
+      "description": "RSHIFT(0x8000, 1) — high bit only, shift right by 1",
+      "parity_class": "required",
+      "input": {
+        "operation": "op_rshift",
+        "value_hex": "8000",
+        "shift_bits": 1
+      },
+      "expected": {
+        "result_hex": "4000",
+        "result_length_bytes": 2
+      },
+      "notes": "0x8000 >> 1 = 0x4000. Tests the upper byte is correctly shifted without endianness swap."
+    },
+    {
+      "id": "regression.script.shift-endianness.0003",
+      "description": "LSHIFT(0x0080, 1) — inverse of 0001, shift left by 1 must produce 0x0100",
+      "parity_class": "required",
+      "input": {
+        "operation": "op_lshift",
+        "value_hex": "0080",
+        "shift_bits": 1
+      },
+      "expected": {
+        "result_hex": "0100",
+        "result_length_bytes": 2
+      },
+      "notes": "0x0080 << 1 = 0x0100. Verifies LSHIFT also preserves endianness (related codepath)."
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.compat.bsm",
+  "name": "Bitcoin Signed Message (BSM) — sign, verify, magicHash",
+  "brc": ["BRC-77"],
+  "version": "1.0.1",
+  "reference_impl": "packages/sdk/ts-sdk/src/compat/BSM.ts",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "bsm-magic-001",
+      "description": "magicHash of bytes [0x00, 0x11, 0x22] produces a 32-byte hash",
+      "input": {
+        "message_hex": "001122"
+      },
+      "expected": {
+        "magic_hash_hex": "5d463c819c79bef8d6ca0cb0677300ca02ede87a4ba14b85e8fda5c4bad410b7",
+        "magic_hash_length_bytes": 32
+      },
+      "tags": ["magic-hash", "happy-path"]
+    },
+    {
+      "id": "bsm-magic-002",
+      "description": "magicHash of UTF-8 'this is my message'",
+      "input": {
+        "message_hex": "74686973206973206d79206d657373616765",
+        "message_utf8": "this is my message"
+      },
+      "expected": {
+        "magic_hash_hex": "1c19bdd862bf0244a06b0d7de8b11d7eb9168078bf8d6f137d5030585c78474b"
+      },
+      "tags": ["magic-hash", "happy-path"]
+    },
+    {
+      "id": "bsm-magic-003",
+      "description": "magicHash of UTF-8 'Texas'",
+      "input": {
+        "message_hex": "5465786173",
+        "message_utf8": "Texas"
+      },
+      "expected": {
+        "magic_hash_hex": "a37a1b793fd569bac5da20a7ecda26630a559fa94c7935396d687173503166db"
+      },
+      "tags": ["magic-hash", "happy-path"]
+    },
+    {
+      "id": "bsm-magic-004",
+      "description": "magicHash of UTF-8 'hello world'",
+      "input": {
+        "message_hex": "68656c6c6f20776f726c64",
+        "message_utf8": "hello world"
+      },
+      "expected": {
+        "magic_hash_hex": "0b6b6ce07bc55ee4aeba0098a5e5d2c8986cab228a54199723f9962316633733"
+      },
+      "tags": ["magic-hash", "happy-path"]
+    },
+    {
+      "id": "bsm-sign-001",
+      "description": "BSM.sign 'this is my message' with private key 42 returns DER signature of length 70",
+      "input": {
+        "message_hex": "74686973206973206d79206d657373616765",
+        "message_utf8": "this is my message",
+        "privkey_hex": "000000000000000000000000000000000000000000000000000000000000002a",
+        "pubkey_hex": "02fe8d1eb1bcb3432b1db5833ff5f2226d9cb5e65cee430558c18ed3a3c86ce1af",
+        "encoding": "raw"
+      },
+      "expected": {
+        "der_hex": "304402202b81ba3cc1f182a305e9a4a462baa05e2630d89a65183dcbfed852d5404054a60220610f6aaa7c233cacf736ebbd0421351a96b44bca73e9ef9b7b0defc1f380c913",
+        "der_length_bytes": 70
+      },
+      "tags": ["sign", "happy-path"]
+    },
+    {
+      "id": "bsm-sign-002",
+      "description": "BSM.sign 'hello world' with WIF key returns known base64 compact signature",
+      "input": {
+        "message_hex": "68656c6c6f20776f726c64",
+        "message_utf8": "hello world",
+        "privkey_wif": "L211enC224G1kV8pyyq7bjVd9SxZebnRYEzzM3i7ZHCc1c5E7dQu",
+        "privkey_hex": "8ea77b137b5e47c67c687ea3ef367f54ad72dab899a3a52889c517c99c7fe1e7",
+        "pubkey_hex": "03bbce95ff192e17a6d842cbafe14f7f192ac0466e7f0928c187398e627e66a84f",
+        "encoding": "base64"
+      },
+      "expected": {
+        "base64_compact_sig": "H4T8Asr0WkC6wYfBESR6pCAfECtdsPM4fwiSQ2qndFi8dVtv/mrOFaySx9xQE7j24ugoJ4iGnsRwAC8QwaoHOXk="
+      },
+      "tags": ["sign", "happy-path"]
+    },
+    {
+      "id": "bsm-verify-001",
+      "description": "BSM.verify 'this is my message' signed with private key 42 returns true",
+      "input": {
+        "message_hex": "74686973206973206d79206d657373616765",
+        "message_utf8": "this is my message",
+        "privkey_hex": "000000000000000000000000000000000000000000000000000000000000002a",
+        "pubkey_hex": "02fe8d1eb1bcb3432b1db5833ff5f2226d9cb5e65cee430558c18ed3a3c86ce1af",
+        "der_hex": "304402202b81ba3cc1f182a305e9a4a462baa05e2630d89a65183dcbfed852d5404054a60220610f6aaa7c233cacf736ebbd0421351a96b44bca73e9ef9b7b0defc1f380c913"
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["verify", "happy-path"]
+    },
+    {
+      "id": "bsm-verify-002",
+      "description": "BSM.verify 'Texas' with known compact signature and public key returns true",
+      "input": {
+        "message_hex": "5465786173",
+        "message_utf8": "Texas",
+        "compact_sig_base64": "IAV89EkfHSzAIA8cEWbbKHUYzJqcShkpWaXGJ5+mf4+YIlf3XNlr0bj9X60sNe1A7+x9qyk+zmXropMDY4370n8=",
+        "compact_sig_hex": "20057cf4491f1d2cc0200f1c1166db287518cc9a9c4a192959a5c6279fa67f8f982257f75cd96bd1b8fd5fad2c35ed40efec7dab293ece65eba29303638dfbd27f",
+        "pubkey_hex": "03d4d1a6c5d8c03b0e671bc1891b69afaecb40c0686188fe9019f93581b43e8334"
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["verify", "happy-path"]
+    },
+    {
+      "id": "bsm-recovery-001",
+      "description": "CalculateRecoveryFactor for 'Texas' signature returns 1; RecoverPublicKey returns matching pubkey",
+      "input": {
+        "message_hex": "5465786173",
+        "message_utf8": "Texas",
+        "compact_sig_hex": "20057cf4491f1d2cc0200f1c1166db287518cc9a9c4a192959a5c6279fa67f8f982257f75cd96bd1b8fd5fad2c35ed40efec7dab293ece65eba29303638dfbd27f",
+        "pubkey_hex": "03d4d1a6c5d8c03b0e671bc1891b69afaecb40c0686188fe9019f93581b43e8334",
+        "magic_hash_hex": "a37a1b793fd569bac5da20a7ecda26630a559fa94c7935396d687173503166db"
+      },
+      "expected": {
+        "recovery_factor": 1,
+        "recovered_pubkey_hex": "03d4d1a6c5d8c03b0e671bc1891b69afaecb40c0686188fe9019f93581b43e8334"
+      },
+      "tags": ["recovery", "happy-path"]
+    }
+  ]
+}

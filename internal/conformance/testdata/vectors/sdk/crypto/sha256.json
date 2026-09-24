@@ -1,0 +1,109 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.sha256",
+  "name": "SHA-256 Hashing",
+  "brc": [],
+  "version": "1.0.0",
+  "reference_impl": "ts-sdk@2.0.14",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sdk.crypto.sha256.1",
+      "description": "SHA-256 of empty string",
+      "input": { "message": "", "encoding": "utf8" },
+      "expected": { "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      "tags": ["happy-path", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.sha256.2",
+      "description": "SHA-256 of ASCII string 'abc' (NIST vector)",
+      "input": { "message": "abc", "encoding": "utf8" },
+      "expected": { "hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" },
+      "tags": ["happy-path", "nist"]
+    },
+    {
+      "id": "sdk.crypto.sha256.3",
+      "description": "SHA-256 of 448-bit ASCII string (NIST vector): 'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq'",
+      "input": { "message": "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "encoding": "utf8" },
+      "expected": { "hash": "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1" },
+      "tags": ["happy-path", "nist"]
+    },
+    {
+      "id": "sdk.crypto.sha256.4",
+      "description": "SHA-256 of binary input 0xdeadbeef (4 bytes)",
+      "input": { "message": "deadbeef", "encoding": "hex" },
+      "expected": { "hash": "5f78c33274e43fa9de5659265c1d917e25c03722dcb0b8d27db8d5feaa813953" },
+      "tags": ["happy-path", "binary"]
+    },
+    {
+      "id": "sdk.crypto.sha256.5",
+      "description": "SHA-256 of ASCII string 'hello world'",
+      "input": { "message": "hello world", "encoding": "utf8" },
+      "expected": { "hash": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.sha256.6",
+      "description": "Double SHA-256 (hash256) of empty string",
+      "input": { "message": "", "encoding": "utf8", "double": true },
+      "expected": { "hash": "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456" },
+      "tags": ["happy-path", "edge-case", "double-hash"]
+    },
+    {
+      "id": "sdk.crypto.sha256.7",
+      "description": "Double SHA-256 (hash256) of ASCII string 'abc'",
+      "input": { "message": "abc", "encoding": "utf8", "double": true },
+      "expected": { "hash": "4f8b42c22dd3729b519ba6f68d2da7cc5b2d606d05daed5ad5128cc03e6c6358" },
+      "tags": ["happy-path", "double-hash"]
+    },
+    {
+      "id": "sdk.crypto.sha256.8",
+      "description": "Double SHA-256 (hash256) of ASCII string 'hello world'",
+      "input": { "message": "hello world", "encoding": "utf8", "double": true },
+      "expected": { "hash": "bc62d4b80d9e36da29c16c5d4d9f11731f36052c72401a76c23c0fb5a9b74423" },
+      "tags": ["happy-path", "double-hash"]
+    },
+    {
+      "id": "sdk.crypto.sha256.9",
+      "description": "SHA-256 of 'The quick brown fox jumps over the lazy dog'",
+      "input": { "message": "The quick brown fox jumps over the lazy dog", "encoding": "utf8" },
+      "expected": { "hash": "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.sha256.10",
+      "description": "SHA-256 of ASCII string 'Bitcoin'",
+      "input": { "message": "Bitcoin", "encoding": "utf8" },
+      "expected": { "hash": "b4056df6691f8dc72e56302ddad345d65fead3ead9299609a826e2344eb63aa4" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.sha256.11",
+      "description": "SHA-256 of single 0xff byte",
+      "input": { "message": "ff", "encoding": "hex" },
+      "expected": { "hash": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89" },
+      "tags": ["happy-path", "binary", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.sha256.12",
+      "description": "SHA-256 of 8 zero bytes",
+      "input": { "message": "0000000000000000", "encoding": "hex" },
+      "expected": { "hash": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc" },
+      "tags": ["happy-path", "binary", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.sha256.13",
+      "description": "SHA-256 of ASCII string 'BSV'",
+      "input": { "message": "BSV", "encoding": "utf8" },
+      "expected": { "hash": "6c080e27dedb22dd1850901075c94cfc2c0c5c7d762ff4070871260a71263ad4" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.sha256.14",
+      "description": "SHA-256 of 16 0xff bytes",
+      "input": { "message": "ffffffffffffffffffffffffffffffff", "encoding": "hex" },
+      "expected": { "hash": "5ac6a5945f16500911219129984ba8b387a06f24fe383ce4e81a73294065461b" },
+      "tags": ["happy-path", "binary", "edge-case"]
+    }
+  ]
+}

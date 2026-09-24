@@ -1,0 +1,407 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "overlay.topicmanagement",
+  "name": "Overlay HTTP API — Topic admission, discovery, admin, and health endpoints",
+  "brc": ["BRC-22"],
+  "version": "1.0.0",
+  "reference_impl": "packages/overlays/overlay-express@1.0.0",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "overlay.topicmanagement.1",
+      "description": "Health full check (GET /health) — live and ready node returns status=ok",
+      "input": {
+        "method": "GET",
+        "path": "/health",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "live": true,
+          "ready": true,
+          "service": {
+            "name": "overlay-node",
+            "network": "main",
+            "topicManagerCount": 2,
+            "lookupServiceCount": 2
+          }
+        },
+        "schema_note": "HealthReport: { status, live, ready, service, checks }"
+      },
+      "tags": ["overlay", "health", "happy-path"]
+    },
+    {
+      "id": "overlay.topicmanagement.2",
+      "description": "Health report when service not ready — GET /health returns 503 with status=error or degraded",
+      "input": {
+        "method": "GET",
+        "path": "/health",
+        "headers": {}
+      },
+      "expected": {
+        "status": 503,
+        "body": {
+          "live": true,
+          "ready": false,
+          "status_oneof": ["degraded", "error"]
+        }
+      },
+      "tags": ["overlay", "health", "error-case", "not-ready"]
+    },
+    {
+      "id": "overlay.topicmanagement.3",
+      "description": "Liveness probe (GET /health/live) — always returns 200 while process is alive",
+      "input": {
+        "method": "GET",
+        "path": "/health/live",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "live": true
+        }
+      },
+      "tags": ["overlay", "health", "happy-path", "liveness"]
+    },
+    {
+      "id": "overlay.topicmanagement.4",
+      "description": "Readiness probe (GET /health/ready) — returns 200 when DB and dependencies are up",
+      "input": {
+        "method": "GET",
+        "path": "/health/ready",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "ready": true,
+          "status": "ok"
+        }
+      },
+      "tags": ["overlay", "health", "happy-path", "readiness"]
+    },
+    {
+      "id": "overlay.topicmanagement.5",
+      "description": "Admin config (GET /admin/config) — returns adminIdentityKey and nodeName without auth",
+      "input": {
+        "method": "GET",
+        "path": "/admin/config",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "adminIdentityKey": "02a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "nodeName": "overlay-test-node"
+        },
+        "schema_note": "adminIdentityKey may also be null if not configured"
+      },
+      "tags": ["overlay", "admin", "happy-path", "public-config"]
+    },
+    {
+      "id": "overlay.topicmanagement.6",
+      "description": "Admin config when no admin identity configured — adminIdentityKey is null",
+      "input": {
+        "method": "GET",
+        "path": "/admin/config",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "adminIdentityKey": null,
+          "nodeName": "overlay-node"
+        }
+      },
+      "tags": ["overlay", "admin", "happy-path", "no-admin-key"]
+    },
+    {
+      "id": "overlay.topicmanagement.7",
+      "description": "Admin stats (GET /admin/stats) without auth — must return 401 Unauthorized",
+      "input": {
+        "method": "GET",
+        "path": "/admin/stats",
+        "headers": {}
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "admin", "error-case", "unauthenticated"]
+    },
+    {
+      "id": "overlay.topicmanagement.8",
+      "description": "Admin stats with valid Bearer token — returns node statistics",
+      "input": {
+        "method": "GET",
+        "path": "/admin/stats",
+        "headers": {
+          "Authorization": "Bearer test-admin-token-abc123"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "data": {
+            "nodeName": "overlay-test-node",
+            "network": "main",
+            "topicManagers": ["tm_ship", "tm_slap"],
+            "lookupServices": ["ls_ship", "ls_slap"]
+          }
+        },
+        "schema_note": "AdminStatsResponse: { status: 'success', data: { nodeName, network, uptime, ... } }"
+      },
+      "tags": ["overlay", "admin", "happy-path", "authenticated", "stats"]
+    },
+    {
+      "id": "overlay.topicmanagement.9",
+      "description": "Admin ban POST with wrong credentials — must return 403 Forbidden",
+      "input": {
+        "method": "POST",
+        "path": "/admin/ban",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer wrong-token"
+        },
+        "body": {
+          "type": "domain",
+          "value": "malicious.example.com",
+          "reason": "spam"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "admin", "error-case", "forbidden", "ban"]
+    },
+    {
+      "id": "overlay.topicmanagement.10",
+      "description": "Admin ban domain — authenticated request bans a domain",
+      "input": {
+        "method": "POST",
+        "path": "/admin/ban",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-admin-token-abc123"
+        },
+        "body": {
+          "type": "domain",
+          "value": "malicious.example.com",
+          "reason": "Repeated spam submissions"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["overlay", "admin", "happy-path", "ban", "domain"]
+    },
+    {
+      "id": "overlay.topicmanagement.11",
+      "description": "Admin ban outpoint — authenticated request bans a specific UTXO outpoint",
+      "input": {
+        "method": "POST",
+        "path": "/admin/ban",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-admin-token-abc123"
+        },
+        "body": {
+          "type": "outpoint",
+          "value": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2.0"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["overlay", "admin", "happy-path", "ban", "outpoint"]
+    },
+    {
+      "id": "overlay.topicmanagement.12",
+      "description": "Admin unban domain — removes a previously applied domain ban",
+      "input": {
+        "method": "POST",
+        "path": "/admin/unban",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-admin-token-abc123"
+        },
+        "body": {
+          "type": "domain",
+          "value": "malicious.example.com"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["overlay", "admin", "happy-path", "unban", "domain"]
+    },
+    {
+      "id": "overlay.topicmanagement.13",
+      "description": "Admin list bans — returns paginated list of active bans",
+      "input": {
+        "method": "GET",
+        "path": "/admin/bans",
+        "headers": {
+          "Authorization": "Bearer test-admin-token-abc123"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "data": {
+            "bans": [
+              {
+                "type": "domain",
+                "value": "malicious.example.com",
+                "reason": "Repeated spam submissions"
+              }
+            ]
+          }
+        },
+        "schema_note": "BanListResponse: { status: 'success', data: { bans: BanRecord[] } }"
+      },
+      "tags": ["overlay", "admin", "happy-path", "list-bans"]
+    },
+    {
+      "id": "overlay.topicmanagement.14",
+      "description": "Admin evict outpoint — removes an outpoint from all lookup services",
+      "input": {
+        "method": "POST",
+        "path": "/admin/evictOutpoint",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-admin-token-abc123"
+        },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "outputIndex": 0
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["overlay", "admin", "happy-path", "evict"]
+    },
+    {
+      "id": "overlay.topicmanagement.15",
+      "description": "Admin evict outpoint with service filter — evicts from named service only",
+      "input": {
+        "method": "POST",
+        "path": "/admin/evictOutpoint",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-admin-token-abc123"
+        },
+        "body": {
+          "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+          "outputIndex": 1,
+          "service": "ls_ship"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["overlay", "admin", "happy-path", "evict", "specific-service"]
+    },
+    {
+      "id": "overlay.topicmanagement.16",
+      "description": "Admin list SHIP records — returns paginated records with default pagination",
+      "input": {
+        "method": "GET",
+        "path": "/admin/ship-records",
+        "query": {
+          "page": "1",
+          "limit": "50"
+        },
+        "headers": {
+          "Authorization": "Bearer test-admin-token-abc123"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "data": {
+            "records": [],
+            "total": 0,
+            "page": 1,
+            "limit": 50,
+            "pages": 0
+          }
+        },
+        "schema_note": "PaginatedRecordResponse: { status, data: { records, total, page, limit, pages } }"
+      },
+      "tags": ["overlay", "admin", "happy-path", "ship-records", "pagination"]
+    },
+    {
+      "id": "overlay.topicmanagement.17",
+      "description": "ARC ingest callback — POST /arc-ingest with valid merkle proof notifies engine",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b078",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["overlay", "arc-ingest", "happy-path", "merkle-proof"]
+    },
+    {
+      "id": "overlay.topicmanagement.18",
+      "description": "ARC ingest callback with missing txid — returns 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b078",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "arc-ingest", "error-case", "missing-txid"]
+    }
+  ]
+}

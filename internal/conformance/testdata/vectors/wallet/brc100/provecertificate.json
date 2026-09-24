@@ -1,0 +1,310 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.provecertificate",
+  "name": "BRC-100 provecertificate",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.provecertificate.1",
+      "description": "proveCertificate reveal single field",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com",
+              "age": "30"
+            }
+          },
+          "fieldsToReveal": [
+            "name"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "keyringForVerifier": {
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "single-field",
+        "happy-path"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs; lookup throws."
+    },
+    {
+      "id": "wallet.brc100.provecertificate.2",
+      "description": "proveCertificate reveal multiple fields",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com",
+              "age": "30"
+            }
+          },
+          "fieldsToReveal": [
+            "name",
+            "email"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "keyringForVerifier": {
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+        }
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "multi-field"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs; lookup throws."
+    },
+    {
+      "id": "wallet.brc100.provecertificate.3",
+      "description": "proveCertificate reveal all fields",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com",
+              "age": "30"
+            }
+          },
+          "fieldsToReveal": [
+            "name",
+            "email",
+            "age"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "keyringForVerifier": {
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=",
+          "age": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC="
+        }
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "all-fields"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs; lookup throws."
+    },
+    {
+      "id": "wallet.brc100.provecertificate.4",
+      "description": "proveCertificate privileged request",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com",
+              "age": "30"
+            }
+          },
+          "fieldsToReveal": [
+            "name"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "privileged": true,
+          "privilegedReason": "KYC verification required"
+        }
+      },
+      "expected": {
+        "keyringForVerifier": {
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "privileged"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs; lookup throws."
+    },
+    {
+      "id": "wallet.brc100.provecertificate.5",
+      "description": "proveCertificate field not in certificate",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com",
+              "age": "30"
+            }
+          },
+          "fieldsToReveal": [
+            "nonexistent-field"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "error",
+        "invalid-field"
+      ]
+    },
+    {
+      "id": "wallet.brc100.provecertificate.6",
+      "description": "proveCertificate result shape: keyringForVerifier",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com",
+              "age": "30"
+            }
+          },
+          "fieldsToReveal": [
+            "name"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "_schema_note": "result: { keyringForVerifier: Record<fieldName, base64> }"
+      },
+      "expected": {
+        "keyringForVerifier": {
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "schema"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs; lookup throws."
+    },
+    {
+      "id": "wallet.brc100.provecertificate.7",
+      "description": "proveCertificate with originator",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com",
+              "age": "30"
+            }
+          },
+          "fieldsToReveal": [
+            "name"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "originator": "verifier.example.com"
+      },
+      "expected": {
+        "keyringForVerifier": {
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "originator"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs; lookup throws."
+    },
+    {
+      "id": "wallet.brc100.provecertificate.8",
+      "description": "proveCertificate partial certificate (Partial<WalletCertificate>)",
+      "input": {
+        "args": {
+          "certificate": {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+          },
+          "fieldsToReveal": [
+            "name"
+          ],
+          "verifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "_schema_note": "certificate arg is Partial<WalletCertificate>"
+      },
+      "expected": {
+        "keyringForVerifier": {
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      },
+      "tags": [
+        "brc-100",
+        "proveCertificate",
+        "partial-cert"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs; lookup throws."
+    }
+  ]
+}

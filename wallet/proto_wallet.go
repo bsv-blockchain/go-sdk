@@ -266,6 +266,13 @@ func (p *ProtoWallet) VerifySignature(
 		return nil, fmt.Errorf("signature is nil")
 	}
 	valid := args.Signature.Verify(dataHash, pubKey)
+	if !valid {
+		// Matches the TS reference (ProtoWallet.verifySignature), which throws
+		// rather than returning { valid: false } for a signature that fails
+		// verification. ErrInvalidSignature is an exported sentinel so callers
+		// can distinguish this from other failure modes with errors.Is.
+		return nil, ErrInvalidSignature
+	}
 
 	return &VerifySignatureResult{
 		Valid: valid,
@@ -348,7 +355,11 @@ func (p *ProtoWallet) VerifyHMAC(
 
 	// Verify HMAC
 	if !hmac.Equal(expectedHMAC, args.HMAC[:]) {
-		return &VerifyHMACResult{Valid: false}, nil
+		// Matches the TS reference (ProtoWallet.verifyHmac), which throws rather
+		// than returning { valid: false } for an HMAC that fails verification.
+		// ErrInvalidHMAC is an exported sentinel so callers can distinguish this
+		// from other failure modes with errors.Is.
+		return nil, ErrInvalidHMAC
 	}
 
 	return &VerifyHMACResult{Valid: true}, nil

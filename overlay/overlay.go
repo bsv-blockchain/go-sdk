@@ -56,12 +56,15 @@ type TopicData struct {
 	Deps []*transaction.Outpoint
 }
 
-// AdmittanceInstructions specify which outputs to admit and which coins to retain when submitting to overlay topics
+// AdmittanceInstructions specify which outputs to admit and which coins to retain when submitting to overlay topics.
+// Field names match the wire shape emitted/consumed by the TypeScript reference SDK's STEAK type
+// (outputsToAdmit, coinsToRetain, coinsRemoved) so a Go-built overlay Steak marshals to the same
+// lowercase/camelCase JSON that TypeScript clients validate strictly.
 type AdmittanceInstructions struct {
-	OutputsToAdmit []uint32
-	CoinsToRetain  []uint32
-	CoinsRemoved   []uint32
-	AncillaryTxids []*chainhash.Hash
+	OutputsToAdmit []uint32          `json:"outputsToAdmit"`
+	CoinsToRetain  []uint32          `json:"coinsToRetain"`
+	CoinsRemoved   []uint32          `json:"coinsRemoved,omitempty"`
+	AncillaryTxids []*chainhash.Hash `json:"ancillaryTxids,omitempty"`
 }
 
 // Steak represents a Submitted Transaction Execution AcKnowledgment mapping topics to their admittance instructions

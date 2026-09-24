@@ -181,3 +181,20 @@ func TestSighashForkIDComposition(t *testing.T) {
 	require.Equal(t, SingleForkID, Flag(0x43))
 	require.Equal(t, AnyOneCanPayForkID, Flag(0xC0))
 }
+
+// TestSighashChronicle pins the historical SIGHASH_CHRONICLE bit's value
+// (0x20, matching ts-stack's TransactionSignature.SIGHASH_CHRONICLE) and that
+// it composes and is detected independently of ForkID/AnyOneCanPay, since
+// transaction/signaturehash.go's usesBip143Preimage relies on Has/HasWithMask
+// distinguishing it from the base ALL/NONE/SINGLE mask and from ForkID.
+func TestSighashChronicle(t *testing.T) {
+	require.Equal(t, Chronicle, Flag(0x20))
+
+	combined := AllForkID | Chronicle
+	require.True(t, combined.Has(ForkID))
+	require.True(t, combined.Has(Chronicle))
+	require.True(t, combined.HasWithMask(All))
+
+	require.False(t, AllForkID.Has(Chronicle))
+	require.False(t, All.Has(Chronicle))
+}

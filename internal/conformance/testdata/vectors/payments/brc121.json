@@ -1,0 +1,325 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "payments.brc121",
+  "name": "BRC-121 Simple HTTP 402 Payments",
+  "brc": ["BRC-121"],
+  "version": "1.0.0",
+  "reference_impl": "@bsv/402-pay",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "payments.brc121.1",
+      "description": "Trip 1: GET without payment headers — server returns 402 with x-bsv-sats and x-bsv-server",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {}
+      },
+      "expected": {
+        "status": 402,
+        "response_headers": {
+          "x-bsv-sats": "100",
+          "x-bsv-server": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        },
+        "body": null
+      },
+      "tags": ["brc-121", "trip-1", "payment-required", "happy-path"]
+    },
+    {
+      "id": "payments.brc121.2",
+      "description": "Trip 1: POST without payment headers — also returns 402",
+      "input": {
+        "method": "POST",
+        "path": "/api/data",
+        "headers": { "content-type": "application/json" },
+        "body": { "query": "test" }
+      },
+      "expected": {
+        "status": 402,
+        "response_headers": {
+          "x-bsv-sats": "50",
+          "x-bsv-server": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "tags": ["brc-121", "trip-1", "post-method"]
+    },
+    {
+      "id": "payments.brc121.3",
+      "description": "Trip 1: 402 response includes Access-Control-Expose-Headers for CORS",
+      "input": {
+        "method": "GET",
+        "path": "/content/premium",
+        "headers": { "origin": "https://browser-client.example.com" }
+      },
+      "expected": {
+        "status": 402,
+        "response_headers_includes": {
+          "access-control-expose-headers": "x-bsv-sats, x-bsv-server"
+        }
+      },
+      "tags": ["brc-121", "trip-1", "cors"]
+    },
+    {
+      "id": "payments.brc121.4",
+      "description": "Trip 2: valid payment headers — server accepts and serves resource",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "1719500000000",
+          "x-bsv-vout": "0"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "tags": ["brc-121", "trip-2", "payment-accepted", "happy-path"]
+    },
+    {
+      "id": "payments.brc121.5",
+      "description": "Trip 2: missing x-bsv-beef header — 402",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "1719500000000",
+          "x-bsv-vout": "0"
+        }
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "missing-beef"]
+    },
+    {
+      "id": "payments.brc121.6",
+      "description": "Trip 2: missing x-bsv-sender header — 402",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "1719500000000",
+          "x-bsv-vout": "0"
+        }
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "missing-sender"]
+    },
+    {
+      "id": "payments.brc121.7",
+      "description": "Trip 2: missing x-bsv-nonce header — 402",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-time": "1719500000000",
+          "x-bsv-vout": "0"
+        }
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "missing-nonce"]
+    },
+    {
+      "id": "payments.brc121.8",
+      "description": "Trip 2: missing x-bsv-time header — 402",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-vout": "0"
+        }
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "missing-time"]
+    },
+    {
+      "id": "payments.brc121.9",
+      "description": "Trip 2: missing x-bsv-vout header — 402",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "1719500000000"
+        }
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "missing-vout"]
+    },
+    {
+      "id": "payments.brc121.10",
+      "description": "Trip 2: x-bsv-time too old (>30s from server time) — 402 replay protection",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "1000000000000",
+          "x-bsv-vout": "0"
+        },
+        "_scenario": "timestamp is more than 30 seconds in the past"
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "stale-timestamp", "replay-protection"]
+    },
+    {
+      "id": "payments.brc121.11",
+      "description": "Trip 2: x-bsv-time in the future (>30s) — 402",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "9999999999999",
+          "x-bsv-vout": "0"
+        },
+        "_scenario": "timestamp is more than 30 seconds in the future"
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "future-timestamp"]
+    },
+    {
+      "id": "payments.brc121.12",
+      "description": "Trip 2: replay — isMerge=true from wallet means txid already seen — 402",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "1719500000000",
+          "x-bsv-vout": "0"
+        },
+        "_scenario": "wallet internalizeAction returns isMerge=true indicating already-seen transaction"
+      },
+      "expected": {
+        "status": 402
+      },
+      "tags": ["brc-121", "trip-2", "error", "replay", "isMerge"]
+    },
+    {
+      "id": "payments.brc121.13",
+      "description": "invoice number derivation: format is '2-3241645161d8-{nonce} {base64(time)}'",
+      "input": {
+        "_schema_check": true,
+        "x_bsv_nonce": "3q2+7w==",
+        "x_bsv_time": "1719500000000"
+      },
+      "expected": {
+        "invoice_number": "2-3241645161d8-3q2+7w== MTcxOTUwMDAwMDAwMA==",
+        "derivation_prefix": "3q2+7w==",
+        "derivation_suffix": "MTcxOTUwMDAwMDAwMA=="
+      },
+      "tags": ["brc-121", "key-derivation", "schema", "invoice-number"]
+    },
+    {
+      "id": "payments.brc121.14",
+      "description": "x-bsv-time format: must be 13-digit decimal (Unix milliseconds)",
+      "input": {
+        "_schema_check": true,
+        "valid_examples": ["1719500000000", "1000000000000", "9999999999999"],
+        "invalid_examples": ["not-a-number", "1719500000", "17195000000000"]
+      },
+      "expected": {
+        "pattern": "^[0-9]{13}$"
+      },
+      "tags": ["brc-121", "schema", "time-format"]
+    },
+    {
+      "id": "payments.brc121.15",
+      "description": "Server wallet unavailable — 500",
+      "input": {
+        "method": "GET",
+        "path": "/content/article-42",
+        "headers": {
+          "x-bsv-beef": "AABB==",
+          "x-bsv-sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "x-bsv-nonce": "3q2+7w==",
+          "x-bsv-time": "1719500000000",
+          "x-bsv-vout": "0"
+        },
+        "_scenario": "server wallet is not initialized or throws unexpectedly"
+      },
+      "expected": {
+        "status": 500,
+        "body": { "error": "wallet unavailable" }
+      },
+      "tags": ["brc-121", "trip-2", "error", "server-error"]
+    },
+    {
+      "id": "payments.brc121.16",
+      "description": "PaymentRemittance shape: server constructs this to pass to internalizeAction",
+      "input": {
+        "_schema_check": true,
+        "x_bsv_nonce": "3q2+7w==",
+        "x_bsv_time": "1719500000000",
+        "x_bsv_sender": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+      },
+      "expected": {
+        "remittance_shape": {
+          "derivationPrefix": "3q2+7w==",
+          "derivationSuffix": "MTcxOTUwMDAwMDAwMA==",
+          "senderIdentityKey": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "tags": ["brc-121", "schema", "payment-remittance"]
+    },
+    {
+      "id": "payments.brc121.17",
+      "description": "402 response body MUST be empty (server MUST NOT serve content on 402)",
+      "input": {
+        "method": "GET",
+        "path": "/content/premium",
+        "headers": {}
+      },
+      "expected": {
+        "status": 402,
+        "body_empty": true
+      },
+      "tags": ["brc-121", "trip-1", "schema", "empty-body"]
+    },
+    {
+      "id": "payments.brc121.18",
+      "description": "Client SHOULD NOT retry payment on 402 after paying (to avoid double-spend)",
+      "input": {
+        "_schema_note": "Both 'no headers' and 'invalid payment' return 402. Client must not auto-retry payment on invalid-payment 402 to prevent double-spend."
+      },
+      "expected": {
+        "auto_retry_safe": false,
+        "double_spend_risk": "present if auto-retry on invalid payment 402"
+      },
+      "tags": ["brc-121", "schema", "double-spend-protection"]
+    }
+  ]
+}

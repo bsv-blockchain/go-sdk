@@ -6,9 +6,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // Shared fixtures for the sighash preimage/digest golden tests. Defining the
@@ -128,4 +130,116 @@ func TestTx_CalcInputSignatureHash(t *testing.T) {
 			require.Equal(t, g.digest, hex.EncodeToString(actual))
 		})
 	}
+}
+
+// hashTypeBits recovers the uint32 bit pattern of a hash_type value that
+// round-trips through JS/JSON as a signed 32-bit int (the node.sighash.*
+// fixtures deliberately use values outside sighash.Flag's uint8 range,
+// including negative ones). A plain uint32(int32(n)) constant expression
+// cannot express this in Go, since a negative constant is not representable
+// by uint32; going through a variable performs the same bit-pattern
+// reinterpretation a runtime conversion does.
+func hashTypeBits(n int32) uint32 {
+	return uint32(n) //nolint:gosec // G115 -- intentional bit-pattern reinterpretation, not a numeric conversion
+}
+
+// fullHashTypeFixtures pins CalcInputSignatureHashFull/CalcInputPreimageLegacyFull
+// against ts-stack's own reference SDK, independently confirmed by running
+// TransactionSignature.formatOTDA/formatBytes for the same inputs (see
+// internal/conformance/testdata/vectors/sdk/scripts/evaluation.json's
+// node.sighash.bitcoin-sv fixtures, which these are drawn from). Each fixture
+// exercises a hash type outside sighash.Flag's uint8 range, so it can only be
+// reached through the Full API.
+var fullHashTypeFixtures = []struct {
+	name         string
+	txHex        string
+	inputIndex   uint32
+	scriptHex    string
+	hashType     uint32 // uint32(int32(hash_type)) bit pattern
+	regularHash  string // reversed hash256(TransactionSignature.format(...))
+	originalHash string // reversed hash256(TransactionSignature.formatOTDA(...))
+}{
+	{
+		// bitcoin-sv.0002: hash_type=-1861635514 has FORKID set, CHRONICLE
+		// clear -> "regular" takes the BIP143 path (formatBip143), embedding
+		// the full 32-bit hash type in the trailer.
+		name:         "bitcoin-sv.0002 (FORKID, no CHRONICLE -> bip143)",
+		txHex:        "7e8c3f7902634018b6e1db2ca591816dff64a6cff74643de7455323ebfc560500aad9eee8c0100000001519c2d146d06fdca2c2e5fa3a2559812df66b6b5e40a3c57b2f7071ae6fe3863c74ab0952d0100000001000bf6638c013c5f6503000000000351ac63cbbf66be",
+		inputIndex:   0,
+		scriptHex:    "acab",
+		hashType:     hashTypeBits(-1861635514),
+		regularHash:  "0abe05b7835921958100225897ce76ca6e6a3ffc7a27235fe71c1252d7465890",
+		originalHash: "f6261bacaed3a70d504cd70d3c0623e3593f6d197cd47316e56cea79ceabe095",
+	},
+	{
+		// bitcoin-sv.0003: hash_type=-750576008 has both FORKID and CHRONICLE
+		// set -> "regular" is forced onto the legacy/OTDA path too, so it
+		// equals "original" byte-for-byte (usesBip143Preimage's core case).
+		name:         "bitcoin-sv.0003 (FORKID+CHRONICLE -> legacy, regular==original)",
+		txHex:        "459499bb032fdcc39d3c6cf819dcaa0a0165d97578446aa87ab745fb9fdcd3e6177b4cba3d0000000005006a6a5265ffffffff10e5929ebe065273c112cab15f6a1f6d9a8a517c288311b048b16663b3d406dc030000000700535263655151ffffffff981d73a7f3d477ab055398bcf9a7d349db1a8e6362055e20f4207ad1b775bac301000000066a6363ac6552ffffffff0403342603000000000165c4390004000000000965ac52006565006365373ce8010000000005520000516aba5a9404000000000351655300000000",
+		inputIndex:   0,
+		scriptHex:    "6a5352",
+		hashType:     hashTypeBits(-750576008),
+		regularHash:  "738b7dcb86260e6fe3fad331ff342429c157730bbcb90c205b9e08568557cd94",
+		originalHash: "738b7dcb86260e6fe3fad331ff342429c157730bbcb90c205b9e08568557cd94",
+	},
+	{
+		// bitcoin-sv.0020: subscript "6a53ac6365ab" is
+		// OP_RETURN OP_3 OP_CHECKSIG OP_IF OP_VER OP_CODESEPARATOR — the
+		// OP_CODESEPARATOR sits after an OP_RETURN, so stripping it
+		// (CalcInputPreimageLegacyFull mirroring formatOTDA's
+		// subscript.removeCodeseparators()) requires walking every opcode
+		// rather than using a Chunks-style OP_RETURN blob.
+		name:         "bitcoin-sv.0020 (strips OP_CODESEPARATOR after OP_RETURN)",
+		txHex:        "9f5c75b00317a167ef003e0aadcbd8697dd04f3445c4ea51982382e2ca09ccd60fd14692ec010000000400ab6a52ffffffff8ec02d3dbaff7c365e75f215bd53505e8a608dbbb2e472b31c731e9a0907d9a403000000036a656aaa704ef86a0248ecaeceabe1244b1020ce1c52a466e2d71ccc084cfe23b67f9037be22710000000000c97fbf7d04233508040000000003ab53514dfcd0040000000008006a65ab6a516a51741d3a03000000000651ac006a5152fa61170400000000003c7d7ad5",
+		inputIndex:   1,
+		scriptHex:    "6a53ac6365ab",
+		hashType:     hashTypeBits(1978643641),
+		regularHash:  "acfac785889c591c28e822c1215f1c258d7b87f0a3abc6594b78025dbaadcef4",
+		originalHash: "acfac785889c591c28e822c1215f1c258d7b87f0a3abc6594b78025dbaadcef4",
+	},
+}
+
+func TestTx_CalcInputSignatureHashFull(t *testing.T) {
+	t.Parallel()
+	for _, f := range fullHashTypeFixtures {
+		t.Run(f.name, func(t *testing.T) {
+			tx, err := transaction.NewTransactionFromHex(f.txHex)
+			require.NoError(t, err)
+			subscript, err := script.NewFromHex(f.scriptHex)
+			require.NoError(t, err)
+			tx.Inputs[f.inputIndex].SetSourceTxOutput(&transaction.TransactionOutput{LockingScript: subscript, Satoshis: 0})
+
+			regular, err := tx.CalcInputSignatureHashFull(f.inputIndex, f.hashType, false)
+			require.NoError(t, err)
+			require.Equal(t, f.regularHash, hex.EncodeToString(util.ReverseBytes(regular)))
+
+			preimage, err := tx.CalcInputPreimageLegacyFull(f.inputIndex, f.hashType)
+			require.NoError(t, err)
+			original := hex.EncodeToString(util.ReverseBytes(crypto.Sha256d(preimage)))
+			require.Equal(t, f.originalHash, original)
+		})
+	}
+}
+
+// TestTx_CalcInputPreimageLegacyFull_StripsCodeSeparators is a focused,
+// non-hashed check that the legacy/OTDA preimage's subscript field has every
+// OP_CODESEPARATOR removed (ts-stack's TransactionSignature.formatOTDA calls
+// Script.removeCodeseparators() unconditionally), including one that occurs
+// after an OP_RETURN in the same subscript.
+func TestTx_CalcInputPreimageLegacyFull_StripsCodeSeparators(t *testing.T) {
+	t.Parallel()
+	tx, index := sighashFixtureTx(t, 0)
+	subscript, err := script.NewFromHex("6a53ac6365ab") // OP_RETURN OP_3 OP_CHECKSIG OP_IF OP_VER OP_CODESEPARATOR
+	require.NoError(t, err)
+	tx.Inputs[index].SetSourceTxOutput(&transaction.TransactionOutput{LockingScript: subscript, Satoshis: sighashFixtures[0].sats})
+
+	preimage, err := tx.CalcInputPreimageLegacyFull(index, uint32(sighash.All))
+	require.NoError(t, err)
+
+	// The subscript field is a varint length + bytes right after the
+	// version(4) + numInputs(varint) + first input's 32-byte txid + 4-byte
+	// vout; for fixture 0 (a single-input tx) that is byte offset 4+1+32+4=41.
+	require.Equal(t, byte(5), preimage[41], "subscript length prefix")
+	require.Equal(t, []byte{0x6a, 0x53, 0xac, 0x63, 0x65}, preimage[42:47], "OP_CODESEPARATOR stripped from subscript")
 }

@@ -51,6 +51,10 @@ func TestIsAuthError(t *testing.T) {
 		require.True(t, auth.IsAuthError(auth.ErrCertificateValidation))
 	})
 
+	t.Run("returns true for ErrReplayedNonce", func(t *testing.T) {
+		require.True(t, auth.IsAuthError(auth.ErrReplayedNonce))
+	})
+
 	t.Run("returns true for wrapped auth error", func(t *testing.T) {
 		wrapped := fmt.Errorf("outer: %w", auth.ErrAuthFailed)
 		require.True(t, auth.IsAuthError(wrapped))

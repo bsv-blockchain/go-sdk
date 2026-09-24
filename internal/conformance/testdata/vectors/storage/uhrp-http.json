@@ -1,0 +1,270 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "storage.uhrp-http",
+  "name": "UHRP HTTP Storage API",
+  "brc": ["BRC-26"],
+  "version": "1.0.1",
+  "reference_impl": "uhrp-services",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "storage.uhrp-http.1",
+      "description": "POST /upload: initiate file upload — returns uploadURL and uhrpUrl",
+      "input": {
+        "method": "POST",
+        "path": "/upload",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <brc103-token>"
+        },
+        "body": {
+          "fileSize": 1024,
+          "contentType": "image/png",
+          "retentionPeriod": 2592000
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_shape": {
+          "uploadURL": "string",
+          "uhrpUrl": "string"
+        }
+      },
+      "tags": ["uhrp", "upload", "happy-path"]
+    },
+    {
+      "id": "storage.uhrp-http.2",
+      "description": "POST /upload: unauthenticated request — 401",
+      "input": {
+        "method": "POST",
+        "path": "/upload",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "fileSize": 1024,
+          "contentType": "image/png",
+          "retentionPeriod": 2592000
+        }
+      },
+      "expected": {
+        "status": 401
+      },
+      "tags": ["uhrp", "upload", "error", "auth"]
+    },
+    {
+      "id": "storage.uhrp-http.3",
+      "description": "POST /upload: missing fileSize — 400",
+      "input": {
+        "method": "POST",
+        "path": "/upload",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <brc103-token>"
+        },
+        "body": {
+          "contentType": "image/png"
+        }
+      },
+      "expected": {
+        "status": 400
+      },
+      "tags": ["uhrp", "upload", "error", "validation"]
+    },
+    {
+      "id": "storage.uhrp-http.4",
+      "description": "GET /find: resolve UHRP URL to download URL(s) — 200",
+      "input": {
+        "method": "GET",
+        "path": "/find",
+        "queryParams": {
+          "uhrpUrl": "uhrp://XYZ123abc..."
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_shape": {
+          "URLs": "array",
+          "MIMEType": "string",
+          "expiryTime": "string"
+        }
+      },
+      "tags": ["uhrp", "find", "happy-path"]
+    },
+    {
+      "id": "storage.uhrp-http.5",
+      "description": "GET /find: bare UHRP URL (no uhrp:// prefix) also accepted",
+      "input": {
+        "method": "GET",
+        "path": "/find",
+        "queryParams": {
+          "uhrpUrl": "XYZ123abc..."
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "tags": ["uhrp", "find", "bare-url"]
+    },
+    {
+      "id": "storage.uhrp-http.6",
+      "description": "GET /find: unknown UHRP URL — 404",
+      "input": {
+        "method": "GET",
+        "path": "/find",
+        "queryParams": {
+          "uhrpUrl": "uhrp://unknownhashvaluenotadvertised"
+        }
+      },
+      "expected": {
+        "status": 404
+      },
+      "tags": ["uhrp", "find", "error", "not-found"]
+    },
+    {
+      "id": "storage.uhrp-http.7",
+      "description": "GET /find: missing uhrpUrl query param — 400",
+      "input": {
+        "method": "GET",
+        "path": "/find",
+        "queryParams": {}
+      },
+      "expected": {
+        "status": 400
+      },
+      "tags": ["uhrp", "find", "error", "missing-param"]
+    },
+    {
+      "id": "storage.uhrp-http.8",
+      "description": "GET /list: list hosted files — 200 with pagination",
+      "input": {
+        "method": "GET",
+        "path": "/list",
+        "queryParams": { "offset": 0, "limit": 10 },
+        "headers": { "authorization": "Bearer <brc103-token>" }
+      },
+      "expected": {
+        "status": 200,
+        "body_shape": {
+          "files": "array",
+          "total": "number"
+        }
+      },
+      "tags": ["uhrp", "list", "happy-path"]
+    },
+    {
+      "id": "storage.uhrp-http.9",
+      "description": "GET /list: unauthenticated — 401",
+      "input": {
+        "method": "GET",
+        "path": "/list",
+        "queryParams": {}
+      },
+      "expected": {
+        "status": 401
+      },
+      "tags": ["uhrp", "list", "error", "auth"]
+    },
+    {
+      "id": "storage.uhrp-http.10",
+      "description": "GET /list: default limit is 100, max is 1000",
+      "input": {
+        "_schema_check": true,
+        "limit_default": 100,
+        "limit_max": 1000,
+        "offset_min": 0
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["uhrp", "list", "schema", "pagination"]
+    },
+    {
+      "id": "storage.uhrp-http.11",
+      "description": "POST /renew: renew advertisement for existing UHRP URL — 200",
+      "input": {
+        "method": "POST",
+        "path": "/renew",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <brc103-token>"
+        },
+        "body": {
+          "uhrpUrl": "uhrp://XYZ123abc...",
+          "additionalPeriod": 2592000
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_shape": {
+          "newExpiryTime": "string"
+        }
+      },
+      "tags": ["uhrp", "renew", "happy-path"]
+    },
+    {
+      "id": "storage.uhrp-http.12",
+      "description": "POST /renew: unauthenticated — 401",
+      "input": {
+        "method": "POST",
+        "path": "/renew",
+        "headers": { "content-type": "application/json" },
+        "body": { "uhrpUrl": "uhrp://XYZ123abc..." }
+      },
+      "expected": {
+        "status": 401
+      },
+      "tags": ["uhrp", "renew", "error", "auth"]
+    },
+    {
+      "id": "storage.uhrp-http.13",
+      "description": "POST /renew: unknown UHRP URL — 404",
+      "input": {
+        "method": "POST",
+        "path": "/renew",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <brc103-token>"
+        },
+        "body": { "uhrpUrl": "uhrp://unknownhash" }
+      },
+      "expected": {
+        "status": 404
+      },
+      "tags": ["uhrp", "renew", "error", "not-found"]
+    },
+    {
+      "id": "storage.uhrp-http.14",
+      "description": "UHRP URL format: Base58Check-encoded SHA-256 hash with prefix bytes ce00",
+      "input": {
+        "_schema_check": true,
+        "_note": "UHRP URL encodes SHA-256 hash using Base58Check with prefix ce00. May be bare or prefixed with 'uhrp://'",
+        "examples": [
+          "uhrp://XUUd4J26mdRjnb7iYUdYWN3XR59w8zBWaGVdWnPU8MWvECe3tqCq",
+          "XUTEaLuvEhPySbAMiJxYEhBBGb258URNoqgnaf3Ym4b2wg683ZKp"
+        ]
+      },
+      "expected": {
+        "encoding": "Base58Check",
+        "hash_algorithm": "SHA-256",
+        "prefix_bytes": "ce00"
+      },
+      "tags": ["uhrp", "schema", "url-format"]
+    },
+    {
+      "id": "storage.uhrp-http.15",
+      "description": "Upload PUT to uploadURL: client puts raw file bytes to pre-signed URL",
+      "input": {
+        "_schema_check": true,
+        "_note": "After POST /upload returns uploadURL, client issues PUT to that URL with raw file bytes",
+        "method": "PUT",
+        "path": "<uploadURL from POST /upload response>",
+        "headers": { "content-type": "image/png" },
+        "body_raw": "<binary file bytes>"
+      },
+      "expected": {
+        "status": 200,
+        "_note": "Exact response depends on storage backend (S3, R2, etc.)"
+      },
+      "tags": ["uhrp", "upload", "put-to-url", "schema"]
+    }
+  ]
+}

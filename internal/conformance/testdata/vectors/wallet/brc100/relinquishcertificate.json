@@ -1,0 +1,138 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.relinquishcertificate",
+  "name": "BRC-100 relinquishcertificate",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.relinquishcertificate.1",
+      "description": "relinquishCertificate happy path",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "relinquished": true
+      },
+      "tags": [
+        "brc-100",
+        "relinquishCertificate",
+        "happy-path"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs."
+    },
+    {
+      "id": "wallet.brc100.relinquishcertificate.2",
+      "description": "relinquishCertificate with originator",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        },
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "relinquished": true
+      },
+      "tags": [
+        "brc-100",
+        "relinquishCertificate",
+        "originator"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs."
+    },
+    {
+      "id": "wallet.brc100.relinquishcertificate.3",
+      "description": "relinquishCertificate certificate not found",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "serialNumber": "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_CERTIFICATE_NOT_FOUND"
+      },
+      "tags": [
+        "brc-100",
+        "relinquishCertificate",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.relinquishcertificate.4",
+      "description": "relinquishCertificate result shape: { relinquished: true }",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        },
+        "_schema_note": "success always returns { relinquished: true }"
+      },
+      "expected": {
+        "relinquished": true
+      },
+      "tags": [
+        "brc-100",
+        "relinquishCertificate",
+        "schema"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs."
+    },
+    {
+      "id": "wallet.brc100.relinquishcertificate.5",
+      "description": "relinquishCertificate wrong certifier",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "relinquishCertificate",
+        "error",
+        "wrong-certifier"
+      ]
+    },
+    {
+      "id": "wallet.brc100.relinquishcertificate.6",
+      "description": "relinquishCertificate second cert type",
+      "input": {
+        "args": {
+          "type": "QW5vdGhlckNlcnRUeXBlQUFBQUFBQUFBQUFBQUFBQUFBQUFBQQ==",
+          "serialNumber": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "relinquished": true
+      },
+      "tags": [
+        "brc-100",
+        "relinquishCertificate"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires pre-existing certificate in storage. Fresh wallet has no certs."
+    }
+  ]
+}

@@ -262,7 +262,11 @@ func TestHandleMessageNonceErrors(t *testing.T) {
 					YourNonce:   "@@@not-base64@@@",
 				})
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "failed to validate nonce")
+				// Matching the TS reference's verifyNonce.ts, a malformed
+				// nonce is simply invalid (no wallet call, no error from
+				// utils.VerifyNonce itself) - the peer classifies it as
+				// auth.ErrInvalidNonce rather than a generic decode failure.
+				require.ErrorIs(t, err, auth.ErrInvalidNonce)
 			})
 		}
 	})
@@ -647,15 +651,18 @@ func TestRequestCertificatesErrorPaths(t *testing.T) {
 		require.Contains(t, err.Error(), "failed to get authenticated session")
 	})
 
-	t.Run("create nonce failure", func(t *testing.T) {
+	t.Run("request nonce does not depend on wallet HMAC", func(t *testing.T) {
+		// certificateRequest.nonce is a fresh 32-byte random value (like a
+		// general message's nonce), not a wallet-derived CreateNonce value,
+		// matching the TS reference's requestCertificates. A failing
+		// CreateHMAC must therefore not fail the request.
 		alice, bobActor := CreateActorsPair(t)
 		bobActor.ListenForGeneralMessages(func(context.Context, *ec.PublicKey, []byte) error { return nil })
 		require.NoError(t, alice.ToPeer(t.Context(), anyMessage, bobActor.IdentityKey, 5000))
 
 		alice.Wallet.OnCreateHMAC().ReturnError(errBoom)
 		err := alice.RequestCertificates(t.Context(), bobActor.IdentityKey, reqSet, 5000)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create nonce")
+		require.NoError(t, err)
 	})
 
 	t.Run("get identity key failure", func(t *testing.T) {
@@ -702,15 +709,18 @@ func TestSendCertificateResponseErrorPaths(t *testing.T) {
 		require.Contains(t, err.Error(), "failed to get authenticated session")
 	})
 
-	t.Run("create nonce failure", func(t *testing.T) {
+	t.Run("response nonce does not depend on wallet HMAC", func(t *testing.T) {
+		// certificateResponse.nonce is a fresh 32-byte random value (like a
+		// general message's nonce), not a wallet-derived CreateNonce value,
+		// matching the TS reference's sendCertificateResponse. A failing
+		// CreateHMAC must therefore not fail the response.
 		alice, bobActor := CreateActorsPair(t)
 		bobActor.ListenForGeneralMessages(func(context.Context, *ec.PublicKey, []byte) error { return nil })
 		require.NoError(t, alice.ToPeer(t.Context(), anyMessage, bobActor.IdentityKey, 5000))
 
 		alice.Wallet.OnCreateHMAC().ReturnError(errBoom)
 		err := alice.SendCertificateResponse(t.Context(), bobActor.IdentityKey, noCerts)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create nonce")
+		require.NoError(t, err)
 	})
 
 	t.Run("get identity key failure", func(t *testing.T) {

@@ -1,0 +1,165 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.abortaction",
+  "name": "BRC-100 abortaction",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.abortaction.1",
+      "description": "abortAction with valid reference",
+      "input": {
+        "args": {
+          "reference": "dGVzdHJlZmVyZW5jZTAwMQ=="
+        }
+      },
+      "expected": {
+        "aborted": true
+      },
+      "tags": [
+        "brc-100",
+        "abortAction",
+        "happy-path"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires in-flight action in wallet state. Fresh wallet has no pending actions."
+    },
+    {
+      "id": "wallet.brc100.abortaction.2",
+      "description": "abortAction with second reference",
+      "input": {
+        "args": {
+          "reference": "dGVzdHJlZmVyZW5jZTAwMg=="
+        }
+      },
+      "expected": {
+        "aborted": true
+      },
+      "tags": [
+        "brc-100",
+        "abortAction"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires in-flight action in wallet state. Fresh wallet has no pending actions."
+    },
+    {
+      "id": "wallet.brc100.abortaction.3",
+      "description": "abortAction with originator",
+      "input": {
+        "args": {
+          "reference": "dGVzdHJlZmVyZW5jZTAwMQ=="
+        },
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "aborted": true
+      },
+      "tags": [
+        "brc-100",
+        "abortAction",
+        "originator"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires in-flight action in wallet state. Fresh wallet has no pending actions."
+    },
+    {
+      "id": "wallet.brc100.abortaction.4",
+      "description": "abortAction unknown reference",
+      "input": {
+        "args": {
+          "reference": "dW5rbm93bi1yZWZlcmVuY2U="
+        }
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_REFERENCE_NOT_FOUND"
+      },
+      "tags": [
+        "brc-100",
+        "abortAction",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.abortaction.5",
+      "description": "abortAction already-completed transaction",
+      "input": {
+        "args": {
+          "reference": "dGVzdHJlZmVyZW5jZTAwMw=="
+        },
+        "_scenario": "transaction already broadcast, cannot abort"
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_TRANSACTION_ALREADY_SENT"
+      },
+      "tags": [
+        "brc-100",
+        "abortAction",
+        "error"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires in-flight action in wallet state. Fresh wallet has no pending actions."
+    },
+    {
+      "id": "wallet.brc100.abortaction.6",
+      "description": "abortAction empty reference",
+      "input": {
+        "args": {
+          "reference": ""
+        }
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "abortAction",
+        "error",
+        "validation"
+      ]
+    },
+    {
+      "id": "wallet.brc100.abortaction.7",
+      "description": "abortAction result shape: always { aborted: true }",
+      "input": {
+        "args": {
+          "reference": "dGVzdHJlZmVyZW5jZTAwMQ=="
+        },
+        "_schema_note": "success result is always { aborted: true }"
+      },
+      "expected": {
+        "aborted": true
+      },
+      "tags": [
+        "brc-100",
+        "abortAction",
+        "schema"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires in-flight action in wallet state. Fresh wallet has no pending actions."
+    },
+    {
+      "id": "wallet.brc100.abortaction.8",
+      "description": "abortAction third reference format",
+      "input": {
+        "args": {
+          "reference": "dGVzdHJlZmVyZW5jZTAwMw=="
+        }
+      },
+      "expected": {
+        "aborted": true
+      },
+      "tags": [
+        "brc-100",
+        "abortAction"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires in-flight action in wallet state. Fresh wallet has no pending actions."
+    }
+  ]
+}

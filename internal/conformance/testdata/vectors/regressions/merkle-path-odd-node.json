@@ -1,0 +1,83 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "transactions",
+  "description": "MerklePath.ComputeMissingHashes must correctly propagate duplicate nodes when intermediate tree levels have an odd count. Go SDK prior to v1.2.18 only handled odd counts at level 0 via Duplicate markers, not at higher levels, producing incomplete proofs.",
+  "regression": {
+    "issue": "go-sdk#298",
+    "fixed_in": { "go": "v1.2.18" },
+    "symptom": "With 5 leaf transactions, the top-level sibling hash was missing, causing 'Missing hash for index N at height M' during BEEF verification",
+    "root_cause": "ComputeMissingHashes only duplicated the last node at level 0, not at intermediate levels"
+  },
+  "vectors": [
+    {
+      "id": "regression.merkle-path.odd-node.0001",
+      "description": "5 leaves (odd count at level 1): MerkleTreeParent of leaf0+leaf1",
+      "parity_class": "required",
+      "input": {
+        "operation": "merkle_tree_parent",
+        "left_hex": "0000000000000000000000000000000000000000000000000000000000000001",
+        "right_hex": "0000000000000000000000000000000000000000000000000000000000000002"
+      },
+      "expected": {
+        "parent_hex": "9b1eb2a9e9a81cbbad8edffa901e93fd94f4405e63b61647cf9d3e602b1fb7b0"
+      },
+      "notes": "sha256d(leaf0 || leaf1) where leaves are literal bytes (not reversed). Used as level-1 node at offset 0 in the odd-node tree."
+    },
+    {
+      "id": "regression.merkle-path.odd-node.0002",
+      "description": "5 leaves: MerkleTreeParent of leaf2+leaf3",
+      "parity_class": "required",
+      "input": {
+        "operation": "merkle_tree_parent",
+        "left_hex": "0000000000000000000000000000000000000000000000000000000000000003",
+        "right_hex": "0000000000000000000000000000000000000000000000000000000000000004"
+      },
+      "expected": {
+        "parent_hex": "fd310e3f704ef2f8dea5f1ac83afc0465848b21dffd112959dbf21ad5e464b42"
+      }
+    },
+    {
+      "id": "regression.merkle-path.odd-node.0003",
+      "description": "5 leaves: leaf4 duplicated to pair with itself (odd node at level 0)",
+      "parity_class": "required",
+      "input": {
+        "operation": "merkle_tree_parent",
+        "left_hex": "0000000000000000000000000000000000000000000000000000000000000005",
+        "right_hex": "0000000000000000000000000000000000000000000000000000000000000005"
+      },
+      "expected": {
+        "parent_hex": "b4dcc47aee63daed12d1446b8bbfdc033ebf1f624a168644b0f0cd6bd0b1b460"
+      },
+      "notes": "leaf4 paired with itself (Bitcoin duplicate rule). This is h45 at level 1 offset 2."
+    },
+    {
+      "id": "regression.merkle-path.odd-node.0004",
+      "description": "5 leaves: h45 duplicated (odd node at level 1 propagates to level 2)",
+      "parity_class": "required",
+      "input": {
+        "operation": "merkle_tree_parent",
+        "left_hex": "b4dcc47aee63daed12d1446b8bbfdc033ebf1f624a168644b0f0cd6bd0b1b460",
+        "right_hex": "b4dcc47aee63daed12d1446b8bbfdc033ebf1f624a168644b0f0cd6bd0b1b460"
+      },
+      "expected": {
+        "parent_hex": "46a5e7bfc4bd43b356a838a8335ab0ebb4a7c6cdd1d9d623a4590196b0e6e904"
+      },
+      "notes": "h45 paired with itself because level 1 has 3 nodes (odd). This is the KEY regression case: the bug failed to propagate this duplication."
+    },
+    {
+      "id": "regression.merkle-path.odd-node.0005",
+      "description": "5 leaves: Merkle root — h0123 paired with h4545",
+      "parity_class": "required",
+      "input": {
+        "operation": "merkle_tree_parent",
+        "left_hex": "2c76ecc1f6a379b82aadc24b14cded50e6b59693b02cee76342c15cf0e31b700",
+        "right_hex": "46a5e7bfc4bd43b356a838a8335ab0ebb4a7c6cdd1d9d623a4590196b0e6e904"
+      },
+      "expected": {
+        "parent_hex": "f0bf455a6a0785a84110fcd82c82a6b025acbd0098685789317f6cd6fdc03817"
+      },
+      "notes": "Root of the 5-leaf Merkle tree. Before the fix, Go SDK produced an incorrect or missing root due to the absent h45 duplicate propagation."
+    }
+  ]
+}

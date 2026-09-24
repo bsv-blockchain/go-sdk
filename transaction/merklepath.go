@@ -45,19 +45,43 @@ func (ip IndexedPath) GetOffsetLeaf(layer int, offset uint64) *PathElement {
 
 	prevOffset := offset * 2
 	left := ip.GetOffsetLeaf(layer-1, prevOffset)
-	right := ip.GetOffsetLeaf(layer-1, prevOffset+1)
-	if left != nil && right != nil {
-		pathElement := &PathElement{
-			Offset: offset,
-		}
-		if right.Duplicate != nil && *right.Duplicate {
-			pathElement.Hash = MerkleTreeParent(left.Hash, left.Hash)
-		} else {
-			pathElement.Hash = MerkleTreeParent(left.Hash, right.Hash)
-		}
-		return pathElement
+	if left == nil || left.Hash == nil {
+		return nil
 	}
-	return nil
+	right := ip.GetOffsetLeaf(layer-1, prevOffset+1)
+	if right == nil || right.Hash == nil {
+		if right != nil && right.Duplicate != nil && *right.Duplicate {
+			return &PathElement{Offset: offset, Hash: MerkleTreeParent(left.Hash, left.Hash)}
+		}
+		// A single-level compound path (e.g. a full block's worth of level-0
+		// txids with no precomputed internal levels) may have an odd node
+		// count at some ancestor height with no explicit duplicate marker at
+		// all: prevOffset is then the last (unpaired) node at that height,
+		// and Bitcoin's Merkle rule is to hash it with itself. Mirrors
+		// ts-sdk's MerklePath.findOrComputeLeaf/cachedFindLeaf.
+		if len(ip) == 1 {
+			var maxOffset uint64
+			for o := range ip[0] {
+				if o > maxOffset {
+					maxOffset = o
+				}
+			}
+			if prevOffset == offsetAtHeight(maxOffset, layer-1) {
+				return &PathElement{Offset: offset, Hash: MerkleTreeParent(left.Hash, left.Hash)}
+			}
+		}
+		return nil
+	}
+
+	pathElement := &PathElement{
+		Offset: offset,
+	}
+	if right.Duplicate != nil && *right.Duplicate {
+		pathElement.Hash = MerkleTreeParent(left.Hash, left.Hash)
+	} else {
+		pathElement.Hash = MerkleTreeParent(left.Hash, right.Hash)
+	}
+	return pathElement
 }
 
 // getOffsetLeaf returns the PathElement at (layer, offset), synthesizing a
@@ -560,4 +584,266 @@ func (mp *MerklePath) ComputeMissingHashes() {
 			return int(a.Offset) - int(b.Offset) //nolint:gosec // G115 -- merkle path offsets are bounded well within int range by tree size
 		})
 	}
+}
+
+// siblingOffset returns the offset of the node paired with offset at the same
+// tree level (even offsets pair with offset+1, odd offsets with offset-1).
+func siblingOffset(offset uint64) uint64 {
+	if offset%2 == 0 {
+		return offset + 1
+	}
+	return offset - 1
+}
+
+// offsetAtHeight returns the ancestor offset of a level-0 offset at the given
+// height (each level up halves the offset), mirroring ts-sdk's
+// offsetAtHeight helper in MerklePath.ts.
+func offsetAtHeight(offset uint64, height int) uint64 {
+	return offset >> uint(height)
+}
+
+// sameNodeAtHeight reports whether index and maxOffset land on the same
+// ancestor node at the given height, mirroring ts-sdk's sameNodeAtHeight.
+func sameNodeAtHeight(index, maxOffset uint64, height int) bool {
+	return offsetAtHeight(index, height) == offsetAtHeight(maxOffset, height)
+}
+
+// extractCacheKey identifies a (height, offset) node for cachedFindLeafForExtract's memo table.
+type extractCacheKey struct {
+	height int
+	offset uint64
+}
+
+// cachedFindLeafForExtract finds or synthesizes the PathElement at
+// (height, offset), memoizing results (including "not found", cached as a
+// present key mapping to nil) so repeated climbs across multiple requested
+// txids share work. It mirrors ts-sdk's MerklePath.cachedFindLeaf exactly,
+// including its handling of a single-level compound path's unpaired last
+// node (treated as self-duplicated via sameNodeAtHeight).
+func (mp *MerklePath) cachedFindLeafForExtract(
+	height int,
+	offset uint64,
+	sourceIndex IndexedPath,
+	cache map[extractCacheKey]*PathElement,
+	maxOffset uint64,
+) *PathElement {
+	key := extractCacheKey{height, offset}
+	if leaf, ok := cache[key]; ok {
+		return leaf
+	}
+
+	if height < len(sourceIndex) {
+		if leaf, ok := sourceIndex[height][offset]; ok {
+			cache[key] = leaf
+			return leaf
+		}
+	}
+	if height == 0 {
+		cache[key] = nil
+		return nil
+	}
+
+	h := height - 1
+	l := offset * 2
+	leaf0 := mp.cachedFindLeafForExtract(h, l, sourceIndex, cache, maxOffset)
+	if leaf0 == nil || leaf0.Hash == nil {
+		cache[key] = nil
+		return nil
+	}
+
+	leaf1 := mp.cachedFindLeafForExtract(h, l+1, sourceIndex, cache, maxOffset)
+	if leaf1 == nil || leaf1.Hash == nil {
+		leaf1IsDuplicate := leaf1 != nil && leaf1.Duplicate != nil && *leaf1.Duplicate
+		if leaf1IsDuplicate || (len(mp.Path) == 1 && l == offsetAtHeight(maxOffset, h)) {
+			result := &PathElement{Offset: offset, Hash: MerkleTreeParent(leaf0.Hash, leaf0.Hash)}
+			cache[key] = result
+			return result
+		}
+		cache[key] = nil
+		return nil
+	}
+
+	var parentHash *chainhash.Hash
+	if leaf1.Duplicate != nil && *leaf1.Duplicate {
+		parentHash = MerkleTreeParent(leaf0.Hash, leaf0.Hash)
+	} else {
+		parentHash = MerkleTreeParent(leaf0.Hash, leaf1.Hash)
+	}
+	result := &PathElement{Offset: offset, Hash: parentHash}
+	cache[key] = result
+	return result
+}
+
+// trim removes internal nodes that are not required to prove the level-0
+// txid-flagged nodes (any node whose value can instead be recomputed from
+// nodes already kept), leaving every level sorted by increasing offset. It
+// mirrors ts-sdk's MerklePath.trim and assumes every genuinely needed node is
+// already present.
+func (mp *MerklePath) trim() {
+	for _, level := range mp.Path {
+		slices.SortFunc(level, func(a, b *PathElement) int {
+			return int(a.Offset) - int(b.Offset) //nolint:gosec // G115 -- merkle path offsets are bounded well within int range by tree size
+		})
+	}
+	if len(mp.Path) == 0 || len(mp.Path[0]) == 0 {
+		return
+	}
+
+	pushIfNew := func(v uint64, a []uint64) []uint64 {
+		if len(a) == 0 || a[len(a)-1] != v {
+			return append(a, v)
+		}
+		return a
+	}
+
+	dropOffsetsFromLevel := func(dropOffsets []uint64, level int) {
+		for _, off := range dropOffsets {
+			for i, n := range mp.Path[level] {
+				if n.Offset == off {
+					mp.Path[level] = append(mp.Path[level][:i], mp.Path[level][i+1:]...)
+					break
+				}
+			}
+		}
+	}
+
+	var computedOffsets []uint64
+	var dropOffsets []uint64
+
+	level0 := mp.Path[0]
+	for l, n := range level0 {
+		if n.Txid != nil && *n.Txid {
+			// level 0 must enable computing level 1 for txid nodes.
+			computedOffsets = pushIfNew(offsetAtHeight(n.Offset, 1), computedOffsets)
+			continue
+		}
+		isOdd := n.Offset%2 == 1
+		peerIdx := l + 1
+		if isOdd {
+			peerIdx = l - 1
+		}
+		if peerIdx < 0 || peerIdx >= len(level0) {
+			continue
+		}
+		peer := level0[peerIdx]
+		if peer.Txid == nil || !*peer.Txid {
+			// drop non-txid level 0 nodes without a txid peer.
+			dropOffsets = pushIfNew(peer.Offset, dropOffsets)
+		}
+	}
+	dropOffsetsFromLevel(dropOffsets, 0)
+
+	for h := 1; h < len(mp.Path); h++ {
+		dropOffsets = computedOffsets
+		var next []uint64
+		for _, o := range dropOffsets {
+			next = pushIfNew(offsetAtHeight(o, 1), next)
+		}
+		computedOffsets = next
+		dropOffsetsFromLevel(dropOffsets, h)
+	}
+}
+
+// Extract returns a new, minimal compound MerklePath proving membership for
+// exactly the given txids, mirroring ts-sdk's MerklePath.extract (BRC-74
+// sub-proof extraction). The receiver must be a compound path that already
+// contains every requested txid as a level-0 leaf (for example, a full
+// block's worth of level-0 txids, or a previously extracted/trimmed compound
+// path); the returned path's computed root is checked to match the
+// receiver's before it is returned.
+func (mp *MerklePath) Extract(txids []*chainhash.Hash) (*MerklePath, error) {
+	if mp == nil || len(mp.Path) == 0 || len(mp.Path[0]) == 0 {
+		return nil, errors.New("merkle path has no leaves")
+	}
+	if len(txids) == 0 {
+		return nil, errors.New("at least one txid must be provided to extract")
+	}
+
+	originalRoot, err := mp.ComputeRoot(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var maxOffset uint64
+	for _, l := range mp.Path[0] {
+		if l.Offset > maxOffset {
+			maxOffset = l.Offset
+		}
+	}
+	treeHeight := len(mp.Path)
+	if h := bits.Len64(maxOffset); h > treeHeight {
+		treeHeight = h
+	}
+
+	sourceIndex := mp.buildIndexedPath()
+	cache := make(map[extractCacheKey]*PathElement)
+
+	txidToOffset := make(map[chainhash.Hash]uint64, len(mp.Path[0]))
+	for _, l := range mp.Path[0] {
+		if l.Hash != nil {
+			txidToOffset[*l.Hash] = l.Offset
+		}
+	}
+
+	neededPerLevel := make([]map[uint64]*PathElement, treeHeight)
+	for h := range neededPerLevel {
+		neededPerLevel[h] = make(map[uint64]*PathElement)
+	}
+
+	for _, txid := range txids {
+		if txid == nil {
+			return nil, errors.New("nil txid provided to extract")
+		}
+		txOffset, ok := txidToOffset[*txid]
+		if !ok {
+			return nil, fmt.Errorf("transaction ID %s not found in the Merkle Path", txid)
+		}
+
+		txidFlag := true
+		hashCopy := *txid
+		neededPerLevel[0][txOffset] = &PathElement{Offset: txOffset, Txid: &txidFlag, Hash: &hashCopy}
+
+		levelZeroSibling := siblingOffset(txOffset)
+		if _, exists := neededPerLevel[0][levelZeroSibling]; !exists {
+			if sib := mp.cachedFindLeafForExtract(0, levelZeroSibling, sourceIndex, cache, maxOffset); sib != nil {
+				neededPerLevel[0][levelZeroSibling] = sib
+			}
+		}
+
+		for h := 1; h < treeHeight; h++ {
+			so := siblingOffset(offsetAtHeight(txOffset, h))
+			if _, exists := neededPerLevel[h][so]; exists {
+				continue
+			}
+			if sib := mp.cachedFindLeafForExtract(h, so, sourceIndex, cache, maxOffset); sib != nil {
+				neededPerLevel[h][so] = sib
+			} else if sameNodeAtHeight(txOffset, maxOffset, h) {
+				dup := true
+				neededPerLevel[h][so] = &PathElement{Offset: so, Duplicate: &dup}
+			}
+		}
+	}
+
+	newPath := make([][]*PathElement, treeHeight)
+	for h, level := range neededPerLevel {
+		leaves := make([]*PathElement, 0, len(level))
+		for _, el := range level {
+			leaves = append(leaves, el)
+		}
+		sort.Slice(leaves, func(i, j int) bool { return leaves[i].Offset < leaves[j].Offset })
+		newPath[h] = leaves
+	}
+
+	compound := &MerklePath{BlockHeight: mp.BlockHeight, Path: newPath}
+	compound.trim()
+
+	extractedRoot, err := compound.ComputeRoot(nil)
+	if err != nil {
+		return nil, err
+	}
+	if !extractedRoot.IsEqual(originalRoot) {
+		return nil, fmt.Errorf("extracted path root %s does not match original root %s", extractedRoot, originalRoot)
+	}
+
+	return compound, nil
 }

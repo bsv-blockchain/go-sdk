@@ -1,0 +1,495 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "messaging.messagebox-http",
+  "name": "MessageBox HTTP API",
+  "brc": ["BRC-31"],
+  "version": "1.0.0",
+  "reference_impl": "message-box-server@2.0.0",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "messaging.messagebox-http.sendmessage.1",
+      "description": "sendMessage to single recipient",
+      "input": {
+        "method": "POST",
+        "path": "/sendMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1"
+        },
+        "body": {
+          "message": {
+            "recipient": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "messageBox": "payment_inbox",
+            "messageId": "msg-001",
+            "body": "{\"amount\":1000,\"currency\":\"BSV\"}"
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "results": [
+            {
+              "recipient": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+              "messageId": "msg-001"
+            }
+          ]
+        }
+      },
+      "tags": ["messaging", "sendMessage", "happy-path", "single-recipient"]
+    },
+    {
+      "id": "messaging.messagebox-http.sendmessage.2",
+      "description": "sendMessage to multiple recipients",
+      "input": {
+        "method": "POST",
+        "path": "/sendMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1"
+        },
+        "body": {
+          "message": {
+            "recipients": [
+              "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+              "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+            ],
+            "messageBox": "group_inbox",
+            "messageId": ["msg-001a", "msg-001b"],
+            "body": "hello group"
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "results": [
+            { "recipient": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5", "messageId": "msg-001a" },
+            { "recipient": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", "messageId": "msg-001b" }
+          ]
+        }
+      },
+      "tags": ["messaging", "sendMessage", "multi-recipient"]
+    },
+    {
+      "id": "messaging.messagebox-http.sendmessage.3",
+      "description": "sendMessage with payment (recipientFee set)",
+      "input": {
+        "method": "POST",
+        "path": "/sendMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1"
+        },
+        "body": {
+          "message": {
+            "recipient": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "messageBox": "premium_inbox",
+            "messageId": "msg-002",
+            "body": "paid message"
+          },
+          "payment": {
+            "derivationPrefix": "dGVzdHByZWZpeA==",
+            "derivationSuffix": "dGVzdHN1ZmZpeA==",
+            "transaction": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "results": [
+            { "recipient": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5", "messageId": "msg-002" }
+          ]
+        }
+      },
+      "tags": ["messaging", "sendMessage", "payment"]
+    },
+    {
+      "id": "messaging.messagebox-http.sendmessage.4",
+      "description": "sendMessage without auth headers returns 401",
+      "input": {
+        "method": "POST",
+        "path": "/sendMessage",
+        "headers": { "Content-Type": "application/json" },
+        "body": {
+          "message": {
+            "recipient": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "messageBox": "inbox",
+            "messageId": "msg-fail",
+            "body": "no auth"
+          }
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": "error",
+          "code": "ERR_AUTH_REQUIRED"
+        }
+      },
+      "tags": ["messaging", "sendMessage", "error", "auth"]
+    },
+    {
+      "id": "messaging.messagebox-http.sendmessage.5",
+      "description": "sendMessage with missing required fields returns 400",
+      "input": {
+        "method": "POST",
+        "path": "/sendMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1"
+        },
+        "body": {
+          "message": {
+            "messageBox": "inbox"
+          }
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["messaging", "sendMessage", "error", "validation"]
+    },
+    {
+      "id": "messaging.messagebox-http.sendmessage.6",
+      "description": "sendMessage invalid recipient pubkey returns 400",
+      "input": {
+        "method": "POST",
+        "path": "/sendMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1"
+        },
+        "body": {
+          "message": {
+            "recipient": "not-a-valid-pubkey",
+            "messageBox": "inbox",
+            "messageId": "msg-x",
+            "body": "test"
+          }
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["messaging", "sendMessage", "error", "validation", "invalid-pubkey"]
+    },
+    {
+      "id": "messaging.messagebox-http.listmessages.1",
+      "description": "listMessages from a box with messages",
+      "input": {
+        "method": "POST",
+        "path": "/listMessages",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "payment_inbox"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "messages": []
+        }
+      },
+      "tags": ["messaging", "listMessages", "happy-path"]
+    },
+    {
+      "id": "messaging.messagebox-http.listmessages.2",
+      "description": "listMessages returns message shape",
+      "input": {
+        "method": "POST",
+        "path": "/listMessages",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "inbox"
+        },
+        "_schema_note": "Message shape: { messageId, body, sender, created_at }"
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "messages": [
+            {
+              "messageId": "msg-001",
+              "body": "{\"amount\":1000}",
+              "sender": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+              "created_at": "2025-01-01T00:00:00.000Z"
+            }
+          ]
+        }
+      },
+      "tags": ["messaging", "listMessages", "schema", "non-empty"]
+    },
+    {
+      "id": "messaging.messagebox-http.listmessages.3",
+      "description": "listMessages without auth returns 401",
+      "input": {
+        "method": "POST",
+        "path": "/listMessages",
+        "headers": { "Content-Type": "application/json" },
+        "body": { "messageBox": "inbox" }
+      },
+      "expected": {
+        "status": 401,
+        "body": { "status": "error", "code": "ERR_AUTH_REQUIRED" }
+      },
+      "tags": ["messaging", "listMessages", "error", "auth"]
+    },
+    {
+      "id": "messaging.messagebox-http.listmessages.4",
+      "description": "listMessages non-existent box returns empty array",
+      "input": {
+        "method": "POST",
+        "path": "/listMessages",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": { "messageBox": "nonexistent_box_xyz" }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success", "messages": [] }
+      },
+      "tags": ["messaging", "listMessages", "empty-box"]
+    },
+    {
+      "id": "messaging.messagebox-http.acknowledgemessage.1",
+      "description": "acknowledgeMessage single message",
+      "input": {
+        "method": "POST",
+        "path": "/acknowledgeMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "payment_inbox",
+          "messageIds": ["msg-001"]
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success" }
+      },
+      "tags": ["messaging", "acknowledgeMessage", "happy-path"]
+    },
+    {
+      "id": "messaging.messagebox-http.acknowledgemessage.2",
+      "description": "acknowledgeMessage multiple messages",
+      "input": {
+        "method": "POST",
+        "path": "/acknowledgeMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "inbox",
+          "messageIds": ["msg-001", "msg-002", "msg-003"]
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success" }
+      },
+      "tags": ["messaging", "acknowledgeMessage", "multi"]
+    },
+    {
+      "id": "messaging.messagebox-http.acknowledgemessage.3",
+      "description": "acknowledgeMessage non-existent messageIds succeeds idempotently",
+      "input": {
+        "method": "POST",
+        "path": "/acknowledgeMessage",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "inbox",
+          "messageIds": ["nonexistent-id-xyz"]
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success" }
+      },
+      "tags": ["messaging", "acknowledgeMessage", "idempotent"]
+    },
+    {
+      "id": "messaging.messagebox-http.acknowledgemessage.4",
+      "description": "acknowledgeMessage without auth returns 401",
+      "input": {
+        "method": "POST",
+        "path": "/acknowledgeMessage",
+        "headers": { "Content-Type": "application/json" },
+        "body": { "messageBox": "inbox", "messageIds": ["msg-001"] }
+      },
+      "expected": {
+        "status": 401,
+        "body": { "status": "error", "code": "ERR_AUTH_REQUIRED" }
+      },
+      "tags": ["messaging", "acknowledgeMessage", "error", "auth"]
+    },
+    {
+      "id": "messaging.messagebox-http.setpermission.1",
+      "description": "setPermission box-wide default fee",
+      "input": {
+        "method": "POST",
+        "path": "/permissions/set",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "premium_inbox",
+          "recipientFee": 1000
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success" }
+      },
+      "tags": ["messaging", "setPermission", "box-wide", "happy-path"]
+    },
+    {
+      "id": "messaging.messagebox-http.setpermission.2",
+      "description": "setPermission sender-specific fee",
+      "input": {
+        "method": "POST",
+        "path": "/permissions/set",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "inbox",
+          "sender": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "recipientFee": 500
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success" }
+      },
+      "tags": ["messaging", "setPermission", "sender-specific"]
+    },
+    {
+      "id": "messaging.messagebox-http.setpermission.3",
+      "description": "setPermission zero fee (free inbox)",
+      "input": {
+        "method": "POST",
+        "path": "/permissions/set",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "body": {
+          "messageBox": "public_inbox",
+          "recipientFee": 0
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success" }
+      },
+      "tags": ["messaging", "setPermission", "zero-fee"]
+    },
+    {
+      "id": "messaging.messagebox-http.getpermission.1",
+      "description": "getPermission for sender+box",
+      "input": {
+        "method": "GET",
+        "path": "/permissions/get?messageBox=inbox&sender=028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+        "headers": {
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "queryParams": {
+          "messageBox": "inbox",
+          "sender": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "permission": {
+            "messageBox": "inbox",
+            "sender": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+            "recipientFee": 500
+          }
+        }
+      },
+      "tags": ["messaging", "getPermission", "happy-path"]
+    },
+    {
+      "id": "messaging.messagebox-http.getpermission.2",
+      "description": "getPermission no record returns permission: null",
+      "input": {
+        "method": "GET",
+        "path": "/permissions/get?messageBox=unset_box",
+        "headers": {
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "queryParams": { "messageBox": "unset_box" }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success", "permission": null }
+      },
+      "tags": ["messaging", "getPermission", "no-record"]
+    },
+    {
+      "id": "messaging.messagebox-http.listpermissions.1",
+      "description": "listPermissions for authenticated user",
+      "input": {
+        "method": "GET",
+        "path": "/permissions/list",
+        "headers": {
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success", "permissions": [] }
+      },
+      "tags": ["messaging", "listPermissions", "happy-path"]
+    },
+    {
+      "id": "messaging.messagebox-http.listpermissions.2",
+      "description": "listPermissions with filter by messageBox",
+      "input": {
+        "method": "GET",
+        "path": "/permissions/list?messageBox=inbox",
+        "headers": {
+          "x-bsv-auth-identity-key": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "queryParams": { "messageBox": "inbox" }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "success", "permissions": [] }
+      },
+      "tags": ["messaging", "listPermissions", "filtered"]
+    }
+  ]
+}

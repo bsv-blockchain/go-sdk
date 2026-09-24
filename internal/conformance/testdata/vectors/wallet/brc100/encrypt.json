@@ -1,0 +1,2041 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.encrypt",
+  "name": "BRC-100 encrypt",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.encrypt.1",
+      "description": "encrypt 0,wallet/1/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          48,
+          204,
+          170,
+          88,
+          105,
+          235,
+          224,
+          65,
+          177,
+          223,
+          123,
+          156,
+          236,
+          35,
+          20,
+          113,
+          108,
+          8,
+          1,
+          77,
+          18,
+          6,
+          95,
+          62,
+          37,
+          19,
+          22,
+          144,
+          164,
+          189,
+          251,
+          150,
+          174,
+          237,
+          119,
+          238,
+          132,
+          151,
+          104,
+          224,
+          165,
+          86,
+          214,
+          46,
+          232,
+          194,
+          91,
+          31
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.2",
+      "description": "encrypt 0,wallet/1/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          223,
+          194,
+          15,
+          115,
+          43,
+          142,
+          129,
+          26,
+          106,
+          121,
+          214,
+          39,
+          225,
+          155,
+          95,
+          221,
+          110,
+          189,
+          216,
+          100,
+          122,
+          161,
+          20,
+          79,
+          157,
+          211,
+          187,
+          115,
+          229,
+          73,
+          103,
+          17,
+          140,
+          235,
+          118,
+          217,
+          51,
+          197,
+          19,
+          240,
+          65,
+          141,
+          3,
+          254,
+          140,
+          200,
+          176,
+          74
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.3",
+      "description": "encrypt 0,wallet/2/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          109,
+          40,
+          45,
+          138,
+          113,
+          8,
+          44,
+          185,
+          171,
+          199,
+          231,
+          219,
+          84,
+          48,
+          189,
+          245,
+          8,
+          59,
+          150,
+          69,
+          169,
+          84,
+          33,
+          244,
+          126,
+          1,
+          124,
+          112,
+          111,
+          61,
+          65,
+          114,
+          65,
+          85,
+          131,
+          199,
+          204,
+          165,
+          150,
+          149,
+          186,
+          248,
+          4,
+          125,
+          128,
+          115,
+          68,
+          223
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.4",
+      "description": "encrypt 0,wallet/2/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          148,
+          162,
+          202,
+          165,
+          171,
+          229,
+          17,
+          64,
+          10,
+          19,
+          63,
+          144,
+          242,
+          79,
+          193,
+          177,
+          221,
+          223,
+          189,
+          165,
+          1,
+          211,
+          59,
+          72,
+          130,
+          71,
+          143,
+          236,
+          240,
+          79,
+          227,
+          6,
+          91,
+          195,
+          238,
+          189,
+          211,
+          229,
+          211,
+          34,
+          245,
+          67,
+          215,
+          2,
+          85,
+          156,
+          231,
+          44
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.5",
+      "description": "encrypt 0,wallet/primary/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          189,
+          140,
+          204,
+          186,
+          115,
+          208,
+          188,
+          22,
+          236,
+          120,
+          158,
+          160,
+          117,
+          67,
+          69,
+          157,
+          195,
+          178,
+          181,
+          254,
+          61,
+          107,
+          45,
+          201,
+          210,
+          141,
+          202,
+          236,
+          13,
+          198,
+          221,
+          150,
+          8,
+          7,
+          1,
+          96,
+          242,
+          88,
+          25,
+          22,
+          58,
+          64,
+          229,
+          76,
+          84,
+          73,
+          10,
+          195
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.6",
+      "description": "encrypt 0,wallet/primary/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          234,
+          174,
+          198,
+          229,
+          42,
+          150,
+          5,
+          236,
+          106,
+          193,
+          177,
+          65,
+          201,
+          182,
+          77,
+          28,
+          174,
+          125,
+          109,
+          175,
+          140,
+          29,
+          233,
+          71,
+          101,
+          59,
+          243,
+          159,
+          225,
+          216,
+          251,
+          35,
+          222,
+          56,
+          236,
+          208,
+          176,
+          133,
+          98,
+          137,
+          237,
+          35,
+          246,
+          41,
+          53,
+          255,
+          139,
+          125
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.7",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.8",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.9",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.10",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.11",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.12",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.13",
+      "description": "encrypt 2,counterparty/1/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          86,
+          172,
+          149,
+          136,
+          199,
+          216,
+          196,
+          126,
+          170,
+          78,
+          249,
+          60,
+          239,
+          157,
+          220,
+          159,
+          222,
+          10,
+          129,
+          3,
+          17,
+          33,
+          123,
+          26,
+          50,
+          28,
+          156,
+          189,
+          13,
+          217,
+          153,
+          172,
+          122,
+          46,
+          70,
+          15,
+          219,
+          103,
+          180,
+          142,
+          16,
+          248,
+          103,
+          159,
+          177,
+          67,
+          13,
+          195
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.14",
+      "description": "encrypt 2,counterparty/1/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          12,
+          80,
+          225,
+          245,
+          118,
+          81,
+          179,
+          46,
+          67,
+          86,
+          57,
+          178,
+          132,
+          245,
+          58,
+          232,
+          52,
+          42,
+          141,
+          209,
+          164,
+          12,
+          43,
+          67,
+          234,
+          9,
+          211,
+          127,
+          3,
+          239,
+          25,
+          46,
+          21,
+          169,
+          41,
+          15,
+          232,
+          174,
+          244,
+          24,
+          130,
+          192,
+          16,
+          90,
+          26,
+          68,
+          97,
+          162
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.15",
+      "description": "encrypt 2,counterparty/2/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          37,
+          102,
+          18,
+          7,
+          170,
+          54,
+          1,
+          169,
+          123,
+          169,
+          11,
+          15,
+          251,
+          29,
+          23,
+          36,
+          168,
+          228,
+          65,
+          247,
+          91,
+          210,
+          61,
+          250,
+          211,
+          206,
+          86,
+          171,
+          83,
+          243,
+          78,
+          19,
+          135,
+          91,
+          229,
+          200,
+          118,
+          113,
+          111,
+          239,
+          96,
+          205,
+          48,
+          107,
+          231,
+          186,
+          247,
+          44
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.16",
+      "description": "encrypt 2,counterparty/2/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          115,
+          252,
+          27,
+          101,
+          203,
+          180,
+          213,
+          60,
+          44,
+          168,
+          19,
+          23,
+          109,
+          39,
+          22,
+          49,
+          157,
+          72,
+          110,
+          163,
+          10,
+          123,
+          133,
+          254,
+          174,
+          212,
+          172,
+          18,
+          32,
+          53,
+          253,
+          53,
+          229,
+          102,
+          44,
+          178,
+          252,
+          38,
+          36,
+          179,
+          10,
+          146,
+          219,
+          149,
+          167,
+          184,
+          13,
+          6
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.17",
+      "description": "encrypt 2,counterparty/primary/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          167,
+          34,
+          21,
+          117,
+          113,
+          149,
+          188,
+          223,
+          49,
+          169,
+          181,
+          188,
+          184,
+          55,
+          89,
+          129,
+          244,
+          233,
+          55,
+          38,
+          170,
+          82,
+          8,
+          85,
+          227,
+          99,
+          122,
+          189,
+          222,
+          246,
+          37,
+          169,
+          240,
+          11,
+          128,
+          91,
+          157,
+          104,
+          172,
+          141,
+          200,
+          218,
+          133,
+          176,
+          64,
+          13,
+          157,
+          33
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.18",
+      "description": "encrypt 2,counterparty/primary/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          223,
+          188,
+          249,
+          127,
+          198,
+          157,
+          184,
+          142,
+          80,
+          31,
+          64,
+          159,
+          79,
+          129,
+          242,
+          135,
+          159,
+          223,
+          193,
+          231,
+          76,
+          81,
+          189,
+          213,
+          16,
+          127,
+          184,
+          176,
+          57,
+          221,
+          242,
+          189,
+          237,
+          125,
+          179,
+          78,
+          89,
+          200,
+          162,
+          26,
+          171,
+          133,
+          105,
+          19,
+          212,
+          97,
+          176,
+          77
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.19",
+      "description": "encrypt 0,wallet/1/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          199,
+          13,
+          248,
+          19,
+          190,
+          162,
+          209,
+          13,
+          76,
+          210,
+          172,
+          35,
+          203,
+          137,
+          8,
+          83,
+          128,
+          58,
+          18,
+          221,
+          132,
+          126,
+          9,
+          232,
+          55,
+          95,
+          135,
+          125,
+          244,
+          150,
+          235,
+          252,
+          86,
+          182,
+          182,
+          211,
+          156,
+          8,
+          115,
+          238,
+          68,
+          64,
+          101,
+          183,
+          8,
+          64,
+          255,
+          125
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.20",
+      "description": "encrypt 0,wallet/1/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          154,
+          13,
+          211,
+          81,
+          116,
+          184,
+          170,
+          106,
+          170,
+          108,
+          94,
+          50,
+          164,
+          36,
+          219,
+          54,
+          84,
+          101,
+          203,
+          12,
+          16,
+          174,
+          73,
+          135,
+          204,
+          105,
+          108,
+          247,
+          186,
+          104,
+          47,
+          98,
+          56,
+          77,
+          33,
+          249,
+          99,
+          86,
+          249,
+          3,
+          198,
+          239,
+          174,
+          124,
+          36,
+          193,
+          171,
+          2
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.21",
+      "description": "encrypt 0,wallet/2/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          53,
+          47,
+          5,
+          59,
+          175,
+          32,
+          134,
+          136,
+          171,
+          56,
+          113,
+          54,
+          106,
+          250,
+          28,
+          75,
+          211,
+          194,
+          186,
+          248,
+          234,
+          45,
+          134,
+          92,
+          130,
+          110,
+          90,
+          175,
+          40,
+          41,
+          201,
+          180,
+          244,
+          230,
+          30,
+          118,
+          231,
+          177,
+          159,
+          244,
+          201,
+          7,
+          102,
+          184,
+          211,
+          131,
+          51,
+          47
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.22",
+      "description": "encrypt 0,wallet/2/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          138,
+          50,
+          70,
+          1,
+          150,
+          17,
+          19,
+          177,
+          219,
+          7,
+          8,
+          233,
+          232,
+          85,
+          198,
+          170,
+          160,
+          86,
+          73,
+          240,
+          18,
+          113,
+          186,
+          88,
+          80,
+          78,
+          148,
+          62,
+          44,
+          220,
+          80,
+          20,
+          54,
+          242,
+          182,
+          44,
+          54,
+          172,
+          254,
+          149,
+          74,
+          221,
+          162,
+          207,
+          249,
+          53,
+          244,
+          99
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.23",
+      "description": "encrypt 0,wallet/primary/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          47,
+          189,
+          101,
+          165,
+          69,
+          211,
+          244,
+          72,
+          12,
+          145,
+          204,
+          181,
+          225,
+          62,
+          155,
+          53,
+          245,
+          250,
+          103,
+          70,
+          195,
+          21,
+          83,
+          13,
+          162,
+          203,
+          76,
+          191,
+          135,
+          8,
+          225,
+          190,
+          106,
+          117,
+          128,
+          200,
+          95,
+          90,
+          204,
+          61,
+          30,
+          181,
+          6,
+          86,
+          139,
+          159,
+          34,
+          145
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.24",
+      "description": "encrypt 0,wallet/primary/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          45,
+          211,
+          47,
+          51,
+          227,
+          166,
+          135,
+          202,
+          185,
+          170,
+          242,
+          12,
+          203,
+          170,
+          113,
+          20,
+          8,
+          159,
+          236,
+          57,
+          54,
+          142,
+          189,
+          130,
+          71,
+          70,
+          228,
+          69,
+          196,
+          23,
+          146,
+          196,
+          82,
+          14,
+          183,
+          42,
+          63,
+          96,
+          248,
+          51,
+          27,
+          171,
+          165,
+          29,
+          153,
+          102,
+          76,
+          141
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.25",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.26",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.27",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.28",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.29",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.30",
+      "description": "encrypt error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "encrypt",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.31",
+      "description": "encrypt 2,counterparty/1/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          137,
+          235,
+          255,
+          171,
+          156,
+          80,
+          213,
+          34,
+          216,
+          51,
+          169,
+          12,
+          97,
+          201,
+          37,
+          237,
+          189,
+          142,
+          115,
+          135,
+          146,
+          117,
+          1,
+          75,
+          122,
+          105,
+          170,
+          195,
+          38,
+          136,
+          22,
+          205,
+          239,
+          127,
+          125,
+          30,
+          189,
+          184,
+          255,
+          140,
+          33,
+          209,
+          58,
+          178,
+          240,
+          227,
+          119,
+          112
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.32",
+      "description": "encrypt 2,counterparty/1/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          207,
+          1,
+          237,
+          59,
+          183,
+          165,
+          248,
+          255,
+          37,
+          83,
+          255,
+          238,
+          42,
+          38,
+          110,
+          97,
+          204,
+          196,
+          68,
+          237,
+          201,
+          177,
+          159,
+          26,
+          135,
+          71,
+          47,
+          203,
+          119,
+          194,
+          77,
+          227,
+          189,
+          166,
+          127,
+          233,
+          14,
+          58,
+          116,
+          92,
+          61,
+          208,
+          159,
+          167,
+          86,
+          68,
+          24,
+          161
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.33",
+      "description": "encrypt 2,counterparty/2/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          185,
+          139,
+          160,
+          213,
+          95,
+          58,
+          38,
+          215,
+          138,
+          169,
+          200,
+          84,
+          57,
+          235,
+          182,
+          116,
+          93,
+          47,
+          200,
+          53,
+          206,
+          153,
+          75,
+          153,
+          86,
+          72,
+          0,
+          69,
+          3,
+          216,
+          41,
+          225,
+          57,
+          203,
+          172,
+          221,
+          226,
+          85,
+          160,
+          0,
+          149,
+          83,
+          175,
+          161,
+          90,
+          74,
+          197,
+          205
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.34",
+      "description": "encrypt 2,counterparty/2/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          114,
+          139,
+          93,
+          64,
+          226,
+          13,
+          178,
+          186,
+          205,
+          84,
+          12,
+          50,
+          83,
+          155,
+          254,
+          45,
+          189,
+          35,
+          83,
+          156,
+          93,
+          90,
+          182,
+          78,
+          44,
+          73,
+          183,
+          203,
+          49,
+          183,
+          206,
+          63,
+          33,
+          63,
+          203,
+          11,
+          219,
+          3,
+          138,
+          34,
+          34,
+          242,
+          195,
+          242,
+          57,
+          234,
+          119,
+          229
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.35",
+      "description": "encrypt 2,counterparty/primary/self",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          52,
+          228,
+          107,
+          99,
+          224,
+          132,
+          171,
+          162,
+          33,
+          4,
+          124,
+          210,
+          182,
+          242,
+          135,
+          23,
+          246,
+          138,
+          59,
+          27,
+          10,
+          72,
+          162,
+          66,
+          64,
+          43,
+          190,
+          189,
+          12,
+          202,
+          99,
+          18,
+          107,
+          92,
+          184,
+          35,
+          66,
+          46,
+          137,
+          110,
+          252,
+          145,
+          160,
+          44,
+          214,
+          15,
+          197,
+          99
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    },
+    {
+      "id": "wallet.brc100.encrypt.36",
+      "description": "encrypt 2,counterparty/primary/anyone",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for encrypt"
+        }
+      },
+      "expected": {
+        "ciphertext": [
+          101,
+          218,
+          19,
+          87,
+          126,
+          174,
+          115,
+          254,
+          125,
+          222,
+          133,
+          143,
+          48,
+          114,
+          253,
+          202,
+          252,
+          227,
+          75,
+          203,
+          77,
+          17,
+          174,
+          189,
+          97,
+          7,
+          37,
+          200,
+          98,
+          12,
+          113,
+          85,
+          72,
+          254,
+          249,
+          112,
+          9,
+          46,
+          42,
+          92,
+          168,
+          108,
+          72,
+          121,
+          189,
+          142,
+          35,
+          117
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "encrypt"
+      ]
+    }
+  ]
+}

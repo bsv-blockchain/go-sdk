@@ -1,0 +1,93 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.getversion",
+  "name": "BRC-100 getversion",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.getversion.1",
+      "description": "getVersion returns version string",
+      "input": {
+        "args": {}
+      },
+      "expected": {
+        "version": "wallet-0.1.0"
+      },
+      "tags": [
+        "brc-100",
+        "getVersion",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getversion.2",
+      "description": "getVersion format is vendor-major.minor.patch",
+      "input": {
+        "args": {},
+        "_schema_note": "version format: [vendor]-[major].[minor].[patch], 7-30 bytes"
+      },
+      "expected": {
+        "version": "wallet-1.0.0"
+      },
+      "tags": [
+        "brc-100",
+        "getVersion",
+        "schema"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getversion.3",
+      "description": "getVersion with originator",
+      "input": {
+        "args": {},
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "version": "wallet-1.0.0"
+      },
+      "tags": [
+        "brc-100",
+        "getVersion",
+        "originator"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getversion.4",
+      "description": "getVersion error when not available",
+      "input": {
+        "args": {},
+        "_scenario": "service unavailable"
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "getVersion",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getversion.5",
+      "description": "getVersion minimum length version (7 chars)",
+      "input": {
+        "args": {},
+        "_schema_note": "minimum 7 chars: \"x-0.0.0\""
+      },
+      "expected": {
+        "version": "x-0.0.0"
+      },
+      "tags": [
+        "brc-100",
+        "getVersion",
+        "schema",
+        "edge-case"
+      ]
+    }
+  ]
+}

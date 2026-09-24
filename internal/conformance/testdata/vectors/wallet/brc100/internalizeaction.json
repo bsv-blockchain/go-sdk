@@ -1,0 +1,464 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.internalizeaction",
+  "name": "BRC-100 internalizeaction",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.internalizeaction.1",
+      "description": "internalizeAction wallet payment",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "inbound payment"
+        }
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "payment",
+        "happy-path"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.2",
+      "description": "internalizeAction basket insertion",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "basket insertion",
+              "insertionRemittance": {
+                "basket": "tokens",
+                "customInstructions": "{\"token\":\"NFT\",\"id\":1}",
+                "tags": [
+                  "nft",
+                  "collectible"
+                ]
+              }
+            }
+          ],
+          "description": "token insert"
+        }
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "basket-insertion"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.3",
+      "description": "internalizeAction multiple outputs",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            },
+            {
+              "outputIndex": 0,
+              "protocol": "basket insertion",
+              "insertionRemittance": {
+                "basket": "tokens",
+                "customInstructions": "{\"token\":\"NFT\",\"id\":1}",
+                "tags": [
+                  "nft",
+                  "collectible"
+                ]
+              }
+            }
+          ],
+          "description": "mixed internalization"
+        }
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "multi-output"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.4",
+      "description": "internalizeAction with labels",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "labeled payment",
+          "labels": [
+            "income",
+            "q4-2025"
+          ]
+        }
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "labels"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.5",
+      "description": "internalizeAction seekPermission=false",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "silent internalization",
+          "seekPermission": false
+        }
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "no-permission"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.6",
+      "description": "internalizeAction invalid BEEF",
+      "input": {
+        "args": {
+          "tx": [
+            0,
+            1,
+            2
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "bad tx data"
+        }
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_INVALID_BEEF"
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "error",
+        "invalid-beef"
+      ]
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.7",
+      "description": "internalizeAction output index out of range",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 999,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "bad output index"
+        }
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "error",
+        "invalid-index"
+      ]
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.8",
+      "description": "internalizeAction result shape: { accepted: true }",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "shape check"
+        },
+        "_schema_note": "success always returns { accepted: true }"
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "schema"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.9",
+      "description": "internalizeAction basket insertion minimal",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "basket insertion",
+              "insertionRemittance": {
+                "basket": "default"
+              }
+            }
+          ],
+          "description": "minimal basket insert"
+        }
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "minimal"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    },
+    {
+      "id": "wallet.brc100.internalizeaction.10",
+      "description": "internalizeAction with originator",
+      "input": {
+        "args": {
+          "tx": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "payment from app"
+        },
+        "originator": "merchant.example.com"
+      },
+      "expected": {
+        "accepted": true
+      },
+      "tags": [
+        "brc-100",
+        "internalizeAction",
+        "originator"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "12-byte placeholder tx arrays are not valid BEEF; wallet BEEF parser rejects them. Pending real BEEF fixture generation."
+    }
+  ]
+}

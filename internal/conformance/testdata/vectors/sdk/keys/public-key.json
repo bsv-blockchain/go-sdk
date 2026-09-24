@@ -1,0 +1,194 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.keys.publickey",
+  "name": "PublicKey DER encoding, fromString, and BRC-42 child derivation",
+  "brc": ["BRC-42"],
+  "version": "1.0.0",
+  "reference_impl": "packages/sdk/ts-sdk/src/primitives/PublicKey.ts",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "pubkey-der-001",
+      "description": "Generator point G (privkey=1) — compressed DER encoding",
+      "input": {
+        "privkey_hex": "0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "expected": {
+        "pubkey_der_hex": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "der_length_bytes": 33,
+        "der_hex_length_chars": 66
+      },
+      "tags": ["public-key", "der", "compressed", "boundary", "happy-path"]
+    },
+    {
+      "id": "pubkey-der-002",
+      "description": "privkey n-1 — compressed DER has 02 prefix at y=G.y (even)",
+      "input": {
+        "privkey_hex": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140"
+      },
+      "expected": {
+        "pubkey_der_hex": "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "der_length_bytes": 33
+      },
+      "tags": ["public-key", "der", "compressed", "boundary", "happy-path"]
+    },
+    {
+      "id": "pubkey-der-003",
+      "description": "Private key f97c89aa — compressed DER with 03 prefix (odd y)",
+      "input": {
+        "privkey_hex": "f97c89aaacf0cd2e47ddbacc97dae1f88bec49106ac37716c451dcdd008a581b"
+      },
+      "expected": {
+        "pubkey_der_hex": "03f24aa2a2cac4083ccc938020369c509cca9bf51915143c0e8707a57b27e3e333",
+        "der_length_bytes": 33,
+        "der_hex_length_chars": 66
+      },
+      "tags": ["public-key", "der", "compressed", "happy-path"]
+    },
+    {
+      "id": "pubkey-fromstring-001",
+      "description": "PublicKey.fromString round-trips through toString — x and y coordinates match",
+      "input": {
+        "pubkey_der_hex": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+      },
+      "expected": {
+        "pubkey_der_hex_roundtrip": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+      },
+      "tags": ["public-key", "fromstring", "roundtrip", "happy-path"]
+    },
+    {
+      "id": "pubkey-fromstring-002",
+      "description": "PublicKey.fromString with 03-prefix compressed DER round-trips correctly",
+      "input": {
+        "pubkey_der_hex": "03f24aa2a2cac4083ccc938020369c509cca9bf51915143c0e8707a57b27e3e333"
+      },
+      "expected": {
+        "pubkey_der_hex_roundtrip": "03f24aa2a2cac4083ccc938020369c509cca9bf51915143c0e8707a57b27e3e333"
+      },
+      "tags": ["public-key", "fromstring", "roundtrip", "happy-path"]
+    },
+    {
+      "id": "pubkey-fromstring-003",
+      "description": "PublicKey.fromString on a known BSM public key",
+      "input": {
+        "pubkey_der_hex": "03d4d1a6c5d8c03b0e671bc1891b69afaecb40c0686188fe9019f93581b43e8334"
+      },
+      "expected": {
+        "pubkey_der_hex_roundtrip": "03d4d1a6c5d8c03b0e671bc1891b69afaecb40c0686188fe9019f93581b43e8334"
+      },
+      "tags": ["public-key", "fromstring", "happy-path"]
+    },
+    {
+      "id": "pubkey-constructor-err-001",
+      "description": "new PublicKey(derHexString) throws — DER strings must go through fromString",
+      "input": {
+        "constructor_arg": "036af279b60aa437d48bb0e2ec0b0c6b5cfaa976663f1f08ad456fd7fff149321d"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "You are using the \"new PublicKey()\" constructor with a DER hex string"
+      },
+      "tags": ["public-key", "constructor", "error-case"]
+    },
+    {
+      "id": "pubkey-ecdh-err-001",
+      "description": "deriveSharedSecret throws for a non-curve public key (10, 13)",
+      "input": {
+        "pubkey_x": 10,
+        "pubkey_y": 13
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Public key not valid for ECDH secret derivation"
+      },
+      "tags": ["public-key", "ecdh", "error-case"]
+    },
+    {
+      "id": "pubkey-brc42-001",
+      "description": "BRC-42 public child key derivation — vector #1",
+      "input": {
+        "sender_private_key_hex": "583755110a8c059de5cd81b8a04e1be884c46083ade3f779c1e022f6f89da94c",
+        "recipient_public_key_hex": "02c0c1e1a1f7d247827d1bcf399f0ef2deef7695c322fd91a01a91378f101b6ffc",
+        "invoice_number": "IBioA4D/OaE="
+      },
+      "expected": {
+        "derived_public_key_hex": "03c1bf5baadee39721ae8c9882b3cf324f0bf3b9eb3fc1b8af8089ca7a7c2e669f"
+      },
+      "tags": ["brc42", "key-derivation", "public", "happy-path"]
+    },
+    {
+      "id": "pubkey-brc42-002",
+      "description": "BRC-42 public child key derivation — vector #2",
+      "input": {
+        "sender_private_key_hex": "2c378b43d887d72200639890c11d79e8f22728d032a5733ba3d7be623d1bb118",
+        "recipient_public_key_hex": "039a9da906ecb8ced5c87971e9c2e7c921e66ad450fd4fc0a7d569fdb5bede8e0f",
+        "invoice_number": "PWYuo9PDKvI="
+      },
+      "expected": {
+        "derived_public_key_hex": "0398cdf4b56a3b2e106224ff3be5253afd5b72de735d647831be51c713c9077848"
+      },
+      "tags": ["brc42", "key-derivation", "public", "happy-path"]
+    },
+    {
+      "id": "pubkey-brc42-003",
+      "description": "BRC-42 public child key derivation — vector #3",
+      "input": {
+        "sender_private_key_hex": "d5a5f70b373ce164998dff7ecd93260d7e80356d3d10abf928fb267f0a6c7be6",
+        "recipient_public_key_hex": "02745623f4e5de046b6ab59ce837efa1a959a8f28286ce9154a4781ec033b85029",
+        "invoice_number": "X9pnS+bByrM="
+      },
+      "expected": {
+        "derived_public_key_hex": "0273eec9380c1a11c5a905e86c2d036e70cbefd8991d9a0cfca671f5e0bbea4a3c"
+      },
+      "tags": ["brc42", "key-derivation", "public", "happy-path"]
+    },
+    {
+      "id": "pubkey-brc42-004",
+      "description": "BRC-42 public child key derivation — vector #4",
+      "input": {
+        "sender_private_key_hex": "46cd68165fd5d12d2d6519b02feb3f4d9c083109de1bfaa2b5c4836ba717523c",
+        "recipient_public_key_hex": "031e18bb0bbd3162b886007c55214c3c952bb2ae6c33dd06f57d891a60976003b1",
+        "invoice_number": "+ktmYRHv3uQ="
+      },
+      "expected": {
+        "derived_public_key_hex": "034c5c6bf2e52e8de8b2eb75883090ed7d1db234270907f1b0d1c2de1ddee5005d"
+      },
+      "tags": ["brc42", "key-derivation", "public", "happy-path"]
+    },
+    {
+      "id": "pubkey-brc42-005",
+      "description": "BRC-42 public child key derivation — vector #5",
+      "input": {
+        "sender_private_key_hex": "7c98b8abd7967485cfb7437f9c56dd1e48ceb21a4085b8cdeb2a647f62012db4",
+        "recipient_public_key_hex": "03c8885f1e1ab4facd0f3272bb7a48b003d2e608e1619fb38b8be69336ab828f37",
+        "invoice_number": "PPfDTTcl1ao="
+      },
+      "expected": {
+        "derived_public_key_hex": "03304b41cfa726096ffd9d8907fe0835f888869eda9653bca34eb7bcab870d3779"
+      },
+      "tags": ["brc42", "key-derivation", "public", "happy-path"]
+    },
+    {
+      "id": "pubkey-mid-key-003",
+      "description": "Mid-range key A — compressed DER output",
+      "input": {
+        "privkey_hex": "8a2f85e08360a04c8a36b7c22c5e9e9a0d3bcf2f95c97db2b8bd90fc5f5ff66a"
+      },
+      "expected": {
+        "pubkey_der_hex": "03ca9dbc4f9182d80f4974e641107f0ae8afe2228855f077c23d63af30b74b8ce0"
+      },
+      "tags": ["public-key", "der", "happy-path"]
+    },
+    {
+      "id": "pubkey-mid-key-004",
+      "description": "Mid-range key B — compressed DER output",
+      "input": {
+        "privkey_hex": "1b5a8f2392e6959a7de2b0a58f8a64cc528c9bfc1788ee0d32e1455063e71545"
+      },
+      "expected": {
+        "pubkey_der_hex": "032c5250c08f16ede60acef505e2d32f5693675faff0340507890dde944a4ed681"
+      },
+      "tags": ["public-key", "der", "happy-path"]
+    }
+  ]
+}

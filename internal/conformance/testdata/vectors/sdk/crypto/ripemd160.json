@@ -1,0 +1,60 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.ripemd160",
+  "name": "RIPEMD-160 Hashing",
+  "brc": [],
+  "version": "1.0.0",
+  "reference_impl": "ts-sdk@2.0.14",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sdk.crypto.ripemd160.1",
+      "description": "RIPEMD-160 of empty string",
+      "input": { "message": "", "encoding": "utf8" },
+      "expected": { "hash": "9c1185a5c5e9fc54612808977ee8f548b2258d31" },
+      "tags": ["happy-path", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.ripemd160.2",
+      "description": "RIPEMD-160 of ASCII string 'abc'",
+      "input": { "message": "abc", "encoding": "utf8" },
+      "expected": { "hash": "8eb208f7e05d987a9b044a8e98c6b087f15a0bfc" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.ripemd160.3",
+      "description": "RIPEMD-160 of ASCII string 'message digest'",
+      "input": { "message": "message digest", "encoding": "utf8" },
+      "expected": { "hash": "5d0689ef49d2fae572b881b123a85ffa21595f36" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.ripemd160.4",
+      "description": "RIPEMD-160 of 448-bit ASCII string 'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq'",
+      "input": { "message": "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "encoding": "utf8" },
+      "expected": { "hash": "12a053384a9c0c88e405a06c27dcf49ada62eb2b" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.ripemd160.5",
+      "description": "RIPEMD-160 of full alphanumeric ASCII string (A-Z a-z 0-9)",
+      "input": { "message": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", "encoding": "utf8" },
+      "expected": { "hash": "b0e20b6e3116640286ed3a87a5713079b21f5189" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.ripemd160.6",
+      "description": "RIPEMD-160 of 'The quick brown fox jumps over the lazy dog'",
+      "input": { "message": "The quick brown fox jumps over the lazy dog", "encoding": "utf8" },
+      "expected": { "hash": "37f332f68db77bd9d7edd4969571ad671cf9dd3b" },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "sdk.crypto.ripemd160.7",
+      "description": "RIPEMD-160 of ASCII string 'Bitcoin'",
+      "input": { "message": "Bitcoin", "encoding": "utf8" },
+      "expected": { "hash": "4c9f77ab9e5eef487c2c0ae07029e79b2ca11a68" },
+      "tags": ["happy-path"]
+    }
+  ]
+}

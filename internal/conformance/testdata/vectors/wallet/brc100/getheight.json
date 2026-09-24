@@ -1,0 +1,91 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.getheight",
+  "name": "BRC-100 getheight",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.getheight.1",
+      "description": "getHeight happy path - returns positive integer",
+      "input": {
+        "args": {}
+      },
+      "expected": {
+        "height": 1
+      },
+      "tags": [
+        "brc-100",
+        "getHeight",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheight.2",
+      "description": "getHeight returns current blockchain height",
+      "input": {
+        "args": {},
+        "originator": "example.com"
+      },
+      "expected": {
+        "height": 1
+      },
+      "tags": [
+        "brc-100",
+        "getHeight",
+        "originator"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheight.3",
+      "description": "getHeight with no originator",
+      "input": {
+        "args": {}
+      },
+      "expected": {
+        "height": 1
+      },
+      "tags": [
+        "brc-100",
+        "getHeight"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheight.4",
+      "description": "getHeight result shape: height is PositiveInteger (≥1)",
+      "input": {
+        "args": {},
+        "_schema_note": "height must be a positive integer >= 1"
+      },
+      "expected": {
+        "height": 1
+      },
+      "tags": [
+        "brc-100",
+        "getHeight",
+        "schema"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheight.5",
+      "description": "getHeight not authenticated error",
+      "input": {
+        "args": {},
+        "_scenario": "wallet not authenticated"
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_NOT_AUTHENTICATED"
+      },
+      "tags": [
+        "brc-100",
+        "getHeight",
+        "error"
+      ]
+    }
+  ]
+}

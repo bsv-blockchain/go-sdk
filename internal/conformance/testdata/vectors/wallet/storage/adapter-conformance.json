@@ -1,0 +1,559 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.storage.adapterconformance",
+  "name": "Wallet Storage Adapter HTTP Interface — request/response contract",
+  "brc": ["BRC-100"],
+  "version": "1.0.0",
+  "reference_impl": "packages/wallet-toolbox/src/storage/remoting@1.0.0",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.storage.adapterconformance.1",
+      "description": "GET /settings — returns TableSettings with all required fields",
+      "input": {
+        "method": "GET",
+        "path": "/storage/v1/settings",
+        "headers": {
+          "Authorization": "Bearer brc103-session-token-abc123"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "storageIdentityKey": "02a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "storageName": "my-wallet-storage",
+          "chain": "main",
+          "dbtype": "SQLite",
+          "maxOutputScript": 10000,
+          "created_at": "2026-01-01T00:00:00.000Z",
+          "updated_at": "2026-05-01T12:00:00.000Z"
+        },
+        "schema_note": "TableSettings: { storageIdentityKey, storageName, chain, dbtype, maxOutputScript, created_at, updated_at }"
+      },
+      "tags": ["wallet", "storage", "happy-path", "settings"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.2",
+      "description": "GET /settings without auth token — returns 401 Unauthorized",
+      "input": {
+        "method": "GET",
+        "path": "/storage/v1/settings",
+        "headers": {}
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "error": "Authentication required"
+        },
+        "schema_note": "ErrorResponse: { error: string, code?: string }"
+      },
+      "tags": ["wallet", "storage", "error-case", "unauthorized"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.3",
+      "description": "POST /migrate — returns storageName on successful migration",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/migrate",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "storageName": "my-wallet-storage",
+          "storageIdentityKey": "02a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "storageName": "my-wallet-storage"
+        }
+      },
+      "tags": ["wallet", "storage", "happy-path", "migrate"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.4",
+      "description": "POST /actions — createAction with simple payment args returns StorageCreateActionResult",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/actions",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "args": {
+            "description": "Send payment to alice",
+            "outputs": [
+              {
+                "lockingScript": "76a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac",
+                "satoshis": 100000,
+                "outputDescription": "payment to alice"
+              }
+            ],
+            "options": {
+              "signAndProcess": false
+            }
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "inputs": [
+            {
+              "vin": 0,
+              "sourceTxid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+              "sourceVout": 0,
+              "sourceSatoshis": 200000,
+              "sourceLockingScript": "76a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac",
+              "unlockingScriptLength": 107,
+              "providedBy": "storage",
+              "type": "P2PKH"
+            }
+          ],
+          "outputs": [
+            {
+              "vout": 0,
+              "providedBy": "you",
+              "satoshis": 100000,
+              "lockingScript": "76a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac"
+            },
+            {
+              "vout": 1,
+              "providedBy": "storage",
+              "purpose": "change",
+              "satoshis": 99750,
+              "lockingScript": "76a914c0cebcd6c2d3c5f1db4cf25d7a3b5e2c6f4a8b7d88ac"
+            }
+          ],
+          "derivationPrefix": "dGVzdHByZWZpeA==",
+          "version": 1,
+          "lockTime": 0,
+          "reference": "dGVzdHJlZmVyZW5jZQ=="
+        },
+        "schema_note": "StorageCreateActionResult: { inputBeef?, inputs, outputs, noSendChangeOutputVouts?, derivationPrefix, version, lockTime, reference }"
+      },
+      "tags": ["wallet", "storage", "happy-path", "create-action"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.5",
+      "description": "POST /actions with missing args field — returns 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/actions",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {}
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "error": "args is required"
+        }
+      },
+      "tags": ["wallet", "storage", "error-case", "create-action", "missing-args"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.6",
+      "description": "POST /actions/process — processAction stores a signed transaction and broadcasts",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/actions/process",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "isNewTx": true,
+          "isSendWith": false,
+          "isNoSend": false,
+          "isDelayed": false,
+          "reference": "dGVzdHJlZmVyZW5jZQ==",
+          "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+          "rawTx": [1, 0, 0, 0, 1, 161, 178, 195, 212, 229, 246, 161, 178, 195, 212, 229, 246, 161, 178, 195, 212, 229, 246, 161, 178, 195, 212, 229, 246, 161, 178, 195, 212, 229, 246, 161, 178, 0, 0, 0, 0, 106, 0, 255, 255, 255, 255, 1, 0, 225, 245, 5, 0, 0, 0, 0, 25, 118, 169, 20, 245, 74, 88, 81, 233, 55, 43, 135, 129, 10, 142, 96, 205, 210, 231, 207, 216, 11, 110, 83, 136, 172, 0, 0, 0, 0],
+          "sendWith": []
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "notDelayedResults": [
+            {
+              "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+              "status": "success"
+            }
+          ]
+        },
+        "schema_note": "StorageProcessActionResults: { sendWithResults?, notDelayedResults?, log? }"
+      },
+      "tags": ["wallet", "storage", "happy-path", "process-action"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.7",
+      "description": "POST /actions/abort — abort an unsigned action frees its inputs",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/actions/abort",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "reference": "dGVzdHJlZmVyZW5jZQ=="
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "aborted": true
+        },
+        "schema_note": "AbortActionResult: { aborted: boolean }"
+      },
+      "tags": ["wallet", "storage", "happy-path", "abort-action"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.8",
+      "description": "POST /actions/internalize — internalize an external payment transaction",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/actions/internalize",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "tx": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "Payment received from Bob"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "accepted": true,
+          "isMerge": false,
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "satoshis": 100000
+        },
+        "schema_note": "StorageInternalizeActionResult: { accepted, isMerge, txid, satoshis, sendWithResults?, notDelayedResults? }"
+      },
+      "tags": ["wallet", "storage", "happy-path", "internalize-action", "payment"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.9",
+      "description": "POST /actions/internalize replay guard — duplicate tx returns isMerge: true",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/actions/internalize",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "tx": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "dGVzdHByZWZpeA==",
+                "derivationSuffix": "dGVzdHN1ZmZpeA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "Duplicate payment replay"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "accepted": true,
+          "isMerge": true,
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "satoshis": 0
+        }
+      },
+      "tags": ["wallet", "storage", "edge-case", "internalize-action", "replay-guard", "brc-121"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.10",
+      "description": "POST /list/actions — list wallet actions with default pagination",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/list/actions",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "limit": 10,
+          "offset": 0,
+          "includeLabels": true,
+          "includeInputs": false,
+          "includeOutputs": false
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "totalActions": 1,
+          "actions": [
+            {
+              "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+              "satoshis": -100250,
+              "status": "completed",
+              "description": "Send payment to alice",
+              "isOutgoing": true,
+              "version": 1,
+              "lockTime": 0,
+              "labels": ["payment"]
+            }
+          ]
+        }
+      },
+      "tags": ["wallet", "storage", "happy-path", "list-actions"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.11",
+      "description": "POST /list/outputs — list spendable UTXOs in a basket",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/list/outputs",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "basket": "default",
+          "limit": 10,
+          "offset": 0,
+          "spendable": true,
+          "includeLockingScripts": false
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "totalOutputs": 1,
+          "outputs": [
+            {
+              "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+              "vout": 1,
+              "satoshis": 99750,
+              "basket": "default",
+              "spendable": true
+            }
+          ]
+        }
+      },
+      "tags": ["wallet", "storage", "happy-path", "list-outputs"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.12",
+      "description": "POST /sync/chunk — export a sync chunk since a given timestamp",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/sync/chunk",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "identityKey": "02a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "fromStorageIdentityKey": "03b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+          "since": "2026-01-01T00:00:00.000Z",
+          "paged": {
+            "limit": 100,
+            "offset": 0
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "users": [],
+          "transactions": [],
+          "outputs": [],
+          "outputBaskets": [],
+          "provenTxs": [],
+          "provenTxReqs": [],
+          "syncStates": []
+        },
+        "schema_note": "SyncChunk: { users?, transactions?, outputs?, outputBaskets?, provenTxs?, provenTxReqs?, syncStates? }"
+      },
+      "tags": ["wallet", "storage", "happy-path", "sync", "chunk"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.13",
+      "description": "POST /sync/state — findOrInsertSyncState creates new state record on first call",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/sync/state",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "storageIdentityKey": "03b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+          "storageName": "remote-wallet-storage"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "syncState": {
+            "syncStateId": 1,
+            "userId": 1,
+            "storageIdentityKey": "03b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+            "storageName": "remote-wallet-storage",
+            "status": "unknown",
+            "init": false,
+            "refNum": "ref-001",
+            "syncMap": "{}"
+          },
+          "isNew": true
+        },
+        "schema_note": "FindOrInsertSyncStateResult: { syncState: TableSyncState, isNew: boolean }"
+      },
+      "tags": ["wallet", "storage", "happy-path", "sync", "sync-state", "find-or-insert"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.14",
+      "description": "POST /sync/active — setActive updates the user's active storage provider",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/sync/active",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "newActiveStorageIdentityKey": "03b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "updated": 1
+        }
+      },
+      "tags": ["wallet", "storage", "happy-path", "sync", "set-active"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.15",
+      "description": "POST /certificates — insert a new identity certificate",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/certificates",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "userId": 1,
+          "certifier": "02certifierkey1234567890abcdef1234567890abcdef1234567890abcdef1234",
+          "serialNumber": "SN-00001-2026",
+          "type": "identity",
+          "isDeleted": false,
+          "fields": [
+            {
+              "fieldName": "email",
+              "fieldValue": "alice@example.com",
+              "masterKey": "00000000000000000000000000000000"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "certificateId": 42
+        }
+      },
+      "tags": ["wallet", "storage", "happy-path", "certificates", "insert"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.16",
+      "description": "POST /certificates/relinquish — soft-delete a certificate",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/certificates/relinquish",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "certifier": "02certifierkey1234567890abcdef1234567890abcdef1234567890abcdef1234",
+          "serialNumber": "SN-00001-2026",
+          "type": "identity"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "updated": 1
+        }
+      },
+      "tags": ["wallet", "storage", "happy-path", "certificates", "relinquish"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.17",
+      "description": "POST /outputs/relinquish — remove output from its basket",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/outputs/relinquish",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "output": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2.0"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "updated": 1
+        }
+      },
+      "tags": ["wallet", "storage", "happy-path", "outputs", "relinquish"]
+    },
+    {
+      "id": "wallet.storage.adapterconformance.18",
+      "description": "POST /outputs/relinquish with malformed outpoint — must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/storage/v1/outputs/relinquish",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer brc103-session-token-abc123"
+        },
+        "body": {
+          "output": "not-a-valid-outpoint-format"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "error": "invalid outpoint format"
+        }
+      },
+      "tags": ["wallet", "storage", "error-case", "outputs", "relinquish", "invalid-format"]
+    }
+  ]
+}

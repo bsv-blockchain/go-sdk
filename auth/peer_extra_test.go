@@ -3,7 +3,9 @@ package auth_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -142,6 +144,76 @@ func TestAuthMessageMarshalJSON(t *testing.T) {
 		_, err := json.Marshal(msg)
 		require.Error(t, err)
 	})
+
+	t.Run("general message always carries payload, even when empty", func(t *testing.T) {
+		// BRC-103 requires general.payload to be present (an empty message is
+		// valid); a plain []byte field with `omitempty` would otherwise drop
+		// it whenever the payload has zero bytes.
+		pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
+		require.NoError(t, err)
+		msg := &auth.AuthMessage{
+			Version:     "0.1",
+			MessageType: auth.MessageTypeGeneral,
+			IdentityKey: pk.PubKey(),
+			Nonce:       "test-nonce",
+			// Payload intentionally left nil/empty.
+		}
+
+		data, err := json.Marshal(msg)
+		require.NoError(t, err)
+
+		var result map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &result))
+		require.Contains(t, result, "payload")
+		payload, ok := result["payload"].([]interface{})
+		require.True(t, ok, "payload must decode as an array, not null")
+		require.Empty(t, payload)
+	})
+
+	t.Run("certificateResponse always carries certificates, even when empty", func(t *testing.T) {
+		// The TS reference validator rejects a certificateResponse whose
+		// certificates field is missing or null.
+		pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
+		require.NoError(t, err)
+		msg := &auth.AuthMessage{
+			Version:     "0.1",
+			MessageType: auth.MessageTypeCertificateResponse,
+			IdentityKey: pk.PubKey(),
+			Nonce:       "test-nonce",
+			// Certificates intentionally left nil.
+		}
+
+		data, err := json.Marshal(msg)
+		require.NoError(t, err)
+
+		var result map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &result))
+		require.Contains(t, result, "certificates")
+		certs, ok := result["certificates"].([]interface{})
+		require.True(t, ok, "certificates must decode as an array, not null")
+		require.Empty(t, certs)
+	})
+
+	t.Run("non-general, non-certificateResponse messages omit unset payload and certificates", func(t *testing.T) {
+		pk, err := ec.PrivateKeyFromHex(alicePrivKeyHex)
+		require.NoError(t, err)
+		msg := &auth.AuthMessage{
+			Version:      "0.1",
+			MessageType:  auth.MessageTypeInitialResponse,
+			IdentityKey:  pk.PubKey(),
+			InitialNonce: "abc",
+			YourNonce:    "def",
+			Signature:    []byte{1, 2, 3},
+		}
+
+		data, err := json.Marshal(msg)
+		require.NoError(t, err)
+
+		var result map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &result))
+		require.NotContains(t, result, "payload")
+		require.NotContains(t, result, "certificates")
+	})
 }
 
 func TestAuthMessageUnmarshalJSON(t *testing.T) {
@@ -257,4 +329,264 @@ func TestSessionManagerExtra(t *testing.T) {
 		sm.RemoveSession(s)
 		require.False(t, sm.HasSession(soloNonce))
 	})
+}
+
+// replayTransport is a minimal, directly-paired auth.Transport (like
+// MockTransport above, but exposing its registered handler and an onSend
+// hook) used by the replay-protection tests below to capture a real,
+// validly-signed AuthMessage as it leaves one Peer and redeliver it to the
+// other Peer's handler directly, simulating a network-level replay.
+type replayTransport struct {
+	name    string
+	peer    *replayTransport
+	handler func(context.Context, *auth.AuthMessage) error
+	onSend  func(*auth.AuthMessage)
+}
+
+func (t *replayTransport) Send(ctx context.Context, message *auth.AuthMessage) error {
+	if t.onSend != nil {
+		t.onSend(message)
+	}
+	if t.peer == nil || t.peer.handler == nil {
+		return fmt.Errorf("%s: paired transport has no handler registered", t.name)
+	}
+	return t.peer.handler(ctx, message)
+}
+
+func (t *replayTransport) OnData(callback func(context.Context, *auth.AuthMessage) error) error {
+	t.handler = callback
+	return nil
+}
+
+func (t *replayTransport) GetRegisteredOnData() (func(context.Context, *auth.AuthMessage) error, error) {
+	if t.handler == nil {
+		return nil, fmt.Errorf("%s: no handler registered", t.name)
+	}
+	return t.handler, nil
+}
+
+// TestPeerRejectsReplayedGeneralMessageNonce is an end-to-end regression test
+// for BRC-103 anti-replay: a real, validly-signed general message that Bob
+// already accepted once must be rejected as auth.ErrReplayedNonce when
+// redelivered with the exact same nonce, mirroring the TS reference Peer's
+// claimMessageNonce enforcement.
+func TestPeerRejectsReplayedGeneralMessageNonce(t *testing.T) {
+	alicePriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	bobPriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	aliceWallet := wallet.NewTestWallet(t, alicePriv)
+	bobWallet := wallet.NewTestWallet(t, bobPriv)
+
+	aliceTransport := &replayTransport{name: "alice"}
+	bobTransport := &replayTransport{name: "bob"}
+	aliceTransport.peer = bobTransport
+	bobTransport.peer = aliceTransport
+
+	var captured *auth.AuthMessage
+	aliceTransport.onSend = func(msg *auth.AuthMessage) {
+		if msg.MessageType == auth.MessageTypeGeneral {
+			captured = msg
+		}
+	}
+
+	alice := auth.NewPeer(&auth.PeerOptions{Wallet: aliceWallet, Transport: aliceTransport})
+	bob := auth.NewPeer(&auth.PeerOptions{Wallet: bobWallet, Transport: bobTransport})
+
+	received := make(chan struct{}, 2)
+	bob.ListenForGeneralMessages(func(context.Context, *ec.PublicKey, []byte) error {
+		received <- struct{}{}
+		return nil
+	})
+
+	require.NoError(t, alice.ToPeer(t.Context(), []byte("hello"), bobPriv.PubKey(), 5000))
+	select {
+	case <-received:
+	default:
+		t.Fatal("bob never received alice's general message")
+	}
+	require.NotNil(t, captured, "expected to capture alice's outgoing general message")
+
+	// Redeliver the exact same message directly to Bob's handler, simulating
+	// a network-level replay of an already-consumed nonce.
+	handler, err := bobTransport.GetRegisteredOnData()
+	require.NoError(t, err)
+	err = handler(t.Context(), captured)
+	require.Error(t, err)
+	require.ErrorIs(t, err, auth.ErrReplayedNonce)
+
+	// The replay must not have reached the application-level listener again.
+	select {
+	case <-received:
+		t.Fatal("replayed general message was delivered to the listener a second time")
+	default:
+	}
+}
+
+// TestPeerRejectsReplayedInitialRequestNonce covers the unsigned handshake
+// side of anti-replay (mirroring the TS reference's
+// claimInitialRequestNonce / auth.brc31-handshake.14): redelivering the same
+// initialRequest (same identityKey + initialNonce) must be rejected even
+// though it carries no signature to re-verify.
+func TestPeerRejectsReplayedInitialRequestNonce(t *testing.T) {
+	alicePriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	bobPriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	bobWallet := wallet.NewTestWallet(t, bobPriv)
+
+	// bobTransport's paired "peer" is a bare sink that accepts Bob's
+	// initialResponse without doing anything further with it - this test
+	// only cares about how Bob's incoming-message handler treats a replayed
+	// initialRequest, not about a real round trip.
+	sink := &replayTransport{name: "sink"}
+	require.NoError(t, sink.OnData(func(context.Context, *auth.AuthMessage) error { return nil }))
+	bobTransport := &replayTransport{name: "bob", peer: sink}
+	_ = auth.NewPeer(&auth.PeerOptions{Wallet: bobWallet, Transport: bobTransport})
+
+	initialRequest := &auth.AuthMessage{
+		Version:      auth.AUTH_VERSION,
+		MessageType:  auth.MessageTypeInitialRequest,
+		IdentityKey:  alicePriv.PubKey(),
+		InitialNonce: string(utilspkg.RandomBase64(32)),
+	}
+
+	handler, err := bobTransport.GetRegisteredOnData()
+	require.NoError(t, err)
+
+	require.NoError(t, handler(t.Context(), initialRequest))
+
+	err = handler(t.Context(), initialRequest)
+	require.Error(t, err)
+	require.ErrorIs(t, err, auth.ErrReplayedNonce)
+}
+
+// TestPeerRejectsConcurrentReplayedGeneralMessageNonce drives many concurrent
+// deliveries of the exact same, already-captured general message at Bob and
+// asserts exactly one succeeds - the nonce claim must be atomic under
+// concurrency. Run with -race.
+func TestPeerRejectsConcurrentReplayedGeneralMessageNonce(t *testing.T) {
+	const concurrency = 25
+
+	alicePriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	bobPriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	aliceWallet := wallet.NewTestWallet(t, alicePriv)
+	bobWallet := wallet.NewTestWallet(t, bobPriv)
+
+	aliceTransport := &replayTransport{name: "alice"}
+	bobTransport := &replayTransport{name: "bob"}
+	aliceTransport.peer = bobTransport
+	bobTransport.peer = aliceTransport
+
+	var (
+		resultsMu sync.Mutex
+		results   []error
+	)
+
+	// Fire (concurrency-1) extra concurrent deliveries of the captured
+	// message the instant it is sent, racing with the "official" delivery
+	// that follows immediately after this hook returns.
+	aliceTransport.onSend = func(msg *auth.AuthMessage) {
+		if msg.MessageType != auth.MessageTypeGeneral {
+			return
+		}
+		var wg sync.WaitGroup
+		for i := 0; i < concurrency-1; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				err := bobTransport.handler(context.Background(), msg)
+				resultsMu.Lock()
+				results = append(results, err)
+				resultsMu.Unlock()
+			}()
+		}
+		wg.Wait()
+	}
+
+	alice := auth.NewPeer(&auth.PeerOptions{Wallet: aliceWallet, Transport: aliceTransport})
+	bob := auth.NewPeer(&auth.PeerOptions{Wallet: bobWallet, Transport: bobTransport})
+
+	received := make(chan struct{}, concurrency)
+	bob.ListenForGeneralMessages(func(context.Context, *ec.PublicKey, []byte) error {
+		received <- struct{}{}
+		return nil
+	})
+
+	sendErr := alice.ToPeer(t.Context(), []byte("hello"), bobPriv.PubKey(), 5000)
+	resultsMu.Lock()
+	results = append(results, sendErr)
+	resultsMu.Unlock()
+
+	require.Len(t, results, concurrency)
+	successes := 0
+	for _, resultErr := range results {
+		if resultErr == nil {
+			successes++
+			continue
+		}
+		require.ErrorIs(t, resultErr, auth.ErrReplayedNonce)
+	}
+	require.Equal(t, 1, successes, "exactly one of %d concurrent deliveries of the same nonce must succeed", concurrency)
+	require.Len(t, received, successes, "the listener must be notified exactly once")
+}
+
+// legacySessionManager only exposes the base auth.SessionManager methods, like
+// a custom implementation written before auth.NonceClaimer existed.
+type legacySessionManager struct {
+	auth.SessionManager
+}
+
+// TestPeerReplayProtectionWithLegacySessionManager proves a SessionManager that
+// does not implement auth.NonceClaimer keeps authenticating and still gets
+// replay protection from the Peer-owned fallback cache.
+func TestPeerReplayProtectionWithLegacySessionManager(t *testing.T) {
+	alicePriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+	bobPriv, err := ec.NewPrivateKey()
+	require.NoError(t, err)
+
+	aliceTransport := &replayTransport{name: "alice"}
+	bobTransport := &replayTransport{name: "bob"}
+	aliceTransport.peer = bobTransport
+	bobTransport.peer = aliceTransport
+
+	var captured *auth.AuthMessage
+	aliceTransport.onSend = func(msg *auth.AuthMessage) {
+		if msg.MessageType == auth.MessageTypeGeneral {
+			captured = msg
+		}
+	}
+
+	bobSessions := legacySessionManager{SessionManager: auth.NewSessionManager()}
+	var _ auth.SessionManager = bobSessions
+	_, implementsClaimer := any(bobSessions).(auth.NonceClaimer)
+	require.False(t, implementsClaimer)
+
+	alice := auth.NewPeer(&auth.PeerOptions{Wallet: wallet.NewTestWallet(t, alicePriv), Transport: aliceTransport})
+	bob := auth.NewPeer(&auth.PeerOptions{
+		Wallet:         wallet.NewTestWallet(t, bobPriv),
+		Transport:      bobTransport,
+		SessionManager: bobSessions,
+	})
+
+	received := make(chan struct{}, 2)
+	bob.ListenForGeneralMessages(func(context.Context, *ec.PublicKey, []byte) error {
+		received <- struct{}{}
+		return nil
+	})
+
+	require.NoError(t, alice.ToPeer(t.Context(), []byte("hello"), bobPriv.PubKey(), 5000))
+	select {
+	case <-received:
+	default:
+		t.Fatal("bob never received alice's general message")
+	}
+	require.NotNil(t, captured)
+
+	handler, err := bobTransport.GetRegisteredOnData()
+	require.NoError(t, err)
+	require.ErrorIs(t, handler(t.Context(), captured), auth.ErrReplayedNonce)
 }

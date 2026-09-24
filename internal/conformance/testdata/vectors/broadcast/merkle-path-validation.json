@@ -1,0 +1,270 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "broadcast.merklepath",
+  "name": "ARC Merkle proof callback — merklePath field validation and structure",
+  "brc": ["BRC-74", "BRC-20"],
+  "version": "1.0.0",
+  "reference_impl": "packages/sdk/ts-sdk/src/transaction/MerklePath.ts + ARC.ts",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "broadcast.merklepath.1",
+      "description": "ARC callback with valid BUMP hex merklePath — engine must accept and store proof",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer callback-token-abc123"
+        },
+        "body": {
+          "txid": "304e737fdfcb017a1a322e78b067ecebb5e07b44f0a36ed1f01264d2014f7711",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b0782e321a7a01cbdf7f734e30fde90b02004e53753e3fe4667073063a17987292cfdea278824e9888e52180581d7188d8fdea0b025e441996fc53f0191d649e68a200e752fb5f39e0d5617083408fa179ddc5c998fdeb0b0102",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "happy-path", "bump"]
+    },
+    {
+      "id": "broadcast.merklepath.2",
+      "description": "ARC callback with merklePath missing — endpoint must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "304e737fdfcb017a1a322e78b067ecebb5e07b44f0a36ed1f01264d2014f7711",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "error-case", "missing-field"]
+    },
+    {
+      "id": "broadcast.merklepath.3",
+      "description": "ARC callback with blockHeight missing — endpoint must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "304e737fdfcb017a1a322e78b067ecebb5e07b44f0a36ed1f01264d2014f7711",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b078"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "error-case", "missing-block-height"]
+    },
+    {
+      "id": "broadcast.merklepath.4",
+      "description": "ARC callback with malformed merklePath hex (odd length) — endpoint must return 400",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "304e737fdfcb017a1a322e78b067ecebb5e07b44f0a36ed1f01264d2014f7711",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b07",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "error-case", "malformed-hex"]
+    },
+    {
+      "id": "broadcast.merklepath.5",
+      "description": "ARC callback txid must be exactly 64 hex characters — txid of 63 chars must return 400",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "304e737fdfcb017a1a322e78b067ecebb5e07b44f0a36ed1f01264d2014f771",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b078",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "error-case", "short-txid"]
+    },
+    {
+      "id": "broadcast.merklepath.6",
+      "description": "ARC callback with blockHeight = 0 (genesis edge case) — must be accepted",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
+          "merklePath": "fe00000000010004a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b01",
+          "blockHeight": 0
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "edge-case", "genesis-block"]
+    },
+    {
+      "id": "broadcast.merklepath.7",
+      "description": "ARC callback with optional blockHash and timestamp fields — accepted without error",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b0782e321a7a01cbdf7f734e30fde90b02004e53753e3fe4667073063a17987292cfdea278824e9888e52180581d7188d8",
+          "blockHeight": 813706,
+          "blockHash": "000000000000000001e4f0ac0b3e17e6a3f50c3d8ce1a1ccbdb71e5c9d4e2b8",
+          "timestamp": "2026-05-01T12:00:00.000Z"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "happy-path", "optional-fields"]
+    },
+    {
+      "id": "broadcast.merklepath.8",
+      "description": "ARC callback with non-hex merklePath characters — endpoint must return 400",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "merklePath": "not-a-valid-bump-hex-string!!",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["broadcast", "merkle-proof", "error-case", "invalid-chars"]
+    },
+    {
+      "id": "broadcast.merklepath.9",
+      "description": "ARC callback BUMP decoded fields — block_height must be decodable from merklePath prefix",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "txid": "304e737fdfcb017a1a322e78b067ecebb5e07b44f0a36ed1f01264d2014f7711",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b0782e321a7a01cbdf7f734e30fde90b02004e53753e3fe4667073063a17987292cfdea278824e9888e52180581d7188d8fdea0b025e441996fc53f0191d649e68a200e752fb5f39e0d5617083408fa179ddc5c998fdeb0b0102fdf405000671394f72237d08a4277f4435e5b6edf7adc272f25effef27cdfe805ce71a81fdf50500262bccabec6c4af3ed00cc7a7414edea9c5efa92fb8623dd6160a001450a528201fdfb020101fd7c010093b3efca9b77ddec914f8effac691ecb54e2c81d0ab81cbc4c4b93befe418e8501bf01015e005881826eb6973c54003a02118fe270f03d46d02681c8bc71cd44c613e86302f8012e00e07a2bb8bb75e5accff266022e1e5e6e7b4d6d943a04faadcf2ab4a22f796ff30116008120cafa17309c0bb0e0ffce835286b3a2dcae48e4497ae2d2b7ced4f051507d010a00502e59ac92f46543c23006bff855d96f5e648043f0fb87a7a5949e6a9bebae430104001ccd9f8f64f4d0489b30cc815351cf425e0e78ad79a589350e4341ac165dbe45010301010000af8764ce7e1cc132ab5ed2229a005c87201c9a5ee15c0f91dd53eff31ab30cd4",
+          "blockHeight": 813706
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success"
+        },
+        "note": "Uses same BUMP as sdk.transactions.merklepath vectors — blockHeight 813706 encodes as 0x0c6a8a in little-endian = fe8a6a0c00 prefix"
+      },
+      "tags": ["broadcast", "merkle-proof", "happy-path", "real-bump", "brc-74"]
+    },
+    {
+      "id": "broadcast.merklepath.10",
+      "description": "ARC submit with SEEN_IN_ORPHAN_MEMPOOL txStatus — SDK must treat as failure (contains ORPHAN)",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "txStatus": "SEEN_IN_ORPHAN_MEMPOOL",
+          "extraInfo": "Transaction is in an orphaned block mempool"
+        },
+        "sdk_treatment": "BroadcastFailure — any txStatus containing 'ORPHAN' is treated as failure by ts-sdk"
+      },
+      "tags": ["broadcast", "arc", "error-case", "orphan", "http-200-failure"]
+    },
+    {
+      "id": "broadcast.merklepath.11",
+      "description": "ARC submit with MINED_IN_STALE_BLOCK txStatus — SDK treats as failure",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "txStatus": "MINED_IN_STALE_BLOCK",
+          "extraInfo": "Block was not on the longest chain"
+        },
+        "sdk_treatment": "BroadcastFailure — MINED_IN_STALE_BLOCK is explicitly in the failure list"
+      },
+      "tags": ["broadcast", "arc", "error-case", "stale-block", "http-200-failure"]
+    }
+  ]
+}

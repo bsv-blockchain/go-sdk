@@ -1,0 +1,411 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "broadcast.arcsubmit",
+  "name": "ARC Broadcast API — transaction submission request/response shapes",
+  "brc": ["BRC-20"],
+  "version": "1.0.0",
+  "reference_impl": "packages/sdk/ts-sdk/src/transaction/broadcasters/ARC.ts",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "broadcast.arcsubmit.1",
+      "description": "Submit single valid EF transaction — ARC returns SENT_TO_NETWORK status",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123",
+          "XDeployment-ID": "ts-sdk-conformance-test-001"
+        },
+        "body": {
+          "rawTx": "0100000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2000000006a473044022012ab34cd56ef78901234567890abcdef1234567890abcdef1234567890abcdef022056789012345678901234567890abcdef1234567890abcdef1234567890abcdef0121034567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "txStatus": "SENT_TO_NETWORK",
+          "extraInfo": ""
+        },
+        "schema_note": "ArcTxResponse: { txid: string(64), txStatus: ArcTxStatus, extraInfo?: string }"
+      },
+      "tags": ["broadcast", "arc", "happy-path", "single-tx", "sent-to-network"]
+    },
+    {
+      "id": "broadcast.arcsubmit.2",
+      "description": "Submit transaction — ARC returns ACCEPTED_BY_NETWORK indicating miner acceptance",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3000000006a4730440220abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890022012345678901234567890abcdef1234567890abcdef1234567890abcdef12345678012103abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ffffffff0200ca9a3b00000000001976a914abc123def456abc123def456abc123def456abc1288ac0065cd1d00000000001976a91456789012345678901234567890abcdef1234567888ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+          "txStatus": "ACCEPTED_BY_NETWORK"
+        }
+      },
+      "tags": ["broadcast", "arc", "happy-path", "accepted"]
+    },
+    {
+      "id": "broadcast.arcsubmit.3",
+      "description": "Submit transaction — ARC returns MINED with status HTTP 200 (SDK treats as success)",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4000000006a47304402201234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef0220abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678900121021234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefabffffffff0100ca9a3b00000000001976a914fedcba9876543210fedcba9876543210fedcba9888ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+          "txStatus": "MINED",
+          "extraInfo": ""
+        }
+      },
+      "tags": ["broadcast", "arc", "happy-path", "mined"]
+    },
+    {
+      "id": "broadcast.arcsubmit.4",
+      "description": "Submit transaction — ARC returns HTTP 200 with DOUBLE_SPEND_ATTEMPTED (SDK treats as failure)",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2000000006a473044022000112233445566778899aabbccddeeff00112233445566778899aabbccddeeff022011223344556677889900aabbccddeeff11223344556677889900aabbccddeeff0121034455667788990011223344556677889900112233445566778899001122334455ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "txStatus": "DOUBLE_SPEND_ATTEMPTED",
+          "extraInfo": "competing tx: deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+          "competingTxs": [
+            "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+          ]
+        },
+        "sdk_treatment": "BroadcastFailure — txStatus DOUBLE_SPEND_ATTEMPTED is treated as failure by ts-sdk"
+      },
+      "tags": ["broadcast", "arc", "error-case", "double-spend", "http-200-failure"]
+    },
+    {
+      "id": "broadcast.arcsubmit.5",
+      "description": "Submit transaction — ARC returns HTTP 200 with REJECTED status (SDK treats as failure)",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "txStatus": "REJECTED",
+          "extraInfo": "Script evaluation failed"
+        },
+        "sdk_treatment": "BroadcastFailure — txStatus REJECTED is treated as failure by ts-sdk"
+      },
+      "tags": ["broadcast", "arc", "error-case", "rejected", "http-200-failure"]
+    },
+    {
+      "id": "broadcast.arcsubmit.6",
+      "description": "Submit malformed hex transaction — ARC returns 422 Unprocessable Entity",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "not-valid-hex-zzzz"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body": {
+          "detail": "invalid transaction hex",
+          "status": 422,
+          "title": "Unprocessable Entity"
+        },
+        "schema_note": "ArcErrorResponse: { detail, status, title, type?, instance?, extraInfo? }"
+      },
+      "tags": ["broadcast", "arc", "error-case", "malformed", "422"]
+    },
+    {
+      "id": "broadcast.arcsubmit.7",
+      "description": "Submit without Authorization header — ARC returns 401 Unauthorized",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "rawTx": "0100000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": 401,
+          "title": "Unauthorized"
+        }
+      },
+      "tags": ["broadcast", "arc", "error-case", "unauthorized", "401"]
+    },
+    {
+      "id": "broadcast.arcsubmit.8",
+      "description": "Submit with callback URL and token headers — ARC registers callback",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123",
+          "X-CallbackUrl": "https://overlay.example.com/arc-ingest",
+          "X-CallbackToken": "callback-secret-token-xyz789",
+          "XDeployment-ID": "ts-sdk-conformance-test-002"
+        },
+        "body": {
+          "rawTx": "0100000001d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5000000006a473044022099aabbccddeeff0011223344556677889900aabbccddeeff001122334455667702207788990011223344556677889900aabbccddeeff001122334455667788990011012103aabbccddeeff001122334455667788990011223344556677889900aabbccddeeffabffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+          "txStatus": "STORED"
+        }
+      },
+      "tags": ["broadcast", "arc", "happy-path", "callback", "stored"]
+    },
+    {
+      "id": "broadcast.arcsubmit.9",
+      "description": "Submit batch of two transactions — both succeed, response array length matches input",
+      "input": {
+        "method": "POST",
+        "path": "/v1/txs",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": [
+          {
+            "rawTx": "0100000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+          },
+          {
+            "rawTx": "0100000001b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+          }
+        ]
+      },
+      "expected": {
+        "status": 200,
+        "body": [
+          {
+            "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+            "txStatus": "SENT_TO_NETWORK"
+          },
+          {
+            "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+            "txStatus": "SENT_TO_NETWORK"
+          }
+        ],
+        "schema_note": "Response array length == input array length"
+      },
+      "tags": ["broadcast", "arc", "happy-path", "batch", "multi-tx"]
+    },
+    {
+      "id": "broadcast.arcsubmit.10",
+      "description": "Submit batch — one succeeds, one double-spend; array positions correspond to input positions",
+      "input": {
+        "method": "POST",
+        "path": "/v1/txs",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": [
+          {
+            "rawTx": "0100000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+          },
+          {
+            "rawTx": "0100000001deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+          }
+        ]
+      },
+      "expected": {
+        "status": 200,
+        "body": [
+          {
+            "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+            "txStatus": "SENT_TO_NETWORK"
+          },
+          {
+            "txid": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+            "txStatus": "DOUBLE_SPEND_ATTEMPTED"
+          }
+        ]
+      },
+      "tags": ["broadcast", "arc", "error-case", "batch", "partial-failure"]
+    },
+    {
+      "id": "broadcast.arcsubmit.11",
+      "description": "Submit transaction with STORED status — ARC accepted but not yet broadcast",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6",
+          "txStatus": "STORED",
+          "extraInfo": ""
+        },
+        "sdk_treatment": "BroadcastSuccess — STORED is not in the failure list"
+      },
+      "tags": ["broadcast", "arc", "happy-path", "stored"]
+    },
+    {
+      "id": "broadcast.arcsubmit.12",
+      "description": "GET /v1/tx/{txid} — retrieve status of a known transaction",
+      "input": {
+        "method": "GET",
+        "path": "/v1/tx/a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+        "headers": {
+          "Authorization": "Bearer test-api-key-abc123"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "txStatus": "MINED"
+        }
+      },
+      "tags": ["broadcast", "arc", "happy-path", "status-query", "by-path"]
+    },
+    {
+      "id": "broadcast.arcsubmit.13",
+      "description": "GET /v1/tx/{txid} for unknown txid — ARC returns 404 Not Found",
+      "input": {
+        "method": "GET",
+        "path": "/v1/tx/0000000000000000000000000000000000000000000000000000000000000000",
+        "headers": {
+          "Authorization": "Bearer test-api-key-abc123"
+        }
+      },
+      "expected": {
+        "status": 404,
+        "body": {
+          "title": "Not Found",
+          "status": 404
+        },
+        "schema_note": "ArcErrorResponse: { detail?, status?, title?, type?, instance? }"
+      },
+      "tags": ["broadcast", "arc", "error-case", "not-found", "404"]
+    },
+    {
+      "id": "broadcast.arcsubmit.14",
+      "description": "ARC Merkle callback POST /arc-ingest — complete payload with all fields",
+      "input": {
+        "method": "POST",
+        "path": "/arc-ingest",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer callback-secret-token-xyz789"
+        },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "merklePath": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b0782e321a7a01cbdf7f734e30fde90b02004e53753e3fe4667073063a17987292cfdea278824e9888e52180581d7188d8",
+          "blockHeight": 813706,
+          "blockHash": "000000000000000001e4f0ac0b3e17e6a3f50c3d8ce1a1ccbdb71e5c9d4e2b8",
+          "timestamp": "2026-05-01T12:00:00.000Z"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "message": "Merkle proof processed"
+        }
+      },
+      "tags": ["broadcast", "arc", "callback", "merkle-proof", "happy-path"]
+    },
+    {
+      "id": "broadcast.arcsubmit.15",
+      "description": "ARC error response shape — all error responses must have detail or message field",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {}
+      },
+      "expected": {
+        "status_oneof": [400, 401, 422],
+        "body_schema": "ArcErrorResponse",
+        "schema_note": "ArcErrorResponse: { txid?, detail?, status?: int, title?, type?, instance?, extraInfo? } — at least one of detail or title required"
+      },
+      "tags": ["broadcast", "arc", "error-case", "error-shape"]
+    },
+    {
+      "id": "broadcast.arcsubmit.16",
+      "description": "Submit transaction rate-limited — ARC returns 429 Too Many Requests",
+      "input": {
+        "method": "POST",
+        "path": "/v1/tx",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test-api-key-abc123"
+        },
+        "body": {
+          "rawTx": "0100000001f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+        }
+      },
+      "expected": {
+        "status": 429,
+        "body": {
+          "title": "Too Many Requests",
+          "status": 429
+        }
+      },
+      "tags": ["broadcast", "arc", "error-case", "rate-limit", "429"]
+    }
+  ]
+}

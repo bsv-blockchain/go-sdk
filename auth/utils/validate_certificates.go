@@ -59,6 +59,61 @@ type RequestedCertificateSet struct {
 	CertificateTypes RequestedCertificateTypeIDAndFieldList
 }
 
+// requestedCertificateSetWire is the BRC-103 wire shape for RequestedCertificateSet:
+// lowercase "certifiers"/"types", matching what @bsv/sdk (TypeScript) emits and
+// strictly validates from 2.8 onward.
+type requestedCertificateSetWire struct {
+	Certifiers []*ec.PublicKey                        `json:"certifiers"`
+	Types      RequestedCertificateTypeIDAndFieldList `json:"types"`
+}
+
+// legacyRequestedCertificateSetWire is the pre-fix Go field-name shape. Decoding
+// still accepts it so older Go peers (and anything persisted under the old
+// names) keep working against this version.
+type legacyRequestedCertificateSetWire struct {
+	Certifiers       []*ec.PublicKey                        `json:"Certifiers"`
+	CertificateTypes RequestedCertificateTypeIDAndFieldList `json:"CertificateTypes"`
+}
+
+// MarshalJSON emits the BRC-103 wire shape {"certifiers":[...],"types":{...}}.
+// Certifiers and types are never marshaled as null: an unset list becomes []
+// and an unset map becomes {}, because @bsv/sdk 2.8's AuthMessageValidation
+// requires both to be present as an array/object, even when empty.
+func (r RequestedCertificateSet) MarshalJSON() ([]byte, error) {
+	certifiers := r.Certifiers
+	if certifiers == nil {
+		certifiers = []*ec.PublicKey{}
+	}
+	types := r.CertificateTypes
+	if types == nil {
+		types = RequestedCertificateTypeIDAndFieldList{}
+	}
+	return json.Marshal(requestedCertificateSetWire{Certifiers: certifiers, Types: types})
+}
+
+// UnmarshalJSON accepts both the BRC-103 wire shape ("certifiers"/"types") and
+// the legacy Go field names ("Certifiers"/"CertificateTypes"), so a peer
+// running this version keeps interoperating with older Go callers.
+func (r *RequestedCertificateSet) UnmarshalJSON(data []byte) error {
+	var wire requestedCertificateSetWire
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	var legacy legacyRequestedCertificateSetWire
+	if err := json.Unmarshal(data, &legacy); err != nil {
+		return err
+	}
+	r.Certifiers = wire.Certifiers
+	if r.Certifiers == nil {
+		r.Certifiers = legacy.Certifiers
+	}
+	r.CertificateTypes = wire.Types
+	if r.CertificateTypes == nil {
+		r.CertificateTypes = legacy.CertificateTypes
+	}
+	return nil
+}
+
 func CertifierInSlice(certifiers []*ec.PublicKey, certifier *ec.PublicKey) bool {
 	if certifier == nil {
 		return false

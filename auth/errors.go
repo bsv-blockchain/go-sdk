@@ -36,6 +36,12 @@ var (
 
 	// ErrCertificateValidation is returned when certificate validation fails
 	ErrCertificateValidation = errors.New("certificate-validation-failed")
+
+	// ErrReplayedNonce is returned when a previously-claimed BRC-103 message
+	// nonce (or unsigned initialRequest nonce) is presented again, matching
+	// the TS reference Peer's claimMessageNonce/claimInitialRequestNonce
+	// replay rejection (see Peer.ts and SessionManager.ts).
+	ErrReplayedNonce = errors.New("replayed-nonce")
 )
 
 // NewAuthError creates a new authentication error with a message
@@ -63,6 +69,7 @@ func IsAuthError(err error) bool {
 		ErrTransportNotConnected,
 		ErrInvalidNonce,
 		ErrCertificateValidation,
+		ErrReplayedNonce,
 	}
 
 	for _, authErr := range authErrors {
