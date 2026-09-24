@@ -1,0 +1,3241 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.listoutputs",
+  "name": "BRC-100 listoutputs",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.listoutputs.1",
+      "description": "listOutputs basket=default tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.2",
+      "description": "listOutputs basket=default tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.3",
+      "description": "listOutputs basket=default tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.4",
+      "description": "listOutputs basket=default tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.5",
+      "description": "listOutputs basket=default tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.6",
+      "description": "listOutputs basket=default tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.7",
+      "description": "listOutputs basket=default tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.8",
+      "description": "listOutputs basket=default tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.9",
+      "description": "listOutputs basket=default tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "payment"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.10",
+      "description": "listOutputs basket=default tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.11",
+      "description": "listOutputs basket=default tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.12",
+      "description": "listOutputs basket=default tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.13",
+      "description": "listOutputs basket=default tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.14",
+      "description": "listOutputs basket=default tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.15",
+      "description": "listOutputs basket=default tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.16",
+      "description": "listOutputs basket=default tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.17",
+      "description": "listOutputs basket=default tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.18",
+      "description": "listOutputs basket=default tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "token"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.19",
+      "description": "listOutputs basket=default tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.20",
+      "description": "listOutputs basket=default tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.21",
+      "description": "listOutputs basket=default tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.22",
+      "description": "listOutputs basket=default tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.23",
+      "description": "listOutputs basket=default tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.24",
+      "description": "listOutputs basket=default tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.25",
+      "description": "listOutputs basket=default tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.26",
+      "description": "listOutputs basket=default tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.27",
+      "description": "listOutputs basket=default tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.28",
+      "description": "listOutputs basket=default tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.29",
+      "description": "listOutputs basket=default tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.30",
+      "description": "listOutputs basket=default tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.31",
+      "description": "listOutputs basket=default tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.32",
+      "description": "listOutputs basket=default tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.33",
+      "description": "listOutputs basket=default tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.34",
+      "description": "listOutputs basket=default tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.35",
+      "description": "listOutputs basket=default tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.36",
+      "description": "listOutputs basket=default tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "default",
+          "tags": [],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.37",
+      "description": "listOutputs basket=payments tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.38",
+      "description": "listOutputs basket=payments tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.39",
+      "description": "listOutputs basket=payments tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.40",
+      "description": "listOutputs basket=payments tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.41",
+      "description": "listOutputs basket=payments tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.42",
+      "description": "listOutputs basket=payments tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.43",
+      "description": "listOutputs basket=payments tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.44",
+      "description": "listOutputs basket=payments tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.45",
+      "description": "listOutputs basket=payments tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "payment"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.46",
+      "description": "listOutputs basket=payments tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.47",
+      "description": "listOutputs basket=payments tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.48",
+      "description": "listOutputs basket=payments tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.49",
+      "description": "listOutputs basket=payments tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.50",
+      "description": "listOutputs basket=payments tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.51",
+      "description": "listOutputs basket=payments tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.52",
+      "description": "listOutputs basket=payments tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.53",
+      "description": "listOutputs basket=payments tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.54",
+      "description": "listOutputs basket=payments tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "token"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.55",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.56",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.57",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.58",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.59",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.60",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.61",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.62",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.63",
+      "description": "listOutputs basket=payments tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.64",
+      "description": "listOutputs basket=payments tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.65",
+      "description": "listOutputs basket=payments tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.66",
+      "description": "listOutputs basket=payments tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.67",
+      "description": "listOutputs basket=payments tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.68",
+      "description": "listOutputs basket=payments tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.69",
+      "description": "listOutputs basket=payments tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.70",
+      "description": "listOutputs basket=payments tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.71",
+      "description": "listOutputs basket=payments tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.72",
+      "description": "listOutputs basket=payments tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "payments",
+          "tags": [],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.73",
+      "description": "listOutputs basket=tokens tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.74",
+      "description": "listOutputs basket=tokens tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.75",
+      "description": "listOutputs basket=tokens tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.76",
+      "description": "listOutputs basket=tokens tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.77",
+      "description": "listOutputs basket=tokens tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.78",
+      "description": "listOutputs basket=tokens tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.79",
+      "description": "listOutputs basket=tokens tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.80",
+      "description": "listOutputs basket=tokens tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.81",
+      "description": "listOutputs basket=tokens tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "payment"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.82",
+      "description": "listOutputs basket=tokens tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.83",
+      "description": "listOutputs basket=tokens tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.84",
+      "description": "listOutputs basket=tokens tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.85",
+      "description": "listOutputs basket=tokens tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.86",
+      "description": "listOutputs basket=tokens tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.87",
+      "description": "listOutputs basket=tokens tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.88",
+      "description": "listOutputs basket=tokens tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.89",
+      "description": "listOutputs basket=tokens tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.90",
+      "description": "listOutputs basket=tokens tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "token"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.91",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.92",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.93",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.94",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.95",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.96",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.97",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.98",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.99",
+      "description": "listOutputs basket=tokens tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.100",
+      "description": "listOutputs basket=tokens tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.101",
+      "description": "listOutputs basket=tokens tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.102",
+      "description": "listOutputs basket=tokens tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.103",
+      "description": "listOutputs basket=tokens tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.104",
+      "description": "listOutputs basket=tokens tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.105",
+      "description": "listOutputs basket=tokens tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.106",
+      "description": "listOutputs basket=tokens tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.107",
+      "description": "listOutputs basket=tokens tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.108",
+      "description": "listOutputs basket=tokens tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "tokens",
+          "tags": [],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.109",
+      "description": "listOutputs basket=invoices tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.110",
+      "description": "listOutputs basket=invoices tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.111",
+      "description": "listOutputs basket=invoices tags=payment include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.112",
+      "description": "listOutputs basket=invoices tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.113",
+      "description": "listOutputs basket=invoices tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.114",
+      "description": "listOutputs basket=invoices tags=payment include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.115",
+      "description": "listOutputs basket=invoices tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.116",
+      "description": "listOutputs basket=invoices tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.117",
+      "description": "listOutputs basket=invoices tags=payment include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "payment"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.118",
+      "description": "listOutputs basket=invoices tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.119",
+      "description": "listOutputs basket=invoices tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.120",
+      "description": "listOutputs basket=invoices tags=token include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.121",
+      "description": "listOutputs basket=invoices tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.122",
+      "description": "listOutputs basket=invoices tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.123",
+      "description": "listOutputs basket=invoices tags=token include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.124",
+      "description": "listOutputs basket=invoices tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.125",
+      "description": "listOutputs basket=invoices tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.126",
+      "description": "listOutputs basket=invoices tags=token include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "token"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.127",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.128",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.129",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.130",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.131",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.132",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.133",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.134",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.135",
+      "description": "listOutputs basket=invoices tags=invoice,high-value include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [
+            "invoice",
+            "high-value"
+          ],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.136",
+      "description": "listOutputs basket=invoices tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.137",
+      "description": "listOutputs basket=invoices tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.138",
+      "description": "listOutputs basket=invoices tags= include=locking scripts",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "include": "locking scripts",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.139",
+      "description": "listOutputs basket=invoices tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.140",
+      "description": "listOutputs basket=invoices tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.141",
+      "description": "listOutputs basket=invoices tags= include=entire transactions",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "include": "entire transactions",
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.142",
+      "description": "listOutputs basket=invoices tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "limit": 10,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.143",
+      "description": "listOutputs basket=invoices tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "limit": 50,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listoutputs.144",
+      "description": "listOutputs basket=invoices tags= include=undefined",
+      "input": {
+        "args": {
+          "basket": "invoices",
+          "tags": [],
+          "limit": 100,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "outputs": [],
+        "totalOutputs": 0
+      },
+      "tags": [
+        "brc-100",
+        "listOutputs"
+      ]
+    }
+  ]
+}

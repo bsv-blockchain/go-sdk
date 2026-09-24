@@ -1,0 +1,279 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "payments.brc29-payment-protocol",
+  "name": "BRC-29 P2P Payment Protocol Message Exchange",
+  "brc": ["BRC-29"],
+  "version": "1.0.0",
+  "reference_impl": "@bsv/sdk + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "payments.brc29-payment-protocol.1",
+      "description": "PaymentMessage shape: required fields derivationPrefix, derivationSuffix, transaction",
+      "input": {
+        "_schema_check": true,
+        "message": {
+          "derivationPrefix": "3q2+7w==",
+          "derivationSuffix": "iMba2Q==",
+          "transaction": "<base64-encoded-BEEF>",
+          "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "required_fields": ["derivationPrefix", "derivationSuffix", "transaction"]
+      },
+      "tags": ["brc-29", "payment-message", "schema"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.2",
+      "description": "PaymentMessage: minimal (no senderIdentityKey, no outputs array)",
+      "input": {
+        "channel": "payment/send",
+        "message": {
+          "derivationPrefix": "3q2+7w==",
+          "derivationSuffix": "iMba2Q==",
+          "transaction": "<base64-encoded-BEEF>"
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["brc-29", "payment-message", "minimal"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.3",
+      "description": "PaymentMessage: multi-output using outputs array",
+      "input": {
+        "channel": "payment/send",
+        "message": {
+          "derivationPrefix": "3q2+7w==",
+          "transaction": "<base64-encoded-BEEF>",
+          "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "outputs": [
+            { "outputIndex": 0, "derivationSuffix": "iMba2Q==" },
+            { "outputIndex": 1, "derivationSuffix": "X9k4LA==" }
+          ]
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["brc-29", "payment-message", "multi-output"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.4",
+      "description": "PaymentAck: accepted = true shape",
+      "input": {
+        "channel": "payment/acknowledge",
+        "message": {
+          "accepted": true,
+          "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "required_fields": ["accepted"]
+      },
+      "tags": ["brc-29", "payment-ack", "schema", "accepted"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.5",
+      "description": "PaymentAck: rejected = false with error message",
+      "input": {
+        "channel": "payment/acknowledge",
+        "message": {
+          "accepted": false,
+          "error": "invalid BEEF: SPV verification failed"
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["brc-29", "payment-ack", "schema", "rejected"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.6",
+      "description": "BRC-42 invoice number format: '2-3241645161d8-{prefix} {suffix}'",
+      "input": {
+        "_schema_check": true,
+        "derivationPrefix": "3q2+7w==",
+        "derivationSuffix": "iMba2Q=="
+      },
+      "expected": {
+        "invoice_number": "2-3241645161d8-3q2+7w== iMba2Q==",
+        "protocol_id": [2, "3241645161d8"]
+      },
+      "tags": ["brc-29", "brc-42", "key-derivation", "invoice-number"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.7",
+      "description": "internalizeAction args shape for single BRC-29 payment",
+      "input": {
+        "_schema_check": true,
+        "internalizeActionArgs": {
+          "tx": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "3q2+7w==",
+                "derivationSuffix": "iMba2Q==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "Incoming BRC-29 payment"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "required_fields": ["tx", "outputs", "description"]
+      },
+      "tags": ["brc-29", "internalize-action", "schema"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.8",
+      "description": "internalizeAction args for multi-output BRC-29 payment",
+      "input": {
+        "_schema_check": true,
+        "internalizeActionArgs": {
+          "tx": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          "outputs": [
+            {
+              "outputIndex": 0,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "3q2+7w==",
+                "derivationSuffix": "iMba2Q==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            },
+            {
+              "outputIndex": 1,
+              "protocol": "wallet payment",
+              "paymentRemittance": {
+                "derivationPrefix": "3q2+7w==",
+                "derivationSuffix": "X9k4LA==",
+                "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+              }
+            }
+          ],
+          "description": "Incoming multi-output BRC-29 payment"
+        }
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["brc-29", "internalize-action", "multi-output"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.9",
+      "description": "derivationPrefix: base64-encoded random nonce (payment-wide)",
+      "input": {
+        "_schema_check": true,
+        "valid_examples": ["3q2+7w==", "dGVzdA==", "AAAAAAAAAAAAAAAAAAAAAA=="],
+        "_note": "derivationPrefix is base64-encoded; uniquely identifies this payment"
+      },
+      "expected": {
+        "encoding": "base64",
+        "scope": "payment-wide"
+      },
+      "tags": ["brc-29", "schema", "derivation-prefix"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.10",
+      "description": "derivationSuffix: base64-encoded random nonce (UTXO-specific)",
+      "input": {
+        "_schema_check": true,
+        "valid_examples": ["iMba2Q==", "X9k4LA==", "AQIDBA=="],
+        "_note": "derivationSuffix is per-output; different for each output in the payment"
+      },
+      "expected": {
+        "encoding": "base64",
+        "scope": "per-utxo"
+      },
+      "tags": ["brc-29", "schema", "derivation-suffix"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.11",
+      "description": "senderIdentityKey: compressed secp256k1 public key (hex, 66 chars)",
+      "input": {
+        "_schema_check": true,
+        "valid_examples": [
+          "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        ]
+      },
+      "expected": {
+        "pattern": "^(02|03)[0-9a-fA-F]{64}$"
+      },
+      "tags": ["brc-29", "schema", "sender-identity-key"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.12",
+      "description": "PaymentOutputDescriptor: outputIndex + derivationSuffix per UTXO",
+      "input": {
+        "_schema_check": true,
+        "output_descriptor": {
+          "outputIndex": 0,
+          "derivationSuffix": "iMba2Q=="
+        }
+      },
+      "expected": {
+        "valid": true,
+        "required_fields": ["outputIndex", "derivationSuffix"]
+      },
+      "tags": ["brc-29", "schema", "output-descriptor"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.13",
+      "description": "Legacy BRC-8 envelope is deprecated — new implementations MUST NOT use it",
+      "input": {
+        "_schema_note": "deprecated",
+        "legacy_message": {
+          "protocol": "3241645161d8",
+          "senderIdentityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "derivationPrefix": "3q2+7w==",
+          "transactions": []
+        }
+      },
+      "expected": {
+        "deprecated": true,
+        "use_instead": "PaymentMessage with Atomic BEEF transaction"
+      },
+      "tags": ["brc-29", "schema", "deprecated", "legacy"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.14",
+      "description": "PaymentMessage: transaction is base64-encoded Atomic BEEF (BRC-95)",
+      "input": {
+        "_schema_check": true,
+        "transaction_encoding": "base64",
+        "beef_version": "BRC-95",
+        "_note": "The 'transaction' field carries the full Atomic BEEF blob, base64-encoded"
+      },
+      "expected": {
+        "transport_encoding": "base64",
+        "format": "Atomic BEEF (BRC-95)"
+      },
+      "tags": ["brc-29", "schema", "beef", "brc-95"]
+    },
+    {
+      "id": "payments.brc29-payment-protocol.15",
+      "description": "PaymentAck txid: 64-char hex string",
+      "input": {
+        "_schema_check": true,
+        "valid_txids": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        ]
+      },
+      "expected": {
+        "pattern": "^[0-9a-fA-F]{64}$"
+      },
+      "tags": ["brc-29", "schema", "txid"]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "version": "1.0.1",
+  "domain": "sdk",
+  "category": "keys",
+  "description": "PrivateKey constructor must reduce values >= curve order n modulo n. Bug-31 in ts-sdk: values in the range [n, 2n) were accepted as-is instead of being reduced. Fixed by PrivateKey.fromString() wrapping mod-n before use.",
+  "regression": {
+    "issue": "ts-sdk#31",
+    "fixed_in": { "ts": "2.x" },
+    "symptom": "new PrivateKey(n + k) without the 'nocheck' flag accepted the out-of-range value and produced an incorrect WIF, different from PrivateKey(k)",
+    "root_cause": "Constructor did not reduce the scalar modulo the curve order before storing"
+  },
+  "vectors": [
+    {
+      "id": "regression.privatekey.modular-reduction.0001",
+      "description": "n + 12 reduces to 12; both must produce the same WIF",
+      "parity_class": "required",
+      "input": {
+        "scalar_hex": "000000000000000000000000000000000000000000000000000000000000000c"
+      },
+      "expected": {
+        "wif": "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU79MFFcB1G"
+      },
+      "notes": "scalar = 12 (0x0c), compressed WIF on mainnet"
+    },
+    {
+      "id": "regression.privatekey.modular-reduction.0002",
+      "description": "n + 12 (overflow value) — fromString with implicit mod-n must also produce WIF of 12",
+      "parity_class": "intended",
+      "skip_reason": "Go-SDK parity gap (ts-sdk#31): Go-SDK v1.2.23 does not reduce scalars in the range [n, 2n) modulo the curve order; it stores the raw value and produces an incorrect WIF. TS SDK correctly reduces mod n. This vector documents the expected cross-language behaviour once Go-SDK is fixed.",
+      "input": {
+        "scalar_hex": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036414d"
+      },
+      "expected": {
+        "wif": "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU79MFFcB1G"
+      },
+      "notes": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036414d = secp256k1 curve order n + 12. TS SDK reduces mod n → 12. Go SDK (as of v1.2.23) does NOT reduce — returns the raw scalar. Marked intended: Go SDK parity needed."
+    },
+    {
+      "id": "regression.privatekey.modular-reduction.0003",
+      "description": "Exact curve order n must be rejected as an invalid private key",
+      "parity_class": "intended",
+      "skip_reason": "Go-SDK parity gap (ts-sdk#31): Go-SDK v1.2.23 does not validate that the scalar is strictly less than the curve order n; it accepts n itself as a valid private key. TS SDK throws 'Input is out of field'. This vector documents the expected rejection behaviour once Go-SDK adds field membership validation.",
+      "input": {
+        "scalar_hex": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+        "strict": true
+      },
+      "expected": {
+        "error": "Input is out of field"
+      },
+      "notes": "The curve order n itself is not a valid private key scalar. TS SDK throws. Go SDK (as of v1.2.23) accepts it. Marked intended: Go SDK should validate field membership."
+    }
+  ]
+}

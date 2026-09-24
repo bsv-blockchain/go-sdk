@@ -1,0 +1,62 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.storage.sync-transfer",
+  "name": "Negotiated wallet sync transfer v1 binary framing",
+  "brc": ["BRC-40"],
+  "version": "1.0.0",
+  "reference_impl": "packages/wallet/wallet-toolbox/src/storage/remoting/SyncTransfer.ts@2.13.0",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.storage.sync-transfer.frame",
+      "description": "Raw binary fields follow a length-prefixed UTF-8 header; SHA-256 covers every byte.",
+      "input": {
+        "value": {
+          "bytes": {
+            "$bsvBinary": "base64",
+            "data": "AH//"
+          },
+          "label": "record"
+        }
+      },
+      "expected": {
+        "hex": "0000005e7b2276657273696f6e223a312c2276616c7565223a7b226279746573223a6e756c6c2c226c6162656c223a227265636f7264227d2c226669656c6473223a5b7b2270617468223a5b226279746573225d2c226c656e677468223a337d5d7d007fff",
+        "digest": "3170835aee82aeaa5bf9c2fe9b9a035de516c11e133dcbf0396b1d34040767c9"
+      },
+      "tags": ["binary", "integrity", "happy-path"]
+    },
+    {
+      "id": "wallet.storage.sync-transfer.truncated",
+      "description": "Reject truncated framing before a wallet record can be merged.",
+      "input": {
+        "hex": "0000005e7b2276657273696f6e223a312c2276616c7565223a7b226279746573223a6e756c6c2c226c6162656c223a227265636f7264227d2c226669656c6473223a5b7b2270617468223a5b226279746573225d2c226c656e677468223a337d5d7d007f"
+      },
+      "expected": {
+        "error": "Invalid wallet sync transfer frame"
+      },
+      "tags": ["error-case", "integrity"]
+    },
+    {
+      "id": "wallet.storage.sync-transfer.trailing",
+      "description": "Reject trailing framing before a wallet record can be merged.",
+      "input": {
+        "hex": "0000005e7b2276657273696f6e223a312c2276616c7565223a7b226279746573223a6e756c6c2c226c6162656c223a227265636f7264227d2c226669656c6473223a5b7b2270617468223a5b226279746573225d2c226c656e677468223a337d5d7d007fff00"
+      },
+      "expected": {
+        "error": "Invalid wallet sync transfer frame"
+      },
+      "tags": ["error-case", "integrity"]
+    },
+    {
+      "id": "wallet.storage.sync-transfer.short-header",
+      "description": "Reject short-header framing before a wallet record can be merged.",
+      "input": {
+        "hex": "000000"
+      },
+      "expected": {
+        "error": "Invalid wallet sync transfer frame"
+      },
+      "tags": ["error-case", "integrity"]
+    }
+  ]
+}

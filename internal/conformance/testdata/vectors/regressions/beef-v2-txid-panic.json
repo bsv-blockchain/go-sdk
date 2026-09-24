@@ -1,0 +1,43 @@
+{
+  "version": "1.0.1",
+  "domain": "sdk",
+  "category": "transactions",
+  "description": "ParseBeef on BEEF_V2 data must return a non-nil transaction from which TxID() can be called without panicking. Go SDK prior to v1.2.21 returned nil for the transaction field when parsing BEEF_V2, causing a nil-pointer panic on TxID().",
+  "regression": {
+    "issue": "go-sdk#306",
+    "fixed_in": { "go": "v1.2.21" },
+    "symptom": "go-sdk ParseBeef() returned nil transaction for BEEF_V2 format, causing nil-pointer dereference when caller invoked TxID()",
+    "root_cause": "BEEF_V2 parse path did not assign the newest transaction to the return value, unlike the ATOMIC_BEEF and BEEF_V1 paths"
+  },
+  "vectors": [
+    {
+      "id": "regression.beef.v2-txid-panic.0001",
+      "description": "Minimal BEEF_V2 encoded as hex — parse must succeed and TxID must be callable",
+      "parity_class": "required",
+      "input": {
+        "beef_hex": "0200beef0000",
+        "format": "BEEF_V2"
+      },
+      "expected": {
+        "parse_succeeds": true,
+        "txid_non_null": false
+      },
+      "notes": "0200beef = BEEF_V2 magic (LE uint32 0xBEEF0002). 0000 = canonical CompactSize encodings for 0 BUMPs and 0 txs. Minimal valid BEEF_V2 envelope. No transactions means txid is null/nil — but parse must not panic."
+    },
+    {
+      "id": "regression.beef.v2-txid-panic.0002",
+      "description": "v1 new BEEF round-trip — minimum BEEF_V1 bytes encode correctly",
+      "parity_class": "intended",
+      "skip_reason": "Go-SDK parity gap: Go-SDK v1.2.23 errors in NewBeefFromTransaction(nil) when the BEEF_V1 parse path produces a nil transaction (no txs in payload), while TS SDK returns null without error. Tracked in go-sdk#306 follow-up; requires Go-SDK fix before this vector can be required.",
+      "input": {
+        "beef_hex": "0100beef0000",
+        "format": "BEEF_V1"
+      },
+      "expected": {
+        "parse_succeeds": true,
+        "txid_non_null": false
+      },
+      "notes": "0100beef = BEEF_V1 magic (LE uint32 0xBEEF0001). 00 = 0 BUMPs, 00 = 0 txs. Minimum valid BEEF_V1. TS SDK returns null txid without error. Go SDK (as of v1.2.23) errors in NewBeefFromTransaction(nil) when ParseBeef's BEEF_V1 path produces a nil transaction. Marked intended: Go SDK parity fix needed."
+    }
+  ]
+}

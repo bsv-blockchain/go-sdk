@@ -1,0 +1,4988 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.getpublickey",
+  "name": "BRC-100 getpublickey",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.getpublickey.1",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0253f70b1025f9f13fb1dec1b2dc6077e6b57e60107642c134997ad8dab54ba290"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.2",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0253f70b1025f9f13fb1dec1b2dc6077e6b57e60107642c134997ad8dab54ba290"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.3",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0253f70b1025f9f13fb1dec1b2dc6077e6b57e60107642c134997ad8dab54ba290"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.4",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0253f70b1025f9f13fb1dec1b2dc6077e6b57e60107642c134997ad8dab54ba290"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.5",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0253f70b1025f9f13fb1dec1b2dc6077e6b57e60107642c134997ad8dab54ba290"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.6",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0253f70b1025f9f13fb1dec1b2dc6077e6b57e60107642c134997ad8dab54ba290"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.7",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "030ef6a1041f719b940424ea697df73e4575a6dec766d53f5c2615c89d057e08e5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.8",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "030ef6a1041f719b940424ea697df73e4575a6dec766d53f5c2615c89d057e08e5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.9",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "030ef6a1041f719b940424ea697df73e4575a6dec766d53f5c2615c89d057e08e5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.10",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "030ef6a1041f719b940424ea697df73e4575a6dec766d53f5c2615c89d057e08e5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.11",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "030ef6a1041f719b940424ea697df73e4575a6dec766d53f5c2615c89d057e08e5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.12",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "030ef6a1041f719b940424ea697df73e4575a6dec766d53f5c2615c89d057e08e5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.13",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03be018652c83478aca9031fadaccb3ee37222d66ed313162c206c7d724d2496b5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.14",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03be018652c83478aca9031fadaccb3ee37222d66ed313162c206c7d724d2496b5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.15",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03be018652c83478aca9031fadaccb3ee37222d66ed313162c206c7d724d2496b5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.16",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03be018652c83478aca9031fadaccb3ee37222d66ed313162c206c7d724d2496b5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.17",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03be018652c83478aca9031fadaccb3ee37222d66ed313162c206c7d724d2496b5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.18",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03be018652c83478aca9031fadaccb3ee37222d66ed313162c206c7d724d2496b5"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.19",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03314cb79727e8c6e173234905f6778ea87d4f9c827236ef5cf33a6195aaf5a4b2"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.20",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03314cb79727e8c6e173234905f6778ea87d4f9c827236ef5cf33a6195aaf5a4b2"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.21",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03314cb79727e8c6e173234905f6778ea87d4f9c827236ef5cf33a6195aaf5a4b2"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.22",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03314cb79727e8c6e173234905f6778ea87d4f9c827236ef5cf33a6195aaf5a4b2"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.23",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03314cb79727e8c6e173234905f6778ea87d4f9c827236ef5cf33a6195aaf5a4b2"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.24",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03314cb79727e8c6e173234905f6778ea87d4f9c827236ef5cf33a6195aaf5a4b2"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.25",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0261549612d403abc61024c9b1c7c832cbf2371f4c788e1f7066de974457d4546a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.26",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0261549612d403abc61024c9b1c7c832cbf2371f4c788e1f7066de974457d4546a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.27",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0261549612d403abc61024c9b1c7c832cbf2371f4c788e1f7066de974457d4546a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.28",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0261549612d403abc61024c9b1c7c832cbf2371f4c788e1f7066de974457d4546a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.29",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0261549612d403abc61024c9b1c7c832cbf2371f4c788e1f7066de974457d4546a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.30",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0261549612d403abc61024c9b1c7c832cbf2371f4c788e1f7066de974457d4546a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.31",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.32",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.33",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.34",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.35",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.36",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.37",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.38",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.39",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.40",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.41",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.42",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.43",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.44",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.45",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.46",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.47",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.48",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.49",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.50",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.51",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.52",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.53",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.54",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.55",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.56",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.57",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.58",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.59",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.60",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.61",
+      "description": "getPublicKey protocol=2,counterparty keyID=1 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "022253afd6a5a175d162ba4f7640db41e20f029e6aee23c15061945e50a76b2bc9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.62",
+      "description": "getPublicKey protocol=2,counterparty keyID=1 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "022253afd6a5a175d162ba4f7640db41e20f029e6aee23c15061945e50a76b2bc9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.63",
+      "description": "getPublicKey protocol=2,counterparty keyID=1 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "022253afd6a5a175d162ba4f7640db41e20f029e6aee23c15061945e50a76b2bc9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.64",
+      "description": "getPublicKey protocol=2,counterparty keyID=1 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "022253afd6a5a175d162ba4f7640db41e20f029e6aee23c15061945e50a76b2bc9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.65",
+      "description": "getPublicKey protocol=2,counterparty keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "022253afd6a5a175d162ba4f7640db41e20f029e6aee23c15061945e50a76b2bc9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.66",
+      "description": "getPublicKey protocol=2,counterparty keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "022253afd6a5a175d162ba4f7640db41e20f029e6aee23c15061945e50a76b2bc9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.67",
+      "description": "getPublicKey protocol=2,counterparty keyID=2 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02f631dd7350872347e800cb812a16f66631349531d2edd4322757ecb9f1b10307"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.68",
+      "description": "getPublicKey protocol=2,counterparty keyID=2 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02f631dd7350872347e800cb812a16f66631349531d2edd4322757ecb9f1b10307"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.69",
+      "description": "getPublicKey protocol=2,counterparty keyID=2 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02f631dd7350872347e800cb812a16f66631349531d2edd4322757ecb9f1b10307"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.70",
+      "description": "getPublicKey protocol=2,counterparty keyID=2 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02f631dd7350872347e800cb812a16f66631349531d2edd4322757ecb9f1b10307"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.71",
+      "description": "getPublicKey protocol=2,counterparty keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02f631dd7350872347e800cb812a16f66631349531d2edd4322757ecb9f1b10307"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.72",
+      "description": "getPublicKey protocol=2,counterparty keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02f631dd7350872347e800cb812a16f66631349531d2edd4322757ecb9f1b10307"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.73",
+      "description": "getPublicKey protocol=2,counterparty keyID=primary counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02fb7bc76a6c7cb8b2d1dc4f6c0534e26659fef83479b6df23ec3f0b76cfb30a5e"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.74",
+      "description": "getPublicKey protocol=2,counterparty keyID=primary counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02fb7bc76a6c7cb8b2d1dc4f6c0534e26659fef83479b6df23ec3f0b76cfb30a5e"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.75",
+      "description": "getPublicKey protocol=2,counterparty keyID=primary counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02fb7bc76a6c7cb8b2d1dc4f6c0534e26659fef83479b6df23ec3f0b76cfb30a5e"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.76",
+      "description": "getPublicKey protocol=2,counterparty keyID=primary counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02fb7bc76a6c7cb8b2d1dc4f6c0534e26659fef83479b6df23ec3f0b76cfb30a5e"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.77",
+      "description": "getPublicKey protocol=2,counterparty keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02fb7bc76a6c7cb8b2d1dc4f6c0534e26659fef83479b6df23ec3f0b76cfb30a5e"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.78",
+      "description": "getPublicKey protocol=2,counterparty keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02fb7bc76a6c7cb8b2d1dc4f6c0534e26659fef83479b6df23ec3f0b76cfb30a5e"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.79",
+      "description": "getPublicKey protocol=2,counterparty keyID=backup counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03cc44e787b7d1965bfcd4bb2a1fb976812026401fbcb985293aedc4144cc34699"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.80",
+      "description": "getPublicKey protocol=2,counterparty keyID=backup counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03cc44e787b7d1965bfcd4bb2a1fb976812026401fbcb985293aedc4144cc34699"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.81",
+      "description": "getPublicKey protocol=2,counterparty keyID=backup counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03cc44e787b7d1965bfcd4bb2a1fb976812026401fbcb985293aedc4144cc34699"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.82",
+      "description": "getPublicKey protocol=2,counterparty keyID=backup counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03cc44e787b7d1965bfcd4bb2a1fb976812026401fbcb985293aedc4144cc34699"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.83",
+      "description": "getPublicKey protocol=2,counterparty keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03cc44e787b7d1965bfcd4bb2a1fb976812026401fbcb985293aedc4144cc34699"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.84",
+      "description": "getPublicKey protocol=2,counterparty keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03cc44e787b7d1965bfcd4bb2a1fb976812026401fbcb985293aedc4144cc34699"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.85",
+      "description": "getPublicKey protocol=2,counterparty keyID=test-key-42 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0316c14f1bc28bf6a2f28cbf7517d143d68092a76c25daf432a6c5dea0f1117e9b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.86",
+      "description": "getPublicKey protocol=2,counterparty keyID=test-key-42 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0316c14f1bc28bf6a2f28cbf7517d143d68092a76c25daf432a6c5dea0f1117e9b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.87",
+      "description": "getPublicKey protocol=2,counterparty keyID=test-key-42 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0316c14f1bc28bf6a2f28cbf7517d143d68092a76c25daf432a6c5dea0f1117e9b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.88",
+      "description": "getPublicKey protocol=2,counterparty keyID=test-key-42 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0316c14f1bc28bf6a2f28cbf7517d143d68092a76c25daf432a6c5dea0f1117e9b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.89",
+      "description": "getPublicKey protocol=2,counterparty keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0316c14f1bc28bf6a2f28cbf7517d143d68092a76c25daf432a6c5dea0f1117e9b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.90",
+      "description": "getPublicKey protocol=2,counterparty keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0316c14f1bc28bf6a2f28cbf7517d143d68092a76c25daf432a6c5dea0f1117e9b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.91",
+      "description": "getPublicKey protocol=0,identity keyID=1 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02adef551bc966bbb470ebc2ee8cf56bdd8424e5ead79829e4ed5c892cba412972"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.92",
+      "description": "getPublicKey protocol=0,identity keyID=1 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02adef551bc966bbb470ebc2ee8cf56bdd8424e5ead79829e4ed5c892cba412972"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.93",
+      "description": "getPublicKey protocol=0,identity keyID=1 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02adef551bc966bbb470ebc2ee8cf56bdd8424e5ead79829e4ed5c892cba412972"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.94",
+      "description": "getPublicKey protocol=0,identity keyID=1 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02adef551bc966bbb470ebc2ee8cf56bdd8424e5ead79829e4ed5c892cba412972"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.95",
+      "description": "getPublicKey protocol=0,identity keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02adef551bc966bbb470ebc2ee8cf56bdd8424e5ead79829e4ed5c892cba412972"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.96",
+      "description": "getPublicKey protocol=0,identity keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02adef551bc966bbb470ebc2ee8cf56bdd8424e5ead79829e4ed5c892cba412972"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.97",
+      "description": "getPublicKey protocol=0,identity keyID=2 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02293096cc0f7c9525302be2e38f45f476c32d0f84869dba7c32f6056d03d9b291"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.98",
+      "description": "getPublicKey protocol=0,identity keyID=2 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02293096cc0f7c9525302be2e38f45f476c32d0f84869dba7c32f6056d03d9b291"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.99",
+      "description": "getPublicKey protocol=0,identity keyID=2 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02293096cc0f7c9525302be2e38f45f476c32d0f84869dba7c32f6056d03d9b291"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.100",
+      "description": "getPublicKey protocol=0,identity keyID=2 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02293096cc0f7c9525302be2e38f45f476c32d0f84869dba7c32f6056d03d9b291"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.101",
+      "description": "getPublicKey protocol=0,identity keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02293096cc0f7c9525302be2e38f45f476c32d0f84869dba7c32f6056d03d9b291"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.102",
+      "description": "getPublicKey protocol=0,identity keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02293096cc0f7c9525302be2e38f45f476c32d0f84869dba7c32f6056d03d9b291"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.103",
+      "description": "getPublicKey protocol=0,identity keyID=primary counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0315e2f379b439841917657354649db37f743cf854121fc769c9d2b9de1b169e65"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.104",
+      "description": "getPublicKey protocol=0,identity keyID=primary counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0315e2f379b439841917657354649db37f743cf854121fc769c9d2b9de1b169e65"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.105",
+      "description": "getPublicKey protocol=0,identity keyID=primary counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0315e2f379b439841917657354649db37f743cf854121fc769c9d2b9de1b169e65"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.106",
+      "description": "getPublicKey protocol=0,identity keyID=primary counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0315e2f379b439841917657354649db37f743cf854121fc769c9d2b9de1b169e65"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.107",
+      "description": "getPublicKey protocol=0,identity keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0315e2f379b439841917657354649db37f743cf854121fc769c9d2b9de1b169e65"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.108",
+      "description": "getPublicKey protocol=0,identity keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0315e2f379b439841917657354649db37f743cf854121fc769c9d2b9de1b169e65"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.109",
+      "description": "getPublicKey protocol=0,identity keyID=backup counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02e35f9503e116a0651871e7c15b03427ec17ca1dfce65cf4ff120c5b09306f5de"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.110",
+      "description": "getPublicKey protocol=0,identity keyID=backup counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02e35f9503e116a0651871e7c15b03427ec17ca1dfce65cf4ff120c5b09306f5de"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.111",
+      "description": "getPublicKey protocol=0,identity keyID=backup counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02e35f9503e116a0651871e7c15b03427ec17ca1dfce65cf4ff120c5b09306f5de"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.112",
+      "description": "getPublicKey protocol=0,identity keyID=backup counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02e35f9503e116a0651871e7c15b03427ec17ca1dfce65cf4ff120c5b09306f5de"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.113",
+      "description": "getPublicKey protocol=0,identity keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02e35f9503e116a0651871e7c15b03427ec17ca1dfce65cf4ff120c5b09306f5de"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.114",
+      "description": "getPublicKey protocol=0,identity keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02e35f9503e116a0651871e7c15b03427ec17ca1dfce65cf4ff120c5b09306f5de"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.115",
+      "description": "getPublicKey protocol=0,identity keyID=test-key-42 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "031337e1e293ba9d0696a1a6f8db4e72e01faac354976a80059a83514386e11459"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.116",
+      "description": "getPublicKey protocol=0,identity keyID=test-key-42 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "031337e1e293ba9d0696a1a6f8db4e72e01faac354976a80059a83514386e11459"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.117",
+      "description": "getPublicKey protocol=0,identity keyID=test-key-42 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "031337e1e293ba9d0696a1a6f8db4e72e01faac354976a80059a83514386e11459"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.118",
+      "description": "getPublicKey protocol=0,identity keyID=test-key-42 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "031337e1e293ba9d0696a1a6f8db4e72e01faac354976a80059a83514386e11459"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.119",
+      "description": "getPublicKey protocol=0,identity keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "031337e1e293ba9d0696a1a6f8db4e72e01faac354976a80059a83514386e11459"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.120",
+      "description": "getPublicKey protocol=0,identity keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "identity"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "031337e1e293ba9d0696a1a6f8db4e72e01faac354976a80059a83514386e11459"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.121",
+      "description": "getPublicKey protocol=1,messaging keyID=1 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "029f12db92e37fbd17c7318e44c490f89fbbbca8ce396f2fcd2335016b48895884"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.122",
+      "description": "getPublicKey protocol=1,messaging keyID=1 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "029f12db92e37fbd17c7318e44c490f89fbbbca8ce396f2fcd2335016b48895884"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.123",
+      "description": "getPublicKey protocol=1,messaging keyID=1 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "029f12db92e37fbd17c7318e44c490f89fbbbca8ce396f2fcd2335016b48895884"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.124",
+      "description": "getPublicKey protocol=1,messaging keyID=1 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "029f12db92e37fbd17c7318e44c490f89fbbbca8ce396f2fcd2335016b48895884"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.125",
+      "description": "getPublicKey protocol=1,messaging keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "029f12db92e37fbd17c7318e44c490f89fbbbca8ce396f2fcd2335016b48895884"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.126",
+      "description": "getPublicKey protocol=1,messaging keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "029f12db92e37fbd17c7318e44c490f89fbbbca8ce396f2fcd2335016b48895884"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.127",
+      "description": "getPublicKey protocol=1,messaging keyID=2 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03c40fdef1b0700f71ce1b4fbd27340bff694001790d98804a3677fe6acf25f596"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.128",
+      "description": "getPublicKey protocol=1,messaging keyID=2 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03c40fdef1b0700f71ce1b4fbd27340bff694001790d98804a3677fe6acf25f596"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.129",
+      "description": "getPublicKey protocol=1,messaging keyID=2 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03c40fdef1b0700f71ce1b4fbd27340bff694001790d98804a3677fe6acf25f596"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.130",
+      "description": "getPublicKey protocol=1,messaging keyID=2 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03c40fdef1b0700f71ce1b4fbd27340bff694001790d98804a3677fe6acf25f596"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.131",
+      "description": "getPublicKey protocol=1,messaging keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03c40fdef1b0700f71ce1b4fbd27340bff694001790d98804a3677fe6acf25f596"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.132",
+      "description": "getPublicKey protocol=1,messaging keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03c40fdef1b0700f71ce1b4fbd27340bff694001790d98804a3677fe6acf25f596"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.133",
+      "description": "getPublicKey protocol=1,messaging keyID=primary counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02632adc5320462a70678f0d0f41e75d4abd530b604a828a8c74229f2d6be30624"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.134",
+      "description": "getPublicKey protocol=1,messaging keyID=primary counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02632adc5320462a70678f0d0f41e75d4abd530b604a828a8c74229f2d6be30624"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.135",
+      "description": "getPublicKey protocol=1,messaging keyID=primary counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02632adc5320462a70678f0d0f41e75d4abd530b604a828a8c74229f2d6be30624"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.136",
+      "description": "getPublicKey protocol=1,messaging keyID=primary counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02632adc5320462a70678f0d0f41e75d4abd530b604a828a8c74229f2d6be30624"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.137",
+      "description": "getPublicKey protocol=1,messaging keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02632adc5320462a70678f0d0f41e75d4abd530b604a828a8c74229f2d6be30624"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.138",
+      "description": "getPublicKey protocol=1,messaging keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02632adc5320462a70678f0d0f41e75d4abd530b604a828a8c74229f2d6be30624"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.139",
+      "description": "getPublicKey protocol=1,messaging keyID=backup counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "028189615acaf8ce3b51a67d40644743cad2eb22d761cdf07b20b96c383d99696a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.140",
+      "description": "getPublicKey protocol=1,messaging keyID=backup counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "028189615acaf8ce3b51a67d40644743cad2eb22d761cdf07b20b96c383d99696a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.141",
+      "description": "getPublicKey protocol=1,messaging keyID=backup counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "028189615acaf8ce3b51a67d40644743cad2eb22d761cdf07b20b96c383d99696a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.142",
+      "description": "getPublicKey protocol=1,messaging keyID=backup counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "028189615acaf8ce3b51a67d40644743cad2eb22d761cdf07b20b96c383d99696a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.143",
+      "description": "getPublicKey protocol=1,messaging keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "028189615acaf8ce3b51a67d40644743cad2eb22d761cdf07b20b96c383d99696a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.144",
+      "description": "getPublicKey protocol=1,messaging keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "028189615acaf8ce3b51a67d40644743cad2eb22d761cdf07b20b96c383d99696a"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.145",
+      "description": "getPublicKey protocol=1,messaging keyID=test-key-42 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0280f17035bda47cd2b09da0e37a5f4d476d4d22dc4ab83a13c2842ac5b3e09af9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.146",
+      "description": "getPublicKey protocol=1,messaging keyID=test-key-42 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0280f17035bda47cd2b09da0e37a5f4d476d4d22dc4ab83a13c2842ac5b3e09af9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.147",
+      "description": "getPublicKey protocol=1,messaging keyID=test-key-42 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0280f17035bda47cd2b09da0e37a5f4d476d4d22dc4ab83a13c2842ac5b3e09af9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.148",
+      "description": "getPublicKey protocol=1,messaging keyID=test-key-42 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0280f17035bda47cd2b09da0e37a5f4d476d4d22dc4ab83a13c2842ac5b3e09af9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.149",
+      "description": "getPublicKey protocol=1,messaging keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0280f17035bda47cd2b09da0e37a5f4d476d4d22dc4ab83a13c2842ac5b3e09af9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.150",
+      "description": "getPublicKey protocol=1,messaging keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "messaging"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0280f17035bda47cd2b09da0e37a5f4d476d4d22dc4ab83a13c2842ac5b3e09af9"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.151",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0373f31b6258f13b9e2186b6ee259e7bb68d30158d8f4f0c41b041762184c02009"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.152",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0373f31b6258f13b9e2186b6ee259e7bb68d30158d8f4f0c41b041762184c02009"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.153",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "025114dc33d83030cdbcf210e4b91b6e92079002fa1854a962c1d5dee075927b8b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.154",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "025114dc33d83030cdbcf210e4b91b6e92079002fa1854a962c1d5dee075927b8b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.155",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "025114dc33d83030cdbcf210e4b91b6e92079002fa1854a962c1d5dee075927b8b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.156",
+      "description": "getPublicKey protocol=0,wallet keyID=1 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "025114dc33d83030cdbcf210e4b91b6e92079002fa1854a962c1d5dee075927b8b"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.157",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "037d1f220b5e66840d06b93a556c4d09f1a4c711d19b82848ab5c4131aa01d15e3"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.158",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "037d1f220b5e66840d06b93a556c4d09f1a4c711d19b82848ab5c4131aa01d15e3"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.159",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03fd14711d65a7e71641e40075a222de3118eeef5da9cd6befb2106fa70fd947a4"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.160",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03fd14711d65a7e71641e40075a222de3118eeef5da9cd6befb2106fa70fd947a4"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.161",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03fd14711d65a7e71641e40075a222de3118eeef5da9cd6befb2106fa70fd947a4"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.162",
+      "description": "getPublicKey protocol=0,wallet keyID=2 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03fd14711d65a7e71641e40075a222de3118eeef5da9cd6befb2106fa70fd947a4"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.163",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "0390f07d7ae7c8ace60fe3f73a49f233123381065ed7e4325670ae15ef7118a302"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.164",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "0390f07d7ae7c8ace60fe3f73a49f233123381065ed7e4325670ae15ef7118a302"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.165",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "029045b8c9cd933da50df2016b97c072478d5fa3cb51b716db8abc8eb5cb39a155"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.166",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "029045b8c9cd933da50df2016b97c072478d5fa3cb51b716db8abc8eb5cb39a155"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.167",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "029045b8c9cd933da50df2016b97c072478d5fa3cb51b716db8abc8eb5cb39a155"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.168",
+      "description": "getPublicKey protocol=0,wallet keyID=primary counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "029045b8c9cd933da50df2016b97c072478d5fa3cb51b716db8abc8eb5cb39a155"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.169",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "022db27566edebad18cc82666abd780f8a94aedf04ad1c0170b0db91a8e54ba99f"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.170",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "022db27566edebad18cc82666abd780f8a94aedf04ad1c0170b0db91a8e54ba99f"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.171",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02baafd721e094874cd1f4d38e9850c14f9e6281ea2adb3b2754f84a494a2ed076"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.172",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02baafd721e094874cd1f4d38e9850c14f9e6281ea2adb3b2754f84a494a2ed076"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.173",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "02baafd721e094874cd1f4d38e9850c14f9e6281ea2adb3b2754f84a494a2ed076"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.174",
+      "description": "getPublicKey protocol=0,wallet keyID=backup counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "backup",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "02baafd721e094874cd1f4d38e9850c14f9e6281ea2adb3b2754f84a494a2ed076"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.175",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=self privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03f8bd97cb4212dd8ebe6f682b1ad1b6a5cf69b130dd412b84f19186dbcb9c3670"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.176",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=self privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03f8bd97cb4212dd8ebe6f682b1ad1b6a5cf69b130dd412b84f19186dbcb9c3670"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.177",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=anyone privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03f8528aa2e51c92cece08412798118154fe9b92c8c4170a62cbef8a834a231115"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.178",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=anyone privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03f8528aa2e51c92cece08412798118154fe9b92c8c4170a62cbef8a834a231115"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.179",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "publicKey": "03f8528aa2e51c92cece08412798118154fe9b92c8c4170a62cbef8a834a231115"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "standard"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.180",
+      "description": "getPublicKey protocol=0,wallet keyID=test-key-42 counterparty=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 privileged=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "test-key-42",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "publicKey": "03f8528aa2e51c92cece08412798118154fe9b92c8c4170a62cbef8a834a231115"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.181",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.182",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.183",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.184",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.185",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.186",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.187",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.188",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.189",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.190",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.191",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.192",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.193",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.194",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.195",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.196",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.197",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.198",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.199",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.200",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "self",
+          "privileged": true,
+          "privilegedReason": "Conformance key derivation"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getpublickey.201",
+      "description": "getPublicKey error case",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "backup",
+          "counterparty": "anyone",
+          "privileged": false
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Protocol names must be 5 characters or more"
+      },
+      "tags": [
+        "brc-100",
+        "getPublicKey",
+        "error"
+      ]
+    }
+  ]
+}

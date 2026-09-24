@@ -1,0 +1,913 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.revealcounterpartykeylinkage",
+  "name": "BRC-100 revealcounterpartykeylinkage",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.1",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.2",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.3",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.4",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.5",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.6",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.7",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.8",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.9",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.10",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.11",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.12",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.13",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.14",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.15",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.16",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.17",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.18",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.19",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.20",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.21",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.22",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.23",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.24",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            0,
+            "wallet"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.25",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.26",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.27",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.28",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.29",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.30",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            1,
+            "app"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.31",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.32",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "1",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.33",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.34",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "2",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.35",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "self",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Counterparty secrets cannot be revealed for counterparty=self."
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.revealcounterpartykeylinkage.36",
+      "description": "revealCounterpartyKeyLinkage error",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "counterparty"
+          ],
+          "keyID": "primary",
+          "counterparty": "anyone",
+          "data": "test data for revealCounterpartyKeyLinkage"
+        }
+      },
+      "expected": {
+        "error": true,
+        "message": "Invalid hex string"
+      },
+      "tags": [
+        "brc-100",
+        "revealCounterpartyKeyLinkage",
+        "error"
+      ]
+    }
+  ]
+}

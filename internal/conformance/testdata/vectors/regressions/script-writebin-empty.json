@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "script",
+  "description": "Script.writeBin([]) must push a single OP_0 (0x00) byte onto the chunk list, and Script.toASM() on that chunk must return 'OP_0'. Pre-fix, writeBin([]) left an empty chunk that toASM() serialised as an empty string, breaking P2PKH-style scripts that relied on an explicit empty push.",
+  "regression": {
+    "issue": "ts-sdk#336",
+    "fixed_in": { "ts": "v1.1.0" },
+    "symptom": "new Script().writeBin([]).toASM() returned '' (empty string) instead of 'OP_0'",
+    "root_cause": "writeBin([]) pushed a chunk with an empty data array; toASM() serialised zero-length data chunks as empty string rather than 'OP_0'"
+  },
+  "vectors": [
+    {
+      "id": "regression.script.writebin-empty.0001",
+      "description": "writeBin([]) toASM must produce 'OP_0'",
+      "parity_class": "required",
+      "input": {
+        "operation": "script_writeBin_toASM",
+        "data_hex": ""
+      },
+      "expected": {
+        "asm": "OP_0"
+      },
+      "notes": "An empty byte push is the canonical OP_0 in Bitcoin Script ASM notation."
+    },
+    {
+      "id": "regression.script.writebin-empty.0002",
+      "description": "writeBin([]) toHex must produce '00' (OP_0 opcode byte)",
+      "parity_class": "required",
+      "input": {
+        "operation": "script_writeBin_toHex",
+        "data_hex": ""
+      },
+      "expected": {
+        "hex": "00"
+      },
+      "notes": "OP_0 is opcode 0x00. Writing an empty array must encode as the single byte 0x00."
+    }
+  ]
+}

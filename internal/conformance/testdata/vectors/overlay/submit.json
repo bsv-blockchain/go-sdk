@@ -1,0 +1,275 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "overlay.submit",
+  "name": "Overlay HTTP API — POST /submit (BEEF submission)",
+  "brc": ["BRC-62", "BRC-22"],
+  "version": "1.0.0",
+  "reference_impl": "packages/overlays/overlay-express@1.0.0",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "overlay.submit.1",
+      "description": "Submit valid BEEF to a single topic — happy path returning STEAK with admitted output",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[\"tm_ship\"]"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000",
+        "topics": ["tm_ship"]
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "tm_ship": {
+            "outputsToAdmit": [0],
+            "coinstakeOutputsToRetain": []
+          }
+        }
+      },
+      "tags": ["overlay", "submit", "happy-path", "steak"]
+    },
+    {
+      "id": "overlay.submit.2",
+      "description": "Submit BEEF to multiple topics — STEAK contains per-topic admission results",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[\"tm_ship\", \"tm_slap\"]"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0200e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00e1f50500000000001976a914c0cebcd6c2d3c5f1db4cf25d7a3b5e2c6f4a8b7d88ac00000000",
+        "topics": ["tm_ship", "tm_slap"]
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "tm_ship": {
+            "outputsToAdmit": [0],
+            "coinstakeOutputsToRetain": []
+          },
+          "tm_slap": {
+            "outputsToAdmit": [1],
+            "coinstakeOutputsToRetain": []
+          }
+        }
+      },
+      "tags": ["overlay", "submit", "happy-path", "multi-topic", "steak"]
+    },
+    {
+      "id": "overlay.submit.3",
+      "description": "Submit BEEF where topic manager rejects all outputs — STEAK returns empty outputsToAdmit",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[\"tm_ship\"]"
+        },
+        "body_hex": "0100beef01010000000001deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef0000000000ffffffff0100e1f50500000000001976a91400112233445566778899aabbccddeeff0011223388ac00000000",
+        "topics": ["tm_ship"]
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "tm_ship": {
+            "outputsToAdmit": [],
+            "coinstakeOutputsToRetain": []
+          }
+        }
+      },
+      "tags": ["overlay", "submit", "topic-rejection", "steak"]
+    },
+    {
+      "id": "overlay.submit.4",
+      "description": "Submit with x-topics header missing — server must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "submit", "error-case", "missing-header"]
+    },
+    {
+      "id": "overlay.submit.5",
+      "description": "Submit with x-topics containing an empty array — server must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[]"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "submit", "error-case", "empty-topics"]
+    },
+    {
+      "id": "overlay.submit.6",
+      "description": "Submit with completely empty body — server must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[\"tm_ship\"]"
+        },
+        "body_hex": ""
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "submit", "error-case", "empty-body"]
+    },
+    {
+      "id": "overlay.submit.7",
+      "description": "Submit with x-topics containing a non-existent topic manager — engine routes, topic returns empty admission",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[\"tm_unknown_xyz\"]"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "submit", "error-case", "unknown-topic"]
+    },
+    {
+      "id": "overlay.submit.8",
+      "description": "Submit BEEF with off-chain values prefix (x-includes-off-chain-values: true) — valid BEEF after varint-delimited prefix",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[\"tm_ship\"]",
+          "x-includes-off-chain-values": "true"
+        },
+        "body_hex": "04deadbeef0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000",
+        "note": "Body: varint(4) + 4 off-chain bytes + BEEF bytes"
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "tm_ship": {
+            "outputsToAdmit": [0]
+          }
+        }
+      },
+      "tags": ["overlay", "submit", "happy-path", "off-chain-values"]
+    },
+    {
+      "id": "overlay.submit.9",
+      "description": "Submit with x-topics as a non-JSON string — server must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "tm_ship"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "submit", "error-case", "malformed-header"]
+    },
+    {
+      "id": "overlay.submit.10",
+      "description": "Submit BEEF with coinstake outputs — STEAK includes coinstakeOutputsToRetain",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "x-topics": "[\"tm_ship\"]"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0300e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00e1f50500000000001976a914c0cebcd6c2d3c5f1db4cf25d7a3b5e2c6f4a8b7d88ac00ca9a3b00000000001976a9141234567890abcdef1234567890abcdef1234567888ac00000000",
+        "topics": ["tm_ship"]
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "tm_ship": {
+            "outputsToAdmit": [0],
+            "coinstakeOutputsToRetain": [1]
+          }
+        }
+      },
+      "tags": ["overlay", "submit", "happy-path", "coinstake", "steak"]
+    },
+    {
+      "id": "overlay.submit.11",
+      "description": "Submit with Content-Type application/json instead of octet-stream — server must return 400",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-topics": "[\"tm_ship\"]"
+        },
+        "body_hex": "0100beef01010000000001a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b20000000000ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "submit", "error-case", "wrong-content-type"]
+    },
+    {
+      "id": "overlay.submit.12",
+      "description": "Error response shape — 400 response must contain status=error and message string",
+      "input": {
+        "method": "POST",
+        "path": "/submit",
+        "headers": {
+          "Content-Type": "application/octet-stream"
+        },
+        "body_hex": ""
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "message_type": "string"
+        },
+        "schema_note": "ErrorResponse: { status: 'error', message: string, code?: string }"
+      },
+      "tags": ["overlay", "submit", "error-case", "error-shape"]
+    }
+  ]
+}

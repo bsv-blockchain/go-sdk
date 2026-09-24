@@ -1,0 +1,747 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sync.brc40",
+  "name": "BRC-40 — User Wallet Data Synchronization (request/response shape + protocol flow)",
+  "brc": ["BRC-40"],
+  "version": "0.1.0",
+  "reference_impl": "packages/wallet/wallet-toolbox/src/storage/methods/getSyncChunk.ts@2.1.25",
+  "parity_class": "intended",
+  "skip_reason": "Requires a stateful producer with seeded user, transaction, output, proof, and sync-offset tables; the current shape-only dispatcher cannot validate runtime merge state.",
+  "vectors": [
+    {
+      "id": "sync.brc40.request.1",
+      "description": "RequestSyncChunkArgs — minimum valid full-sync request (no `since`, single zero offset for ProvenTxs)",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "maxRoughSize": 10000000,
+          "maxItems": 1000,
+          "offsets": [{ "name": "ProvenTxs", "offset": 0 }]
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "RequestSyncChunkArgs: { fromStorageIdentityKey: string, toStorageIdentityKey: string, identityKey: string, since?: ISO-8601 string, maxRoughSize: integer >= 1, maxItems: integer >= 1, offsets: { name: string, offset: integer >= 0 }[] }. Omitting `since` means full sync from epoch."
+      },
+      "tags": ["brc40", "sync", "happy-path", "request", "full-sync"]
+    },
+    {
+      "id": "sync.brc40.request.2",
+      "description": "RequestSyncChunkArgs — incremental sync with ISO-8601 `since` and all 12 entity offsets in dependency order",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "since": "2026-04-23T12:34:56.789Z",
+          "maxRoughSize": 10000000,
+          "maxItems": 1000,
+          "offsets": [
+            { "name": "ProvenTxs", "offset": 0 },
+            { "name": "ProvenTxReqs", "offset": 0 },
+            { "name": "OutputBaskets", "offset": 0 },
+            { "name": "TxLabels", "offset": 0 },
+            { "name": "OutputTags", "offset": 0 },
+            { "name": "Transactions", "offset": 0 },
+            { "name": "TxLabelMaps", "offset": 0 },
+            { "name": "Commissions", "offset": 0 },
+            { "name": "Outputs", "offset": 0 },
+            { "name": "OutputTagMaps", "offset": 0 },
+            { "name": "Certificates", "offset": 0 },
+            { "name": "CertificateFields", "offset": 0 }
+          ]
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "Entity dependency order per BRC-40 §request.offsets matches RequestSyncChunkArgs.offsets in WalletStorage.interfaces.ts:524-537. `since` is inclusive lower bound on updated_at."
+      },
+      "tags": ["brc40", "sync", "happy-path", "request", "incremental", "pagination"]
+    },
+    {
+      "id": "sync.brc40.request.3",
+      "description": "RequestSyncChunkArgs — resume mid-stream with non-zero offset on Transactions and Outputs",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "since": "2026-04-23T12:34:56.789Z",
+          "maxRoughSize": 5000000,
+          "maxItems": 500,
+          "offsets": [
+            { "name": "Transactions", "offset": 1500 },
+            { "name": "Outputs", "offset": 3200 }
+          ]
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "Resumable pagination — consumer carries the last offset per entity across requests until SyncChunk arrays return empty (completion)."
+      },
+      "tags": ["brc40", "sync", "happy-path", "request", "resume"]
+    },
+    {
+      "id": "sync.brc40.request.error.1",
+      "description": "RequestSyncChunkArgs missing fromStorageIdentityKey — producer must reject",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "maxRoughSize": 10000000,
+          "maxItems": 1000,
+          "offsets": []
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_MISSING_FIELD", "field": "fromStorageIdentityKey" },
+        "schema_note": "All three identityKey fields are required."
+      },
+      "tags": ["brc40", "sync", "error-case", "request", "validation"]
+    },
+    {
+      "id": "sync.brc40.request.error.2",
+      "description": "RequestSyncChunkArgs missing identityKey — producer must reject (no user scope)",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "maxRoughSize": 10000000,
+          "maxItems": 1000,
+          "offsets": []
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_MISSING_FIELD", "field": "identityKey" }
+      },
+      "tags": ["brc40", "sync", "error-case", "request", "validation"]
+    },
+    {
+      "id": "sync.brc40.request.error.3",
+      "description": "RequestSyncChunkArgs unknown identityKey — producer must reject with ERR_BRC40_UNKNOWN_USER",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02deadbeef000000000000000000000000000000000000000000000000deadbeef",
+          "maxRoughSize": 10000000,
+          "maxItems": 1000,
+          "offsets": []
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_UNKNOWN_USER" },
+        "schema_note": "Producer has no records for the requested identityKey."
+      },
+      "tags": ["brc40", "sync", "error-case", "request", "unknown-user"],
+      "notes": "Runtime-state assertion is governed by the file-level intended classification."
+    },
+    {
+      "id": "sync.brc40.request.error.4",
+      "description": "RequestSyncChunkArgs malformed offset entry — missing `name`",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "maxRoughSize": 10000000,
+          "maxItems": 1000,
+          "offsets": [{ "offset": 0 }]
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_MALFORMED_OFFSETS" }
+      },
+      "tags": ["brc40", "sync", "error-case", "request", "validation"]
+    },
+    {
+      "id": "sync.brc40.request.error.5",
+      "description": "RequestSyncChunkArgs negative offset — must be rejected",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "maxRoughSize": 10000000,
+          "maxItems": 1000,
+          "offsets": [{ "name": "Transactions", "offset": -1 }]
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_MALFORMED_OFFSETS", "reason": "offset must be integer >= 0" }
+      },
+      "tags": ["brc40", "sync", "error-case", "request", "edge-case"]
+    },
+    {
+      "id": "sync.brc40.request.error.6",
+      "description": "RequestSyncChunkArgs maxItems <= 0 — must be rejected",
+      "input": {
+        "channel": "brc40/requestSyncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "maxRoughSize": 10000000,
+          "maxItems": 0,
+          "offsets": []
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_INVALID_LIMIT", "field": "maxItems" }
+      },
+      "tags": ["brc40", "sync", "error-case", "request", "edge-case"]
+    },
+    {
+      "id": "sync.brc40.response.1",
+      "description": "SyncChunk — non-empty incremental response with provenTxs and transactions populated, other entities omitted (size cap hit)",
+      "input": {
+        "channel": "brc40/syncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "provenTxs": [
+            {
+              "provenTxId": 1,
+              "txid": "f4b3d8e3b27e3e6d2c1b1aebf2d2f3e1c4a9f0eedc7a8b1f2e3d4c5b6a7f8e9d",
+              "created_at": "2026-04-23T12:34:56.789Z",
+              "updated_at": "2026-04-23T12:34:56.789Z"
+            }
+          ],
+          "transactions": [
+            {
+              "transactionId": 42,
+              "userId": 7,
+              "status": "completed",
+              "created_at": "2026-04-23T12:34:57.001Z",
+              "updated_at": "2026-04-23T12:34:57.001Z"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "SyncChunk per WalletStorage.interfaces.ts:548-566. Omitted entity properties mean 'no attempt to update'. Every record must include created_at and updated_at."
+      },
+      "tags": ["brc40", "sync", "happy-path", "response", "partial"]
+    },
+    {
+      "id": "sync.brc40.response.2",
+      "description": "SyncChunk — completion sentinel: all entity arrays present and empty",
+      "input": {
+        "channel": "brc40/syncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "provenTxs": [],
+          "provenTxReqs": [],
+          "outputBaskets": [],
+          "txLabels": [],
+          "outputTags": [],
+          "transactions": [],
+          "txLabelMaps": [],
+          "commissions": [],
+          "outputs": [],
+          "outputTagMaps": [],
+          "certificates": [],
+          "certificateFields": []
+        }
+      },
+      "expected": {
+        "valid": true,
+        "done": true,
+        "schema_note": "Per BRC-40: completion requires all 12 entity arrays present AND empty. Consumer's ProcessSyncChunkResult.done = true."
+      },
+      "tags": ["brc40", "sync", "happy-path", "response", "completion"]
+    },
+    {
+      "id": "sync.brc40.response.error.1",
+      "description": "SyncChunk with record missing updated_at — consumer must reject",
+      "input": {
+        "channel": "brc40/syncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "transactions": [
+            {
+              "transactionId": 42,
+              "userId": 7,
+              "status": "completed",
+              "created_at": "2026-04-23T12:34:57.001Z"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_MISSING_TIMESTAMP", "field": "updated_at" }
+      },
+      "tags": ["brc40", "sync", "error-case", "response", "validation"]
+    },
+    {
+      "id": "sync.brc40.response.error.2",
+      "description": "SyncChunk with null inside entity array — disallowed by spec (no null values)",
+      "input": {
+        "channel": "brc40/syncChunk",
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+          "outputs": [null]
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_NULL_ENTITY" }
+      },
+      "tags": ["brc40", "sync", "error-case", "response", "validation"]
+    },
+    {
+      "id": "sync.brc40.response.error.3",
+      "description": "SyncChunk with mismatched userIdentityKey vs request.identityKey — consumer must reject",
+      "input": {
+        "channel": "brc40/syncChunk",
+        "request": {
+          "identityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc"
+        },
+        "message": {
+          "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+          "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+          "userIdentityKey": "02dddd00000000000000000000000000000000000000000000000000000000dddd",
+          "transactions": []
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_USER_MISMATCH" }
+      },
+      "tags": ["brc40", "sync", "error-case", "response", "integrity"]
+    },
+    {
+      "id": "sync.brc40.flow.idmap.1",
+      "description": "Persistent ID mapping — same logical record arriving with different producer-side primary key on second chunk must converge via stable natural key",
+      "input": {
+        "channel": "brc40/flow",
+        "messages": [
+          {
+            "syncChunk": {
+              "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+              "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+              "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+              "provenTxs": [
+                {
+                  "provenTxId": 1,
+                  "txid": "f4b3d8e3b27e3e6d2c1b1aebf2d2f3e1c4a9f0eedc7a8b1f2e3d4c5b6a7f8e9d",
+                  "created_at": "2026-04-23T12:34:56.789Z",
+                  "updated_at": "2026-04-23T12:34:56.789Z"
+                }
+              ]
+            }
+          },
+          {
+            "syncChunk": {
+              "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+              "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+              "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+              "provenTxs": [
+                {
+                  "provenTxId": 99,
+                  "txid": "f4b3d8e3b27e3e6d2c1b1aebf2d2f3e1c4a9f0eedc7a8b1f2e3d4c5b6a7f8e9d",
+                  "created_at": "2026-04-23T12:34:56.789Z",
+                  "updated_at": "2026-04-23T13:00:00.000Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "Consumer must dedupe on natural key (txid for provenTxs) and treat producer-side surrogate IDs as opaque. Result: 1 row, updated_at = 2026-04-23T13:00:00.000Z."
+      },
+      "tags": ["brc40", "sync", "happy-path", "flow", "id-mapping", "convergence"]
+    },
+    {
+      "id": "sync.brc40.flow.idmap.error.1",
+      "description": "Conflicting ID mapping — same natural key arrives with incompatible payloads across chunks",
+      "input": {
+        "channel": "brc40/flow",
+        "messages": [
+          {
+            "syncChunk": {
+              "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+              "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+              "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+              "outputBaskets": [
+                {
+                  "basketId": 1,
+                  "userId": 7,
+                  "name": "default",
+                  "created_at": "2026-04-23T12:34:56.789Z",
+                  "updated_at": "2026-04-23T12:34:56.789Z"
+                }
+              ]
+            }
+          },
+          {
+            "syncChunk": {
+              "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+              "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+              "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+              "outputBaskets": [
+                {
+                  "basketId": 2,
+                  "userId": 7,
+                  "name": "default",
+                  "created_at": "2026-04-23T12:34:56.789Z",
+                  "updated_at": "2026-04-23T12:34:56.789Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "error": { "code": "ERR_BRC40_ID_MAPPING_CONFLICT" },
+        "schema_note": "Two distinct producer-side rows claim the same (userId, name) natural key for OutputBaskets."
+      },
+      "tags": ["brc40", "sync", "error-case", "flow", "id-mapping", "conflict"]
+    },
+    {
+      "id": "sync.brc40.merge.tx.1",
+      "description": "EntityTransaction.mergeExisting — incoming chunk row is newer; consumer must UPDATE (status, provenTxId, updated_at advance)",
+      "input": {
+        "channel": "brc40/mergeExisting",
+        "entity": "transactions",
+        "existing": {
+          "transactionId": 42,
+          "userId": 7,
+          "status": "unsigned",
+          "provenTxId": null,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T12:30:00.000Z"
+        },
+        "incoming": {
+          "transactionId": 42,
+          "userId": 7,
+          "status": "completed",
+          "provenTxId": 1001,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:00:00.000Z"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "action": "update",
+        "schema_note": "incoming.updated_at > existing.updated_at — apply update (per TS EntityTransaction.mergeExisting in wallet-toolbox)."
+      },
+      "tags": ["brc40", "sync", "happy-path", "merge", "monotonic-updated-at"]
+    },
+    {
+      "id": "sync.brc40.merge.tx.error.regression.1",
+      "description": "EntityTransaction.mergeExisting — stale chunk MUST NOT regress status from 'completed' back to 'unsigned' (go-wallet-toolbox#853)",
+      "input": {
+        "channel": "brc40/mergeExisting",
+        "entity": "transactions",
+        "existing": {
+          "transactionId": 42,
+          "userId": 7,
+          "status": "completed",
+          "provenTxId": 1001,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:00:00.000Z"
+        },
+        "incoming": {
+          "transactionId": 42,
+          "userId": 7,
+          "status": "unsigned",
+          "provenTxId": null,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T12:30:00.000Z"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "action": "skip",
+        "schema_note": "incoming.updated_at < existing.updated_at — SKIP. Direct regression case from go-wallet-toolbox#853: status MUST NOT regress; provenTxId MUST NOT be cleared."
+      },
+      "tags": [
+        "brc40",
+        "sync",
+        "regression-case",
+        "merge",
+        "monotonic-updated-at",
+        "go-wallet-toolbox-853"
+      ]
+    },
+    {
+      "id": "sync.brc40.merge.tx.error.regression.2",
+      "description": "EntityTransaction.mergeExisting — equal updated_at: incoming is not strictly newer, so it MUST NOT overwrite (boundary)",
+      "input": {
+        "channel": "brc40/mergeExisting",
+        "entity": "transactions",
+        "existing": {
+          "transactionId": 42,
+          "userId": 7,
+          "status": "completed",
+          "provenTxId": 1001,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:00:00.000Z"
+        },
+        "incoming": {
+          "transactionId": 42,
+          "userId": 7,
+          "status": "unsigned",
+          "provenTxId": null,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:00:00.000Z"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "action": "skip",
+        "schema_note": "Reference TS uses strict `if (ei.updated_at > this.updated_at)`. Equal timestamps → no update."
+      },
+      "tags": ["brc40", "sync", "edge-case", "merge", "monotonic-updated-at", "boundary"]
+    },
+    {
+      "id": "sync.brc40.merge.output.error.regression.1",
+      "description": "EntityOutput.mergeExisting — stale chunk MUST NOT flip spendable from false → true (double-spend hazard, go-wallet-toolbox#853)",
+      "input": {
+        "channel": "brc40/mergeExisting",
+        "entity": "outputs",
+        "existing": {
+          "outputId": 555,
+          "userId": 7,
+          "transactionId": 42,
+          "vout": 0,
+          "satoshis": 5000,
+          "spendable": false,
+          "spentBy": 43,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:30:00.000Z"
+        },
+        "incoming": {
+          "outputId": 555,
+          "userId": 7,
+          "transactionId": 42,
+          "vout": 0,
+          "satoshis": 5000,
+          "spendable": true,
+          "spentBy": null,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:00:00.000Z"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "action": "skip",
+        "schema_note": "go-wallet-toolbox#853: output.spendable false→true via stale chunk = double-spend hazard. MUST be rejected by upsert."
+      },
+      "tags": [
+        "brc40",
+        "sync",
+        "regression-case",
+        "merge",
+        "monotonic-updated-at",
+        "double-spend-hazard",
+        "go-wallet-toolbox-853"
+      ]
+    },
+    {
+      "id": "sync.brc40.merge.output.error.regression.2",
+      "description": "EntityOutput.mergeExisting — stale chunk MUST NOT clear spentBy (spend-attribution loss, go-wallet-toolbox#853)",
+      "input": {
+        "channel": "brc40/mergeExisting",
+        "entity": "outputs",
+        "existing": {
+          "outputId": 555,
+          "userId": 7,
+          "transactionId": 42,
+          "vout": 0,
+          "satoshis": 5000,
+          "spendable": false,
+          "spentBy": 43,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:30:00.000Z"
+        },
+        "incoming": {
+          "outputId": 555,
+          "userId": 7,
+          "transactionId": 42,
+          "vout": 0,
+          "satoshis": 5000,
+          "spendable": false,
+          "spentBy": null,
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T12:45:00.000Z"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "action": "skip",
+        "schema_note": "Stale incoming has spentBy=null but existing has spentBy=43. Skip preserves attribution."
+      },
+      "tags": [
+        "brc40",
+        "sync",
+        "regression-case",
+        "merge",
+        "monotonic-updated-at",
+        "go-wallet-toolbox-853"
+      ]
+    },
+    {
+      "id": "sync.brc40.merge.proventx.error.regression.1",
+      "description": "EntityProvenTx.mergeExisting — stale chunk MUST NOT overwrite proven tx (no merkle-proof regression)",
+      "input": {
+        "channel": "brc40/mergeExisting",
+        "entity": "provenTxs",
+        "existing": {
+          "provenTxId": 1,
+          "txid": "f4b3d8e3b27e3e6d2c1b1aebf2d2f3e1c4a9f0eedc7a8b1f2e3d4c5b6a7f8e9d",
+          "height": 845123,
+          "merklePath": "fe83df0c00…",
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T13:00:00.000Z"
+        },
+        "incoming": {
+          "provenTxId": 1,
+          "txid": "f4b3d8e3b27e3e6d2c1b1aebf2d2f3e1c4a9f0eedc7a8b1f2e3d4c5b6a7f8e9d",
+          "height": 845123,
+          "merklePath": "fe83df0c00…",
+          "created_at": "2026-04-23T12:00:00.000Z",
+          "updated_at": "2026-04-23T12:30:00.000Z"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "action": "skip",
+        "schema_note": "Older incoming for an already-proven tx must be ignored."
+      },
+      "tags": [
+        "brc40",
+        "sync",
+        "regression-case",
+        "merge",
+        "monotonic-updated-at",
+        "go-wallet-toolbox-853"
+      ]
+    },
+    {
+      "id": "sync.brc40.flow.regression.1",
+      "description": "Two-chunk sequence: newer local-equivalent chunk arrives, then a STALE chunk for same row. Final consumer state must reflect the NEWER write (regression scenario from go-wallet-toolbox#853).",
+      "input": {
+        "channel": "brc40/flow",
+        "messages": [
+          {
+            "syncChunk": {
+              "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+              "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+              "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+              "transactions": [
+                {
+                  "transactionId": 42,
+                  "userId": 7,
+                  "status": "completed",
+                  "provenTxId": 1001,
+                  "created_at": "2026-04-23T12:00:00.000Z",
+                  "updated_at": "2026-04-23T13:00:00.000Z"
+                }
+              ]
+            }
+          },
+          {
+            "syncChunk": {
+              "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+              "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+              "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+              "transactions": [
+                {
+                  "transactionId": 42,
+                  "userId": 7,
+                  "status": "unsigned",
+                  "provenTxId": null,
+                  "created_at": "2026-04-23T12:00:00.000Z",
+                  "updated_at": "2026-04-23T12:30:00.000Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "finalState": {
+          "transactions": [
+            {
+              "transactionId": 42,
+              "status": "completed",
+              "provenTxId": 1001,
+              "updated_at": "2026-04-23T13:00:00.000Z"
+            }
+          ]
+        },
+        "schema_note": "Post-merge consumer state must equal the chunk with the greatest updated_at per natural key, regardless of arrival order."
+      },
+      "tags": [
+        "brc40",
+        "sync",
+        "regression-case",
+        "flow",
+        "monotonic-updated-at",
+        "go-wallet-toolbox-853"
+      ]
+    },
+    {
+      "id": "sync.brc40.flow.since.inclusive.1",
+      "description": "`since` is inclusive lower bound — response must include at least one item with updated_at == since (so consumer can detect 'already seen' boundary)",
+      "input": {
+        "channel": "brc40/flow",
+        "request": {
+          "since": "2026-04-23T12:34:56.789Z"
+        },
+        "response": {
+          "syncChunk": {
+            "fromStorageIdentityKey": "02aaaa00000000000000000000000000000000000000000000000000000000aaaa",
+            "toStorageIdentityKey": "02bbbb00000000000000000000000000000000000000000000000000000000bbbb",
+            "userIdentityKey": "02cccc00000000000000000000000000000000000000000000000000000000cccc",
+            "transactions": [
+              {
+                "transactionId": 100,
+                "userId": 7,
+                "status": "completed",
+                "created_at": "2026-04-23T12:00:00.000Z",
+                "updated_at": "2026-04-23T12:34:56.789Z"
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "Per WalletStorage.interfaces.ts:508 — 'since must include items if updated_at is greater or equal'. Boundary item required when prior sync exists."
+      },
+      "tags": ["brc40", "sync", "happy-path", "flow", "boundary", "inclusive"]
+    }
+  ]
+}

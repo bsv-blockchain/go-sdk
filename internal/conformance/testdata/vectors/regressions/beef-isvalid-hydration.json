@@ -1,0 +1,42 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "transactions",
+  "description": "Beef.IsValid(true) must hydrate SourceTransaction references from the internal Transactions map before running validation. go-sdk pre-fix stored each transaction's raw bytes in the map but did not back-link input.SourceTransaction pointers, causing IsValid(true) to return false even for fully self-contained BEEF payloads where every input's source transaction is present.",
+  "regression": {
+    "issue": "go-sdk#167",
+    "fixed_in": { "go": "v1.1.24" },
+    "symptom": "NewBeefFromBytes().IsValid(true) returned false for a valid BEEF because input.SourceTransaction was nil despite the source tx being present in beef.Transactions map",
+    "root_cause": "BEEF deserialisation populated the Transactions map but did not set input.SourceTransaction pointers; IsValid traversed inputs but found nil source references"
+  },
+  "vectors": [
+    {
+      "id": "regression.beef.isvalid-hydration.0001",
+      "description": "BEEF_V1 with one parent and one child tx: IsValid(true) must return true",
+      "parity_class": "required",
+      "input": {
+        "beef_hex": "0100beef01fde80301010000c5c92effd1e69189c6516fb90ff9648009b29dc4e02ffd00a64cc73a18ae74a70201000000012e3f4683e173b40a20527fe5719633ba070df649983614886e90e45aecf2ac56000000006b483045022100b874c7b5c7e2c011a114eb57b49d968e00974543a566e0d2151e836f344283a802201c04cc282e06c6680f82311e4a1fb7c3fadd86ae67562626b0243c9d1a5830bf4121034d2d6d23fbcb6eefe3e80c47044e36797dcb80d0ac5e96e732ef03c3c550a116ffffffff01c8000000000000001976a91494677c56fa2968644c90a517214338b4139899ce88ac0000000001000100000001c5c92effd1e69189c6516fb90ff9648009b29dc4e02ffd00a64cc73a18ae74a7000000006b483045022100b79afac85f7b4fcb23f4a31c23319dff618fddf713766d39d8635b1d7ca276ff022000d7a058b9bfc412e8f880afabff1c3bbd9c128167d4693b465f0110dcbea5354121034d2d6d23fbcb6eefe3e80c47044e36797dcb80d0ac5e96e732ef03c3c550a116ffffffff0164000000000000001976a9143cf53c49c322d9d811728182939aee2dca087f9888ac0000000000",
+        "operation": "NewBeefFromBytes_IsValid"
+      },
+      "expected": {
+        "parse_error": null,
+        "is_valid": true
+      },
+      "notes": "BEEF from go-sdk#167 issue body. The parent tx (c5c92e…) is present in the payload; the child spending it is the newest tx. IsValid(true) must return true. Pre-fix returned false because SourceTransaction was nil."
+    },
+    {
+      "id": "regression.beef.isvalid-hydration.0002",
+      "description": "Same BEEF: NewTransactionFromBEEFHex must return the newest tx TxID without error",
+      "parity_class": "required",
+      "input": {
+        "beef_hex": "0100beef01fde80301010000c5c92effd1e69189c6516fb90ff9648009b29dc4e02ffd00a64cc73a18ae74a70201000000012e3f4683e173b40a20527fe5719633ba070df649983614886e90e45aecf2ac56000000006b483045022100b874c7b5c7e2c011a114eb57b49d968e00974543a566e0d2151e836f344283a802201c04cc282e06c6680f82311e4a1fb7c3fadd86ae67562626b0243c9d1a5830bf4121034d2d6d23fbcb6eefe3e80c47044e36797dcb80d0ac5e96e732ef03c3c550a116ffffffff01c8000000000000001976a91494677c56fa2968644c90a517214338b4139899ce88ac0000000001000100000001c5c92effd1e69189c6516fb90ff9648009b29dc4e02ffd00a64cc73a18ae74a7000000006b483045022100b79afac85f7b4fcb23f4a31c23319dff618fddf713766d39d8635b1d7ca276ff022000d7a058b9bfc412e8f880afabff1c3bbd9c128167d4693b465f0110dcbea5354121034d2d6d23fbcb6eefe3e80c47044e36797dcb80d0ac5e96e732ef03c3c550a116ffffffff0164000000000000001976a9143cf53c49c322d9d811728182939aee2dca087f9888ac0000000000",
+        "operation": "NewTransactionFromBEEFHex_TxID"
+      },
+      "expected": {
+        "parse_error": null,
+        "txid_non_null": true
+      },
+      "notes": "Verifies the full parse-and-extract path (go-sdk#168 follow-up). The BEEF was produced by go-sdk and must be parseable back into a Transaction with a non-null TxID."
+    }
+  ]
+}

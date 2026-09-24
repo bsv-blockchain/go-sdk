@@ -41,5 +41,8 @@ golangci-lint-report.xml
 # Fuzz Tests
 testdata
 
+# Pinned ts-stack conformance vectors (scripts/sync-conformance-vectors.sh)
+!/internal/conformance/testdata/
+
 # Ignore files related to AI tools
 CLAUDE.md

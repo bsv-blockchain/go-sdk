@@ -1,0 +1,316 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.acquirecertificate",
+  "name": "BRC-100 acquirecertificate",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.acquirecertificate.1",
+      "description": "acquireCertificate direct acquisition",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "acquisitionProtocol": "direct",
+          "fields": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          },
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+          "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "keyringRevealer": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "keyringForSubject": {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+          }
+        }
+      },
+      "expected": {
+        "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+        "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "fields": {
+          "name": "Alice",
+          "email": "alice@example.com"
+        }
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "direct",
+        "happy-path"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Vectors 1,3,7,8: placeholder signature a000... fails MasterCertificate.verify(). Vector 2: issuance protocol requires live certifier URL."
+    },
+    {
+      "id": "wallet.brc100.acquirecertificate.2",
+      "description": "acquireCertificate issuance acquisition",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "acquisitionProtocol": "issuance",
+          "fields": {
+            "name": "Bob"
+          },
+          "certifierUrl": "https://certifier.example.com"
+        }
+      },
+      "expected": {
+        "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+        "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "fields": {
+          "name": "Alice",
+          "email": "alice@example.com"
+        }
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "issuance"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Vectors 1,3,7,8: placeholder signature a000... fails MasterCertificate.verify(). Vector 2: issuance protocol requires live certifier URL."
+    },
+    {
+      "id": "wallet.brc100.acquirecertificate.3",
+      "description": "acquireCertificate privileged=true",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "acquisitionProtocol": "direct",
+          "fields": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          },
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+          "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "keyringRevealer": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "keyringForSubject": {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+          },
+          "privileged": true,
+          "privilegedReason": "admin access needed"
+        }
+      },
+      "expected": {
+        "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+        "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "fields": {
+          "name": "Alice",
+          "email": "alice@example.com"
+        }
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "privileged"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Vectors 1,3,7,8: placeholder signature a000... fails MasterCertificate.verify(). Vector 2: issuance protocol requires live certifier URL."
+    },
+    {
+      "id": "wallet.brc100.acquirecertificate.4",
+      "description": "acquireCertificate invalid signature",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "acquisitionProtocol": "direct",
+          "fields": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          },
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+          "signature": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "keyringRevealer": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "keyringForSubject": {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+          }
+        }
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_INVALID_CERTIFICATE_SIGNATURE"
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "error",
+        "invalid-sig"
+      ]
+    },
+    {
+      "id": "wallet.brc100.acquirecertificate.5",
+      "description": "acquireCertificate certifier not trusted",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "031111111111111111111111111111111111111111111111111111111111111111",
+          "acquisitionProtocol": "direct",
+          "fields": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          },
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+          "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "keyringRevealer": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "keyringForSubject": {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+          }
+        }
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "error",
+        "untrusted-certifier"
+      ]
+    },
+    {
+      "id": "wallet.brc100.acquirecertificate.6",
+      "description": "acquireCertificate missing serialNumber for direct",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "acquisitionProtocol": "direct",
+          "fields": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          },
+          "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+          "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "keyringRevealer": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "keyringForSubject": {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+          }
+        }
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "error",
+        "validation"
+      ]
+    },
+    {
+      "id": "wallet.brc100.acquirecertificate.7",
+      "description": "acquireCertificate result is WalletCertificate",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "acquisitionProtocol": "direct",
+          "fields": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          },
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+          "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "keyringRevealer": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "keyringForSubject": {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+          }
+        },
+        "_schema_note": "WalletCertificate: type, subject, serialNumber, certifier, revocationOutpoint, signature, fields"
+      },
+      "expected": {
+        "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+        "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "fields": {
+          "name": "Alice",
+          "email": "alice@example.com"
+        }
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "schema"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Vectors 1,3,7,8: placeholder signature a000... fails MasterCertificate.verify(). Vector 2: issuance protocol requires live certifier URL."
+    },
+    {
+      "id": "wallet.brc100.acquirecertificate.8",
+      "description": "acquireCertificate with originator",
+      "input": {
+        "args": {
+          "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "acquisitionProtocol": "direct",
+          "fields": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          },
+          "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+          "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "keyringRevealer": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "keyringForSubject": {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "email": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+          }
+        },
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+        "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+        "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "fields": {
+          "name": "Alice",
+          "email": "alice@example.com"
+        }
+      },
+      "tags": [
+        "brc-100",
+        "acquireCertificate",
+        "originator"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Vectors 1,3,7,8: placeholder signature a000... fails MasterCertificate.verify(). Vector 2: issuance protocol requires live certifier URL."
+    }
+  ]
+}

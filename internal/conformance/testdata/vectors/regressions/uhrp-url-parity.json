@@ -1,0 +1,62 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "storage",
+  "description": "UHRP URL generation cross-language parity. Go SDK prior to v1.2.20 produced a different URL for the same hash. Fixed in go-sdk#310 to match the TypeScript SDK exactly.",
+  "regression": {
+    "issue": "go-sdk#310",
+    "fixed_in": { "go": "v1.2.20" },
+    "symptom": "GetURLForHash produced a different base58check string in Go than getURLForHash in TypeScript for identical 32-byte SHA-256 inputs",
+    "root_cause": "Go implementation used a different prefix or checksum scheme than the TypeScript reference"
+  },
+  "vectors": [
+    {
+      "id": "regression.uhrp.url-parity.0001",
+      "description": "Hash-to-URL round trip — canonical cross-language vector from StorageUtils.test.ts",
+      "parity_class": "required",
+      "input": {
+        "hash_hex": "1a5ec49a3f32cd56d19732e89bde5d81755ddc0fd8515dc8b226d47654139dca"
+      },
+      "expected": {
+        "url": "XUT6PqWb3GP3LR7dmBMCJwZ3oo5g1iGCF3CrpzyuJCemkGu1WGoq"
+      },
+      "notes": "hash is SHA-256 of file content; URL is base58check with UHRP prefix bytes. Both TS and Go must produce this exact string."
+    },
+    {
+      "id": "regression.uhrp.url-parity.0002",
+      "description": "URL-to-hash round trip — decode URL back to original hash",
+      "parity_class": "required",
+      "input": {
+        "url": "XUT6PqWb3GP3LR7dmBMCJwZ3oo5g1iGCF3CrpzyuJCemkGu1WGoq"
+      },
+      "expected": {
+        "hash_hex": "1a5ec49a3f32cd56d19732e89bde5d81755ddc0fd8515dc8b226d47654139dca"
+      },
+      "notes": "Inverse of 0001 — round-trip must be lossless."
+    },
+    {
+      "id": "regression.uhrp.url-parity.0003",
+      "description": "URL validity — valid URL is accepted",
+      "parity_class": "required",
+      "input": {
+        "url": "XUT6PqWb3GP3LR7dmBMCJwZ3oo5g1iGCF3CrpzyuJCemkGu1WGoq"
+      },
+      "expected": {
+        "valid": true
+      }
+    },
+    {
+      "id": "regression.uhrp.url-parity.0004",
+      "description": "URL validity — corrupted checksum is rejected",
+      "parity_class": "required",
+      "input": {
+        "url": "XUU7cTfy6fA6q2neLDmzPqJnGB6o18PXKoGaWLPrH1SeWLKgdCKq"
+      },
+      "expected": {
+        "valid": false,
+        "error": "Invalid checksum"
+      },
+      "notes": "One character changed in the valid URL above — checksum must fail."
+    }
+  ]
+}

@@ -1,0 +1,447 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sync.chaintracks-v2-http",
+  "name": "Chaintracks v2 HTTP API",
+  "brc": [],
+  "version": "1.0.0",
+  "reference_impl": "chaintracks-server@1.0.2",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sync.chaintracks-v2-http.network.1",
+      "description": "GET /v2/network returns the active chain name",
+      "input": {
+        "method": "GET",
+        "path": "/v2/network"
+      },
+      "expected": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": {
+          "status": "success",
+          "value": "main"
+        },
+        "schema_note": "value MUST be 'main' or 'test'; envelope is the canonical {status:'success', value} shape"
+      },
+      "tags": ["chaintracks", "v2", "network", "happy-path"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.tip.1",
+      "description": "GET /v2/tip returns the active chain tip header as JSON, no cache",
+      "input": {
+        "method": "GET",
+        "path": "/v2/tip"
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache"
+        },
+        "body_shape": {
+          "status": "success",
+          "value": {
+            "version": "integer",
+            "previousHash": "hex-64",
+            "merkleRoot": "hex-64",
+            "time": "integer",
+            "bits": "integer",
+            "nonce": "integer",
+            "height": "integer >= 0",
+            "hash": "hex-64"
+          }
+        }
+      },
+      "tags": ["chaintracks", "v2", "tip", "happy-path"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.tip.2",
+      "description": "GET /v2/tip returns 404 ERR_NO_TIP when storage has no headers",
+      "input": {
+        "method": "GET",
+        "path": "/v2/tip",
+        "state": "storage-empty"
+      },
+      "expected": {
+        "status": 404,
+        "body": {
+          "status": "error",
+          "code": "ERR_NO_TIP",
+          "description": "Chain tip not found"
+        }
+      },
+      "tags": ["chaintracks", "v2", "tip", "error", "no-tip"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.tip-bin.1",
+      "description": "GET /v2/tip.bin returns 80-byte binary header with X-Block-Height response header",
+      "input": {
+        "method": "GET",
+        "path": "/v2/tip.bin"
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "Cache-Control": "no-cache",
+          "X-Block-Height": "string-integer"
+        },
+        "body_shape": {
+          "encoding": "binary",
+          "length_bytes": 80
+        }
+      },
+      "tags": ["chaintracks", "v2", "tip", "binary", "happy-path"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-height.1",
+      "description": "GET /v2/header/height/0 returns the BSV mainnet genesis header",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/height/0"
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=3600"
+        },
+        "body": {
+          "status": "success",
+          "value": {
+            "version": 1,
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "merkleRoot": "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
+            "time": 1231006505,
+            "bits": 486604799,
+            "nonce": 2083236893,
+            "height": 0,
+            "hash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+          }
+        },
+        "schema_note": "Hashes are in display (byte-reversed) hex form; height < currentHeight-100 implies immutable Cache-Control"
+      },
+      "tags": ["chaintracks", "v2", "header-by-height", "happy-path", "genesis"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-height.2",
+      "description": "GET /v2/header/height/1 returns the BSV mainnet block 1 header",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/height/1"
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "value": {
+            "version": 1,
+            "previousHash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+            "merkleRoot": "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098",
+            "time": 1231469665,
+            "bits": 486604799,
+            "nonce": 2573394689,
+            "height": 1,
+            "hash": "00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048"
+          }
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-height", "happy-path"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-height.3",
+      "description": "GET /v2/header/height/abc returns 400 ERR_INVALID_PARAMS (non-numeric)",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/height/abc"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "code": "ERR_INVALID_PARAMS",
+          "description": "Invalid height parameter"
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-height", "error", "invalid-params"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-height.4",
+      "description": "GET /v2/header/height/-1 returns 400 ERR_INVALID_PARAMS (negative)",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/height/-1"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "code": "ERR_INVALID_PARAMS",
+          "description": "Invalid height parameter"
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-height", "error", "negative"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-height.5",
+      "description": "GET /v2/header/height/999999999 returns 404 ERR_NOT_FOUND for unknown height",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/height/999999999"
+      },
+      "expected": {
+        "status": 404,
+        "body": {
+          "status": "error",
+          "code": "ERR_NOT_FOUND",
+          "description": "Header not found at height 999999999"
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-height", "error", "not-found"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-height-bin.1",
+      "description": "GET /v2/header/height/0.bin returns the genesis header in 80-byte binary form",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/height/0.bin"
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "X-Block-Height": "0",
+          "Cache-Control": "public, max-age=3600"
+        },
+        "body_shape": {
+          "encoding": "binary",
+          "length_bytes": 80,
+          "layout": "little-endian uint32 version || prev_hash (internal LE) || merkle_root (internal LE) || time u32 || bits u32 || nonce u32",
+          "note": "prev_hash and merkle_root are byte-reversed relative to the display-hex JSON variant"
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-height", "binary", "happy-path", "genesis"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-hash.1",
+      "description": "GET /v2/header/hash/<genesis-hash> returns the genesis header",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/hash/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "success",
+          "value": {
+            "version": 1,
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "merkleRoot": "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
+            "time": 1231006505,
+            "bits": 486604799,
+            "nonce": 2083236893,
+            "height": 0,
+            "hash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+          }
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-hash", "happy-path", "genesis"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-hash.2",
+      "description": "GET /v2/header/hash/<too-short-hex> returns 400 ERR_INVALID_PARAMS",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/hash/deadbeef"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "code": "ERR_INVALID_PARAMS",
+          "description": "Invalid hash parameter"
+        },
+        "schema_note": "hash MUST be 64 lowercase or mixed-case hex chars; pattern /^[a-fA-F0-9]{64}$/"
+      },
+      "tags": ["chaintracks", "v2", "header-by-hash", "error", "invalid-params"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-hash.3",
+      "description": "GET /v2/header/hash/<non-hex-of-correct-length> returns 400 ERR_INVALID_PARAMS",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/hash/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "code": "ERR_INVALID_PARAMS",
+          "description": "Invalid hash parameter"
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-hash", "error", "invalid-params"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-hash.4",
+      "description": "GET /v2/header/hash/<unknown-hash> returns 404 ERR_NOT_FOUND",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/hash/0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "expected": {
+        "status": 404,
+        "body": {
+          "status": "error",
+          "code": "ERR_NOT_FOUND",
+          "description": "Header not found for hash 0000000000000000000000000000000000000000000000000000000000000001"
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-hash", "error", "not-found"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.header-by-hash-bin.1",
+      "description": "GET /v2/header/hash/<genesis-hash>.bin returns the genesis header as 80-byte binary",
+      "input": {
+        "method": "GET",
+        "path": "/v2/header/hash/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f.bin"
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "X-Block-Height": "0"
+        },
+        "body_shape": {
+          "encoding": "binary",
+          "length_bytes": 80
+        }
+      },
+      "tags": ["chaintracks", "v2", "header-by-hash", "binary", "happy-path"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.headers.1",
+      "description": "GET /v2/headers?height=0&count=2 streams 160 bytes (2 × 80) of binary headers",
+      "input": {
+        "method": "GET",
+        "path": "/v2/headers",
+        "query": { "height": 0, "count": 2 }
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "Cache-Control": "public, max-age=3600"
+        },
+        "body_shape": {
+          "encoding": "binary",
+          "length_bytes": 160,
+          "stride": 80,
+          "ordering": "ascending-height-from-start"
+        }
+      },
+      "tags": ["chaintracks", "v2", "headers-batch", "binary", "happy-path"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.headers.2",
+      "description": "GET /v2/headers without count parameter returns 400 ERR_INVALID_PARAMS",
+      "input": {
+        "method": "GET",
+        "path": "/v2/headers",
+        "query": { "height": 0 }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "code": "ERR_INVALID_PARAMS",
+          "description": "Invalid or missing count parameter"
+        }
+      },
+      "tags": ["chaintracks", "v2", "headers-batch", "error", "invalid-params"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.headers.3",
+      "description": "GET /v2/headers with count=0 returns 400 ERR_INVALID_PARAMS",
+      "input": {
+        "method": "GET",
+        "path": "/v2/headers",
+        "query": { "height": 0, "count": 0 }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "code": "ERR_INVALID_PARAMS",
+          "description": "Invalid or missing count parameter"
+        }
+      },
+      "tags": ["chaintracks", "v2", "headers-batch", "error", "invalid-params"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.headers.4",
+      "description": "GET /v2/headers with missing height returns 400 ERR_INVALID_PARAMS",
+      "input": {
+        "method": "GET",
+        "path": "/v2/headers",
+        "query": { "count": 2 }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "code": "ERR_INVALID_PARAMS",
+          "description": "Invalid or missing height parameter"
+        }
+      },
+      "tags": ["chaintracks", "v2", "headers-batch", "error", "invalid-params"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.headers-bin.1",
+      "description": "GET /v2/headers.bin?height=0&count=2 streams binary headers with X-Start-Height + X-Header-Count",
+      "input": {
+        "method": "GET",
+        "path": "/v2/headers.bin",
+        "query": { "height": 0, "count": 2 }
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "X-Start-Height": "0",
+          "X-Header-Count": "2",
+          "Cache-Control": "public, max-age=3600"
+        },
+        "body_shape": {
+          "encoding": "binary",
+          "length_bytes": 160,
+          "stride": 80
+        }
+      },
+      "tags": ["chaintracks", "v2", "headers-batch", "binary", "happy-path"]
+    },
+    {
+      "id": "sync.chaintracks-v2-http.headers-bin.2",
+      "description": "GET /v2/headers.bin returns fewer headers than requested when the tip is reached",
+      "input": {
+        "method": "GET",
+        "path": "/v2/headers.bin",
+        "query": { "height": 0, "count": 1000000 }
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/octet-stream",
+          "X-Start-Height": "0",
+          "X-Header-Count": "string-integer-less-than-requested"
+        },
+        "body_shape": {
+          "encoding": "binary",
+          "length_bytes": "80 * X-Header-Count",
+          "note": "Server stops collecting at the first missing height; partial result is allowed"
+        }
+      },
+      "tags": ["chaintracks", "v2", "headers-batch", "binary", "partial"]
+    }
+  ]
+}

@@ -1,0 +1,343 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "overlay.lookup",
+  "name": "Overlay HTTP API — POST /lookup (Lookup Service queries)",
+  "brc": ["BRC-22"],
+  "version": "1.0.0",
+  "reference_impl": "packages/overlays/overlay-express@1.0.0",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "overlay.lookup.1",
+      "description": "Lookup outputs by service name with a simple query object — returns output-list LookupAnswer",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": "ls_ship",
+          "query": {
+            "domain": "overlay.example.com",
+            "topic": "tm_ship"
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "type": "output-list",
+          "outputs": [
+            {
+              "beef": [1, 0, 190, 239],
+              "outputIndex": 0
+            }
+          ]
+        },
+        "schema_note": "LookupAnswer: { type: 'output-list', outputs: LookupOutput[] }"
+      },
+      "tags": ["overlay", "lookup", "happy-path", "output-list"]
+    },
+    {
+      "id": "overlay.lookup.2",
+      "description": "Lookup with freeform result type — lookup service returns arbitrary data under result field",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": "ls_custom",
+          "query": {
+            "action": "getMetrics"
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "type": "freeform",
+          "outputs": [],
+          "result": {
+            "count": 42
+          }
+        },
+        "schema_note": "LookupAnswer with type=freeform: result field carries arbitrary data"
+      },
+      "tags": ["overlay", "lookup", "happy-path", "freeform"]
+    },
+    {
+      "id": "overlay.lookup.3",
+      "description": "Lookup with x-aggregation: yes header — response must be binary application/octet-stream",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-aggregation": "yes"
+        },
+        "body": {
+          "service": "ls_ship",
+          "query": {
+            "domain": "overlay.example.com"
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "content_type": "application/octet-stream",
+        "body_note": "varint(numOutpoints) + foreach[txid(32 bytes LE) + varint(outputIndex) + varint(contextLen) + context] + BEEF bytes",
+        "schema_note": "Binary aggregated BEEF payload — not JSON"
+      },
+      "tags": ["overlay", "lookup", "happy-path", "aggregation", "binary"]
+    },
+    {
+      "id": "overlay.lookup.4",
+      "description": "Lookup with missing service field — server must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "query": {
+            "domain": "overlay.example.com"
+          }
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "lookup", "error-case", "missing-service"]
+    },
+    {
+      "id": "overlay.lookup.5",
+      "description": "Lookup with missing query field — server must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": "ls_ship"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "lookup", "error-case", "missing-query"]
+    },
+    {
+      "id": "overlay.lookup.6",
+      "description": "Lookup referencing a non-existent lookup service — server must return 400 or 500",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": "ls_does_not_exist",
+          "query": {}
+        }
+      },
+      "expected": {
+        "status_oneof": [400, 500],
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "lookup", "error-case", "unknown-service"]
+    },
+    {
+      "id": "overlay.lookup.7",
+      "description": "Lookup with empty body — server must return 400 Bad Request",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {}
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "lookup", "error-case", "empty-body"]
+    },
+    {
+      "id": "overlay.lookup.8",
+      "description": "Lookup returning multiple outputs with context bytes — all outputs have beef and outputIndex",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": "ls_slap",
+          "query": {
+            "topic": "tm_slap",
+            "domain": "peer.example.com"
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "type": "output-list",
+          "outputs": [
+            {
+              "beef": [1, 0, 190, 239, 1, 1],
+              "outputIndex": 0,
+              "context": [0, 1, 2, 3]
+            },
+            {
+              "beef": [1, 0, 190, 239, 2, 1],
+              "outputIndex": 1,
+              "context": [4, 5, 6, 7]
+            }
+          ]
+        }
+      },
+      "tags": ["overlay", "lookup", "happy-path", "multi-output", "context"]
+    },
+    {
+      "id": "overlay.lookup.9",
+      "description": "Lookup returning zero outputs — outputs array is empty, type is output-list",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": "ls_ship",
+          "query": {
+            "domain": "nonexistent.example.com"
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "type": "output-list",
+          "outputs": []
+        }
+      },
+      "tags": ["overlay", "lookup", "happy-path", "empty-result"]
+    },
+    {
+      "id": "overlay.lookup.10",
+      "description": "Error response shape — 400 body must have status=error and string message",
+      "input": {
+        "method": "POST",
+        "path": "/lookup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": 12345,
+          "query": null
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error",
+          "message_type": "string"
+        },
+        "schema_note": "ErrorResponse: { status: 'error', message: string, code?: string }"
+      },
+      "tags": ["overlay", "lookup", "error-case", "error-shape"]
+    },
+    {
+      "id": "overlay.lookup.11",
+      "description": "listTopicManagers — GET /listTopicManagers returns map of manager names to metadata",
+      "input": {
+        "method": "GET",
+        "path": "/listTopicManagers",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "body_schema": "Record<string, TopicManagerInfo>",
+        "example_body": {
+          "tm_ship": {
+            "name": "tm_ship",
+            "shortDescription": "SHIP topic manager"
+          }
+        }
+      },
+      "tags": ["overlay", "discovery", "happy-path", "list-topic-managers"]
+    },
+    {
+      "id": "overlay.lookup.12",
+      "description": "listLookupServiceProviders — GET /listLookupServiceProviders returns map of service names to metadata",
+      "input": {
+        "method": "GET",
+        "path": "/listLookupServiceProviders",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "body_schema": "Record<string, LookupServiceInfo>",
+        "example_body": {
+          "ls_ship": {
+            "name": "ls_ship",
+            "shortDescription": "SHIP lookup service"
+          }
+        }
+      },
+      "tags": ["overlay", "discovery", "happy-path", "list-lookup-services"]
+    },
+    {
+      "id": "overlay.lookup.13",
+      "description": "getDocumentationForTopicManager — returns Markdown string for named manager",
+      "input": {
+        "method": "GET",
+        "path": "/getDocumentationForTopicManager",
+        "query": {
+          "manager": "tm_ship"
+        },
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "content_type": "text/markdown",
+        "body_type": "string"
+      },
+      "tags": ["overlay", "discovery", "happy-path", "documentation"]
+    },
+    {
+      "id": "overlay.lookup.14",
+      "description": "getDocumentationForTopicManager with missing manager query param — returns 400",
+      "input": {
+        "method": "GET",
+        "path": "/getDocumentationForTopicManager",
+        "query": {},
+        "headers": {}
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["overlay", "discovery", "error-case", "missing-param"]
+    }
+  ]
+}

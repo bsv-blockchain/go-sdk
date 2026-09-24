@@ -1,0 +1,53 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "script",
+  "description": "Script.fromASM() must treat bare hex strings that look like opcodes as data pushes when they appear in an ASM context that expects data, not as opcode names. ts-sdk pre-fix treated '76' (the hex encoding of OP_DUP) as OP_DUP (opcode 0x76) rather than as a data push of the byte 0x76, producing 'OP_PUSHDATA1' when toHex() was called instead of '0176'.",
+  "regression": {
+    "issue": "ts-sdk#42",
+    "fixed_in": { "ts": "v1.0.0" },
+    "symptom": "Script.fromASM('76').toHex() returned 'OP_PUSHDATA1' (the opcode name, not hex) because '76' was parsed as opcode 0x76 (OP_DUP) then re-serialised",
+    "root_cause": "fromASM tokeniser resolved bare hex strings against the opcode name table before checking if they were intended as data; '76' matched OP_DUP (0x76)"
+  },
+  "vectors": [
+    {
+      "id": "regression.script.fromasm-numeric-token.0001",
+      "description": "fromASM('76') must encode as data push of byte 0x76, producing hex '0176'",
+      "parity_class": "required",
+      "input": {
+        "operation": "fromASM_toHex",
+        "asm": "76"
+      },
+      "expected": {
+        "hex": "0176"
+      },
+      "notes": "0x76 is the opcode byte for OP_DUP, but in an ASM literal context '76' is a 1-byte data push. The encoded form is OP_PUSHDATA_1byte (0x01) followed by the byte (0x76) = 0176."
+    },
+    {
+      "id": "regression.script.fromasm-numeric-token.0002",
+      "description": "fromASM('OP_DUP') must encode as OP_DUP opcode 0x76 (not a data push)",
+      "parity_class": "required",
+      "input": {
+        "operation": "fromASM_toHex",
+        "asm": "OP_DUP"
+      },
+      "expected": {
+        "hex": "76"
+      },
+      "notes": "Control vector: the opcode name 'OP_DUP' must still produce the single opcode byte 0x76, not a data push."
+    },
+    {
+      "id": "regression.script.fromasm-numeric-token.0003",
+      "description": "fromASM('OP_DUP OP_HASH160') round-trips correctly to hex",
+      "parity_class": "required",
+      "input": {
+        "operation": "fromASM_toHex",
+        "asm": "OP_DUP OP_HASH160"
+      },
+      "expected": {
+        "hex": "76a9"
+      },
+      "notes": "Regression guard: named opcodes must remain unaffected by the data-push fix."
+    }
+  ]
+}

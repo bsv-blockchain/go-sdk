@@ -1,0 +1,11 @@
+# Extends gitleaks' built-in rules. The ts-stack conformance corpus under
+# internal/conformance/testdata is public, synthetic test data (fixed keys,
+# nonces and signatures shared by every BSV SDK's conformance runner), so its
+# path is allowlisted instead of listing each match in .gitleaksignore.
+# Refresh the corpus with scripts/sync-conformance-vectors.sh.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public ts-stack conformance vectors"
+paths = ['''^internal/conformance/testdata/''']

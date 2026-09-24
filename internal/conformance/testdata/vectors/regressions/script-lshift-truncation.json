@@ -1,0 +1,59 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "script",
+  "description": "OP_LSHIFT must truncate the shifted result to the original byte length (discarding overflow MSBs), matching BSV node behaviour. ts-sdk v2.0.5 threw 'byte array longer than desired length' because BigNumber.toArray asserted the result fit without first masking it to the input width.",
+  "regression": {
+    "issue": "ts-sdk#493",
+    "fixed_in": { "ts": "v2.0.6" },
+    "symptom": "Spend.validate() threw 'byte array longer than desired length' for any OP_LSHIFT where the shifted value exceeded the input byte length",
+    "root_cause": "Spend.ts passed shiftedBn directly to toArray(length) which asserted result fits; the fix masks to original bit-width (buf1.length * 8 bits) before conversion"
+  },
+  "vectors": [
+    {
+      "id": "regression.script.lshift-truncation.0001",
+      "description": "LSHIFT(0x6A09E667, 30) — 4-byte value shifted left 30 bits must truncate to 4 bytes",
+      "parity_class": "required",
+      "input": {
+        "operation": "op_lshift",
+        "value_hex": "6a09e667",
+        "shift_bits": 30
+      },
+      "expected": {
+        "result_hex": "c0000000",
+        "result_length_bytes": 4
+      },
+      "notes": "0x6A09E667 << 30 = 0x1A827999C0000000 (8 bytes of precision); truncated to low 32 bits = 0xC0000000. Real BSV nodes execute this correctly. The bug only affected the SDK off-chain interpreter."
+    },
+    {
+      "id": "regression.script.lshift-truncation.0002",
+      "description": "LSHIFT(0x01, 7) — 1-byte operand, shift fits cleanly in 1 byte",
+      "parity_class": "required",
+      "input": {
+        "operation": "op_lshift",
+        "value_hex": "01",
+        "shift_bits": 7
+      },
+      "expected": {
+        "result_hex": "80",
+        "result_length_bytes": 1
+      },
+      "notes": "0x01 << 7 = 0x80. No truncation needed — verifies the basic non-overflow case still works after the fix."
+    },
+    {
+      "id": "regression.script.lshift-truncation.0003",
+      "description": "LSHIFT(0xFF, 1) — 1-byte operand, result overflows into 9 bits but must truncate to 1 byte",
+      "parity_class": "required",
+      "input": {
+        "operation": "op_lshift",
+        "value_hex": "ff",
+        "shift_bits": 1
+      },
+      "expected": {
+        "result_hex": "fe",
+        "result_length_bytes": 1
+      },
+      "notes": "0xFF << 1 = 0x1FE; truncated to 8 bits = 0xFE. Simplest possible overflow case — one extra bit dropped."
+    }
+  ]
+}

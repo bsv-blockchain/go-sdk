@@ -1,0 +1,253 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.discoverbyidentitykey",
+  "name": "BRC-100 discoverbyidentitykey",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.1",
+      "description": "discoverByIdentityKey happy path",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.2",
+      "description": "discoverByIdentityKey with limit",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "limit": 10
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "limit"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.3",
+      "description": "discoverByIdentityKey with offset",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "limit": 5,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "pagination"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.4",
+      "description": "discoverByIdentityKey seekPermission=false",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "seekPermission": false
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "no-permission"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.5",
+      "description": "discoverByIdentityKey result shape: DiscoverCertificatesResult",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        },
+        "_schema_note": "result: { totalCertificates: int, certificates: IdentityCertificate[] }"
+      },
+      "expected": {
+        "totalCertificates": 1,
+        "certificates": [
+          {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice"
+            },
+            "certifierInfo": {
+              "name": "TrustCorp",
+              "iconUrl": "https://trust.example.com/icon.png",
+              "description": "Trusted identity",
+              "trust": 5
+            },
+            "publiclyRevealedKeyring": {
+              "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            },
+            "decryptedFields": {
+              "name": "Alice"
+            }
+          }
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "schema",
+        "non-empty"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Expect non-empty certifierInfo from overlay; stub LookupResolver returns empty. Pending live overlay integration."
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.6",
+      "description": "discoverByIdentityKey IdentityCertificate shape",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        },
+        "_schema_note": "IdentityCertificate extends WalletCertificate with certifierInfo, publiclyRevealedKeyring, decryptedFields"
+      },
+      "expected": {
+        "totalCertificates": 1,
+        "certificates": [
+          {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice"
+            },
+            "certifierInfo": {
+              "name": "TrustCorp",
+              "iconUrl": "https://trust.example.com/icon.png",
+              "description": "Trusted identity",
+              "trust": 5
+            },
+            "publiclyRevealedKeyring": {
+              "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            },
+            "decryptedFields": {
+              "name": "Alice"
+            }
+          }
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "schema"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Expect non-empty certifierInfo from overlay; stub LookupResolver returns empty. Pending live overlay integration."
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.7",
+      "description": "discoverByIdentityKey with originator",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        },
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "originator"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.8",
+      "description": "discoverByIdentityKey second identity key",
+      "input": {
+        "args": {
+          "identityKey": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.9",
+      "description": "discoverByIdentityKey limit=10000 max",
+      "input": {
+        "args": {
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "limit": 10000
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "limit-max"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyidentitykey.10",
+      "description": "discoverByIdentityKey invalid identity key format",
+      "input": {
+        "args": {
+          "identityKey": "not-a-valid-pubkey"
+        }
+      },
+      "expected": {
+        "error": true
+      },
+      "tags": [
+        "brc-100",
+        "discoverByIdentityKey",
+        "error",
+        "validation"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,419 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sync.gasprotocol",
+  "name": "GASP — Graph Aware Sync Protocol message shapes and session flow",
+  "brc": ["BRC-21"],
+  "version": "1.0.0",
+  "reference_impl": "packages/gasp-core/src/GASP.ts@1.0.0",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sync.gasprotocol.1",
+      "description": "GASPInitialRequest — minimum valid request with version=1 and since=0 (full sync)",
+      "input": {
+        "channel": "gasp/initialRequest",
+        "message": {
+          "version": 1,
+          "since": 0
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPInitialRequest: { version: 1, since: integer >= 0, limit?: integer >= 1 }"
+      },
+      "tags": ["gasp", "sync", "happy-path", "initial-request", "full-sync"]
+    },
+    {
+      "id": "sync.gasprotocol.2",
+      "description": "GASPInitialRequest — incremental sync with since timestamp and page limit",
+      "input": {
+        "channel": "gasp/initialRequest",
+        "message": {
+          "version": 1,
+          "since": 1714000000,
+          "limit": 1000
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "since=1714000000 (2024-04-25) — only UTXOs newer than this timestamp returned"
+      },
+      "tags": ["gasp", "sync", "happy-path", "initial-request", "incremental"]
+    },
+    {
+      "id": "sync.gasprotocol.3",
+      "description": "GASPInitialRequest with wrong version — responder must reject with GASPVersionMismatchError",
+      "input": {
+        "channel": "gasp/initialRequest",
+        "message": {
+          "version": 2,
+          "since": 0
+        }
+      },
+      "expected": {
+        "valid": false,
+        "error": {
+          "code": "ERR_GASP_VERSION_MISMATCH",
+          "currentVersion": 1,
+          "foreignVersion": 2
+        },
+        "schema_note": "GASPVersionMismatchError: { code: 'ERR_GASP_VERSION_MISMATCH', message, currentVersion, foreignVersion }"
+      },
+      "tags": ["gasp", "sync", "error-case", "version-mismatch"]
+    },
+    {
+      "id": "sync.gasprotocol.4",
+      "description": "GASPInitialRequest with negative since — invalid; must be rejected",
+      "input": {
+        "channel": "gasp/initialRequest",
+        "message": {
+          "version": 1,
+          "since": -1
+        }
+      },
+      "expected": {
+        "valid": false,
+        "schema_note": "since must be >= 0"
+      },
+      "tags": ["gasp", "sync", "error-case", "invalid-since"]
+    },
+    {
+      "id": "sync.gasprotocol.5",
+      "description": "GASPInitialResponse — contains UTXOList with known outputs and responder since timestamp",
+      "input": {
+        "channel": "gasp/initialResponse",
+        "message": {
+          "UTXOList": [
+            {
+              "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+              "outputIndex": 0,
+              "score": 1714000000
+            },
+            {
+              "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+              "outputIndex": 1,
+              "score": 1714001000
+            }
+          ],
+          "since": 1714001000
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPInitialResponse: { UTXOList: GASPOutput[], since: integer >= 0 }"
+      },
+      "tags": ["gasp", "sync", "happy-path", "initial-response"]
+    },
+    {
+      "id": "sync.gasprotocol.6",
+      "description": "GASPInitialResponse with empty UTXOList — responder has no UTXOs; since is still required",
+      "input": {
+        "channel": "gasp/initialResponse",
+        "message": {
+          "UTXOList": [],
+          "since": 0
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "Empty UTXOList is valid — no UTXOs to sync from this responder"
+      },
+      "tags": ["gasp", "sync", "happy-path", "initial-response", "empty"]
+    },
+    {
+      "id": "sync.gasprotocol.7",
+      "description": "GASPOutput fields — txid must be exactly 64 lowercase hex characters",
+      "input": {
+        "channel": "gasp/initialResponse",
+        "message": {
+          "UTXOList": [
+            {
+              "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+              "outputIndex": 0,
+              "score": 0
+            }
+          ],
+          "since": 0
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPOutput: { txid: /^[0-9a-fA-F]{64}$/, outputIndex: int >= 0, score: number >= 0 }"
+      },
+      "tags": ["gasp", "sync", "happy-path", "gasp-output", "unconfirmed"]
+    },
+    {
+      "id": "sync.gasprotocol.8",
+      "description": "GASPOutput with score=0 — unconfirmed UTXO; always included regardless of since filter",
+      "input": {
+        "channel": "gasp/initialResponse",
+        "message": {
+          "UTXOList": [
+            {
+              "txid": "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+              "outputIndex": 0,
+              "score": 0
+            }
+          ],
+          "since": 1714001000
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "Unconfirmed UTXOs (score=0) must always be included in the response regardless of since"
+      },
+      "tags": ["gasp", "sync", "edge-case", "unconfirmed-utxo", "score-zero"]
+    },
+    {
+      "id": "sync.gasprotocol.9",
+      "description": "GASPInitialReply — bidirectional mode; initiator sends UTXOs responder is missing",
+      "input": {
+        "channel": "gasp/initialReply",
+        "message": {
+          "UTXOList": [
+            {
+              "txid": "d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+              "outputIndex": 0,
+              "score": 1714002000
+            }
+          ]
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPInitialReply: { UTXOList: GASPOutput[] } — must NOT include UTXOs already in GASPInitialResponse"
+      },
+      "tags": ["gasp", "sync", "happy-path", "initial-reply", "bidirectional"]
+    },
+    {
+      "id": "sync.gasprotocol.10",
+      "description": "GASPNodeRequest — request a specific graph node with metadata=true",
+      "input": {
+        "channel": "gasp/requestNode",
+        "message": {
+          "graphID": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2.0",
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "outputIndex": 0,
+          "metadata": true
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPNodeRequest: { graphID: string, txid: /^[0-9a-fA-F]{64}$/, outputIndex: int >= 0, metadata: boolean }"
+      },
+      "tags": ["gasp", "sync", "happy-path", "node-request", "with-metadata"]
+    },
+    {
+      "id": "sync.gasprotocol.11",
+      "description": "GASPNodeRequest without metadata — metadata=false, no metadata fields expected in response",
+      "input": {
+        "channel": "gasp/requestNode",
+        "message": {
+          "graphID": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3.1",
+          "txid": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+          "outputIndex": 1,
+          "metadata": false
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "When metadata=false, GASPNode response must omit txMetadata, outputMetadata, and inputs fields"
+      },
+      "tags": ["gasp", "sync", "happy-path", "node-request", "no-metadata"]
+    },
+    {
+      "id": "sync.gasprotocol.12",
+      "description": "GASPNode — confirmed transaction with BUMP proof and metadata",
+      "input": {
+        "channel": "gasp/node",
+        "message": {
+          "graphID": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2.0",
+          "rawTx": "0100000001deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef000000006a473044022012ab34cd56ef78901234567890abcdef1234567890abcdef1234567890abcdef022056789012345678901234567890abcdef1234567890abcdef1234567890abcdef0121034567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000",
+          "outputIndex": 0,
+          "proof": "fe8a6a0c000c04fde80b0011774f01d26412f0d16ea3f0447be0b5ebec67b0782e321a7a01cbdf7f734e30fde90b02004e53753e3fe4667073063a17987292cfdea278824e9888e52180581d7188d8",
+          "txMetadata": "ship-advertisement-v1",
+          "outputMetadata": "domain:overlay.example.com",
+          "inputs": {
+            "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef.0": {
+              "hash": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+            }
+          }
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPNode: { graphID, rawTx (hex), outputIndex, proof? (BUMP hex), txMetadata?, outputMetadata?, inputs?: Record<string, { hash }> }"
+      },
+      "tags": ["gasp", "sync", "happy-path", "gasp-node", "confirmed", "with-proof"]
+    },
+    {
+      "id": "sync.gasprotocol.13",
+      "description": "GASPNode — unconfirmed transaction without proof field",
+      "input": {
+        "channel": "gasp/node",
+        "message": {
+          "graphID": "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4.0",
+          "rawTx": "0100000001deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000",
+          "outputIndex": 0
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPNode without proof field — transaction is unconfirmed; inputs and metadata are also optional"
+      },
+      "tags": ["gasp", "sync", "happy-path", "gasp-node", "unconfirmed"]
+    },
+    {
+      "id": "sync.gasprotocol.14",
+      "description": "GASPNodeResponse — recipient requests two additional inputs to complete the graph",
+      "input": {
+        "channel": "gasp/nodeResponse",
+        "message": {
+          "requestedInputs": {
+            "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef.0": {
+              "metadata": true
+            },
+            "cafebabecafebabecafebabecafebabecafebabecafebabecafebabecafebabe.1": {
+              "metadata": false
+            }
+          }
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "GASPNodeResponse: { requestedInputs?: Record<string, { metadata: boolean }> } — non-empty means graph incomplete"
+      },
+      "tags": ["gasp", "sync", "happy-path", "node-response", "inputs-requested"]
+    },
+    {
+      "id": "sync.gasprotocol.15",
+      "description": "GASPNodeResponse with empty requestedInputs — graph is complete; no further inputs needed",
+      "input": {
+        "channel": "gasp/nodeResponse",
+        "message": {
+          "requestedInputs": {}
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "Empty requestedInputs signals graph completion — submitter can stop walking inputs"
+      },
+      "tags": ["gasp", "sync", "happy-path", "node-response", "graph-complete"]
+    },
+    {
+      "id": "sync.gasprotocol.16",
+      "description": "GASPNodeResponse with null requestedInputs — signals graph is complete",
+      "input": {
+        "channel": "gasp/nodeResponse",
+        "message": {
+          "requestedInputs": null
+        }
+      },
+      "expected": {
+        "valid": true,
+        "schema_note": "null requestedInputs is equivalent to absent — graph is complete"
+      },
+      "tags": ["gasp", "sync", "edge-case", "node-response", "null-inputs"]
+    },
+    {
+      "id": "sync.gasprotocol.17",
+      "description": "Overlay HTTP /requestSyncResponse — GASP sync over HTTP with x-bsv-topic header",
+      "input": {
+        "method": "POST",
+        "path": "/requestSyncResponse",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-bsv-topic": "tm_ship"
+        },
+        "body": {
+          "version": 1,
+          "since": 0
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "UTXOList": [
+            {
+              "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+              "outputIndex": 0,
+              "score": 1714000000
+            }
+          ],
+          "since": 1746367200
+        }
+      },
+      "tags": ["gasp", "sync", "happy-path", "http", "request-sync-response"]
+    },
+    {
+      "id": "sync.gasprotocol.18",
+      "description": "Overlay HTTP /requestSyncResponse with missing x-bsv-topic header — returns 400",
+      "input": {
+        "method": "POST",
+        "path": "/requestSyncResponse",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": 1,
+          "since": 0
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["gasp", "sync", "error-case", "http", "missing-topic-header"]
+    },
+    {
+      "id": "sync.gasprotocol.19",
+      "description": "Overlay HTTP /requestForeignGASPNode — request a specific graph node by path params",
+      "input": {
+        "method": "POST",
+        "path": "/requestForeignGASPNode",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "graphID": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2.0",
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "outputIndex": 0
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "graphID": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2.0",
+          "rawTx": "0100000001deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef000000006a00ffffffff0100e1f50500000000001976a914f54a5851e9372b87810a8e60cdd2e7cfd80b6e5388ac00000000",
+          "outputIndex": 0
+        }
+      },
+      "tags": ["gasp", "sync", "happy-path", "http", "foreign-gasp-node"]
+    },
+    {
+      "id": "sync.gasprotocol.20",
+      "description": "Overlay HTTP /requestForeignGASPNode with invalid txid (63 chars) — returns 400",
+      "input": {
+        "method": "POST",
+        "path": "/requestForeignGASPNode",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "graphID": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b.0",
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b",
+          "outputIndex": 0
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": {
+          "status": "error"
+        }
+      },
+      "tags": ["gasp", "sync", "error-case", "http", "invalid-txid"]
+    }
+  ]
+}

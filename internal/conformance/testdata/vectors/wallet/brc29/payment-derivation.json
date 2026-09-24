@@ -1,0 +1,671 @@
+{
+  "$schema": "../../../../schema/vector.schema.json",
+  "id": "wallet.brc29.payment-derivation",
+  "name": "BRC-29 P2P Payment Key Derivation",
+  "brc": [
+    "BRC-29"
+  ],
+  "version": "1.1.0",
+  "reference_impl": "ts-sdk@2.0.14",
+  "parity_class": "required",
+  "notes": "BRC-29 payment protocol uses BRC-42 key derivation with protocol=[2,'3241645161d8'] and keyID='<derivationPrefix> <derivationSuffix>'. Sender calls getPublicKey(counterparty=recipientIdentityKey) to derive the output key. Recipient calls getPublicKey(counterparty=senderIdentityKey, forSelf=true) to derive the same key. Identity keys: scalar=1 => 0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798, scalar=2 => 02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5, scalar=3 => 02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9, scalar=4 => 02e493dbf1c10d80f3581e4904930b1404cc6c13900ee0758474fa94abe8c4cd13.",
+  "vectors": [
+    {
+      "id": "wallet.brc29.payment-derivation.1",
+      "description": "Sender (key 1) derives recipient (key 2) output key: prefix='rBpqFxcNxkmqWBxU', suffix='FDWH1mTbSBrC7yoW'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "publicKey": "02e918a5972ece85499aabd64d12b4b051a53b258f71c58191dddfa094346d5b35"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.2",
+      "description": "Sender (key 1) derives recipient (key 2) output key: prefix='YmFzZTY0cmFuZG9t', suffix='b3V0cHV0c3VmZml4'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "publicKey": "026fe234ef613493eb403ac21d7d998fe1bab5e1a14546ab0d76b7a9ac10fffe42"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.3",
+      "description": "Sender (key 1) derives recipient (key 2) output key: prefix='cGF5bWVudHByZWZp', suffix='eHN1ZmZpeHZhbHVl'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "cGF5bWVudHByZWZp eHN1ZmZpeHZhbHVl",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "publicKey": "02b41f11909252d9883c8c9df466744372a3311aa4b8b01a0742429e31df4f2387"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.4",
+      "description": "Sender (key 1) derives recipient (key 3) output key: prefix='rBpqFxcNxkmqWBxU', suffix='FDWH1mTbSBrC7yoW'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9"
+        }
+      },
+      "expected": {
+        "publicKey": "03f34dbc1dfe96ac64f0584d50219a16569ca7ae494e9100b29ba79026f7dfb475"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.5",
+      "description": "Sender (key 1) derives recipient (key 3) output key: prefix='YmFzZTY0cmFuZG9t', suffix='b3V0cHV0c3VmZml4'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9"
+        }
+      },
+      "expected": {
+        "publicKey": "0360c3d980ded9c1566fbe9de259b4e753199adc4e09165e1e9e9e4fb99016bb36"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.6",
+      "description": "Sender (key 1) derives recipient (key 3) output key: prefix='cGF5bWVudHByZWZp', suffix='eHN1ZmZpeHZhbHVl'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "cGF5bWVudHByZWZp eHN1ZmZpeHZhbHVl",
+          "counterparty": "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9"
+        }
+      },
+      "expected": {
+        "publicKey": "02245e8e56f1214817618d6efebf600920a8041e1aff82d79e50ca9dffd7c9c803"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.7",
+      "description": "Sender (key 2) derives recipient (key 1) output key: prefix='rBpqFxcNxkmqWBxU', suffix='FDWH1mTbSBrC7yoW'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "publicKey": "0249bc734fd882f1fbe17df840a1088dee6e19b58b88fceedc9b44763c94f6a8ea"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.8",
+      "description": "Sender (key 2) derives recipient (key 1) output key: prefix='YmFzZTY0cmFuZG9t', suffix='b3V0cHV0c3VmZml4'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "publicKey": "0253311a8db3e3491c1381237d46ca2ec91860e1e9b89ae01d1ec17f50f3ce6519"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.9",
+      "description": "Sender (key 2) derives recipient (key 1) output key: prefix='cGF5bWVudHByZWZp', suffix='eHN1ZmZpeHZhbHVl'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "cGF5bWVudHByZWZp eHN1ZmZpeHZhbHVl",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "publicKey": "0211fa4fba30ebe0f2a96d9f740a3c58af1a2dca94053e9c73b51d7ad3a8c4dddd"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.10",
+      "description": "Sender (key 2) derives recipient (key 3) output key: prefix='rBpqFxcNxkmqWBxU', suffix='FDWH1mTbSBrC7yoW'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9"
+        }
+      },
+      "expected": {
+        "publicKey": "026edf142a346f9d05da9ce551352c69c9b1c25782d822692c2cd0d699de0b0b73"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.11",
+      "description": "Sender (key 2) derives recipient (key 3) output key: prefix='YmFzZTY0cmFuZG9t', suffix='b3V0cHV0c3VmZml4'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9"
+        }
+      },
+      "expected": {
+        "publicKey": "032cf586b17974a353ac4c1c45bb9d7d695bc9f29c28def7b6e19522d93967323f"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.12",
+      "description": "Sender (key 2) derives recipient (key 3) output key: prefix='cGF5bWVudHByZWZp', suffix='eHN1ZmZpeHZhbHVl'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "cGF5bWVudHByZWZp eHN1ZmZpeHZhbHVl",
+          "counterparty": "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9"
+        }
+      },
+      "expected": {
+        "publicKey": "0378fe6b6a40125f44c516d7ca8374a191e09dc47788179dfca2dfadc3954ffd51"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.13",
+      "description": "Sender (key 3) derives recipient (key 1) output key: prefix='rBpqFxcNxkmqWBxU', suffix='FDWH1mTbSBrC7yoW'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "publicKey": "0203842c248263199fcebee8241bbc95aab1939ae07d80acd49bcc11fdb6346e5b"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.14",
+      "description": "Sender (key 3) derives recipient (key 1) output key: prefix='YmFzZTY0cmFuZG9t', suffix='b3V0cHV0c3VmZml4'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "publicKey": "022bf7fd95593b8959905a1a757c9cf97510df21fd5a31e496639519539dce63fb"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.15",
+      "description": "Sender (key 3) derives recipient (key 1) output key: prefix='cGF5bWVudHByZWZp', suffix='eHN1ZmZpeHZhbHVl'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "cGF5bWVudHByZWZp eHN1ZmZpeHZhbHVl",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        }
+      },
+      "expected": {
+        "publicKey": "032cd4d947c76ebb6148483646219bde6bb050e2adc290c195b0a277aaa7a276f0"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.16",
+      "description": "Sender (key 3) derives recipient (key 2) output key: prefix='rBpqFxcNxkmqWBxU', suffix='FDWH1mTbSBrC7yoW'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "publicKey": "036b93a85c9d64de5f6927fb55c4ea4c812a136555e343d72ac818721146f2f46b"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.17",
+      "description": "Sender (key 3) derives recipient (key 2) output key: prefix='YmFzZTY0cmFuZG9t', suffix='b3V0cHV0c3VmZml4'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "publicKey": "02c249afc560935ee36bcd315ec9f31be9e55444bd93d27426b1d6258ec117dcd6"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.18",
+      "description": "Sender (key 3) derives recipient (key 2) output key: prefix='cGF5bWVudHByZWZp', suffix='eHN1ZmZpeHZhbHVl'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "cGF5bWVudHByZWZp eHN1ZmZpeHZhbHVl",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        }
+      },
+      "expected": {
+        "publicKey": "02f73b808ae98784d24fd9a1ef3af48f5641c8f0afb611b33a483a0cd0024415ff"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "sender-derives"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.19",
+      "description": "Recipient (key 1) forSelf=true derives same key with senderIdentityKey (key 2): prefix='rBpqFxcNxkmqWBxU'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "forSelf": true
+        }
+      },
+      "expected": {
+        "publicKey": "0249bc734fd882f1fbe17df840a1088dee6e19b58b88fceedc9b44763c94f6a8ea"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "recipient-view",
+        "forSelf"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.20",
+      "description": "Recipient (key 1) forSelf=true derives same key with senderIdentityKey (key 2): prefix='YmFzZTY0cmFuZG9t'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+          "forSelf": true
+        }
+      },
+      "expected": {
+        "publicKey": "0253311a8db3e3491c1381237d46ca2ec91860e1e9b89ae01d1ec17f50f3ce6519"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "recipient-view",
+        "forSelf"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.21",
+      "description": "Recipient (key 2) forSelf=true derives same key with senderIdentityKey (key 1): prefix='rBpqFxcNxkmqWBxU'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "forSelf": true
+        }
+      },
+      "expected": {
+        "publicKey": "02e918a5972ece85499aabd64d12b4b051a53b258f71c58191dddfa094346d5b35"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "recipient-view",
+        "forSelf"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.22",
+      "description": "Recipient (key 2) forSelf=true derives same key with senderIdentityKey (key 1): prefix='YmFzZTY0cmFuZG9t'",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "YmFzZTY0cmFuZG9t b3V0cHV0c3VmZml4",
+          "counterparty": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "forSelf": true
+        }
+      },
+      "expected": {
+        "publicKey": "026fe234ef613493eb403ac21d7d998fe1bab5e1a14546ab0d76b7a9ac10fffe42"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "recipient-view",
+        "forSelf"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.23",
+      "description": "Symmetry: sender-derived == recipient-derived for same prefix/suffix (schema note)",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        },
+        "_schema_note": "recipient forSelf=true with senderKey MUST produce same publicKey: 02e918a5972ece85499aabd64d12b4b051a53b258f71c58191dddfa094346d5b35"
+      },
+      "expected": {
+        "publicKey": "02e918a5972ece85499aabd64d12b4b051a53b258f71c58191dddfa094346d5b35"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "symmetry"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.24",
+      "description": "Self-payment: sender pays self, counterparty=\"self\"",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "rBpqFxcNxkmqWBxU FDWH1mTbSBrC7yoW",
+          "counterparty": "self"
+        }
+      },
+      "expected": {
+        "publicKey": "03a35d5c49a34c3319d324b49e9942673d2e5bd2f1d7067a3593f17140ce3a6e52"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "self-payment"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.25",
+      "description": "BRC-121 timestamp suffix pattern: prefix='3q2+7w==', suffix='MTcxOTUwMDAwMDAwMA==' (base64-encoded Unix ms)",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "3q2+7w== MTcxOTUwMDAwMDAwMA==",
+          "counterparty": "02e493dbf1c10d80f3581e4904930b1404cc6c13900ee0758474fa94abe8c4cd13"
+        }
+      },
+      "expected": {
+        "publicKey": "02ce32e7d14b46309e089535e9358205023fe1d8d7061079c1c8e1fe3acc66a583"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "brc-121-timestamp"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.26",
+      "description": "BRC-121 timestamp suffix pattern: prefix='3q2+7w==', suffix='MTcxOTUxMDAwMDAwMA==' (base64-encoded Unix ms)",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "3q2+7w== MTcxOTUxMDAwMDAwMA==",
+          "counterparty": "02e493dbf1c10d80f3581e4904930b1404cc6c13900ee0758474fa94abe8c4cd13"
+        }
+      },
+      "expected": {
+        "publicKey": "025d213f38d6583045b42db46b06cada0658cdd71d21937c041af10ee8ff08c523"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "brc-121-timestamp"
+      ]
+    },
+    {
+      "id": "wallet.brc29.payment-derivation.27",
+      "description": "BRC-121 timestamp suffix pattern: prefix='3q2+7w==', suffix='MTcxOTUyMDAwMDAwMA==' (base64-encoded Unix ms)",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "keyID": "3q2+7w== MTcxOTUyMDAwMDAwMA==",
+          "counterparty": "02e493dbf1c10d80f3581e4904930b1404cc6c13900ee0758474fa94abe8c4cd13"
+        }
+      },
+      "expected": {
+        "publicKey": "033f33d3a9dfdf1afcf2f58f700094bdff03c22aba36d82faa958b78ccf2ba1936"
+      },
+      "tags": [
+        "brc-29",
+        "brc-42",
+        "payment",
+        "brc-121-timestamp"
+      ]
+    }
+  ]
+}

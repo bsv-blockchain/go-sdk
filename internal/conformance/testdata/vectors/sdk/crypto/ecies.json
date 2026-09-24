@@ -1,0 +1,467 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.ecies",
+  "name": "ECIES Encryption and Decryption (Electrum variant)",
+  "brc": [],
+  "version": "1.1.0",
+  "reference_impl": "ts-sdk@2.0.14",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sdk.crypto.ecies.1",
+      "description": "Electrum ECIES: Alice encrypts to Bob's public key using her private key; Bob decrypts",
+      "input": {
+        "sender_private_key": "77e06abc52bf065cb5164c5deca839d0276911991a2730be4d8d0a0307de7ceb",
+        "sender_public_key": "0339e504d6492b082da96e11e8f039796b06cd4855c101e2492a6f10f3e056a9e7",
+        "recipient_private_key": "2b57c7c5e408ce927eef5e2efb49cfdadde77961d342daa72284bb3d6590862d",
+        "recipient_public_key": "03861723172e8f50bf4e3b2b70582619a7260b79f040bcb2460ffd1d9053f534c9",
+        "message": "74686973206973206d792074657374206d657373616765",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "424945310339e504d6492b082da96e11e8f039796b06cd4855c101e2492a6f10f3e056a9e775c73ade8bded2a6ad7868eb28faa617e888c9013a15257513e7108e1f4995dbbd9247832033c40e92a2e8ddbaf257bfe03dae2de9a3dbde8a5ae673ca7a770a",
+        "decrypted_message": "74686973206973206d792074657374206d657373616765",
+        "decrypted_message_utf8": "this is my test message"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "deterministic"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.2",
+      "description": "Electrum ECIES: Bob encrypts to Alice's public key using his private key; Alice decrypts",
+      "input": {
+        "sender_private_key": "2b57c7c5e408ce927eef5e2efb49cfdadde77961d342daa72284bb3d6590862d",
+        "sender_public_key": "03861723172e8f50bf4e3b2b70582619a7260b79f040bcb2460ffd1d9053f534c9",
+        "recipient_private_key": "77e06abc52bf065cb5164c5deca839d0276911991a2730be4d8d0a0307de7ceb",
+        "recipient_public_key": "0339e504d6492b082da96e11e8f039796b06cd4855c101e2492a6f10f3e056a9e7",
+        "message": "74686973206973206d792074657374206d657373616765",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "4249453103861723172e8f50bf4e3b2b70582619a7260b79f040bcb2460ffd1d9053f534c975c73ade8bded2a6ad7868eb28faa617e888c9013a15257513e7108e1f4995db89a1f816cc4a20e3afce8948155012d05a6552689bd879e500cd723ff8a23ec5",
+        "decrypted_message": "74686973206973206d792074657374206d657373616765",
+        "decrypted_message_utf8": "this is my test message"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "deterministic"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.3",
+      "description": "Electrum ECIES ECDH no-key mode: Alice and Bob produce symmetric ciphertext",
+      "input": {
+        "alice_private_key": "77e06abc52bf065cb5164c5deca839d0276911991a2730be4d8d0a0307de7ceb",
+        "alice_public_key": "0339e504d6492b082da96e11e8f039796b06cd4855c101e2492a6f10f3e056a9e7",
+        "bob_private_key": "2b57c7c5e408ce927eef5e2efb49cfdadde77961d342daa72284bb3d6590862d",
+        "bob_public_key": "03861723172e8f50bf4e3b2b70582619a7260b79f040bcb2460ffd1d9053f534c9",
+        "message": "74686973206973206d7920454344482074657374206d657373616765",
+        "message_encoding": "hex",
+        "no_key": true
+      },
+      "expected": {
+        "ciphertext_symmetric": true,
+        "decrypted_message_utf8": "this is my ECDH test message",
+        "note": "electrumEncrypt(msg, bobPub, alicePriv, noKey=true) === electrumEncrypt(msg, alicePub, bobPriv, noKey=true); both parties can decrypt the same ciphertext"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "ecdh",
+        "symmetric"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.4",
+      "description": "Electrum ECIES: decrypt known ciphertext with recipient private key (vector 1 - Alice decrypts with her key)",
+      "input": {
+        "recipient_private_key": "77e06abc52bf065cb5164c5deca839d0276911991a2730be4d8d0a0307de7ceb",
+        "ciphertext_hex": "4249453103861723172e8f50bf4e3b2b70582619a7260b79f040bcb2460ffd1d9053f534c975c73ade8bded2a6ad7868eb28faa617e888c9013a15257513e7108e1f4995db89a1f816cc4a20e3afce8948155012d05a6552689bd879e500cd723ff8a23ec5"
+      },
+      "expected": {
+        "decrypted_message": "74686973206973206d792074657374206d657373616765",
+        "decrypted_message_utf8": "this is my test message"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "decrypt-only"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.5",
+      "description": "Electrum ECIES: decrypt known ciphertext with recipient private key (vector 2 - Bob decrypts with his key)",
+      "input": {
+        "recipient_private_key": "2b57c7c5e408ce927eef5e2efb49cfdadde77961d342daa72284bb3d6590862d",
+        "ciphertext_hex": "424945310339e504d6492b082da96e11e8f039796b06cd4855c101e2492a6f10f3e056a9e775c73ade8bded2a6ad7868eb28faa617e888c9013a15257513e7108e1f4995dbbd9247832033c40e92a2e8ddbaf257bfe03dae2de9a3dbde8a5ae673ca7a770a"
+      },
+      "expected": {
+        "decrypted_message": "74686973206973206d792074657374206d657373616765",
+        "decrypted_message_utf8": "this is my test message"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "decrypt-only"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.6",
+      "description": "Electrum ECIES: single-byte message (0x61 = 'a'), key pair 1->2",
+      "input": {
+        "sender_private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+        "sender_public_key": "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+        "recipient_private_key": "2222222222222222222222222222222222222222222222222222222222222222",
+        "recipient_public_key": "02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27",
+        "message": "61",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "42494531034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aab04b2d5e4b4e66220875ec3c852586f67efcc50154a4af1c09bbf938ffa7f0607c80313cfd3f3ac809666ecad7f8ef4f",
+        "decrypted_message": "61"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "edge-case",
+        "single-byte"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.7",
+      "description": "Electrum ECIES: 11-byte UTF-8 message ('hello world'), key pair 2->3",
+      "input": {
+        "sender_private_key": "2222222222222222222222222222222222222222222222222222222222222222",
+        "sender_public_key": "02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27",
+        "recipient_private_key": "3333333333333333333333333333333333333333333333333333333333333333",
+        "recipient_public_key": "023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b1",
+        "message": "68656c6c6f20776f726c64",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "4249453102466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27f255ad6848fb667a3eb468731721db971b0217f969b86c1dc86ea44c39d076008be8e3f9ad9517b1f642fa1e62c8f464",
+        "decrypted_message": "68656c6c6f20776f726c64"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.8",
+      "description": "Electrum ECIES: 32 bytes of 0xab, key pair 3->A",
+      "input": {
+        "sender_private_key": "3333333333333333333333333333333333333333333333333333333333333333",
+        "sender_public_key": "023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b1",
+        "recipient_private_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recipient_public_key": "026a04ab98d9e4774ad806e302dddeb63bea16b5cb5f223ee77478e861bb583eb3",
+        "message": "abababababababababababababababababababababababababababababababab",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "42494531023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b1fc07f08cd0ab3dbacf911cb2fb2c3675d724171559c4ba604a110f3497548a86c4064e3d444367c90b866ab34d1e57be41a4dcbf7098c85c5a1cd4f9cf24b5c75409c583333ee44ed659abedb81b6195",
+        "decrypted_message": "abababababababababababababababababababababababababababababababab"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "32-bytes"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.9",
+      "description": "Electrum ECIES: empty message (0 bytes), key pair B->1",
+      "input": {
+        "sender_private_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "sender_public_key": "0268680737c76dabb801cb2204f57dbe4e4579e4f710cd67dc1b4227592c81e9b5",
+        "recipient_private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+        "recipient_public_key": "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+        "message": "",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "424945310268680737c76dabb801cb2204f57dbe4e4579e4f710cd67dc1b4227592c81e9b5438b92b3093b46b1f4532ec6d462b21ba33f70f3f6ae836fea8de9beb67b08bfb08ef797fa8bd2c40b7d9e9787430529",
+        "decrypted_message": ""
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "edge-case",
+        "empty-message"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.10",
+      "description": "Electrum ECIES: ASCII message 'BSV SDK conformance test', key pair 1->3",
+      "input": {
+        "sender_private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+        "sender_public_key": "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+        "recipient_private_key": "3333333333333333333333333333333333333333333333333333333333333333",
+        "recipient_public_key": "023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b1",
+        "message": "4253562053444b20636f6e666f726d616e63652074657374",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "42494531034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa1f9d861c0fcecc51136795b09219d765d79e0a45a18fee3599899fe08679b5b6470e2eaa13dfff202eb0eeec7c851e84e80ec5b3a09cb62e34395d7f80d94643",
+        "decrypted_message": "4253562053444b20636f6e666f726d616e63652074657374"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.11",
+      "description": "Electrum ECIES: pangram message, key pair 2->A",
+      "input": {
+        "sender_private_key": "2222222222222222222222222222222222222222222222222222222222222222",
+        "sender_public_key": "02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27",
+        "recipient_private_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recipient_public_key": "026a04ab98d9e4774ad806e302dddeb63bea16b5cb5f223ee77478e861bb583eb3",
+        "message": "54686520717569636b2062726f776e20666f78206a756d7073206f76657220746865206c617a7920646f67",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "4249453102466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27630c5f336bd8306495b87e54d87b41caf4f9d9a4787d2c6380becb8205733a2990e7a51c753fcbcf65d4668d616ae32c4caf21d4394f7d040ca7a24ccf7242ed6039719ac8ee02fd6b03e23e06fd5c57",
+        "decrypted_message": "54686520717569636b2062726f776e20666f78206a756d7073206f76657220746865206c617a7920646f67"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.12",
+      "description": "Electrum ECIES: sequential bytes 0x00..0x07 message, key pair 3->B",
+      "input": {
+        "sender_private_key": "3333333333333333333333333333333333333333333333333333333333333333",
+        "sender_public_key": "023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b1",
+        "recipient_private_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "recipient_public_key": "0268680737c76dabb801cb2204f57dbe4e4579e4f710cd67dc1b4227592c81e9b5",
+        "message": "0001020304050607",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "42494531023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b117d6ea100f5c10795533eec3fe90b426df9b42937b519cdc6ae8770c268b7c30333f8d20e676b59318ad5007af2e9dd6",
+        "decrypted_message": "0001020304050607"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "binary-data"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.13",
+      "description": "Electrum ECIES: short 5-byte message ('short'), key pair A->B",
+      "input": {
+        "sender_private_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sender_public_key": "026a04ab98d9e4774ad806e302dddeb63bea16b5cb5f223ee77478e861bb583eb3",
+        "recipient_private_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "recipient_public_key": "0268680737c76dabb801cb2204f57dbe4e4579e4f710cd67dc1b4227592c81e9b5",
+        "message": "73686f7274",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "42494531026a04ab98d9e4774ad806e302dddeb63bea16b5cb5f223ee77478e861bb583eb3dd0e618d03ce7c212ab1b37d43a5498eb01f1be9b5ad6d17a2cfd5ac37f5218241e4e91cc319bd944bb0b8eb5e8ee8d9",
+        "decrypted_message": "73686f7274"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.14",
+      "description": "Electrum ECIES: 64 bytes of 0xff (all-high-bits payload), key pair B->2",
+      "input": {
+        "sender_private_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "sender_public_key": "0268680737c76dabb801cb2204f57dbe4e4579e4f710cd67dc1b4227592c81e9b5",
+        "recipient_private_key": "2222222222222222222222222222222222222222222222222222222222222222",
+        "recipient_public_key": "02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27",
+        "message": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "424945310268680737c76dabb801cb2204f57dbe4e4579e4f710cd67dc1b4227592c81e9b54e592e7a2fb7d33f47e32d4c2d9ab556c1821d936c48fec822a4f786f256cdbb9280eaea0adc65e37d8aa90ecd2a77463b108ae8b00551e03e60d0e1ac99f99895d4ff3728521ca4af5a561db8191fbc53772f19a1198433a0b8d4217d0bece4553ffa70643213e1360ac3dab40e8090",
+        "decrypted_message": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "all-bits-set"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.15",
+      "description": "Electrum ECIES: decrypt-only for vector 6 ciphertext (ciphertext from sdk.crypto.ecies.6)",
+      "input": {
+        "recipient_private_key": "2222222222222222222222222222222222222222222222222222222222222222",
+        "ciphertext_hex": "42494531034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aab04b2d5e4b4e66220875ec3c852586f67efcc50154a4af1c09bbf938ffa7f0607c80313cfd3f3ac809666ecad7f8ef4f"
+      },
+      "expected": {
+        "decrypted_message": "61"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "decrypt-only"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.16",
+      "description": "Electrum ECIES: tampered ciphertext (last MAC byte flipped) must throw",
+      "input": {
+        "sender_private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+        "sender_public_key": "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+        "recipient_private_key": "2222222222222222222222222222222222222222222222222222222222222222",
+        "recipient_public_key": "02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27",
+        "message": "74616d7065722074657374206d657373616765",
+        "message_encoding": "hex",
+        "tampered_ciphertext_hex": "42494531034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa050af20e1880af4f65cd019d634a439f8620f72bdef78c5fb1517ec57e8eb5d87e3986d3705227ff1c31af72332fd5858cdf2fb4028a4191cee74cf500f32dac",
+        "note": "Last byte of the MAC is flipped from 0x53 to 0xac; electrumDecrypt(tampered, recipPriv, senderPub) must throw"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid checksum"
+      },
+      "tags": [
+        "error-case",
+        "electrum-ecies",
+        "tampered-ciphertext"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.17",
+      "description": "Electrum ECIES: decrypt-only on wrong-key ciphertext must throw",
+      "input": {
+        "recipient_private_key": "3333333333333333333333333333333333333333333333333333333333333333",
+        "ciphertext_hex": "42494531034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa050af20e1880af4f65cd019d634a439f8620f72bdef78c5fb1517ec57e8eb5d87e3986d3705227ff1c31af72332fd5858cdf2fb4028a4191cee74cf500f32d53",
+        "note": "Ciphertext was encrypted to key 2222...2222; decrypting with 3333...3333 must fail"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid checksum"
+      },
+      "tags": [
+        "error-case",
+        "electrum-ecies",
+        "decrypt-only",
+        "wrong-key"
+      ],
+      "skip": true,
+      "skip_reason": "runner dispatchECIES decrypt-only shape does not check throws; wrong-key error is tested via sdk.crypto.ecies.16 (full form with tampered_ciphertext_hex)"
+    },
+    {
+      "id": "sdk.crypto.ecies.18",
+      "description": "Electrum ECIES: ECDH no-key mode with keys 1 and 3 produces symmetric ciphertext",
+      "input": {
+        "alice_private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+        "alice_public_key": "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+        "bob_private_key": "3333333333333333333333333333333333333333333333333333333333333333",
+        "bob_public_key": "023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b1",
+        "message": "454344482073796d6d65747269632074657374",
+        "message_encoding": "hex",
+        "no_key": true
+      },
+      "expected": {
+        "ciphertext_symmetric": true,
+        "decrypted_message_utf8": "ECDH symmetric test",
+        "note": "encrypt(msg, bobPub, alicePriv, noKey=true) === encrypt(msg, alicePub, bobPriv, noKey=true)"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "ecdh",
+        "symmetric"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.19",
+      "description": "Electrum ECIES: 1KB message (1024 bytes of 0x42 = 'B'), key pair 2->A",
+      "input": {
+        "sender_private_key": "2222222222222222222222222222222222222222222222222222222222222222",
+        "sender_public_key": "02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f27",
+        "recipient_private_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recipient_public_key": "026a04ab98d9e4774ad806e302dddeb63bea16b5cb5f223ee77478e861bb583eb3",
+        "message": "42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242",
+        "message_encoding": "hex",
+        "note": "1024 bytes of 0x42"
+      },
+      "expected": {
+        "ciphertext_hex": "4249453102466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f2752ee43de5a392ffdd9e031b1af412c0e7c05620a8077fa55d4232348de5db49edfa506f6d7ada38034ddb57e6fea13b50f92186a53dce51ef1608f03218090059ee1a5ec9fc87216764c8714f7e77bf016df3bc5f3cbda43c98c5fe7345ba2769aa9b93d2bb284a5609b701b5fb75384532002dbbed50dd80c988b05b128cfb4477cff8b746e9df21cf63e177a0526882f2cc4fbe33f64bdad7d65a46a2cc2aa4e6504a00c7157728b7ba9927e8dc0fab3bf7f43734a1f3ed6f9bc124a4c2adffd2412f264f8da31df68a5f3b6f544fff042f2ce5644c340e5766fdce780b7d402055b9e00764c442ab2b9bef5815a35bedf00d150012f831804f420314cfc97a31419e65ffbd89c01abc1023ddcfb8c0da6a598e22c6ad38701c8783201e27f114934f676c3d194a0046ceecfb3f1c117bb4a30a8ffd14bc7510f51b3127bb75d298a7db764d71a5fe14f78ac222654116362d46d091d0cac98030870275520a1db8fc42c46fb8954f0f33b70a4374a161a03d31b1b492540fbe568ea3ed649fa14d13f806a948661cefadb080affe8250f40718eed69bed95b008cac91562405e72c421624f795d7786dd9d323798084f292cba2466810f7f67671213a5957daad79c9a663a0140647d4007572003a79fdbbb2199f1346b54610e5f2893615e306a6571c2ce1e8a3c879d1bcbb2c4dbe1da52dfaa402e439770552ba05e6b5f767e908649e14a2d6c0175b0efd22218d9394aef024647bb9ccbd8a88781519c10a6ef8e13bc5bd1ccc0dc61ef6580c4cdc026c39d49ef2a7499207e7916133394f1c13007eaee679ad09dc4232ca6b241d65097be9f2c16d4c5e889ff0c9d6bcca0509448c211ac8bc2c2283fdd8760dd195397617f6f6c2b7fbb3b283dd31cb27b2bd3864c4fa1f56fdafa6cd8f878f40ac592ae34822cce8cac4896a78450099660b4218b525d6adc27b0e4b4832aedbc218b0321ecdb62ce80a01371d93641b25f2537eff6fc5ae39ca088982a3d72b81745df10a37e4c096d3201eac4b77217e7958d89adb06d7de50aa8ad3d305549342d8fdaef4d71689ccd007fedb4ce29f694a798a1fa515d9c3dfa6c2fd84acf0be21b6064ae26b4fae3a1a2b7c8633be38385e7db95f63a41114d2b20707bbe2a247be4801789174bb92389b9c1bbbdc5c98d3d574e0a175bc6aeeae1da9c3ea9c71eebef53f0f64d6bff4213aaa3e7e40f2da5e222c4884c581b1c7639be366072515ae1ade2aa90935416c507930f2d59c0a5bbff076438f30c8aa80ce64f21de871ab7fce8cb41fbd2678a4cf68da38d60450ce4283df23475910b494169bef3995a138526bba04a28fdd74e1c4f2d6af107bb136d4d982ca6ea10e15d69e22f5b0f7a4b9f97afb611596d2e381033acdf97bbd6afcc8e1a9b1624d99f4a839f104e3da94bd66ee1c71f37bea3153bc1e09d62ba0f1403a40039a376914d3b408b1eea81035c0340d8d7f05c2fb4d71bd80c34fb5f9ebd9834d3a97",
+        "decrypted_message_length_bytes": 1024
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "large-message",
+        "1kb"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.20",
+      "description": "Electrum ECIES: decrypt-only known ciphertext for empty message (from sdk.crypto.ecies.9)",
+      "input": {
+        "recipient_private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+        "ciphertext_hex": "424945310268680737c76dabb801cb2204f57dbe4e4579e4f710cd67dc1b4227592c81e9b5438b92b3093b46b1f4532ec6d462b21ba33f70f3f6ae836fea8de9beb67b08bfb08ef797fa8bd2c40b7d9e9787430529"
+      },
+      "expected": {
+        "decrypted_message": ""
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "decrypt-only",
+        "empty-message"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.21",
+      "description": "Electrum ECIES: encrypt and decrypt 'encrypt and decrypt', key pair 1->A",
+      "input": {
+        "sender_private_key": "1111111111111111111111111111111111111111111111111111111111111111",
+        "sender_public_key": "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+        "recipient_private_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recipient_public_key": "026a04ab98d9e4774ad806e302dddeb63bea16b5cb5f223ee77478e861bb583eb3",
+        "message": "656e637279707420616e642064656372797074",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "ciphertext_hex": "42494531034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa47773a5316bff9e25c866c0183dfb83083c6e2778df4f518e5155f864aeb94bb2ffb3bb0a30f60f51c60ac12872ece7103662872c35c3fc922d5b2ca8ad9a152",
+        "decrypted_message": "656e637279707420616e642064656372797074"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies"
+      ]
+    },
+    {
+      "id": "sdk.crypto.ecies.22",
+      "description": "Electrum ECIES: 64-byte all-zero message, key pair A->3",
+      "input": {
+        "sender_private_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sender_public_key": "026a04ab98d9e4774ad806e302dddeb63bea16b5cb5f223ee77478e861bb583eb3",
+        "recipient_private_key": "3333333333333333333333333333333333333333333333333333333333333333",
+        "recipient_public_key": "023c72addb4fdf09af94f0c94d7fe92a386a7e70cf8a1d85916386bb2535c7b1b1",
+        "message": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "message_encoding": "hex"
+      },
+      "expected": {
+        "_roundtrip_only": true,
+        "_note": "All-zero plaintext: ciphertext is non-deterministic but decrypt must recover original"
+      },
+      "tags": [
+        "happy-path",
+        "electrum-ecies",
+        "edge-case",
+        "all-zeros",
+        "skip"
+      ]
+    }
+  ]
+}

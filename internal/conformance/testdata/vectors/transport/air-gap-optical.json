@@ -1,0 +1,454 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "transport.air-gap-optical",
+  "name": "Air-Gap Optical Transport v1 (BRC-141)",
+  "brc": ["BRC-141"],
+  "version": "1.0.0",
+  "reference_impl": "@bsv/air-gap@0.1.1",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "transport.air-gap-optical.crc32.1",
+      "description": "IEEE CRC-32 check value for ASCII \"123456789\"",
+      "input": {
+        "operation": "crc32",
+        "message_hex": "313233343536373839"
+      },
+      "expected": {
+        "crc32_hex": "cbf43926"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.length.2",
+      "description": "exact rendered part length for blockBytes 1",
+      "input": {
+        "operation": "part-char-length",
+        "block_bytes": 1
+      },
+      "expected": {
+        "chars": 40
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.length.3",
+      "description": "exact rendered part length for blockBytes 1200",
+      "input": {
+        "operation": "part-char-length",
+        "block_bytes": 1200
+      },
+      "expected": {
+        "chars": 1639
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.length.4",
+      "description": "exact rendered part length for blockBytes 2048",
+      "input": {
+        "operation": "part-char-length",
+        "block_bytes": 2048
+      },
+      "expected": {
+        "chars": 2770
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.5",
+      "description": "K=1 \"Hello\" blockBytes 8 seq 0 (systematic/fountain of a single block)",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "48656c6c6f",
+        "block_bytes": 8,
+        "session_id_hex": "0102030405060708",
+        "seq": 0
+      },
+      "expected": {
+        "part": "air-gap:AQECAwQFBgcIAAAAAAABAAAABffRiYJIZWxsbwAAAA"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.6",
+      "description": "K=1 \"Hello\" blockBytes 8 seq 1 (systematic/fountain of a single block)",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "48656c6c6f",
+        "block_bytes": 8,
+        "session_id_hex": "0102030405060708",
+        "seq": 1
+      },
+      "expected": {
+        "part": "air-gap:AQECAwQFBgcIAAAAAQABAAAABffRiYJIZWxsbwAAAA"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.7",
+      "description": "K=3 pseudo-random 10-byte message blockBytes 4 seq 0",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e",
+        "block_bytes": 4,
+        "session_id_hex": "0102030405060708",
+        "seq": 0
+      },
+      "expected": {
+        "part": "air-gap:AQECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.8",
+      "description": "K=3 pseudo-random 10-byte message blockBytes 4 seq 1",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e",
+        "block_bytes": 4,
+        "session_id_hex": "0102030405060708",
+        "seq": 1
+      },
+      "expected": {
+        "part": "air-gap:AQECAwQFBgcIAAAAAQADAAAACnLCHwuDosHg"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.9",
+      "description": "K=3 pseudo-random 10-byte message blockBytes 4 seq 2",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e",
+        "block_bytes": 4,
+        "session_id_hex": "0102030405060708",
+        "seq": 2
+      },
+      "expected": {
+        "part": "air-gap:AQECAwQFBgcIAAAAAgADAAAACnLCHwv_HgAA"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.10",
+      "description": "K=3 pseudo-random 10-byte message blockBytes 4 seq 3",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e",
+        "block_bytes": 4,
+        "session_id_hex": "0102030405060708",
+        "seq": 3
+      },
+      "expected": {
+        "part": "air-gap:AQECAwQFBgcIAAAAAwADAAAACnLCHwt8vMHg"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.11",
+      "description": "K=3 pseudo-random 10-byte message blockBytes 4 seq 4",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e",
+        "block_bytes": 4,
+        "session_id_hex": "0102030405060708",
+        "seq": 4
+      },
+      "expected": {
+        "part": "air-gap:AQECAwQFBgcIAAAABAADAAAACnLCHwsHJkVk"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.12",
+      "description": "K=5 boundary seq 3393264 — u32 modular seed (Math.imul); a float-multiply port diverges here or above",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e3d5c7b9ab9d8f7163554",
+        "block_bytes": 4,
+        "session_id_hex": "0000000000000000",
+        "seq": 3393264
+      },
+      "expected": {
+        "part": "air-gap:AQAAAAAAAAAAADPG8AAFAAAAFNHjUJUICAgI"
+      },
+      "tags": ["edge-case", "seed-precision"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.13",
+      "description": "K=5 boundary seq 3393265 — u32 modular seed (Math.imul); a float-multiply port diverges here or above",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e3d5c7b9ab9d8f7163554",
+        "block_bytes": 4,
+        "session_id_hex": "0000000000000000",
+        "seq": 3393265
+      },
+      "expected": {
+        "part": "air-gap:AQAAAAAAAAAAADPG8QAFAAAAFNHjUJX4OHg4"
+      },
+      "tags": ["edge-case", "seed-precision"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.14",
+      "description": "K=5 boundary seq 2147483647 — u32 modular seed (Math.imul); a float-multiply port diverges here or above",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e3d5c7b9ab9d8f7163554",
+        "block_bytes": 4,
+        "session_id_hex": "0000000000000000",
+        "seq": 2147483647
+      },
+      "expected": {
+        "part": "air-gap:AQAAAAAAAAAAf____wAFAAAAFNHjUJV8vPy8"
+      },
+      "tags": ["edge-case", "seed-precision"]
+    },
+    {
+      "id": "transport.air-gap-optical.encode.15",
+      "description": "K=5 boundary seq 4294967295 — u32 modular seed (Math.imul); a float-multiply port diverges here or above",
+      "input": {
+        "operation": "encode-part",
+        "message_hex": "0726456483a2c1e0ff1e3d5c7b9ab9d8f7163554",
+        "block_bytes": 4,
+        "session_id_hex": "0000000000000000",
+        "seq": 4294967295
+      },
+      "expected": {
+        "part": "air-gap:AQAAAAAAAAAA_____wAFAAAAFNHjUJUAAAAA"
+      },
+      "tags": ["edge-case", "seed-precision"]
+    },
+    {
+      "id": "transport.air-gap-optical.decode.16",
+      "description": "K=3 systematic cycle decodes to the exact message",
+      "input": {
+        "operation": "decode",
+        "parts": [
+          "air-gap:AQECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk",
+          "air-gap:AQECAwQFBgcIAAAAAQADAAAACnLCHwuDosHg",
+          "air-gap:AQECAwQFBgcIAAAAAgADAAAACnLCHwv_HgAA"
+        ]
+      },
+      "expected": {
+        "message_hex": "0726456483a2c1e0ff1e"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.decode.17",
+      "description": "K=3 fountain part substitutes for a missed systematic part",
+      "input": {
+        "operation": "decode",
+        "parts": [
+          "air-gap:AQECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk",
+          "air-gap:AQECAwQFBgcIAAAAAgADAAAACnLCHwv_HgAA",
+          "air-gap:AQECAwQFBgcIAAAAAwADAAAACnLCHwt8vMHg"
+        ]
+      },
+      "expected": {
+        "message_hex": "0726456483a2c1e0ff1e"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.decode.18",
+      "description": "single part completes a single-block message",
+      "input": {
+        "operation": "decode",
+        "parts": ["air-gap:AQECAwQFBgcIAAAAAQABAAAABffRiYJIZWxsbwAAAA"]
+      },
+      "expected": {
+        "message_hex": "48656c6c6f"
+      },
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "transport.air-gap-optical.session.19",
+      "description": "one foreign frame is rejected; the locked session still completes",
+      "input": {
+        "operation": "decode",
+        "parts": [
+          "air-gap:AQECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk",
+          "air-gap:ARESExQVFhcYAAAAAAACAAAACKdWBCgHJkVk",
+          "air-gap:AQECAwQFBgcIAAAAAQADAAAACnLCHwuDosHg",
+          "air-gap:AQECAwQFBgcIAAAAAgADAAAACnLCHwv_HgAA"
+        ]
+      },
+      "expected": {
+        "message_hex": "0726456483a2c1e0ff1e"
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.session.20",
+      "description": "three consecutive foreign parts switch the decoder to the new session",
+      "input": {
+        "operation": "decode",
+        "parts": [
+          "air-gap:AQECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk",
+          "air-gap:ARESExQVFhcYAAAAAAACAAAACKdWBCgHJkVk",
+          "air-gap:ARESExQVFhcYAAAAAQACAAAACKdWBCiDosHg",
+          "air-gap:ARESExQVFhcYAAAAAgACAAAACKdWBCiEhISE",
+          "air-gap:ARESExQVFhcYAAAAAAACAAAACKdWBCgHJkVk",
+          "air-gap:ARESExQVFhcYAAAAAQACAAAACKdWBCiDosHg"
+        ]
+      },
+      "expected": {
+        "message_hex": "0726456483a2c1e0"
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.session.21",
+      "description": "K=3 linearly dependent fountain parts stall at 1/3 recovered — recovery is probabilistic, receivers keep scanning",
+      "input": {
+        "operation": "progress",
+        "parts": [
+          "air-gap:AQAAAAAAAAAAAAAABAADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAGwADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAJgADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAOAADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAPwADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAASAADAAAAHgatDaIHJkVkg6LB4P8e"
+        ]
+      },
+      "expected": {
+        "have": 1,
+        "total": 3,
+        "done": false
+      },
+      "tags": ["edge-case", "stall"]
+    },
+    {
+      "id": "transport.air-gap-optical.session.22",
+      "description": "the stalled session completes once the remaining systematic parts arrive",
+      "input": {
+        "operation": "decode",
+        "parts": [
+          "air-gap:AQAAAAAAAAAAAAAABAADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAGwADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAJgADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAOAADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAPwADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAASAADAAAAHgatDaIHJkVkg6LB4P8e",
+          "air-gap:AQAAAAAAAAAAAAAAAQADAAAAHgatDaI9XHuaudj3FjVU",
+          "air-gap:AQAAAAAAAAAAAAAAAgADAAAAHgatDaJzkrHQ7w4tTGuK"
+        ]
+      },
+      "expected": {
+        "message_hex": "0726456483a2c1e0ff1e3d5c7b9ab9d8f71635547392b1d0ef0e2d4c6b8a"
+      },
+      "tags": ["edge-case", "stall"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.23",
+      "description": "legacy bsvpayf2 frame is not accepted",
+      "input": {
+        "operation": "accept-one",
+        "text": "bsvpayf2:AAAAAAAAAAAAAAAA"
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.24",
+      "description": "BRC-225 TKQR1 frame is not accepted",
+      "input": {
+        "operation": "accept-one",
+        "text": "TKQR1|0011223344556677|0|1|aGk="
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.25",
+      "description": "wire version 0 is rejected",
+      "input": {
+        "operation": "accept-one",
+        "text": "air-gap:AAECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk"
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.26",
+      "description": "wire version 2 is rejected",
+      "input": {
+        "operation": "accept-one",
+        "text": "air-gap:AgECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk"
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.27",
+      "description": "header-only body is rejected",
+      "input": {
+        "operation": "accept-one",
+        "text": "air-gap:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.28",
+      "description": "payload longer than MAX_BLOCK_BYTES is rejected",
+      "input": {
+        "operation": "accept-one",
+        "text": "air-gap:AQECAwQFBgcIAAAAAAADAAAACnLCHwsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.29",
+      "description": "scanned text longer than the maximum part length is rejected before decoding",
+      "input": {
+        "operation": "accept-one",
+        "text": "air-gap:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.30",
+      "description": "base64url with padding is rejected",
+      "input": {
+        "operation": "accept-one",
+        "text": "air-gap:AQECAwQFBgcIAAAAAAADAAAACnLCHwsHJkVk="
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    },
+    {
+      "id": "transport.air-gap-optical.reject.31",
+      "description": "whitespace inside the body is rejected",
+      "input": {
+        "operation": "accept-one",
+        "text": "air-gap:AQECAwQFBgcI AAAAAAADAAAACnLCHwsHJkVk"
+      },
+      "expected": {
+        "ok": false
+      },
+      "tags": ["adversarial"]
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.getheaderforheight",
+  "name": "BRC-100 getheaderforheight",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.0",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.getheaderforheight.1",
+      "description": "getHeaderForHeight height=1",
+      "input": {
+        "args": {
+          "height": 1
+        }
+      },
+      "expected": {
+        "header": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheaderforheight.2",
+      "description": "getHeaderForHeight genesis block (height=0)",
+      "input": {
+        "args": {
+          "height": 0
+        }
+      },
+      "expected": {
+        "header": "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight",
+        "genesis",
+        "edge-case"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheaderforheight.3",
+      "description": "getHeaderForHeight height=100",
+      "input": {
+        "args": {
+          "height": 100
+        }
+      },
+      "expected": {
+        "header": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheaderforheight.4",
+      "description": "getHeaderForHeight height=1000000",
+      "input": {
+        "args": {
+          "height": 1000000
+        }
+      },
+      "expected": {
+        "header": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheaderforheight.5",
+      "description": "getHeaderForHeight result shape: header is 80-byte hex",
+      "input": {
+        "args": {
+          "height": 1
+        },
+        "_schema_note": "header is always exactly 80 bytes (160 hex chars)"
+      },
+      "expected": {
+        "header": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight",
+        "schema"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheaderforheight.6",
+      "description": "getHeaderForHeight height beyond chain tip",
+      "input": {
+        "args": {
+          "height": 2147483647
+        },
+        "_scenario": "height beyond current chain tip"
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_HEADER_NOT_FOUND"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight",
+        "error"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheaderforheight.7",
+      "description": "getHeaderForHeight with originator",
+      "input": {
+        "args": {
+          "height": 10
+        },
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "header": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight",
+        "originator"
+      ]
+    },
+    {
+      "id": "wallet.brc100.getheaderforheight.8",
+      "description": "getHeaderForHeight invalid height (zero for some impls)",
+      "input": {
+        "args": {
+          "height": 0
+        },
+        "_scenario": "Some implementations start at block 1"
+      },
+      "expected": {
+        "header": "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
+      },
+      "tags": [
+        "brc-100",
+        "getHeaderForHeight",
+        "edge-case"
+      ]
+    }
+  ]
+}

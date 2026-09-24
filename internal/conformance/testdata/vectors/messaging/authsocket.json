@@ -1,0 +1,218 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "messaging.authsocket",
+  "name": "AuthSocket WebSocket Protocol",
+  "brc": ["BRC-103"],
+  "version": "1.1.0",
+  "reference_impl": "packages/messaging/authsocket",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "messaging.authsocket.1",
+      "description": "BRC-103 handshake: client sends authMessage with messageType=initialRequest over Socket.IO",
+      "input": {
+        "socketio_event": "authMessage",
+        "payload": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        }
+      },
+      "expected": {
+        "server_emits_event": "authMessage",
+        "response_shape": {
+          "messageType": "initialResponse",
+          "version": "0.1",
+          "identityKey": "string",
+          "yourNonce": "string",
+          "signature": "array",
+          "initialNonce": "string",
+          "requestedCertificates": "object"
+        }
+      },
+      "tags": ["authsocket", "brc-103", "handshake", "initial-request"]
+    },
+    {
+      "id": "messaging.authsocket.2",
+      "description": "EventEnvelope shape: application events wrapped as { eventName, data }",
+      "input": {
+        "_schema_check": true,
+        "envelope": {
+          "eventName": "message",
+          "data": {
+            "body": "hello world"
+          }
+        }
+      },
+      "expected": {
+        "valid": true,
+        "required_fields": ["eventName", "data"]
+      },
+      "tags": ["authsocket", "event-envelope", "schema"]
+    },
+    {
+      "id": "messaging.authsocket.3",
+      "description": "MessageBox 'message' event: server pushes incoming message to connected recipient",
+      "input": {
+        "socketio_event": "message",
+        "_scenario": "sender sent a message to recipient; recipient is connected via AuthSocket",
+        "payload_example": {
+          "sender": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "messageBox": "test-box",
+          "body": "hello",
+          "messageId": "msg-123"
+        }
+      },
+      "expected": {
+        "event_received": "message",
+        "payload_has_fields": ["sender", "messageBox", "body"]
+      },
+      "tags": ["authsocket", "message-event", "real-time"]
+    },
+    {
+      "id": "messaging.authsocket.4",
+      "description": "AuthMessage: messageType values are initialRequest, initialResponse, general",
+      "input": {
+        "_schema_check": true,
+        "valid_types": ["initialRequest", "initialResponse", "general"]
+      },
+      "expected": {
+        "enum": ["initialRequest", "initialResponse", "general"]
+      },
+      "tags": ["authsocket", "schema", "message-type"]
+    },
+    {
+      "id": "messaging.authsocket.5",
+      "description": "Post-handshake: application events are signed as BRC-103 general messages",
+      "input": {
+        "socketio_event": "authMessage",
+        "payload": {
+          "messageType": "general",
+          "version": "0.1",
+          "identityKey": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "nonce": "bmV3Tm9uY2U=",
+          "yourNonce": "c2VydmVyTm9uY2U=",
+          "payload": [
+            123, 34, 101, 118, 101, 110, 116, 78, 97, 109, 101, 34, 58, 34, 116, 101, 115, 116, 34,
+            125
+          ],
+          "signature": [48, 69, 2, 33, 0]
+        }
+      },
+      "expected": {
+        "server_processes": true,
+        "inner_event_extracted_from_payload": true
+      },
+      "tags": ["authsocket", "brc-103", "general-message", "post-handshake"]
+    },
+    {
+      "id": "messaging.authsocket.6",
+      "description": "Unauthenticated connection: server disconnects if handshake is not completed",
+      "input": {
+        "_scenario": "client connects but never sends authMessage event within timeout",
+        "socketio_event": null
+      },
+      "expected": {
+        "server_disconnects": true
+      },
+      "tags": ["authsocket", "error", "no-handshake"]
+    },
+    {
+      "id": "messaging.authsocket.7",
+      "description": "identityKey known server-side after handshake: stored for connection lifetime",
+      "input": {
+        "_scenario": "After successful handshake, server has client's identityKey in memory",
+        "expected_identity_key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1"
+      },
+      "expected": {
+        "identity_key_known": true,
+        "persists_for": "connection lifetime"
+      },
+      "tags": ["authsocket", "identity-key", "session"]
+    },
+    {
+      "id": "messaging.authsocket.8",
+      "description": "requestedCertificates: server may include certificate request in initialResponse",
+      "input": {
+        "socketio_event": "authMessage",
+        "payload": {
+          "messageType": "initialRequest",
+          "version": "0.1",
+          "identityKey": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "nonce": "dGVzdE5vbmNlMTIzNA==",
+          "initialNonce": "dGVzdE5vbmNlMTIzNA==",
+          "payload": [],
+          "signature": []
+        },
+        "_scenario": "server configured with certificatesToRequest"
+      },
+      "expected": {
+        "response_shape_includes": {
+          "requestedCertificates": "present"
+        }
+      },
+      "tags": ["authsocket", "brc-103", "certificates", "initial-response"]
+    },
+    {
+      "id": "messaging.authsocket.9",
+      "description": "Production server: wss://messagebox.babbage.systems, Socket.IO over WSS",
+      "input": {
+        "_schema_check": true
+      },
+      "expected": {
+        "production_url": "wss://messagebox.babbage.systems",
+        "protocol": "wss",
+        "transport": "Socket.IO"
+      },
+      "tags": ["authsocket", "schema", "server-config"]
+    },
+    {
+      "id": "messaging.authsocket.10",
+      "description": "SocketServerTransport transparent envelope: application code sees eventName+data, not raw BRC-103 payload",
+      "input": {
+        "_schema_check": true,
+        "_note": "SocketServerTransport decodes the BRC-103 general message payload to extract the EventEnvelope"
+      },
+      "expected": {
+        "application_sees": {
+          "eventName": "string",
+          "data": "any"
+        },
+        "transport_handles": "BRC-103 signing/verification"
+      },
+      "tags": ["authsocket", "schema", "transport-abstraction"]
+    },
+    {
+      "id": "messaging.authsocket.11",
+      "description": "AuthMessage schema: required fields are messageType, version, identityKey",
+      "input": {
+        "_schema_check": true,
+        "required_fields": ["messageType", "version", "identityKey"]
+      },
+      "expected": {
+        "valid": true
+      },
+      "tags": ["authsocket", "schema", "auth-message"]
+    },
+    {
+      "id": "messaging.authsocket.12",
+      "description": "PubKeyHex format over WebSocket: same 66-char hex constraint as HTTP",
+      "input": {
+        "_schema_check": true,
+        "valid_examples": [
+          "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+        ]
+      },
+      "expected": {
+        "pattern": "^0[23][0-9a-fA-F]{64}$"
+      },
+      "tags": ["authsocket", "schema", "pubkey-format"]
+    }
+  ]
+}

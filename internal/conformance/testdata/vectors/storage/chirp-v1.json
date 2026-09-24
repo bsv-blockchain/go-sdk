@@ -1,0 +1,197 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "storage.chirp-v1",
+  "name": "CHIRP v1 canonical serialization",
+  "brc": ["BRC-167", "BRC-26"],
+  "version": "1.0.0",
+  "reference_impl": "@bsv/chirp@0.1.0",
+  "parity_class": "required",
+  "schemaVersion": 1,
+  "standard": "BRC-167",
+  "profile": 1,
+  "vectors": [
+    {
+      "id": "storage.chirp-v1.empty",
+      "description": "Canonical profile 1 root for empty logical content",
+      "input": {
+        "source": { "encoding": "hex", "value": "" },
+        "mediaType": null
+      },
+      "expected": {
+        "logicalLength": "0",
+        "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "rootBytes": "434849525001000000010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8550000",
+        "rootHash": "0403640d635fd27b6c719d2b81db853483ff8d0fb46f7b90ce9f9d7e9a2729ee",
+        "rootIdentifier": "XUSvYkywHxEMvs7oiYYMV8bJ1sJjHq2mHgZvu8jSLyLhbNRVjG8E",
+        "chirpURL": "chirp://XUSvYkywHxEMvs7oiYYMV8bJ1sJjHq2mHgZvu8jSLyLhbNRVjG8E"
+      },
+      "tags": ["chirp", "profile-1", "empty", "golden"]
+    },
+    {
+      "id": "storage.chirp-v1.hello",
+      "description": "Canonical profile 1 root and blob identity for UTF-8 hello",
+      "input": {
+        "source": { "encoding": "utf8", "value": "hello" },
+        "mediaType": null
+      },
+      "expected": {
+        "logicalLength": "5",
+        "contentHash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "blobIdentifier": "XUTEaLuvEhPySbAMiJxYEhBBGb258URNoqgnaf3Ym4b2wg683ZKp",
+        "rootBytes": "4348495250010000000100000000000000052cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824010000000000000000052cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b982400",
+        "rootHash": "1731ac8562f744fdd7990a5ef69b36bc140761db5b0e2936e896021d03b276a9",
+        "rootIdentifier": "XUT4zhwjYd9NLrcGUudTnMiQ7WpA3SeEa4T7ZwrcNn85qmW1XucC",
+        "chirpURL": "chirp://XUT4zhwjYd9NLrcGUudTnMiQ7WpA3SeEa4T7ZwrcNn85qmW1XucC"
+      },
+      "tags": ["chirp", "profile-1", "single-blob", "golden"]
+    },
+    {
+      "id": "storage.chirp-v1.hello-media-type",
+      "description": "Canonical advisory mediaType extension for UTF-8 hello",
+      "input": {
+        "source": { "encoding": "utf8", "value": "hello" },
+        "mediaType": "text/plain"
+      },
+      "expected": {
+        "logicalLength": "5",
+        "contentHash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "rootBytes": "4348495250010000000100000000000000052cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824010000000000000000052cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b982401010a746578742f706c61696e",
+        "rootHash": "5493c139e9366f7c3facf9b3f28d5e0da6514fec975e70f59f5b2c3a40cd2c85",
+        "rootIdentifier": "XUTY2f2HxHyj7RDPgsSngBETiwZj58oYfjyGgfgFLsCE2y3mgrGv",
+        "chirpURL": "chirp://XUTY2f2HxHyj7RDPgsSngBETiwZj58oYfjyGgfgFLsCE2y3mgrGv"
+      },
+      "tags": ["chirp", "profile-1", "media-type", "extension", "golden"]
+    },
+    {
+      "id": "storage.chirp-v1.chunk-size-minus-one",
+      "description": "Canonical profile 1 root for chunkSize - 1 repeated bytes",
+      "input": {
+        "source": { "encoding": "repeat", "byte": 165, "length": 4194303 },
+        "mediaType": null
+      },
+      "expected": {
+        "blobCount": 1,
+        "logicalLength": "4194303",
+        "contentHash": "aa1384e02f5f4e5fb51c2a4eb94d8a638e8aa982a9f2d59250db953e54836093",
+        "rootBytes": "4348495250010000000100000000003fffffaa1384e02f5f4e5fb51c2a4eb94d8a638e8aa982a9f2d59250db953e54836093010000000000003fffffaa1384e02f5f4e5fb51c2a4eb94d8a638e8aa982a9f2d59250db953e5483609300",
+        "rootHash": "4a523d05030b9f8a501eeafb1613c8dc14d08cf194589efe99c9a7e11f9a8190",
+        "rootIdentifier": "XUTTWgYRQ1fFiP5FJMHZRfU6gMJZLpXhQNiaHjTHMmpDzBZ8LhQ6",
+        "chirpURL": "chirp://XUTTWgYRQ1fFiP5FJMHZRfU6gMJZLpXhQNiaHjTHMmpDzBZ8LhQ6"
+      },
+      "tags": ["chirp", "profile-1", "chunk-boundary", "golden"]
+    },
+    {
+      "id": "storage.chirp-v1.chunk-size",
+      "description": "Canonical profile 1 root for exactly one full chunk",
+      "input": {
+        "source": { "encoding": "repeat", "byte": 165, "length": 4194304 },
+        "mediaType": null
+      },
+      "expected": {
+        "blobCount": 1,
+        "logicalLength": "4194304",
+        "contentHash": "8c7631389970cde5de2c18211fd7b0e8f0618c6ea0221542f518ce4336149203",
+        "rootBytes": "4348495250010000000100000000004000008c7631389970cde5de2c18211fd7b0e8f0618c6ea0221542f518ce4336149203010000000000004000008c7631389970cde5de2c18211fd7b0e8f0618c6ea0221542f518ce433614920300",
+        "rootHash": "be6548f994d0a0d1d6f7b04b55b56a9ea736417c8485a6d23d23f982c0f4131b",
+        "rootIdentifier": "XUULdeVySTcA3Vx5UyeoenB57Sck8kMQ7LQjRKzfsSysziMZ16yX",
+        "chirpURL": "chirp://XUULdeVySTcA3Vx5UyeoenB57Sck8kMQ7LQjRKzfsSysziMZ16yX"
+      },
+      "tags": ["chirp", "profile-1", "chunk-boundary", "golden"]
+    },
+    {
+      "id": "storage.chirp-v1.chunk-size-plus-one",
+      "description": "Canonical profile 1 root for one full chunk plus one byte",
+      "input": {
+        "source": { "encoding": "repeat", "byte": 165, "length": 4194305 },
+        "mediaType": null
+      },
+      "expected": {
+        "blobCount": 2,
+        "logicalLength": "4194305",
+        "contentHash": "bc4b7ff66747372e6461b257591b61b2bfa17ad08d80588a0d4f1e04e92cdef3",
+        "rootBytes": "434849525001000000010000000000400001bc4b7ff66747372e6461b257591b61b2bfa17ad08d80588a0d4f1e04e92cdef3020000000000004000008c7631389970cde5de2c18211fd7b0e8f0618c6ea0221542f518ce43361492030000000000000000016922e93e3827642ce4b883c756b31abf80036649d3614bf5fcb3adda43b8ea3200",
+        "rootHash": "7104bacb5b0b8230655f234e6e01e89706a5c914c28caedae24c0645e9b31bf8",
+        "rootIdentifier": "XUTkZ9jcrErMdSL6gjLNGWMVztyrhBLdb5DuaFpEABDXVmSiswfv",
+        "chirpURL": "chirp://XUTkZ9jcrErMdSL6gjLNGWMVztyrhBLdb5DuaFpEABDXVmSiswfv"
+      },
+      "tags": ["chirp", "profile-1", "chunk-boundary", "multi-blob", "golden"]
+    },
+    {
+      "id": "storage.chirp-v1.tree-256-blobs",
+      "description": "Exactly 256 deterministic leaf references remain directly under the root",
+      "input": {
+        "leafCount": 256,
+        "logicalLength": "4194304",
+        "hashSeed": "BRC-167 canonical tree leaf"
+      },
+      "expected": { "branchCount": 0, "levelWidths": [256] }
+    },
+    {
+      "id": "storage.chirp-v1.tree-257-blobs",
+      "description": "The 257th deterministic leaf creates canonical 256-plus-1 branches",
+      "input": {
+        "leafCount": 257,
+        "logicalLength": "4194304",
+        "hashSeed": "BRC-167 canonical tree leaf"
+      },
+      "expected": {
+        "branchCount": 2,
+        "levelWidths": [257, 2],
+        "rootChildren": [
+          {
+            "childKind": 1,
+            "logicalLength": "1073741824",
+            "objectHash": "65f0e211bb73fbe7c7db0a0433d1626dc1c775821fa658bbf43175e610e44fa2"
+          },
+          {
+            "childKind": 1,
+            "logicalLength": "4194304",
+            "objectHash": "bc57e1fe69cbc6245cace01bbd61591cf81737a162707dea131b63da3f77e74e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "storage.chirp-v1.tree-multiple-branch-levels",
+      "description": "65,537 deterministic leaves produce two canonical branch levels",
+      "input": {
+        "leafCount": 65537,
+        "logicalLength": "4194304",
+        "hashSeed": "BRC-167 canonical tree leaf"
+      },
+      "expected": {
+        "branchCount": 259,
+        "levelWidths": [65537, 257, 2],
+        "rootChildren": [
+          {
+            "childKind": 1,
+            "logicalLength": "274877906944",
+            "objectHash": "9b196daab8cd5ef832093f9fadab3656e3cc2fd2256857e91956f4baacd0a0e8"
+          },
+          {
+            "childKind": 1,
+            "logicalLength": "4194304",
+            "objectHash": "cfee311fdfa2f73242c729513a301e0b670b3bd6511bce9c2f65018a2da97c53"
+          }
+        ]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "non-minimal-zero-child-count",
+      "rootBytes": "434849525001000000010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855fd000000",
+      "errorCode": "ERR_CHIRP_COMPACT_SIZE_NON_MINIMAL"
+    },
+    {
+      "name": "unknown-critical-extension",
+      "rootBytes": "434849525001000000010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85500010200",
+      "errorCode": "ERR_CHIRP_CRITICAL_EXTENSION"
+    },
+    {
+      "name": "trailing-byte",
+      "rootBytes": "434849525001000000010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855000000",
+      "errorCode": "ERR_CHIRP_TRAILING_BYTES"
+    }
+  ]
+}

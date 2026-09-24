@@ -1,0 +1,279 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "broadcast.merkle-service",
+  "name": "Merkle Service HTTP API",
+  "brc": [],
+  "version": "1.0.0",
+  "reference_impl": "go/merkle-service",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "broadcast.merkle-service.1",
+      "description": "POST /watch: register valid txid for merkle proof delivery — 200 ok",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "callbackUrl": "https://example.com/callback"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "message": "registration successful"
+        }
+      },
+      "tags": ["merkle-service", "watch", "happy-path"]
+    },
+    {
+      "id": "broadcast.merkle-service.2",
+      "description": "POST /watch: idempotent — re-registering same txid+callbackUrl is safe",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "callbackUrl": "https://example.com/callback"
+        },
+        "_scenario": "same txid+callbackUrl registered twice"
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "ok" }
+      },
+      "tags": ["merkle-service", "watch", "idempotent"]
+    },
+    {
+      "id": "broadcast.merkle-service.3",
+      "description": "POST /watch: same txid, different callbackUrl — also accepted",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "callbackUrl": "https://other-service.com/hook"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "ok" }
+      },
+      "tags": ["merkle-service", "watch", "multi-callback"]
+    },
+    {
+      "id": "broadcast.merkle-service.4",
+      "description": "POST /watch: missing txid — 400 with error message",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "callbackUrl": "https://example.com/callback"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": { "error": "txid is required" }
+      },
+      "tags": ["merkle-service", "watch", "error", "missing-txid"]
+    },
+    {
+      "id": "broadcast.merkle-service.5",
+      "description": "POST /watch: invalid txid format (not 64 hex chars) — 400",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "tooshort",
+          "callbackUrl": "https://example.com/callback"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": { "error": "invalid txid format: must be a 64-character hex string" }
+      },
+      "tags": ["merkle-service", "watch", "error", "invalid-txid"]
+    },
+    {
+      "id": "broadcast.merkle-service.6",
+      "description": "POST /watch: invalid txid — non-hex characters — 400",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "callbackUrl": "https://example.com/callback"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": { "error": "invalid txid format: must be a 64-character hex string" }
+      },
+      "tags": ["merkle-service", "watch", "error", "non-hex-txid"]
+    },
+    {
+      "id": "broadcast.merkle-service.7",
+      "description": "POST /watch: missing callbackUrl — 400",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": { "error": "callbackUrl is required" }
+      },
+      "tags": ["merkle-service", "watch", "error", "missing-callback-url"]
+    },
+    {
+      "id": "broadcast.merkle-service.8",
+      "description": "POST /watch: invalid callbackUrl (not HTTP/HTTPS) — 400",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "callbackUrl": "ftp://invalid.com/callback"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body": { "error": "invalid callbackUrl: must be a valid HTTP/HTTPS URL" }
+      },
+      "tags": ["merkle-service", "watch", "error", "invalid-callback-url"]
+    },
+    {
+      "id": "broadcast.merkle-service.9",
+      "description": "POST /watch: invalid request body (malformed JSON) — 400",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body_raw": "{ not valid json }"
+      },
+      "expected": {
+        "status": 400,
+        "body": { "error": "invalid request body" }
+      },
+      "tags": ["merkle-service", "watch", "error", "malformed-json"]
+    },
+    {
+      "id": "broadcast.merkle-service.10",
+      "description": "GET /health: all dependencies healthy — 200",
+      "input": {
+        "method": "GET",
+        "path": "/health"
+      },
+      "expected": {
+        "status": 200,
+        "body": {
+          "status": "healthy",
+          "details": {
+            "aerospike": "connected"
+          }
+        }
+      },
+      "tags": ["merkle-service", "health", "happy-path"]
+    },
+    {
+      "id": "broadcast.merkle-service.11",
+      "description": "GET /health: Aerospike connection failure — 503",
+      "input": {
+        "method": "GET",
+        "path": "/health",
+        "_scenario": "Aerospike is unreachable (e.g. connection refused)"
+      },
+      "expected": {
+        "status": 503,
+        "body": {
+          "status": "unhealthy",
+          "details": {
+            "aerospike": "connection refused"
+          }
+        }
+      },
+      "tags": ["merkle-service", "health", "error", "aerospike-down"]
+    },
+    {
+      "id": "broadcast.merkle-service.12",
+      "description": "WatchRequest schema: txid must be 64-char hex string",
+      "input": {
+        "_schema_check": true,
+        "valid_txids": [
+          "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        ],
+        "invalid_txids": [
+          "short",
+          "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2extra",
+          "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        ]
+      },
+      "expected": {
+        "pattern": "^[0-9a-fA-F]{64}$"
+      },
+      "tags": ["merkle-service", "schema", "txid-format"]
+    },
+    {
+      "id": "broadcast.merkle-service.13",
+      "description": "WatchResponse schema: { status: 'ok', message: string }",
+      "input": {
+        "_schema_check": true
+      },
+      "expected": {
+        "status": "ok",
+        "message": "registration successful"
+      },
+      "tags": ["merkle-service", "schema", "watch-response"]
+    },
+    {
+      "id": "broadcast.merkle-service.14",
+      "description": "POST /watch: callback URL with HTTP (non-HTTPS) — also accepted",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "b1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "callbackUrl": "http://internal-service.local/callback"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body": { "status": "ok" }
+      },
+      "tags": ["merkle-service", "watch", "http-callback"]
+    },
+    {
+      "id": "broadcast.merkle-service.15",
+      "description": "POST /watch: storage failure results in 500",
+      "input": {
+        "method": "POST",
+        "path": "/watch",
+        "headers": { "content-type": "application/json" },
+        "body": {
+          "txid": "c1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "callbackUrl": "https://example.com/callback"
+        },
+        "_scenario": "Aerospike write fails with internal error"
+      },
+      "expected": {
+        "status": 500,
+        "body": { "error": "internal server error" }
+      },
+      "tags": ["merkle-service", "watch", "error", "storage-failure"]
+    }
+  ]
+}

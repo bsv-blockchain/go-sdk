@@ -1,0 +1,216 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.listcertificates",
+  "name": "BRC-100 listcertificates",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.listcertificates.1",
+      "description": "listCertificates by certifier and type",
+      "input": {
+        "args": {
+          "certifiers": [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+          ],
+          "types": [
+            "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          ]
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listcertificates.2",
+      "description": "listCertificates multiple certifiers",
+      "input": {
+        "args": {
+          "certifiers": [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"
+          ],
+          "types": [
+            "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          ]
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "multi-certifier"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listcertificates.3",
+      "description": "listCertificates with limit and offset",
+      "input": {
+        "args": {
+          "certifiers": [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+          ],
+          "types": [
+            "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          ],
+          "limit": 5,
+          "offset": 0
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "pagination"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listcertificates.4",
+      "description": "listCertificates privileged request",
+      "input": {
+        "args": {
+          "certifiers": [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+          ],
+          "types": [
+            "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          ],
+          "privileged": true,
+          "privilegedReason": "admin view"
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "privileged"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listcertificates.5",
+      "description": "listCertificates result shape",
+      "input": {
+        "args": {
+          "certifiers": [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+          ],
+          "types": [
+            "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          ]
+        },
+        "_schema_note": "result: { totalCertificates: int, certificates: CertificateResult[] }"
+      },
+      "expected": {
+        "totalCertificates": 1,
+        "certificates": [
+          {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice"
+            }
+          }
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "schema",
+        "non-empty"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Expects 1 pre-stored certificate; fresh empty wallet returns 0."
+    },
+    {
+      "id": "wallet.brc100.listcertificates.6",
+      "description": "listCertificates empty certifiers",
+      "input": {
+        "args": {
+          "certifiers": [],
+          "types": []
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "empty"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listcertificates.7",
+      "description": "listCertificates limit=10000",
+      "input": {
+        "args": {
+          "certifiers": [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+          ],
+          "types": [
+            "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          ],
+          "limit": 10000
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "limit-max"
+      ]
+    },
+    {
+      "id": "wallet.brc100.listcertificates.8",
+      "description": "listCertificates with originator",
+      "input": {
+        "args": {
+          "certifiers": [
+            "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+          ],
+          "types": [
+            "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          ]
+        },
+        "originator": "app.example.com"
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "listCertificates",
+        "originator"
+      ]
+    }
+  ]
+}

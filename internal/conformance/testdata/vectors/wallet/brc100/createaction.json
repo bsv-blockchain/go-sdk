@@ -1,0 +1,4564 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.createaction",
+  "name": "BRC-100 createaction",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.createaction.1",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 0",
+          "outputs": [
+            {
+              "lockingScript": "76a914a3dbcdd15d94b7fec6f80879369cf57ffda0eeca88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "20be99adabb3c31f3219803ea1100fc4c0a5a78d8945f321a0de3c4b4f815fa1",
+        "noSendTxid": "20be99adabb3c31f3219803ea1100fc4c0a5a78d8945f321a0de3c4b4f815fa1",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.2",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 1",
+          "outputs": [
+            {
+              "lockingScript": "76a914c436cfb6ec514fdaa3dd60f30b20c76981ce92a588ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9149138bf05b5d6b85dce73220ee1c816f5c26fdf9288ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "58d32a70dfb317233458ae9ffa83b349d1e451d179373792f8c178423ab716f2",
+        "tx": "010000000002e8030000000000001976a914c436cfb6ec514fdaa3dd60f30b20c76981ce92a588ac4c040000000000001976a9149138bf05b5d6b85dce73220ee1c816f5c26fdf9288ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.3",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 2",
+          "outputs": [
+            {
+              "lockingScript": "76a914a0f148c1b586dedd76dff0b0729599cc7a62510888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9145fab529e9f1141519bb61a3a8334e84a2636fd7788ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914122212f54a94e2fb35541bb758d18089bc7f0c0688ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "51e364fe72c1e1d33a60581afc7d64cf356a9cc06bd81b18ab5a312ebe946a58",
+        "tx": "010000000003e8030000000000001976a914a0f148c1b586dedd76dff0b0729599cc7a62510888ac4c040000000000001976a9145fab529e9f1141519bb61a3a8334e84a2636fd7788acb0040000000000001976a914122212f54a94e2fb35541bb758d18089bc7f0c0688ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.4",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 3",
+          "outputs": [
+            {
+              "lockingScript": "76a9147e6f0b907848f9ff943d5ebe1e0b6ead87f97ab988ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914186bc3a7cd792cc253462b0d82a083f8edffae2688ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91461b6723f4b4ade75be6bd2b1794f477f0b6c3e2088ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914bf71192d681a90c1f0a8953ee0dd1b1c12792dc388ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "389832046fcc77ab3b1c445470c280b81d54803419f9350ab883d866c00672f7",
+        "noSendTxid": "389832046fcc77ab3b1c445470c280b81d54803419f9350ab883d866c00672f7",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.5",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 4",
+          "outputs": [
+            {
+              "lockingScript": "76a914de9d935b25236d60ad670cd6f08417aedf9384b088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "04fadd15d3854821ca20abe6630b127e34cb8e19e39c30824a0748411e0828d9",
+        "tx": "010000000001e8030000000000001976a914de9d935b25236d60ad670cd6f08417aedf9384b088ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.6",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 5",
+          "outputs": [
+            {
+              "lockingScript": "76a914c5e0bb94cf84e0f25a050ed32aa7990d8e04301988ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91458bc130be83a4d6d27d9490d2d8b0a7fcd208fc588ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "0da3abffe509fe77dea31c0519bb7348e09a563ab31549ed3f0eb943bbc95910",
+        "tx": "010000000002e8030000000000001976a914c5e0bb94cf84e0f25a050ed32aa7990d8e04301988ac4c040000000000001976a91458bc130be83a4d6d27d9490d2d8b0a7fcd208fc588ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.7",
+      "description": "createAction with 3 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 6",
+          "outputs": [
+            {
+              "lockingScript": "76a914feea16f36b988421a0821874e36a189a467eda2888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914af52cd1a787f3b3bb6d8bcc2978a2ec7fcd65f1e88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914d66f37bb2c943738c482030b394dea5e8e1a2b9088ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "6962e7062f699b80c02437d8311e1a9118073eedcd7ffdca04608141d96c9152",
+        "noSendTxid": "6962e7062f699b80c02437d8311e1a9118073eedcd7ffdca04608141d96c9152",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.8",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 7",
+          "outputs": [
+            {
+              "lockingScript": "76a914d4ec0fd3a52b17927057cb1379c953fcb8b74adf88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9143eb144e956a54640e8c2260f40abc11c135352aa88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91409e3545184e051e3b7a390fed1c44d8079dd2cd288ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a91469f4b9629057f160caae518ee708223c82352a1488ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "bcf709a91dd49b39adb57198b2f94bf4a7f23bcfb4dba993becda5459b645d81",
+        "tx": "010000000004e8030000000000001976a914d4ec0fd3a52b17927057cb1379c953fcb8b74adf88ac4c040000000000001976a9143eb144e956a54640e8c2260f40abc11c135352aa88acb0040000000000001976a91409e3545184e051e3b7a390fed1c44d8079dd2cd288ac14050000000000001976a91469f4b9629057f160caae518ee708223c82352a1488ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.9",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 8",
+          "outputs": [
+            {
+              "lockingScript": "76a91459d893f97aaeda3a116dd15b1f13b39513a2840288ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "91b4ef352dd87fd3ee23b1ec87bb9bc7a60bacc5f682ce3dced09bfa3ff9e20c",
+        "tx": "010000000001e8030000000000001976a91459d893f97aaeda3a116dd15b1f13b39513a2840288ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.10",
+      "description": "createAction with 2 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 9",
+          "outputs": [
+            {
+              "lockingScript": "76a9147cb76faa3ac5793496816ed7348a16211f06059088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914829f97239f1c8d77bf1a11cf0b79d3654ec2c33988ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "ad68cf4e4b588ad5a74bc54534a6c4db8086869031a10c7ce2882eb9598f2b6d",
+        "noSendTxid": "ad68cf4e4b588ad5a74bc54534a6c4db8086869031a10c7ce2882eb9598f2b6d",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.11",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 10",
+          "outputs": [
+            {
+              "lockingScript": "76a9141955b6962018bee093336ab354497b4005c44e5888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91454eb8e657cc0ab125e749cb0f1daa1d6ad497d3688ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914daf2fb6b7caf6e499932188c9a46923a745a11ca88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "553df299613c63c177386e9cee9a3f9254282523c611f33cbe449c72e1ba7c04",
+        "tx": "010000000003e8030000000000001976a9141955b6962018bee093336ab354497b4005c44e5888ac4c040000000000001976a91454eb8e657cc0ab125e749cb0f1daa1d6ad497d3688acb0040000000000001976a914daf2fb6b7caf6e499932188c9a46923a745a11ca88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.12",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 11",
+          "outputs": [
+            {
+              "lockingScript": "76a914c2735a9ee20f6d05ed266b807f6dda3e0ca1f07a88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914ca146b69583a9b8fd65f12044d9b4a258c2744c288ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914dc04a17ca440108637c08021646533f4ab8180ba88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9149bcec7f0198b6f74c0372e15b62876149f0fdc8888ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "2edb52f8a591f2e66d54067ab51e58d5fd3de429751946297d1638dab41a0752",
+        "tx": "010000000004e8030000000000001976a914c2735a9ee20f6d05ed266b807f6dda3e0ca1f07a88ac4c040000000000001976a914ca146b69583a9b8fd65f12044d9b4a258c2744c288acb0040000000000001976a914dc04a17ca440108637c08021646533f4ab8180ba88ac14050000000000001976a9149bcec7f0198b6f74c0372e15b62876149f0fdc8888ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.13",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 12",
+          "outputs": [
+            {
+              "lockingScript": "76a91489f4e2c1dd2a50aeb418bed937c1f0365d5c39e388ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "391f866325848a3ba88e9c1561724addb912db39c9b6ec33a8cd1f25d6075ef2",
+        "noSendTxid": "391f866325848a3ba88e9c1561724addb912db39c9b6ec33a8cd1f25d6075ef2",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.14",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 13",
+          "outputs": [
+            {
+              "lockingScript": "76a9146da615bb23dce23390eea284641e755c2d6f49af88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91417be67526ef45a6403f8a6738d6e9ee79a2e2cb188ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "3d7104fba7c805d05f791279bdb07780c5c874cdf4ac9443422cc044c660ac3e",
+        "tx": "010000000002e8030000000000001976a9146da615bb23dce23390eea284641e755c2d6f49af88ac4c040000000000001976a91417be67526ef45a6403f8a6738d6e9ee79a2e2cb188ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.15",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 14",
+          "outputs": [
+            {
+              "lockingScript": "76a914b5d7cc662f7892d2164f7d12bd8f40ffcdb98e9988ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914de1bce26d75b14ae3e56111f78d30d5f6341398388ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914e7e6de811d98ab1be285101539fffc663a84611388ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "c5a31f2a24edf28f3140f596dadaf413e9080be7ce73268ae68d741df24d519a",
+        "tx": "010000000003e8030000000000001976a914b5d7cc662f7892d2164f7d12bd8f40ffcdb98e9988ac4c040000000000001976a914de1bce26d75b14ae3e56111f78d30d5f6341398388acb0040000000000001976a914e7e6de811d98ab1be285101539fffc663a84611388ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.16",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 15",
+          "outputs": [
+            {
+              "lockingScript": "76a9141c0e90d3952ad84de75047b698138365ae9252c688ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91492ace4208d7ac011c3baf99b2060521c0a3cec5c88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9149970f1419ea91e75190aa83c087324595e6293e788ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9142101bb61f764c2a5d48ce13935466a702f4f8ac888ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "63f4fe2ec9d6ff9a03325d9b6b1e3819d05a715ec7685011a2cd769314692fe7",
+        "noSendTxid": "63f4fe2ec9d6ff9a03325d9b6b1e3819d05a715ec7685011a2cd769314692fe7",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.17",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 16",
+          "outputs": [
+            {
+              "lockingScript": "76a91484e48c52a25cc1a9a07b060b498cca8fd6497d6788ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "5c5906a46f2959a089eac8aae739a03a1ab4ae61f668db87adc0195e49e67cae",
+        "tx": "010000000001e8030000000000001976a91484e48c52a25cc1a9a07b060b498cca8fd6497d6788ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.18",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 17",
+          "outputs": [
+            {
+              "lockingScript": "76a914a895e3e8600efee553d5587dab5522c5b1ed67a788ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914c643929afa74ca563f540a8f45ccf252f59c09ba88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "b6748b46b5b0cfdf5e91653e8634d36ecacbbb9fb995709b7f6d69d3f128dac9",
+        "tx": "010000000002e8030000000000001976a914a895e3e8600efee553d5587dab5522c5b1ed67a788ac4c040000000000001976a914c643929afa74ca563f540a8f45ccf252f59c09ba88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.19",
+      "description": "createAction with 3 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 18",
+          "outputs": [
+            {
+              "lockingScript": "76a914c43992e8e7c5498711e37b998b5392ba3a83a07588ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91429470c09a7565a85b05847c720cf8fa678ca221888ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914007732188cef9f7a469cc290dec9bb74ecf0d68788ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "93f7ccb6c41db7dae57d0b6340d29e1f47707e52da5e1fa4c465e75ea3773772",
+        "noSendTxid": "93f7ccb6c41db7dae57d0b6340d29e1f47707e52da5e1fa4c465e75ea3773772",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.20",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 19",
+          "outputs": [
+            {
+              "lockingScript": "76a9144314d388730d399cbb82bb6057d098371e4dc07888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9146c0ede74788197a3fc9cf7fa6b30e86ecb60a2d488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91491602f2dde5dcac0186714fc4ff2c44c6b5f42e088ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914fe5e309fdea4a1fd4fb38f88588a67400c40ea0b88ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "c4a118bed5ca69ef16ed8ec7693f346d5c72a83012dfae3b16495ef0a80be33a",
+        "tx": "010000000004e8030000000000001976a9144314d388730d399cbb82bb6057d098371e4dc07888ac4c040000000000001976a9146c0ede74788197a3fc9cf7fa6b30e86ecb60a2d488acb0040000000000001976a91491602f2dde5dcac0186714fc4ff2c44c6b5f42e088ac14050000000000001976a914fe5e309fdea4a1fd4fb38f88588a67400c40ea0b88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.21",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 20",
+          "outputs": [
+            {
+              "lockingScript": "76a9147535a10d2b435c5fa0b17bbab5a9b622d21c7e6c88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "e9e95ed8eeb99de0c913326d895ef6d7ece6977a291e1ac0092644974cf4ee69",
+        "tx": "010000000001e8030000000000001976a9147535a10d2b435c5fa0b17bbab5a9b622d21c7e6c88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.22",
+      "description": "createAction with 2 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 21",
+          "outputs": [
+            {
+              "lockingScript": "76a914010fdeb35f8878c7b3d6d75d4cf73e8e605575f188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914f21d98711d05bf3b46ac6fd8339fd7e392bd2c2488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "50330611787287e28622fa113fb4e0afabdf8546fb7ca994327f14faa739787d",
+        "noSendTxid": "50330611787287e28622fa113fb4e0afabdf8546fb7ca994327f14faa739787d",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.23",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 22",
+          "outputs": [
+            {
+              "lockingScript": "76a9145e5c4c35fd10d4f10366572bc2a0cb5a7912e20588ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9144d7c8b1d1783e2cf8f504c706670c650b16b4f4688ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91407af2d7e9fe456166002c727ef70454e06009f7288ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "3298afd836d72e4a4634cb7f63e6e449922f20c9621fc9bd73052cba569211ab",
+        "tx": "010000000003e8030000000000001976a9145e5c4c35fd10d4f10366572bc2a0cb5a7912e20588ac4c040000000000001976a9144d7c8b1d1783e2cf8f504c706670c650b16b4f4688acb0040000000000001976a91407af2d7e9fe456166002c727ef70454e06009f7288ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.24",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 23",
+          "outputs": [
+            {
+              "lockingScript": "76a914632094aef99904c82995ae9193619547aa8479e088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9145eb5b0188101197473407b1b36e031ebc06a9eb488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9144d00b0ebe06d8c334b2bbc53c79ccc01ba49d4a588ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a91435ed44ec7aebac2186fa1e1ecb761b305a3263de88ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "7987dce878a1add125773bc1634d386efc876221418b60d305f667252e059c57",
+        "tx": "010000000004e8030000000000001976a914632094aef99904c82995ae9193619547aa8479e088ac4c040000000000001976a9145eb5b0188101197473407b1b36e031ebc06a9eb488acb0040000000000001976a9144d00b0ebe06d8c334b2bbc53c79ccc01ba49d4a588ac14050000000000001976a91435ed44ec7aebac2186fa1e1ecb761b305a3263de88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.25",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 24",
+          "outputs": [
+            {
+              "lockingScript": "76a914c0949e7bb7ff1ba17af71999c7e24bda010842bc88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "f78b25c0e3cb58f42c7a7f0d07f13e9614c4fb1bb513161f9eba41b2ea7984cb",
+        "noSendTxid": "f78b25c0e3cb58f42c7a7f0d07f13e9614c4fb1bb513161f9eba41b2ea7984cb",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.26",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 25",
+          "outputs": [
+            {
+              "lockingScript": "76a914a4be510733510612dff1341f679f63a334ad048e88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914fb66c26a9cc22ea1416ca45408f5a8dfc9c03e9c88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "f2ec2b868b10d5099f0a8cf9dc9e15702046eadbdf36d0da30f7a9bdec9d0b49",
+        "tx": "010000000002e8030000000000001976a914a4be510733510612dff1341f679f63a334ad048e88ac4c040000000000001976a914fb66c26a9cc22ea1416ca45408f5a8dfc9c03e9c88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.27",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 26",
+          "outputs": [
+            {
+              "lockingScript": "76a914a34c75dd0444515af97ef9c4274b0c97b80a656888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91457313966050db75396cfb7ef65601eacbfa9a76588ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9142160179030e28f100a431132e2f3894ee56de47d88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "14ae362f37b2c105d341813e29e2ee23994e91a40314e1bbaae5774c02f6c891",
+        "tx": "010000000003e8030000000000001976a914a34c75dd0444515af97ef9c4274b0c97b80a656888ac4c040000000000001976a91457313966050db75396cfb7ef65601eacbfa9a76588acb0040000000000001976a9142160179030e28f100a431132e2f3894ee56de47d88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.28",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 27",
+          "outputs": [
+            {
+              "lockingScript": "76a91499c626b61c83123c7de8819f215c55dfa0a17f4788ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91452fb1f0d0a43e35f7e2d84be55b45b94ae21959988ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91485ecb785029802ad2a686f0d3bfe8c4cad33e04888ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914e8ec26f8cfdbaa1bd4b73aa2e9df3e8928c0bd1288ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "36cc4ba8de3452e5f1052fbc301e8c308292995f70c50ac4c2928473b91c6ca2",
+        "noSendTxid": "36cc4ba8de3452e5f1052fbc301e8c308292995f70c50ac4c2928473b91c6ca2",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.29",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 28",
+          "outputs": [
+            {
+              "lockingScript": "76a914b02d9581b65ff8e3319c3e0bde7c405beeec7ba188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "0fe81d183b9d5118e6ed7b334b97d132c61c0443cdad355144d8a6bb3c06802f",
+        "tx": "010000000001e8030000000000001976a914b02d9581b65ff8e3319c3e0bde7c405beeec7ba188ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.30",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000001",
+        "args": {
+          "description": "test createAction 29",
+          "outputs": [
+            {
+              "lockingScript": "76a91430cd50b67c1eceeaeb51946e6b1595063584ce9e88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914c271196aedd73835d7a088afc8325c3ad57fcf5f88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "38cd828ae219f1907aec181c513abb76790825000942675e2100a41b7e1cd908",
+        "tx": "010000000002e8030000000000001976a91430cd50b67c1eceeaeb51946e6b1595063584ce9e88ac4c040000000000001976a914c271196aedd73835d7a088afc8325c3ad57fcf5f88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.31",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 0",
+          "outputs": [
+            {
+              "lockingScript": "76a914b7588caa927f75767bc59e87cc99dd4e675e1fe388ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "bf799f03173368ff0f08983c82234194af583d3ca853510de187921bf35fba9b",
+        "noSendTxid": "bf799f03173368ff0f08983c82234194af583d3ca853510de187921bf35fba9b",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.32",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 1",
+          "outputs": [
+            {
+              "lockingScript": "76a914b8edc42e8c4dd5eb3cd43ca3415609e1e64392cf88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914fcd28354f5fe493e0b1953f129550740da4b5bff88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "8c7d1843170277acc41d836a76ad38d358322a0e40807a57f7f33de9225a4fa8",
+        "tx": "010000000002e8030000000000001976a914b8edc42e8c4dd5eb3cd43ca3415609e1e64392cf88ac4c040000000000001976a914fcd28354f5fe493e0b1953f129550740da4b5bff88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.33",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 2",
+          "outputs": [
+            {
+              "lockingScript": "76a914e570ea109947e36572c4e48123ed3c3ad039de8088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914e5605f7452d27546f2debd23148fb6262f1bb52488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914afa22e32d8080c8a3208f6ba62351ebaef2ab99888ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "be009c055da41446f0970175126bbcb5c414d59c9013f09c355c00de545d503c",
+        "tx": "010000000003e8030000000000001976a914e570ea109947e36572c4e48123ed3c3ad039de8088ac4c040000000000001976a914e5605f7452d27546f2debd23148fb6262f1bb52488acb0040000000000001976a914afa22e32d8080c8a3208f6ba62351ebaef2ab99888ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.34",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 3",
+          "outputs": [
+            {
+              "lockingScript": "76a914fef5907c2898f5361d45f00460aef32622e7eb6188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9143928d695c0aa7c9bf7f40b970a474bc827ef483f88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914fb88170cde096087241600304a98e1c74410557588ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914c1b254f14772674e1193aa925d502f0509d4ac5f88ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "f8bad70f31b1c7f6899b322e862cf7f21f82634043595198986c09f368787f32",
+        "noSendTxid": "f8bad70f31b1c7f6899b322e862cf7f21f82634043595198986c09f368787f32",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.35",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 4",
+          "outputs": [
+            {
+              "lockingScript": "76a914829be6f1fe7a832e909ced9ccbaa3d342cc2b59e88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "06b259a644e8af6f8d90da31a67291a6ce14a1143900f06fc255e9edc2e89b3c",
+        "tx": "010000000001e8030000000000001976a914829be6f1fe7a832e909ced9ccbaa3d342cc2b59e88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.36",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 5",
+          "outputs": [
+            {
+              "lockingScript": "76a914e6f0e57e36abd08666a622a748cb2561a770570c88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914e90d018dbac89951e688fe7bda7800478e7ab7d488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "861336a7233d2e6bcbdb32bf3fee90bbbe95721934d0bc03d38020be43a0f569",
+        "tx": "010000000002e8030000000000001976a914e6f0e57e36abd08666a622a748cb2561a770570c88ac4c040000000000001976a914e90d018dbac89951e688fe7bda7800478e7ab7d488ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.37",
+      "description": "createAction with 3 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 6",
+          "outputs": [
+            {
+              "lockingScript": "76a914f411af137a950091e8ee2a376515f769f17ec79f88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9147757ffe9a745ca19f2db625a86733c80f76dbe8a88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914e9e929ef47d8252b61112edfe84b296aad74b81588ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "a294642ebb055ef45c3aedd636a0b8c7a3f652ffebc12e54683d2b2c2e46e52c",
+        "noSendTxid": "a294642ebb055ef45c3aedd636a0b8c7a3f652ffebc12e54683d2b2c2e46e52c",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.38",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 7",
+          "outputs": [
+            {
+              "lockingScript": "76a9143abc8b3bf7fec5f9d492d78c8a9de54dd3b3a3be88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914f5404c1956180e7267cd837a542a0e014208566a88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914e6fe88ac5e675343e0308ad5014245621526938e88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9145aab3ad600eb8ca60253ced2ae5c03f4991ff4a288ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "d6a3452bb8c5b15ba34845bdd47d68cdd30a891df4267680fd7eb8b37cac189d",
+        "tx": "010000000004e8030000000000001976a9143abc8b3bf7fec5f9d492d78c8a9de54dd3b3a3be88ac4c040000000000001976a914f5404c1956180e7267cd837a542a0e014208566a88acb0040000000000001976a914e6fe88ac5e675343e0308ad5014245621526938e88ac14050000000000001976a9145aab3ad600eb8ca60253ced2ae5c03f4991ff4a288ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.39",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 8",
+          "outputs": [
+            {
+              "lockingScript": "76a914c9a8964a461f902355ba655e832bd8411750901a88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "2c272cd9f779aba22d6d7ff295fb77f558bb908aeb7aa42a3343394443f8dddd",
+        "tx": "010000000001e8030000000000001976a914c9a8964a461f902355ba655e832bd8411750901a88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.40",
+      "description": "createAction with 2 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 9",
+          "outputs": [
+            {
+              "lockingScript": "76a914a7a51675eee37394001c1d6cbbccdf97f475739488ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914ba8e9782ff16f9efaecfd39a696cc3dabc2da8b588ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "32a122e7d2c8415b1e37a9189473b313270679b007a3e46393eec2a8cc41728d",
+        "noSendTxid": "32a122e7d2c8415b1e37a9189473b313270679b007a3e46393eec2a8cc41728d",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.41",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 10",
+          "outputs": [
+            {
+              "lockingScript": "76a914c1bd264813c7c7a33e9f39f026d3d055203105b188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9140118f373bda243ce9c1cffa1c3308439426ac36888ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914466409a2da46f24b34838bedce7851f42c0c556a88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "65f6de113a9054bdc09eb0dbd4a4571191b0152d00f32e5031832bda7142eb83",
+        "tx": "010000000003e8030000000000001976a914c1bd264813c7c7a33e9f39f026d3d055203105b188ac4c040000000000001976a9140118f373bda243ce9c1cffa1c3308439426ac36888acb0040000000000001976a914466409a2da46f24b34838bedce7851f42c0c556a88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.42",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 11",
+          "outputs": [
+            {
+              "lockingScript": "76a914534bf3a69dcdeaf98a0649ad1ecd28d6846c2d2b88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914640dd99ea2c57c0e026712d54f04fa6b937ca73b88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914eeecacbf56f083a605a951a61106800e526bcd4f88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9146e973a234569510cba3ae9d586eaac9afecfada788ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "5f59ad7dde645d76dd1dc4ebfa5208a9d5e2ceb024ff27006bfcf65c93376987",
+        "tx": "010000000004e8030000000000001976a914534bf3a69dcdeaf98a0649ad1ecd28d6846c2d2b88ac4c040000000000001976a914640dd99ea2c57c0e026712d54f04fa6b937ca73b88acb0040000000000001976a914eeecacbf56f083a605a951a61106800e526bcd4f88ac14050000000000001976a9146e973a234569510cba3ae9d586eaac9afecfada788ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.43",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 12",
+          "outputs": [
+            {
+              "lockingScript": "76a91453738eb364996e05b4c3c3ed415096a253133dbc88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "1ebe617ed101e42566d6a1adb22605bd2c078b268e6a8669bc997aa27dcc5930",
+        "noSendTxid": "1ebe617ed101e42566d6a1adb22605bd2c078b268e6a8669bc997aa27dcc5930",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.44",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 13",
+          "outputs": [
+            {
+              "lockingScript": "76a914e82ea28d8ea0980308b0d0d0548539975f68ba1388ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9141783d785af625d744498baf0e3641d37eabb457888ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "d6d357498bcc97f1ed87f85660cefb97b67a39a8bdba1e7c4954fed05479a948",
+        "tx": "010000000002e8030000000000001976a914e82ea28d8ea0980308b0d0d0548539975f68ba1388ac4c040000000000001976a9141783d785af625d744498baf0e3641d37eabb457888ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.45",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 14",
+          "outputs": [
+            {
+              "lockingScript": "76a9141372a90040ba161d3d8114efa1fa98c45648597288ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91434cb2c03df6f0add490ec4c819a023fd8c3ec9cd88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914ccd64f7812945db3d2361a5cd8b607e0fa47f88a88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "9e310cb2058f60e0bbb48c5b50cd60e4d96eb1b9aa7990db54afacdcefe701db",
+        "tx": "010000000003e8030000000000001976a9141372a90040ba161d3d8114efa1fa98c45648597288ac4c040000000000001976a91434cb2c03df6f0add490ec4c819a023fd8c3ec9cd88acb0040000000000001976a914ccd64f7812945db3d2361a5cd8b607e0fa47f88a88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.46",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 15",
+          "outputs": [
+            {
+              "lockingScript": "76a914d08928dac839d4fe451c2444531bb1cf1ed9c23988ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914055c4e2b4988b9442405d1fe45b4afaed15dbfed88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9140d99ca2fdf100b5de41ee32d667f47452deb244188ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914d05dbab629c389bd6b2146993787d545cb586b4488ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "51d634d2e9a5ae456bd3e004ea58d694cecbedd9c34187df4526a9fef8f9a751",
+        "noSendTxid": "51d634d2e9a5ae456bd3e004ea58d694cecbedd9c34187df4526a9fef8f9a751",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.47",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 16",
+          "outputs": [
+            {
+              "lockingScript": "76a914bf21993729aab1f920f33974d665aec6cecddd3f88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "102fb22c774e504a42c8cd0679bab5c60a1d8a1e0ea53dd91bfa059f8c3ba3e0",
+        "tx": "010000000001e8030000000000001976a914bf21993729aab1f920f33974d665aec6cecddd3f88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.48",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 17",
+          "outputs": [
+            {
+              "lockingScript": "76a91471c0090a8ec0556fa1ec4326784d56a37396f74188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914bd8585eebb635fb102abf4a2c5139a88ff0ba4f988ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "b9b7f1e19f90d24c1435ed85f0dd9ca09d634c7d749698675c8f0d518efd3ae0",
+        "tx": "010000000002e8030000000000001976a91471c0090a8ec0556fa1ec4326784d56a37396f74188ac4c040000000000001976a914bd8585eebb635fb102abf4a2c5139a88ff0ba4f988ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.49",
+      "description": "createAction with 3 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 18",
+          "outputs": [
+            {
+              "lockingScript": "76a914d6d786dee6c9d5ae5e435dd23c170757fe31f85388ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9149dd8e54a38c66761c1f08b945303e3b922949f2688ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9143bfc02312c3015d4a745044731e831239f3bb71b88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "a6508c02b68417b9ad5b9a59ce550099a956b457e4265937bc7fdbad658cf274",
+        "noSendTxid": "a6508c02b68417b9ad5b9a59ce550099a956b457e4265937bc7fdbad658cf274",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.50",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 19",
+          "outputs": [
+            {
+              "lockingScript": "76a91432cedf8d7db92dd4179e270d8236cfe856842f8188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9145eb789eb4958d93d534b3eece0d5a984a5d155bf88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914113c5db04e7ca8167092762375fffd77d591627588ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a91460234c36cf5c0603fc926fb0ef30016e4235e3fe88ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "3e1bb141b8abaedb373cf1fe26ad326986b5131f54c0274acee90786e3f4e137",
+        "tx": "010000000004e8030000000000001976a91432cedf8d7db92dd4179e270d8236cfe856842f8188ac4c040000000000001976a9145eb789eb4958d93d534b3eece0d5a984a5d155bf88acb0040000000000001976a914113c5db04e7ca8167092762375fffd77d591627588ac14050000000000001976a91460234c36cf5c0603fc926fb0ef30016e4235e3fe88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.51",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 20",
+          "outputs": [
+            {
+              "lockingScript": "76a9144ada6f930c1347f2488450dfef1f59b540d0ce3888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "5ffe2e255ee25f377584971c77b4fea5285e5932b9a5da3c4e643b4d093c3627",
+        "tx": "010000000001e8030000000000001976a9144ada6f930c1347f2488450dfef1f59b540d0ce3888ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.52",
+      "description": "createAction with 2 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 21",
+          "outputs": [
+            {
+              "lockingScript": "76a914aca1072780f14e677b5524957fdeb638a586122988ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914490356809b743ebb0a385a86e2011854694576c788ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "dccd117fb6275c5f0381946b47f79bcfaef82928abdc4cd44b66d4a318149ca8",
+        "noSendTxid": "dccd117fb6275c5f0381946b47f79bcfaef82928abdc4cd44b66d4a318149ca8",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.53",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 22",
+          "outputs": [
+            {
+              "lockingScript": "76a914212f03db9ea183eb8bf27b6a828659d1840bc7ca88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91425fe7a9c039941defe1d85d63af96470bc052b7488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914ea8fcbcdcb1d45aadd016195b50d9f554e74c3a988ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "93b5aca157f10d165c5274984e4efc3ffff3422bebd0e2eb1ff1acefa16917bf",
+        "tx": "010000000003e8030000000000001976a914212f03db9ea183eb8bf27b6a828659d1840bc7ca88ac4c040000000000001976a91425fe7a9c039941defe1d85d63af96470bc052b7488acb0040000000000001976a914ea8fcbcdcb1d45aadd016195b50d9f554e74c3a988ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.54",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 23",
+          "outputs": [
+            {
+              "lockingScript": "76a914e3e4e092e5252ea7b2f71d83e821157bc0d9ef1b88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9141f88adaefb5bded9f505f8760d6368cc640841c688ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9143ea2ed11a6efa6c34441d6086afe9a1e50037a0e88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9141f407d6a37cc81fa55c1e2b02f0af7d3ceb5fbf688ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "c45b7393012967a8608a80e5ca75f5915298af1bead6030563c01f2af70e8e48",
+        "tx": "010000000004e8030000000000001976a914e3e4e092e5252ea7b2f71d83e821157bc0d9ef1b88ac4c040000000000001976a9141f88adaefb5bded9f505f8760d6368cc640841c688acb0040000000000001976a9143ea2ed11a6efa6c34441d6086afe9a1e50037a0e88ac14050000000000001976a9141f407d6a37cc81fa55c1e2b02f0af7d3ceb5fbf688ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.55",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 24",
+          "outputs": [
+            {
+              "lockingScript": "76a9145dfc3f419bedf96258dcc81882206154a2050d5088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "ac14a4e711aa27c652f10f7cb7b9968f09d749dbcc986564a808a4c1ace796b3",
+        "noSendTxid": "ac14a4e711aa27c652f10f7cb7b9968f09d749dbcc986564a808a4c1ace796b3",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.56",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 25",
+          "outputs": [
+            {
+              "lockingScript": "76a914f80f761e0e9f604e09d511e4feabc3b7c8cd1a7088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914980286f6f574c76ee40e86242dafe52fdfe1c1be88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "4307a815c91504793092ea80a8089181747c2fccee39bd9bd5b24b88114b85c3",
+        "tx": "010000000002e8030000000000001976a914f80f761e0e9f604e09d511e4feabc3b7c8cd1a7088ac4c040000000000001976a914980286f6f574c76ee40e86242dafe52fdfe1c1be88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.57",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 26",
+          "outputs": [
+            {
+              "lockingScript": "76a914a8ac65b2ded2304fb2beacea106ed5c43c2cc99788ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9142d0cd0a7beb34282de1ea395045b3f0f43ddb89d88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914fa4da2f0f17fffef68078f1c5ca5e080c1281b2288ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "43e1182ba809245e62fa1614f9beafd054936ebdbf23ec6c5aec4b6a822f6c0b",
+        "tx": "010000000003e8030000000000001976a914a8ac65b2ded2304fb2beacea106ed5c43c2cc99788ac4c040000000000001976a9142d0cd0a7beb34282de1ea395045b3f0f43ddb89d88acb0040000000000001976a914fa4da2f0f17fffef68078f1c5ca5e080c1281b2288ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.58",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 27",
+          "outputs": [
+            {
+              "lockingScript": "76a91451e4d6b924a65ab8d2499a1592c46316c10f6f1688ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9148f7d3a5a1f7197180283ebb34e8090fbec6acd1088ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9144e99ed4c847741a28d3ae32f63b65fa6265f0a6d88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914acfd5c8f27ee4fa9d4df67115beca716671f71c888ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "802fd9d2625acbd38c5ea35b2a9615ce9ba150dbb14238b1b800009fd4c85ab4",
+        "noSendTxid": "802fd9d2625acbd38c5ea35b2a9615ce9ba150dbb14238b1b800009fd4c85ab4",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.59",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 28",
+          "outputs": [
+            {
+              "lockingScript": "76a914f38450d15e09420f6a59eb030acecd7fe3cb4c6d88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "433f153ed795725a353ae769585802f3501dff16663330ddffbece165ef7f9b0",
+        "tx": "010000000001e8030000000000001976a914f38450d15e09420f6a59eb030acecd7fe3cb4c6d88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.60",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000002",
+        "args": {
+          "description": "test createAction 29",
+          "outputs": [
+            {
+              "lockingScript": "76a914f902ed8e6fcce9965d7f80264428608b29088b1888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9147903f45e57f7beb492640009b2151f3872413cbc88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "183564efc921045507366b79b7d7a11ecb60d5cee1d5820ba4ee532550994894",
+        "tx": "010000000002e8030000000000001976a914f902ed8e6fcce9965d7f80264428608b29088b1888ac4c040000000000001976a9147903f45e57f7beb492640009b2151f3872413cbc88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.61",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 0",
+          "outputs": [
+            {
+              "lockingScript": "76a91405c1cec2498637fa44cb5f80ceebcb525661bd3a88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "0e724123e4240e95ef8cb76e010fea0476d82d6a646496f7533a1348c31b0f6d",
+        "noSendTxid": "0e724123e4240e95ef8cb76e010fea0476d82d6a646496f7533a1348c31b0f6d",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.62",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 1",
+          "outputs": [
+            {
+              "lockingScript": "76a914f66070dc1af5a7dea434f0622c02a34a4be6f53188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91403ddbebc40a950c16b6f137674f415b2913c6b0088ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "77b26497d60795e70e516ceb54c007ad6da92eb5105ca4e90b1e430bae501998",
+        "tx": "010000000002e8030000000000001976a914f66070dc1af5a7dea434f0622c02a34a4be6f53188ac4c040000000000001976a91403ddbebc40a950c16b6f137674f415b2913c6b0088ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.63",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 2",
+          "outputs": [
+            {
+              "lockingScript": "76a914845fcb1755194cdf950509f29f6262d19b4155d388ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9144656d59854216910a1c456b82f584be71d185cbb88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914b0c1eab3dcae6b2d511b25bfd8f10618bb91516688ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "958ec8d1f54cbb0211dbf5e6f2a9cdd6107cd4e60c09a76e6fb59fcb0a75a6c8",
+        "tx": "010000000003e8030000000000001976a914845fcb1755194cdf950509f29f6262d19b4155d388ac4c040000000000001976a9144656d59854216910a1c456b82f584be71d185cbb88acb0040000000000001976a914b0c1eab3dcae6b2d511b25bfd8f10618bb91516688ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.64",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 3",
+          "outputs": [
+            {
+              "lockingScript": "76a91495623a4e74bacb908329f8a9d4afb3a4f07aa8c088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9147fdaaccde3358991a078837c77a330be95b60d9588ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914020081d7f0794547a14897115193974d8c91aee688ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a91457fba49c3511ef768dad1a228560d95a8b2aaf8788ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "9397e5896ee5032b155871d1c2f2e32b1b7fd001ce80c35597a3fbf1be37a106",
+        "noSendTxid": "9397e5896ee5032b155871d1c2f2e32b1b7fd001ce80c35597a3fbf1be37a106",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.65",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 4",
+          "outputs": [
+            {
+              "lockingScript": "76a91417f291127d0bc21affdd126d5b8481c25090ca9c88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "7a392208864a394c505ffc2f9e9c28d98cba4a1f5134e0785f39f43cfc76664c",
+        "tx": "010000000001e8030000000000001976a91417f291127d0bc21affdd126d5b8481c25090ca9c88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.66",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 5",
+          "outputs": [
+            {
+              "lockingScript": "76a91495338ee0b7dffc7f2e3a75c25419e8fac05c600988ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91450f09a3b576199ae20c48e412392791ad254a8cb88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "2dc9c30d791f0292c75aa97e0c677c7ea3ca642ad00ac7c89e729b049cce856b",
+        "tx": "010000000002e8030000000000001976a91495338ee0b7dffc7f2e3a75c25419e8fac05c600988ac4c040000000000001976a91450f09a3b576199ae20c48e412392791ad254a8cb88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.67",
+      "description": "createAction with 3 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 6",
+          "outputs": [
+            {
+              "lockingScript": "76a914835b56598a53172051320317c2718db89454222888ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914eacf1264199eaa6511f954d0975c6c9f90ce56ac88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91420b4a8f74995ce365482c0e02e5d1f3925950f2888ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "9f27d24dcf301f693fd5a9e0df93c15081445358d0dfd498f268f7efd0843ff6",
+        "noSendTxid": "9f27d24dcf301f693fd5a9e0df93c15081445358d0dfd498f268f7efd0843ff6",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.68",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 7",
+          "outputs": [
+            {
+              "lockingScript": "76a914a1c9e5d21709496d1ad58cd73b39b81d69bb4c0688ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914aa05fcc59cfa8210e36ce395d37376a9128bcdf388ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914919269989039fb5bf63f7572099f61595e6fc45e88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9142fa04631299dfee3947562dafe7bf6dfdad150e988ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "3e26dcee901b0a4a6790b94850be1e5d1478bf2a94e00c330051c622abfe651e",
+        "tx": "010000000004e8030000000000001976a914a1c9e5d21709496d1ad58cd73b39b81d69bb4c0688ac4c040000000000001976a914aa05fcc59cfa8210e36ce395d37376a9128bcdf388acb0040000000000001976a914919269989039fb5bf63f7572099f61595e6fc45e88ac14050000000000001976a9142fa04631299dfee3947562dafe7bf6dfdad150e988ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.69",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 8",
+          "outputs": [
+            {
+              "lockingScript": "76a914d38e450502c8f77875b96210492c48110ef0885688ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "38e1c92595d19fa49f5e98ddda05ed39428c22ffc166ce57e04b75e38cd36e2b",
+        "tx": "010000000001e8030000000000001976a914d38e450502c8f77875b96210492c48110ef0885688ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.70",
+      "description": "createAction with 2 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 9",
+          "outputs": [
+            {
+              "lockingScript": "76a914d98165af8e8e9a6a2c399316f8ad90fc4fe50aad88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9144e604df69bd148e017d69e516a465bbec8a324c088ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "abbdf90d97f08a7c0516df68600b9e2f4712ef8bd1d342052b0dce9c66555740",
+        "noSendTxid": "abbdf90d97f08a7c0516df68600b9e2f4712ef8bd1d342052b0dce9c66555740",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.71",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 10",
+          "outputs": [
+            {
+              "lockingScript": "76a9140c68544d0987c672d0272ffdcbf28bc9abc9486288ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91484c7e3cc9cee6b407c301e285211e905e817f3d988ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914cd4d8c8d9697d35fa20b707f7c6160bf227ca13b88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "1a9e77056dd5806084b1c79d317842befa9fb0bf8659890b731cde40e1ee8573",
+        "tx": "010000000003e8030000000000001976a9140c68544d0987c672d0272ffdcbf28bc9abc9486288ac4c040000000000001976a91484c7e3cc9cee6b407c301e285211e905e817f3d988acb0040000000000001976a914cd4d8c8d9697d35fa20b707f7c6160bf227ca13b88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.72",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 11",
+          "outputs": [
+            {
+              "lockingScript": "76a91404cf2bd1ba89de251049ea13f5d2514fcb96df3788ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914594bdcecd2f8d0b3f9da7f594d8954328a8f158488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9142a7509182cf2a6a8ec5d789fd0673930575598cf88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9146e5e126dfcd1db5bd100f0ccbf12734f97ca565288ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "b5f21d8faa3e928d1574a6993665f0a00c1cbdb626a53992f0a5b83d973fc4d2",
+        "tx": "010000000004e8030000000000001976a91404cf2bd1ba89de251049ea13f5d2514fcb96df3788ac4c040000000000001976a914594bdcecd2f8d0b3f9da7f594d8954328a8f158488acb0040000000000001976a9142a7509182cf2a6a8ec5d789fd0673930575598cf88ac14050000000000001976a9146e5e126dfcd1db5bd100f0ccbf12734f97ca565288ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.73",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 12",
+          "outputs": [
+            {
+              "lockingScript": "76a91401cb384244842731d0f788cf3ffc303c05483d2788ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "455c7ab0f36f5aa4070425fd5b964c6d760cdd73b9fc3e941ea19507af6c73b3",
+        "noSendTxid": "455c7ab0f36f5aa4070425fd5b964c6d760cdd73b9fc3e941ea19507af6c73b3",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.74",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 13",
+          "outputs": [
+            {
+              "lockingScript": "76a9142f99386c721a5b045c792ff627af0f8d2e169c4488ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914051e80e4d92301f9687c0197554245ffa62ebd5a88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "99fdd0f681e5133122f01c2b76e694ca0e5b845ddeb599422e8c404a327bd07f",
+        "tx": "010000000002e8030000000000001976a9142f99386c721a5b045c792ff627af0f8d2e169c4488ac4c040000000000001976a914051e80e4d92301f9687c0197554245ffa62ebd5a88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.75",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 14",
+          "outputs": [
+            {
+              "lockingScript": "76a91431e6388a388d07dc72c8a5f0fd52f18b56fc687088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914914fd39a7ef648a95f81afd455d192bc1c90cae888ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914f98fc1d3ab17ca309d5a98a215829752b5714d1288ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "916e81b8f80c9b525e328984bdef974ba6dcd68e8f73299ea67f829e5a2281fb",
+        "tx": "010000000003e8030000000000001976a91431e6388a388d07dc72c8a5f0fd52f18b56fc687088ac4c040000000000001976a914914fd39a7ef648a95f81afd455d192bc1c90cae888acb0040000000000001976a914f98fc1d3ab17ca309d5a98a215829752b5714d1288ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.76",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 15",
+          "outputs": [
+            {
+              "lockingScript": "76a914a9f1bea9f6469b2161b1d865f6410a7e456da61188ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914ea26bf1d624d7767c06ffedc628981f14192627b88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91473d931605a80220c2425dea98680b884e0fb369488ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914ad86941936c92dc42613092f107967fc3efde00d88ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "d77b4fbb8e3bb3bf0a9fcfb799eec5fa24cd8e1bec3bad438f10ca31676129bf",
+        "noSendTxid": "d77b4fbb8e3bb3bf0a9fcfb799eec5fa24cd8e1bec3bad438f10ca31676129bf",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.77",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 16",
+          "outputs": [
+            {
+              "lockingScript": "76a9145f27c1b4dfcb7aebad80899aaf7a0267bfc6e4a688ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "3269dea35cf1d7685abd3ab4d9b70e1de9427b2e8d5a1c668b1ab21dc9076d4c",
+        "tx": "010000000001e8030000000000001976a9145f27c1b4dfcb7aebad80899aaf7a0267bfc6e4a688ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.78",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 17",
+          "outputs": [
+            {
+              "lockingScript": "76a914dcf5c485e2bd368da525e93c70cece33fd1b517288ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91485828195d54ff09c61eae6a663b138779ca014a888ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "265b231644e51472997d97a099278a397ccd250c5da5a9f0d6a372ad7b800b50",
+        "tx": "010000000002e8030000000000001976a914dcf5c485e2bd368da525e93c70cece33fd1b517288ac4c040000000000001976a91485828195d54ff09c61eae6a663b138779ca014a888ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.79",
+      "description": "createAction with 3 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 18",
+          "outputs": [
+            {
+              "lockingScript": "76a91443d8f9335f981a136e649ef57fae64d08d4f6ad588ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914ef8451b2b28348ee5d55cab8f9ddd40cfed460f988ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9142e39aec4b86b661d78002a83e96189eddf8ea12b88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "58c999e240acbc6805b09f5d33735bf503f67056d7c068c3cf84768f1c743a26",
+        "noSendTxid": "58c999e240acbc6805b09f5d33735bf503f67056d7c068c3cf84768f1c743a26",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.80",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 19",
+          "outputs": [
+            {
+              "lockingScript": "76a9142bc223e6feec3cf21ed405d5437c932a1930eb9088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914a47215feaaf376cf1e838f4f66098e66328811db88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a9142e1b500f55ef278f47ff0b30fdd906836ac46eda88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a91463c0c175f1afb91b4d9fa4be64957429ab1aedb088ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "83eabbbc0ff27587e496a737f27c473b3bc9097207b6198a8bb0b69aa507a51c",
+        "tx": "010000000004e8030000000000001976a9142bc223e6feec3cf21ed405d5437c932a1930eb9088ac4c040000000000001976a914a47215feaaf376cf1e838f4f66098e66328811db88acb0040000000000001976a9142e1b500f55ef278f47ff0b30fdd906836ac46eda88ac14050000000000001976a91463c0c175f1afb91b4d9fa4be64957429ab1aedb088ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.81",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 20",
+          "outputs": [
+            {
+              "lockingScript": "76a914c9616671c63521bf0d87d8fbe45ac1515631613d88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "d9bb92e2552c48e038e54f3054dcd10e9bd150c88ff3079fa99180d506bf7034",
+        "tx": "010000000001e8030000000000001976a914c9616671c63521bf0d87d8fbe45ac1515631613d88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.82",
+      "description": "createAction with 2 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 21",
+          "outputs": [
+            {
+              "lockingScript": "76a9140494e3be4ac932f030b17a7c3983c1e65795a67788ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914284837c2335dddbf0bf2833b197aeba278c32e7488ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "8e6b5839ce175010fcb6de3878201e41506b29ff16b6dd06adf555ce3a7aef68",
+        "noSendTxid": "8e6b5839ce175010fcb6de3878201e41506b29ff16b6dd06adf555ce3a7aef68",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.83",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 22",
+          "outputs": [
+            {
+              "lockingScript": "76a9149f627827d031bacc7d2a30ed73d4c4e6f966769088ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91400c50482ed67c0c095285b6c231615e2d545a17e88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a91425be94b17fcc1dfc363d90f2384a4ac37d65d38b88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "a79f47c64ee8c77af2bda33ac725c649e1bfd3a5f3d95ab7a040871ca75122d1",
+        "tx": "010000000003e8030000000000001976a9149f627827d031bacc7d2a30ed73d4c4e6f966769088ac4c040000000000001976a91400c50482ed67c0c095285b6c231615e2d545a17e88acb0040000000000001976a91425be94b17fcc1dfc363d90f2384a4ac37d65d38b88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.84",
+      "description": "createAction with 4 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 23",
+          "outputs": [
+            {
+              "lockingScript": "76a91459dc8345efc6409bca74130171e49e8947ead0d288ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914a2bd91e2226c6f1394fe4b5160ff1c2ad7799cb588ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914446070237d77e5d17f0f8cba2808a00b089a50ca88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a9142f972831b00dd3100160f28100a330dda0ccdb3d88ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "95b446e6065c2027ddcfb7d1d18563c4a89881ed8b173323c87b25bc6efa7b1f",
+        "tx": "010000000004e8030000000000001976a91459dc8345efc6409bca74130171e49e8947ead0d288ac4c040000000000001976a914a2bd91e2226c6f1394fe4b5160ff1c2ad7799cb588acb0040000000000001976a914446070237d77e5d17f0f8cba2808a00b089a50ca88ac14050000000000001976a9142f972831b00dd3100160f28100a330dda0ccdb3d88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.85",
+      "description": "createAction with 1 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 24",
+          "outputs": [
+            {
+              "lockingScript": "76a91495d76ed9528e637e853ec56cedd676ab8d54e55b88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "7cca5de021661f864449e9b7dd47ee5165e16a056933196bd98f0100573f6026",
+        "noSendTxid": "7cca5de021661f864449e9b7dd47ee5165e16a056933196bd98f0100573f6026",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.86",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 25",
+          "outputs": [
+            {
+              "lockingScript": "76a914343b751d1267ccc282e9cbbd360656062ef687d588ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a914769a4d530edbe9cfea7cf1dafacb7ae0cd4e014d88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "8c1a8d552fa9179e85b613f859dc1ebb9d474e40887e2bb6c753490fb5b32e3c",
+        "tx": "010000000002e8030000000000001976a914343b751d1267ccc282e9cbbd360656062ef687d588ac4c040000000000001976a914769a4d530edbe9cfea7cf1dafacb7ae0cd4e014d88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.87",
+      "description": "createAction with 3 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 26",
+          "outputs": [
+            {
+              "lockingScript": "76a914b2e91275b1d900dc3b91e3eeda2311ee1980eabd88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91426a6a4fe7f719626617121f208685c13d28a16bb88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914b39485e3837deb92b63751b1e4c5c63434c74efb88ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "7adcd39d4d86481ffb802fbe670a5eefc41a38a11d8a88018ae21e0bb79ee2e4",
+        "tx": "010000000003e8030000000000001976a914b2e91275b1d900dc3b91e3eeda2311ee1980eabd88ac4c040000000000001976a91426a6a4fe7f719626617121f208685c13d28a16bb88acb0040000000000001976a914b39485e3837deb92b63751b1e4c5c63434c74efb88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.88",
+      "description": "createAction with 4 outputs, noSend=true",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 27",
+          "outputs": [
+            {
+              "lockingScript": "76a9148e99e5087c1bd07b351ff153f85aeaef09f9bf3288ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a91461c66c3eecd94f65b676f5a3c03a04569c4f262c88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            },
+            {
+              "lockingScript": "76a914370c461bf702fd588102b47c8edc9378dfd73f5488ac",
+              "satoshis": 1200,
+              "outputDescription": "out2",
+              "basket": "tokens",
+              "tags": [
+                "invoice",
+                "high-value"
+              ]
+            },
+            {
+              "lockingScript": "76a914876db4e27e17b53e8c47504d932bd9e1cabda9a588ac",
+              "satoshis": 1300,
+              "outputDescription": "out3",
+              "basket": "invoices",
+              "tags": []
+            }
+          ],
+          "labels": [
+            "tx1"
+          ],
+          "noSend": true,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "6b9a676ac2ab014e3e4530d58140f821e55e337d853259c0922c9731c6bd9bf7",
+        "noSendTxid": "6b9a676ac2ab014e3e4530d58140f821e55e337d853259c0922c9731c6bd9bf7",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "nosend"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.89",
+      "description": "createAction with 1 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 28",
+          "outputs": [
+            {
+              "lockingScript": "76a9144f20a78c27aa2beb134b3a6f97324d65c5b9959f88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            }
+          ],
+          "labels": [
+            "payment",
+            "confirmed"
+          ],
+          "noSend": false,
+          "acceptDelayedBroadcast": true
+        }
+      },
+      "expected": {
+        "txid": "67908b38f5948f7c3fe08107f329297c600e55549f5343900ad8067e7e22119a",
+        "tx": "010000000001e8030000000000001976a9144f20a78c27aa2beb134b3a6f97324d65c5b9959f88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    },
+    {
+      "id": "wallet.brc100.createaction.90",
+      "description": "createAction with 2 outputs, noSend=false",
+      "input": {
+        "root_key": "0000000000000000000000000000000000000000000000000000000000000003",
+        "args": {
+          "description": "test createAction 29",
+          "outputs": [
+            {
+              "lockingScript": "76a914a6c3786623f46db5925d436ea4ffb927ec91f4bb88ac",
+              "satoshis": 1000,
+              "outputDescription": "out0",
+              "basket": "default",
+              "tags": [
+                "payment"
+              ]
+            },
+            {
+              "lockingScript": "76a9143d59e261c152b8d75c5f8889d2951b23053c534d88ac",
+              "satoshis": 1100,
+              "outputDescription": "out1",
+              "basket": "payments",
+              "tags": [
+                "token"
+              ]
+            }
+          ],
+          "labels": [],
+          "noSend": false,
+          "acceptDelayedBroadcast": false
+        }
+      },
+      "expected": {
+        "txid": "cdc67001f80041dd168810fdcff9809809d912cef3b9d251f9a634c85908ae1b",
+        "tx": "010000000002e8030000000000001976a914a6c3786623f46db5925d436ea4ffb927ec91f4bb88ac4c040000000000001976a9143d59e261c152b8d75c5f8889d2951b23053c534d88ac00000000",
+        "status": "success"
+      },
+      "tags": [
+        "brc-100",
+        "createAction",
+        "broadcast"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Requires funded wallet (change UTXOs); fresh in-memory wallet throws ERR_INSUFFICIENT_FUNDS. Pending funded mock-chain harness."
+    }
+  ]
+}

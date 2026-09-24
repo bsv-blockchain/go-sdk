@@ -1,0 +1,213 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.aes",
+  "name": "AES-GCM Encryption and Decryption",
+  "brc": [],
+  "version": "1.0.0",
+  "reference_impl": "ts-sdk@2.0.14",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sdk.crypto.aes.1",
+      "description": "AES-128 block encrypt: NIST FIPS 197 Appendix B",
+      "input": {
+        "algorithm": "aes-block",
+        "plaintext": "00112233445566778899aabbccddeeff",
+        "key": "000102030405060708090a0b0c0d0e0f"
+      },
+      "expected": { "ciphertext": "69c4e0d86a7b0430d8cdb78070b4c55a" },
+      "tags": ["happy-path", "nist", "aes-128"]
+    },
+    {
+      "id": "sdk.crypto.aes.2",
+      "description": "AES-192 block encrypt: NIST FIPS 197 Appendix C",
+      "input": {
+        "algorithm": "aes-block",
+        "plaintext": "00112233445566778899aabbccddeeff",
+        "key": "000102030405060708090a0b0c0d0e0f1011121314151617"
+      },
+      "expected": { "ciphertext": "dda97ca4864cdfe06eaf70a0ec0d7191" },
+      "tags": ["happy-path", "nist", "aes-192"]
+    },
+    {
+      "id": "sdk.crypto.aes.3",
+      "description": "AES-256 block encrypt: NIST FIPS 197 Appendix D",
+      "input": {
+        "algorithm": "aes-block",
+        "plaintext": "00112233445566778899aabbccddeeff",
+        "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "expected": { "ciphertext": "8ea2b7ca516745bfeafc49904b496089" },
+      "tags": ["happy-path", "nist", "aes-256"]
+    },
+    {
+      "id": "sdk.crypto.aes.4",
+      "description": "AES-GCM encrypt: NIST Test Case 1 — empty plaintext, 128-bit zero key",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "",
+        "key": "00000000000000000000000000000000",
+        "iv": "000000000000000000000000"
+      },
+      "expected": {
+        "ciphertext": "",
+        "authentication_tag": "58e2fccefa7e3061367f1d57a4e7455a"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-128", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.aes.5",
+      "description": "AES-GCM encrypt: NIST Test Case 2 — 16-byte zero plaintext, 128-bit zero key",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "00000000000000000000000000000000",
+        "key": "00000000000000000000000000000000",
+        "iv": "000000000000000000000000"
+      },
+      "expected": {
+        "ciphertext": "0388dace60b6a392f328c2b971b2fe78",
+        "authentication_tag": "ab6e47d42cec13bdf53a67b21257bddf"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-128"]
+    },
+    {
+      "id": "sdk.crypto.aes.6",
+      "description": "AES-GCM encrypt: NIST Test Case 3 — 60-byte plaintext, 128-bit key, cafebabe IV",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+        "key": "feffe9928665731c6d6a8f9467308308",
+        "iv": "cafebabefacedbaddecaf888"
+      },
+      "expected": {
+        "ciphertext": "42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985",
+        "authentication_tag": "4d5c2af327cd64a62cf35abd2ba6fab4"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-128"]
+    },
+    {
+      "id": "sdk.crypto.aes.7",
+      "description": "AES-GCM encrypt: NIST Test Case 7 — empty plaintext, 192-bit zero key",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "",
+        "key": "000000000000000000000000000000000000000000000000",
+        "iv": "000000000000000000000000"
+      },
+      "expected": {
+        "ciphertext": "",
+        "authentication_tag": "cd33b28ac773f74ba00ed1f312572435"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-192", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.aes.8",
+      "description": "AES-GCM encrypt: NIST Test Case 13 — empty plaintext, 256-bit zero key",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "",
+        "key": "0000000000000000000000000000000000000000000000000000000000000000",
+        "iv": "000000000000000000000000"
+      },
+      "expected": {
+        "ciphertext": "",
+        "authentication_tag": "530f8afbc74536b9a963b4f1c4cb738b"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-256", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.aes.9",
+      "description": "AES-GCM encrypt: NIST Test Case 14 — 16-byte zero plaintext, 256-bit zero key",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "00000000000000000000000000000000",
+        "key": "0000000000000000000000000000000000000000000000000000000000000000",
+        "iv": "000000000000000000000000"
+      },
+      "expected": {
+        "ciphertext": "cea7403d4d606b6e074ec5d3baf39d18",
+        "authentication_tag": "d0d1c8a799996bf0265b98b5d48ab919"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-256"]
+    },
+    {
+      "id": "sdk.crypto.aes.10",
+      "description": "AES-GCM encrypt: NIST Test Case 15 — 60-byte plaintext, 256-bit key, cafebabe IV",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+        "key": "feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+        "iv": "cafebabefacedbaddecaf888"
+      },
+      "expected": {
+        "ciphertext": "522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662898015ad",
+        "authentication_tag": "b094dac5d93471bdec1a502270e3cc6c"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-256"]
+    },
+    {
+      "id": "sdk.crypto.aes.11",
+      "description": "AES-GCM SymmetricKey decrypt: known ciphertext with known key (hex-encoded iv+ciphertext+tag)",
+      "input": {
+        "algorithm": "aes-gcm-symmetrickey",
+        "ciphertext_hex": "8c8d25348dfd5240be833215a123173c64919779ab8845a700a4520311504c168ade2d4b728cc53a254f0aba857caaf6af97453ac2ff61487d0d52",
+        "key": "5a90d59d829197983a54d887fdea2dc4c38098f00ba3110f2645633b6ea11458",
+        "key_encoding": "hex"
+      },
+      "expected": { "plaintext_utf8": "hello there" },
+      "tags": ["happy-path", "symmetrickey", "round-trip"]
+    },
+    {
+      "id": "sdk.crypto.aes.12",
+      "description": "AES-GCM encrypt: NIST Test Case 8 — 16-byte zero plaintext, 192-bit zero key",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "00000000000000000000000000000000",
+        "key": "000000000000000000000000000000000000000000000000",
+        "iv": "000000000000000000000000"
+      },
+      "expected": {
+        "ciphertext": "98e7247c07f0fe411c267e4384b0f600",
+        "authentication_tag": "2ff58d80033927ab8ef4d4587514f0fb"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-192"]
+    },
+    {
+      "id": "sdk.crypto.aes.13",
+      "description": "AES-GCM encrypt: NIST Test Case 9 — 60-byte plaintext, 192-bit key, cafebabe IV",
+      "input": {
+        "algorithm": "aes-gcm",
+        "plaintext": "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+        "key": "feffe9928665731c6d6a8f9467308308feffe9928665731c",
+        "iv": "cafebabefacedbaddecaf888"
+      },
+      "expected": {
+        "ciphertext": "3980ca0b3c00e841eb06fac4872a2757859e1ceaa6efd984628593b40ca1e19c7d773d00c144c525ac619d18c84a3f4718e2448b2fe324d9ccda2710acade256",
+        "authentication_tag": "9924a7c8587336bfb118024db8674a14"
+      },
+      "tags": ["happy-path", "nist", "aes-gcm", "aes-192"]
+    },
+    {
+      "id": "sdk.crypto.aes.14",
+      "description": "AES-128 block encrypt: zero plaintext with zero key",
+      "input": {
+        "algorithm": "aes-block",
+        "plaintext": "00000000000000000000000000000000",
+        "key": "00000000000000000000000000000000"
+      },
+      "expected": { "ciphertext": "66e94bd4ef8a2c3b884cfa59ca342b2e" },
+      "tags": ["happy-path", "aes-128", "edge-case"]
+    },
+    {
+      "id": "sdk.crypto.aes.15",
+      "description": "AES-128 block encrypt: zero plaintext with sequential key 00..0f",
+      "input": {
+        "algorithm": "aes-block",
+        "plaintext": "00000000000000000000000000000000",
+        "key": "000102030405060708090a0b0c0d0e0f"
+      },
+      "expected": { "ciphertext": "c6a13b37878f5b826f4f8162a1c8d879" },
+      "tags": ["happy-path", "aes-128"]
+    }
+  ]
+}

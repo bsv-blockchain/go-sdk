@@ -1,0 +1,418 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.crypto.signature",
+  "name": "Signature DER / compact encoding and error paths",
+  "brc": [
+    "BRC-42"
+  ],
+  "version": "1.1.0",
+  "reference_impl": "packages/sdk/ts-sdk/src/primitives/Signature.ts",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "sig-der-001",
+      "description": "toDER returns correct DER-encoded hex for fixed key 0x1e5edd45 and message 0xdeadbeef",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg"
+      },
+      "expected": {
+        "der_hex": "30450221009f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda302201c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a",
+        "der_length_bytes": 71,
+        "r_hex": "9f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda3",
+        "s_hex": "1c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a"
+      },
+      "tags": [
+        "der",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-der-002",
+      "description": "fromDER round-trips: parse the DER bytes back to the same r and s values",
+      "input": {
+        "der_hex": "30450221009f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda302201c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a"
+      },
+      "expected": {
+        "r_hex": "9f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda3",
+        "s_hex": "1c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a"
+      },
+      "tags": [
+        "der",
+        "roundtrip",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-der-003",
+      "description": "fromDER throws when DER does not start with 0x30",
+      "input": {
+        "der_hex": "31450221009f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda302201c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a",
+        "note": "Leading byte is 0x31 instead of 0x30"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Signature DER must start with 0x30"
+      },
+      "tags": [
+        "der",
+        "error-case",
+        "invalid-input"
+      ]
+    },
+    {
+      "id": "sig-der-004",
+      "description": "fromDER throws when outer length byte has high bit set (multi-byte length form)",
+      "input": {
+        "der_bytes_hex": "3081010201010201",
+        "note": "length byte 0x81 triggers multi-byte length rejection"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid DER entity length"
+      },
+      "tags": [
+        "der",
+        "error-case",
+        "invalid-input"
+      ]
+    },
+    {
+      "id": "sig-der-005",
+      "description": "fromDER throws when r element has leading 0x00 but next byte does not have high bit set",
+      "input": {
+        "der_hex": "30080200010201",
+        "note": "r = [0x00, 0x01] \u2014 invalid padding; r[1] high bit is 0"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid R-value in signature DER"
+      },
+      "tags": [
+        "der",
+        "error-case",
+        "invalid-input"
+      ]
+    },
+    {
+      "id": "sig-der-006",
+      "description": "fromDER throws when s element has leading 0x00 but next byte does not have high bit set",
+      "input": {
+        "der_hex": "30080201010200",
+        "note": "r = [0x01], s = [0x00, 0x01] \u2014 invalid padding"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid S-value in signature DER"
+      },
+      "tags": [
+        "der",
+        "error-case",
+        "invalid-input"
+      ]
+    },
+    {
+      "id": "sig-compact-001",
+      "description": "toCompact with recovery=0, compressed=true returns 65-byte array with first byte 31",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg",
+        "recovery": 0,
+        "compressed": true
+      },
+      "expected": {
+        "compact_hex": "1f9f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda31c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a",
+        "compact_length_bytes": 65,
+        "compact_length_hex_chars": 130,
+        "first_byte": 31
+      },
+      "tags": [
+        "compact",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-compact-002",
+      "description": "toCompact with recovery=0, compressed=false has first byte 27",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg",
+        "recovery": 0,
+        "compressed": false
+      },
+      "expected": {
+        "first_byte": 27
+      },
+      "tags": [
+        "compact",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-compact-003",
+      "description": "fromCompact throws when input is 64 bytes (not 65)",
+      "input": {
+        "compact_bytes": "64 zero bytes",
+        "byte_count": 64
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid Compact Signature"
+      },
+      "tags": [
+        "compact",
+        "error-case"
+      ]
+    },
+    {
+      "id": "sig-compact-004",
+      "description": "fromCompact throws when input is 66 bytes (not 65)",
+      "input": {
+        "compact_bytes": "66 zero bytes",
+        "byte_count": 66
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid Compact Signature"
+      },
+      "tags": [
+        "compact",
+        "error-case"
+      ]
+    },
+    {
+      "id": "sig-compact-005",
+      "description": "fromCompact throws when first byte is 26 (below minimum 27)",
+      "input": {
+        "first_byte": 26,
+        "remaining_bytes": "64 zero bytes",
+        "note": "compact byte must be 27-34"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid Compact Byte"
+      },
+      "tags": [
+        "compact",
+        "error-case",
+        "edge-case"
+      ]
+    },
+    {
+      "id": "sig-compact-006",
+      "description": "fromCompact throws when first byte is 35 (above maximum 34)",
+      "input": {
+        "first_byte": 35,
+        "remaining_bytes": "64 zero bytes",
+        "note": "compact byte must be 27-34"
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid Compact Byte"
+      },
+      "tags": [
+        "compact",
+        "error-case",
+        "edge-case"
+      ]
+    },
+    {
+      "id": "sig-compact-007",
+      "description": "fromCompact round-trips: parse compact hex back to same r and s values",
+      "input": {
+        "compact_hex": "1f9f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda31c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a"
+      },
+      "expected": {
+        "r_hex": "9f99368049a3297f8e20ae6b8bd99ebec0f97ceada82478da074266cecbcfda3",
+        "s_hex": "1c72b222e69565a42ff82757e2360de74fc05827fabe75a7dd22d0397a2c189a"
+      },
+      "tags": [
+        "compact",
+        "roundtrip",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-tocompact-err-001",
+      "description": "toCompact throws when recovery param is -1",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "recovery": -1,
+        "compressed": true
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid recovery param"
+      },
+      "tags": [
+        "compact",
+        "error-case"
+      ]
+    },
+    {
+      "id": "sig-tocompact-err-002",
+      "description": "toCompact throws when recovery param is 4",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "recovery": 4,
+        "compressed": true
+      },
+      "expected": {
+        "throws": true,
+        "error_pattern": "Invalid recovery param"
+      },
+      "tags": [
+        "compact",
+        "error-case"
+      ]
+    },
+    {
+      "id": "sig-der-007",
+      "description": "toDER returns correct DER for key 2222...2222 and message 0xcafebabe",
+      "input": {
+        "privkey_hex": "2222222222222222222222222222222222222222222222222222222222222222",
+        "message_hex": "cafebabe",
+        "k": "drbg"
+      },
+      "expected": {
+        "der_hex": "30440220024eb1ae149d315b0fb68b623cf455086aba5c8b92e068682c1ca12dfcdfd65202207dbe86af62a372324b9ec4a35f777227d012b6c042ca800327e16b446d1bc5f3",
+        "der_length_bytes": 70,
+        "r_hex": "024eb1ae149d315b0fb68b623cf455086aba5c8b92e068682c1ca12dfcdfd652",
+        "s_hex": "7dbe86af62a372324b9ec4a35f777227d012b6c042ca800327e16b446d1bc5f3"
+      },
+      "tags": [
+        "der",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-der-008",
+      "description": "fromDER round-trips for key 2222...2222 / cafebabe: parse back to same r and s",
+      "input": {
+        "der_hex": "30440220024eb1ae149d315b0fb68b623cf455086aba5c8b92e068682c1ca12dfcdfd65202207dbe86af62a372324b9ec4a35f777227d012b6c042ca800327e16b446d1bc5f3"
+      },
+      "expected": {
+        "r_hex": "024eb1ae149d315b0fb68b623cf455086aba5c8b92e068682c1ca12dfcdfd652",
+        "s_hex": "7dbe86af62a372324b9ec4a35f777227d012b6c042ca800327e16b446d1bc5f3"
+      },
+      "tags": [
+        "der",
+        "roundtrip",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-der-009",
+      "description": "fromDER throws when input is truncated (missing the s-integer)",
+      "input": {
+        "der_hex": "30200220024eb1ae149d315b0fb68b623cf455086aba5c8b92e068682c1ca12dfcdfd652",
+        "note": "outer length says 32 bytes but only r-element is present"
+      },
+      "expected": {
+        "throws": true
+      },
+      "tags": [
+        "der",
+        "error-case",
+        "truncated"
+      ]
+    },
+    {
+      "id": "sig-der-010",
+      "description": "toDER for key aaaa...aaaa and message 0xf00dbabe",
+      "input": {
+        "privkey_hex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "message_hex": "f00dbabe",
+        "k": "drbg"
+      },
+      "expected": {
+        "der_hex": "304402204f8a492337a9d7dbf3cd1a09c8dec693cae972cb492492c88919f328532eb93702200697cde870f890caeb94e951c4ed2a874f8ff08d9ed28e629c1e5ce6feb814d8",
+        "der_length_bytes": 70,
+        "r_hex": "4f8a492337a9d7dbf3cd1a09c8dec693cae972cb492492c88919f328532eb937",
+        "s_hex": "0697cde870f890caeb94e951c4ed2a874f8ff08d9ed28e629c1e5ce6feb814d8"
+      },
+      "tags": [
+        "der",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-compact-008",
+      "description": "toCompact with recovery=1, compressed=true has first byte 0x32 (50 decimal)",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg",
+        "recovery": 1,
+        "compressed": true
+      },
+      "expected": {
+        "first_byte": 32
+      },
+      "tags": [
+        "compact",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-compact-009",
+      "description": "toCompact with recovery=2, compressed=true has first byte 0x33 (51 decimal)",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg",
+        "recovery": 2,
+        "compressed": true
+      },
+      "expected": {
+        "first_byte": 33
+      },
+      "tags": [
+        "compact",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-compact-010",
+      "description": "toCompact with recovery=3, compressed=true has first byte 0x34 (52 decimal)",
+      "input": {
+        "privkey_hex": "1e5edd45de6d22deebef4596b80444ffcc29143839c1dce18db470e25b4be7b5",
+        "message_hex": "deadbeef",
+        "k": "drbg",
+        "recovery": 3,
+        "compressed": true
+      },
+      "expected": {
+        "first_byte": 34
+      },
+      "tags": [
+        "compact",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "sig-compact-011",
+      "description": "toCompact with recovery=0, compressed=true has compact first byte formula: 31 = 27 + 4 + recovery",
+      "input": {
+        "privkey_hex": "2222222222222222222222222222222222222222222222222222222222222222",
+        "message_hex": "cafebabe",
+        "k": "drbg",
+        "recovery": 0,
+        "compressed": true
+      },
+      "expected": {
+        "compact_hex": "1f024eb1ae149d315b0fb68b623cf455086aba5c8b92e068682c1ca12dfcdfd6527dbe86af62a372324b9ec4a35f777227d012b6c042ca800327e16b446d1bc5f3",
+        "first_byte": 31
+      },
+      "tags": [
+        "compact",
+        "happy-path"
+      ]
+    }
+  ]
+}

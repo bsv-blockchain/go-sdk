@@ -1,0 +1,501 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "auth.brc31-handshake",
+  "name": "BRC-103 Mutual Authentication and BRC-104 HTTP Transport",
+  "brc": ["BRC-103", "BRC-104"],
+  "version": "1.2.0",
+  "reference_impl": "packages/sdk",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "auth.brc31-handshake.1",
+      "description": "Real SDK initialRequest emitted by Peer through SimplifiedFetchTransport; nonce is a captured random example",
+      "input": {
+        "method": "POST",
+        "path": "/.well-known/auth",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_shape": {
+          "messageType": "initialResponse",
+          "version": "0.1",
+          "identityKey": "string",
+          "yourNonce": "string",
+          "signature": "array",
+          "initialNonce": "string",
+          "requestedCertificates": "object"
+        }
+      },
+      "tags": ["brc-103", "phase-1", "initial-request", "happy-path"]
+    },
+    {
+      "id": "auth.brc31-handshake.2",
+      "description": "Phase 1 step 2: initialResponse is a JSON AuthMessage, not a general-message header envelope",
+      "input": {
+        "method": "POST",
+        "path": "/.well-known/auth",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_shape": {
+          "messageType": "initialResponse",
+          "version": "0.1",
+          "identityKey": "string",
+          "yourNonce": "string",
+          "signature": "array",
+          "initialNonce": "string",
+          "requestedCertificates": "object"
+        }
+      },
+      "tags": ["brc-103", "phase-1", "initial-response", "schema"]
+    },
+    {
+      "id": "auth.brc31-handshake.3",
+      "description": "Phase 1: absent identityKey in the JSON initialRequest body",
+      "input": {
+        "method": "POST",
+        "path": "/.well-known/auth",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": "error",
+          "code": "UNAUTHORIZED"
+        }
+      },
+      "tags": ["brc-103", "phase-1", "error", "missing-identity-key"]
+    },
+    {
+      "id": "auth.brc31-handshake.4",
+      "description": "Phase 1: absent initialNonce in the JSON initialRequest body",
+      "input": {
+        "method": "POST",
+        "path": "/.well-known/auth",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": "error",
+          "code": "UNAUTHORIZED"
+        }
+      },
+      "tags": ["brc-103", "phase-1", "error", "missing-nonce"]
+    },
+    {
+      "id": "auth.brc31-handshake.5",
+      "description": "Phase 2: authenticated GET request \u2014 general request headers shape",
+      "input": {
+        "method": "GET",
+        "path": "/api/resource",
+        "headers": {
+          "x-bsv-auth-version": "0.1",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "x-bsv-auth-nonce": "bmV3Tm9uY2UxMjM0NQ==",
+          "x-bsv-auth-your-nonce": "c2VydmVyTm9uY2U=",
+          "x-bsv-auth-request-id": "cmVxdWVzdElkMzJCeXRlcw==",
+          "x-bsv-auth-signature": "3045022100abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567890220abcdef0123456789abcdef0123456789abcdef0123456789abcdef012345678901"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "response_headers_required": [
+          "x-bsv-auth-version",
+          "x-bsv-auth-identity-key",
+          "x-bsv-auth-nonce",
+          "x-bsv-auth-your-nonce",
+          "x-bsv-auth-request-id",
+          "x-bsv-auth-signature"
+        ]
+      },
+      "tags": ["brc-103", "phase-2", "general-request", "schema"]
+    },
+    {
+      "id": "auth.brc31-handshake.6",
+      "description": "Phase 2: authenticated POST request with body",
+      "input": {
+        "method": "POST",
+        "path": "/sendMessage",
+        "headers": {
+          "x-bsv-auth-version": "0.1",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "x-bsv-auth-nonce": "bmV3Tm9uY2UxMjM0NQ==",
+          "x-bsv-auth-your-nonce": "c2VydmVyTm9uY2U=",
+          "x-bsv-auth-request-id": "cmVxdWVzdElkMzJCeXRlcw==",
+          "x-bsv-auth-signature": "3045022100abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567890220abcdef0123456789abcdef0123456789abcdef0123456789abcdef012345678901",
+          "content-type": "application/json"
+        },
+        "body": {
+          "recipient": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "messageBox": "test",
+          "body": "hello"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "response_headers_required": ["x-bsv-auth-signature"]
+      },
+      "tags": ["brc-103", "phase-2", "general-request", "post-with-body"]
+    },
+    {
+      "id": "auth.brc31-handshake.7",
+      "description": "Phase 2: missing general request signature header \u2014 401",
+      "input": {
+        "method": "GET",
+        "path": "/api/resource",
+        "headers": {
+          "x-bsv-auth-version": "0.1",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "x-bsv-auth-nonce": "bmV3Tm9uY2UxMjM0NQ=="
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": "error",
+          "code": "UNAUTHORIZED"
+        }
+      },
+      "tags": ["brc-103", "phase-2", "error", "missing-signature"]
+    },
+    {
+      "id": "auth.brc31-handshake.8",
+      "description": "Phase 2: bad signature \u2014 401",
+      "input": {
+        "method": "GET",
+        "path": "/api/resource",
+        "headers": {
+          "x-bsv-auth-version": "0.1",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "x-bsv-auth-nonce": "bmV3Tm9uY2UxMjM0NQ==",
+          "x-bsv-auth-your-nonce": "c2VydmVyTm9uY2U=",
+          "x-bsv-auth-request-id": "cmVxdWVzdElkMzJCeXRlcw==",
+          "x-bsv-auth-signature": "badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb"
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": "error",
+          "code": "ERR_AUTH_FAILED"
+        }
+      },
+      "tags": ["brc-103", "phase-2", "error", "bad-signature"]
+    },
+    {
+      "id": "auth.brc31-handshake.9",
+      "description": "allowUnauthenticated=true: request with no auth headers passes through with identityKey='unknown'",
+      "input": {
+        "method": "GET",
+        "path": "/api/public-resource",
+        "headers": {
+          "content-type": "application/json"
+        },
+        "_scenario": "middleware configured with allowUnauthenticated: true"
+      },
+      "expected": {
+        "status": 200,
+        "req_auth_identity_key": "unknown"
+      },
+      "tags": ["brc-103", "unauthenticated-passthrough", "allow-unauthenticated"]
+    },
+    {
+      "id": "auth.brc31-handshake.10",
+      "description": "Certificate timeout: server waits 30s for client certs \u2014 408",
+      "input": {
+        "method": "POST",
+        "path": "/.well-known/auth",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        },
+        "_scenario": "server requires certificates (certificatesToRequest non-empty) and client never provides them within 30s"
+      },
+      "expected": {
+        "status": 408,
+        "body": {
+          "status": "error",
+          "code": "CERTIFICATE_TIMEOUT"
+        }
+      },
+      "tags": ["brc-103", "phase-1", "certificate-timeout", "error"]
+    },
+    {
+      "id": "auth.brc31-handshake.11",
+      "description": "requestedCertificates is carried in the initialResponse JSON body when the server requests certificates",
+      "input": {
+        "method": "POST",
+        "path": "/.well-known/auth",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        },
+        "_scenario": "server configured with certificatesToRequest"
+      },
+      "expected": {
+        "status": 200,
+        "response_body_includes": {
+          "requestedCertificates": "present"
+        }
+      },
+      "tags": ["brc-103", "phase-1", "certificate-request", "schema"]
+    },
+    {
+      "id": "auth.brc31-handshake.12",
+      "description": "AuthMessage shape: initialRequest schema check",
+      "input": {
+        "_schema_check": true,
+        "version": "0.1",
+        "messageType": "initialRequest",
+        "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+        "requestedCertificates": {
+          "certifiers": [],
+          "types": {}
+        }
+      },
+      "expected": {
+        "valid_message_types": [
+          "initialRequest",
+          "initialResponse",
+          "certificateRequest",
+          "certificateResponse",
+          "general"
+        ],
+        "required_fields": [
+          "messageType",
+          "version",
+          "identityKey",
+          "initialNonce",
+          "requestedCertificates"
+        ]
+      },
+      "tags": ["brc-103", "schema", "auth-message"]
+    },
+    {
+      "id": "auth.brc31-handshake.13",
+      "description": "Phase 2: requestId is 32 bytes base64-encoded",
+      "input": {
+        "_schema_note": "x-bsv-auth-request-id is always a 32-byte random value, base64-encoded (44 chars with padding)",
+        "requestId_example": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+        "requestId_length_bytes": 32
+      },
+      "expected": {
+        "requestId_base64_length": 44
+      },
+      "tags": ["brc-103", "schema", "request-id"]
+    },
+    {
+      "id": "auth.brc31-handshake.14",
+      "description": "Replay prevention: reused nonce rejected",
+      "input": {
+        "method": "POST",
+        "path": "/.well-known/auth",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "version": "0.1",
+          "messageType": "initialRequest",
+          "identityKey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "initialNonce": "Z9+3SZ9qiJvtpQN1RNmmGue247vPuQLeqfIV2eFIMtvRRqFb0FpYckzLbawd0bdR",
+          "requestedCertificates": {
+            "certifiers": [],
+            "types": {}
+          }
+        },
+        "_scenario": "this exact nonce was already used in a previous request; SessionManager has seen it"
+      },
+      "expected": {
+        "status": 401,
+        "body": {
+          "status": "error",
+          "code": "ERR_AUTH_FAILED"
+        }
+      },
+      "tags": ["brc-103", "replay-protection", "error"]
+    },
+    {
+      "id": "auth.brc31-handshake.15",
+      "description": "PubKeyHex format: 66 hex chars starting with 02 or 03",
+      "input": {
+        "_schema_check": true,
+        "valid_examples": [
+          "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        ],
+        "invalid_examples": [
+          "04",
+          "01deadbeef",
+          "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc"
+        ]
+      },
+      "expected": {
+        "pattern": "^0[23][0-9a-fA-F]{64}$"
+      },
+      "tags": ["brc-103", "schema", "pubkey-format"]
+    },
+    {
+      "id": "auth.brc31-handshake.16",
+      "description": "Response signing failure \u2014 500",
+      "input": {
+        "method": "GET",
+        "path": "/api/resource",
+        "headers": {
+          "x-bsv-auth-version": "0.1",
+          "x-bsv-auth-identity-key": "028d37b941208cd6b8a4c28288eda5f2f16c2b3ab0fcb6d13c18b47fe37b971fc1",
+          "x-bsv-auth-nonce": "bmV3Tm9uY2UxMjM0NQ==",
+          "x-bsv-auth-your-nonce": "c2VydmVyTm9uY2U=",
+          "x-bsv-auth-request-id": "cmVxdWVzdElkMzJCeXRlcw==",
+          "x-bsv-auth-signature": "3045022100abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567890220abcdef0123456789abcdef0123456789abcdef0123456789abcdef012345678901"
+        },
+        "_scenario": "server's wallet signing operation throws an unexpected error"
+      },
+      "expected": {
+        "status": 500,
+        "body": {
+          "status": "error",
+          "code": "ERR_RESPONSE_SIGNING_FAILED"
+        }
+      },
+      "tags": ["brc-103", "phase-2", "error", "signing-failure"]
+    },
+    {
+      "id": "auth.brc31-handshake.17",
+      "description": "BRC-104 HTTP 204 response preimage with an empty body",
+      "input": {
+        "http_response_preimage": true,
+        "status": 204,
+        "body_hex": "",
+        "request_id_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "expected": {
+        "payload_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fcc00ffffffffffffffffff"
+      },
+      "tags": ["brc-104", "response", "wire-bytes"]
+    },
+    {
+      "id": "auth.brc31-handshake.18",
+      "description": "BRC-104 HTTP 401 response preimage with an empty body",
+      "input": {
+        "http_response_preimage": true,
+        "status": 401,
+        "body_hex": "",
+        "request_id_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "expected": {
+        "payload_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1ffd910100ffffffffffffffffff"
+      },
+      "tags": ["brc-104", "response", "wire-bytes"]
+    },
+    {
+      "id": "auth.brc31-handshake.19",
+      "description": "BRC-104 HTTP 403 response preimage with an empty body",
+      "input": {
+        "http_response_preimage": true,
+        "status": 403,
+        "body_hex": "",
+        "request_id_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "expected": {
+        "payload_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1ffd930100ffffffffffffffffff"
+      },
+      "tags": ["brc-104", "response", "wire-bytes"]
+    },
+    {
+      "id": "auth.brc31-handshake.20",
+      "description": "BRC-104 HTTP 404 response preimage with an empty body",
+      "input": {
+        "http_response_preimage": true,
+        "status": 404,
+        "body_hex": "",
+        "request_id_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "expected": {
+        "payload_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1ffd940100ffffffffffffffffff"
+      },
+      "tags": ["brc-104", "response", "wire-bytes"]
+    },
+    {
+      "id": "auth.brc31-handshake.21",
+      "description": "BRC-104 HTTP 404 response preimage with three raw body bytes",
+      "input": {
+        "http_response_preimage": true,
+        "status": 404,
+        "body_hex": "010203",
+        "request_id_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "expected": {
+        "payload_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1ffd94010003010203"
+      },
+      "tags": ["brc-104", "response", "wire-bytes"]
+    }
+  ]
+}

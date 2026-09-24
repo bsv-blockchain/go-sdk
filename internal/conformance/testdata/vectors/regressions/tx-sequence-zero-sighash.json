@@ -1,0 +1,59 @@
+{
+  "version": "1",
+  "domain": "sdk",
+  "category": "transactions",
+  "description": "When an input is constructed with sequence = 0 (explicitly or via array literal without a sequence field), the signing preimage must also use sequence 0 for that input, not the default 0xFFFFFFFF. ts-sdk pre-fix populated a missing sequence with 0xFFFFFFFF at Transaction construction time, causing SIGHASH preimage to use 0xFFFFFFFF while the serialised input retained 0 — making signatures invalid on verify.",
+  "regression": {
+    "issue": "ts-sdk#371",
+    "fixed_in": { "ts": "v1.1.0" },
+    "symptom": "Transaction.verify() returned false (CHECKSIG invalid) for inputs with sequence 0, because signing used one sequence value and verification used another",
+    "root_cause": "Input.sequence defaulted to 0xFFFFFFFF during Transaction construction even when the caller provided an array literal without setting sequence; the preimage used the default but the serialised tx kept the provided zero"
+  },
+  "vectors": [
+    {
+      "id": "regression.transactions.sequence-zero-sighash.0001",
+      "description": "Input with sequence=0: SIGHASH_ALL preimage sequence field must be 0x00000000",
+      "parity_class": "required",
+      "input": {
+        "operation": "sighash_preimage",
+        "version": 1,
+        "input_sequence": 0,
+        "lock_time": 0,
+        "sighash_type": "SIGHASH_ALL"
+      },
+      "expected": {
+        "preimage_sequence_field_hex": "00000000"
+      },
+      "notes": "The sighash preimage for the spending input must encode the actual sequence number (0x00000000), not the default (0xFFFFFFFF). If the preimage uses the wrong value, CHECKSIG will always fail for sequence-0 inputs."
+    },
+    {
+      "id": "regression.transactions.sequence-zero-sighash.0002",
+      "description": "Input with sequence=0xFFFFFFFF (explicit default): preimage must encode 0xFFFFFFFF",
+      "parity_class": "required",
+      "input": {
+        "operation": "sighash_preimage",
+        "version": 1,
+        "input_sequence": 4294967295,
+        "lock_time": 0,
+        "sighash_type": "SIGHASH_ALL"
+      },
+      "expected": {
+        "preimage_sequence_field_hex": "ffffffff"
+      },
+      "notes": "Control vector: explicit 0xFFFFFFFF must produce ffffffff in the preimage."
+    },
+    {
+      "id": "regression.transactions.sequence-zero-sighash.0003",
+      "description": "Sequence round-trip: sequence=0 serialises to 00000000 in raw tx bytes",
+      "parity_class": "required",
+      "input": {
+        "operation": "serialise_input_sequence",
+        "input_sequence": 0
+      },
+      "expected": {
+        "serialised_sequence_hex": "00000000"
+      },
+      "notes": "The serialised transaction must encode the actual sequence 0, not a default. Verifies the construction bug where the in-memory value was replaced before signing."
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "$schema": "../../../schema/vector.schema.json",
+  "id": "wallet.brc100.discoverbyattributes",
+  "name": "BRC-100 discoverbyattributes",
+  "brc": [
+    "BRC-100"
+  ],
+  "version": "2.0.1",
+  "reference_impl": "@bsv/sdk@2.0.14 + wallet-toolbox",
+  "parity_class": "required",
+  "vectors": [
+    {
+      "id": "wallet.brc100.discoverbyattributes.1",
+      "description": "discoverByAttributes single attribute",
+      "input": {
+        "args": {
+          "attributes": {
+            "name": "Alice"
+          }
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.2",
+      "description": "discoverByAttributes multiple attributes",
+      "input": {
+        "args": {
+          "attributes": {
+            "name": "Alice",
+            "email": "alice@example.com"
+          }
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "multi-attr"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.3",
+      "description": "discoverByAttributes with limit",
+      "input": {
+        "args": {
+          "attributes": {
+            "name": "Bob"
+          },
+          "limit": 10
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "limit"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.4",
+      "description": "discoverByAttributes with offset",
+      "input": {
+        "args": {
+          "attributes": {
+            "name": "Carol"
+          },
+          "limit": 5,
+          "offset": 20
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "pagination"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.5",
+      "description": "discoverByAttributes seekPermission=false",
+      "input": {
+        "args": {
+          "attributes": {
+            "role": "admin"
+          },
+          "seekPermission": false
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "no-permission"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.6",
+      "description": "discoverByAttributes result shape",
+      "input": {
+        "args": {
+          "attributes": {
+            "name": "Alice"
+          }
+        },
+        "_schema_note": "result: { totalCertificates: int, certificates: IdentityCertificate[] }"
+      },
+      "expected": {
+        "totalCertificates": 1,
+        "certificates": [
+          {
+            "type": "YWNlcnR0eXBlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "subject": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "serialNumber": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "certifier": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            "revocationOutpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0",
+            "signature": "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "fields": {
+              "name": "Alice",
+              "email": "alice@example.com"
+            },
+            "certifierInfo": {
+              "name": "TrustCorp",
+              "iconUrl": "https://trust.example.com/icon.png",
+              "description": "Trusted identity",
+              "trust": 8
+            },
+            "publiclyRevealedKeyring": {
+              "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            },
+            "decryptedFields": {
+              "name": "Alice",
+              "email": "alice@example.com"
+            }
+          }
+        ]
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "schema",
+        "non-empty"
+      ],
+      "parity_class": "intended",
+      "skip_reason": "Expects non-empty overlay result; stub LookupResolver returns empty. Pending live overlay integration."
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.7",
+      "description": "discoverByAttributes empty attributes",
+      "input": {
+        "args": {
+          "attributes": {}
+        }
+      },
+      "expected": {
+        "error": true,
+        "code": "ERR_INVALID_PARAMETER"
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "empty-attrs",
+        "validation"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.8",
+      "description": "discoverByAttributes with originator",
+      "input": {
+        "args": {
+          "attributes": {
+            "name": "Dave"
+          }
+        },
+        "originator": "directory.example.com"
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "originator"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.9",
+      "description": "discoverByAttributes limit=10000",
+      "input": {
+        "args": {
+          "attributes": {
+            "country": "US"
+          },
+          "limit": 10000
+        }
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "limit-max"
+      ]
+    },
+    {
+      "id": "wallet.brc100.discoverbyattributes.10",
+      "description": "discoverByAttributes attribute names max 50 bytes",
+      "input": {
+        "args": {
+          "attributes": {
+            "a": "1"
+          }
+        },
+        "_schema_note": "field names are CertificateFieldNameUnder50Bytes (max 50 chars)"
+      },
+      "expected": {
+        "totalCertificates": 0,
+        "certificates": []
+      },
+      "tags": [
+        "brc-100",
+        "discoverByAttributes",
+        "schema"
+      ]
+    }
+  ]
+}
