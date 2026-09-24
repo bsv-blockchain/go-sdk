@@ -1,35 +1,18 @@
 package compat
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
-	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 // PubKeyFromSignature gets a publickey for a signature and tells you whether is was compressed
 func PubKeyFromSignature(sig, data []byte) (pubKey *ec.PublicKey, wasCompressed bool, err error) {
 	// Validate the signature - this just shows that it was valid at all
 	// we will compare it with the key next
-	var buf bytes.Buffer
-
-	varInt := util.VarInt(len(hBSV))
-	buf.Write(varInt.Bytes())
-	// append the hBsv to buff
-	buf.WriteString(hBSV)
-
-	varInt = util.VarInt(len(data))
-	buf.Write(varInt.Bytes())
-	// append the data to buff
-	buf.Write(data)
-
-	// Create the hash
-	expectedMessageHash := crypto.Sha256d(buf.Bytes())
-	return ec.RecoverCompact(sig, expectedMessageHash)
+	return ec.RecoverCompact(sig, MagicHash(data))
 }
 
 // VerifyMessage verifies a string and address against the provided

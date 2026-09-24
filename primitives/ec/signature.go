@@ -26,6 +26,14 @@ var (
 	errExcessivelyPaddedValue = errors.New("value is excessively padded")
 )
 
+// ErrMessageTooLarge is returned by Sign when the digest being signed
+// exceeds the bit length of the curve order. ECDSA operates on a digest
+// already reduced to the curve's scalar field, so per FIPS 186-4 / SEC 1 a
+// caller must hash any longer message before signing; this mirrors the TS
+// reference implementation's TOB-22 hardening, which rejects such inputs
+// instead of silently truncating them.
+var ErrMessageTooLarge = errors.New("message is too large: must be hashed before signing")
+
 func (sig *Signature) ToDER() ([]byte, error) {
 	return asn1.Marshal(*sig)
 }
@@ -95,13 +103,22 @@ func (sig *Signature) Serialize() []byte {
 
 // Verify verifies the signature of hash using the public key. It uses an
 // external verifier when one is installed and otherwise uses crypto/ecdsa.
+//
+// It returns false, rather than panicking, for a nil/incomplete public key
+// (including the point-at-infinity key some callers use to represent "no
+// key") and for a hash whose bit length exceeds the curve order — the latter
+// mirrors the TS reference's TOB-22 hardening, which rejects unhashed,
+// oversized messages instead of silently truncating them.
 func (sig *Signature) Verify(hash []byte, pubKey *PublicKey) bool {
-	if verifier := getExternalVerifySignatureFn(); verifier != nil {
-		if sig == nil || sig.R == nil || sig.S == nil ||
-			pubKey == nil || pubKey.Curve == nil || pubKey.X == nil || pubKey.Y == nil {
-			return false
-		}
+	if sig == nil || sig.R == nil || sig.S == nil ||
+		pubKey == nil || pubKey.Curve == nil || pubKey.X == nil || pubKey.Y == nil {
+		return false
+	}
+	if messageTooLarge(hash, pubKey.Curve) {
+		return false
+	}
 
+	if verifier := getExternalVerifySignatureFn(); verifier != nil {
 		// The external verifier accepts only secp256k1 public keys. Preserve
 		// crypto/ecdsa behavior for callers using another curve.
 		curve, ok := pubKey.Curve.(*KoblitzCurve)
@@ -118,6 +135,14 @@ func (sig *Signature) Verify(hash []byte, pubKey *PublicKey) bool {
 		return verifier(hash, sig.Serialize(), pubKey.Compressed())
 	}
 	return e.Verify(pubKey.ToECDSA(), hash, sig.R, sig.S)
+}
+
+// messageTooLarge reports whether hash, interpreted as a big-endian integer,
+// has more bits than the curve order — i.e. it cannot be a value already
+// reduced into the curve's scalar field and must not be signed or verified
+// as-is.
+func messageTooLarge(hash []byte, curve elliptic.Curve) bool {
+	return new(big.Int).SetBytes(hash).BitLen() > curve.Params().N.BitLen()
 }
 
 func validSecp256k1PublicKey(curve *KoblitzCurve, pubKey *PublicKey) bool {
@@ -501,8 +526,75 @@ func RecoverCompact(signature,
 	return key, ((signature[0] - 27) & 4) == 4, nil
 }
 
+// ErrInvalidRecoveryParam is returned by ToCompact when recovery is outside
+// the valid [0, 3] range.
+var ErrInvalidRecoveryParam = errors.New("invalid recovery param")
+
+// ErrInvalidCompactSignature is returned by SignatureFromCompact when the
+// input is not exactly 1+2*curveByteLen bytes long.
+var ErrInvalidCompactSignature = errors.New("invalid compact signature: wrong length")
+
+// ErrInvalidCompactByte is returned by SignatureFromCompact when the header
+// byte is outside the valid [27, 34] range.
+var ErrInvalidCompactByte = errors.New("invalid compact signature: header byte out of range")
+
+// ToCompact encodes sig as a compact signature using the supplied recovery
+// ID and compressed-key flag: <27+recovery(+4 if compressed)><R><S>. Unlike
+// SignCompact, it does not search for or validate the recovery ID against a
+// public key — the caller supplies it directly, matching the TS reference's
+// Signature.toCompact. Use RecoverCompact to decode and recover the key.
+func (sig *Signature) ToCompact(recovery int, compressed bool) ([]byte, error) {
+	if recovery < 0 || recovery > 3 {
+		return nil, ErrInvalidRecoveryParam
+	}
+
+	curvelen := (S256().BitSize + 7) / 8
+	result := make([]byte, 1, 2*curvelen+1)
+
+	header := byte(27 + recovery)
+	if compressed {
+		header += 4
+	}
+	result[0] = header
+
+	rBytes := sig.R.Bytes()
+	if len(rBytes) < curvelen {
+		result = append(result, make([]byte, curvelen-len(rBytes))...)
+	}
+	result = append(result, rBytes...)
+
+	sBytes := sig.S.Bytes()
+	if len(sBytes) < curvelen {
+		result = append(result, make([]byte, curvelen-len(sBytes))...)
+	}
+	result = append(result, sBytes...)
+
+	return result, nil
+}
+
+// SignatureFromCompact decodes r and s from a compact signature without
+// recovering the public key (use RecoverCompact for that). It validates the
+// overall length and the header byte's range ([27, 34]), matching the TS
+// reference's Signature.fromCompact.
+func SignatureFromCompact(signature []byte) (*Signature, error) {
+	bitlen := (S256().BitSize + 7) / 8
+	if len(signature) != 1+bitlen*2 {
+		return nil, ErrInvalidCompactSignature
+	}
+	if signature[0] < 27 || signature[0] > 34 {
+		return nil, ErrInvalidCompactByte
+	}
+	return &Signature{
+		R: new(big.Int).SetBytes(signature[1 : bitlen+1]),
+		S: new(big.Int).SetBytes(signature[bitlen+1:]),
+	}, nil
+}
+
 // signRFC6979 generates a deterministic ECDSA signature according to RFC 6979 and BIP 62.
 func signRFC6979(privkey *PrivateKey, hash []byte) (*Signature, error) {
+	if messageTooLarge(hash, privkey.Curve) {
+		return nil, ErrMessageTooLarge
+	}
 	N := S256().N
 	halfOrder := S256().halfOrder
 	k := nonceRFC6979(privkey.D, hash)
