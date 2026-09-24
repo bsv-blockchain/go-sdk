@@ -167,7 +167,7 @@ func (tx *Transaction) CalcInputPreimageWithCache(inputNumber uint32, sigHashFla
 // CalcInputSignatureHashFull). Every sighash.Flag combination is below 256,
 // so CalcInputPreimage(idx, flag) is exactly
 // CalcInputPreimageFull(idx, uint32(flag)).
-func (tx *Transaction) CalcInputPreimageFull(inputNumber uint32, hashType uint32) ([]byte, error) {
+func (tx *Transaction) CalcInputPreimageFull(inputNumber, hashType uint32) ([]byte, error) {
 	return tx.preimage(inputNumber, hashType, nil)
 }
 
@@ -293,11 +293,11 @@ func (tx *Transaction) CalcInputPreimageLegacy(inputNumber uint32, shf sighash.F
 // sighash.Flag combination is below 256, so
 // CalcInputPreimageLegacy(idx, flag) is exactly
 // CalcInputPreimageLegacyFull(idx, uint32(flag)).
-func (tx *Transaction) CalcInputPreimageLegacyFull(inputNumber uint32, hashType uint32) ([]byte, error) {
+func (tx *Transaction) CalcInputPreimageLegacyFull(inputNumber, hashType uint32) ([]byte, error) {
 	return tx.calcInputPreimageLegacy(inputNumber, hashType)
 }
 
-func (tx *Transaction) calcInputPreimageLegacy(inputNumber uint32, hashType uint32) ([]byte, error) {
+func (tx *Transaction) calcInputPreimageLegacy(inputNumber, hashType uint32) ([]byte, error) {
 	shf := sighash.Flag(uint8(hashType)) //nolint:gosec // G115 -- intentional narrowing; only the low byte carries flag semantics, see CalcInputSignatureHashFull
 	if tx.InputIdx(int(inputNumber)) == nil {
 		return nil, ErrInputNoExist
