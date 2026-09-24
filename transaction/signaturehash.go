@@ -57,11 +57,11 @@ func (tx *Transaction) CalcInputSignatureHash(inputNumber uint32, sigHashFlag si
 // Every sighash.Flag combination is below 256, so
 // CalcInputSignatureHash(idx, flag) is exactly
 // CalcInputSignatureHashFull(idx, uint32(flag), false).
-func (tx *Transaction) CalcInputSignatureHashFull(inputNumber uint32, hashType uint32, ignoreChronicle bool) ([]byte, error) {
+func (tx *Transaction) CalcInputSignatureHashFull(inputNumber, hashType uint32, ignoreChronicle bool) ([]byte, error) {
 	return tx.calcInputSignatureHash(inputNumber, hashType, ignoreChronicle)
 }
 
-func (tx *Transaction) calcInputSignatureHash(inputNumber uint32, hashType uint32, ignoreChronicle bool) ([]byte, error) {
+func (tx *Transaction) calcInputSignatureHash(inputNumber, hashType uint32, ignoreChronicle bool) ([]byte, error) {
 	flag := sighash.Flag(uint8(hashType)) //nolint:gosec // G115 -- intentional narrowing: only the low byte carries flag semantics, see CalcInputSignatureHashFull
 
 	var buf []byte
@@ -178,7 +178,7 @@ func (tx *Transaction) CalcInputPreimageFull(inputNumber, hashType uint32) ([]by
 // 32-bit sighash type; only its low byte (as sighash.Flag) drives branching,
 // but the complete value is what gets written into the preimage trailer by
 // assemblePreimage.
-func (tx *Transaction) preimage(inputNumber uint32, hashType uint32, cache *SigHashCache) ([]byte, error) {
+func (tx *Transaction) preimage(inputNumber, hashType uint32, cache *SigHashCache) ([]byte, error) {
 	in := tx.InputIdx(int(inputNumber))
 	if in == nil {
 		return nil, ErrInputNoExist
