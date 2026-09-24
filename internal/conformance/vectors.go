@@ -97,29 +97,35 @@ func Load(t testing.TB, rel string) *File {
 // vector ID, applying the reference runner's governed-skip rules first.
 func Run(t *testing.T, f *File, fn func(t *testing.T, v Vector)) {
 	t.Helper()
-	fileParity := f.ParityClass
-	if fileParity == "" {
-		fileParity = "required"
-	}
 	for _, v := range f.Vectors {
 		t.Run(v.ID, func(t *testing.T) {
-			parity := v.ParityClass
-			if parity == "" {
-				parity = fileParity
-			}
-			reason := v.SkipReason
-			if reason == "" {
-				reason = f.SkipReason
-			}
-			if parity == "intended" || v.Skip {
-				if reason == "" {
-					reason = v.Notes
-				}
+			if parity, reason, skip := governedSkip(f, v); skip {
 				t.Skipf("governed skip (%s): %s", parity, reason)
 			}
 			fn(t, v)
 		})
 	}
+}
+
+// governedSkip reports whether the reference runner skips v: parity_class
+// "intended" (vector level, else file level) or an explicit skip flag.
+func governedSkip(f *File, v Vector) (parity, reason string, skip bool) {
+	parity = v.ParityClass
+	if parity == "" {
+		parity = f.ParityClass
+	}
+	if parity == "" {
+		parity = "required"
+	}
+	if parity != "intended" && !v.Skip {
+		return parity, "", false
+	}
+	for _, r := range []string{v.SkipReason, f.SkipReason, v.Notes} {
+		if r != "" {
+			return parity, r, true
+		}
+	}
+	return parity, "", true
 }
 
 // GoGap skips a vector the Go SDK deliberately does not implement. The reason
