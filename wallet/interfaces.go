@@ -152,15 +152,15 @@ const (
 
 // CreateActionOptions contains optional parameters for creating a new transaction
 type CreateActionOptions struct {
-	SignAndProcess         *bool
-	AcceptDelayedBroadcast *bool
-	TrustSelf              TrustSelf // "known" or ""
-	KnownTxids             []chainhash.Hash
-	ReturnTXIDOnly         *bool
-	NoSend                 *bool
-	NoSendChange           []transaction.Outpoint
-	SendWith               []chainhash.Hash
-	RandomizeOutputs       *bool
+	SignAndProcess         *bool                  `json:"signAndProcess,omitempty"`
+	AcceptDelayedBroadcast *bool                  `json:"acceptDelayedBroadcast,omitempty"`
+	TrustSelf              TrustSelf              `json:"trustSelf,omitempty"` // "known" or ""
+	KnownTxids             []chainhash.Hash       `json:"knownTxids,omitempty"`
+	ReturnTXIDOnly         *bool                  `json:"returnTXIDOnly,omitempty"`
+	NoSend                 *bool                  `json:"noSend,omitempty"`
+	NoSendChange           []transaction.Outpoint `json:"noSendChange,omitempty"`
+	SendWith               []chainhash.Hash       `json:"sendWith,omitempty"`
+	RandomizeOutputs       *bool                  `json:"randomizeOutputs,omitempty"`
 }
 
 // CreateActionArgs contains all data needed to create a new transaction
@@ -177,11 +177,11 @@ type CreateActionArgs struct {
 
 // CreateActionResult contains the results of creating a transaction
 type CreateActionResult struct {
-	Txid                chainhash.Hash
-	Tx                  []byte
-	NoSendChange        []transaction.Outpoint
-	SendWithResults     []SendWithResult
-	SignableTransaction *SignableTransaction
+	Txid                chainhash.Hash         `json:"txid,omitempty"`
+	Tx                  []byte                 `json:"tx,omitempty"`
+	NoSendChange        []transaction.Outpoint `json:"noSendChange,omitempty"`
+	SendWithResults     []SendWithResult       `json:"sendWithResults,omitempty"`
+	SignableTransaction *SignableTransaction   `json:"signableTransaction,omitempty"`
 }
 
 // ActionResultStatus represents the current state of a transaction action.
@@ -195,14 +195,14 @@ const (
 
 // SendWithResult tracks the status of transactions sent as part of a batch.
 type SendWithResult struct {
-	Txid   chainhash.Hash
-	Status ActionResultStatus
+	Txid   chainhash.Hash     `json:"txid"`
+	Status ActionResultStatus `json:"status"`
 }
 
 // SignableTransaction contains data needed to complete signing of a partial transaction.
 type SignableTransaction struct {
-	Tx        []byte
-	Reference []byte
+	Tx        []byte `json:"tx"`
+	Reference []byte `json:"reference"`
 }
 
 // SignActionSpend provides the unlocking script and sequence number for a specific input.
@@ -213,10 +213,10 @@ type SignActionSpend struct {
 
 // SignActionOptions controls signing and broadcasting behavior.
 type SignActionOptions struct {
-	AcceptDelayedBroadcast *bool
-	ReturnTXIDOnly         *bool
-	NoSend                 *bool
-	SendWith               []chainhash.Hash
+	AcceptDelayedBroadcast *bool            `json:"acceptDelayedBroadcast,omitempty"`
+	ReturnTXIDOnly         *bool            `json:"returnTXIDOnly,omitempty"`
+	NoSend                 *bool            `json:"noSend,omitempty"`
+	SendWith               []chainhash.Hash `json:"sendWith,omitempty"`
 }
 
 // SignActionArgs contains data needed to sign a previously created transaction.
@@ -228,9 +228,9 @@ type SignActionArgs struct {
 
 // SignActionResult contains the output of a successful signing operation.
 type SignActionResult struct {
-	Txid            chainhash.Hash
-	Tx              []byte
-	SendWithResults []SendWithResult
+	Txid            chainhash.Hash   `json:"txid,omitempty"`
+	Tx              []byte           `json:"tx,omitempty"`
+	SendWithResults []SendWithResult `json:"sendWithResults,omitempty"`
 }
 
 // ActionInput describes a transaction input with full details.

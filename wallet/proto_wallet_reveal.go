@@ -116,8 +116,8 @@ func (p *ProtoWallet) RevealSpecificKeyLinkage(
 	identityKey := p.keyDeriver.rootKey
 	proverPublicKey := identityKey.PubKey()
 
-	// Validate counterparty
-	counterpartyPubKey, err := getCounterpartyPublicKey(args.Counterparty)
+	// Resolve counterparty to a public key
+	counterpartyPubKey, err := getCounterpartyPublicKey(args.Counterparty, proverPublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -188,13 +188,17 @@ func padTo32Bytes(b []byte) []byte {
 	return padded
 }
 
-// getCounterpartyPublicKey converts a Counterparty to a PublicKey
-func getCounterpartyPublicKey(counterparty Counterparty) (*ec.PublicKey, error) {
+// getCounterpartyPublicKey resolves a Counterparty to a PublicKey, matching
+// the TS reference SDK's ProtoWallet.revealSpecificKeyLinkage: "self" and
+// "anyone" are valid counterparties there too (self resolves to the caller's
+// own identity key, anyone to the well-known "anyone" key), not errors.
+func getCounterpartyPublicKey(counterparty Counterparty, proverPublicKey *ec.PublicKey) (*ec.PublicKey, error) {
 	switch counterparty.Type {
 	case CounterpartyTypeSelf:
-		return nil, fmt.Errorf("cannot reveal specific key linkage for 'self'")
+		return proverPublicKey, nil
 	case CounterpartyTypeAnyone:
-		return nil, fmt.Errorf("cannot reveal specific key linkage for 'anyone'")
+		_, anyonePublicKey := AnyoneKey()
+		return anyonePublicKey, nil
 	case CounterpartyTypeOther:
 		if counterparty.Counterparty == nil {
 			return nil, fmt.Errorf("counterparty public key is required")
