@@ -515,12 +515,35 @@ func (t *thread) SetStack(data [][]byte) {
 }
 
 // subScript returns the script since the last OP_CODESEPARATOR.
+//
+// Post-Chronicle, a signature check executing in the unlocking script signs
+// everything from the most recent OP_CODESEPARATOR to the end of the unlocking
+// script plus the whole locking script, so the locking script is appended
+// (BSV node v1.2.0, OP_CHECKSIG / OP_CHECKMULTISIG in src/script/interpreter.cpp).
 func (t *thread) subScript() ParsedScript {
 	skip := 0
 	if t.lastCodeSep > 0 {
 		skip = t.lastCodeSep + 1 // +1 to skip the opcode separator itself
 	}
-	return t.scripts[t.scriptIdx][skip:]
+	sub := t.scripts[t.scriptIdx][skip:]
+	if t.afterChronicle && t.scriptIdx == 0 && len(t.scripts) > 1 {
+		combined := make(ParsedScript, 0, len(sub)+len(t.scripts[1]))
+		combined = append(combined, sub...)
+		return append(combined, t.scripts[1]...)
+	}
+	return sub
+}
+
+// strictEncodingHashType returns the hash type the strict-encoding checks
+// range-check: without SIGHASH_ANYONECANPAY, and post-Chronicle without
+// SIGHASH_CHRONICLE alongside SIGHASH_FORKID (a legal modifier selecting the
+// original transaction digest, which doesn't change the base type).
+func (t *thread) strictEncodingHashType(shf sighash.Flag) sighash.Flag {
+	sigHashType := shf & ^sighash.AnyOneCanPay
+	if t.afterChronicle && shf.Has(sighash.ForkID) {
+		sigHashType &= ^sighash.Chronicle
+	}
+	return sigHashType
 }
 
 // checkHashTypeEncoding returns whether the passed hashtype adheres to
@@ -530,7 +553,7 @@ func (t *thread) checkHashTypeEncoding(shf sighash.Flag) error {
 		return nil
 	}
 
-	sigHashType := shf & ^sighash.AnyOneCanPay
+	sigHashType := t.strictEncodingHashType(shf)
 	if t.hasFlag(scriptflag.VerifyBip143SigHash) {
 		sigHashType ^= sighash.ForkID
 		if shf&sighash.ForkID == 0 {
