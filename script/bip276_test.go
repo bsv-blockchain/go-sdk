@@ -186,6 +186,52 @@ func TestDecodeBIP276(t *testing.T) {
 		require.Equal(t, []byte{}, decoded.Data)
 	})
 
+	t.Run("issue 286 hex network version and empty data", func(t *testing.T) {
+		// Reproduction from go-sdk#286: hex letters in network/version and a
+		// distinct version must survive encode → decode. BIP-276 and
+		// EncodeBIP276 write version then network (0xAA then 0xFF).
+		original := script.BIP276{
+			Prefix:  "test",
+			Version: 170, // 0xAA
+			Network: 255, // 0xFF
+			Data:    []byte("hello"),
+		}
+		encoded := script.EncodeBIP276(original)
+		require.NotEqual(t, "ERROR", encoded)
+		require.Contains(t, encoded, "test:aaff68656c6c6f")
+
+		decoded, err := script.DecodeBIP276(encoded)
+		require.NoError(t, err)
+		require.Equal(t, "test", decoded.Prefix)
+		require.Equal(t, 255, decoded.Network)
+		require.Equal(t, 170, decoded.Version)
+		require.Equal(t, []byte("hello"), decoded.Data)
+
+		// Direct decode of the known testnet vector. A swapped assignment
+		// fails the checksum, because Encode writes version 01 then network 02.
+		testnet, err := script.DecodeBIP276("bitcoin-script:010266616b652073637269707494becee6")
+		require.NoError(t, err)
+		require.Equal(t, 1, testnet.Version)
+		require.Equal(t, 2, testnet.Network)
+		require.Equal(t, "fake script", string(testnet.Data))
+
+		empty := script.BIP276{
+			Prefix:  "test",
+			Version: 170,
+			Network: 255,
+			Data:    []byte{},
+		}
+		encodedEmpty := script.EncodeBIP276(empty)
+		require.NotEqual(t, "ERROR", encodedEmpty)
+		require.Contains(t, encodedEmpty, "test:aaff")
+
+		decodedEmpty, err := script.DecodeBIP276(encodedEmpty)
+		require.NoError(t, err)
+		require.Equal(t, 255, decodedEmpty.Network)
+		require.Equal(t, 170, decodedEmpty.Version)
+		require.Empty(t, decodedEmpty.Data)
+	})
+
 	t.Run("roundtrip encode-decode preserves all fields", func(t *testing.T) {
 		// Comprehensive test for encode/decode roundtrip
 		testCases := []script.BIP276{
