@@ -531,6 +531,12 @@ func (t *thread) checkHashTypeEncoding(shf sighash.Flag) error {
 	}
 
 	sigHashType := shf & ^sighash.AnyOneCanPay
+	// Post-Chronicle, SIGHASH_CHRONICLE alongside SIGHASH_FORKID is a legal
+	// modifier selecting the original transaction digest; it doesn't change
+	// the base type.
+	if t.afterChronicle && shf.Has(sighash.ForkID) {
+		sigHashType &= ^sighash.Chronicle
+	}
 	if t.hasFlag(scriptflag.VerifyBip143SigHash) {
 		sigHashType ^= sighash.ForkID
 		if shf&sighash.ForkID == 0 {
