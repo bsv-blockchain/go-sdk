@@ -515,12 +515,23 @@ func (t *thread) SetStack(data [][]byte) {
 }
 
 // subScript returns the script since the last OP_CODESEPARATOR.
+//
+// Post-Chronicle, a signature check executing in the unlocking script signs
+// everything from the most recent OP_CODESEPARATOR to the end of the unlocking
+// script plus the whole locking script, so the locking script is appended
+// (BSV node v1.2.0, OP_CHECKSIG / OP_CHECKMULTISIG in src/script/interpreter.cpp).
 func (t *thread) subScript() ParsedScript {
 	skip := 0
 	if t.lastCodeSep > 0 {
 		skip = t.lastCodeSep + 1 // +1 to skip the opcode separator itself
 	}
-	return t.scripts[t.scriptIdx][skip:]
+	sub := t.scripts[t.scriptIdx][skip:]
+	if t.afterChronicle && t.scriptIdx == 0 && len(t.scripts) > 1 {
+		combined := make(ParsedScript, 0, len(sub)+len(t.scripts[1]))
+		combined = append(combined, sub...)
+		return append(combined, t.scripts[1]...)
+	}
+	return sub
 }
 
 // checkHashTypeEncoding returns whether the passed hashtype adheres to
