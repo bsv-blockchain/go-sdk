@@ -534,6 +534,18 @@ func (t *thread) subScript() ParsedScript {
 	return sub
 }
 
+// strictEncodingHashType returns the hash type the strict-encoding checks
+// range-check: without SIGHASH_ANYONECANPAY, and post-Chronicle without
+// SIGHASH_CHRONICLE alongside SIGHASH_FORKID (a legal modifier selecting the
+// original transaction digest, which doesn't change the base type).
+func (t *thread) strictEncodingHashType(shf sighash.Flag) sighash.Flag {
+	sigHashType := shf & ^sighash.AnyOneCanPay
+	if t.afterChronicle && shf.Has(sighash.ForkID) {
+		sigHashType &= ^sighash.Chronicle
+	}
+	return sigHashType
+}
+
 // checkHashTypeEncoding returns whether the passed hashtype adheres to
 // the strict encoding requirements if enabled.
 func (t *thread) checkHashTypeEncoding(shf sighash.Flag) error {
@@ -541,13 +553,7 @@ func (t *thread) checkHashTypeEncoding(shf sighash.Flag) error {
 		return nil
 	}
 
-	sigHashType := shf & ^sighash.AnyOneCanPay
-	// Post-Chronicle, SIGHASH_CHRONICLE alongside SIGHASH_FORKID is a legal
-	// modifier selecting the original transaction digest; it doesn't change
-	// the base type.
-	if t.afterChronicle && shf.Has(sighash.ForkID) {
-		sigHashType &= ^sighash.Chronicle
-	}
+	sigHashType := t.strictEncodingHashType(shf)
 	if t.hasFlag(scriptflag.VerifyBip143SigHash) {
 		sigHashType ^= sighash.ForkID
 		if shf&sighash.ForkID == 0 {
