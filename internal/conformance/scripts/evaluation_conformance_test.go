@@ -9,14 +9,13 @@ import (
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/internal/conformance"
 	crypto "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/bsv-blockchain/go-sdk/util"
-
-	"github.com/bsv-blockchain/go-sdk/internal/conformance"
 )
 
 // TestEvaluation runs sdk/scripts/evaluation.json, the pinned snapshot of

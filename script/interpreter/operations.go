@@ -2582,7 +2582,7 @@ func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 			return errs.NewError(errs.ErrNumberTooBig, "%s: shift amount exceeds %d bits", name, math.MaxInt32)
 		}
 		// Shift the magnitude and restore the sign: truncation toward zero.
-		shifted = new(big.Int).Rsh(new(big.Int).Abs(val.Val), uint(n.Val.Uint64())) //nolint:gosec // G115 -- n <= math.MaxInt32, checked above
+		shifted = new(big.Int).Rsh(new(big.Int).Abs(val.Val), uint(n.Val.Uint64()))
 		if val.Val.Sign() < 0 {
 			shifted.Neg(shifted)
 		}
@@ -2594,7 +2594,7 @@ func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 		if shiftBytes.Cmp(big.NewInt(int64(maxLen-scriptNumEncodedLen(val.Val)))) > 0 {
 			return errs.NewError(errs.ErrNumberTooBig, "%s: script numbers are limited to %d bytes", name, maxLen)
 		}
-		shifted = new(big.Int).Lsh(val.Val, uint(n.Val.Uint64())) //nolint:gosec // G115 -- n/8 <= maxLen, checked above
+		shifted = new(big.Int).Lsh(val.Val, uint(n.Val.Uint64()))
 	}
 
 	if scriptNumEncodedLen(shifted) > maxLen {
@@ -2605,7 +2605,7 @@ func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 }
 
 // scriptNumEncodedLen returns the length of the minimal script number encoding
-// of v without serialising it: the magnitude's bytes plus room for the sign bit.
+// of v without serializing it: the magnitude's bytes plus room for the sign bit.
 func scriptNumEncodedLen(v *big.Int) int {
 	if v.Sign() == 0 {
 		return 0

@@ -5,10 +5,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/bsv-blockchain/go-sdk/internal/conformance"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
-
-	"github.com/bsv-blockchain/go-sdk/internal/conformance"
 )
 
 // TestRegressions runs the standalone script-* regression vector files,
