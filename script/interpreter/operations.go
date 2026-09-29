@@ -5,6 +5,7 @@ import (
 	"crypto/sha1" //nolint:gosec // OP_SHA1 support requires this
 	"crypto/sha256"
 	"hash"
+	"math"
 	"math/big"
 
 	"golang.org/x/crypto/ripemd160" //nolint:staticcheck,gosec // required
@@ -2544,6 +2545,21 @@ func opcodeRShiftNum(op *ParsedOpcode, t *thread) error {
 
 // opcodeShiftNum implements the shared logic for OP_LSHIFTNUM and OP_RSHIFTNUM.
 // rightShift=false performs a left shift; rightShift=true performs a right shift.
+//
+// Semantics follow the SV Node reference implementation (bitcoin-sv
+// src/script/interpreter.cpp OP_LSHIFTNUM/OP_RSHIFTNUM, which shift a
+// CScriptNum backed by bsv::bint, see src/script/script_num.cpp and
+// src/big_int.cpp):
+//
+//   - The shift operates on the magnitude and keeps the sign (OpenSSL
+//     BN_lshift/BN_rshift), so a right shift truncates toward zero:
+//     -5 >> 1 == -2 and -1 >> 1 == 0. It is division by 2^n, not an
+//     arithmetic shift on a two's-complement value.
+//   - A left shift fails with a script number overflow when the input's
+//     encoded size plus n/8 bytes, or the result's encoded size, exceeds the
+//     maximum script number length.
+//   - A right shift by more than math.MaxInt32 bits fails (bsv::bint rejects
+//     shift counts above INT_MAX).
 func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 	n, err := t.dstack.PopInt()
 	if err != nil {
@@ -2558,20 +2574,41 @@ func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 		return err
 	}
 
-	// Cap shift to avoid huge memory allocation; any shift beyond this saturates.
-	const maxShiftBits = MaxScriptNumberLengthAfterChronicle * 8
-	shift64 := n.Int64()
-	if shift64 > maxShiftBits {
-		shift64 = maxShiftBits
-	}
-	shiftAmt := uint(shift64)
+	maxLen := t.cfg.MaxScriptNumberLength()
 
 	var shifted *big.Int
 	if rightShift {
-		shifted = new(big.Int).Rsh(val.Val, shiftAmt)
+		if n.Val.Cmp(big.NewInt(math.MaxInt32)) > 0 {
+			return errs.NewError(errs.ErrNumberTooBig, "%s: shift amount exceeds %d bits", name, math.MaxInt32)
+		}
+		// Shift the magnitude and restore the sign: truncation toward zero.
+		shifted = new(big.Int).Rsh(new(big.Int).Abs(val.Val), uint(n.Val.Uint64())) //nolint:gosec // G115 -- n <= math.MaxInt32, checked above
+		if val.Val.Sign() < 0 {
+			shifted.Neg(shifted)
+		}
 	} else {
-		shifted = new(big.Int).Lsh(val.Val, shiftAmt)
+		// Reject before allocating when the result cannot fit: the node
+		// checks encoded size + n/8 against the limit (this also rejects
+		// 0 << n for large n).
+		shiftBytes := new(big.Int).Rsh(n.Val, 3)
+		if shiftBytes.Cmp(big.NewInt(int64(maxLen-scriptNumEncodedLen(val.Val)))) > 0 {
+			return errs.NewError(errs.ErrNumberTooBig, "%s: script numbers are limited to %d bytes", name, maxLen)
+		}
+		shifted = new(big.Int).Lsh(val.Val, uint(n.Val.Uint64())) //nolint:gosec // G115 -- n/8 <= maxLen, checked above
+	}
+
+	if scriptNumEncodedLen(shifted) > maxLen {
+		return errs.NewError(errs.ErrNumberTooBig, "%s: script numbers are limited to %d bytes", name, maxLen)
 	}
 	t.dstack.PushInt(&ScriptNumber{Val: shifted, AfterGenesis: t.afterGenesis})
 	return nil
+}
+
+// scriptNumEncodedLen returns the length of the minimal script number encoding
+// of v without serialising it: the magnitude's bytes plus room for the sign bit.
+func scriptNumEncodedLen(v *big.Int) int {
+	if v.Sign() == 0 {
+		return 0
+	}
+	return v.BitLen()/8 + 1
 }
