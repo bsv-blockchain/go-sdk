@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## Table of Contents
 
+- [Unreleased](#unreleased)
 - [1.2.22 - 2026-04-21](#1222---2026-04-21)
 - [1.2.21 - 2026-04-03](#1221---2026-04-03)
 - [1.2.20 - 2026-03-26](#1220---2026-03-26)
@@ -56,6 +57,14 @@ All notable changes to this project will be documented in this file. The format 
 - [1.1.1 - 2024-08-28](#111---2024-08-28)
 - [1.1.0 - 2024-08-19](#110---2024-08-19)
 - [1.0.0 - 2024-06-06](#100---2024-06-06)
+
+## [Unreleased]
+
+### Changed
+- **Breaking:** `script/interpreter`: `Engine.Execute` now defaults to after-Chronicle rules when no UTXO epoch is specified. Previously the default was pre-Genesis. Chronicle has been active on BSV mainnet since April 2026. To verify spends of older UTXOs, pass `WithAfterGenesis()` (after-Genesis, pre-Chronicle) or the new `WithBeforeGenesis()` (pre-Genesis). `WithFlags(...)` still treats its flags as a complete node-style set, so a flag set without `UTXOAfterGenesis`/`UTXOAfterChronicle` still means pre-Genesis.
+
+### Added
+- `script/interpreter`: `WithBeforeGenesis()` execution option.
 
 ## [1.2.22] - 2026-04-21
 

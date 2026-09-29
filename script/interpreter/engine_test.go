@@ -1105,6 +1105,7 @@ func TestLargeStackDataNUM2BIN(t *testing.T) {
 				execErr = NewEngine().Execute(
 					WithTx(tx, 0, prevOutput),
 					WithForkID(),
+					WithBeforeGenesis(),
 				)
 			}
 

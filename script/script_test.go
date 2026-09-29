@@ -749,7 +749,8 @@ func TestSpendValid(t *testing.T) {
 					Satoshis:      1,
 					LockingScript: lockingScript,
 				}),
-				// interpreter.WithAfterGenesis(),
+				// The spend vectors are pre-Genesis scripts.
+				interpreter.WithBeforeGenesis(),
 				interpreter.WithForkID(),
 			)
 			if err != nil {
