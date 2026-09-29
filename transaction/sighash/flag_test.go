@@ -161,6 +161,15 @@ func TestSighashFlagString(t *testing.T) {
 		{AllForkID | AnyOneCanPay, "ALL|FORKID|ANYONECANPAY"},
 		{NoneForkID | AnyOneCanPay, "NONE|FORKID|ANYONECANPAY"},
 		{SingleForkID | AnyOneCanPay, "SINGLE|FORKID|ANYONECANPAY"},
+		// GHSA-rh54-8fpg-8wwf: SIGHASH_CHRONICLE-bit combinations are
+		// now legal post-Chronicle, so String() names them instead of
+		// falling back to "ALL".
+		{AllForkID | Chronicle, "ALL|FORKID|CHRONICLE"},
+		{NoneForkID | Chronicle, "NONE|FORKID|CHRONICLE"},
+		{SingleForkID | Chronicle, "SINGLE|FORKID|CHRONICLE"},
+		{AllForkID | Chronicle | AnyOneCanPay, "ALL|FORKID|CHRONICLE|ANYONECANPAY"},
+		{NoneForkID | Chronicle | AnyOneCanPay, "NONE|FORKID|CHRONICLE|ANYONECANPAY"},
+		{SingleForkID | Chronicle | AnyOneCanPay, "SINGLE|FORKID|CHRONICLE|ANYONECANPAY"},
 		// Unrecognized flags fall back to "ALL"
 		{Flag(0xFF), "ALL"},
 		{Old, "ALL"},

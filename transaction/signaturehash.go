@@ -62,11 +62,36 @@ func (tx *Transaction) CalcInputSignatureHashFull(inputNumber, hashType uint32, 
 }
 
 func (tx *Transaction) calcInputSignatureHash(inputNumber, hashType uint32, ignoreChronicle bool) ([]byte, error) {
+	// CalcInputSignatureHash's historical behavior is unchanged: it is
+	// exactly calcInputSignatureHashForkIDEnabled with forkIDEnabled=true,
+	// matching every pre-existing (non-interpreter) caller, none of which
+	// ever validated a signature under a flag word that disables
+	// SIGHASH_FORKID.
+	return tx.calcInputSignatureHashForkIDEnabled(inputNumber, hashType, ignoreChronicle, true)
+}
+
+// CalcInputSignatureHashWithForkIDEnabled is CalcInputSignatureHash, except
+// the BIP143-vs-legacy digest selection also requires forkIDEnabled -- the
+// spending interpreter's own SCRIPT_ENABLE_SIGHASH_FORKID flag state --
+// ANDed with the signature's own ForkID bit, exactly as node's
+// SignatureHash(..., enabledSighashForkid) does (interpreter.cpp:2112-2124),
+// fed by checker.CheckSig's engine-flag parameter (interpreter.cpp:1487,
+// 1619). Without this, a hash type that merely carries the ForkID bit is
+// hashed BIP143-style even under a flag word that never enables ForkID (a
+// pre-UAHF-shaped word, which historical validation can hit).
+//
+// CalcInputSignatureHash keeps its existing behavior unchanged; it is
+// equivalent to calling this with forkIDEnabled = true.
+func (tx *Transaction) CalcInputSignatureHashWithForkIDEnabled(inputNumber uint32, sigHashFlag sighash.Flag, forkIDEnabled bool) ([]byte, error) {
+	return tx.calcInputSignatureHashForkIDEnabled(inputNumber, uint32(sigHashFlag), false, forkIDEnabled)
+}
+
+func (tx *Transaction) calcInputSignatureHashForkIDEnabled(inputNumber, hashType uint32, ignoreChronicle, forkIDEnabled bool) ([]byte, error) {
 	flag := sighash.Flag(uint8(hashType)) //nolint:gosec // G115 -- intentional narrowing: only the low byte carries flag semantics, see CalcInputSignatureHashFull
 
 	var buf []byte
 	var err error
-	if usesBip143Preimage(flag, ignoreChronicle) {
+	if forkIDEnabled && usesBip143Preimage(flag, ignoreChronicle) {
 		buf, err = tx.preimage(inputNumber, hashType, nil)
 	} else {
 		buf, err = tx.calcInputPreimageLegacy(inputNumber, hashType)
@@ -335,21 +360,14 @@ func (tx *Transaction) calcInputPreimageLegacy(inputNumber, hashType uint32) ([]
 		return defaultHex, nil
 	}
 
-	// ts-stack's TransactionSignature.formatOTDA unconditionally strips every
-	// OP_CODESEPARATOR from the signing input's subscript before serializing
-	// it (Script.removeCodeseparators()) — unlike formatBip143, which embeds
-	// the subscript as given. Mirror that here so the legacy/OTDA preimage
-	// matches byte-for-byte whenever the subscript contains a code separator.
+	// The signing input's subscript is written by appendLegacyScriptCode,
+	// which strips its OP_CODESEPARATORs the way node does (and ts-stack's
+	// TransactionSignature.formatOTDA does for well-formed scripts) -- unlike
+	// the BIP143 preimage, which embeds the subscript as given.
 	subscript := in.SourceTxScript()
-	if subscript != nil {
-		stripped, err := subscript.RemoveCodeSeparators()
-		if err != nil {
-			return nil, err
-		}
-		subscript = stripped
-	}
 
 	txCopy := tx.ShallowClone()
+	signingInput := txCopy.Inputs[inputNumber]
 
 	for i := range txCopy.Inputs {
 		if i == int(inputNumber) {
@@ -412,9 +430,8 @@ func (tx *Transaction) calcInputPreimageLegacy(inputNumber, hashType uint32) ([]
 	for _, in := range txCopy.Inputs {
 		buf = append(buf, in.SourceTXID[:]...)
 		buf = binary.LittleEndian.AppendUint32(buf, in.SourceTxOutIndex)
-		if s := in.SourceTxScript(); s != nil {
-			buf = appendVarInt(buf, uint64(len(*s)))
-			buf = append(buf, *s...)
+		if s := in.SourceTxScript(); in == signingInput && s != nil {
+			buf = appendLegacyScriptCode(buf, *s)
 		} else {
 			buf = appendVarInt(buf, 0)
 		}
@@ -429,6 +446,94 @@ func (tx *Transaction) calcInputPreimageLegacy(inputNumber, hashType uint32) ([]
 	buf = binary.LittleEndian.AppendUint32(buf, tx.LockTime)
 	buf = binary.LittleEndian.AppendUint32(buf, hashType)
 	return buf, nil
+}
+
+// appendLegacyScriptCode appends scriptCode to buf exactly as bitcoin-sv's
+// CTransactionSignatureSerializer::SerializeScriptCode writes it into the
+// legacy (original) signature preimage (interpreter.cpp:1862-1892): the
+// OP_CODESEPARATORs found while decoding it are left out, and the length
+// prefix is the script's full length minus their number. Decoding stops at
+// the first instruction that cannot be decoded (a push running past the end
+// of the script); the bytes read up to that point -- including the opcode
+// and any length bytes of the undecodable push -- are written, while the
+// length prefix still counts the whole script. A malformed scriptCode is
+// therefore never an error: it only yields node's (odd) serialization.
+func appendLegacyScriptCode(buf, scriptCode []byte) []byte {
+	nCodeSeparators := 0
+	for pc := 0; ; {
+		op, next, ok := legacyGetOp(scriptCode, pc)
+		if !ok {
+			break
+		}
+		if op == script.OpCODESEPARATOR {
+			nCodeSeparators++
+		}
+		pc = next
+	}
+	buf = appendVarInt(buf, uint64(len(scriptCode)-nCodeSeparators))
+
+	begin, pc := 0, 0
+	for {
+		op, next, ok := legacyGetOp(scriptCode, pc)
+		pc = next
+		if !ok {
+			break
+		}
+		if op == script.OpCODESEPARATOR {
+			buf = append(buf, scriptCode[begin:pc-1]...)
+			begin = pc
+		}
+	}
+	if begin != len(scriptCode) {
+		buf = append(buf, scriptCode[begin:pc]...)
+	}
+
+	return buf
+}
+
+// legacyGetOp reads the instruction at scr[pc] like CScript::GetOp2
+// (script.h:163-198). It returns the opcode and the position after the
+// instruction, or ok=false with the position GetOp2 leaves its iterator at
+// when it fails: unchanged at the end of the script, otherwise just past the
+// opcode byte and whatever length bytes of the push it could read.
+func legacyGetOp(scr []byte, pc int) (op byte, next int, ok bool) {
+	if pc >= len(scr) {
+		return 0, pc, false
+	}
+	op = scr[pc]
+	pc++
+	if op > script.OpPUSHDATA4 {
+		return op, pc, true
+	}
+
+	var size uint64
+	switch op {
+	case script.OpPUSHDATA1:
+		if len(scr)-pc < 1 {
+			return op, pc, false
+		}
+		size = uint64(scr[pc])
+		pc++
+	case script.OpPUSHDATA2:
+		if len(scr)-pc < 2 {
+			return op, pc, false
+		}
+		size = uint64(binary.LittleEndian.Uint16(scr[pc:]))
+		pc += 2
+	case script.OpPUSHDATA4:
+		if len(scr)-pc < 4 {
+			return op, pc, false
+		}
+		size = uint64(binary.LittleEndian.Uint32(scr[pc:]))
+		pc += 4
+	default:
+		size = uint64(op)
+	}
+	if uint64(len(scr)-pc) < size { //nolint:gosec // G115 -- pc <= len(scr), checked above
+		return op, pc, false
+	}
+
+	return op, pc + int(size), true
 }
 
 // OutputsHash returns a bytes slice of the requested output, used for generating

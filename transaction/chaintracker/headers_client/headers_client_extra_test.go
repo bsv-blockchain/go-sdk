@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 	tu "github.com/bsv-blockchain/go-sdk/util/test_util"
 )
 
@@ -53,6 +54,23 @@ func TestNewClientWithHTTPClient(t *testing.T) {
 func TestWithHTTPClientNilPanics(t *testing.T) {
 	t.Parallel()
 	require.Panics(t, func() { WithHTTPClient(nil) })
+}
+
+// TestClientActivationHeights checks that a Client reports mainnet's
+// activation heights unless it was constructed with WithActivationHeights.
+func TestClientActivationHeights(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, scriptflag.MainNetActivationHeights, (&Client{Url: "https://headers.test"}).ActivationHeights())
+	require.Equal(t, scriptflag.MainNetActivationHeights, NewClient("https://headers.test", testAPIKey).ActivationHeights())
+
+	heights := scriptflag.TestNetActivationHeights
+	c := NewClient("https://headers.test", testAPIKey, WithActivationHeights(heights))
+	heights.Genesis = 0 // the Client keeps its own copy
+	require.Equal(t, scriptflag.TestNetActivationHeights, c.ActivationHeights())
+
+	c = NewClient("https://headers.test", testAPIKey, WithActivationHeights(scriptflag.ActivationHeights{}))
+	require.Equal(t, scriptflag.ActivationHeights{}, c.ActivationHeights())
 }
 
 func TestIsValidRootForHeightConfirmed(t *testing.T) {

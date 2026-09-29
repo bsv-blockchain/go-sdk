@@ -103,7 +103,7 @@ func TestMakeScriptNum(t *testing.T) {
 
 	tests := []struct {
 		serialized      []byte
-		num             int
+		num             int64
 		numLen          int
 		minimalEncoding bool
 		err             error
@@ -142,10 +142,18 @@ func TestMakeScriptNum(t *testing.T) {
 		{hexToBytes("ffffffffff"), -549755813887, 5, true, nil},
 		{hexToBytes("ffffffffffffff7f"), 9223372036854775807, 8, true, nil},
 		{hexToBytes("ffffffffffffffff"), -9223372036854775807, 8, true, nil},
-		{hexToBytes("ffffffffffffffff7f"), -1, 9, true, nil},
-		{hexToBytes("ffffffffffffffffff"), 1, 9, true, nil},
-		{hexToBytes("ffffffffffffffffff7f"), -1, 10, true, nil},
-		{hexToBytes("ffffffffffffffffffff"), 1, 10, true, nil},
+
+		// These 9- and 10-byte values decode (via the general, non-legacy
+		// sign-magnitude path) to magnitudes far beyond int64 range --
+		// 2^71-1 and 2^79-1 respectively. gotNum.Int() must saturate to
+		// math.MaxInt64/math.MinInt64 (see ScriptNumber.Int()'s doc comment
+		// and GHSA-rh54-8fpg-8wwf), not silently truncate to the low 64
+		// bits the way the pre-fix implementation did (which produced -1/1
+		// here purely as an artifact of that truncation).
+		{hexToBytes("ffffffffffffffff7f"), math.MaxInt64, 9, true, nil},
+		{hexToBytes("ffffffffffffffffff"), math.MinInt64, 9, true, nil},
+		{hexToBytes("ffffffffffffffffff7f"), math.MaxInt64, 10, true, nil},
+		{hexToBytes("ffffffffffffffffffff"), math.MinInt64, 10, true, nil},
 
 		// Minimally encoded values that are out of range for data that
 		// is interpreted as script numbers with the minimal encoding
@@ -206,10 +214,22 @@ func TestMakeScriptNum(t *testing.T) {
 			continue
 		}
 
-		if gotNum.Int() != test.num {
+		if gotNum.Int64() != test.num {
 			t.Errorf("makeScriptNumber(%#x): did not get expected number - got %d, want %d",
 				test.serialized, gotNum.Int64(), test.num)
 			continue
+		}
+
+		// Int saturates to the platform's int range.
+		wantInt := math.MaxInt
+		switch {
+		case test.num < math.MinInt:
+			wantInt = math.MinInt
+		case test.num <= math.MaxInt:
+			wantInt = int(test.num)
+		}
+		if gotNum.Int() != wantInt {
+			t.Errorf("makeScriptNumber(%#x).Int() = %d, want %d", test.serialized, gotNum.Int(), wantInt)
 		}
 	}
 }

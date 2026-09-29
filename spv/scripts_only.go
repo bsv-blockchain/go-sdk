@@ -16,3 +16,8 @@ func (g *GullibleHeadersClient) IsValidRootForHeight(ctx context.Context, merkle
 func (g *GullibleHeadersClient) CurrentHeight(ctx context.Context) (uint32, error) {
 	return 800000, nil // Return a dummy height for testing
 }
+
+// noRealChainTip marks CurrentHeight as a placeholder, so that Verify skips
+// the checks that need the chain tip (finality and coinbase maturity)
+// rather than judging them against height 800,000.
+func (g *GullibleHeadersClient) noRealChainTip() {}

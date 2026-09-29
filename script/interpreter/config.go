@@ -22,9 +22,22 @@ const (
 	MaxScriptNumberLengthBeforeGenesis = 4
 	MaxPubKeysPerMultiSigBeforeGenesis = 20
 
-	// MaxScriptNumberLengthAfterChronicle is the max script number length after the Chronicle upgrade (32MB).
-	MaxScriptNumberLengthAfterChronicle = 32 * 1024 * 1024
+	// MaxScriptNumberLengthAfterChronicle is the max script number length
+	// after the Chronicle upgrade: 32,000,000 bytes, matching node's
+	// consensus/consensus.h:66 MAX_SCRIPT_NUM_LENGTH_AFTER_CHRONICLE =
+	// 32*ONE_MEGABYTE (a decimal megabyte, not 32*1024*1024). The name is
+	// kept for API stability even though the value is not a power-of-two
+	// byte count; see GHSA-rh54-8fpg-8wwf.
+	MaxScriptNumberLengthAfterChronicle = 32_000_000
 )
+
+// DefaultMaxStackMemory is the stack memory limit, in bytes, that an Engine
+// applies to an output created after Genesis unless WithMaxStackMemory sets
+// another: bitcoin-sv's default relay policy,
+// DEFAULT_STACK_MEMORY_USAGE_POLICY_AFTER_GENESIS (policy/policy.h:153).
+// Every element on the data and alt stacks counts its size plus 32 bytes.
+// Blocks are validated with no such limit; see WithMaxStackMemory.
+const DefaultMaxStackMemory int64 = 100_000_000
 
 type (
 	beforeGenesisConfig  struct{}

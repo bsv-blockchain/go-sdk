@@ -98,7 +98,9 @@ const (
 	ErrTooManyOperations
 
 	// ErrStackOverflow is returned when stack and altstack combined depth
-	// is over the limit.
+	// is over the limit, or when their combined memory would exceed the
+	// stack memory limit (see interpreter.WithMaxStackMemory). Node reports
+	// both as SCRIPT_ERR_STACK_SIZE.
 	ErrStackOverflow
 
 	// ErrInvalidPubKeyCount is returned when the number of public keys
@@ -325,6 +327,24 @@ const (
 	// set, but the ScriptEnableSighashForkID flag is not set.
 	ErrIllegalForkID
 
+	// ErrMustUseForkID is returned when the ScriptEnableSighashForkID flag is
+	// set but a signature's hash type does not have the ForkID bit set.
+	ErrMustUseForkID
+
+	// ErrIllegalChronicle is returned when a signature's hash type has the
+	// SIGHASH_CHRONICLE bit set but the Chronicle flag is not set.
+	ErrIllegalChronicle
+
+	// ErrBigInt is returned when a big-integer operation is outside the range
+	// the node supports, such as a shift count above math.MaxInt32.
+	ErrBigInt
+
+	// ErrExecutionCancelled is returned when the context.Context passed to
+	// WithContext is done before or during execution. The error also
+	// unwraps to ctx.Err(), so errors.Is(err, context.Canceled) or
+	// errors.Is(err, context.DeadlineExceeded) identify why.
+	ErrExecutionCancelled
+
 	// numErrorCodes is the maximum error code number used in tests.  This
 	// entry MUST be the last entry in the enum.
 	numErrorCodes
@@ -394,6 +414,10 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrNegativeLockTime:         "ErrNegativeLockTime",
 	ErrUnsatisfiedLockTime:      "ErrUnsatisfiedLockTime",
 	ErrIllegalForkID:            "ErrIllegalForkID",
+	ErrMustUseForkID:            "ErrMustUseForkID",
+	ErrIllegalChronicle:         "ErrIllegalChronicle",
+	ErrBigInt:                   "ErrBigInt",
+	ErrExecutionCancelled:       "ErrExecutionCancelled",
 }
 
 // String returns the ErrorCode as a human-readable name.
@@ -418,6 +442,12 @@ func (e ErrorCode) String() string {
 type Error struct {
 	ErrorCode   ErrorCode
 	Description string
+	// Cause is the wrapped error, if any. It is nil for every Error built
+	// with NewError; only NewCancelError sets it, to the context.Context
+	// error that stopped execution. Unwrap exposes it so errors.Is can
+	// identify the cause without changing what IsErrorCode or a type
+	// assertion to Error sees.
+	Cause error
 }
 
 // Error satisfies the error interface and prints human-readable errors.
@@ -425,9 +455,28 @@ func (e Error) Error() string {
 	return e.Description
 }
 
+// Unwrap returns Cause, which is nil for every Error except one built with
+// NewCancelError. A nil Cause simply ends errors.Is/errors.As traversal,
+// exactly as it did before Error had an Unwrap method.
+func (e Error) Unwrap() error {
+	return e.Cause
+}
+
 // NewError creates an Error given a set of arguments.
 func NewError(c ErrorCode, desc string, fmtArgs ...any) Error {
 	return Error{ErrorCode: c, Description: fmt.Sprintf(desc, fmtArgs...)}
+}
+
+// NewCancelError creates an ErrExecutionCancelled Error wrapping cause,
+// the context.Context error (context.Canceled or context.DeadlineExceeded)
+// that stopped execution. The result satisfies both
+// IsErrorCode(err, ErrExecutionCancelled) and errors.Is(err, cause).
+func NewCancelError(cause error) Error {
+	return Error{
+		ErrorCode:   ErrExecutionCancelled,
+		Description: fmt.Sprintf("script execution cancelled: %v", cause),
+		Cause:       cause,
+	}
 }
 
 // IsErrorCode returns whether the provided error is a script error with

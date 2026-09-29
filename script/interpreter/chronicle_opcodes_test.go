@@ -421,14 +421,16 @@ func TestChronicleOpcodesPostChronicle(t *testing.T) {
 func TestChronicleOpcodesEdgeCases(t *testing.T) {
 	t.Parallel()
 
-	t.Run("OP_VER without tx returns error post-Chronicle", func(t *testing.T) {
+	t.Run("OP_VER without tx pushes version 0 post-Chronicle", func(t *testing.T) {
 		t.Parallel()
-		locking := buildScript(t, script.OpVER, script.Op1)
+		// Like node's BaseSignatureChecker, a missing transaction has
+		// version 0 (interpreter.h:69-72).
+		locking := buildScript(t, script.OpVER, []byte{0, 0, 0, 0}, script.OpEQUAL)
 		err := NewEngine().Execute(
 			WithScripts(locking, &script.Script{}),
 			WithAfterChronicle(),
 		)
-		require.Error(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("OP_SUBSTR invalid range rejected post-Chronicle", func(t *testing.T) {
@@ -581,11 +583,14 @@ func TestChronicleOpcodesEdgeCases(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("MaxScriptNumberLength is 32MB post-Chronicle", func(t *testing.T) {
+	t.Run("MaxScriptNumberLength is 32,000,000 post-Chronicle", func(t *testing.T) {
 		t.Parallel()
 		cfg := &afterChronicleConfig{}
 		require.Equal(t, MaxScriptNumberLengthAfterChronicle, cfg.MaxScriptNumberLength())
-		require.Equal(t, 32*1024*1024, cfg.MaxScriptNumberLength())
+		// 32,000,000 (32 decimal megabytes), matching node's
+		// consensus/consensus.h:66 MAX_SCRIPT_NUM_LENGTH_AFTER_CHRONICLE,
+		// not 32*1024*1024. See GHSA-rh54-8fpg-8wwf.
+		require.Equal(t, 32_000_000, cfg.MaxScriptNumberLength())
 	})
 
 	t.Run("afterChronicleConfig implies afterGenesis", func(t *testing.T) {
@@ -680,11 +685,11 @@ func TestChronicleShiftNumNodeSemantics(t *testing.T) {
 		{name: "-5 >> INT_MAX == 0", value: i(-5), shift: i(math.MaxInt32), right: true, expected: i(0)},
 		{
 			name: "shift above INT_MAX fails", value: i(-5), shift: i(math.MaxInt32 + 1), right: true,
-			errCode: errs.ErrNumberTooBig,
+			errCode: errs.ErrBigInt, // node: bint rejects counts above INT_MAX, SCRIPT_ERR_BIG_INT,
 		},
 		{
 			name: "shift of 2^64+1 fails", value: i(5), shift: new(big.Int).Add(pow2(64), i(1)), right: true,
-			errCode: errs.ErrNumberTooBig,
+			errCode: errs.ErrBigInt, // node: bint rejects counts above INT_MAX, SCRIPT_ERR_BIG_INT,
 		},
 		{name: "negative right shift count fails", value: i(5), shift: i(-1), right: true, errCode: errs.ErrNumberTooSmall},
 
@@ -738,10 +743,10 @@ func TestChronicleShiftNumNodeSemantics(t *testing.T) {
 	}
 }
 
-func TestScriptNumEncodedLen(t *testing.T) {
+func TestSerializedSize(t *testing.T) {
 	t.Parallel()
 	for _, v := range []int64{0, 1, -1, 0x7f, -0x7f, 0x80, -0x80, 0xff, 0x7fff, 0x8000, -0x8000, math.MaxInt64, math.MinInt64 + 1} {
 		n := big.NewInt(v)
-		require.Len(t, (&ScriptNumber{Val: n, AfterGenesis: true}).Bytes(), scriptNumEncodedLen(n), "value %d", v)
+		require.Len(t, (&ScriptNumber{Val: n, AfterGenesis: true}).Bytes(), serializedSize(n), "value %d", v)
 	}
 }

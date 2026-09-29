@@ -491,6 +491,14 @@ func dispatchNodeScriptFixture(t *testing.T, input, expected jsonMap) {
 	}
 	prevOut := &transaction.TransactionOutput{LockingScript: lockingScript, Satoshis: amount}
 	flags := parseFlagsCSV(t, getString(input, "flags_csv"))
+	// Teranode's copy of script_tests.json predates bitcoin-sv's spend-era
+	// SCRIPT_GENESIS flag: bitcoin-sv's own copy of these vectors now reads
+	// "GENESIS,SIGPUSHONLY" (test/data/script_tests.json), since the node only
+	// enforces SIGPUSHONLY for spends validated under Genesis rules. Teranode
+	// only validates post-Genesis spends, so evaluate its fixtures as such.
+	if slices.Contains(getStringSlice(input, "sources"), "teranode") {
+		flags |= scriptflag.Genesis
+	}
 
 	err = interpreter.NewEngine().Execute(
 		interpreter.WithTx(tx, 0, prevOut),

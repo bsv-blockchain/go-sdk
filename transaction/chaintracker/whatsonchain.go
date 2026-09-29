@@ -9,6 +9,7 @@ import (
 	woc "github.com/mrz1836/go-whatsonchain"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
@@ -82,6 +83,17 @@ func NewWhatsOnChain(network Network, apiKey string, opts ...func(*WhatsOnChainO
 		ApiKey:     apiKey,
 		httpClient: options.HTTPClient,
 	}
+}
+
+// ActivationHeights returns the script-rule activation heights of the network
+// w follows, for spv.Verify: testnet's for TestNet and mainnet's for any
+// other network, as spv.Verify assumes for a chain tracker that does not say.
+// Wrap w with spv.WithActivationHeights to verify another network.
+func (w *WhatsOnChain) ActivationHeights() scriptflag.ActivationHeights {
+	if w.Network == TestNet {
+		return scriptflag.TestNetActivationHeights
+	}
+	return scriptflag.MainNetActivationHeights
 }
 
 // client builds the underlying go-whatsonchain client, threading the caller's

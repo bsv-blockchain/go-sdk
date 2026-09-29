@@ -17,9 +17,25 @@ import (
 
 const spvWIF = "KznvCNc6Yf4iztSThoMH6oHWzH9EgjfodKxmeuUGPq5DEX5maspS"
 
+// unminedSource returns an unmined transaction paying out that spends an
+// anyone-can-spend output of the same amount supplied without its source
+// transaction, so Verify checks it without consulting a chain tracker.
+func unminedSource(out *transaction.TransactionOutput) *transaction.Transaction {
+	in := &transaction.TransactionInput{
+		SourceTXID:      &chainhash.Hash{},
+		UnlockingScript: &script.Script{},
+		SequenceNumber:  transaction.DefaultSequenceNumber,
+	}
+	in.SetSourceTxOutput(&transaction.TransactionOutput{Satoshis: out.Satoshis, LockingScript: opTrue})
+	src := transaction.NewTransaction()
+	src.AddInput(in)
+	src.AddOutput(out)
+	return src
+}
+
 // signedP2PKHTx builds a signed 1-in/1-out P2PKH transaction whose single source
-// transaction has no inputs and no merkle path, so Verify completes entirely
-// from scripts without ever consulting a chain tracker.
+// transaction is unminedSource's, so Verify completes entirely from scripts
+// without ever consulting a chain tracker.
 func signedP2PKHTx(t *testing.T) *transaction.Transaction {
 	t.Helper()
 	priv, err := ec.PrivateKeyFromWif(spvWIF)
@@ -32,8 +48,7 @@ func signedP2PKHTx(t *testing.T) *transaction.Transaction {
 	require.NoError(t, err)
 
 	tx := transaction.NewTransaction()
-	src := transaction.NewTransaction()
-	src.AddOutput(&transaction.TransactionOutput{Satoshis: 100_000, LockingScript: lock})
+	src := unminedSource(&transaction.TransactionOutput{Satoshis: 100_000, LockingScript: lock})
 	tx.AddInputFromTx(src, 0, unlocker)
 	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: lock})
 	require.NoError(t, tx.Sign())
@@ -150,8 +165,7 @@ func TestSPVVerifyChronicleOpcodes(t *testing.T) {
 	require.NoError(t, lock.AppendOpcodes(script.Op2, script.Op2MUL, script.Op4, script.OpEQUAL))
 
 	tx := transaction.NewTransaction()
-	src := transaction.NewTransaction()
-	src.AddOutput(&transaction.TransactionOutput{Satoshis: 100_000, LockingScript: lock})
+	src := unminedSource(&transaction.TransactionOutput{Satoshis: 100_000, LockingScript: lock})
 	tx.AddInputFromTx(src, 0, nil)
 	tx.Inputs[0].UnlockingScript = &script.Script{}
 	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 1000, LockingScript: lock})

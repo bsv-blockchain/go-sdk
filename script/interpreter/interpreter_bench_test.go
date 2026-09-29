@@ -59,6 +59,25 @@ func BenchmarkEngineExecuteP2PKH(b *testing.B) {
 	}
 }
 
+// BenchmarkEngineExecuteStackOps measures a signature-free script that is
+// nothing but stack traffic: 1,000 rounds of OP_1 OP_DUP OP_ADD OP_DROP, the
+// case where per-push and per-pop bookkeeping is most visible.
+func BenchmarkEngineExecuteStackOps(b *testing.B) {
+	lock := make(script.Script, 0, 4001)
+	for range 1000 {
+		lock = append(lock, script.Op1, script.OpDUP, script.OpADD, script.OpDROP)
+	}
+	lock = append(lock, script.Op1)
+	unlock := &script.Script{script.Op1}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := NewEngine().Execute(WithScripts(&lock, unlock), WithAfterChronicle()); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // BenchmarkScriptNumberArithmetic measures each big.Int-backed script number
 // operation. The receiver is reset to a fixed value each iteration so results
 // stay bounded and comparable (the ops mutate the receiver in place).

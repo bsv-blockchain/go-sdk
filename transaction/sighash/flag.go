@@ -73,6 +73,18 @@ func (f Flag) String() string {
 		return "NONE|FORKID|ANYONECANPAY"
 	case SingleForkID | AnyOneCanPay:
 		return "SINGLE|FORKID|ANYONECANPAY"
+	case AllForkID | Chronicle:
+		return "ALL|FORKID|CHRONICLE"
+	case NoneForkID | Chronicle:
+		return "NONE|FORKID|CHRONICLE"
+	case SingleForkID | Chronicle:
+		return "SINGLE|FORKID|CHRONICLE"
+	case AllForkID | Chronicle | AnyOneCanPay:
+		return "ALL|FORKID|CHRONICLE|ANYONECANPAY"
+	case NoneForkID | Chronicle | AnyOneCanPay:
+		return "NONE|FORKID|CHRONICLE|ANYONECANPAY"
+	case SingleForkID | Chronicle | AnyOneCanPay:
+		return "SINGLE|FORKID|CHRONICLE|ANYONECANPAY"
 	}
 
 	return "ALL"

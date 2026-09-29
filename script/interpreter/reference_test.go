@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"os"
 	"strconv"
@@ -126,28 +127,77 @@ func parseShortForm(scriptStr string) (*script.Script, error) {
 	return &scr, nil
 }
 
-// scriptTestName returns a descriptive test name for the given reference script
-// test data.
-func scriptTestName(test []any) (string, error) {
-	// The test must consist of at least a signature script, public key script,
-	// flags, and expected error.  Finally, it may optionally contain a comment.
-	if len(test) < 4 || 6 < len(test) {
-		//nolint:forbidigo // test debug output
-		fmt.Printf("%#v\n", test)
-		return "", fmt.Errorf("invalid test length %d", len(test))
+// scriptTest is one parsed script_tests.json vector.
+type scriptTest struct {
+	name      string
+	amount    int64 // satoshis
+	txVersion uint32
+	sigScript string
+	pkScript  string
+	flags     string
+	result    string
+}
+
+// parseScriptTest parses one script_tests.json vector. bitcoin-sv's format
+// (test/script_tests.cpp script_json_test) is
+//
+//	[[wit..., amount]?, txnVersion, scriptSig, scriptPubKey, flags, expected_scripterror, comment?]
+//
+// where the node reads the amount (in BTC) from the array's first element and
+// txnVersion is the spending transaction's version as a decimal string. The
+// txnVersion field is optional here so that copies of the corpus predating it
+// (version 1 implied) still load.
+func parseScriptTest(test []any) (scriptTest, error) {
+	var st scriptTest
+	fields := test
+	if len(fields) > 0 {
+		if wit, ok := fields[0].([]any); ok {
+			if len(wit) == 0 {
+				return st, errors.New("empty witness/amount array")
+			}
+			f, ok := wit[0].(float64)
+			if !ok {
+				return st, errors.New("amount is not a number")
+			}
+			st.amount = int64(math.Round(f * 1e8))
+			fields = fields[1:]
+		}
 	}
+
+	strs := make([]string, len(fields))
+	for i, f := range fields {
+		s, ok := f.(string)
+		if !ok {
+			return st, fmt.Errorf("field %d is not a string", i)
+		}
+		strs[i] = s
+	}
+
+	st.txVersion = 1
+	if len(strs) >= 5 {
+		if _, err := parseExpectedResult(strs[4]); err == nil {
+			v, err := strconv.ParseInt(strs[0], 10, 32)
+			if err != nil {
+				return st, fmt.Errorf("bad txnVersion %q: %w", strs[0], err)
+			}
+			st.txVersion = uint32(int32(v)) //nolint:gosec // G115 -- nVersion is a signed int32 on the wire
+			strs = strs[1:]
+		}
+	}
+	if len(strs) < 4 || len(strs) > 5 {
+		return st, fmt.Errorf("invalid test length %d", len(test))
+	}
+	st.sigScript, st.pkScript, st.flags, st.result = strs[0], strs[1], strs[2], strs[3]
 
 	// Use the comment for the test name if one is specified, otherwise,
 	// construct the name based on the signature script, public key script,
 	// and flags.
-	var name string
-	if len(test) >= 5 {
-		name = fmt.Sprintf("test (%s)", test[len(test)-1])
+	if len(strs) == 5 {
+		st.name = fmt.Sprintf("test (%s)", strs[4])
 	} else {
-		name = fmt.Sprintf("test ([%s, %s, %s])", test[0],
-			test[1], test[2])
+		st.name = fmt.Sprintf("test ([%s, %s, %s])", strs[0], strs[1], strs[2])
 	}
-	return name, nil
+	return st, nil
 }
 
 // parse hex string into a []byte.
@@ -200,6 +250,14 @@ func parseScriptFlags(flagStr string) (scriptflag.Flag, error) {
 			flags |= scriptflag.VerifyStrictEncoding
 		case "UTXO_AFTER_GENESIS":
 			flags |= scriptflag.UTXOAfterGenesis
+		case "UTXO_AFTER_CHRONICLE":
+			// One bit, like node's ParseScriptFlags: without
+			// UTXO_AFTER_GENESIS it is SCRIPT_ERR_INVALID_FLAGS.
+			flags |= scriptflag.UTXOAfterChronicle
+		case "GENESIS":
+			flags |= scriptflag.Genesis
+		case "CHRONICLE":
+			flags |= scriptflag.Genesis | scriptflag.Chronicle
 		case "MINIMALIF":
 			flags |= scriptflag.VerifyMinimalIf
 		case "SIGHASH_FORKID":
@@ -235,7 +293,10 @@ func parseExpectedResult(expected string) ([]errs.ErrorCode, error) {
 			errs.ErrInvalidSigHashType,
 		}, nil
 	case "EVAL_FALSE":
-		return []errs.ErrorCode{errs.ErrEvalFalse, errs.ErrEmptyStack}, nil
+		// The node checks the final stack element before CLEANSTACK
+		// (VerifyScript), the SDK after, so a false top element with extra
+		// items below it reports ErrCleanStack; both reject.
+		return []errs.ErrorCode{errs.ErrEvalFalse, errs.ErrEmptyStack, errs.ErrCleanStack}, nil
 	case "EQUALVERIFY":
 		return []errs.ErrorCode{errs.ErrEqualVerify}, nil
 	case "NULLFAIL":
@@ -244,6 +305,26 @@ func parseExpectedResult(expected string) ([]errs.ErrorCode, error) {
 		return []errs.ErrorCode{errs.ErrSigHighS}, nil
 	case "SIG_HASHTYPE":
 		return []errs.ErrorCode{errs.ErrInvalidSigHashType}, nil
+	case "ILLEGAL_CHRONICLE":
+		return []errs.ErrorCode{errs.ErrIllegalChronicle}, nil
+	case "MISSING_FORKID", "MUST_USE_FORKID":
+		// script_tests.cpp names SCRIPT_ERR_MUST_USE_FORKID "MISSING_FORKID".
+		return []errs.ErrorCode{errs.ErrMustUseForkID}, nil
+	case "BIG_INT":
+		return []errs.ErrorCode{errs.ErrBigInt}, nil
+	case "INVALID_FLAGS":
+		return []errs.ErrorCode{errs.ErrInvalidFlags}, nil
+	case "IMPOSSIBLE_ENCODING":
+		// OP_NUM2BIN whose value does not fit the requested size.
+		return []errs.ErrorCode{errs.ErrNumberTooSmall}, nil
+	case "CHECKMULTISIGVERIFY":
+		return []errs.ErrorCode{errs.ErrCheckMultiSigVerify}, nil
+	case "NUMEQUALVERIFY":
+		return []errs.ErrorCode{errs.ErrNumEqualVerify}, nil
+	case "NONCOMPRESSED_PUBKEY":
+		return []errs.ErrorCode{errs.ErrPubKeyType}, nil
+	case "UNKNOWN_ERROR":
+		return []errs.ErrorCode{errs.ErrInternal}, nil
 	case "SIG_NULLDUMMY":
 		return []errs.ErrorCode{errs.ErrSigNullDummy}, nil
 	case "SIG_PUSHONLY":
@@ -272,7 +353,9 @@ func parseExpectedResult(expected string) ([]errs.ErrorCode, error) {
 	case "NUMBER_SIZE":
 		return []errs.ErrorCode{errs.ErrNumberTooBig, errs.ErrNumberTooSmall}, nil
 	case "PUSH_SIZE":
-		return []errs.ErrorCode{errs.ErrElementTooBig}, nil
+		// OP_NUM2BIN reports an out-of-range size as SCRIPT_ERR_PUSH_SIZE on
+		// the node and as ErrNumberTooBig/ErrNumberTooSmall in the SDK.
+		return []errs.ErrorCode{errs.ErrElementTooBig, errs.ErrNumberTooBig, errs.ErrNumberTooSmall}, nil
 	case "OP_COUNT":
 		return []errs.ErrorCode{errs.ErrTooManyOperations}, nil
 	case "STACK_SIZE":
@@ -307,9 +390,11 @@ func parseExpectedResult(expected string) ([]errs.ErrorCode, error) {
 		expected)
 }
 
-// createSpendTx generates a basic spending transaction given the passed
-// signature and locking scripts.
-func createSpendingTx(sigScript, pkScript *script.Script, outputValue int64) *transaction.Transaction {
+// createSpendingTx generates a basic spending transaction given the passed
+// signature and locking scripts, mirroring bitcoin-sv's
+// BuildCreditingTransaction/BuildSpendingTransaction (test/script_tests.cpp):
+// the crediting transaction is always version 1, the spend carries txVersion.
+func createSpendingTx(sigScript, pkScript *script.Script, outputValue int64, txVersion uint32) *transaction.Transaction {
 	coinbaseTx := transaction.NewTransaction()
 	coinbaseTx.AddInput(&transaction.TransactionInput{
 		SourceTXID:       &chainhash.Hash{},
@@ -323,7 +408,7 @@ func createSpendingTx(sigScript, pkScript *script.Script, outputValue int64) *tr
 	})
 
 	spendingTx := &transaction.Transaction{
-		Version:  1,
+		Version:  txVersion,
 		LockTime: 0,
 		Inputs: []*transaction.TransactionInput{{
 			SourceTXID:       coinbaseTx.TxID(),
@@ -344,7 +429,9 @@ func createSpendingTx(sigScript, pkScript *script.Script, outputValue int64) *tr
 }
 
 // TestScripts ensures all of the tests in script_tests.json execute with the
-// expected results as defined in the test data.
+// expected results as defined in the test data. data/script_tests.json,
+// data/tx_valid.json and data/tx_invalid.json are verbatim copies of
+// bitcoin-sv's src/test/data at 879fc8b42.
 func TestScripts(t *testing.T) {
 	file, err := os.ReadFile("data/script_tests.json")
 	if err != nil {
@@ -357,84 +444,46 @@ func TestScripts(t *testing.T) {
 		t.Fatalf("TestScripts couldn't Unmarshal: %v", err)
 	}
 
-	// Create a signature cache to use only if requested.
 	for i, test := range tests {
-		// "Format is: [[wit..., amount]?, scriptSig, scriptPubKey,
-		//    flags, expected_scripterror, ... comments]"
-
 		// Skip single line comments.
 		if len(test) == 1 {
 			continue
 		}
 
-		// Construct a name for the test based on the comment and test
-		// data.
-		name, err := scriptTestName(test)
+		st, err := parseScriptTest(test)
 		if err != nil {
 			t.Errorf("TestScripts: invalid test #%d: %v", i, err)
 			continue
 		}
+		name := st.name
 
-		var inputAmt int64
-		if v, ok := test[0].([]any); ok {
-			if f, ok := v[0].(float64); ok {
-				inputAmt = int64(f * 100000000)
-			}
-
-			test = test[1:]
-		}
-
-		// Extract and parse the signature script from the test fields.
-		scriptSigStr, ok := test[0].(string)
-		if !ok {
-			t.Errorf("%s: signature script is not a string", name)
-			continue
-		}
-		scriptSig, err := parseShortForm(scriptSigStr)
+		scriptSig, err := parseShortForm(st.sigScript)
 		if err != nil {
-			t.Errorf("%s: can't parse signature script: %v", name,
-				err)
+			t.Errorf("%s: can't parse signature script: %v", name, err)
 			continue
 		}
-
-		// Extract and parse the public key script from the test fields.
-		scriptPubKeyStr, ok := test[1].(string)
-		if !ok {
-			t.Errorf("%s: public key script is not a string", name)
-			continue
-		}
-		scriptPubKey, err := parseShortForm(scriptPubKeyStr)
+		scriptPubKey, err := parseShortForm(st.pkScript)
 		if err != nil {
-			t.Errorf("%s: can't parse public key script: %v", name,
-				err)
+			t.Errorf("%s: can't parse public key script: %v", name, err)
 			continue
 		}
-
-		// Extract and parse the script flags from the test fields.
-		flagsStr, ok := test[2].(string)
-		if !ok {
-			t.Errorf("%s: flags field is not a string", name)
-			continue
-		}
-		flags, err := parseScriptFlags(flagsStr)
+		flags, err := parseScriptFlags(st.flags)
 		if err != nil {
 			t.Errorf("%s: %v", name, err)
 			continue
 		}
+		// DoTest (test/script_tests.cpp) adds P2SH whenever CLEANSTACK is
+		// requested, since the node never runs CLEANSTACK without it.
+		if flags.HasFlag(scriptflag.VerifyCleanStack) {
+			flags |= scriptflag.Bip16
+		}
 
-		// Extract and parse the expected result from the test fields.
-		//
 		// Convert the expected result string into the allowed script
 		// error codes.  This is necessary because interpreter is more
 		// fine grained with its errors than the reference test data, so
 		// some of the reference test data errors map to more than one
 		// possibility.
-		resultStr, ok := test[3].(string)
-		if !ok {
-			t.Errorf("%s: result field is not a string", name)
-			continue
-		}
-		allowedErrorCodes, err := parseExpectedResult(resultStr)
+		allowedErrorCodes, err := parseExpectedResult(st.result)
 		if err != nil {
 			t.Errorf("%s: %v", name, err)
 			continue
@@ -443,15 +492,15 @@ func TestScripts(t *testing.T) {
 		// Generate a transaction pair such that one spends from the
 		// other and the provided signature and public key scripts are
 		// used, then create a new engine to execute the scripts.
-		tx := createSpendingTx(scriptSig, scriptPubKey, inputAmt)
+		tx := createSpendingTx(scriptSig, scriptPubKey, st.amount, st.txVersion)
 
 		err = NewEngine().Execute(
-			WithTx(tx, 0, &transaction.TransactionOutput{LockingScript: scriptPubKey, Satoshis: uint64(inputAmt)}),
+			WithTx(tx, 0, &transaction.TransactionOutput{LockingScript: scriptPubKey, Satoshis: uint64(st.amount)}), //nolint:gosec // G115 -- test-data amounts are always non-negative
 			WithFlags(flags),
 		)
 
 		// Ensure there were no errors when the expected result is OK.
-		if resultStr == "OK" {
+		if st.result == "OK" {
 			if err != nil {
 				t.Errorf("%s failed to execute: %v", name, err)
 			}
@@ -496,300 +545,222 @@ type txIOKey struct {
 	idx uint32
 }
 
-// TestTxInvalidTests ensures all of the tests in tx_invalid.json fail as
-// expected.
-func TestTxInvalidTests(t *testing.T) {
-	file, err := os.ReadFile("data/tx_invalid.json")
-	if err != nil {
-		t.Fatalf("TestTxInvalidTests: %v\n", err)
-	}
+// Transaction-level consensus limits CheckTransactionCommon applies in the
+// node's tx_valid/tx_invalid runner (test/transaction_tests.cpp RunTests,
+// which validates as ProtocolEra::PreGenesis).
+const (
+	maxTxSizeConsensusBeforeGenesis = 1_000_000
+	maxMoney                        = 21_000_000 * 100_000_000
+	maxCoinbaseScriptSigSize        = 100
+)
 
-	var tests [][]any
-	err = json.Unmarshal(file, &tests)
-	if err != nil {
-		t.Fatalf("TestTxInvalidTests couldn't Unmarshal: %v\n", err)
-	}
+// isNullOutpoint mirrors COutPoint::IsNull.
+func isNullOutpoint(in *transaction.TransactionInput) bool {
+	return in.SourceTxOutIndex == ^uint32(0) && (in.SourceTXID == nil || in.SourceTXID.IsEqual(&chainhash.Hash{}))
+}
 
-	// form is either:
-	//   ["this is a comment "]
-	// or:
-	//   [[[previous hash, previous index, previous scriptPubKey]...,]
-	//	serializedTransaction, verifyFlags]
-testloop:
-	for i, test := range tests {
-		if name, ok := test[0].(string); ok {
-			t.Log(name)
+// checkTransaction mirrors the node's context-free CheckCoinbase and
+// CheckRegularTransaction (validation.cpp) for the pre-Genesis era the
+// tx_valid/tx_invalid runner uses. The pre-Genesis sigop limit is not
+// modelled: no vector reaches it.
+func checkTransaction(tx *transaction.Transaction) error {
+	if len(tx.Inputs) == 0 {
+		return errors.New("bad-txns-vin-empty")
+	}
+	if len(tx.Outputs) == 0 {
+		return errors.New("bad-txns-vout-empty")
+	}
+	if len(tx.Bytes()) > maxTxSizeConsensusBeforeGenesis {
+		return errors.New("bad-txns-oversize")
+	}
+	var valueOut int64
+	for _, out := range tx.Outputs {
+		v := int64(out.Satoshis) //nolint:gosec // G115 -- nValue is a signed int64 on the wire
+		if v < 0 {
+			return errors.New("bad-txns-vout-negative")
 		}
+		if v > maxMoney {
+			return errors.New("bad-txns-vout-toolarge")
+		}
+		valueOut += v
+		if valueOut > maxMoney {
+			return errors.New("bad-txns-txouttotal-toolarge")
+		}
+	}
+	if len(tx.Inputs) == 1 && isNullOutpoint(tx.Inputs[0]) {
+		if n := len(*tx.Inputs[0].UnlockingScript); n < 2 || n > maxCoinbaseScriptSigSize {
+			return errors.New("bad-cb-length")
+		}
+		return nil
+	}
+	seen := make(map[txIOKey]struct{}, len(tx.Inputs))
+	for _, in := range tx.Inputs {
+		if isNullOutpoint(in) {
+			return errors.New("bad-txns-prevout-null")
+		}
+		k := txIOKey{id: in.SourceTXID.String(), idx: in.SourceTxOutIndex}
+		if _, dup := seen[k]; dup {
+			return errors.New("bad-txns-inputs-duplicate")
+		}
+		seen[k] = struct{}{}
+	}
+	return nil
+}
+
+// runTxTests mirrors RunTests in bitcoin-sv's test/transaction_tests.cpp.
+// Each vector is either ["comment"] or
+//
+//	[[[prevout hash, prevout index, prevout scriptPubKey, amount?]...], serializedTransaction, verifyFlags|[verifyFlags...]]
+//
+// A vector is valid when it passes the context-free transaction checks and
+// every input verifies under every listed flag set; an invalid vector must
+// fail the transaction checks or fail some input under each flag set.
+func runTxTests(t *testing.T, path string, shouldBeValid bool) {
+	t.Helper()
+	file, err := os.ReadFile(path) //nolint:gosec // G304 -- test reads a fixed local testdata file
+	if err != nil {
+		t.Fatalf("%s: %v", path, err)
+	}
+	var tests [][]any
+	if err = json.Unmarshal(file, &tests); err != nil {
+		t.Fatalf("%s: couldn't Unmarshal: %v", path, err)
+	}
+
+	for i, test := range tests {
 		inputs, ok := test[0].([]any)
 		if !ok {
 			continue
 		}
-
 		if len(test) != 3 {
 			t.Errorf("bad test (bad length) %d: %v", i, test)
 			continue
-
 		}
-
 		serializedhex, ok := test[1].(string)
 		if !ok {
 			t.Errorf("bad test (arg 2 not string) %d: %v", i, test)
 			continue
 		}
-		serializedTx, err := hex.DecodeString(serializedhex)
+
+		flagStrs, flagSets, err := parseTxTestFlags(test[2])
 		if err != nil {
-			t.Errorf("bad test (arg 2 not hex %v) %d: %v", err, i,
-				test)
+			t.Errorf("bad test %d: %v: %v", i, err, test)
 			continue
 		}
 
-		tx, err := transaction.NewTransactionFromBytes(serializedTx)
+		prevOuts, err := parseTxTestPrevOuts(inputs)
 		if err != nil {
-			t.Errorf("bad test (arg 2 not msgtx %v) %d: %v", err,
-				i, test)
+			t.Errorf("bad test %d: %v: %v", i, err, test)
 			continue
 		}
 
-		verifyFlags, ok := test[2].(string)
-		if !ok {
-			t.Errorf("bad test (arg 3 not string) %d: %v", i, test)
-			continue
+		tx, err := transaction.NewTransactionFromHex(serializedhex)
+		if err == nil {
+			err = checkTransaction(tx)
 		}
-
-		flags, err := parseScriptFlags(verifyFlags)
 		if err != nil {
-			t.Errorf("bad test %d: %v", i, err)
+			// The node deserializes the two segwit-marker vectors in
+			// tx_invalid.json as transactions with no inputs, which
+			// CheckTransactionCommon rejects; the SDK refuses to parse them.
+			if shouldBeValid {
+				t.Errorf("test %d: %v: %v", i, err, test)
+			}
 			continue
 		}
 
-		prevOuts := make(map[txIOKey]*transaction.TransactionOutput)
-		for j, iinput := range inputs {
-			input, ok := iinput.([]any)
-			if !ok {
-				t.Errorf("bad test (%dth input not array)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-
-			if len(input) < 3 || len(input) > 4 {
-				t.Errorf("bad test (%dth input wrong length)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-
-			previoustx, ok := input[0].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input hash not string)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-
-			idxf, ok := input[1].(float64)
-			if !ok {
-				t.Errorf("bad test (%dth input idx not number)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-			idx := testVecF64ToUint32(idxf)
-
-			oscript, ok := input[2].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input script not "+
-					"string) %d: %v", j, i, test)
-				continue testloop
-			}
-
-			script, parseErr := parseShortForm(oscript)
-			if parseErr != nil {
-				t.Errorf("bad test (%dth input script doesn't "+
-					"parse %v) %d: %v", j, parseErr, i, test)
-				continue testloop
-			}
-
-			var inputValue float64
-			if len(input) == 4 {
-				inputValue, ok = input[3].(float64)
+		for j, flags := range flagSets {
+			valid := true
+			k := 0
+			for ; k < len(tx.Inputs) && valid; k++ {
+				txin := tx.Inputs[k]
+				prevOut, ok := prevOuts[txIOKey{id: txin.SourceTXID.String(), idx: txin.SourceTxOutIndex}]
 				if !ok {
-					t.Errorf("bad test (%dth input value not int) "+
-						"%d: %v", j, i, test)
-					continue
+					t.Errorf("bad test (missing %dth input) %d: %v", k, i, test)
+					break
 				}
+				txin.SetSourceTxOutput(prevOut)
+				valid = NewEngine().Execute(WithTx(tx, k, prevOut), WithFlags(flags)) == nil
 			}
-
-			v := &transaction.TransactionOutput{
-				Satoshis:      uint64(inputValue),
-				LockingScript: script,
-			}
-			prevOuts[txIOKey{id: previoustx, idx: idx}] = v
-		}
-
-		for k, txin := range tx.Inputs {
-			prevOut, ok := prevOuts[txIOKey{id: txin.SourceTXID.String(), idx: txin.SourceTxOutIndex}]
-			txin.SetSourceTxOutput(prevOut)
-			if !ok {
-				t.Errorf("bad test (missing %dth input) %d:%v",
-					k, i, test)
-				continue testloop
-			}
-			// These are meant to fail, so as soon as the first
-			// input fails the transaction has failed. (some of the
-			// test txns have good inputs, too..
-			err = NewEngine().Execute(
-				WithTx(tx, k, prevOut),
-				WithFlags(flags),
-			)
-			if err != nil {
-				continue testloop
+			if valid != shouldBeValid {
+				t.Errorf("test %d: flags %q: valid=%v on input %d, want %v: %v", i, flagStrs[j], valid, k-1, shouldBeValid, test)
 			}
 		}
-		t.Errorf("test (%d:%v) succeeded when should fail",
-			i, test)
 	}
+}
+
+// parseTxTestFlags parses a tx_valid/tx_invalid vector's verifyFlags field:
+// one flag string or a non-empty array of them.
+func parseTxTestFlags(field any) ([]string, []scriptflag.Flag, error) {
+	var strs []string
+	switch f := field.(type) {
+	case string:
+		strs = []string{f}
+	case []any:
+		for _, v := range f {
+			s, ok := v.(string)
+			if !ok {
+				return nil, nil, errors.New("verifyFlags array holds a non-string")
+			}
+			strs = append(strs, s)
+		}
+	}
+	if len(strs) == 0 {
+		return nil, nil, errors.New("verifyFlags is not a string or a non-empty string array")
+	}
+	flags := make([]scriptflag.Flag, len(strs))
+	for j, str := range strs {
+		var err error
+		if flags[j], err = parseScriptFlags(str); err != nil {
+			return nil, nil, err
+		}
+	}
+	return strs, flags, nil
+}
+
+// parseTxTestPrevOuts parses a tx_valid/tx_invalid vector's prevout list.
+func parseTxTestPrevOuts(inputs []any) (map[txIOKey]*transaction.TransactionOutput, error) {
+	prevOuts := make(map[txIOKey]*transaction.TransactionOutput, len(inputs))
+	for j, iinput := range inputs {
+		input, ok := iinput.([]any)
+		if !ok || len(input) < 3 || len(input) > 4 {
+			return nil, fmt.Errorf("%dth input is not a 3 or 4 element array", j)
+		}
+		previoustx, ok := input[0].(string)
+		if !ok {
+			return nil, fmt.Errorf("%dth input hash not string", j)
+		}
+		idxf, ok := input[1].(float64)
+		if !ok {
+			return nil, fmt.Errorf("%dth input idx not number", j)
+		}
+		oscript, ok := input[2].(string)
+		if !ok {
+			return nil, fmt.Errorf("%dth input script not string", j)
+		}
+		lockingScript, err := parseShortForm(oscript)
+		if err != nil {
+			return nil, fmt.Errorf("%dth input script doesn't parse: %w", j, err)
+		}
+		var inputValue float64
+		if len(input) == 4 {
+			if inputValue, ok = input[3].(float64); !ok {
+				return nil, fmt.Errorf("%dth input value not int", j)
+			}
+		}
+		prevOuts[txIOKey{id: previoustx, idx: testVecF64ToUint32(idxf)}] = &transaction.TransactionOutput{
+			Satoshis:      uint64(inputValue),
+			LockingScript: lockingScript,
+		}
+	}
+	return prevOuts, nil
+}
+
+// TestTxInvalidTests ensures all of the tests in tx_invalid.json fail as
+// expected.
+func TestTxInvalidTests(t *testing.T) {
+	runTxTests(t, "data/tx_invalid.json", false)
 }
 
 // TestTxValidTests ensures all of the tests in tx_valid.json pass as expected.
 func TestTxValidTests(t *testing.T) {
-	file, err := os.ReadFile("data/tx_valid.json")
-	if err != nil {
-		t.Fatalf("TestTxValidTests: %v\n", err)
-	}
-
-	var tests [][]any
-	err = json.Unmarshal(file, &tests)
-	if err != nil {
-		t.Fatalf("TestTxValidTests couldn't Unmarshal: %v\n", err)
-	}
-
-	// form is either:
-	//   ["this is a comment "]
-	// or:
-	//   [[[previous hash, previous index, previous scriptPubKey, input value]...,]
-	//	serializedTransaction, verifyFlags]
-testloop:
-	for i, test := range tests {
-		if name, ok := test[0].(string); ok {
-			t.Log(name)
-			// if name == "Coinbase of size 2" {
-			// }
-		}
-		inputs, ok := test[0].([]any)
-		if !ok {
-			continue
-		}
-
-		if len(test) != 3 {
-			t.Errorf("bad test (bad length) %d: %v", i, test)
-			continue
-		}
-		serializedhex, ok := test[1].(string)
-		if !ok {
-			t.Errorf("bad test (arg 2 not string) %d: %v", i, test)
-			continue
-		}
-		serializedTx, err := hex.DecodeString(serializedhex)
-		if err != nil {
-			t.Errorf("bad test (arg 2 not hex %v) %d: %v", err, i,
-				test)
-			continue
-		}
-
-		tx, err := transaction.NewTransactionFromBytes(serializedTx)
-		if err != nil {
-			t.Errorf("bad test (arg 2 not msgtx %v) %d: %v", err,
-				i, test)
-			continue
-		}
-
-		verifyFlags, ok := test[2].(string)
-		if !ok {
-			t.Errorf("bad test (arg 3 not string) %d: %v", i, test)
-			continue
-		}
-
-		flags, err := parseScriptFlags(verifyFlags)
-		if err != nil {
-			t.Errorf("bad test %d: %v", i, err)
-			continue
-		}
-
-		prevOuts := make(map[txIOKey]*transaction.TransactionOutput)
-		for j, iinput := range inputs {
-			input, ok := iinput.([]any)
-			if !ok {
-				t.Errorf("bad test (%dth input not array)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-
-			if len(input) < 3 || len(input) > 4 {
-				t.Errorf("bad test (%dth input wrong length)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-
-			previoustx, ok := input[0].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input hash not string)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-
-			idxf, ok := input[1].(float64)
-			if !ok {
-				t.Errorf("bad test (%dth input idx not number)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-			idx := testVecF64ToUint32(idxf)
-
-			oscript, ok := input[2].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input script not "+
-					"string) %d: %v", j, i, test)
-				continue
-			}
-
-			script, parseErr := parseShortForm(oscript)
-			if parseErr != nil {
-				t.Errorf("bad test (%dth input script doesn't "+
-					"parse %v) %d: %v", j, parseErr, i, test)
-				continue
-			}
-
-			var inputValue float64
-			if len(input) == 4 {
-				inputValue, ok = input[3].(float64)
-				if !ok {
-					t.Errorf("bad test (%dth input value not int) "+
-						"%d: %v", j, i, test)
-					continue
-				}
-			}
-
-			v := &transaction.TransactionOutput{
-				Satoshis:      uint64(inputValue),
-				LockingScript: script,
-			}
-			prevOuts[txIOKey{id: previoustx, idx: idx}] = v
-		}
-
-		for k, txin := range tx.Inputs {
-			prevOut, ok := prevOuts[txIOKey{id: txin.SourceTXID.String(), idx: txin.SourceTxOutIndex}]
-			txin.SetSourceTxOutput(prevOut)
-			if !ok {
-				t.Errorf("bad test (missing %dth input) %d:%v",
-					k, i, test)
-				continue testloop
-			}
-
-			if err = NewEngine().Execute(
-				WithTx(tx, k, prevOut),
-				WithFlags(flags),
-			); err != nil {
-				t.Errorf("test (%d:%v:%d) failed to execute: "+
-					"%v", i, test, k, err)
-				continue
-			}
-		}
-	}
+	runTxTests(t, "data/tx_valid.json", true)
 }

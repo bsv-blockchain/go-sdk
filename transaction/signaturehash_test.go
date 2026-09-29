@@ -243,3 +243,55 @@ func TestTx_CalcInputPreimageLegacyFull_StripsCodeSeparators(t *testing.T) {
 	require.Equal(t, byte(5), preimage[41], "subscript length prefix")
 	require.Equal(t, []byte{0x6a, 0x53, 0xac, 0x63, 0x65}, preimage[42:47], "OP_CODESEPARATOR stripped from subscript")
 }
+
+// TestTx_CalcInputPreimageLegacyFull_NodeSerializeScriptCode pins the legacy
+// preimage's subscript field to bitcoin-sv's
+// CTransactionSignatureSerializer::SerializeScriptCode (interpreter.cpp:
+// 1862-1892) for malformed subscripts (GHSA-rh54-8fpg-8wwf): the
+// length prefix is the full script length minus the OP_CODESEPARATORs decoded
+// before the first undecodable instruction, and the bytes stop where
+// CScript::GetOp gives up -- after the opcode and whatever length bytes it
+// could read. Such a subscript is never an error.
+func TestTx_CalcInputPreimageLegacyFull_NodeSerializeScriptCode(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		subscript string
+		want      string // varint length + serialized bytes
+	}{
+		{"well formed, codeseps stripped", "51ab52ab", "025152"},
+		{"empty", "", "00"},
+		{"lone PUSHDATA1", "ac6a4c", "03ac6a4c"},
+		{"PUSHDATA1 with length, short data", "ac6a4c0501", "05ac6a4c05"},
+		{"PUSHDATA2 short length, codesep first", "abac6a4dff", "04ac6a4d"},
+		{"PUSHDATA2 short data", "ac4d0300aa", "05ac4d0300"},
+		{"PUSHDATA4 short length", "acab4e010203", "05ac4e"},
+		{"PUSHDATA4 short data with codeseps inside", "4e05000000abab", "074e05000000"},
+		{"direct push short data", "05aabb", "0305"},
+		{"codesep after top-level OP_RETURN", "6aab4c", "026a4c"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tx, index := sighashFixtureTx(t, 0)
+			subscript, err := script.NewFromHex(tt.subscript)
+			require.NoError(t, err)
+			tx.Inputs[index].SetSourceTxOutput(&transaction.TransactionOutput{LockingScript: subscript, Satoshis: sighashFixtures[0].sats})
+
+			preimage, err := tx.CalcInputPreimageLegacyFull(index, uint32(sighash.All))
+			require.NoError(t, err)
+
+			// Subscript field offset for the single-input fixture 0, see
+			// TestTx_CalcInputPreimageLegacyFull_StripsCodeSeparators.
+			want, err := hex.DecodeString(tt.want)
+			require.NoError(t, err)
+			require.Equal(t, want, preimage[41:41+len(want)])
+			// The input's nSequence follows the serialized bytes directly.
+			require.Equal(t, []byte{0xff, 0xff, 0xff, 0xff}, preimage[41+len(want):41+len(want)+4])
+
+			_, err = tx.CalcInputSignatureHash(index, sighash.AllForkID|sighash.Chronicle)
+			require.NoError(t, err)
+		})
+	}
+}

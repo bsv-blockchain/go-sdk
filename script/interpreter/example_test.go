@@ -133,7 +133,7 @@ func ExampleEngine_Execute_concurrent() {
 
 			fmt.Println(inputASM)
 			fmt.Println(outputASM)
-			return vm.Execute(interpreter.WithTx(exec.tx, exec.inputIdx, exec.prevTxOut))
+			return vm.Execute(interpreter.WithTx(exec.tx, exec.inputIdx, exec.prevTxOut), interpreter.WithForkID())
 		})
 	}
 

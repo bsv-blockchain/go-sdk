@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 	"github.com/bsv-blockchain/go-sdk/util"
 )
 
@@ -35,10 +36,11 @@ type MerkleRootInfo struct {
 }
 
 type Client struct {
-	Ctx        context.Context //nolint:containedctx // kept for backward compatibility; per-call context.Context parameters are used instead
-	Url        string
-	ApiKey     string
-	httpClient util.HTTPClient
+	Ctx               context.Context //nolint:containedctx // kept for backward compatibility; per-call context.Context parameters are used instead
+	Url               string
+	ApiKey            string
+	httpClient        util.HTTPClient
+	activationHeights *scriptflag.ActivationHeights
 }
 
 // ClientOptions configures a Client constructed with NewClient.
@@ -46,6 +48,9 @@ type ClientOptions struct {
 	// HTTPClient is the util.HTTPClient used for every request. When nil, the
 	// Client falls back to http.DefaultClient.
 	HTTPClient util.HTTPClient
+	// ActivationHeights are the script-rule activation heights of the network
+	// the headers service follows. When nil, the Client reports mainnet's.
+	ActivationHeights *scriptflag.ActivationHeights
 }
 
 // WithHTTPClient injects a custom util.HTTPClient into the Client, enabling
@@ -59,6 +64,15 @@ func WithHTTPClient(client util.HTTPClient) func(*ClientOptions) {
 	}
 }
 
+// WithActivationHeights sets the script-rule activation heights of the
+// network the headers service follows, which the Client reports to
+// spv.Verify. Without it the Client reports mainnet's.
+func WithActivationHeights(heights scriptflag.ActivationHeights) func(*ClientOptions) {
+	return func(opts *ClientOptions) {
+		opts.ActivationHeights = &heights
+	}
+}
+
 // NewClient constructs a headers-service Client for the given base URL and API
 // key. Additional behavior (such as a custom HTTP client) can be supplied through
 // functional options.
@@ -68,10 +82,21 @@ func NewClient(url, apiKey string, opts ...func(*ClientOptions)) *Client {
 		opt(options)
 	}
 	return &Client{
-		Url:        url,
-		ApiKey:     apiKey,
-		httpClient: options.HTTPClient,
+		Url:               url,
+		ApiKey:            apiKey,
+		httpClient:        options.HTTPClient,
+		activationHeights: options.ActivationHeights,
 	}
+}
+
+// ActivationHeights returns the script-rule activation heights of the network
+// the headers service follows, for spv.Verify: mainnet's, unless the Client
+// was constructed with WithActivationHeights.
+func (c *Client) ActivationHeights() scriptflag.ActivationHeights {
+	if c.activationHeights != nil {
+		return *c.activationHeights
+	}
+	return scriptflag.MainNetActivationHeights
 }
 
 func (c *Client) getHTTPClient() util.HTTPClient {

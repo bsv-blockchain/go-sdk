@@ -78,6 +78,10 @@ func TestErrorCodeStringer(t *testing.T) {
 		{ErrNegativeLockTime, "ErrNegativeLockTime"},
 		{ErrUnsatisfiedLockTime, "ErrUnsatisfiedLockTime"},
 		{ErrIllegalForkID, "ErrIllegalForkID"},
+		{ErrMustUseForkID, "ErrMustUseForkID"},
+		{ErrIllegalChronicle, "ErrIllegalChronicle"},
+		{ErrBigInt, "ErrBigInt"},
+		{ErrExecutionCancelled, "ErrExecutionCancelled"},
 		{0xffff, "Unknown ErrorCode (65535)"},
 	}
 

@@ -32,6 +32,37 @@ func fromBool(v bool) []byte {
 	return nil
 }
 
+// stackElementOverhead is what node charges against the stack memory limit
+// for each element on top of its bytes: LimitedVector::ELEMENT_OVERHEAD
+// (script/limitedstack.h), a consensus constant that stops a script from
+// filling memory with empty elements.
+const stackElementOverhead = 32
+
+// stackMemory is the memory budget the data stack and the alt stack share,
+// like node's LimitedStack and the alt stack it makes as its child
+// (script/limitedstack.cpp, interpreter.cpp:1993): used is the size of every
+// element on either stack plus stackElementOverhead for each, and adding an
+// element that would take it past limit fails with SCRIPT_ERR_STACK_SIZE
+// (LimitedStack::increaseCombinedStackSize, interpreter.cpp:1815-1818).
+type stackMemory struct {
+	used  int64
+	limit int64
+	// err is the first push refused for exceeding limit; see
+	// stack.PushByteArray.
+	err error
+}
+
+// check returns the error node raises when adding an element of size bytes
+// would take the stacks past their memory limit.
+func (m *stackMemory) check(size int64) error {
+	if size+stackElementOverhead > m.limit-m.used {
+		return errs.NewError(errs.ErrStackOverflow,
+			"stack memory usage would reach %d bytes, over the limit of %d",
+			m.used+size+stackElementOverhead, m.limit)
+	}
+	return nil
+}
+
 // stack represents a stack of immutable objects to be used with bitcoin
 // scripts.  Objects may be shared, therefore in usage if a value is to be
 // changed it *must* be deep-copied first to avoid changing other values on the
@@ -43,6 +74,9 @@ type stack struct {
 	verifyMinimalData bool
 	debug             Debugger
 	sh                StateHandler
+	// mem is the memory budget this stack draws on, shared by a thread's
+	// data and alt stacks; nil for a stack outside it (the else stack).
+	mem *stackMemory
 }
 
 func newStack(cfg config, verifyMinimalData bool) stack {
@@ -62,11 +96,38 @@ func (s *stack) Depth() int32 {
 
 // PushByteArray adds the given back array to the top of the stack.
 //
+// A push that would take the stacks past their memory limit is not made and
+// fails the opcode, as node's LimitedStack::push_back throwing does: the
+// error is recorded in the budget, and executeOpcode returns it as soon as
+// the opcode returns, which keeps PushByteArray's signature for its many
+// callers.
+//
 // Stack transformation: [... x1 x2] -> [... x1 x2 data]
 func (s *stack) PushByteArray(so []byte) {
-	defer s.afterStackPush(so)
+	// A refused push records its error and is not reported to the debugger.
+	if s.mem != nil {
+		if err := s.mem.check(int64(len(so))); err != nil {
+			if s.mem.err == nil {
+				s.mem.err = err
+			}
+			return
+		}
+	}
 	s.beforeStackPush(so)
+	if s.mem != nil {
+		s.mem.used += int64(len(so)) + stackElementOverhead
+	}
 	s.stk = append(s.stk, so)
+	s.afterStackPush(so)
+}
+
+// checkMemory returns the error pushing an element of size bytes would fail
+// with, so an opcode can reject a result before allocating it.
+func (s *stack) checkMemory(size int64) error {
+	if s.mem == nil {
+		return nil
+	}
+	return s.mem.check(size)
 }
 
 // PushInt converts the provided scriptNumber to a suitable byte array then pushes
@@ -110,6 +171,42 @@ func (s *stack) PopInt() (*ScriptNumber, error) {
 	}
 
 	return MakeScriptNumber(so, s.maxNumLength, s.verifyMinimalData, s.afterGenesis)
+}
+
+// PopLegacyInt pops the value off the top of the stack and decodes it the
+// way node's OP_SUBSTR/OP_LEFT/OP_RIGHT do: CScriptNum{elem, requireMinimal,
+// max_len} (big_int=false, so node's legacy bsv::deserialize<int64_t>, see
+// legacyDeserializeInt64) followed by getint(), which saturates the int64 to
+// int32 (script_num.cpp:394-420) before the caller's range checks.
+//
+// This must be used ONLY by OP_SUBSTR/OP_LEFT/OP_RIGHT: unlike PopInt, an
+// operand of 9 or more bytes is not decoded as a big.Int sign-magnitude
+// value. OP_SPLIT and every other numeric opcode must keep using
+// PopInt/MakeScriptNumber; see GHSA-rh54-8fpg-8wwf.
+//
+// The era's max-length and minimal-encoding checks still apply, in the same
+// order node applies them: length, then minimal encoding, then decode.
+func (s *stack) PopLegacyInt() (int32, error) {
+	so, err := s.PopByteArray()
+	if err != nil {
+		return 0, err
+	}
+
+	if len(so) > s.maxNumLength {
+		return 0, errs.NewError(
+			errs.ErrNumberTooBig,
+			"numeric value encoded as %s is %d bytes which exceeds the max allowed of %d",
+			hexPreview(so), len(so), s.maxNumLength,
+		)
+	}
+
+	if s.verifyMinimalData {
+		if err := CheckMinimalDataEncoding(so); err != nil {
+			return 0, err
+		}
+	}
+
+	return saturateInt32(legacyDeserializeInt64(so)), nil
 }
 
 // PopBool pops the value off the top of the stack, converts it into a bool, and
@@ -170,18 +267,16 @@ func (s *stack) nipN(idx int32) ([]byte, error) {
 		return nil, errs.NewError(errs.ErrInvalidStackOperation, "index %d is invalid for stack size %d", idx, sz)
 	}
 
+	// Close the gap in place, like node's LimitedStack::erase, and clear the
+	// slot this frees: a reference left behind the new end would keep the
+	// removed element allocated while no longer counting it against the
+	// stack memory limit.
 	so := s.stk[sz-idx-1]
-	switch idx {
-	case 0:
-		s.stk = s.stk[:sz-1]
-	case sz - 1:
-		s1 := make([][]byte, sz-1)
-		copy(s1, s.stk[1:])
-		s.stk = s1
-	default:
-		s1 := s.stk[sz-idx : sz]
-		s.stk = s.stk[:sz-idx-1]
-		s.stk = append(s.stk, s1...)
+	copy(s.stk[sz-idx-1:], s.stk[sz-idx:])
+	s.stk[sz-1] = nil
+	s.stk = s.stk[:sz-1]
+	if s.mem != nil {
+		s.mem.used -= int64(len(so)) + stackElementOverhead
 	}
 	return so, nil
 }

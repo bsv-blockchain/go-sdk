@@ -83,6 +83,31 @@ const (
 	// the Chronicle upgrade, enabling Chronicle-era opcodes and rules.
 	// Chronicle cannot be set without UTXOAfterGenesis also being set.
 	UTXOAfterChronicle
+
+	// Genesis defines that the spending transaction is validated under the
+	// Genesis protocol rules, i.e. it is part of (or is relayed for) a block
+	// at or after the Genesis activation height. UTXOAfterGenesis describes
+	// the era the spent output was created in; Genesis describes the era of
+	// the spend. Mirrors bitcoin-sv's SCRIPT_GENESIS.
+	//
+	// It is implied by UTXOAfterGenesis and by Chronicle, since an output can
+	// only be spent at or after the height it was created at.
+	Genesis
+
+	// Chronicle defines that the spending transaction is validated under the
+	// Chronicle protocol rules, i.e. it is part of (or is relayed for) a block
+	// at or after the Chronicle activation height. UTXOAfterChronicle
+	// describes the era the spent output was created in; Chronicle describes
+	// the era of the spend. Mirrors bitcoin-sv's SCRIPT_CHRONICLE.
+	//
+	// Under Chronicle the non-malleability rules (VerifyLowS,
+	// VerifyMinimalData, VerifyMinimalIf, VerifyNullFail, StrictMultiSig,
+	// VerifyCleanStack and VerifySigPushOnly) are only enforced for
+	// transactions whose version is 1 or less, and signatures may use the
+	// SIGHASH_CHRONICLE hash type bit.
+	//
+	// It is implied by UTXOAfterChronicle, and implies Genesis.
+	Chronicle
 )
 
 // HasFlag returns whether the Flags has the passed flag set.

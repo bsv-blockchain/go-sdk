@@ -97,9 +97,12 @@ var flagBits = map[string]scriptflag.Flag{
 	"MINIMALIF":                  scriptflag.VerifyMinimalIf,
 	"NULLFAIL":                   scriptflag.VerifyNullFail,
 	"UTXO_AFTER_GENESIS":         scriptflag.UTXOAfterGenesis,
-	// GENESIS is the vectors' alias for UTXO_AFTER_GENESIS: TS's
-	// #isAfterGenesis() treats the two flags identically (Spend.ts).
-	"GENESIS": scriptflag.UTXOAfterGenesis,
+	// GENESIS and CHRONICLE are bitcoin-sv's spend-era flags
+	// (SCRIPT_GENESIS/SCRIPT_CHRONICLE, test/scriptflags.cpp), distinct from
+	// the coin-era UTXO_AFTER_* flags. A Chronicle spend is also a Genesis
+	// spend.
+	"GENESIS":   scriptflag.Genesis,
+	"CHRONICLE": scriptflag.Genesis | scriptflag.Chronicle,
 	// UTXO_AFTER_CHRONICLE always implies UTXO_AFTER_GENESIS in the Go
 	// engine (scriptflag.UTXOAfterChronicle's doc comment), which matches
 	// #isAfterGenesis() also returning true whenever UTXO_AFTER_CHRONICLE

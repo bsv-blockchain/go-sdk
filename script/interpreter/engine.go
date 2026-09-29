@@ -5,6 +5,8 @@
 
 package interpreter
 
+import "github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
+
 // Engine is the virtual machine that executes scripts.
 type Engine interface {
 	Execute(opts ...ExecutionOptionFunc) error
@@ -32,6 +34,8 @@ func NewEngine() Engine {
 //	WithAfterChronicle()                    after-Chronicle
 //	WithAfterGenesis()                      after-Genesis, pre-Chronicle
 //	WithBeforeGenesis()                     pre-Genesis
+//	WithGenesis() / WithChronicle()         pre-Genesis, unless an epoch above
+//	                                        is also named
 //	WithFlags(f)                            taken from f: UTXOAfterChronicle,
 //	                                        UTXOAfterGenesis, or pre-Genesis if
 //	                                        f names neither (SV node semantics)
@@ -57,7 +61,31 @@ func NewEngine() Engine {
 //	); err != nil {
 //	    // handle err
 //	}
-func (e *engine) Execute(oo ...ExecutionOptionFunc) error {
+//
+// Without any flag option (WithFlags, WithForkID, WithP2SH or an era option),
+// Execute enables SIGHASH_FORKID, as every block since the UAHF does, so that
+// current signatures verify. Flags given with WithFlags are used exactly as
+// given, as bitcoin-sv uses its flag word.
+//
+// Breaking change from v1.6.0: SIGHASH_FORKID implies VerifyStrictEncoding
+// (interpreter.cpp:2315-2319), so with no flag option a signature without
+// SIGHASH_FORKID now fails with errs.ErrMustUseForkID, where v1.6.0 verified
+// it against the legacy digest. To verify a spend from before the UAHF, pass
+// flags without EnableSighashForkID, such as those
+// scriptflag.ActivationHeights.BlockValidationFlags gives for its height.
+//
+// Execution has no time limit unless WithContext gives it one.
+//
+// Scripts are often supplied by untrusted parties, so a panic while executing
+// them is reported as an ErrInternal error, which fails validation, rather
+// than crashing the caller.
+func (e *engine) Execute(oo ...ExecutionOptionFunc) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errs.NewError(errs.ErrInternal, "script execution panicked: %v", r)
+		}
+	}()
+
 	opts := &execOpts{}
 	for _, o := range oo {
 		o(opts)
@@ -68,7 +96,7 @@ func (e *engine) Execute(oo ...ExecutionOptionFunc) error {
 		return err
 	}
 
-	if err := t.execute(); err != nil {
+	if err = t.execute(); err != nil {
 		t.afterError(err)
 		return err
 	}

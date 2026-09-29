@@ -38,6 +38,11 @@ func TestExecutionEpochSelection(t *testing.T) {
 		{name: "WithAfterChronicle", opts: []ExecutionOptionFunc{WithAfterChronicle()}, epoch: afterChronicle},
 		{name: "WithAfterGenesis", opts: []ExecutionOptionFunc{WithAfterGenesis()}, epoch: afterGenesis},
 		{name: "WithBeforeGenesis", opts: []ExecutionOptionFunc{WithBeforeGenesis()}, epoch: beforeGenesis},
+		// The spend-era options name the epoch too: on their own the spent
+		// output is pre-Genesis.
+		{name: "WithGenesis alone", opts: []ExecutionOptionFunc{WithGenesis()}, epoch: beforeGenesis},
+		{name: "WithChronicle alone", opts: []ExecutionOptionFunc{WithChronicle()}, epoch: beforeGenesis},
+		{name: "WithChronicle plus WithAfterChronicle", opts: []ExecutionOptionFunc{WithChronicle(), WithAfterChronicle()}, epoch: afterChronicle},
 		{name: "WithFlags without epoch flag", opts: []ExecutionOptionFunc{WithFlags(scriptflag.VerifyMinimalData)}, epoch: beforeGenesis},
 		{name: "WithFlags UTXOAfterGenesis", opts: []ExecutionOptionFunc{WithFlags(scriptflag.UTXOAfterGenesis)}, epoch: afterGenesis},
 		{

@@ -405,11 +405,13 @@ func popIfBool(t *thread) (bool, error) {
 			return false, err
 		}
 
-		if len(b) > 1 {
-			return false, errs.NewError(errs.ErrMinimalIf, "conditionl has data of length %d", len(b))
-		}
-		if len(b) == 1 && b[0] != 1 {
-			return false, errs.NewError(errs.ErrMinimalIf, "conditional failed")
+		if t.enforceNonMalleability {
+			if len(b) > 1 {
+				return false, errs.NewError(errs.ErrMinimalIf, "conditionl has data of length %d", len(b))
+			}
+			if len(b) == 1 && b[0] != 1 {
+				return false, errs.NewError(errs.ErrMinimalIf, "conditional failed")
+			}
 		}
 
 		return asBool(b), nil
@@ -649,6 +651,13 @@ func opcodeCheckLockTimeVerify(op *ParsedOpcode, t *thread) error {
 		return errs.NewError(errs.ErrNegativeLockTime, "negative lock time: %d", lockTime.Int64())
 	}
 
+	// Without a transaction (WithScripts) there is no lock time to satisfy:
+	// node's BaseSignatureChecker::CheckLockTime returns false
+	// (interpreter.h:61-63).
+	if t.tx == nil {
+		return errs.NewError(errs.ErrUnsatisfiedLockTime, "no transaction to check the lock time against")
+	}
+
 	// The lock time field of a transaction is either a block height at
 	// which the transaction is finalized or a timestamp depending on if the
 	// value is before the interpreter.LockTimeThreshold.  When it is under the
@@ -726,6 +735,13 @@ func opcodeCheckSequenceVerify(op *ParsedOpcode, t *thread) error {
 	// CHECKSEQUENCEVERIFY behaves as a NOP.
 	if sequence&int64(transaction.SequenceLockTimeDisabled) != 0 {
 		return nil
+	}
+
+	// Without a transaction (WithScripts) there is no sequence to satisfy:
+	// node's BaseSignatureChecker::CheckSequence returns false
+	// (interpreter.h:65-67).
+	if t.tx == nil {
+		return errs.NewError(errs.ErrUnsatisfiedLockTime, "no transaction to check the sequence against")
 	}
 
 	// Transaction version numbers not high enough to trigger CSV rules must
@@ -952,11 +968,22 @@ func opcodeCat(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	c := bytes.Join([][]byte{a, b}, nil)
-	if len(c) > t.cfg.MaxScriptElementSize() {
+	// Only outputs created before Genesis limit the result
+	// (interpreter.cpp:1699-1702); afterwards only stack memory bounds it.
+	if !t.afterGenesis && len(a)+len(b) > MaxScriptElementSizeBeforeGenesis {
 		return errs.NewError(errs.ErrElementTooBig,
-			"concatenated size %d exceeds max allowed size %d", len(c), t.cfg.MaxScriptElementSize())
+			"concatenated size %d exceeds max allowed size %d", len(a)+len(b), MaxScriptElementSizeBeforeGenesis)
 	}
+
+	// Node pops b before appending it to a (interpreter.cpp:1704-1705), so
+	// the result costs one element overhead less than its operands did; the
+	// result is still checked against the memory limit before it is
+	// allocated, as LimitedVector::append checks the bytes it adds.
+	if err = t.dstack.checkMemory(int64(len(a)) + int64(len(b))); err != nil {
+		return err
+	}
+
+	c := bytes.Join([][]byte{a, b}, nil)
 
 	t.dstack.PushByteArray(c)
 	return nil
@@ -977,19 +1004,32 @@ func opcodeSplit(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	if n.Int32() > int32(len(c)) { //nolint:gosec // G115 -- len(c) is bounded by MaxScriptElementSize, well within int32 range
+	if n.GreaterThanInt(int64(len(c))) {
 		return errs.NewError(errs.ErrNumberTooBig, "n is larger than length of array")
 	}
 	if n.LessThanInt(0) {
 		return errs.NewError(errs.ErrNumberTooSmall, "n is negative")
 	}
 
-	a := c[:n.Int()]
-	b := c[n.Int():]
-	t.dstack.PushByteArray(a)
-	t.dstack.PushByteArray(b)
+	// Like node's (interpreter.cpp:1726-1727), the two halves are copies.
+	t.dstack.PushByteArray(subBytes(c, 0, n.Int()))
+	t.dstack.PushByteArray(subBytes(c, n.Int(), len(c)))
 
 	return nil
+}
+
+// subBytes returns b[start:end] for pushing as a stack element of its own:
+// the whole of b as it is, otherwise a copy. A shorter slice would keep all
+// of b allocated while only its own length counts against the stack memory
+// limit, so that splitting a large element and dropping the rest could hold
+// memory the limit no longer sees. The copy costs O(len) per opcode, as it
+// does in node, which builds each result as a new vector (for OP_SPLIT,
+// interpreter.cpp:1723-1726).
+func subBytes(b []byte, start, end int) []byte {
+	if start == 0 && end == len(b) {
+		return b
+	}
+	return bytes.Clone(b[start:end])
 }
 
 // opcodeNum2Bin converts the numeric value into a byte sequence of a
@@ -1028,19 +1068,30 @@ func opcodeNum2bin(op *ParsedOpcode, t *thread) error {
 		return nil
 	}
 
+	// LimitedVector::padRight (limitedstack.cpp:60-71) checks the stack
+	// memory limit before growing the number in place, charging size minus
+	// its old length. Here the number is already popped, so checking size
+	// against the usage without it charges the same total (its old length is
+	// added back by the push below), and an oversized n fails before its
+	// bytes are allocated.
+	if err = t.dstack.checkMemory(n.Int64()); err != nil {
+		return err
+	}
+
 	signbit := byte(0x00)
 	if len(b) > 0 {
 		signbit = b[len(b)-1] & 0x80
 		b[len(b)-1] &= 0x7f
 	}
 
-	for n.GreaterThanInt(int64(len(b) + 1)) {
-		b = append(b, 0x00)
-	}
+	// LimitedVector::padRight (limitedstack.cpp:60-71): zero-fill to n bytes
+	// and put the sign bit in the new last byte, in a single allocation
+	// rather than one append (and one big.Int comparison) per padding byte.
+	out := make([]byte, n.Int())
+	copy(out, b)
+	out[len(out)-1] = signbit
 
-	b = append(b, signbit)
-
-	t.dstack.PushByteArray(b)
+	t.dstack.PushByteArray(out)
 	return nil
 }
 
@@ -1055,10 +1106,15 @@ func opcodeBin2num(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	b := make([]byte, len(a))
-	// Copy the bytes so that we don't corrupt the original stack value
-	copy(b, a)
-	b = MinimallyEncode(b)
+	// An already minimal a is the result as it is. Otherwise encode a copy,
+	// so the original stack value is not corrupted, and keep only the
+	// result's bytes: MinimallyEncode shortens its argument in place, and a
+	// long operand of zero padding would otherwise stay allocated behind a
+	// short number that alone counts against the stack memory limit.
+	b := a
+	if !isMinimallyEncoded(a) {
+		b = bytes.Clone(MinimallyEncode(bytes.Clone(a)))
+	}
 	if len(b) > t.cfg.MaxScriptNumberLength() {
 		return errs.NewError(errs.ErrNumberTooBig, "script numbers are limited to %d bytes", t.cfg.MaxScriptNumberLength())
 	}
@@ -1230,8 +1286,7 @@ func opcode1Add(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	t.dstack.PushInt(m.Incr())
-	return nil
+	return pushArithResult(t, m.Incr())
 }
 
 // opcode1Sub treats the top item on the data stack as an integer and replaces
@@ -1244,8 +1299,7 @@ func opcode1Sub(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	t.dstack.PushInt(m.Decr())
-	return nil
+	return pushArithResult(t, m.Decr())
 }
 
 // opcodeNegate treats the top item on the data stack as an integer and replaces
@@ -1326,6 +1380,34 @@ func opcode0NotEqual(op *ParsedOpcode, t *thread) error {
 	return nil
 }
 
+// pushArithResult serializes an arithmetic RESULT and pushes it onto the
+// data stack, first enforcing the era's max script-number length on the
+// RESULT itself (post-Genesis) -- mirroring node's script_num.cpp bigint
+// CScriptNum operator+=/-=/*= (lines ~142-220), each of which checks
+// `value.serialized_size() > m_max_length` immediately after computing the
+// result and throws scriptnum_overflow_error right there, mid-script,
+// rather than deferring to the next decode of that value. Used by
+// OP_ADD/OP_SUB/OP_MUL/OP_1ADD/OP_1SUB/OP_2MUL and, for its post-shift
+// check (script_num.cpp:315-316), OP_LSHIFTNUM; OP_DIV/OP_MOD/OP_2DIV need
+// no equivalent call since division cannot grow a result's magnitude beyond
+// that of an operand, matching node (no such check exists on that path
+// either). See GHSA-rh54-8fpg-8wwf.
+//
+// It computes n.Bytes() exactly once and pushes those bytes directly rather
+// than calling the higher-level PushInt(n), which would call n.Bytes()
+// again: Bytes() mutates n.Val to its absolute value as a side effect, so a
+// second call on a value that was negative would silently lose its sign.
+func pushArithResult(t *thread, n *ScriptNumber) error {
+	bb := n.Bytes()
+	if t.afterGenesis && len(bb) > t.cfg.MaxScriptNumberLength() {
+		return errs.NewError(errs.ErrNumberTooBig,
+			"script number overflow: arithmetic result is %d bytes which exceeds the max allowed of %d",
+			len(bb), t.cfg.MaxScriptNumberLength())
+	}
+	t.dstack.PushByteArray(bb)
+	return nil
+}
+
 // opcodeAdd treats the top two items on the data stack as integers and replaces
 // them with their sum.
 //
@@ -1341,8 +1423,7 @@ func opcodeAdd(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	t.dstack.PushInt(v0.Add(v1))
-	return nil
+	return pushArithResult(t, v0.Add(v1))
 }
 
 // opcodeSub treats the top two items on the data stack as integers and replaces
@@ -1361,8 +1442,7 @@ func opcodeSub(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	t.dstack.PushInt(v1.Sub(v0))
-	return nil
+	return pushArithResult(t, v1.Sub(v0))
 }
 
 // opcodeMul treats the top two items on the data stack as integers and replaces
@@ -1379,8 +1459,44 @@ func opcodeMul(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	t.dstack.PushInt(n1.Mul(n2))
-	return nil
+	// Node multiplies bints with OpenSSL's BN_mul (big_int.cpp:226-236),
+	// which fails for some operand shapes above 8 MiB before the product's
+	// size is ever checked; see bnMulFails and GHSA-rh54-8fpg-8wwf.
+	if t.afterGenesis && bnMulFails(n1.Val, n2.Val) {
+		return errs.NewError(errs.ErrBigInt,
+			"OP_MUL: %d-bit by %d-bit multiplication exceeds OpenSSL BN_mul's working-size limit",
+			n1.Val.BitLen(), n2.Val.BitLen())
+	}
+
+	// Unlike ADD/SUB (result size bounded by max(len(a),len(b))+1) or 2MUL
+	// (a single doubling), OP_MUL's cost grows superlinearly with operand
+	// size -- node permits this (see GHSA-rh54-8fpg-8wwf),
+	// but a tiny OP_DUP/OP_MUL chain can still force a many-second multiply
+	// on operands that were already too large to ever produce a legal
+	// result. bitlen(a)+bitlen(b) is a safe upper bound on the product's
+	// bit length (the true value is that or one less), so rejecting here
+	// when it clearly exceeds the era's length limit -- well outside the
+	// +2-byte slack for the bound's own rounding -- can never reject a
+	// multiplication that pushArithResult's exact post-multiply check
+	// would otherwise have accepted.
+	if t.afterGenesis {
+		maxBits := int64(t.cfg.MaxScriptNumberLength()) * 8
+		if int64(n1.Val.BitLen())+int64(n2.Val.BitLen()) > maxBits+16 {
+			return errs.NewError(errs.ErrNumberTooBig,
+				"script number overflow: multiplication result would exceed the max script number length of %d",
+				t.cfg.MaxScriptNumberLength())
+		}
+	}
+
+	// An OP_DUP OP_MUL squaring decodes two distinct but equal big.Ints;
+	// passing the same operand twice lets math/big use its dedicated
+	// squaring algorithm (about a third faster on multi-megabyte operands),
+	// with an identical result.
+	if n1.Val.Cmp(n2.Val) == 0 {
+		n2 = n1
+	}
+
+	return pushArithResult(t, n1.Mul(n2))
 }
 
 // opcodeDiv return the integer quotient of a and b. If the result
@@ -1452,6 +1568,15 @@ func opcodeLShift(op *ParsedOpcode, t *thread) error {
 
 	result := make([]byte, len(x))
 	for idx := len(x); idx > 0; idx-- {
+		// len(x) is a script-controlled element size (unbounded post-Genesis
+		// beyond the stack memory limit); check WithContext's context.Context
+		// periodically, as node checks its cancellation token in the
+		// equivalent loop (interpreter.cpp:1144).
+		if idx&checkContextEveryMask == 0 {
+			if ctxErr := t.checkContext(); ctxErr != nil {
+				return ctxErr
+			}
+		}
 		i := idx - 1
 		if byteShift <= i {
 			k := i - byteShift
@@ -1493,6 +1618,15 @@ func opcodeRShift(op *ParsedOpcode, t *thread) error {
 	overflowMask := ^mask
 	result := make([]byte, len(x))
 	for i, b := range x {
+		// len(x) is a script-controlled element size (unbounded post-Genesis
+		// beyond the stack memory limit); check WithContext's context.Context
+		// periodically, as node checks its cancellation token in the
+		// equivalent loop (interpreter.cpp:1178).
+		if i&checkContextEveryMask == 0 {
+			if ctxErr := t.checkContext(); ctxErr != nil {
+				return ctxErr
+			}
+		}
 		k := i + byteShift
 		if k < len(x) {
 			val := b & mask
@@ -1918,12 +2052,13 @@ func opcodeHash256(op *ParsedOpcode, t *thread) error {
 	return nil
 }
 
-// opcodeCodeSeparator stores the current script offset as the most recently
-// seen script.OpCODESEPARATOR which is used during signature checking.
+// opcodeCodeSeparator makes the scriptCode used during signature checking
+// start just after this (executed) script.OpCODESEPARATOR, like node's
+// pbegincodehash = pc (interpreter.cpp:1445-1448).
 //
 // This opcode does not change the contents of the data stack.
 func opcodeCodeSeparator(op *ParsedOpcode, t *thread) error {
-	t.lastCodeSep = t.scriptOff
+	t.scriptCodeStart = t.scriptOff + 1
 	return nil
 }
 
@@ -1936,9 +2071,9 @@ func opcodeCodeSeparator(op *ParsedOpcode, t *thread) error {
 // transaction based on the hash type byte (which is the final byte of the
 // signature) and the portion of the script starting from the most recent
 // script.OpCODESEPARATOR (or the beginning of the script if there are none) to the
-// end of the script (with any other script.OpCODESEPARATORs removed).  Once this
-// "script hash" is calculated, the signature is checked using standard
-// cryptographic methods against the provided public key.
+// end of the script (see checkSigScriptCode).  Once this "script hash" is
+// calculated, the signature is checked using standard cryptographic methods
+// against the provided public key.
 //
 // Stack transformation: [... signature pubkey] -> [... bool]
 func opcodeCheckSig(op *ParsedOpcode, t *thread) error {
@@ -1952,17 +2087,12 @@ func opcodeCheckSig(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	// The signature actually needs needs to be longer than this, but at
-	// least 1 byte is needed for the hash type below.  The full length is
-	// checked depending on the script flags and upon parsing the signature.
-	if len(fullSigBytes) < 1 {
-		t.dstack.PushBool(false)
-		return nil
-	}
-
 	// Trim off hashtype from the signature string and check if the
-	// signature and pubkey conform to the strict encoding requirements
-	// depending on the flags.
+	// signature conforms to the strict encoding requirements depending on
+	// the flags. An empty signature is not strictly DER encoded, but is
+	// allowed as a compact way to provide an invalid signature for use with
+	// CHECK(MULTI)SIG: CheckSignatureEncoding returns OK for it immediately,
+	// without ever inspecting a hash type (interpreter.cpp:267-269).
 	//
 	// NOTE: When the strict encoding flags are set, any errors in the
 	// signature or public encoding here result in an immediate script error
@@ -1972,91 +2102,73 @@ func opcodeCheckSig(op *ParsedOpcode, t *thread) error {
 	// the data stack.  This is required because the more general script
 	// validation consensus rules do not have the new strict encoding
 	// requirements enabled by the flags.
-	shf := sighash.Flag(fullSigBytes[len(fullSigBytes)-1])
-	sigBytes := fullSigBytes[:len(fullSigBytes)-1]
-	if err = t.checkHashTypeEncoding(shf); err != nil {
-		return err
+	var shf sighash.Flag
+	var sigBytes []byte
+	if len(fullSigBytes) > 0 {
+		shf = sighash.Flag(fullSigBytes[len(fullSigBytes)-1])
+		sigBytes = fullSigBytes[:len(fullSigBytes)-1]
+		if err = t.checkHashTypeEncoding(shf); err != nil {
+			return err
+		}
+		if err = t.checkSignatureEncoding(sigBytes); err != nil {
+			return err
+		}
 	}
-	if err = t.checkSignatureEncoding(sigBytes); err != nil {
-		return err
-	}
+
+	// CheckPubKeyEncoding runs for every checked pubkey, even when the
+	// signature is empty -- interpreter.cpp:1459-1465 runs it unconditionally,
+	// ahead of anything that inspects vchSig's contents.
 	if err = t.checkPubKeyEncoding(pkBytes); err != nil {
 		return err
 	}
 
-	// Get script starting from the most recent script.OpCODESEPARATOR.
-	subScript := t.subScript()
-
-	// Generate the signature hash based on the signature hash type.
-	var hash []byte
-
-	// Remove the signature since there is no way for a signature
-	// to sign itself.
-	if !t.hasFlag(scriptflag.EnableSighashForkID) || !shf.Has(sighash.ForkID) {
-		subScript = subScript.removeOpcodeByData(fullSigBytes)
-		subScript = subScript.removeOpcode(script.OpCODESEPARATOR)
-	}
-
-	up, err := t.scriptParser.Unparse(subScript)
-	if err != nil {
-		return err
-	}
-
-	txCopy := t.tx.ShallowClone()
-	sourceTxOut := txCopy.Inputs[t.inputIdx].SourceTxOutput()
-	sourceTxOut.LockingScript = up
-
-	hash, err = txCopy.CalcInputSignatureHash(uint32(t.inputIdx), shf) //nolint:gosec // G115 -- inputIdx is bounded by the number of transaction inputs
-	if err != nil {
+	if len(fullSigBytes) == 0 {
 		t.dstack.PushBool(false)
-		return err
+		return nil
 	}
 
-	var sigBytesDer []byte
-	// if the signature is in DER format, we can set it here and just use it
-	// directly if an external verifier is set
-	if t.hasAny(scriptflag.VerifyStrictEncoding, scriptflag.VerifyDERSignatures) {
-		sigBytesDer = sigBytes
-	}
-
+	// A pubkey CPubKey cannot hold, or a signature its lax DER parse cannot
+	// use, is not a script error: node's CheckSig returns fSuccess=false for
+	// them (interpreter.cpp:2128-2160, pubkey.cpp:183-213), exactly like a
+	// verification failure -- NULLFAIL below still applies to it.
 	var ok bool
-	var signature *ec.Signature
-
-	if verifySignature := getExternalVerifySignatureFn(); verifySignature != nil {
-		if sigBytesDer == nil {
-			// signature is not in DER format, so we must parse it and set the bytes
-			signature, err = ec.ParseSignature(sigBytes)
-			if err != nil {
-				t.dstack.PushBool(false)
-				return nil //nolint:nilerr // only need a false push in this case
-			}
-			if sigBytesDer, err = signature.ToDER(); err != nil {
-				return err
-			}
+	if isValidCheckSigPubKey(pkBytes) {
+		scriptCode, scErr := t.checkSigScriptCode([][]byte{fullSigBytes})
+		if scErr != nil {
+			return scErr
 		}
-		ok = verifySignature(hash, sigBytesDer, pkBytes)
-	} else {
-		var pubKey *ec.PublicKey
-		pubKey, err = ec.ParsePubKey(pkBytes)
-		if err != nil {
+
+		txCopy := t.tx.ShallowClone()
+		sourceTxOut := txCopy.Inputs[t.inputIdx].SourceTxOutput()
+		sourceTxOut.LockingScript = scriptCode
+
+		hash, hashErr := txCopy.CalcInputSignatureHashWithForkIDEnabled(uint32(t.inputIdx), shf, t.hasFlag(scriptflag.EnableSighashForkID)) //nolint:gosec // G115 -- inputIdx is bounded by the number of transaction inputs
+		if hashErr != nil {
 			t.dstack.PushBool(false)
-			return nil //nolint:nilerr // only need a false push in this case
+			return hashErr
 		}
 
-		if t.hasAny(scriptflag.VerifyStrictEncoding, scriptflag.VerifyDERSignatures) {
-			signature, err = ec.ParseDERSignature(sigBytes)
-		} else {
-			signature, err = ec.ParseSignature(sigBytes)
+		if signature := t.parseCheckSigSignature(sigBytes); signature != nil {
+			if verifySignature := getExternalVerifySignatureFn(); verifySignature != nil {
+				// The external verifier takes strict DER: a signature that
+				// passed IsValidSignatureEncoding already is, a lax one is
+				// re-encoded from its parsed, low-S-normalised R and S.
+				sigBytesDer := sigBytes
+				if !t.hasAny(scriptflag.VerifyStrictEncoding, scriptflag.VerifyDERSignatures, scriptflag.VerifyLowS) {
+					sigBytesDer = signature.Serialize()
+				}
+				ok = verifySignature(hash, sigBytesDer, pkBytes)
+			} else if pubKey, pkErr := ec.ParsePubKey(pkBytes); pkErr == nil {
+				ok = signature.Verify(hash, pubKey)
+			}
 		}
-		if err != nil {
-			t.dstack.PushBool(false)
-			return nil //nolint:nilerr // only need a false push in this case
-		}
-
-		ok = signature.Verify(hash, pubKey)
 	}
 
-	if !ok && t.hasFlag(scriptflag.VerifyNullFail) && len(sigBytes) > 0 {
+	// If the operation failed and the txn is non-malleable, the signature
+	// must be empty -- interpreter.cpp:1493-1499. fullSigBytes is already
+	// known to be non-empty here (the len==0 case returned above), matching
+	// node's !vchSig.empty() check on the full (hashtype-inclusive) bytes.
+	if !ok && t.hasFlag(scriptflag.VerifyNullFail) && t.enforceNonMalleability {
 		return errs.NewError(errs.ErrNullFail, "signature not empty on failed checksig")
 	}
 
@@ -2086,6 +2198,37 @@ type parsedSigInfo struct {
 	parsed          bool
 }
 
+// checkSigScriptCode returns the scriptCode CHECKSIG/CHECKMULTISIG hash
+// signatures over: the script from the most recent OP_CODESEPARATOR to its
+// end (plus the full locking script when a post-Chronicle CHECK(MULTI)SIG is
+// executing directly inside the unlocking script; see subScriptForChecksig),
+// after CleanupScriptCode (interpreter.cpp:255-263) for each of sigs in turn:
+// FindAndDelete(CScript(vchSig)) unless the signature uses FORKID under
+// SCRIPT_ENABLE_SIGHASH_FORKID. An empty signature has hash type 0, so it
+// deletes the OP_0 instructions. OP_CODESEPARATORs are kept: only the legacy
+// digest's serializer skips them (interpreter.cpp:1862-1892), while a BIP143
+// digest hashes them.
+func (t *thread) checkSigScriptCode(sigs [][]byte) (*script.Script, error) {
+	up, err := t.scriptParser.Unparse(t.subScriptForChecksig())
+	if err != nil {
+		return nil, err
+	}
+
+	scriptCode := []byte(*up)
+	forkIDEnabled := t.hasFlag(scriptflag.EnableSighashForkID)
+	for _, sig := range sigs {
+		var shf sighash.Flag
+		if len(sig) > 0 {
+			shf = sighash.Flag(sig[len(sig)-1])
+		}
+		if !forkIDEnabled || !shf.Has(sighash.ForkID) {
+			scriptCode = removeOpcodeByData(scriptCode, sig)
+		}
+	}
+
+	return script.NewFromBytes(scriptCode), nil
+}
+
 // opcodeCheckMultiSig treats the top item on the stack as an integer number of
 // public keys, followed by that many entries as raw data representing the public
 // keys, followed by the integer number of signatures, followed by that many
@@ -2106,7 +2249,16 @@ type parsedSigInfo struct {
 // Stack transformation:
 // [... dummy [sig ...] numsigs [pubkey ...] numpubkeys] -> [... bool]
 func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
-	numKeys, err := t.dstack.PopInt()
+	numKeysBytes, err := t.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	// OP_CHECKMULTISIG's pubkey/signature counts are always decoded as a
+	// 4-byte-max CScriptNum, independent of era
+	// (CScriptNum::MAXIMUM_ELEMENT_SIZE, interpreter.cpp:1519-1525) --
+	// unlike ordinary numeric opcodes, whose max width grows with
+	// Genesis/Chronicle (params.MaxScriptNumLength(), t.cfg.MaxScriptNumberLength()).
+	numKeys, err := MakeScriptNumber(numKeysBytes, 4, t.dstack.verifyMinimalData, t.dstack.afterGenesis)
 	if err != nil {
 		return err
 	}
@@ -2122,9 +2274,20 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 			numPubKeys, t.cfg.MaxPubKeysPerMultiSig(),
 		)
 	}
-	t.numOps += numPubKeys
-	if t.numOps > t.cfg.MaxOps() {
+	// numOps never exceeds MaxOps, so comparing against the room left cannot
+	// overflow a 32-bit int the way numOps+numPubKeys could.
+	if numPubKeys > t.cfg.MaxOps()-t.numOps {
 		return errs.NewError(errs.ErrTooManyOperations, "exceeded max operation limit of %d", t.cfg.MaxOps())
+	}
+	t.numOps += numPubKeys
+
+	// The counts are the script's own claims. Like node, which checks that
+	// the stack holds the arguments before reading them
+	// (interpreter.cpp:1544-1546), require the pubkeys and the signature
+	// count to be there before allocating anything by numPubKeys.
+	if numPubKeys >= int(t.dstack.Depth()) {
+		return errs.NewError(errs.ErrInvalidStackOperation,
+			"%d pubkeys and a signature count need more than the %d items on the stack", numPubKeys, t.dstack.Depth())
 	}
 
 	pubKeys := make([][]byte, 0, numPubKeys)
@@ -2136,7 +2299,11 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 		pubKeys = append(pubKeys, pubKey)
 	}
 
-	numSigs, err := t.dstack.PopInt()
+	numSigsBytes, err := t.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	numSigs, err := MakeScriptNumber(numSigsBytes, 4, t.dstack.verifyMinimalData, t.dstack.afterGenesis)
 	if err != nil {
 		return err
 	}
@@ -2153,6 +2320,13 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 		)
 	}
 
+	// The signatures and the dummy below them must be there too
+	// (interpreter.cpp:1562-1565).
+	if numSignatures >= int(t.dstack.Depth()) {
+		return errs.NewError(errs.ErrInvalidStackOperation,
+			"%d signatures and the dummy need more than the %d items on the stack", numSignatures, t.dstack.Depth())
+	}
+
 	signatures := make([]*parsedSigInfo, 0, numSignatures)
 	for i := 0; i < numSignatures; i++ {
 		signature, popErr := t.dstack.PopByteArray()
@@ -2163,43 +2337,32 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 		signatures = append(signatures, sigInfo)
 	}
 
-	// A bug in the original Satoshi client implementation means one more
-	// stack value than should be used must be popped.  Unfortunately, this
-	// buggy behavior is now part of the consensus and a hard fork would be
-	// required to fix it.
-	dummy, err := t.dstack.PopByteArray()
+	// The scriptCode shared by every signature check below, with
+	// CleanupScriptCode applied for every declared signature up front,
+	// empty ones included (interpreter.cpp:1567-1585).
+	sigBytesList := make([][]byte, len(signatures))
+	for i, sigInfo := range signatures {
+		sigBytesList[i] = sigInfo.signature
+	}
+	scriptCode, err := t.checkSigScriptCode(sigBytesList)
 	if err != nil {
 		return err
 	}
-
-	// Since the dummy argument is otherwise not checked, it could be any
-	// value which unfortunately provides a source of malleability.  Thus,
-	// there is a script flag to force an error when the value is NOT 0.
-	if t.hasFlag(scriptflag.StrictMultiSig) && len(dummy) != 0 {
-		return errs.NewError(errs.ErrSigNullDummy, "multisig dummy argument has length %d instead of 0", len(dummy))
-	}
-
-	// Get script starting from the most recent script.OpCODESEPARATOR.
-	scr := t.subScript()
-
-	// Remove signatures and code separators from subscript, mirroring opcodeCheckSig.
-	// When ForkID is enabled, ForkID signatures use BIP143 digest and don't need cleanup.
-	for _, sigInfo := range signatures {
-		shf := sighash.Flag(0)
-		if len(sigInfo.signature) > 0 {
-			shf = sighash.Flag(sigInfo.signature[len(sigInfo.signature)-1])
-		}
-		if !t.hasFlag(scriptflag.EnableSighashForkID) || !shf.Has(sighash.ForkID) {
-			scr = scr.removeOpcodeByData(sigInfo.signature)
-			scr = scr.removeOpcode(script.OpCODESEPARATOR)
-		}
-	}
+	forkIDEnabled := t.hasFlag(scriptflag.EnableSighashForkID)
 
 	success := true
 	numPubKeys++
 	pubKeyIdx := -1
 	signatureIdx := 0
 	for numSignatures > 0 {
+		// numPubKeys is a script-controlled count (up to the data stack
+		// depth), so this loop's length is too; check WithContext's
+		// context.Context every iteration, as node does in the equivalent
+		// while loop (interpreter.cpp:1589).
+		if ctxErr := t.checkContext(); ctxErr != nil {
+			return ctxErr
+		}
+
 		// When there are more signatures than public keys remaining,
 		// there is no way to succeed since too many signatures are
 		// invalid, so exit early.
@@ -2218,61 +2381,59 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 		// script.OpCHECKMULTISIG NOT when the strict encoding flag is set.
 
 		rawSig := sigInfo.signature
-		if len(rawSig) == 0 {
-			// Skip to the next pubkey if signature is empty.
-			continue
+		var shf sighash.Flag
+		var signature []byte
+		if len(rawSig) > 0 {
+			shf = sighash.Flag(rawSig[len(rawSig)-1])
+			signature = rawSig[:len(rawSig)-1]
 		}
 
-		// Split the signature into hash type and signature components.
-		shf := sighash.Flag(rawSig[len(rawSig)-1])
-		signature := rawSig[:len(rawSig)-1]
-
-		// Only parse and check the signature encoding once.
+		// Only parse and check the signature encoding once. An empty
+		// signature is always "OK" to checkHashTypeEncoding/
+		// checkSignatureEncoding (mirroring CheckSignatureEncoding's own
+		// empty-vchSig early return, interpreter.cpp:267-269) and is never
+		// parsed.
 		var parsedSig *ec.Signature
-		if !sigInfo.parsed {
-			if err := t.checkHashTypeEncoding(shf); err != nil {
-				return err
-			}
-			if err := t.checkSignatureEncoding(signature); err != nil {
-				return err
-			}
+		if len(rawSig) > 0 {
+			if !sigInfo.parsed {
+				if encErr := t.checkHashTypeEncoding(shf); encErr != nil {
+					return encErr
+				}
+				if encErr := t.checkSignatureEncoding(signature); encErr != nil {
+					return encErr
+				}
 
-			// Parse the signature.
-			var err error
-			if t.hasAny(scriptflag.VerifyStrictEncoding, scriptflag.VerifyDERSignatures) {
-				parsedSig, err = ec.ParseDERSignature(signature)
+				// Parse the signature (nil when it can never verify).
+				parsedSig = t.parseCheckSigSignature(signature)
+				sigInfo.parsed = true
+				sigInfo.parsedSignature = parsedSig
 			} else {
-				parsedSig, err = ec.ParseSignature(signature)
+				// Use the already parsed signature (nil if it previously
+				// failed to parse).
+				parsedSig = sigInfo.parsedSignature
 			}
-			sigInfo.parsed = true
-			if err != nil {
-				continue
-			}
-			sigInfo.parsedSignature = parsedSig
-		} else {
-			// Skip to the next pubkey if the signature is invalid.
-			if sigInfo.parsedSignature == nil {
-				continue
-			}
-
-			// Use the already parsed signature.
-			parsedSig = sigInfo.parsedSignature
 		}
 
-		if err := t.checkPubKeyEncoding(pubKey); err != nil {
-			return err
+		// checkPubKeyEncoding runs for every (sig, pubkey) pair the loop
+		// attempts, even when the signature is empty or failed to parse:
+		// node's CheckSignatureEncoding/CheckPubKeyEncoding both run
+		// unconditionally on every while-loop iteration, before CheckSig
+		// ever looks at whether the signature verifies
+		// (interpreter.cpp:1600-1611).
+		if pkErr := t.checkPubKeyEncoding(pubKey); pkErr != nil {
+			return pkErr
 		}
 
-		// Parse the pubkey.
-		parsedPubKey, err := ec.ParsePubKey(pubKey)
-		if err != nil {
+		// Check signature: node's CheckSig returns fOk=false -- consuming the
+		// pubkey but keeping the signature -- for an empty signature, a
+		// pubkey CPubKey cannot hold or parse, or a signature its lax DER
+		// parse cannot use (interpreter.cpp:1613-1624, 2128-2160).
+		if len(rawSig) == 0 || parsedSig == nil || !isValidCheckSigPubKey(pubKey) {
 			continue
 		}
-
-		up, err := t.scriptParser.Unparse(scr)
-		if err != nil {
-			t.dstack.PushBool(false)
-			return nil //nolint:nilerr // only need a false push in this case
+		parsedPubKey, pubKeyErr := ec.ParsePubKey(pubKey)
+		if pubKeyErr != nil {
+			continue
 		}
 
 		// Generate the signature hash based on the signature hash type.
@@ -2280,11 +2441,11 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 		input := txCopy.Inputs[t.inputIdx]
 		sourceOut := input.SourceTxOutput()
 		if sourceOut != nil {
-			sourceOut.LockingScript = up
+			sourceOut.LockingScript = scriptCode
 		}
 
-		signatureHash, err := txCopy.CalcInputSignatureHash(uint32(t.inputIdx), shf) //nolint:gosec // G115 -- inputIdx is bounded by the number of transaction inputs
-		if err != nil {
+		signatureHash, hashErr := txCopy.CalcInputSignatureHashWithForkIDEnabled(uint32(t.inputIdx), shf, forkIDEnabled) //nolint:gosec // G115 -- inputIdx is bounded by the number of transaction inputs
+		if hashErr != nil {
 			t.dstack.PushBool(false)
 			return nil //nolint:nilerr // only need a false push in this case
 		}
@@ -2296,12 +2457,33 @@ func opcodeCheckMultiSig(op *ParsedOpcode, t *thread) error {
 		}
 	}
 
-	if !success && t.hasFlag(scriptflag.VerifyNullFail) {
+	if !success && t.hasFlag(scriptflag.VerifyNullFail) && t.enforceNonMalleability {
 		for _, sig := range signatures {
 			if len(sig.signature) > 0 {
 				return errs.NewError(errs.ErrNullFail, "not all signatures empty on failed checkmultisig")
 			}
 		}
+	}
+
+	// A bug in the original Satoshi client implementation means one more
+	// stack value than should be used must be popped.  Unfortunately, this
+	// buggy behavior is now part of the consensus and a hard fork would be
+	// required to fix it. This is popped last, after the checksig loop and
+	// its NULLFAIL cleanup, mirroring node's own stack cleanup order
+	// (interpreter.cpp:1626-1655): the dummy sits at the bottom of this
+	// opcode's arguments and nothing else touches the data stack in
+	// between, so popping it here rather than up front changes only the
+	// order errors are reported in, never which value is popped.
+	dummy, err := t.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	// Since the dummy argument is otherwise not checked, it could be any
+	// value which unfortunately provides a source of malleability.  Thus,
+	// there is a script flag to force an error when the value is NOT 0.
+	if t.hasFlag(scriptflag.StrictMultiSig) && t.enforceNonMalleability && len(dummy) != 0 {
+		return errs.NewError(errs.ErrSigNullDummy, "multisig dummy argument has length %d instead of 0", len(dummy))
 	}
 
 	t.dstack.PushBool(success)
@@ -2333,12 +2515,20 @@ func opcodeVer(op *ParsedOpcode, t *thread) error {
 	if !t.afterChronicle {
 		return opcodeReserved(op, t)
 	}
-	if t.tx == nil {
-		return errs.NewError(errs.ErrInvalidParams, "OP_VER requires a transaction")
-	}
-	v := t.tx.Version
-	t.dstack.PushByteArray([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}) //nolint:gosec // G115 -- intentional truncation to extract individual bytes of a uint32
+	t.dstack.PushByteArray(txVersionBytes(t.tx))
 	return nil
+}
+
+// txVersionBytes returns the 4-byte little-endian encoding of tx's version,
+// as OP_VER pushes it and OP_VERIF/OP_VERNOTIF compare it. Without a
+// transaction (WithScripts) the version is 0, like node's
+// BaseSignatureChecker::Version (interpreter.h:69-72).
+func txVersionBytes(tx *transaction.Transaction) []byte {
+	var v uint32
+	if tx != nil {
+		v = tx.Version
+	}
+	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
 }
 
 // opcodeVerConditional handles OP_VERIF and OP_VERNOTIF.
@@ -2384,13 +2574,9 @@ func resolveVerCondition(op *ParsedOpcode, t *thread) (int, error) {
 }
 
 // txVersionMatchesBytes reports whether data is exactly the 4-byte little-endian
-// encoding of tx.Version.
+// encoding of tx.Version (see txVersionBytes).
 func txVersionMatchesBytes(tx *transaction.Transaction, data []byte) bool {
-	if len(data) != 4 || tx == nil {
-		return false
-	}
-	v := tx.Version
-	return bytes.Equal([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}, data) //nolint:gosec // G115 -- intentional truncation to extract individual bytes of a uint32
+	return bytes.Equal(txVersionBytes(tx), data)
 }
 
 // opcode2Mul treats the top item on the data stack as an integer and replaces
@@ -2403,8 +2589,7 @@ func opcode2Mul(op *ParsedOpcode, t *thread) error {
 	}
 
 	two := &ScriptNumber{Val: big.NewInt(2), AfterGenesis: t.afterGenesis}
-	t.dstack.PushInt(m.Mul(two))
-	return nil
+	return pushArithResult(t, m.Mul(two))
 }
 
 // opcode2Div treats the top item on the data stack as an integer and replaces
@@ -2433,11 +2618,15 @@ func opcodeSubstr(op *ParsedOpcode, t *thread) error {
 		return nil
 	}
 
-	length, err := t.dstack.PopInt()
+	// OP_SUBSTR's begin/len operands are decoded via node's legacy
+	// bsv::deserialize<int64_t> plus getint() (CScriptNum constructed with
+	// big_int=false at interpreter.cpp:622-625), NOT the general era-aware
+	// ScriptNumber decode that PopInt uses -- see GHSA-rh54-8fpg-8wwf.
+	ln32, err := t.dstack.PopLegacyInt()
 	if err != nil {
 		return err
 	}
-	begin, err := t.dstack.PopInt()
+	offset32, err := t.dstack.PopLegacyInt()
 	if err != nil {
 		return err
 	}
@@ -2446,17 +2635,17 @@ func opcodeSubstr(op *ParsedOpcode, t *thread) error {
 		return err
 	}
 
-	offset64 := begin.Int64()
-	ln64 := length.Int64()
 	size := int64(len(data))
+	offset64, ln64 := int64(offset32), int64(ln32)
 	if offset64 < 0 || offset64 >= size || ln64 < 0 || ln64 > size-offset64 {
 		return errs.NewError(errs.ErrNumberTooBig, "OP_SUBSTR: invalid range offset=%d len=%d size=%d",
 			offset64, ln64, size)
 	}
 
+	// A copy, like LimitedVector::shrink's (limitedstack.cpp:132-147).
 	offset := int(offset64)
 	ln := int(ln64)
-	t.dstack.PushByteArray(data[offset : offset+ln])
+	t.dstack.PushByteArray(subBytes(data, offset, offset+ln))
 	return nil
 }
 
@@ -2491,7 +2680,9 @@ func opcodeRight(op *ParsedOpcode, t *thread) error {
 // opcodeSliceBytes implements the shared logic for OP_LEFT and OP_RIGHT.
 // fromRight=false slices from the start (OP_LEFT); fromRight=true slices from the end (OP_RIGHT).
 func opcodeSliceBytes(t *thread, name string, fromRight bool) error {
-	length, err := t.dstack.PopInt()
+	// OP_LEFT/OP_RIGHT's len operand uses the same legacy decode as
+	// OP_SUBSTR (interpreter.cpp:655-656,680-681); see legacyDeserializeInt64.
+	ln32, err := t.dstack.PopLegacyInt()
 	if err != nil {
 		return err
 	}
@@ -2500,17 +2691,18 @@ func opcodeSliceBytes(t *thread, name string, fromRight bool) error {
 		return err
 	}
 
-	ln64 := length.Int64()
 	size := int64(len(data))
+	ln64 := int64(ln32)
 	if ln64 < 0 || ln64 > size {
 		return errs.NewError(errs.ErrNumberTooBig, "%s: invalid length %d for size %d", name, ln64, size)
 	}
 
+	// A copy, like LimitedVector::shrink's (limitedstack.cpp:132-147).
 	ln := int(ln64)
 	if fromRight {
-		t.dstack.PushByteArray(data[int(size)-ln:])
+		t.dstack.PushByteArray(subBytes(data, int(size)-ln, int(size)))
 	} else {
-		t.dstack.PushByteArray(data[:ln])
+		t.dstack.PushByteArray(subBytes(data, 0, ln))
 	}
 	return nil
 }
@@ -2546,20 +2738,10 @@ func opcodeRShiftNum(op *ParsedOpcode, t *thread) error {
 // opcodeShiftNum implements the shared logic for OP_LSHIFTNUM and OP_RSHIFTNUM.
 // rightShift=false performs a left shift; rightShift=true performs a right shift.
 //
-// Semantics follow the SV Node reference implementation (bitcoin-sv
-// src/script/interpreter.cpp OP_LSHIFTNUM/OP_RSHIFTNUM, which shift a
-// CScriptNum backed by bsv::bint, see src/script/script_num.cpp and
-// src/big_int.cpp):
-//
-//   - The shift operates on the magnitude and keeps the sign (OpenSSL
-//     BN_lshift/BN_rshift), so a right shift truncates toward zero:
-//     -5 >> 1 == -2 and -1 >> 1 == 0. It is division by 2^n, not an
-//     arithmetic shift on a two's-complement value.
-//   - A left shift fails with a script number overflow when the input's
-//     encoded size plus n/8 bytes, or the result's encoded size, exceeds the
-//     maximum script number length.
-//   - A right shift by more than math.MaxInt32 bits fails (bsv::bint rejects
-//     shift counts above INT_MAX).
+// Both mirror interpreter.cpp:692-767: n and then the value are decoded as
+// big numbers, and the shift itself is CScriptNum::operator<<= /
+// operator>>= on the bint arm, whose checks run in the order reproduced
+// below.
 func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 	n, err := t.dstack.PopInt()
 	if err != nil {
@@ -2574,41 +2756,49 @@ func opcodeShiftNum(t *thread, name string, rightShift bool) error {
 		return err
 	}
 
-	maxLen := t.cfg.MaxScriptNumberLength()
-
-	var shifted *big.Int
-	if rightShift {
-		if n.Val.Cmp(big.NewInt(math.MaxInt32)) > 0 {
-			return errs.NewError(errs.ErrNumberTooBig, "%s: shift amount exceeds %d bits", name, math.MaxInt32)
+	if !rightShift {
+		// script_num.cpp:309-312: reject a left shift whose width
+		// serialized_size(value) + n/8 would exceed the era's max
+		// script-number length BEFORE allocating the shifted value. This is
+		// evaluated in bint for any n, including a zero value, so it -- not
+		// bint's INT_MAX guard below -- is what rejects every count above
+		// INT_MAX (SCRIPT_ERR_SCRIPTNUM_OVERFLOW), and it is the fix for the
+		// DoS half of GHSA-rh54-8fpg-8wwf.
+		maxLen := t.cfg.MaxScriptNumberLength()
+		valLen := serializedSize(val.Val)
+		if new(big.Int).Rsh(n.Val, 3).Cmp(big.NewInt(int64(maxLen-valLen))) > 0 {
+			return errs.NewError(errs.ErrNumberTooBig,
+				"%s: result of shifting a %d-byte value left by %s bits would exceed the max script number length of %d",
+				name, valLen, numberPreview(n.Val), maxLen)
 		}
-		// Shift the magnitude and restore the sign: truncation toward zero.
-		shifted = new(big.Int).Rsh(new(big.Int).Abs(val.Val), uint(n.Val.Uint64()))
-		if val.Val.Sign() < 0 {
+	}
+
+	// bint::operator<<=/>>=(const bint&) (big_int.cpp:359-369, 383-393):
+	// after both operands have decoded, a count above INT_MAX is
+	// SCRIPT_ERR_BIG_INT. Only OP_RSHIFTNUM can reach this in practice.
+	if n.GreaterThanInt(math.MaxInt32) {
+		return errs.NewError(errs.ErrBigInt, "%s: shift count %s exceeds INT_MAX", name, numberPreview(n.Val))
+	}
+	shiftAmt := uint(n.Int64()) //nolint:gosec // G115 -- n is provably in [0,math.MaxInt32] per the two checks above
+
+	if rightShift {
+		// script_num.cpp's bigint path shifts the magnitude and restores
+		// the sign afterward (round toward zero, i.e. -((-value)>>n)),
+		// unlike math/big.Int.Rsh's arithmetic shift on a signed value
+		// (floor division). See GHSA-rh54-8fpg-8wwf.
+		isNegative := val.Val.Sign() < 0
+		shifted := new(big.Int).Abs(val.Val)
+		shifted.Rsh(shifted, shiftAmt)
+		if isNegative {
 			shifted.Neg(shifted)
 		}
-	} else {
-		// Reject before allocating when the result cannot fit: the node
-		// checks encoded size + n/8 against the limit (this also rejects
-		// 0 << n for large n).
-		shiftBytes := new(big.Int).Rsh(n.Val, 3)
-		if shiftBytes.Cmp(big.NewInt(int64(maxLen-scriptNumEncodedLen(val.Val)))) > 0 {
-			return errs.NewError(errs.ErrNumberTooBig, "%s: script numbers are limited to %d bytes", name, maxLen)
-		}
-		shifted = new(big.Int).Lsh(val.Val, uint(n.Val.Uint64()))
+		t.dstack.PushInt(&ScriptNumber{Val: shifted, AfterGenesis: t.afterGenesis})
+		return nil
 	}
 
-	if scriptNumEncodedLen(shifted) > maxLen {
-		return errs.NewError(errs.ErrNumberTooBig, "%s: script numbers are limited to %d bytes", name, maxLen)
-	}
-	t.dstack.PushInt(&ScriptNumber{Val: shifted, AfterGenesis: t.afterGenesis})
-	return nil
-}
-
-// scriptNumEncodedLen returns the length of the minimal script number encoding
-// of v without serializing it: the magnitude's bytes plus room for the sign bit.
-func scriptNumEncodedLen(v *big.Int) int {
-	if v.Sign() == 0 {
-		return 0
-	}
-	return v.BitLen()/8 + 1
+	// script_num.cpp:314-316: the pre-check above only bounds n/8 whole
+	// bytes, so the exact post-shift size is checked too -- e.g. 1 << (8*k+7)
+	// gains a 0x80 top byte and needs one more byte than the pre-check
+	// allows for (GHSA-rh54-8fpg-8wwf).
+	return pushArithResult(t, &ScriptNumber{Val: new(big.Int).Lsh(val.Val, shiftAmt), AfterGenesis: t.afterGenesis})
 }

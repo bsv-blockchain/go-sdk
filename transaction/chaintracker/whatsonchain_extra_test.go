@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 )
 
 func TestNewWhatsOnChain(t *testing.T) {
@@ -39,6 +40,18 @@ func TestNewWhatsOnChainWithHTTPClientIsUsed(t *testing.T) {
 func TestWithHTTPClientNilPanics(t *testing.T) {
 	t.Parallel()
 	require.Panics(t, func() { WithHTTPClient(nil) })
+}
+
+// TestWhatsOnChainActivationHeights checks that a WhatsOnChain tracker
+// reports testnet's activation heights for TestNet and mainnet's for any other
+// network, as spv.Verify assumes for a tracker that does not say.
+func TestWhatsOnChainActivationHeights(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, scriptflag.MainNetActivationHeights, NewWhatsOnChain(MainNet, "").ActivationHeights())
+	require.Equal(t, scriptflag.TestNetActivationHeights, NewWhatsOnChain(TestNet, "").ActivationHeights())
+	require.Equal(t, scriptflag.MainNetActivationHeights, NewWhatsOnChain(Network("stn"), "").ActivationHeights())
+	require.Equal(t, scriptflag.MainNetActivationHeights, (&WhatsOnChain{}).ActivationHeights())
 }
 
 // An invalid network makes go-whatsonchain's client construction fail, which both

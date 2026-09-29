@@ -60,11 +60,34 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
-### Changed
-- **Breaking:** `script/interpreter`: `Engine.Execute` now defaults to after-Chronicle rules when no UTXO epoch is specified. Previously the default was pre-Genesis. Chronicle has been active on BSV mainnet since April 2026. To verify spends of older UTXOs, pass `WithAfterGenesis()` (after-Genesis, pre-Chronicle) or the new `WithBeforeGenesis()` (pre-Genesis). `WithFlags(...)` still treats its flags as a complete node-style set, so a flag set without `UTXOAfterGenesis`/`UTXOAfterChronicle` still means pre-Genesis.
+Fixes GHSA-rh54-8fpg-8wwf: `script/interpreter` and `spv.Verify` now agree with the bitcoin-sv node (commit `879fc8b42`) on script evaluation and on validating unmined transactions. Full detail is in the security advisory and pull request; this entry lists what callers need to know.
 
 ### Added
-- `script/interpreter`: `WithBeforeGenesis()` execution option.
+- `scriptflag.Genesis` / `scriptflag.Chronicle` spend-era flags and `scriptflag.ActivationHeights` (mainnet/testnet tables), with `BlockValidationFlags(coinHeight, spendHeight)` deriving the node's per-input flag word.
+- `spv.ActivationHeightsProvider`, `spv.WithActivationHeights`, and `headers_client.WithActivationHeights`, so a chain tracker can report which network's script rules and coin eras `spv.Verify` should apply. A tracker that does not implement `ActivationHeightsProvider` is now taken to follow mainnet (previously every rule was active from the first block).
+- `spv.MedianTimePastProvider`, an optional interface a chain tracker can implement so `spv.Verify` can resolve a non-final input under a time-based `nLockTime` against the chain tip's median time past instead of always rejecting it (see Changed).
+- `interpreter.WithContext`, which stops `Engine.Execute` once a `context.Context` is done. As in the node it is checked before every opcode and inside the loops of `OP_CHECKMULTISIG`, `OP_LSHIFT` and `OP_RSHIFT`. `spv.Verify` passes its `ctx` to every script it runs; give it a deadline when verifying transactions from untrusted parties.
+- `interpreter.WithGenesis`, `interpreter.WithChronicle` (spend-era options) and `interpreter.WithMaxStackMemory`.
+- `interpreter.WithBeforeGenesis()` execution option.
+- `Transaction.CalcInputSignatureHashWithForkIDEnabled`, which picks the BIP143 or legacy digest as the node does, from the engine's `SIGHASH_FORKID` flag as well as the signature's bits.
+- New `spv` sentinel errors: `ErrNoInputs`, `ErrNoOutputs`, `ErrP2SHOutput`, `ErrUnminedCoinbase`, `ErrNullOutpoint`, `ErrDuplicateInput`, `ErrValueOutOfRange`, `ErrOutputsExceedInputs`, `ErrNonFinalTransaction`, `ErrPrematureCoinbaseSpend`, `ErrConfiscationTransaction`, `ErrPrematureConfiscationSpend`, `ErrSourceTransactionMismatch`.
+- New `errs.ErrMustUseForkID`, `errs.ErrIllegalChronicle`, `errs.ErrBigInt`, `errs.ErrExecutionCancelled` (with `errs.NewCancelError`).
+- `State.ScriptCodeStart` (distinguishes a codeseparator at parsed index 0 from none) and `State.StackMemory` (carries counted stack memory through `WithState`/`SetState`).
+
+### Changed (Breaking)
+- `Engine.Execute` now defaults to after-Chronicle rules when no UTXO epoch is specified. Previously the default was pre-Genesis. Chronicle has been active on BSV mainnet since April 2026. To verify spends of older UTXOs, pass `WithAfterGenesis()` (after-Genesis, pre-Chronicle) or the new `WithBeforeGenesis()` (pre-Genesis). `WithFlags(...)` still treats its flags as a complete node-style set, so a flag set without `UTXOAfterGenesis`/`UTXOAfterChronicle` still means pre-Genesis; `WithGenesis()`/`WithChronicle()` also name the epoch, so on their own they mean a pre-Genesis output.
+- `spv.Verify` now checks every unmined transaction the way bitcoin-sv checks it when mining it: it also rejects one with no inputs or outputs, one that creates a pay-to-script-hash output, one spending an outpoint twice or the null outpoint, one whose amounts or their totals exceed 21,000,000 BSV or that pays more than it spends, one that is itself coinbase-shaped, one that **is not final**, one spending a coinbase output that **is not yet 100 blocks deep**, one that is a confiscation transaction (output 0 starting with `OP_FALSE OP_RETURN 'cftx'`; a node accepts one only from its whitelist, which SPV cannot see), and one spending a confiscation transaction's output that is not yet 1000 blocks deep. About finality and the two maturity rules:
+  - They need the chain tracker's current height, so they are skipped for `spv.GullibleHeadersClient`, whose height is a placeholder: in `VerifyScripts` and in `Verify` given that client, directly or through `WithActivationHeights` (the pattern `docs/examples/verify_transaction` uses).
+  - **A non-final input under a time-based `nLockTime` (>= 500,000,000) is rejected unless the chain tracker implements the new `spv.MedianTimePastProvider`**, even once the lock has long passed, since `spv.Verify` has no other way to learn that it has. Neither `chaintracker.WhatsOnChain` nor `headers_client.Client` implements it.
+  - A pay-to-script-hash-shaped output whose source is not a proven-mined coinbase is now always treated as pre-Genesis, closing the advisory's bypass on the Extended-Format/Arcade path.
+- `WithAfterGenesis`/`WithAfterChronicle`/`WithGenesis`/`WithChronicle` now imply `SIGHASH_FORKID`, and `Execute` with no flag option at all also enables it. As in the node, `SIGHASH_FORKID` implies strict encoding, so **a signature without `SIGHASH_FORKID` verified with no flag option now fails with `errs.ErrMustUseForkID`**; to verify a pre-UAHF spend, pass flags without `scriptflag.EnableSighashForkID`.
+- A flag word passed through `WithFlags` is used exactly as given, as the node uses its own. **Without `scriptflag.EnableSighashForkID` every signature is checked against the legacy digest**, so an ordinary `SIGHASH_FORKID` spend verified with, say, `WithFlags(scriptflag.UTXOAfterGenesis)` now fails (with `errs.ErrIllegalForkID` if the word sets `VerifyStrictEncoding`). v1.6.0 chose the digest from the signature's bits alone.
+- `Engine.Execute` reports a panic during execution as an `errs.ErrInternal` error instead of crashing the caller.
+- `MaxScriptNumberLengthAfterChronicle` changed from 33,554,432 to 32,000,000 (exported constant value change).
+- The exported zero-value `DefaultOpcodeParser` gained an unexported field: an unkeyed literal of it (`DefaultOpcodeParser{}` and keyed literals are unaffected) no longer compiles.
+- `errs.Error` gained an exported `Cause` field (holding the `context.Context` error behind `errs.ErrExecutionCancelled`, via `errs.NewCancelError`): an unkeyed two-field literal such as `errs.Error{code, "description"}` no longer compiles; use a keyed literal or `errs.NewError`.
+- A `State` resumed with `WithState`/`SetState` must carry at least an unlocking and a locking script; a hand-built `State` with fewer no longer resumes (`errs.ErrInvalidParams`). Resuming re-derives P2SH evaluation, the push-only rule and the flag checks from the `State`'s flags and scripts, and fails as a one-shot run would on an invalid combination.
+- Stack memory is now accounted exactly as in the node's `LimitedStack` and limited to 100,000,000 bytes by default after Genesis (`interpreter.DefaultMaxStackMemory`, `WithMaxStackMemory` to change it; `WithMaxStackMemory(math.MaxInt64)` for consensus/block-validation parity).
 
 ## [1.2.22] - 2026-04-21
 
