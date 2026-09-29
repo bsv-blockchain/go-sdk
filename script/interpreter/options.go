@@ -26,17 +26,42 @@ func WithScripts(lockingScript, unlockingScript *script.Script) ExecutionOptionF
 	}
 }
 
-// WithAfterGenesis configure the execution to operate in an after-genesis context.
+// WithBeforeGenesis configures the execution to operate in a pre-Genesis
+// context: the original script limits (500 ops, 520-byte elements, 4-byte
+// numbers, ...) and disabled opcodes apply. Use it when verifying a spend of a
+// UTXO created before the Genesis upgrade (block 620538 on mainnet).
+//
+// If a later epoch is also requested (WithAfterGenesis, WithAfterChronicle or
+// a UTXO epoch flag via WithFlags), the most recent of the requested epochs
+// wins, regardless of option order.
+func WithBeforeGenesis() ExecutionOptionFunc {
+	return func(p *execOpts) {
+		p.epochSet = true
+	}
+}
+
+// WithAfterGenesis configures the execution to operate in an after-Genesis,
+// pre-Chronicle context. Use it when verifying a spend of a UTXO created after
+// the Genesis upgrade but before the Chronicle upgrade.
+//
+// Combined with WithAfterChronicle (in any order), the execution is
+// after-Chronicle.
 func WithAfterGenesis() ExecutionOptionFunc {
 	return func(p *execOpts) {
+		p.epochSet = true
 		p.flags.AddFlag(scriptflag.UTXOAfterGenesis)
 	}
 }
 
-// WithAfterChronicle configure the execution to operate in an after-Chronicle context.
-// This also implies after-genesis. Chronicle is the BSV v1.2.0 protocol upgrade.
+// WithAfterChronicle configures the execution to operate in an after-Chronicle
+// context. This also implies after-Genesis. Chronicle is the BSV v1.2.0
+// protocol upgrade, active on mainnet since April 2026.
+//
+// This is the default when no epoch is specified (see Engine.Execute), so it
+// only needs to be passed explicitly alongside WithFlags, or for clarity.
 func WithAfterChronicle() ExecutionOptionFunc {
 	return func(p *execOpts) {
+		p.epochSet = true
 		p.flags.AddFlag(scriptflag.UTXOAfterGenesis)
 		p.flags.AddFlag(scriptflag.UTXOAfterChronicle)
 	}
@@ -57,8 +82,15 @@ func WithP2SH() ExecutionOptionFunc {
 }
 
 // WithFlags configure the execution with the provided flags.
+//
+// The flags are treated as a complete, node-style flag set: the UTXO epoch is
+// taken from scriptflag.UTXOAfterGenesis and scriptflag.UTXOAfterChronicle,
+// and if neither is set the execution is pre-Genesis, exactly as in the SV
+// node. Passing WithFlags therefore disables the after-Chronicle default; add
+// WithAfterChronicle (or the UTXO epoch flags) to verify under current rules.
 func WithFlags(flags scriptflag.Flag) ExecutionOptionFunc {
 	return func(p *execOpts) {
+		p.epochSet = true
 		p.flags.AddFlag(flags)
 	}
 }

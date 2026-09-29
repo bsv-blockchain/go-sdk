@@ -56,6 +56,13 @@ func createThread(opts *execOpts) (*thread, error) {
 		cfg: &beforeGenesisConfig{},
 	}
 
+	// Chronicle is active on mainnet, so unless the caller names an epoch
+	// (WithBeforeGenesis, WithAfterGenesis, WithAfterChronicle or WithFlags)
+	// the execution follows current, after-Chronicle rules.
+	if !opts.epochSet {
+		opts.flags.AddFlag(scriptflag.UTXOAfterGenesis | scriptflag.UTXOAfterChronicle)
+	}
+
 	if err := th.apply(opts); err != nil {
 		return nil, err
 	}
@@ -77,8 +84,12 @@ type execOpts struct {
 	tx              *transaction.Transaction
 	inputIdx        int
 	flags           scriptflag.Flag
-	debugger        Debugger
-	state           *State
+	// epochSet records that the caller chose the UTXO epoch, either with an
+	// epoch option or by supplying a full flag set via WithFlags. When false,
+	// the execution defaults to after-Chronicle.
+	epochSet bool
+	debugger Debugger
+	state    *State
 }
 
 func (o execOpts) validate() error {
