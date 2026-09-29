@@ -80,21 +80,31 @@ func TestWithContextPreCancelledFailsBeforeRunning(t *testing.T) {
 func TestWithContextDeadlineStopsLongRun(t *testing.T) {
 	t.Parallel()
 
-	lock := memScript(memBig(99_000_000, script.Op0), memOps(3000, script.OpINVERT), []byte{script.Op1})
+	passes := func(n int) []byte {
+		return memScript(memBig(99_000_000, script.Op0), memOps(n, script.OpINVERT), []byte{script.Op1})
+	}
+
+	// Scale the bound to this machine: under -race on a loaded CI runner a
+	// single pass over 99MB can take seconds, and the context is only
+	// checked between opcodes. Running all 3000 passes would take about
+	// 3000 of these; stopping near the deadline takes a handful.
+	start := time.Now()
+	require.NoError(t, memExecute(passes(1), nil, memPostChronicle))
+	onePass := time.Since(start)
 
 	const deadline = 200 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), deadline)
 	defer cancel()
 
-	start := time.Now()
-	err := memExecute(lock, nil, memPostChronicle, WithContext(ctx))
+	start = time.Now()
+	err := memExecute(passes(3000), nil, memPostChronicle, WithContext(ctx))
 	elapsed := time.Since(start)
 
 	require.Error(t, err)
 	require.True(t, errs.IsErrorCode(err, errs.ErrExecutionCancelled), "got %v", err)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
-	require.Less(t, elapsed, deadline+2*time.Second,
-		"execution should stop near the deadline, not after all 3000 OP_INVERT passes")
+	require.Less(t, elapsed, deadline+max(2*time.Second, 100*onePass),
+		"execution should stop near the deadline, not after all 3000 OP_INVERT passes (one pass: %v)", onePass)
 }
 
 // multiSigLoopScript returns a locking script that runs OP_CHECKMULTISIG

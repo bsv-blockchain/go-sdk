@@ -48,28 +48,40 @@ func dosLockingScript(t *testing.T, n int) *script.Script {
 // still be visible through errors.Is alongside ErrScriptVerificationFailed
 // (fmt.Errorf's two %w verbs keep both wrapped, see verifyTx).
 func TestSPVVerifyContextDeadlineStopsScriptExecution(t *testing.T) {
-	lock := dosLockingScript(t, 3000)
-	src := minedSource(t, lock, mainnetChronicleHeight+1)
+	spend := func(passes int) *transaction.Transaction {
+		src := minedSource(t, dosLockingScript(t, passes), mainnetChronicleHeight+1)
+		child := transaction.NewTransaction()
+		child.AddInputFromTx(src, 0, nil)
+		child.Inputs[0].UnlockingScript = &script.Script{}
+		child.AddOutput(&transaction.TransactionOutput{Satoshis: 40_000, LockingScript: opTrue})
+		return child
+	}
 
-	child := transaction.NewTransaction()
-	child.AddInputFromTx(src, 0, nil)
-	child.Inputs[0].UnlockingScript = &script.Script{}
-	child.AddOutput(&transaction.TransactionOutput{Satoshis: 40_000, LockingScript: opTrue})
+	// Scale the bound to this machine: under -race on a loaded CI runner a
+	// single OP_INVERT pass can take seconds, and the context is only
+	// checked between opcodes. Running all 3000 passes would take about
+	// 3000 of these; stopping near the deadline takes a handful.
+	start := time.Now()
+	verified, err := Verify(t.Context(), spend(1), &GullibleHeadersClient{}, nil)
+	onePass := time.Since(start)
+	require.NoError(t, err)
+	require.True(t, verified)
 
 	const deadline = 200 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), deadline)
 	defer cancel()
 
-	start := time.Now()
-	verified, err := Verify(ctx, child, &GullibleHeadersClient{}, nil)
+	child := spend(3000)
+	start = time.Now()
+	verified, err = Verify(ctx, child, &GullibleHeadersClient{}, nil)
 	elapsed := time.Since(start)
 
 	require.Error(t, err)
 	require.False(t, verified)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	require.ErrorIs(t, err, ErrScriptVerificationFailed)
-	require.Less(t, elapsed, deadline+2*time.Second,
-		"Verify should stop near the deadline, not run all OP_INVERT passes to completion")
+	require.Less(t, elapsed, deadline+max(2*time.Second, 100*onePass),
+		"Verify should stop near the deadline, not run all OP_INVERT passes to completion (one pass: %v)", onePass)
 }
 
 // TestSPVVerifyNoDeadlineUnaffected checks that a small version of the same

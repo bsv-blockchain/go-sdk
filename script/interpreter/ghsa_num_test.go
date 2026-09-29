@@ -16,6 +16,7 @@ import (
 	"encoding/hex"
 	"math"
 	"math/big"
+	"os"
 	"testing"
 	"time"
 
@@ -606,14 +607,15 @@ func BenchmarkGHSANumBytesNew32MB(b *testing.B) {
 	numBenchmarkBytesNew(b, 32<<20)
 }
 
+// The Old benchmarks measure the pre-fix O(n^2) encoder, so they are slow by
+// design: on a CI runner the 1MB case alone takes close to a minute per
+// iteration, and the 8MB one far longer. They exist only to let a maintainer
+// reproduce the before/after comparison, so they are skipped unless
+// GO_SDK_BENCH_QUADRATIC=1, which keeps `go test -bench=. ./...` bounded.
 func BenchmarkGHSANumBytesOld1MB(b *testing.B) {
 	numBenchmarkBytesOld(b, 1<<20)
 }
 
-// BenchmarkGHSANumBytesOld8MB is intentionally NOT run by default (only via
-// -bench, and even then it is slow: the old implementation is O(n^2), so an
-// 8MB value takes tens of seconds). It exists purely to let a maintainer
-// reproduce the before/after comparison.
 func BenchmarkGHSANumBytesOld8MB(b *testing.B) {
 	numBenchmarkBytesOld(b, 8<<20)
 }
@@ -628,6 +630,9 @@ func numBenchmarkBytesNew(b *testing.B, byteLen int) {
 }
 
 func numBenchmarkBytesOld(b *testing.B, byteLen int) {
+	if os.Getenv("GO_SDK_BENCH_QUADRATIC") != "1" {
+		b.Skip("quadratic pre-fix encoder; set GO_SDK_BENCH_QUADRATIC=1 to run")
+	}
 	v := numBenchValue(byteLen)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
