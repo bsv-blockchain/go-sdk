@@ -443,6 +443,11 @@ func (mp *MerklePath) Verify(ctx context.Context, txid *chainhash.Hash, ct chain
 	return ct.IsValidRootForHeight(ctx, root, mp.BlockHeight)
 }
 
+// Combine merges other into the receiver.
+//
+// Both paths must share a block height and merkle root. m.Path is replaced only
+// when the merged path still computes that root. other is not modified. On
+// error, including a merged root that no longer matches, m is left unchanged.
 func (m *MerklePath) Combine(other *MerklePath) (err error) {
 	if m.BlockHeight != other.BlockHeight {
 		return errors.New("cannot combine MerklePaths with different block heights")
@@ -461,7 +466,16 @@ func (m *MerklePath) Combine(other *MerklePath) (err error) {
 		return errors.New("cannot combine MerklePaths with different roots")
 	}
 
+	original := m.Path
 	m.combineVerified(other)
+	merged, err := m.ComputeRoot(nil)
+	if err != nil || !merged.IsEqual(root1) {
+		m.Path = original
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("combined MerklePath root %s does not match original root %s", merged, root1)
+	}
 	return nil
 }
 
