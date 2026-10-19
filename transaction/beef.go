@@ -580,41 +580,52 @@ func (t *Transaction) BEEFHex() (string, error) {
 	}
 }
 
+// collectAncestors returns the txids of t and its unmined ancestors in
+// topological order (parents before children), populating txns along the way.
+// Each transaction is visited once, so shared ancestors in deep unconfirmed
+// chains cost O(txs + inputs) rather than O(paths through the DAG).
 func (t *Transaction) collectAncestors(txid *chainhash.Hash, txns map[chainhash.Hash]*Transaction, allowPartial bool) ([]chainhash.Hash, error) {
 	if txid == nil {
 		txid = t.TxID()
 	}
-	if t.MerklePath != nil {
-		return []chainhash.Hash{*txid}, nil
-	}
 	ancestors := make([]chainhash.Hash, 0)
+	visited := make(map[chainhash.Hash]struct{})
+	if err := t.walkAncestors(txid, txns, allowPartial, visited, &ancestors); err != nil {
+		return nil, err
+	}
+	return ancestors, nil
+}
+
+func (t *Transaction) walkAncestors(txid *chainhash.Hash, txns map[chainhash.Hash]*Transaction, allowPartial bool, visited map[chainhash.Hash]struct{}, ancestors *[]chainhash.Hash) error {
+	visited[*txid] = struct{}{}
+	if t.MerklePath != nil {
+		*ancestors = append(*ancestors, *txid)
+		return nil
+	}
 	for _, input := range t.Inputs {
 		if input.SourceTransaction == nil {
 			if allowPartial {
 				continue
-			} else {
-				return nil, fmt.Errorf("missing previous transaction for %s", txid)
 			}
+			return fmt.Errorf("missing previous transaction for %s", txid)
 		}
 		txns[*input.SourceTXID] = input.SourceTransaction
-		if grands, err := input.SourceTransaction.collectAncestors(input.SourceTXID, txns, allowPartial); err != nil {
-			return nil, err
-		} else {
-			ancestors = append(grands, ancestors...)
+	}
+	// Later inputs' ancestors are emitted first, matching the historical ordering.
+	for i := len(t.Inputs) - 1; i >= 0; i-- {
+		input := t.Inputs[i]
+		if input.SourceTransaction == nil {
+			continue
+		}
+		if _, ok := visited[*input.SourceTXID]; ok {
+			continue
+		}
+		if err := input.SourceTransaction.walkAncestors(input.SourceTXID, txns, allowPartial, visited, ancestors); err != nil {
+			return err
 		}
 	}
-	ancestors = append(ancestors, *txid)
-
-	found := make(map[chainhash.Hash]struct{})
-	results := make([]chainhash.Hash, 0, len(ancestors))
-	for _, ancestor := range ancestors {
-		if _, ok := found[ancestor]; !ok {
-			results = append(results, ancestor)
-			found[ancestor] = struct{}{}
-		}
-	}
-
-	return results, nil
+	*ancestors = append(*ancestors, *txid)
+	return nil
 }
 
 func (b *Beef) FindBumpByHash(txid *chainhash.Hash) *MerklePath {
