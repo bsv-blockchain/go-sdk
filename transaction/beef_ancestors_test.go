@@ -102,38 +102,46 @@ func TestCollectAncestorsDiamondChain(t *testing.T) {
 func TestCollectAncestorsMatchesLegacyOrder(t *testing.T) {
 	rng := rand.New(rand.NewSource(1)) //nolint:gosec // deterministic test data
 	for trial := 0; trial < 200; trial++ {
-		var txs []*Transaction
-		n := 2 + rng.Intn(14)
-		for i := 0; i < n; i++ {
-			var parents []*Transaction
-			if i > 0 {
-				for k := rng.Intn(4); k > 0; k-- {
-					parents = append(parents, txs[rng.Intn(i)])
-				}
-			}
-			tx := newTestTx(uint32(trial*100+i), 1+rng.Intn(3), parents...) //nolint:gosec // test id
-			if len(parents) == 0 || rng.Intn(5) == 0 {
-				tx.MerklePath = &MerklePath{BlockHeight: uint32(rng.Intn(3))} //nolint:gosec // test height
-			}
-			txs = append(txs, tx)
-		}
-		tip := txs[n-1]
-		if rng.Intn(4) == 0 && len(tip.Inputs) > 0 {
-			tip.Inputs[rng.Intn(len(tip.Inputs))].SourceTransaction = nil
-		}
-
-		for _, allowPartial := range []bool{false, true} {
-			wantTxns := map[chainhash.Hash]*Transaction{}
-			want, wantErr := legacyCollectAncestors(tip, nil, wantTxns, allowPartial)
-			gotTxns := map[chainhash.Hash]*Transaction{}
-			got, gotErr := tip.collectAncestors(nil, gotTxns, allowPartial)
-			if wantErr != nil {
-				require.Error(t, gotErr, "trial %d", trial)
-				continue
-			}
-			require.NoError(t, gotErr, "trial %d", trial)
-			require.Equal(t, want, got, "trial %d allowPartial=%v", trial, allowPartial)
-			require.Equal(t, wantTxns, gotTxns, "trial %d allowPartial=%v", trial, allowPartial)
-		}
+		tip := randomTestDAG(rng, uint32(trial*100)) //nolint:gosec // test id
+		requireSameAncestors(t, tip, false, "trial %d allowPartial=false", trial)
+		requireSameAncestors(t, tip, true, "trial %d allowPartial=true", trial)
 	}
+}
+
+// randomTestDAG builds a random DAG of 2-15 transactions with mined roots,
+// occasionally mined interior nodes, and sometimes a missing source on the tip.
+func randomTestDAG(rng *rand.Rand, idBase uint32) *Transaction {
+	n := 2 + rng.Intn(14)
+	txs := make([]*Transaction, 0, n)
+	for i := 0; i < n; i++ {
+		var parents []*Transaction
+		for k := rng.Intn(4); i > 0 && k > 0; k-- {
+			parents = append(parents, txs[rng.Intn(i)])
+		}
+		tx := newTestTx(idBase+uint32(i), 1+rng.Intn(3), parents...) //nolint:gosec // test id
+		if len(parents) == 0 || rng.Intn(5) == 0 {
+			tx.MerklePath = &MerklePath{BlockHeight: uint32(rng.Intn(3))} //nolint:gosec // test height
+		}
+		txs = append(txs, tx)
+	}
+	tip := txs[n-1]
+	if rng.Intn(4) == 0 && len(tip.Inputs) > 0 {
+		tip.Inputs[rng.Intn(len(tip.Inputs))].SourceTransaction = nil
+	}
+	return tip
+}
+
+func requireSameAncestors(t *testing.T, tip *Transaction, allowPartial bool, msgAndArgs ...interface{}) {
+	t.Helper()
+	wantTxns := map[chainhash.Hash]*Transaction{}
+	want, wantErr := legacyCollectAncestors(tip, nil, wantTxns, allowPartial)
+	gotTxns := map[chainhash.Hash]*Transaction{}
+	got, gotErr := tip.collectAncestors(nil, gotTxns, allowPartial)
+	if wantErr != nil {
+		require.Error(t, gotErr, msgAndArgs...)
+		return
+	}
+	require.NoError(t, gotErr, msgAndArgs...)
+	require.Equal(t, want, got, msgAndArgs...)
+	require.Equal(t, wantTxns, gotTxns, msgAndArgs...)
 }
