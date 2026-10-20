@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter/errs"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter/scriptflag"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 )
@@ -185,20 +186,22 @@ func TestGHSANumOracleCases(t *testing.T) {
 			wantValid: true,
 		},
 		{
-			name:      "OP_SUBSTR 9-byte BEGIN operand decodes to +4",
+			// +4, so valid, through bitcoin-sv 1.2.2.
+			name:      "OP_SUBSTR 9-byte BEGIN operand decodes to -4",
 			rule:      "OP_SUBSTR legacy operand decode",
 			tx:        substrTx,
 			lock:      "10000102030405060708090a0b0c0d0e0f0904000000000000008054b3040405060787",
 			opts:      numOptsConsensusPostChronicle(),
-			wantValid: true,
+			wantValid: false,
 		},
 		{
-			name:      "OP_SUBSTR 9-byte LEN operand decodes to +4",
+			// +4, so valid, through bitcoin-sv 1.2.2.
+			name:      "OP_SUBSTR 9-byte LEN operand decodes to -4",
 			rule:      "OP_SUBSTR legacy operand decode",
 			tx:        baseTx,
 			lock:      "1400000000000000000000000000000000000000000009040000000000000080b37551",
 			opts:      numOptsConsensusPostChronicle(),
-			wantValid: true,
+			wantValid: false,
 		},
 		{
 			name:      "OP_SUBSTR 8-byte control (non-divergent boundary)",
@@ -383,43 +386,36 @@ func TestGHSANumLSHIFTNUMDoSIsFast(t *testing.T) {
 
 func TestGHSANumLegacyDeserializeInt64(t *testing.T) {
 	tests := []struct {
-		name string
-		in   []byte
-		want int64
+		name   string
+		in     []byte
+		want   int64
+		wantOK bool
 	}{
-		{"empty is zero", nil, 0},
-		{"1 byte positive", hexToBytes("04"), 4},
-		{"1 byte negative", hexToBytes("84"), -4},
-		{"8 byte max positive (sign-magnitude, well-defined)", hexToBytes("ffffffffffffff7f"), math.MaxInt64},
-		{"8 byte, mirrors general decode", hexToBytes("ffffffffffffffff"), -9223372036854775807},
+		{"empty is zero", nil, 0, true},
+		{"1 byte positive", hexToBytes("04"), 4, true},
+		{"1 byte negative", hexToBytes("84"), -4, true},
+		{"8 byte max positive (sign-magnitude, well-defined)", hexToBytes("ffffffffffffff7f"), math.MaxInt64, true},
+		{"8 byte, mirrors general decode", hexToBytes("ffffffffffffffff"), -9223372036854775807, true},
 		{
-			// The advisory's own 9-byte reproducer: node decodes this to
-			// +4 by reinterpreting bytes[0:8] as a raw little-endian
-			// int64 and discarding byte 8 (0x80) entirely, NOT by
-			// sign-magnitude decoding all 9 bytes (which would give -4,
-			// the general MakeScriptNumber path's answer).
-			name: "9 byte: raw reinterpretation of bytes[0:8], byte 8 discarded",
-			in:   hexToBytes("0400000000000000" + "80"),
-			want: 4,
+			// The advisory's own 9-byte reproducer. bitcoin-sv through
+			// 1.2.2 dropped byte 8 and decoded +4; since 1.2.3 a pure sign
+			// byte applies, as in the general MakeScriptNumber path.
+			name:   "9 byte: pure sign byte applies",
+			in:     hexToBytes("0400000000000000" + "80"),
+			want:   -4,
+			wantOK: true,
 		},
-		{
-			name: "9 byte all-0xff: low 8 bytes as raw two's complement",
-			in:   hexToBytes("ffffffffffffffff" + "01"),
-			want: -1,
-		},
-		{
-			// Byte 8 is ORed into byte slot 0 (the compiled node's shift
-			// count wraps mod 64); only the last byte is discarded. The
-			// real node decodes this to 132 (GHSA-rh54-8fpg-8wwf).
-			name: "10 byte: byte 8 folds into slot 0, last byte discarded",
-			in:   hexToBytes("0400000000000000" + "8000"),
-			want: 0x84,
-		},
+		{"9 byte: math.MinInt64 needs the sign byte", hexToBytes("0000000000000080" + "80"), math.MinInt64, true},
+		{"9 byte: 2^63 without the sign overflows", hexToBytes("0000000000000080" + "00"), 0, false},
+		{"9 byte: magnitude above 2^63 overflows", hexToBytes("0100000000000080" + "80"), 0, false},
+		{"9 byte: magnitude bits in the last byte overflow", hexToBytes("ffffffffffffffff" + "01"), 0, false},
+		{"10 byte overflows", hexToBytes("0400000000000000" + "8000"), 0, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := legacyDeserializeInt64(tt.in)
+			got, ok := legacyDeserializeInt64(tt.in)
+			require.Equal(t, tt.wantOK, ok)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -454,12 +450,19 @@ func TestGHSANumPopLegacyInt(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("9-byte operand uses the legacy decode, not sign-magnitude", func(t *testing.T) {
+	t.Run("9-byte operand with a pure sign byte decodes", func(t *testing.T) {
 		s := numNewStack(100, false)
 		s.PushByteArray(hexToBytes("0400000000000000" + "80"))
 		v, err := s.PopLegacyInt()
 		require.NoError(t, err)
-		require.Equal(t, int32(4), v)
+		require.Equal(t, int32(-4), v)
+	})
+
+	t.Run("operand out of int64 range overflows", func(t *testing.T) {
+		s := numNewStack(100, false)
+		s.PushByteArray(hexToBytes("0400000000000000" + "8000"))
+		_, err := s.PopLegacyInt()
+		require.True(t, errs.IsErrorCode(err, errs.ErrNumberTooBig), "got %v", err)
 	})
 }
 

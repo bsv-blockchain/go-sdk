@@ -180,8 +180,8 @@ func (s *stack) PopInt() (*ScriptNumber, error) {
 // int32 (script_num.cpp:394-420) before the caller's range checks.
 //
 // This must be used ONLY by OP_SUBSTR/OP_LEFT/OP_RIGHT: unlike PopInt, an
-// operand of 9 or more bytes is not decoded as a big.Int sign-magnitude
-// value. OP_SPLIT and every other numeric opcode must keep using
+// operand that does not fit an int64 is rejected rather than decoded as a
+// big.Int. OP_SPLIT and every other numeric opcode must keep using
 // PopInt/MakeScriptNumber; see GHSA-rh54-8fpg-8wwf.
 //
 // The era's max-length and minimal-encoding checks still apply, in the same
@@ -206,7 +206,15 @@ func (s *stack) PopLegacyInt() (int32, error) {
 		}
 	}
 
-	return saturateInt32(legacyDeserializeInt64(so)), nil
+	v, ok := legacyDeserializeInt64(so)
+	if !ok {
+		return 0, errs.NewError(
+			errs.ErrNumberTooBig,
+			"numeric value encoded as %s (%d bytes) is out of int64 range",
+			hexPreview(so), len(so),
+		)
+	}
+	return saturateInt32(v), nil
 }
 
 // PopBool pops the value off the top of the stack, converts it into a bool, and

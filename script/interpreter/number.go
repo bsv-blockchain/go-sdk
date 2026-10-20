@@ -156,42 +156,47 @@ func MakeScriptNumber(bb []byte, scriptNumLen int, requireMinimal, afterGenesis 
 }
 
 // legacyDeserializeInt64 decodes bb the way node's bsv::deserialize<int64_t>
-// (int_serialization.h:63-95) does for the OP_SUBSTR/OP_LEFT/OP_RIGHT operand
+// (int_serialization.h) does for the OP_SUBSTR/OP_LEFT/OP_RIGHT operand
 // path, where the CScriptNum is constructed with big_int=false. It must be
 // used ONLY by those three opcodes (via stack.PopLegacyInt) -- OP_SPLIT and
 // every other numeric opcode use the general, era-aware MakeScriptNumber
 // path above and must not be routed through this function.
 //
-// For d := len(bb) in [1,8] this is the ordinary sign-magnitude little-endian
-// decode, restricted to d bytes -- well-defined, since node's accumulation
-// loop only ever shifts by less than 64 bits in this range.
+// bb is a little-endian sign-magnitude number. ok is false, node's "script
+// number overflow", when bb cannot denote an int64: more than 9 bytes, or
+// exactly 9 bytes whose last byte is not a pure 0x00/0x80 sign byte or whose
+// 8-byte magnitude is out of range for that sign. math.MinInt64 is the only
+// value that needs the 9th byte.
 //
-// For d>=9, node's loop (int_serialization.h:72-79) ORs bytes[0:d-1] into a
-// signed int64 via `tmp <<= 8*i` and returns at int_serialization.h:81-82
-// BEFORE the sign handling runs: the last byte, including its sign bit, is
-// discarded and the accumulated bit pattern is the raw two's-complement
-// result. For d==9 that is simply bytes[0:8]. For d>=10 the shift count
-// reaches 64, which is undefined behavior in C++. The linux-x86_64 and
-// darwin-arm64 BDK builds compile the loop to a scalar variable shift that
-// masks the count mod 64 (SHL r64,cl / LSLV), so byte i is ORed into byte
-// slot i%8 -- e.g. 04 00x7 80 00 decodes to 0x84. This replicates those
-// builds, verified against bitcoin-sv through GoBDK for d from 9 up to
-// 100,001. The node's own result is platform-dependent:
-// the darwin-x86_64 and linux-aarch64 builds vectorize the loop (PSLLQ /
-// NEON SSHL give 0 for a count of 64 or more) and so drop some of the
-// bytes this folds in once d>=17. Re-verify on each node release and
-// follow upstream once the UB is fixed.
-func legacyDeserializeInt64(bb []byte) int64 {
+// This follows bitcoin-sv 1.2.3 (22c9beeb0, "reject out-of-range int64 in
+// deserialize"), verified against bitcoin-sv 6504a3aff through GoBDK
+// v1.3.1. Through 1.2.2 (879fc8b42) node instead accepted operands of any
+// length, dropping the last byte and, through a shift count that reached
+// 64 (undefined behavior), folding byte i into byte slot i%8.
+func legacyDeserializeInt64(bb []byte) (int64, bool) {
 	d := len(bb)
 	if d == 0 {
-		return 0
+		return 0, true
 	}
-	if d >= 9 {
-		var r uint64
-		for i, b := range bb[:d-1] {
-			r |= uint64(b) << (8 * (i % 8))
+	if d > 9 {
+		return 0, false
+	}
+	if d == 9 {
+		if bb[8]&0x7f != 0 {
+			return 0, false
 		}
-		return int64(r) // raw two's-complement reinterpretation, as node returns it
+		isNegative := bb[8]&0x80 != 0
+		magnitude := binary.LittleEndian.Uint64(bb[:8])
+		switch {
+		case magnitude == 1<<63 && isNegative:
+			return math.MinInt64, true
+		case magnitude > math.MaxInt64:
+			return 0, false
+		case isNegative:
+			return -int64(magnitude), true
+		default:
+			return int64(magnitude), true
+		}
 	}
 
 	var buf [8]byte
@@ -204,7 +209,7 @@ func legacyDeserializeInt64(bb []byte) int64 {
 	if isNegative {
 		v = -v
 	}
-	return v
+	return v, true
 }
 
 // serializedSize returns len((&ScriptNumber{Val: v}).Bytes()) without
