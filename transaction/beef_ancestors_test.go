@@ -102,7 +102,7 @@ func TestCollectAncestorsDiamondChain(t *testing.T) {
 func TestCollectAncestorsMatchesLegacyOrder(t *testing.T) {
 	rng := rand.New(rand.NewSource(1)) //nolint:gosec // deterministic test data
 	for trial := 0; trial < 200; trial++ {
-		tip := randomTestDAG(rng, uint32(trial*100)) //nolint:gosec // test id
+		tip := randomTestDAG(rng, uint32(trial*100))
 		requireSameAncestors(t, tip, false, "trial %d allowPartial=false", trial)
 		requireSameAncestors(t, tip, true, "trial %d allowPartial=true", trial)
 	}
@@ -118,7 +118,7 @@ func randomTestDAG(rng *rand.Rand, idBase uint32) *Transaction {
 		for k := rng.Intn(4); i > 0 && k > 0; k-- {
 			parents = append(parents, txs[rng.Intn(i)])
 		}
-		tx := newTestTx(idBase+uint32(i), 1+rng.Intn(3), parents...) //nolint:gosec // test id
+		tx := newTestTx(idBase+uint32(i), 1+rng.Intn(3), parents...)
 		if len(parents) == 0 || rng.Intn(5) == 0 {
 			tx.MerklePath = &MerklePath{BlockHeight: uint32(rng.Intn(3))} //nolint:gosec // test height
 		}
