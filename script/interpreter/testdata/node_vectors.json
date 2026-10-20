@@ -1,7 +1,7 @@
 {
  "comment": [
   "GHSA-rh54-8fpg-8wwf node vector corpus: every case verified against bitcoin-sv (GoBDK) while fixing the advisory.",
-  "valid/nodeError are bitcoin-sv 879fc8b42's verdict (gobdk v1.2.4 TxValidator.VerifyScriptWithCustomFlags(EF tx, coinHeights, spend, consensus, [word per input])).",
+  "valid/nodeError are bitcoin-sv 6504a3aff's verdict (gobdk v1.3.1 TxValidator.VerifyScriptWithCustomFlags(EF tx, coinHeights, spend, consensus, [word per input])); first recorded with bitcoin-sv 879fc8b42 (gobdk v1.2.4), whose OP_SUBSTR/OP_LEFT/OP_RIGHT operand decode bitcoin-sv 1.2.3 changed.",
   "word is the node's per-input script-verify flag word; consensus is false for words carrying a policy-only bit (NULLDUMMY, MINIMALDATA, DISCOURAGE_UPGRADABLE_NOPS, CLEANSTACK).",
   "sats are the spent outputs' values; heavy vectors are slow on one side and skipped under -short.",
   "rnd/* are random differential-batch cases on which the interpreter panicked before the top-level OP_RETURN end-of-script fix.",
@@ -303,7 +303,8 @@
     {
      "word": "0x3d462f",
      "consensus": true,
-     "valid": true
+     "valid": false,
+     "nodeError": "Given operand is not a number within the valid range [-2^31...2^31]"
     }
    ]
   },
@@ -747,7 +748,8 @@
     {
      "word": "0x3d462f",
      "consensus": true,
-     "valid": true
+     "valid": false,
+     "nodeError": "Given operand is not a number within the valid range [-2^31...2^31]"
     }
    ]
   },
@@ -2936,7 +2938,8 @@
     {
      "word": "0x3d462f",
      "consensus": true,
-     "valid": true
+     "valid": false,
+     "nodeError": "Script number overflow"
     }
    ]
   },

@@ -17,9 +17,9 @@ import (
 )
 
 // harnessNodeVectorsFile holds every case verified against bitcoin-sv
-// (GoBDK) while fixing GHSA-rh54-8fpg-8wwf, each with bitcoin-sv 879fc8b42's
-// verdict for one or more per-input flag words. transaction/bdk replays the
-// same file through the node itself.
+// (GoBDK) while fixing GHSA-rh54-8fpg-8wwf, each with bitcoin-sv 6504a3aff's
+// (gobdk v1.3.1) verdict for one or more per-input flag words. transaction/bdk
+// replays the same file through the node itself.
 const harnessNodeVectorsFile = "testdata/node_vectors.json"
 
 type harnessNodeVectorResult struct {

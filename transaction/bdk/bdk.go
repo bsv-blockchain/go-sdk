@@ -174,7 +174,8 @@ func finalizeValidateBatch(batch *ValidateBatch) {
 // Add serializes and adds tx to the batch. The adapter pins and retains the
 // serialized transaction and a private copy of the heights until Clear is
 // called because GoBDK retains pointers to their memory while processing the
-// batch.
+// batch. If GoBDK rejects the entry, Add returns its error and the batch is
+// unchanged.
 func (b *ValidateBatch) Add(tx *transaction.Transaction, utxoHeights []int32, blockHeight int32, consensus bool) error {
 	if b == nil || b.native == nil {
 		return ErrNilBatch
@@ -190,10 +191,14 @@ func (b *ValidateBatch) Add(tx *transaction.Transaction, utxoHeights []int32, bl
 	if len(heights) > 0 {
 		b.pinner.Pin(&heights[0])
 	}
+	err = b.native.Add(extendedTx, heights, blockHeight, consensus)
+	runtime.KeepAlive(b)
+	if err != nil {
+		// GoBDK appended nothing; Clear releases the pins taken above.
+		return err
+	}
 	b.extendedTxs = append(b.extendedTxs, extendedTx)
 	b.utxoHeightLists = append(b.utxoHeightLists, heights)
-	b.native.Add(extendedTx, heights, blockHeight, consensus)
-	runtime.KeepAlive(b)
 	return nil
 }
 

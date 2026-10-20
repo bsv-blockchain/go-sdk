@@ -88,6 +88,7 @@ Fixes GHSA-rh54-8fpg-8wwf: `script/interpreter` and `spv.Verify` now agree with 
 - `errs.Error` gained an exported `Cause` field (holding the `context.Context` error behind `errs.ErrExecutionCancelled`, via `errs.NewCancelError`): an unkeyed two-field literal such as `errs.Error{code, "description"}` no longer compiles; use a keyed literal or `errs.NewError`.
 - A `State` resumed with `WithState`/`SetState` must carry at least an unlocking and a locking script; a hand-built `State` with fewer no longer resumes (`errs.ErrInvalidParams`). Resuming re-derives P2SH evaluation, the push-only rule and the flag checks from the `State`'s flags and scripts, and fails as a one-shot run would on an invalid combination.
 - Stack memory is now accounted exactly as in the node's `LimitedStack` and limited to 100,000,000 bytes by default after Genesis (`interpreter.DefaultMaxStackMemory`, `WithMaxStackMemory` to change it; `WithMaxStackMemory(math.MaxInt64)` for consensus/block-validation parity).
+- `OP_SUBSTR`, `OP_LEFT` and `OP_RIGHT` decode their numeric operands as bitcoin-sv 1.2.3 does (`6504a3aff`, via gobdk v1.3.1): **an operand of 10 or more bytes, or a 9-byte one that is out of int64 range, now fails with `errs.ErrNumberTooBig`**, and a 9-byte operand's final sign byte now applies. bitcoin-sv 1.2.2 dropped the final byte and folded the rest into an int64.
 
 ## [1.2.22] - 2026-04-21
 
