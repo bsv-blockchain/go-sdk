@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"testing"
 
@@ -440,6 +441,109 @@ func TestMerklePathSingleLeafCoinbaseOnly(t *testing.T) {
 		empty := &MerklePath{BlockHeight: 1}
 		_, err = empty.ComputeRoot(nil)
 		require.Error(t, err)
+	})
+}
+
+// rootAtHeightTracker accepts one merkle root at one block height and reports
+// a tip above that height. It is the local tracker from go-sdk#377.
+type rootAtHeightTracker struct {
+	root   *chainhash.Hash
+	height uint32
+	tip    uint32
+}
+
+func (rt rootAtHeightTracker) IsValidRootForHeight(_ context.Context, root *chainhash.Hash, height uint32) (bool, error) {
+	return root != nil && rt.root != nil && root.Equal(*rt.root) && height == rt.height, nil
+}
+
+func (rt rootAtHeightTracker) CurrentHeight(context.Context) (uint32, error) {
+	return rt.tip, nil
+}
+
+// TestMerklePathLoneLeafOffset rejects a one-level path whose only leaf is not
+// the coinbase at offset 0. A block of one transaction holds that coinbase at
+// index 0; any other offset is a missing sibling. Vectors are from go-sdk#377.
+func TestMerklePathLoneLeafOffset(t *testing.T) {
+	t.Parallel()
+
+	const (
+		leaf        = "0202ef57aa9f29c8141ae17935c88434457b2117890f23efba0d0e0cba7a7a37d5"
+		txidHex     = "d5377a7aba0c0e0dbaef230f8917217b453484c83579e11a14c8299faa57ef02"
+		missing     = "we do not have a hash for this index at height: 0"
+		beefOffset1 = "0100beef01fe05350c00010101027f99c4e42e06eca54293b05cb7a67be42778ae046c04fc5b68122bedcadbeef500"
+		beefOffset0 = "0100beef01fe05350c00010100027f99c4e42e06eca54293b05cb7a67be42778ae046c04fc5b68122bedcadbeef50101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff00ffffffff01010000000000000000000000000100"
+		beefTxid    = "f5eedbcaed2b12685bfc046c04ae7827e47ba6b75cb09342a5ec062ee4c4997f"
+		beefHeight  = uint32(800005)
+	)
+
+	txid, err := chainhash.NewHashFromHex(txidHex)
+	require.NoError(t, err)
+
+	zero, err := NewMerklePathFromHex("fdd204010100" + leaf)
+	require.NoError(t, err)
+	root, err := zero.ComputeRoot(txid)
+	require.NoError(t, err)
+	require.Equal(t, txid, root)
+
+	tracker := rootAtHeightTracker{root: txid, height: 1234, tip: 1240}
+	ok, err := zero.Verify(t.Context(), txid, tracker)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	for _, offset := range []uint64{1, 5} {
+		_, err = NewMerklePathFromHex(fmt.Sprintf("fdd2040101%02x", offset) + leaf)
+		require.EqualError(t, err, missing)
+
+		forged := NewMerklePath(1234, [][]*PathElement{{{Offset: offset, Hash: txid}}})
+		_, err = forged.ComputeRoot(txid)
+		require.EqualError(t, err, missing)
+
+		ok, err = forged.Verify(t.Context(), txid, tracker)
+		require.EqualError(t, err, missing)
+		require.False(t, ok)
+
+		err = zero.Combine(forged)
+		require.EqualError(t, err, missing)
+		root, err = zero.ComputeRoot(txid)
+		require.NoError(t, err)
+		require.Equal(t, txid, root)
+		require.Equal(t, uint64(0), zero.Path[0][0].Offset)
+	}
+
+	t.Run("refuses the 47-byte BEEF with a lone leaf at offset 1", func(t *testing.T) {
+		_, err := NewBeefFromHex(beefOffset1)
+		require.EqualError(t, err, missing)
+
+		_, err = NewTransactionFromBEEFHex(beefOffset1)
+		require.EqualError(t, err, missing)
+	})
+
+	t.Run("accepts the 109-byte offset-0 BEEF control", func(t *testing.T) {
+		beefTx, err := chainhash.NewHashFromHex(beefTxid)
+		require.NoError(t, err)
+
+		beef, err := NewBeefFromHex(beefOffset0)
+		require.NoError(t, err)
+		require.True(t, beef.IsValid(false))
+		require.Len(t, beef.BUMPs, 1)
+		require.Equal(t, beefHeight, beef.BUMPs[0].BlockHeight)
+
+		got, err := beef.BUMPs[0].ComputeRoot(beefTx)
+		require.NoError(t, err)
+		require.True(t, got.Equal(*beefTx))
+
+		beefTracker := rootAtHeightTracker{root: beefTx, height: beefHeight, tip: 800010}
+		ok, err := beef.Verify(t.Context(), beefTracker, false)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		tx, err := NewTransactionFromBEEFHex(beefOffset0)
+		require.NoError(t, err)
+		require.Equal(t, beefTxid, tx.TxID().String())
+		require.NotNil(t, tx.MerklePath)
+		verified, err := tx.MerklePath.Verify(t.Context(), beefTx, beefTracker)
+		require.NoError(t, err)
+		require.True(t, verified)
 	})
 }
 

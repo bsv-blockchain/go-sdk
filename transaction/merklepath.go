@@ -270,6 +270,14 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 		})
 	}
 
+	// A one-level path with a single leaf is a block that contains only its
+	// coinbase, and the coinbase is always at index 0. Any other offset is a
+	// sibling that this path does not contain. Reject it here so embedded
+	// BEEFs fail with the same error as ComputeRoot.
+	if len(bump.Path) == 1 && len(bump.Path[0]) == 1 && bump.Path[0][0].Offset != 0 {
+		return nil, fmt.Errorf("we do not have a hash for this index at height: %v", 0)
+	}
+
 	return bump, nil
 }
 
@@ -351,15 +359,17 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 	if txid == nil {
 		return nil, errors.New("no valid leaf found in the Merkle Path")
 	}
-	if len(mp.Path) == 1 {
-		// if there is only one txid in the block then the root is the txid.
-		if len(mp.Path[0]) == 1 {
-			leaf := mp.Path[0][0]
-			if leaf.Hash == nil || !leaf.Hash.Equal(*txid) {
-				return nil, fmt.Errorf("the BUMP does not contain the txid: %s", *txid)
-			}
-			return txid, nil
+	if len(mp.Path) == 1 && len(mp.Path[0]) == 1 && mp.Path[0][0].Offset == 0 {
+		// A block with only one transaction holds that coinbase at offset 0,
+		// and the merkle root is the txid itself. A lone leaf at any other
+		// offset is missing its sibling; leave it to the climb below, which
+		// rejects the gap. NewMerklePath does not validate, so this check
+		// also covers paths built in memory.
+		leaf := mp.Path[0][0]
+		if leaf.Hash == nil || !leaf.Hash.Equal(*txid) {
+			return nil, fmt.Errorf("the BUMP does not contain the txid: %s", *txid)
 		}
+		return txid, nil
 	}
 	// Find the index of the txid at the lowest level of the Merkle tree
 	var txLeaf *PathElement
@@ -428,6 +438,11 @@ func (mp *MerklePath) Verify(ctx context.Context, txid *chainhash.Hash, ct chain
 	return ct.IsValidRootForHeight(ctx, root, mp.BlockHeight)
 }
 
+// Combine merges other into the receiver.
+//
+// Both paths must share a block height and merkle root. m.Path is replaced only
+// when the merged path still computes that root. other is not modified. On
+// error, including a merged root that no longer matches, m is left unchanged.
 func (m *MerklePath) Combine(other *MerklePath) (err error) {
 	if m.BlockHeight != other.BlockHeight {
 		return errors.New("cannot combine MerklePaths with different block heights")
@@ -446,7 +461,16 @@ func (m *MerklePath) Combine(other *MerklePath) (err error) {
 		return errors.New("cannot combine MerklePaths with different roots")
 	}
 
+	original := m.Path
 	m.combineVerified(other)
+	merged, err := m.ComputeRoot(nil)
+	if err != nil || !merged.IsEqual(root1) {
+		m.Path = original
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("combined MerklePath root %s does not match original root %s", merged, root1)
+	}
 	return nil
 }
 

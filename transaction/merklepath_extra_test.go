@@ -137,6 +137,49 @@ func TestMerklePathCombineErrors(t *testing.T) {
 	})
 }
 
+// TestMerklePathCombineRejectsMergedRootMismatch pins the post-merge root
+// check. Two paths can each compute the same root and still merge into a
+// path whose root is different; Combine must refuse that and leave the
+// receiver unchanged.
+func TestMerklePathCombineRejectsMergedRootMismatch(t *testing.T) {
+	t.Parallel()
+	left := mpHashA(t)
+	right := mpHashB(t)
+	parent := MerkleTreeParent(left, right)
+
+	two := &MerklePath{
+		BlockHeight: 10,
+		Path: [][]*PathElement{{
+			{Offset: 0, Hash: left},
+			{Offset: 1, Hash: right},
+		}},
+	}
+	root, err := two.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, root.Equal(*parent))
+
+	lone := singleLeafPath(10, parent)
+	loneRoot, err := lone.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, loneRoot.Equal(*parent))
+
+	err = two.Combine(lone)
+	require.ErrorContains(t, err, "does not match original root")
+	require.ErrorContains(t, err, parent.String())
+	require.Len(t, two.Path[0], 2)
+	require.True(t, two.Path[0][0].Hash.Equal(*left))
+	again, err := two.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, again.Equal(*parent))
+
+	// The opposite merge keeps the shared root, so it is accepted.
+	err = lone.Combine(two)
+	require.NoError(t, err)
+	merged, err := lone.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, merged.Equal(*parent))
+}
+
 func TestMerklePathVerifyComputeRootError(t *testing.T) {
 	t.Parallel()
 	a := mpHashA(t)
