@@ -31,7 +31,7 @@ updates:
   # ──────────────────────────────────────────────────────────────
   - package-ecosystem: "gomod"
     directory: "/"
-    target-branch: "main"
+    target-branch: "master"
     schedule:
       interval: "weekly"
       day: "tuesday"
@@ -62,7 +62,7 @@ updates:
   # ──────────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "main"
+    target-branch: "master"
     schedule:
       interval: "weekly"
       day: "tuesday"
@@ -88,7 +88,7 @@ updates:
   # ──────────────────────────────────────────────────────────────
   - package-ecosystem: "devcontainers"
     directory: "/"
-    target-branch: "main"
+    target-branch: "master"
     schedule:
       interval: "weekly"
       day: "tuesday"
