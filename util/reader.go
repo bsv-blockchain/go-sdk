@@ -120,9 +120,18 @@ func (r *Reader) ReadVarIntOptional() (*uint64, error) {
 	return &i, nil
 }
 
+// ReadVarInt32 reads a varint that stands for a 32-bit wire field. A value above
+// math.MaxUint32 is refused rather than truncated, so a frame carrying 4294967296
+// is not read as 0.
 func (r *Reader) ReadVarInt32() (uint32, error) {
 	varUint64, err := r.ReadVarInt()
-	return uint32(varUint64), err //nolint:gosec // G115 -- wire-format 32-bit fields are bounded by protocol design
+	if err != nil {
+		return 0, err
+	}
+	if varUint64 > math.MaxUint32 {
+		return 0, fmt.Errorf("varint out of range for a 32-bit field: expected an integer from 0 to %d, received %d", uint32(math.MaxUint32), varUint64)
+	}
+	return uint32(varUint64), nil //nolint:gosec // G115 -- range checked above
 }
 
 // Read implements the io.Reader interface
