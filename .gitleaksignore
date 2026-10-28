@@ -108,6 +108,11 @@
 825c8e0614fbb53a3ae7b0fe3e86db5a2ab8cd03:wallet/proto_wallet_brc_test.go:generic-api-key:19
 825c8e0614fbb53a3ae7b0fe3e86db5a2ab8cd03:wallet/proto_wallet_brc_test.go:generic-api-key:57
 825c8e0614fbb53a3ae7b0fe3e86db5a2ab8cd03:wallet/proto_wallet_brc_test.go:generic-api-key:98
+8e9325868035eb6fca222330ff93afcdd907714d:wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:20
+8e9325868035eb6fca222330ff93afcdd907714d:wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:47
+8e9325868035eb6fca222330ff93afcdd907714d:wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:54
+8e9325868035eb6fca222330ff93afcdd907714d:wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:67
+8e9325868035eb6fca222330ff93afcdd907714d:wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:74
 aad26483d4d28223425e427f73f49f9673e9c18e:wallet/serializer/discover_by_identity_key_test.go:generic-api-key:18
 aad26483d4d28223425e427f73f49f9673e9c18e:wallet/serializer/discover_by_identity_key_test.go:generic-api-key:26
 aad26483d4d28223425e427f73f49f9673e9c18e:wallet/serializer/discover_by_identity_key_test.go:generic-api-key:31
@@ -197,6 +202,11 @@ primitives/ecdsa/testdata/BRC42.public.vectors.json:generic-api-key:30
 primitives/ecdsa/testdata/BRC42.public.vectors.json:generic-api-key:6
 transaction/template/p2pkh/p2pkh_compat_test.go:generic-api-key:20
 transaction/transaction_test.go:generic-api-key:226
+wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:20
+wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:47
+wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:54
+wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:67
+wallet/proto_wallet_brc56_hmac_test.go:generic-api-key:74
 wallet/proto_wallet_brc_test.go:generic-api-key:20
 wallet/proto_wallet_brc_test.go:generic-api-key:58
 wallet/proto_wallet_brc_test.go:generic-api-key:99

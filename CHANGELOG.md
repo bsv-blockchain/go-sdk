@@ -60,6 +60,9 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Changed
+- `ProtoWallet.CreateHMAC` and `ProtoWallet.VerifyHMAC` key HMAC-SHA256 with the shared point's X coordinate as a minimal-length unsigned big-endian byte array (leading zero bytes omitted), the established TypeScript SDK convention specified by BRC-56 and BRC-100. Earlier go-sdk releases used the 32-byte zero-padded encoding, so for about one key in 256 tags now differ, and tags issued by those releases for such keys no longer verify.
+
 Fixes GHSA-rh54-8fpg-8wwf: `script/interpreter` and `spv.Verify` now agree with the bitcoin-sv node (commit `879fc8b42`) on script evaluation and on validating unmined transactions. Full detail is in the security advisory and pull request; this entry lists what callers need to know.
 
 ### Added

@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -308,15 +309,30 @@ func (p *ProtoWallet) CreateHMAC(
 		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
-	// Create HMAC using the derived key
-	mac := hmac.New(sha256.New, key.ToBytes())
-	mac.Write(args.Data)
-	hmacValue := mac.Sum(nil)
-
+	// The HMAC key is the minimal-length unsigned big-endian X coordinate (no
+	// leading zero bytes), the established TS SDK convention (BRC-56, BRC-100).
 	result := &CreateHMACResult{}
-	copy(result.HMAC[:], hmacValue)
+	copy(result.HMAC[:], hmacSHA256(minimalHMACKey(key.ToBytes()), args.Data))
 
 	return result, nil
+}
+
+// hmacSHA256 returns HMAC-SHA256 of data under key.
+func hmacSHA256(key, data []byte) []byte {
+	mac := hmac.New(sha256.New, key)
+	mac.Write(data)
+	return mac.Sum(nil)
+}
+
+// minimalHMACKey drops the leading zero bytes of the 32-byte symmetric key,
+// matching the TS SDK's BigNumber toArray() encoding (a zero key encodes as [0]).
+// The result differs from the 32-byte encoding for about one key in 256.
+func minimalHMACKey(key []byte) []byte {
+	trimmed := bytes.TrimLeft(key, "\x00")
+	if len(trimmed) == 0 {
+		return []byte{0}
+	}
+	return trimmed
 }
 
 // VerifyHMAC verifies that the provided HMAC matches the expected value for the given data.
@@ -348,12 +364,8 @@ func (p *ProtoWallet) VerifyHMAC(
 		return nil, fmt.Errorf("failed to derive symmetric key: %w", err)
 	}
 
-	// Create expected HMAC
-	mac := hmac.New(sha256.New, key.ToBytes())
-	mac.Write(args.Data)
-	expectedHMAC := mac.Sum(nil)
-
-	// Verify HMAC
+	// Verify with the same minimal-length key encoding CreateHMAC issues with.
+	expectedHMAC := hmacSHA256(minimalHMACKey(key.ToBytes()), args.Data)
 	if !hmac.Equal(expectedHMAC, args.HMAC[:]) {
 		// Matches the TS reference (ProtoWallet.verifyHmac), which throws rather
 		// than returning { valid: false } for an HMAC that fails verification.
