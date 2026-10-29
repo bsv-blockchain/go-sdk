@@ -150,7 +150,7 @@ func SerializeListOutputsResult(result *wallet.ListOutputsResult, spendable bool
 	if !spendable {
 		for i := range result.Outputs {
 			if !result.Outputs[i].Spendable {
-				return nil, fmt.Errorf("Non-spendable listOutputs records require the spendable encoding extension or JSON")
+				return nil, fmt.Errorf("non-spendable listOutputs records require the spendable encoding extension or JSON")
 			}
 		}
 	}

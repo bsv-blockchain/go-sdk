@@ -200,7 +200,7 @@ func TestListOutputsResultLegacyRefusesNonSpendable(t *testing.T) {
 	}
 	_, err := SerializeListOutputsResult(result, false)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "Non-spendable listOutputs records require the spendable encoding extension or JSON")
+	require.Contains(t, err.Error(), "non-spendable listOutputs records require the spendable encoding extension or JSON")
 }
 
 // TestListOutputsArgsSpendableExtension covers the optional trailing opt-in
