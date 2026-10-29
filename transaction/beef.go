@@ -378,7 +378,6 @@ func (b *Beef) unrelatedToSubject(subject *chainhash.Hash) *chainhash.Hash {
 		if _, ok := reached[id]; ok {
 			continue
 		}
-		id := id
 		if first == nil || bytes.Compare(id[:], first[:]) < 0 {
 			first = &id
 		}

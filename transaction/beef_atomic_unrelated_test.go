@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
@@ -26,8 +25,9 @@ func TestNewBeefFromAtomicBytes_RefusesUnrelatedTransaction(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "outside the dependency graph")
 
-	_, _, _, err = ParseBeef(raw)
+	parsed, _, _, err := ParseBeef(raw)
 	require.Error(t, err, "ParseBeef takes the same atomic path")
+	require.Nil(t, parsed)
 	require.Contains(t, err.Error(), "outside the dependency graph")
 }
 
@@ -73,7 +73,7 @@ func TestNewBeefFromAtomicBytes_AtomicBeefVectors(t *testing.T) {
 			case "unrelated-transaction":
 				require.Contains(t, err.Error(), "outside the dependency graph")
 			case "subject-missing":
-				require.True(t, strings.Contains(err.Error(), "is missing"), "got %v", err)
+				require.Contains(t, err.Error(), "is missing")
 			default:
 				t.Fatalf("unknown expected error %q", v.Expected.Error)
 			}
