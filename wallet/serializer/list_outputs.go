@@ -141,19 +141,19 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, bool, err
 // output is refused (matching ts-stack), since the legacy layout cannot carry
 // spendability and must not silently read back as spendable.
 func SerializeListOutputsResult(result *wallet.ListOutputsResult, spendable bool) ([]byte, error) {
-	w := util.NewWriter()
-
 	if uint32(len(result.Outputs)) != result.TotalOutputs { //nolint:gosec // G115 -- value is bounded by domain constraints
 		return nil, fmt.Errorf("total outputs %d does not match actual outputs %d", result.TotalOutputs, len(result.Outputs))
 	}
 
+	// The legacy layout cannot carry spendability, so a non-spendable record
+	// must be refused rather than silently encoded as spendable.
 	if !spendable {
-		for i := range result.Outputs {
-			if !result.Outputs[i].Spendable {
-				return nil, fmt.Errorf("non-spendable listOutputs records require the spendable encoding extension or JSON")
-			}
+		if err := requireAllOutputsSpendable(result.Outputs); err != nil {
+			return nil, err
 		}
 	}
+
+	w := util.NewWriter()
 
 	// A leading negative marker cannot be mistaken for a legacy output count,
 	// so a spendable-aware reader can detect the extended layout.
@@ -171,29 +171,45 @@ func SerializeListOutputsResult(result *wallet.ListOutputsResult, spendable bool
 	}
 
 	// Outputs
-	for _, output := range result.Outputs {
-		// Serialize each output
-		w.WriteBytes(encodeOutpoint(&output.Outpoint))
-		w.WriteVarInt(output.Satoshis)
-		if len(output.LockingScript) > 0 {
-			w.WriteIntBytes(output.LockingScript)
-		} else {
-			w.WriteNegativeOne()
-		}
-		// Spendability is explicit only on negotiated connections.
-		if spendable {
-			if output.Spendable {
-				w.WriteByteValue(1)
-			} else {
-				w.WriteByteValue(0)
-			}
-		}
-		w.WriteOptionalString(output.CustomInstructions)
-		w.WriteStringSlice(output.Tags)
-		w.WriteStringSlice(output.Labels)
+	for i := range result.Outputs {
+		serializeListOutput(w, &result.Outputs[i], spendable)
 	}
 
 	return w.Buf, nil
+}
+
+// requireAllOutputsSpendable refuses any non-spendable record, matching
+// ts-stack's legacy-layout guard.
+func requireAllOutputsSpendable(outputs []wallet.Output) error {
+	for i := range outputs {
+		if !outputs[i].Spendable {
+			return fmt.Errorf("non-spendable listOutputs records require the spendable encoding extension or JSON")
+		}
+	}
+	return nil
+}
+
+// serializeListOutput writes a single output record. The Int8 spendable byte is
+// emitted after the lockingScript only in spendable mode.
+func serializeListOutput(w *util.Writer, output *wallet.Output, spendable bool) {
+	w.WriteBytes(encodeOutpoint(&output.Outpoint))
+	w.WriteVarInt(output.Satoshis)
+	if len(output.LockingScript) > 0 {
+		w.WriteIntBytes(output.LockingScript)
+	} else {
+		w.WriteNegativeOne()
+	}
+	// Spendability is explicit only on negotiated connections.
+	if spendable {
+		var b byte
+		if output.Spendable {
+			b = 1
+		}
+		w.WriteByteValue(b)
+	}
+	w.WriteOptionalString(output.CustomInstructions)
+	w.WriteStringSlice(output.Tags)
+	w.WriteStringSlice(output.Labels)
 }
 
 // DeserializeListOutputsResult deserializes the listOutputs result. spendable
@@ -205,16 +221,9 @@ func DeserializeListOutputsResult(data []byte, spendable bool) (*wallet.ListOutp
 	r := util.NewReaderHoldError(data)
 	result := &wallet.ListOutputsResult{}
 
-	// In spendable mode the result is prefixed with a -1 marker acknowledging
-	// the negotiated encoding (ts-stack: "Missing listOutputs spendable
-	// encoding acknowledgement").
 	if spendable {
-		marker := r.ReadVarInt()
-		if r.Err != nil {
-			return nil, fmt.Errorf("error reading list outputs spendable marker: %w", r.Err)
-		}
-		if !util.IsNegativeOne(marker) {
-			return nil, fmt.Errorf("missing listOutputs spendable encoding acknowledgement")
+		if err := readListOutputsSpendableMarker(r); err != nil {
+			return nil, err
 		}
 	}
 
@@ -229,41 +238,9 @@ func DeserializeListOutputsResult(data []byte, spendable bool) (*wallet.ListOutp
 	// Outputs
 	result.Outputs = make([]wallet.Output, 0, result.TotalOutputs)
 	for i := uint32(0); i < result.TotalOutputs; i++ {
-		outpoint, err := decodeOutpoint(&r.Reader)
+		output, err := deserializeListOutput(r, spendable)
 		if err != nil {
-			return nil, fmt.Errorf("error decoding outpoint: %w", err)
-		}
-		sats := r.ReadVarInt()
-		lockScriptByteLen := r.ReadVarInt()
-		var lockingScript []byte
-		if !util.IsNegativeOne(lockScriptByteLen) {
-			lockingScript = r.ReadBytes(int(lockScriptByteLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
-		}
-		// Spendability is explicit only on negotiated connections; legacy
-		// records default to spendable (matches ts-sdk).
-		isSpendable := true
-		if spendable {
-			b := r.ReadByteValue()
-			if r.Err != nil {
-				return nil, fmt.Errorf("error reading output spendable flag: %w", r.Err)
-			}
-			if b != 0 && b != 1 {
-				return nil, fmt.Errorf("invalid listOutputs spendable flag: expected 0 or 1, received %d", b)
-			}
-			isSpendable = b == 1
-		}
-		output := wallet.Output{
-			Outpoint:           *outpoint,
-			Satoshis:           sats,
-			LockingScript:      lockingScript,
-			Spendable:          isSpendable,
-			CustomInstructions: r.ReadString(),
-			Tags:               r.ReadStringSlice(),
-			Labels:             r.ReadStringSlice(),
-		}
-		// Check error each loop
-		if r.Err != nil {
-			return nil, fmt.Errorf("error reading output: %w", r.Err)
+			return nil, err
 		}
 		result.Outputs = append(result.Outputs, output)
 	}
@@ -274,4 +251,66 @@ func DeserializeListOutputsResult(data []byte, spendable bool) (*wallet.ListOutp
 	}
 
 	return result, nil
+}
+
+// readListOutputsSpendableMarker consumes the leading -1 marker that
+// acknowledges the negotiated encoding (ts-stack: "Missing listOutputs
+// spendable encoding acknowledgement").
+func readListOutputsSpendableMarker(r *util.ReaderHoldError) error {
+	marker := r.ReadVarInt()
+	if r.Err != nil {
+		return fmt.Errorf("error reading list outputs spendable marker: %w", r.Err)
+	}
+	if !util.IsNegativeOne(marker) {
+		return fmt.Errorf("missing listOutputs spendable encoding acknowledgement")
+	}
+	return nil
+}
+
+// deserializeListOutput reads a single output record. The Int8 spendable byte is
+// read after the lockingScript only in spendable mode.
+func deserializeListOutput(r *util.ReaderHoldError, spendable bool) (wallet.Output, error) {
+	outpoint, err := decodeOutpoint(&r.Reader)
+	if err != nil {
+		return wallet.Output{}, fmt.Errorf("error decoding outpoint: %w", err)
+	}
+	sats := r.ReadVarInt()
+	lockScriptByteLen := r.ReadVarInt()
+	var lockingScript []byte
+	if !util.IsNegativeOne(lockScriptByteLen) {
+		lockingScript = r.ReadBytes(int(lockScriptByteLen)) //nolint:gosec // G115 -- value is bounded by domain constraints
+	}
+	isSpendable, err := readOutputSpendableFlag(r, spendable)
+	if err != nil {
+		return wallet.Output{}, err
+	}
+	output := wallet.Output{
+		Outpoint:           *outpoint,
+		Satoshis:           sats,
+		LockingScript:      lockingScript,
+		Spendable:          isSpendable,
+		CustomInstructions: r.ReadString(),
+		Tags:               r.ReadStringSlice(),
+		Labels:             r.ReadStringSlice(),
+	}
+	if r.Err != nil {
+		return wallet.Output{}, fmt.Errorf("error reading output: %w", r.Err)
+	}
+	return output, nil
+}
+
+// readOutputSpendableFlag reads the per-output Int8 spendable byte in spendable
+// mode; legacy records default to spendable (matches ts-sdk).
+func readOutputSpendableFlag(r *util.ReaderHoldError, spendable bool) (bool, error) {
+	if !spendable {
+		return true, nil
+	}
+	b := r.ReadByteValue()
+	if r.Err != nil {
+		return false, fmt.Errorf("error reading output spendable flag: %w", r.Err)
+	}
+	if b != 0 && b != 1 {
+		return false, fmt.Errorf("invalid listOutputs spendable flag: expected 0 or 1, received %d", b)
+	}
+	return b == 1, nil
 }
