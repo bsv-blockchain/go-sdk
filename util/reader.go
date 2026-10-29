@@ -131,7 +131,7 @@ func (r *Reader) ReadVarInt32() (uint32, error) {
 	if varUint64 > math.MaxUint32 {
 		return 0, fmt.Errorf("varint out of range for a 32-bit field: expected an integer from 0 to %d, received %d", uint32(math.MaxUint32), varUint64)
 	}
-	return uint32(varUint64), nil //nolint:gosec // G115 -- range checked above
+	return uint32(varUint64), nil
 }
 
 // Read implements the io.Reader interface
