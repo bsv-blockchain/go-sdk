@@ -270,6 +270,15 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 		})
 	}
 
+	// A single-level path with exactly one leaf is only valid as a block whose
+	// sole transaction is its coinbase, which sits at offset 0. A lone leaf at
+	// any other offset lacks its sibling and can never form a valid path, so
+	// reject it at parse time rather than later computing a bogus root. This
+	// mirrors @bsv/sdk.
+	if len(bump.Path) == 1 && len(bump.Path[0]) == 1 && bump.Path[0][0].Offset != 0 {
+		return nil, fmt.Errorf("invalid merkle path: a lone leaf must be at offset 0, found offset %d", bump.Path[0][0].Offset)
+	}
+
 	return bump, nil
 }
 
@@ -352,9 +361,15 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 		return nil, errors.New("no valid leaf found in the Merkle Path")
 	}
 	if len(mp.Path) == 1 {
-		// if there is only one txid in the block then the root is the txid.
+		// A single-level path with one leaf can only be a block whose sole
+		// transaction is its coinbase: that leaf sits at offset 0 and is itself
+		// the merkle root. A lone leaf at any other offset lacks the sibling
+		// needed to climb the tree, so it has no root. This mirrors @bsv/sdk.
 		if len(mp.Path[0]) == 1 {
 			leaf := mp.Path[0][0]
+			if leaf.Offset != 0 {
+				return nil, fmt.Errorf("invalid merkle path: a lone leaf must be at offset 0, found offset %d", leaf.Offset)
+			}
 			if leaf.Hash == nil || !leaf.Hash.Equal(*txid) {
 				return nil, fmt.Errorf("the BUMP does not contain the txid: %s", *txid)
 			}
