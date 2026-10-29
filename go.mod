@@ -3,13 +3,13 @@ module github.com/bsv-blockchain/go-sdk
 go 1.26.0
 
 require (
-	github.com/bitcoin-sv/bdk/module/gobdk v1.3.1
+	github.com/bitcoin-sv/bdk/module/gobdk v1.4.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/mrz1836/go-whatsonchain v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/crypto v0.58.0
-	golang.org/x/net v0.61.0
+	golang.org/x/net v0.62.0
 	golang.org/x/sync v0.24.0
 )
 
