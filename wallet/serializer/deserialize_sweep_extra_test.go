@@ -409,9 +409,9 @@ func TestDeserializeTruncationSweep(t *testing.T) {
 			Offset:                    util.Uint32Ptr(5),
 			SeekPermission:            util.BoolPtr(true),
 		}
-		good := serOK(SerializeListOutputsArgs(args))
+		good := serOK(SerializeListOutputsArgs(args, false))
 		runDeserializeSweep(t, good, func(d []byte) error {
-			_, err := DeserializeListOutputsArgs(d)
+			_, _, err := DeserializeListOutputsArgs(d)
 			return err
 		})
 	})
@@ -430,9 +430,9 @@ func TestDeserializeTruncationSweep(t *testing.T) {
 				Labels:             []string{"l1"},
 			}},
 		}
-		good := serOK(SerializeListOutputsResult(result))
+		good := serOK(SerializeListOutputsResult(result, false))
 		runDeserializeSweep(t, good, func(d []byte) error {
-			_, err := DeserializeListOutputsResult(d)
+			_, err := DeserializeListOutputsResult(d, false)
 			return err
 		})
 	})

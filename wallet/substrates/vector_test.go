@@ -934,12 +934,12 @@ func TestVectors(t *testing.T) {
 					deserialized, err2 := serializer.DeserializeListActionsResult(frameParams)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				case wallet.ListOutputsArgs:
-					serialized, err1 := serializer.SerializeListOutputsArgs(&obj)
-					deserialized, err2 := serializer.DeserializeListOutputsArgs(frameParams)
+					serialized, err1 := serializer.SerializeListOutputsArgs(&obj, false)
+					deserialized, _, err2 := serializer.DeserializeListOutputsArgs(frameParams)
 					checkWireSerialize(substrates.CallListOutputs, &obj, serialized, err1, deserialized, err2)
 				case wallet.ListOutputsResult:
-					serialized, err1 := serializer.SerializeListOutputsResult(&obj)
-					deserialized, err2 := serializer.DeserializeListOutputsResult(frameParams)
+					serialized, err1 := serializer.SerializeListOutputsResult(&obj, false)
+					deserialized, err2 := serializer.DeserializeListOutputsResult(frameParams, false)
 					checkWireSerialize(0, &obj, serialized, err1, deserialized, err2)
 				case wallet.RelinquishOutputArgs:
 					serialized, err1 := serializer.SerializeRelinquishOutputArgs(&obj)
