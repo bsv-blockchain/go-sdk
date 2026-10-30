@@ -12,6 +12,12 @@ import (
 // A way to make remote calls to a wallet over a wallet wire.
 type WalletWireTransceiver struct {
 	Wire WalletWire
+
+	// ListOutputsSpendable opts this client into the negotiated "spendable"
+	// listOutputs encoding (mirrors ts-stack's WalletWireTransceiver
+	// listOutputsEncoding: 'spendable' option). It defaults to false, i.e. the
+	// legacy layout that every deployed peer understands.
+	ListOutputsSpendable bool
 }
 
 // NewWalletWireTransceiver creates a new WalletWireTransceiver with the given processor.
@@ -106,7 +112,7 @@ func (t *WalletWireTransceiver) InternalizeAction(ctx context.Context, args wall
 }
 
 func (t *WalletWireTransceiver) ListOutputs(ctx context.Context, args wallet.ListOutputsArgs, originator string) (*wallet.ListOutputsResult, error) {
-	data, err := serializer.SerializeListOutputsArgs(&args)
+	data, err := serializer.SerializeListOutputsArgsWithEncoding(&args, t.ListOutputsSpendable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize list outputs arguments: %w", err)
 	}
@@ -116,7 +122,7 @@ func (t *WalletWireTransceiver) ListOutputs(ctx context.Context, args wallet.Lis
 		return nil, fmt.Errorf("failed to transmit list outputs call: %w", err)
 	}
 
-	return serializer.DeserializeListOutputsResult(resp)
+	return serializer.DeserializeListOutputsResultWithEncoding(resp, t.ListOutputsSpendable)
 }
 
 func (t *WalletWireTransceiver) RelinquishOutput(ctx context.Context, args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
