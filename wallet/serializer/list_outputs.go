@@ -21,11 +21,20 @@ const (
 // WalletWireProcessor ("Invalid listOutputs encoding extension: expected 1").
 const listOutputsSpendableExtensionByte uint8 = 1
 
-// SerializeListOutputsArgs serializes the listOutputs request args. When
-// spendable is true, a single trailing 0x01 byte is appended to negotiate the
-// opt-in "spendable" result encoding, matching current ts-stack
+// SerializeListOutputsArgs serializes the listOutputs request args in the legacy
+// layout that every deployed peer understands. It is source-compatible with
+// releases before the spendable encoding was added. Callers that want to
+// negotiate the opt-in "spendable" result layout use
+// SerializeListOutputsArgsWithEncoding instead.
+func SerializeListOutputsArgs(args *wallet.ListOutputsArgs) ([]byte, error) {
+	return SerializeListOutputsArgsWithEncoding(args, false)
+}
+
+// SerializeListOutputsArgsWithEncoding serializes the listOutputs request args.
+// When spendable is true, a single trailing 0x01 byte is appended to negotiate
+// the opt-in "spendable" result encoding, matching current ts-stack
 // (WalletWireTransceiver.#transmitListOutputs). Legacy peers omit the byte.
-func SerializeListOutputsArgs(args *wallet.ListOutputsArgs, spendable bool) ([]byte, error) {
+func SerializeListOutputsArgsWithEncoding(args *wallet.ListOutputsArgs, spendable bool) ([]byte, error) {
 	w := util.NewWriter()
 
 	// Basket is required
@@ -71,43 +80,37 @@ func SerializeListOutputsArgs(args *wallet.ListOutputsArgs, spendable bool) ([]b
 	return w.Buf, nil
 }
 
-// DeserializeListOutputsArgs deserializes the listOutputs request args. The
-// returned bool reports whether the request negotiated the "spendable" result
-// encoding via the optional trailing 0x01 byte. An unextended request leaves it
-// false and keeps the deployed SDK 2/3 response bytes (mirrors ts-stack
-// WalletWireProcessor: includeSpendable = !paramsReader.eof()).
-func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, bool, error) {
+// DeserializeListOutputsArgs deserializes the listOutputs request args in the
+// legacy layout. It is source-compatible with releases before the spendable
+// encoding was added and rejects any trailing byte, including the opt-in
+// extension, as leftover data. A processor that negotiates the spendable layout
+// uses DeserializeListOutputsArgsWithEncoding instead.
+func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, error) {
 	r := util.NewReaderHoldError(data)
-	args := &wallet.ListOutputsArgs{}
+	args, err := readListOutputsArgsFields(r)
+	if err != nil {
+		return nil, err
+	}
 
-	args.Basket = r.ReadString()
-	args.Tags = r.ReadStringSlice()
+	r.CheckComplete()
 	if r.Err != nil {
-		return nil, false, fmt.Errorf("error reading basket/tags: %w", r.Err)
+		return nil, fmt.Errorf("error reading list outputs args: %w", r.Err)
 	}
 
-	switch r.ReadByteValue() {
-	case tagQueryModeAllCode:
-		args.TagQueryMode = wallet.QueryModeAll
-	case tagQueryModeAnyCode:
-		args.TagQueryMode = wallet.QueryModeAny
-	}
+	return args, nil
+}
 
-	switch r.ReadByteValue() {
-	case outputIncludeLockingScriptsCode:
-		args.Include = wallet.OutputIncludeLockingScripts
-	case outputIncludeEntireTransactionsCode:
-		args.Include = wallet.OutputIncludeEntireTransactions
-	}
-
-	args.IncludeCustomInstructions = r.ReadOptionalBool()
-	args.IncludeTags = r.ReadOptionalBool()
-	args.IncludeLabels = r.ReadOptionalBool()
-	args.Limit = r.ReadOptionalUint32()
-	args.Offset = r.ReadOptionalUint32()
-	args.SeekPermission = r.ReadOptionalBool()
-	if r.Err != nil {
-		return nil, false, fmt.Errorf("error reading list outputs args: %w", r.Err)
+// DeserializeListOutputsArgsWithEncoding deserializes the listOutputs request
+// args. The returned bool reports whether the request negotiated the
+// "spendable" result encoding via the optional trailing 0x01 byte. An
+// unextended request leaves it false and keeps the deployed SDK 2/3 response
+// bytes (mirrors ts-stack WalletWireProcessor: includeSpendable =
+// !paramsReader.eof()).
+func DeserializeListOutputsArgsWithEncoding(data []byte) (*wallet.ListOutputsArgs, bool, error) {
+	r := util.NewReaderHoldError(data)
+	args, err := readListOutputsArgsFields(r)
+	if err != nil {
+		return nil, false, err
 	}
 
 	// Optional request extension selecting the spendable result layout. The
@@ -133,14 +136,62 @@ func DeserializeListOutputsArgs(data []byte) (*wallet.ListOutputsArgs, bool, err
 	return args, spendable, nil
 }
 
-// SerializeListOutputsResult serializes the listOutputs result. When spendable
-// is false the legacy SDK 2/3 layout is emitted unchanged. When spendable is
-// true it mirrors ts-stack's WalletWireProcessor "spendable" layout: a leading
-// -1 varint marker precedes totalOutputs, and each output carries an explicit
-// Int8 spendable byte after its lockingScript. In legacy mode a non-spendable
-// output is refused (matching ts-stack), since the legacy layout cannot carry
-// spendability and must not silently read back as spendable.
-func SerializeListOutputsResult(result *wallet.ListOutputsResult, spendable bool) ([]byte, error) {
+// readListOutputsArgsFields reads the shared listOutputs request fields up to,
+// but not including, the optional trailing spendable extension byte.
+func readListOutputsArgsFields(r *util.ReaderHoldError) (*wallet.ListOutputsArgs, error) {
+	args := &wallet.ListOutputsArgs{}
+
+	args.Basket = r.ReadString()
+	args.Tags = r.ReadStringSlice()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading basket/tags: %w", r.Err)
+	}
+
+	switch r.ReadByteValue() {
+	case tagQueryModeAllCode:
+		args.TagQueryMode = wallet.QueryModeAll
+	case tagQueryModeAnyCode:
+		args.TagQueryMode = wallet.QueryModeAny
+	}
+
+	switch r.ReadByteValue() {
+	case outputIncludeLockingScriptsCode:
+		args.Include = wallet.OutputIncludeLockingScripts
+	case outputIncludeEntireTransactionsCode:
+		args.Include = wallet.OutputIncludeEntireTransactions
+	}
+
+	args.IncludeCustomInstructions = r.ReadOptionalBool()
+	args.IncludeTags = r.ReadOptionalBool()
+	args.IncludeLabels = r.ReadOptionalBool()
+	args.Limit = r.ReadOptionalUint32()
+	args.Offset = r.ReadOptionalUint32()
+	args.SeekPermission = r.ReadOptionalBool()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading list outputs args: %w", r.Err)
+	}
+
+	return args, nil
+}
+
+// SerializeListOutputsResult serializes the listOutputs result in the legacy SDK
+// 2/3 layout. It is source-compatible with releases before the spendable
+// encoding was added. A non-spendable output is refused, since the legacy layout
+// cannot carry spendability and must not silently read back as spendable.
+// Callers that negotiated the opt-in layout use
+// SerializeListOutputsResultWithEncoding instead.
+func SerializeListOutputsResult(result *wallet.ListOutputsResult) ([]byte, error) {
+	return SerializeListOutputsResultWithEncoding(result, false)
+}
+
+// SerializeListOutputsResultWithEncoding serializes the listOutputs result. When
+// spendable is false the legacy SDK 2/3 layout is emitted unchanged. When
+// spendable is true it mirrors ts-stack's WalletWireProcessor "spendable"
+// layout: a leading -1 varint marker precedes totalOutputs, and each output
+// carries an explicit Int8 spendable byte after its lockingScript. In legacy
+// mode a non-spendable output is refused (matching ts-stack), since the legacy
+// layout cannot carry spendability and must not silently read back as spendable.
+func SerializeListOutputsResultWithEncoding(result *wallet.ListOutputsResult, spendable bool) ([]byte, error) {
 	if uint32(len(result.Outputs)) != result.TotalOutputs { //nolint:gosec // G115 -- value is bounded by domain constraints
 		return nil, fmt.Errorf("total outputs %d does not match actual outputs %d", result.TotalOutputs, len(result.Outputs))
 	}
@@ -212,12 +263,21 @@ func serializeListOutput(w *util.Writer, output *wallet.Output, spendable bool) 
 	w.WriteStringSlice(output.Labels)
 }
 
-// DeserializeListOutputsResult deserializes the listOutputs result. spendable
-// must match the encoding negotiated by the request: when true the leading -1
-// varint marker and the per-output Int8 spendable byte are read, mirroring
-// ts-stack's WalletWireTransceiver spendable path. When false the legacy layout
-// is read and every output defaults to spendable=true.
-func DeserializeListOutputsResult(data []byte, spendable bool) (*wallet.ListOutputsResult, error) {
+// DeserializeListOutputsResult deserializes the listOutputs result in the legacy
+// SDK 2/3 layout. It is source-compatible with releases before the spendable
+// encoding was added and reads every output back as spendable. A transceiver
+// that negotiated the opt-in layout uses DeserializeListOutputsResultWithEncoding
+// instead.
+func DeserializeListOutputsResult(data []byte) (*wallet.ListOutputsResult, error) {
+	return DeserializeListOutputsResultWithEncoding(data, false)
+}
+
+// DeserializeListOutputsResultWithEncoding deserializes the listOutputs result.
+// spendable must match the encoding negotiated by the request: when true the
+// leading -1 varint marker and the per-output Int8 spendable byte are read,
+// mirroring ts-stack's WalletWireTransceiver spendable path. When false the
+// legacy layout is read and every output defaults to spendable=true.
+func DeserializeListOutputsResultWithEncoding(data []byte, spendable bool) (*wallet.ListOutputsResult, error) {
 	r := util.NewReaderHoldError(data)
 	result := &wallet.ListOutputsResult{}
 

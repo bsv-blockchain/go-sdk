@@ -409,9 +409,29 @@ func TestDeserializeTruncationSweep(t *testing.T) {
 			Offset:                    util.Uint32Ptr(5),
 			SeekPermission:            util.BoolPtr(true),
 		}
-		good := serOK(SerializeListOutputsArgs(args, false))
+		good := serOK(SerializeListOutputsArgs(args))
 		runDeserializeSweep(t, good, func(d []byte) error {
-			_, _, err := DeserializeListOutputsArgs(d)
+			_, err := DeserializeListOutputsArgs(d)
+			return err
+		})
+	})
+
+	t.Run("ListOutputsArgs spendable", func(t *testing.T) {
+		args := &wallet.ListOutputsArgs{
+			Basket:                    "b",
+			Tags:                      []string{"t1", "t2"},
+			TagQueryMode:              wallet.QueryModeAll,
+			Include:                   wallet.OutputIncludeLockingScripts,
+			IncludeCustomInstructions: util.BoolPtr(true),
+			IncludeTags:               util.BoolPtr(true),
+			IncludeLabels:             util.BoolPtr(true),
+			Limit:                     util.Uint32Ptr(10),
+			Offset:                    util.Uint32Ptr(5),
+			SeekPermission:            util.BoolPtr(true),
+		}
+		good := serOK(SerializeListOutputsArgsWithEncoding(args, true))
+		runDeserializeSweep(t, good, func(d []byte) error {
+			_, _, err := DeserializeListOutputsArgsWithEncoding(d)
 			return err
 		})
 	})
@@ -430,9 +450,37 @@ func TestDeserializeTruncationSweep(t *testing.T) {
 				Labels:             []string{"l1"},
 			}},
 		}
-		good := serOK(SerializeListOutputsResult(result, false))
+		good := serOK(SerializeListOutputsResult(result))
 		runDeserializeSweep(t, good, func(d []byte) error {
-			_, err := DeserializeListOutputsResult(d, false)
+			_, err := DeserializeListOutputsResult(d)
+			return err
+		})
+	})
+
+	t.Run("ListOutputsResult spendable", func(t *testing.T) {
+		result := &wallet.ListOutputsResult{
+			TotalOutputs: 2,
+			BEEF:         []byte{1, 2, 3},
+			Outputs: []wallet.Output{
+				{
+					Outpoint:           *op,
+					Satoshis:           1000,
+					LockingScript:      []byte{0x76, 0xa9},
+					Spendable:          true,
+					CustomInstructions: "ci",
+					Tags:               []string{"t1"},
+					Labels:             []string{"l1"},
+				},
+				{
+					Outpoint:  *op,
+					Satoshis:  2000,
+					Spendable: false,
+				},
+			},
+		}
+		good := serOK(SerializeListOutputsResultWithEncoding(result, true))
+		runDeserializeSweep(t, good, func(d []byte) error {
+			_, err := DeserializeListOutputsResultWithEncoding(d, true)
 			return err
 		})
 	})

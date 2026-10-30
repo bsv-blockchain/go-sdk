@@ -65,7 +65,7 @@ func TestSerializeResultCountMismatch(t *testing.T) {
 	})
 
 	t.Run("ListOutputsResult", func(t *testing.T) {
-		_, err := SerializeListOutputsResult(&wallet.ListOutputsResult{TotalOutputs: 3}, false)
+		_, err := SerializeListOutputsResult(&wallet.ListOutputsResult{TotalOutputs: 3})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "does not match")
 	})

@@ -112,7 +112,7 @@ func (t *WalletWireTransceiver) InternalizeAction(ctx context.Context, args wall
 }
 
 func (t *WalletWireTransceiver) ListOutputs(ctx context.Context, args wallet.ListOutputsArgs, originator string) (*wallet.ListOutputsResult, error) {
-	data, err := serializer.SerializeListOutputsArgs(&args, t.ListOutputsSpendable)
+	data, err := serializer.SerializeListOutputsArgsWithEncoding(&args, t.ListOutputsSpendable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize list outputs arguments: %w", err)
 	}
@@ -122,7 +122,7 @@ func (t *WalletWireTransceiver) ListOutputs(ctx context.Context, args wallet.Lis
 		return nil, fmt.Errorf("failed to transmit list outputs call: %w", err)
 	}
 
-	return serializer.DeserializeListOutputsResult(resp, t.ListOutputsSpendable)
+	return serializer.DeserializeListOutputsResultWithEncoding(resp, t.ListOutputsSpendable)
 }
 
 func (t *WalletWireTransceiver) RelinquishOutput(ctx context.Context, args wallet.RelinquishOutputArgs, originator string) (*wallet.RelinquishOutputResult, error) {
