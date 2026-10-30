@@ -313,8 +313,9 @@ func newBeefFromBytes(beef []byte) (*Beef, error) {
 	}, nil
 }
 
-// NewBeefFromAtomicBytes parses an AtomicBEEF prefix and binds the subject to
-// an included entry. Presence is not graph validation or SPV verification.
+// NewBeefFromAtomicBytes parses an AtomicBEEF prefix, binds the subject to an
+// included entry and refuses a BEEF with an entry outside the subject's
+// dependency graph (BRC-95). It is not SPV verification of the graph.
 func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	if len(beef) < 36 {
 		return nil, nil, fmt.Errorf("provided atomic BEEF length (%d) is too short", len(beef))
@@ -333,8 +334,55 @@ func NewBeefFromAtomicBytes(beef []byte) (*Beef, *chainhash.Hash, error) {
 	if _, ok := b.Transactions[*txid]; !ok {
 		return nil, nil, fmt.Errorf("atomic BEEF subject %s is missing", txid.String())
 	}
+	if id := b.unrelatedToSubject(txid); id != nil {
+		return nil, nil, fmt.Errorf("atomic BEEF contains transaction %s outside the dependency graph of subject %s", id.String(), txid.String())
+	}
 	b.NewestTxID = txid
 	return b, txid, nil
+}
+
+// unrelatedToSubject returns the smallest txid among the entries that the
+// subject's dependency graph does not reach, or nil when every entry is in it
+// (BRC-95: a transaction outside the subject's graph makes the BEEF invalid).
+// The graph follows the inputs of every entry that carries its transaction, proven
+// or not, so a raw ancestor behind a proven transaction stays inside it. Entries
+// that are txid-only have no inputs to follow.
+func (b *Beef) unrelatedToSubject(subject *chainhash.Hash) *chainhash.Hash {
+	reached := make(map[chainhash.Hash]struct{}, len(b.Transactions))
+	stack := []chainhash.Hash{*subject}
+	for len(stack) > 0 {
+		id := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if _, seen := reached[id]; seen {
+			continue
+		}
+		entry, ok := b.Transactions[id]
+		if !ok {
+			continue
+		}
+		reached[id] = struct{}{}
+		if entry.Transaction == nil {
+			continue
+		}
+		for _, input := range entry.Transaction.Inputs {
+			if input.SourceTXID != nil {
+				stack = append(stack, *input.SourceTXID)
+			}
+		}
+	}
+	if len(reached) == len(b.Transactions) {
+		return nil
+	}
+	var first *chainhash.Hash
+	for id := range b.Transactions {
+		if _, ok := reached[id]; ok {
+			continue
+		}
+		if first == nil || bytes.Compare(id[:], first[:]) < 0 {
+			first = &id
+		}
+	}
+	return first
 }
 
 func ParseBeef(beefBytes []byte) (*Beef, *Transaction, *chainhash.Hash, error) {
