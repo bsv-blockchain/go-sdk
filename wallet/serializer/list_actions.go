@@ -196,10 +196,10 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 	result := &wallet.ListActionsResult{}
 
 	// Deserialize totalActions
-	result.TotalActions = r.ReadVarInt32()
+	result.TotalActions = r.ReadVarIntCount32()
 
 	// Deserialize actions
-	result.Actions = make([]wallet.Action, 0, result.TotalActions)
+	result.Actions = make([]wallet.Action, 0)
 	for i := uint32(0); i < result.TotalActions; i++ {
 		action := wallet.Action{}
 
@@ -236,11 +236,11 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		action.LockTime = r.ReadVarInt32()
 
 		// Deserialize inputs
-		inputCount := r.ReadVarInt()
+		inputCount := r.ReadVarIntCount()
 		if inputCount == math.MaxUint64 {
 			inputCount = 0
 		} else {
-			action.Inputs = make([]wallet.ActionInput, 0, inputCount)
+			action.Inputs = make([]wallet.ActionInput, 0)
 		}
 		for j := uint64(0); j < inputCount; j++ {
 			input := wallet.ActionInput{}
@@ -267,11 +267,11 @@ func DeserializeListActionsResult(data []byte) (*wallet.ListActionsResult, error
 		}
 
 		// Deserialize outputs
-		outputCount := r.ReadVarInt()
+		outputCount := r.ReadVarIntCount()
 		if outputCount == math.MaxUint64 {
 			outputCount = 0
 		} else {
-			action.Outputs = make([]wallet.ActionOutput, 0, outputCount)
+			action.Outputs = make([]wallet.ActionOutput, 0)
 		}
 		for k := uint64(0); k < outputCount; k++ {
 			output := wallet.ActionOutput{}

@@ -130,7 +130,7 @@ func ToHTTPRequest(payload []byte, opts ...func(*HttpRequestDeserializationOptio
 		return nil, nil, fmt.Errorf("failed to create url from payload to create http request: %w", err)
 	}
 
-	numHeaders, err := reader.ReadVarInt()
+	numHeaders, err := reader.ReadVarIntCount()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read number of headers from payload to create http request: %w", err)
 	}
@@ -269,7 +269,7 @@ func ToSimplifiedHttpResponse(payload []byte, opts ...func(*HttpResponseDeserial
 		return nil, res, fmt.Errorf("failed to read status code to create http response: %w", err)
 	}
 
-	nHeaders, err := responseReader.ReadVarInt32()
+	nHeaders, err := responseReader.ReadVarIntCount32()
 	if err != nil {
 		return nil, res, fmt.Errorf("failed to read header count to create http response: %w", err)
 	}

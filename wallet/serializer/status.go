@@ -43,7 +43,7 @@ func writeTxidSliceWithStatus(w *util.Writer, results []wallet.SendWithResult) e
 }
 
 func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
-	count, err := r.ReadVarInt()
+	count, err := r.ReadVarIntCount()
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func readTxidSliceWithStatus(r *util.Reader) ([]wallet.SendWithResult, error) {
 		return nil, nil
 	}
 
-	results := make([]wallet.SendWithResult, 0, count)
+	results := make([]wallet.SendWithResult, 0)
 	for i := uint64(0); i < count; i++ {
 		txidBytes, err := r.ReadBytes(chainhash.HashSize)
 		if err != nil {

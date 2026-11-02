@@ -39,8 +39,8 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	args := &wallet.ListCertificatesArgs{}
 
 	// Read certifiers
-	certifiersLength := r.ReadVarInt()
-	args.Certifiers = make([]*ec.PublicKey, 0, certifiersLength)
+	certifiersLength := r.ReadVarIntCount()
+	args.Certifiers = make([]*ec.PublicKey, 0)
 	for i := uint64(0); i < certifiersLength; i++ {
 		certifierBytes := r.ReadBytes(33)
 		if r.Err != nil {
@@ -54,8 +54,8 @@ func DeserializeListCertificatesArgs(data []byte) (*wallet.ListCertificatesArgs,
 	}
 
 	// Read types
-	typesLength := r.ReadVarInt()
-	args.Types = make([]wallet.CertificateType, 0, typesLength)
+	typesLength := r.ReadVarIntCount()
+	args.Types = make([]wallet.CertificateType, 0)
 	for i := uint64(0); i < typesLength; i++ {
 		var typeArray wallet.CertificateType
 		copy(typeArray[:], r.ReadBytes(32))
@@ -129,11 +129,11 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 	result := &wallet.ListCertificatesResult{}
 
 	// Read total certificates
-	result.TotalCertificates = r.ReadVarInt32()
+	result.TotalCertificates = r.ReadVarIntCount32()
 
 	// Read certificates
 	if result.TotalCertificates > 0 {
-		result.Certificates = make([]wallet.CertificateResult, 0, result.TotalCertificates)
+		result.Certificates = make([]wallet.CertificateResult, 0)
 	}
 	for i := uint32(0); i < result.TotalCertificates; i++ {
 		cert, err := DeserializeCertificate(r.ReadIntBytes())
@@ -145,13 +145,16 @@ func DeserializeListCertificatesResult(data []byte) (*wallet.ListCertificatesRes
 
 		// Read keyring if present
 		if r.ReadByteValue() == 1 {
-			keyringLen := r.ReadVarInt()
+			keyringLen := r.ReadVarIntCount()
 			if keyringLen > 0 {
-				certResult.Keyring = make(map[string]string, keyringLen)
+				certResult.Keyring = make(map[string]string)
 			}
 			for j := uint64(0); j < keyringLen; j++ {
 				key := r.ReadString()
 				value := r.ReadBase64Int()
+				if r.Err != nil {
+					return nil, fmt.Errorf("error reading keyring entry %d for certificate %d: %w", j, i, r.Err)
+				}
 				certResult.Keyring[key] = value
 			}
 		}

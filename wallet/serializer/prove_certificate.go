@@ -99,9 +99,9 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read fields
-	fieldsLen := r.ReadVarInt()
+	fieldsLen := r.ReadVarIntCount()
 	if fieldsLen > 0 {
-		args.Certificate.Fields = make(map[string]string, fieldsLen)
+		args.Certificate.Fields = make(map[string]string)
 	}
 	for i := uint64(0); i < fieldsLen; i++ {
 		key := string(r.ReadIntBytes())
@@ -114,10 +114,13 @@ func DeserializeProveCertificateArgs(data []byte) (args *wallet.ProveCertificate
 	}
 
 	// Read fieldsToReveal
-	fieldsToRevealLen := r.ReadVarInt()
-	args.FieldsToReveal = make([]string, 0, fieldsToRevealLen)
+	fieldsToRevealLen := r.ReadVarIntCount()
+	args.FieldsToReveal = make([]string, 0)
 	for i := uint64(0); i < fieldsToRevealLen; i++ {
 		fieldBytes := r.ReadIntBytes()
+		if r.Err != nil {
+			return nil, fmt.Errorf("error reading fieldToReveal %d: %w", i, r.Err)
+		}
 		args.FieldsToReveal = append(args.FieldsToReveal, string(fieldBytes))
 	}
 
@@ -164,9 +167,9 @@ func DeserializeProveCertificateResult(data []byte) (*wallet.ProveCertificateRes
 	result := &wallet.ProveCertificateResult{}
 
 	// Read keyringForVerifier
-	keyringLen := r.ReadVarInt()
+	keyringLen := r.ReadVarIntCount()
 	if keyringLen > 0 {
-		result.KeyringForVerifier = make(map[string]string, keyringLen)
+		result.KeyringForVerifier = make(map[string]string)
 	}
 	for i := uint64(0); i < keyringLen; i++ {
 		key := string(r.ReadIntBytes())

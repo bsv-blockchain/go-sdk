@@ -48,7 +48,7 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 	}
 
 	r := util.NewReader(data)
-	count, err := r.ReadVarInt()
+	count, err := r.ReadVarIntCount()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 		return nil, nil
 	}
 
-	outpoints := make([]transaction.Outpoint, 0, count)
+	outpoints := make([]transaction.Outpoint, 0)
 	for i := uint64(0); i < count; i++ {
 		txBytes, err := r.ReadBytesReverse(chainhash.HashSize)
 		if err != nil {
