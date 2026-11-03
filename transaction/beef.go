@@ -222,8 +222,9 @@ func NewBeefFromHex(beefHex string) (*Beef, error) {
 }
 
 // NewBeefFromBytes parses a BEEF prefix. For AtomicBEEF it also requires the
-// declared subject to be present, but does not validate the complete graph,
-// scripts, proof roots, or trust in txid-only entries.
+// declared subject to be present and refuses an entry outside the subject's
+// dependency graph (see NewBeefFromAtomicBytes), but does not validate scripts,
+// proof roots, or trust in txid-only entries.
 func NewBeefFromBytes(beef []byte) (*Beef, error) {
 	if len(beef) >= 4 && binary.LittleEndian.Uint32(beef[:4]) == ATOMIC_BEEF {
 		b, _, err := NewBeefFromAtomicBytes(beef)
