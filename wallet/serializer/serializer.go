@@ -66,13 +66,13 @@ func decodeOutpoints(data []byte) ([]transaction.Outpoint, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid txid bytes: %w", err)
 		}
-		outputIndex, err := r.ReadVarInt()
+		outputIndex, err := r.ReadVarInt32()
 		if err != nil {
 			return nil, fmt.Errorf("failed to read output index: %w", err)
 		}
 		outpoints = append(outpoints, transaction.Outpoint{
 			Txid:  *tx,
-			Index: uint32(outputIndex), //nolint:gosec // G115 -- output index is bounded well within uint32 range
+			Index: outputIndex,
 		})
 	}
 	return outpoints, nil
@@ -84,7 +84,7 @@ func decodeOutpoint(reader *util.Reader) (*transaction.Outpoint, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read txid: %w", err)
 	}
-	outputIndex, err := reader.ReadVarInt()
+	outputIndex, err := reader.ReadVarInt32()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read output index: %w", err)
 	}
@@ -92,7 +92,7 @@ func decodeOutpoint(reader *util.Reader) (*transaction.Outpoint, error) {
 	// Create revocation outpoint
 	return &transaction.Outpoint{
 		Txid:  chainhash.Hash(txidBytes),
-		Index: uint32(outputIndex), //nolint:gosec // G115 -- output index is bounded well within uint32 range
+		Index: outputIndex,
 	}, nil
 }
 

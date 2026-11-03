@@ -34,7 +34,7 @@ func DeserializeDiscoverCertificatesResult(data []byte) (*wallet.DiscoverCertifi
 	result := &wallet.DiscoverCertificatesResult{}
 
 	// Read total certificates
-	result.TotalCertificates = uint32(r.ReadVarInt()) //nolint:gosec // G115 -- certificate count is bounded well within uint32 range
+	result.TotalCertificates = r.ReadVarInt32()
 
 	// Read certificates
 	if result.TotalCertificates > 0 {

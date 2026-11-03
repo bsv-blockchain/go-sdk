@@ -649,3 +649,68 @@ func TestMerklePathAddLeafAndComputeMissingHashes(t *testing.T) {
 		require.Equal(t, leaf.String(), mp.Path[5][0].Hash.String())
 	})
 }
+
+// Issue #377: a MerklePath holding a single lone leaf at an offset other than 0
+// is a one-level path that lacks the sibling needed to climb the tree. Only a
+// block containing just its coinbase yields a single-leaf path, and that leaf
+// sits at offset 0 (the txid is the root). A lone leaf at any other offset must
+// be rejected, matching @bsv/sdk.
+const (
+	// Control: the legitimate single-coinbase vector, offset 0.
+	loneLeafOffset0Hex = "fdd2040101000202ef57aa9f29c8141ae17935c88434457b2117890f23efba0d0e0cba7a7a37d5"
+	// Bug: the identical leaf moved to offset 1 (no sibling present).
+	loneLeafOffset1Hex = "fdd2040101010202ef57aa9f29c8141ae17935c88434457b2117890f23efba0d0e0cba7a7a37d5"
+	// txid == expected root of the offset-0 (legitimate) path.
+	loneLeafTxidHex = "d5377a7aba0c0e0dbaef230f8917217b453484c83579e11a14c8299faa57ef02"
+	// A whole BEEF carrying one leaf at offset 1, no transactions (47 bytes):
+	// BEEF parsing runs the same MerklePath check, so it must be refused.
+	loneLeafBeef47Hex = "0100beef01fe05350c00010101027f99c4e42e06eca54293b05cb7a67be42778ae046c04fc5b68122bedcadbeef500"
+	// Its control: the same leaf at offset 0 with the transaction it proves
+	// (109 bytes). Still parses.
+	loneLeafBeef109Hex = "0100beef01fe05350c00010100027f99c4e42e06eca54293b05cb7a67be42778ae046c04fc5b68122bedcadbeef50101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff00ffffffff01010000000000000000000000000100"
+)
+
+func TestMerklePathLoneLeafOffsetZeroStillValid(t *testing.T) {
+	t.Parallel()
+
+	txid, err := chainhash.NewHashFromHex(loneLeafTxidHex)
+	require.NoError(t, err)
+
+	mp, err := NewMerklePathFromHex(loneLeafOffset0Hex)
+	require.NoError(t, err, "the legitimate single-coinbase path at offset 0 must parse")
+
+	root, err := mp.ComputeRoot(txid)
+	require.NoError(t, err, "a single leaf at offset 0 is the block's only transaction; its txid is the root")
+	require.Equal(t, loneLeafTxidHex, root.String())
+}
+
+func TestMerklePathLoneLeafNonZeroOffsetRejected(t *testing.T) {
+	t.Parallel()
+
+	txid, err := chainhash.NewHashFromHex(loneLeafTxidHex)
+	require.NoError(t, err)
+
+	// Parse-time refusal: the offset-1 vector no longer decodes.
+	_, err = NewMerklePathFromHex(loneLeafOffset1Hex)
+	require.Error(t, err, "a lone leaf at offset 1 must be refused at parse time")
+
+	// Path is exported and NewMerklePath does no validation, so an in-memory
+	// lone leaf at a nonzero offset can still reach ComputeRoot and Combine;
+	// both must refuse it directly.
+	for _, offset := range []uint64{1, 5} {
+		forged := NewMerklePath(1234, [][]*PathElement{{{Offset: offset, Hash: txid}}})
+		_, err = forged.ComputeRoot(txid)
+		require.Error(t, err, "offset %d must not yield a root", offset)
+
+		zero := NewMerklePath(1234, [][]*PathElement{{{Offset: 0, Hash: txid}}})
+		require.Error(t, zero.Combine(forged), "combining a lone leaf at offset %d must fail", offset)
+	}
+
+	// BEEF parsing runs the same check: the 47-byte lone-leaf BEEF is refused,
+	// while its offset-0 109-byte control still parses.
+	_, err = NewBeefFromHex(loneLeafBeef47Hex)
+	require.Error(t, err, "a BEEF carrying a lone leaf at offset 1 must be refused")
+
+	_, err = NewBeefFromHex(loneLeafBeef109Hex)
+	require.NoError(t, err, "the offset-0 control BEEF must still parse")
+}
