@@ -146,8 +146,7 @@ func (fc loFixtureCase) result(t *testing.T) wallet.ListOutputsResult {
 // frozen response bytes exactly. wallet.Output.CustomInstructions is a plain
 // string, so Go writes a present-but-empty customInstructions ("") as absent
 // (-1) rather than as a zero-length string (0x00). This predates the spendable
-// work; such a case is skipped for the encode direction only (as suggested in
-// the PR #390 review).
+// work; such a case is skipped for the encode direction only.
 func (fc loFixtureCase) goCannotReproduceBytes() bool {
 	for _, fo := range fc.Result.Outputs {
 		if fo.CustomInstructions != nil && *fo.CustomInstructions == "" {
