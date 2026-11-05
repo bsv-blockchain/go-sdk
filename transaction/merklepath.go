@@ -344,8 +344,15 @@ func (mp *MerklePath) ComputeRootHex(txidStr *string) (string, error) {
 	}
 }
 
-// ComputeRoot computes the Merkle root from a given transaction ID
+// ComputeRoot computes the Merkle root from a given transaction ID.
 func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error) {
+	return mp.computeRoot(txid, nil)
+}
+
+// computeRoot is ComputeRoot with an optional index shared across climbs.
+// A nil sharedIndex builds the index lazily on the first synthesized lookup,
+// so checking many txids does not rebuild it once per call.
+func (mp *MerklePath) computeRoot(txid *chainhash.Hash, sharedIndex *IndexedPath) (*chainhash.Hash, error) {
 	if mp == nil || len(mp.Path) == 0 || len(mp.Path[0]) == 0 {
 		return nil, errors.New("merkle path has no leaves")
 	}
@@ -404,10 +411,14 @@ func (mp *MerklePath) ComputeRoot(txid *chainhash.Hash) (*chainhash.Hash, error)
 		effectiveHeight = bitsNeeded
 	}
 
-	var indexedPath IndexedPath // built lazily, only if a node must be synthesized
+	idx := sharedIndex
+	if idx == nil {
+		var local IndexedPath
+		idx = &local
+	}
 	for height := 0; height < effectiveHeight; height++ {
 		offset := (index >> height) ^ 1
-		leaf := mp.getOffsetLeaf(height, offset, &indexedPath)
+		leaf := mp.getOffsetLeaf(height, offset, idx)
 		if leaf == nil {
 			return nil, fmt.Errorf("we do not have a hash for this index at height: %v", height)
 		}
@@ -445,74 +456,321 @@ func (mp *MerklePath) Verify(ctx context.Context, txid *chainhash.Hash, ct chain
 
 // Combine merges other into the receiver.
 //
-// Both paths must share a block height and merkle root. m.Path is replaced only
-// when the merged path still computes that root. other is not modified. On
-// error, including a merged root that no longer matches, m is left unchanged.
-func (m *MerklePath) Combine(other *MerklePath) (err error) {
+// Both paths must share a block height and merkle root. The merge refuses a
+// level/offset held by both paths with different contents, and refuses to drop
+// a parent that both children can recompute unless that parent is their
+// MerkleTreeParent. Every txid-flagged leaf from either input must still
+// compute the receiver's root afterwards. m.Path is replaced only when those
+// checks pass. other is not modified. On error, m is left unchanged.
+func (m *MerklePath) Combine(other *MerklePath) error {
+	if m == nil || other == nil {
+		return errors.New("cannot combine a nil MerklePath")
+	}
 	if m.BlockHeight != other.BlockHeight {
 		return errors.New("cannot combine MerklePaths with different block heights")
 	}
+	_, err := m.combineVerified(other)
+	return err
+}
 
-	root1, err := m.ComputeRoot(nil)
+// combineVerified merges other into m after the caller has decided the paths
+// belong to the same block. changed reports whether m.Path was replaced.
+// On error m is left unchanged.
+func (m *MerklePath) combineVerified(other *MerklePath) (bool, error) {
+	if m == nil || other == nil {
+		return false, errors.New("cannot combine a nil MerklePath")
+	}
+	expected, err := m.ComputeRoot(nil)
 	if err != nil {
-		return err
+		return false, err
 	}
-	root2, err := other.ComputeRoot(nil)
+	otherRoot, err := other.ComputeRoot(nil)
 	if err != nil {
-		return err
+		return false, err
+	}
+	if !expected.IsEqual(otherRoot) {
+		return false, errors.New("cannot combine MerklePaths with different roots")
 	}
 
-	if !root1.IsEqual(root2) {
-		return errors.New("cannot combine MerklePaths with different roots")
+	height := len(m.Path)
+	if len(other.Path) > height {
+		height = len(other.Path)
 	}
-
-	original := m.Path
-	m.combineVerified(other)
-	merged, err := m.ComputeRoot(nil)
-	if err != nil || !merged.IsEqual(root1) {
-		m.Path = original
-		if err != nil {
-			return err
+	left := indexPathLevels(m.Path)
+	right := indexPathLevels(other.Path)
+	levels := make([]map[uint64]*PathElement, height)
+	for h := 0; h < height; h++ {
+		levels[h] = make(map[uint64]*PathElement)
+		var lmap, rmap map[uint64]*PathElement
+		if h < len(left) {
+			lmap = left[h]
 		}
-		return fmt.Errorf("combined MerklePath root %s does not match original root %s", merged, root1)
+		if h < len(right) {
+			rmap = right[h]
+		}
+		for off, el := range lmap {
+			levels[h][off] = el
+		}
+		for off, el := range rmap {
+			existing, ok := levels[h][off]
+			if !ok {
+				levels[h][off] = el
+				continue
+			}
+			if !pathElementsCompatible(existing, el, lmap, rmap) {
+				return false, fmt.Errorf("cannot combine MerklePaths with conflicting nodes at level %d offset %d", h, off)
+			}
+			levels[h][off] = preferPathElement(existing, el)
+		}
+	}
+
+	for h := 1; h < len(levels); h++ {
+		for off, el := range levels[h] {
+			leftChild, hasLeft := levels[h-1][off*2]
+			rightChild, hasRight := levels[h-1][off*2+1]
+			if !hasLeft || !hasRight {
+				continue
+			}
+			parent, ok := merkleParentOf(leftChild, rightChild)
+			if !ok {
+				continue
+			}
+			match, known := nodeMatchesParent(el, parent, levels[h])
+			if !known {
+				continue
+			}
+			if !match {
+				return false, fmt.Errorf("cannot combine MerklePaths: node at level %d offset %d does not match its children", h, off)
+			}
+			delete(levels[h], off)
+		}
+	}
+
+	newPath := make([][]*PathElement, height)
+	for h := range levels {
+		newPath[h] = make([]*PathElement, 0, len(levels[h]))
+		for _, el := range levels[h] {
+			newPath[h] = append(newPath[h], el)
+		}
+		slices.SortFunc(newPath[h], func(a, b *PathElement) int {
+			return int(a.Offset) - int(b.Offset) //nolint:gosec // G115 -- merkle path offsets are bounded well within int range by tree size
+		})
+	}
+	if pathsEqual(m.Path, newPath) {
+		return false, nil
+	}
+
+	candidate := &MerklePath{BlockHeight: m.BlockHeight, Path: newPath}
+	var shared IndexedPath
+	got, err := candidate.computeRoot(nil, &shared)
+	if err != nil {
+		return false, err
+	}
+	if !got.IsEqual(expected) {
+		return false, fmt.Errorf("combined MerklePath root %s does not match original root %s", got, expected)
+	}
+	for _, txid := range txidFlaggedLeaves(m.Path, other.Path) {
+		got, err = candidate.computeRoot(txid, &shared)
+		if err != nil {
+			return false, err
+		}
+		if !got.IsEqual(expected) {
+			return false, fmt.Errorf("combined MerklePath root %s does not match original root %s", got, expected)
+		}
+	}
+
+	m.Path = newPath
+	return true, nil
+}
+
+func indexPathLevels(path [][]*PathElement) []map[uint64]*PathElement {
+	out := make([]map[uint64]*PathElement, len(path))
+	for h, level := range path {
+		indexed := make(map[uint64]*PathElement, len(level))
+		for _, el := range level {
+			if el == nil {
+				continue
+			}
+			indexed[el.Offset] = el // last entry wins, matching the previous merge
+		}
+		out[h] = indexed
+	}
+	return out
+}
+
+func pathElementIsDuplicate(el *PathElement) bool {
+	return el != nil && el.Duplicate != nil && *el.Duplicate
+}
+
+func pathElementTxid(el *PathElement) bool {
+	return el != nil && el.Txid != nil && *el.Txid
+}
+
+// pathElementsCompatible reports whether two nodes at the same level and offset
+// describe the same tree node. A hash matches a duplicate marker when the hash
+// equals the sibling the marker copies.
+func pathElementsCompatible(a, b *PathElement, left, right map[uint64]*PathElement) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	aDup, bDup := pathElementIsDuplicate(a), pathElementIsDuplicate(b)
+	if aDup && bDup {
+		return true
+	}
+	if !aDup && !bDup {
+		if a.Hash == nil || b.Hash == nil {
+			return a.Hash == nil && b.Hash == nil
+		}
+		return a.Hash.Equal(*b.Hash)
+	}
+	hashed, dup := a, b
+	if aDup {
+		hashed, dup = b, a
+	}
+	if hashed.Hash == nil {
+		return false
+	}
+	sib := elementAt(siblingOffset(dup.Offset), left, right)
+	return sib != nil && sib.Hash != nil && hashed.Hash.Equal(*sib.Hash)
+}
+
+func elementAt(offset uint64, levels ...map[uint64]*PathElement) *PathElement {
+	for _, level := range levels {
+		if el, ok := level[offset]; ok {
+			return el
+		}
 	}
 	return nil
 }
 
-func (m *MerklePath) combineVerified(other *MerklePath) {
-	combinedPath := make([]map[uint64]*PathElement, len(m.Path))
-	for h := 0; h < len(m.Path); h++ {
-		path := map[uint64]*PathElement{}
-		for l := 0; l < len(m.Path[h]); l++ {
-			path[m.Path[h][l].Offset] = m.Path[h][l]
-		}
-		combinedPath[h] = path
+// preferPathElement keeps a hash when the other node is only a duplicate
+// marker, and preserves a txid flag set on either input without mutating it.
+func preferPathElement(existing, incoming *PathElement) *PathElement {
+	chosen := existing
+	if chosen.Hash == nil && incoming.Hash != nil {
+		chosen = incoming
 	}
-
-	for h := 0; h < len(other.Path); h++ {
-		for l := 0; l < len(other.Path[h]); l++ {
-			combinedPath[h][other.Path[h][l].Offset] = other.Path[h][l]
-		}
+	if pathElementTxid(existing) || pathElementTxid(incoming) {
+		return withTxidFlag(chosen)
 	}
+	return chosen
+}
 
-	m.Path = make([][]*PathElement, len(combinedPath))
-	for h := len(m.Path) - 1; h >= 0; h-- {
-		m.Path[h] = make([]*PathElement, 0, len(combinedPath[h]))
-		for offset := range combinedPath[h] {
-			if h > 0 {
-				childOffset := offset * 2
-				_, hasLeft := combinedPath[h-1][childOffset]
-				_, hasRight := combinedPath[h-1][childOffset+1]
-				if hasLeft && hasRight {
-					continue
-				}
+func withTxidFlag(el *PathElement) *PathElement {
+	if pathElementTxid(el) {
+		return el
+	}
+	flag := true
+	cp := *el
+	cp.Txid = &flag
+	return &cp
+}
+
+// merkleParentOf is the parent hash of two children. A duplicate right child
+// means the left child is hashed with itself. ok is false when the hash cannot
+// be computed.
+func merkleParentOf(left, right *PathElement) (*chainhash.Hash, bool) {
+	if left == nil || left.Hash == nil {
+		return nil, false
+	}
+	if pathElementIsDuplicate(right) {
+		return MerkleTreeParent(left.Hash, left.Hash), true
+	}
+	if right == nil || right.Hash == nil {
+		return nil, false
+	}
+	return MerkleTreeParent(left.Hash, right.Hash), true
+}
+
+// nodeMatchesParent reports whether el's value is parent. known is false when
+// el is a duplicate marker whose sibling hash is not available to compare.
+func nodeMatchesParent(el *PathElement, parent *chainhash.Hash, level map[uint64]*PathElement) (match bool, known bool) {
+	if el == nil || parent == nil {
+		return false, false
+	}
+	if el.Hash != nil {
+		return el.Hash.Equal(*parent), true
+	}
+	if !pathElementIsDuplicate(el) {
+		return false, false
+	}
+	sib := level[siblingOffset(el.Offset)]
+	if sib == nil || sib.Hash == nil {
+		return false, false
+	}
+	return sib.Hash.Equal(*parent), true
+}
+
+func txidFlaggedLeaves(paths ...[][]*PathElement) []*chainhash.Hash {
+	seen := make(map[chainhash.Hash]struct{})
+	var out []*chainhash.Hash
+	for _, path := range paths {
+		if len(path) == 0 {
+			continue
+		}
+		for _, el := range path[0] {
+			if el == nil || el.Hash == nil || !pathElementTxid(el) {
+				continue
 			}
-			m.Path[h] = append(m.Path[h], combinedPath[h][offset])
+			if _, ok := seen[*el.Hash]; ok {
+				continue
+			}
+			seen[*el.Hash] = struct{}{}
+			out = append(out, el.Hash)
 		}
-		slices.SortFunc(m.Path[h], func(a, b *PathElement) int {
-			return int(a.Offset) - int(b.Offset) //nolint:gosec // G115 -- merkle path offsets are bounded well within int range by tree size
-		})
 	}
+	return out
+}
+
+func pathsEqual(a, b [][]*PathElement) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !levelEqual(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func levelEqual(a, b []*PathElement) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	indexed := make(map[uint64]*PathElement, len(b))
+	for _, el := range b {
+		if el == nil {
+			return false
+		}
+		if _, exists := indexed[el.Offset]; exists {
+			return false
+		}
+		indexed[el.Offset] = el
+	}
+	if len(indexed) != len(a) {
+		return false
+	}
+	for _, el := range a {
+		other, ok := indexed[el.Offset]
+		if !ok || !pathElementEqual(el, other) {
+			return false
+		}
+	}
+	return true
+}
+
+func pathElementEqual(a, b *PathElement) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if a.Offset != b.Offset || pathElementIsDuplicate(a) != pathElementIsDuplicate(b) || pathElementTxid(a) != pathElementTxid(b) {
+		return false
+	}
+	if a.Hash == nil || b.Hash == nil {
+		return a.Hash == nil && b.Hash == nil
+	}
+	return a.Hash.Equal(*b.Hash)
 }
 
 // FindLeafByOffset finds a PathElement at the given offset in the specified level.

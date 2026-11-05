@@ -235,23 +235,31 @@ func TestMergeBumpBranches(t *testing.T) {
 		t.Parallel()
 		bf := NewBeef()
 		bump := singleLeafPath(5, a)
-		first := bf.MergeBump(bump)
-		second := bf.MergeBump(bump)
+		first, err := bf.MergeBump(bump)
+		require.NoError(t, err)
+		second, err := bf.MergeBump(bump)
+		require.NoError(t, err)
 		assert.Equal(t, first, second)
 	})
 
 	t.Run("incoming-root-error", func(t *testing.T) {
 		t.Parallel()
 		bf := NewBeef()
-		bf.MergeBump(singleLeafPath(5, a))
-		assert.Equal(t, -1, bf.MergeBump(brokenTwoLevelPath(5, a)))
+		_, err := bf.MergeBump(singleLeafPath(5, a))
+		require.NoError(t, err)
+		idx, err := bf.MergeBump(brokenTwoLevelPath(5, a))
+		require.Error(t, err)
+		assert.Equal(t, -1, idx)
 	})
 
 	t.Run("existing-root-error", func(t *testing.T) {
 		t.Parallel()
 		bf := NewBeef()
-		bf.MergeBump(brokenTwoLevelPath(5, a))
-		assert.Equal(t, -1, bf.MergeBump(singleLeafPath(5, b)))
+		_, err := bf.MergeBump(brokenTwoLevelPath(5, a))
+		require.NoError(t, err)
+		idx, err := bf.MergeBump(singleLeafPath(5, b))
+		require.Error(t, err)
+		assert.Equal(t, -1, idx)
 	})
 }
 
@@ -298,10 +306,61 @@ func TestMergeNilInputs(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestMergeBeefBytesRejectsLoneLeafOverwrite is the #378 review's BEEF case.
+// A one-leaf BUMP whose hash is the block root parses, and its root matches
+// the victim's, but merging it would overwrite the real txid at offset 0.
+func TestMergeBeefBytesRejectsLoneLeafOverwrite(t *testing.T) {
+	t.Parallel()
+	tx := NewTransaction()
+	tx.AddOutput(&TransactionOutput{Satoshis: 1, LockingScript: &script.Script{}})
+	txid := tx.TxID()
+	sibling := mpHashB(t)
+	root := MerkleTreeParent(txid, sibling)
+	flag := true
+	victimPath := &MerklePath{
+		BlockHeight: 900,
+		Path: [][]*PathElement{{
+			{Offset: 0, Hash: txid, Txid: &flag},
+			{Offset: 1, Hash: sibling},
+		}},
+	}
+	tx.MerklePath = victimPath
+	victim := NewBeef()
+	victim.BUMPs = []*MerklePath{victimPath}
+	victim.Transactions[*txid] = &BeefTx{
+		DataFormat:  RawTxAndBumpIndex,
+		Transaction: tx,
+		BumpIndex:   0,
+	}
+	require.True(t, victim.IsValid(false))
+	cached, err := victim.bumpRoot(victimPath)
+	require.NoError(t, err)
+	require.True(t, cached.Equal(*root))
+
+	attacker := NewBeef()
+	attacker.BUMPs = []*MerklePath{{
+		BlockHeight: 900,
+		Path:        [][]*PathElement{{{Offset: 0, Hash: root, Txid: &flag}}},
+	}}
+	require.True(t, attacker.IsValid(false))
+	raw, err := attacker.Bytes()
+	require.NoError(t, err)
+
+	err = victim.MergeBeefBytes(raw)
+	require.Error(t, err)
+	require.True(t, victim.IsValid(false))
+	require.True(t, victim.BUMPs[0].Path[0][0].Hash.Equal(*txid))
+	require.Len(t, victim.BUMPs, 1)
+	again, err := victim.bumpRoot(victimPath)
+	require.NoError(t, err)
+	require.True(t, again.Equal(*root))
+}
+
 func TestMergeBeefWithBumps(t *testing.T) {
 	t.Parallel()
 	other := NewBeef()
-	other.MergeBump(singleLeafPath(7, mpHashA(t)))
+	_, err := other.MergeBump(singleLeafPath(7, mpHashA(t)))
+	require.NoError(t, err)
 
 	b := NewBeef()
 	require.NoError(t, b.MergeBeef(other))
