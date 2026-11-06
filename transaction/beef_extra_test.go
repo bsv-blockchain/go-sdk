@@ -306,9 +306,9 @@ func TestMergeNilInputs(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestMergeBeefBytesRejectsLoneLeafOverwrite is the #378 review's BEEF case.
-// A one-leaf BUMP whose hash is the block root parses, and its root matches
-// the victim's, but merging it would overwrite the real txid at offset 0.
+// TestMergeBeefBytesRejectsLoneLeafOverwrite refuses a one-leaf BUMP whose
+// hash is the block root. That proof parses and its root matches the victim's,
+// but merging it would overwrite the real txid at offset 0.
 func TestMergeBeefBytesRejectsLoneLeafOverwrite(t *testing.T) {
 	t.Parallel()
 	tx := NewTransaction()

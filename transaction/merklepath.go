@@ -459,9 +459,9 @@ func (mp *MerklePath) Verify(ctx context.Context, txid *chainhash.Hash, ct chain
 // Both paths must share a block height and merkle root. The merge refuses a
 // level/offset held by both paths with different contents, and refuses to drop
 // a parent that both children can recompute unless that parent is their
-// MerkleTreeParent. Every txid-flagged leaf from either input must still
-// compute the receiver's root afterwards. m.Path is replaced only when those
-// checks pass. other is not modified. On error, m is left unchanged.
+// MerkleTreeParent. Every level-0 hash of the receiver that already proved the
+// root must still do so, not only leaves marked as txids. m.Path is replaced
+// only when those checks pass. other is not modified. On error, m is left unchanged.
 func (m *MerklePath) Combine(other *MerklePath) error {
 	if m == nil || other == nil {
 		return errors.New("cannot combine a nil MerklePath")
@@ -560,27 +560,232 @@ func (m *MerklePath) combineVerified(other *MerklePath) (bool, error) {
 		return false, nil
 	}
 
-	candidate := &MerklePath{BlockHeight: m.BlockHeight, Path: newPath}
-	var shared IndexedPath
-	got, err := candidate.computeRoot(nil, &shared)
-	if err != nil {
+	// Every level-0 hash of the receiver that already proved expected must still
+	// do so. Flagged leaves are not enough: a trimmed proof computes interior
+	// nodes from unflagged siblings, and replacing one of those changes a leaf
+	// the txid flag never named. The climbs use the maps built above.
+	if err := mergedLevel0StillProves(left, levels, expected); err != nil {
 		return false, err
-	}
-	if !got.IsEqual(expected) {
-		return false, fmt.Errorf("combined MerklePath root %s does not match original root %s", got, expected)
-	}
-	for _, txid := range txidFlaggedLeaves(m.Path, other.Path) {
-		got, err = candidate.computeRoot(txid, &shared)
-		if err != nil {
-			return false, err
-		}
-		if !got.IsEqual(expected) {
-			return false, fmt.Errorf("combined MerklePath root %s does not match original root %s", got, expected)
-		}
 	}
 
 	m.Path = newPath
 	return true, nil
+}
+
+// combineNodeKey identifies a memoized node in a merge-time climb.
+type combineNodeKey struct {
+	height int
+	offset uint64
+}
+
+// combineMemo is one memoized lookup. found is false when the node cannot be
+// resolved; dup means the stored node is a duplicate marker.
+type combineMemo struct {
+	found bool
+	dup   bool
+	hash  *chainhash.Hash
+}
+
+// combineClimber computes merkle roots from the level maps a merge already
+// built. Node lookups and the root above each node are memoized, so checking
+// every level-0 leaf hashes each tree node once.
+type combineClimber struct {
+	levels      []map[uint64]*PathElement
+	maxOffset   uint64
+	singleLevel bool
+	eff         int
+	cache       map[combineNodeKey]combineMemo
+	above       map[aboveKey]combineMemo
+}
+
+// aboveKey memoizes the tree root computed from a specific node hash.
+// The hash is part of the key so a corrupted sibling cannot reuse an honest
+// leaf's result.
+type aboveKey struct {
+	height int
+	offset uint64
+	self   chainhash.Hash
+}
+
+func newCombineClimber(levels []map[uint64]*PathElement) *combineClimber {
+	var maxOffset uint64
+	if len(levels) > 0 {
+		for off := range levels[0] {
+			if off > maxOffset {
+				maxOffset = off
+			}
+		}
+	}
+	eff := len(levels)
+	if bitsNeeded := bits.Len64(maxOffset); bitsNeeded > eff {
+		eff = bitsNeeded
+	}
+	return &combineClimber{
+		levels:      levels,
+		maxOffset:   maxOffset,
+		singleLevel: len(levels) == 1,
+		eff:         eff,
+		cache:       make(map[combineNodeKey]combineMemo),
+		above:       make(map[aboveKey]combineMemo),
+	}
+}
+
+func (c *combineClimber) node(height int, offset uint64) combineMemo {
+	key := combineNodeKey{height, offset}
+	if memo, ok := c.cache[key]; ok {
+		return memo
+	}
+	var memo combineMemo
+	if height < len(c.levels) {
+		if el, ok := c.levels[height][offset]; ok && el != nil {
+			if pathElementIsDuplicate(el) {
+				memo = combineMemo{found: true, dup: true}
+			} else if el.Hash != nil {
+				memo = combineMemo{found: true, hash: el.Hash}
+			}
+			c.cache[key] = memo
+			return memo
+		}
+	}
+	if height == 0 {
+		c.cache[key] = memo
+		return memo
+	}
+	left := c.node(height-1, offset*2)
+	if !left.found || left.hash == nil {
+		c.cache[key] = memo
+		return memo
+	}
+	right := c.node(height-1, offset*2+1)
+	if right.dup || (c.singleLevel && offset*2 == offsetAtHeight(c.maxOffset, height-1) && !right.found) {
+		memo = combineMemo{found: true, hash: MerkleTreeParent(left.hash, left.hash)}
+		c.cache[key] = memo
+		return memo
+	}
+	if !right.found || right.hash == nil {
+		c.cache[key] = memo
+		return memo
+	}
+	memo = combineMemo{found: true, hash: MerkleTreeParent(left.hash, right.hash)}
+	c.cache[key] = memo
+	return memo
+}
+
+// rootFrom climbs from a level-0 offset the way ComputeRoot does.
+func (c *combineClimber) rootFrom(index uint64) (*chainhash.Hash, bool) {
+	n := c.node(0, index)
+	if !n.found || n.hash == nil {
+		return nil, false
+	}
+	return c.upFromHash(0, index, n.hash)
+}
+
+// upFromHash is the tree root given the climb hash of (height, offset).
+// Both children of one parent pass the same combined hash and share the result.
+func (c *combineClimber) upFromHash(height int, offset uint64, self *chainhash.Hash) (*chainhash.Hash, bool) {
+	if self == nil {
+		return nil, false
+	}
+	if height >= c.eff {
+		return self, true
+	}
+	key := aboveKey{height: height, offset: offset, self: *self}
+	if memo, ok := c.above[key]; ok {
+		return memo.hash, memo.found
+	}
+	sibOff := offset ^ 1
+	sib := c.node(height, sibOff)
+	var combined *chainhash.Hash
+	switch {
+	case !sib.found:
+		c.above[key] = combineMemo{}
+		return nil, false
+	case sib.dup:
+		combined = MerkleTreeParent(self, self)
+	case sib.hash == nil:
+		c.above[key] = combineMemo{}
+		return nil, false
+	case sibOff%2 != 0:
+		combined = MerkleTreeParent(self, sib.hash)
+	default:
+		combined = MerkleTreeParent(sib.hash, self)
+	}
+	got, ok := c.upFromHash(height+1, offset>>1, combined)
+	if !ok {
+		c.above[key] = combineMemo{}
+		return nil, false
+	}
+	c.above[key] = combineMemo{found: true, hash: got}
+	return got, true
+}
+
+// mergedLevel0StillProves requires every level-0 hash of the receiver that
+// computed expected before the merge, and every txid-flagged level-0 hash of
+// the merged path, to still compute expected.
+func mergedLevel0StillProves(before, after []map[uint64]*PathElement, expected *chainhash.Hash) error {
+	if expected == nil {
+		return errors.New("combined MerklePath has no root")
+	}
+	proving := provingLeafOffsets(before, expected)
+	afterClimb := newCombineClimber(after)
+	seen := make(map[uint64]struct{}, len(proving))
+	check := func(off uint64) error {
+		if _, ok := seen[off]; ok {
+			return nil
+		}
+		seen[off] = struct{}{}
+		got, ok := afterClimb.rootFrom(off)
+		if !ok || !got.IsEqual(expected) {
+			if got == nil {
+				return fmt.Errorf("combined MerklePath no longer proves offset %d", off)
+			}
+			return fmt.Errorf("combined MerklePath root %s does not match original root %s", got, expected)
+		}
+		return nil
+	}
+	for _, off := range proving {
+		if err := check(off); err != nil {
+			return err
+		}
+	}
+	if len(after) == 0 {
+		return nil
+	}
+	for off, el := range after[0] {
+		if el == nil || el.Hash == nil || !pathElementTxid(el) {
+			continue
+		}
+		if err := check(off); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// provingLeafOffsets lists level-0 offsets of before whose stored hash computes
+// expected. A lone offset-0 leaf is the coinbase shortcut: its hash is the root
+// and the climb has no sibling.
+func provingLeafOffsets(before []map[uint64]*PathElement, expected *chainhash.Hash) []uint64 {
+	if len(before) == 0 || len(before[0]) == 0 {
+		return nil
+	}
+	if len(before) == 1 && len(before[0]) == 1 {
+		if el, ok := before[0][0]; ok && el != nil && el.Hash != nil && el.Hash.Equal(*expected) {
+			return []uint64{0}
+		}
+	}
+	climb := newCombineClimber(before)
+	offsets := make([]uint64, 0, len(before[0]))
+	for off, el := range before[0] {
+		if el == nil || el.Hash == nil {
+			continue
+		}
+		got, ok := climb.rootFrom(off)
+		if ok && got.IsEqual(expected) {
+			offsets = append(offsets, off)
+		}
+	}
+	return offsets
 }
 
 func indexPathLevels(path [][]*PathElement) []map[uint64]*PathElement {
@@ -607,8 +812,11 @@ func pathElementTxid(el *PathElement) bool {
 }
 
 // pathElementsCompatible reports whether two nodes at the same level and offset
-// describe the same tree node. A hash matches a duplicate marker when the hash
-// equals the sibling the marker copies.
+// describe the same tree node. A hash matches a duplicate marker only when the
+// input that stores the marker also stores the sibling it copies, and the hash
+// equals that sibling. The other input's sibling does not count: above level 0
+// that sibling is often computed rather than stored, so the other proof could
+// supply both the sibling and a garbage hash.
 func pathElementsCompatible(a, b *PathElement, left, right map[uint64]*PathElement) bool {
 	if a == nil || b == nil {
 		return false
@@ -624,23 +832,16 @@ func pathElementsCompatible(a, b *PathElement, left, right map[uint64]*PathEleme
 		return a.Hash.Equal(*b.Hash)
 	}
 	hashed, dup := a, b
+	home := right
 	if aDup {
 		hashed, dup = b, a
+		home = left
 	}
-	if hashed.Hash == nil {
+	if hashed.Hash == nil || home == nil {
 		return false
 	}
-	sib := elementAt(siblingOffset(dup.Offset), left, right)
-	return sib != nil && sib.Hash != nil && hashed.Hash.Equal(*sib.Hash)
-}
-
-func elementAt(offset uint64, levels ...map[uint64]*PathElement) *PathElement {
-	for _, level := range levels {
-		if el, ok := level[offset]; ok {
-			return el
-		}
-	}
-	return nil
+	sib, ok := home[siblingOffset(dup.Offset)]
+	return ok && sib != nil && sib.Hash != nil && hashed.Hash.Equal(*sib.Hash)
 }
 
 // preferPathElement keeps a hash when the other node is only a duplicate
@@ -699,27 +900,6 @@ func nodeMatchesParent(el *PathElement, parent *chainhash.Hash, level map[uint64
 		return false, false
 	}
 	return sib.Hash.Equal(*parent), true
-}
-
-func txidFlaggedLeaves(paths ...[][]*PathElement) []*chainhash.Hash {
-	seen := make(map[chainhash.Hash]struct{})
-	var out []*chainhash.Hash
-	for _, path := range paths {
-		if len(path) == 0 {
-			continue
-		}
-		for _, el := range path[0] {
-			if el == nil || el.Hash == nil || !pathElementTxid(el) {
-				continue
-			}
-			if _, ok := seen[*el.Hash]; ok {
-				continue
-			}
-			seen[*el.Hash] = struct{}{}
-			out = append(out, el.Hash)
-		}
-	}
-	return out
 }
 
 func pathsEqual(a, b [][]*PathElement) bool {
