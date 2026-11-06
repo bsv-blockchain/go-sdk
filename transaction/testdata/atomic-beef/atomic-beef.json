@@ -1,0 +1,240 @@
+{
+  "$schema": "../../schema/vector.schema.json",
+  "id": "sdk.transactions.atomic-beef",
+  "name": "Atomic BEEF (BRC-95): the subject's graph, not the wire position",
+  "brc": [
+    "BRC-95",
+    "BRC-62"
+  ],
+  "version": "1.0.0",
+  "reference_impl": "bsv-rs@0.8.1: the expected values are this crate's ruling (BRC-95's graph followed through the inputs of every raw entry, proven or not; the owner's ruling of 2026-10-22), not the TypeScript SDK's. The bytes are the writers': @bsv/sdk@2.1.4, go-sdk@v1.7.2 and bsv-rs. @bsv/sdk 3.x (ts-stack 4d0ea63, Beef.ts:420-434) cuts the graph at each proven transaction and refuses the two vectors marked intended; it agrees on the other four",
+  "parity_class": "required",
+  "description": "An atomic BEEF is valid when the subject is a transaction of the BEEF and every other entry is reachable from the subject by following the inputs of raw entries, proven or not (this crate's ruling; @bsv/sdk 3.x stops at each proven transaction, as BRC-95's 'up to the point where each input can be confirmed with a Merkle proof' reads); position is not judged. Each proven entry carries a one-leaf BUMP (a block of one transaction, the root the txid); input.headers is the merkle root per height a chain tracker must carry. Every output is OP_TRUE and every unlocking script empty, so the spends execute. Staged in bsv-rs (tests/transaction/vectors/atomic-beef.json) for vectors/sdk/transactions/.",
+  "vectors": [
+    {
+      "id": "dependency-order-subject-last",
+      "description": "Dependency order, the subject last: Z (proven), C (unproven, spends Z), W (proven), S2 (spends C and W). As the Go writer writes it (a DFS over the inputs, the subject collected last; the order of the proven entries follows Go's map iteration).",
+      "input": {
+        "beef_hex": "010101012c5f2688aa72dceacfbbffdc9a193356770205166a279de823086a4e1157985b0100beef02fea2bb0d00010100029f88f1db2bf7ef40352272c40593f23e6fba502feb735d85d7597d9990fd1894fea0bb0d00010100025ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0401000000012a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a0000000000ffffffff02e8030000000000000151f401000000000000015100000000010101000000015ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0100000000ffffffff012c010000000000000151000000000001000000012b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b0000000000ffffffff01840300000000000001510000000001000100000002319a1cdca74f88f3d8e334a9c2b3cb8ebc11cc7618e772cc3638f0ba60f629ed0000000000ffffffff9f88f1db2bf7ef40352272c40593f23e6fba502feb735d85d7597d9990fd18940000000000ffffffff01e80300000000000001510000000000",
+        "headers": {
+          "900000": "ad62ccc517cca1eed898ca62bc0a403d0792533ae87a5ce10a6aee883023eb5c",
+          "900002": "9418fd90997d59d7855d73eb2f50ba6f3ef29305c472223540eff72bdbf1889f"
+        },
+        "writer": "go-sdk@v1.7.2 (2ca481c) Beef.AtomicBytes",
+        "order": [
+          "Z",
+          "C",
+          "W",
+          "S2"
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "subject_txid": "5b9857114e6a0823e89d276a160502775633199adcffbbcfeadc72aa88265f2c"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "ts-partition-order",
+      "description": "The TypeScript writer's partition order on the same graph: every proven entry first in encounter order (W, Z), then the unproven in dependency order (C), the subject last (S2).",
+      "input": {
+        "beef_hex": "010101012c5f2688aa72dceacfbbffdc9a193356770205166a279de823086a4e1157985b0100beef02fea2bb0d00010100029f88f1db2bf7ef40352272c40593f23e6fba502feb735d85d7597d9990fd1894fea0bb0d00010100025ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0401000000012b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b0000000000ffffffff018403000000000000015100000000010001000000012a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a0000000000ffffffff02e8030000000000000151f401000000000000015100000000010101000000015ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0100000000ffffffff012c01000000000000015100000000000100000002319a1cdca74f88f3d8e334a9c2b3cb8ebc11cc7618e772cc3638f0ba60f629ed0000000000ffffffff9f88f1db2bf7ef40352272c40593f23e6fba502feb735d85d7597d9990fd18940000000000ffffffff01e80300000000000001510000000000",
+        "headers": {
+          "900002": "9418fd90997d59d7855d73eb2f50ba6f3ef29305c472223540eff72bdbf1889f",
+          "900000": "ad62ccc517cca1eed898ca62bc0a403d0792533ae87a5ce10a6aee883023eb5c"
+        },
+        "writer": "@bsv/sdk@2.1.4 Beef.sortTxs then Beef.toBinaryAtomic",
+        "order": [
+          "W",
+          "Z",
+          "C",
+          "S2"
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "subject_txid": "5b9857114e6a0823e89d276a160502775633199adcffbbcfeadc72aa88265f2c"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "happy-path"
+      ]
+    },
+    {
+      "id": "raw-unproven-ancestor-after-proven-descendant",
+      "description": "The TypeScript writer's order on Z (proven) -> A (raw, unproven) -> P (proven) -> S1: P is written before its raw unproven ancestor A, which only P spends. BRC-95 judges the graph, not the position: valid. bsv-rs before 0.8.1 refused it UnrelatedTransaction (the bsv-dd x402 refund, P0-65). ts-stack 3.x (@bsv/sdk 3.0.0 at 4d0ea63, npm 3.2.1) refuses it: its closure (Beef.ts:420-434 #collectAtomicTransactions) does not follow the inputs of the proven P, so A is outside it and isAtomic is false (Transaction.fromAtomicBEEF: 'Atomic BEEF contains unrelated transaction data.'). The expected value is bsv-rs's ruling.",
+      "parity_class": "intended",
+      "skip_reason": "ts-stack 3.x cuts the subject's graph at each proven transaction and refuses a raw ancestor behind a proof; the expected value is bsv-rs's ruling (a stated divergence, bsv-rs CHANGELOG 0.8.1).",
+      "input": {
+        "beef_hex": "01010101850259d5c7f0efe1fbf12869ab1b2e4d8d60df9c683bffcb24db9001eb3e383c0100beef02fea1bb0d0001010002d430e4bdd40ff8e7c97784af10b582fe08530edc22900d0237ecd53e2b6df215fea0bb0d00010100025ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0401000000016556f01b05df2fbe88262545264715260d79b7575c269a8cb43346398a8b02880000000000ffffffff015e01000000000000015100000000010001000000012a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a0000000000ffffffff02e8030000000000000151f401000000000000015100000000010101000000015ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0000000000ffffffff019001000000000000015100000000000100000001d430e4bdd40ff8e7c97784af10b582fe08530edc22900d0237ecd53e2b6df2150000000000ffffffff012c0100000000000001510000000000",
+        "headers": {
+          "900001": "15f26d2b3ed5ec37020d9022dc0e5308fe82b510af8477c9e7f80fd4bde430d4",
+          "900000": "ad62ccc517cca1eed898ca62bc0a403d0792533ae87a5ce10a6aee883023eb5c"
+        },
+        "writer": "@bsv/sdk@2.1.4 Beef.sortTxs then Beef.toBinaryAtomic",
+        "order": [
+          "P",
+          "Z",
+          "A",
+          "S1"
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "subject_txid": "3c383eeb0190db24cbff3b689cdf608d4d2e1bab6928f1fbe1eff0c7d5590285"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "edge-case",
+        "regression"
+      ]
+    },
+    {
+      "id": "subject-present-not-last",
+      "description": "The subject present but not last: P, Z, S1, then A (S1's ancestor through the proven P, spending the earlier Z). Every entry is in the subject's graph and every unproven entry follows what it spends: valid. The TypeScript writer never writes this shape (toBinaryAtomic cuts every entry after the subject) nor does the Go writer (the subject last, the ancestry cut at each proof); bsv-rs's writer did, merged in the order P, Z, S1, A, until it emitted the BRC-95 closure (0.8.1, before release; it now drops A, behind the proven P). ts-stack 3.x (@bsv/sdk 3.0.0 at 4d0ea63, npm 3.2.1) refuses it: its closure (Beef.ts:420-434 #collectAtomicTransactions) does not follow the inputs of the proven P, so A is outside it and isAtomic is false (Transaction.fromAtomicBEEF: 'Atomic BEEF contains unrelated transaction data.'). The expected value is bsv-rs's ruling.",
+      "parity_class": "intended",
+      "skip_reason": "ts-stack 3.x cuts the subject's graph at each proven transaction and refuses a raw ancestor behind a proof; the expected value is bsv-rs's ruling (a stated divergence, bsv-rs CHANGELOG 0.8.1).",
+      "input": {
+        "beef_hex": "01010101850259d5c7f0efe1fbf12869ab1b2e4d8d60df9c683bffcb24db9001eb3e383c0100beef02fea1bb0d0001010002d430e4bdd40ff8e7c97784af10b582fe08530edc22900d0237ecd53e2b6df215fea0bb0d00010100025ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0401000000016556f01b05df2fbe88262545264715260d79b7575c269a8cb43346398a8b02880000000000ffffffff015e01000000000000015100000000010001000000012a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a0000000000ffffffff02e8030000000000000151f40100000000000001510000000001010100000001d430e4bdd40ff8e7c97784af10b582fe08530edc22900d0237ecd53e2b6df2150000000000ffffffff012c010000000000000151000000000001000000015ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0000000000ffffffff01900100000000000001510000000000",
+        "headers": {
+          "900001": "15f26d2b3ed5ec37020d9022dc0e5308fe82b510af8477c9e7f80fd4bde430d4",
+          "900000": "ad62ccc517cca1eed898ca62bc0a403d0792533ae87a5ce10a6aee883023eb5c"
+        },
+        "writer": "bsv-rs@0.8.1 Beef::to_binary_atomic",
+        "order": [
+          "P",
+          "Z",
+          "S1",
+          "A"
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "subject_txid": "3c383eeb0190db24cbff3b689cdf608d4d2e1bab6928f1fbe1eff0c7d5590285"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "edge-case"
+      ]
+    },
+    {
+      "id": "unrelated-transaction",
+      "description": "An entry outside the subject's graph: X (proven, spent by nothing) beside the S1 graph. BRC-95: nothing else may be present; refused. The TypeScript writer writes it (toBinaryAtomic does not trim an unrelated entry) and its 2.1.4 reader accepts it (Transaction.fromAtomicBEEF, Beef.verifyValid).",
+      "input": {
+        "beef_hex": "01010101850259d5c7f0efe1fbf12869ab1b2e4d8d60df9c683bffcb24db9001eb3e383c0100beef03fea3bb0d00010100026c010e899b9b628ca7c259b9a9e563e5481006892d91983287d5df542bccaa8bfea1bb0d0001010002d430e4bdd40ff8e7c97784af10b582fe08530edc22900d0237ecd53e2b6df215fea0bb0d00010100025ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0501000000012c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c0000000000ffffffff010500000000000000015100000000010001000000016556f01b05df2fbe88262545264715260d79b7575c269a8cb43346398a8b02880000000000ffffffff015e01000000000000015100000000010101000000012a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a0000000000ffffffff02e8030000000000000151f401000000000000015100000000010201000000015ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0000000000ffffffff019001000000000000015100000000000100000001d430e4bdd40ff8e7c97784af10b582fe08530edc22900d0237ecd53e2b6df2150000000000ffffffff012c0100000000000001510000000000",
+        "headers": {
+          "900003": "8baacc2b54dfd5873298912d89061048e563e5a9b959c2a78c629b9b890e016c",
+          "900001": "15f26d2b3ed5ec37020d9022dc0e5308fe82b510af8477c9e7f80fd4bde430d4",
+          "900000": "ad62ccc517cca1eed898ca62bc0a403d0792533ae87a5ce10a6aee883023eb5c"
+        },
+        "writer": "@bsv/sdk@2.1.4 Beef.sortTxs then Beef.toBinaryAtomic",
+        "order": [
+          "X",
+          "P",
+          "Z",
+          "A",
+          "S1"
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "subject_txid": "3c383eeb0190db24cbff3b689cdf608d4d2e1bab6928f1fbe1eff0c7d5590285",
+        "error": "unrelated-transaction"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "error-case"
+      ]
+    },
+    {
+      "id": "subject-missing",
+      "description": "The prefix names X, which the BEEF does not hold (the bytes of dependency-order-subject-last with the 32 bytes at offset 4 replaced). Refused. Hand-built: no writer writes an atomic BEEF for a txid it does not hold (TypeScript throws 'does not exist in this Beef', Go 'atomic BEEF subject ... is missing', bsv-rs a BeefError).",
+      "input": {
+        "beef_hex": "010101016c010e899b9b628ca7c259b9a9e563e5481006892d91983287d5df542bccaa8b0100beef02fea2bb0d00010100029f88f1db2bf7ef40352272c40593f23e6fba502feb735d85d7597d9990fd1894fea0bb0d00010100025ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0401000000012a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a0000000000ffffffff02e8030000000000000151f401000000000000015100000000010101000000015ceb233088ee6a0ae15c7ae83a5392073d400abc62ca98d8eea1cc17c5cc62ad0100000000ffffffff012c010000000000000151000000000001000000012b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b0000000000ffffffff01840300000000000001510000000001000100000002319a1cdca74f88f3d8e334a9c2b3cb8ebc11cc7618e772cc3638f0ba60f629ed0000000000ffffffff9f88f1db2bf7ef40352272c40593f23e6fba502feb735d85d7597d9990fd18940000000000ffffffff01e80300000000000001510000000000",
+        "headers": {
+          "900000": "ad62ccc517cca1eed898ca62bc0a403d0792533ae87a5ce10a6aee883023eb5c",
+          "900002": "9418fd90997d59d7855d73eb2f50ba6f3ef29305c472223540eff72bdbf1889f"
+        },
+        "writer": "hand-built from dependency-order-subject-last",
+        "order": [
+          "Z",
+          "C",
+          "W",
+          "S2"
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "subject_txid": "8baacc2b54dfd5873298912d89061048e563e5a9b959c2a78c629b9b890e016c",
+        "error": "subject-missing"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "error-case"
+      ]
+    },
+    {
+      "id": "unrelated-pair-parent-named",
+      "description": "Two entries outside the subject's graph, one of them spent: beside the proven subject S, a proven Y and a raw unproven X that spends Y and that nothing spends, written Y, X, S. The walk from S over the inputs of raw entries reaches neither, so the BEEF is refused (BRC-95: nothing else may be present). Y comes before X in the trie order (the txid's bytes, each byte's bits reversed, least first), so bsv-rs's streaming reader (verify_stream, verify_stream_structure; the Lean's finish) names Y (640639c3d0bd8a5ef167e9700ed22e54ac7b79a9872c436cba9f73f1cf5118fe) at offset 124, the earliest unreached entry; the whole-BEEF reader (Beef::verify_structure, verify_valid) refuses it UnrelatedTransaction and names no entry. @bsv/sdk 3.x refuses it (its closure from S stops at the proven S; Transaction.fromAtomicBEEF: 'Atomic BEEF contains unrelated transaction data.' names no entry); @bsv/sdk 2.1.4's readers and go-sdk's NewBeefFromAtomicBytes do not judge the graph. Y's amount is the first from 1,000 up that gives this trie order. Hand-built by bsv-rs's test writer (tests/beef_atomic_graph.rs xy_pair, no sort).",
+      "input": {
+        "beef_hex": "01010101e1ef33341a5a2a6f142afdac109e74ffbf66a8971793424774e61741d7c0d3e90100beef02fe20f40e0001010002e1ef33341a5a2a6f142afdac109e74ffbf66a8971793424774e61741d7c0d3e9fe21f40e0001010002fe1851cff1739fba6c432c87a9797bac542ed20e70e967f15e8abdd0c33906640301000000012f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f0000000000ffffffff01ec0300000000000001510000000001010100000001fe1851cff1739fba6c432c87a9797bac542ed20e70e967f15e8abdd0c33906640000000000ffffffff0101000000000000000151000000000001000000012e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e0000000000ffffffff01e8030000000000000151000000000100",
+        "headers": {
+          "980000": "e9d3c0d74117e6744742931797a866bfff749e10acfd2a146f2a5a1a3433efe1",
+          "980001": "640639c3d0bd8a5ef167e9700ed22e54ac7b79a9872c436cba9f73f1cf5118fe"
+        },
+        "writer": "bsv-rs tests/beef_atomic_graph.rs xy_pair (hand-built, written as given)",
+        "order": [
+          "Y",
+          "X",
+          "S"
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "subject_txid": "e9d3c0d74117e6744742931797a866bfff749e10acfd2a146f2a5a1a3433efe1",
+        "error": "unrelated-transaction"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "error-case"
+      ]
+    },
+    {
+      "id": "unrelated-pair-child-named",
+      "description": "Two entries outside the subject's graph, one of them spent: beside the proven subject S, a proven Y and a raw unproven X that spends Y and that nothing spends, written Y, X, S. The walk from S over the inputs of raw entries reaches neither, so the BEEF is refused (BRC-95: nothing else may be present). Y comes after X in the trie order (the txid's bytes, each byte's bits reversed, least first), so bsv-rs's streaming reader (verify_stream, verify_stream_structure; the Lean's finish) names X (e948b6fd127c559f972e31248b867a2b338659a4e542c1301213a8d95e97edca) at offset 187, the earliest unreached entry; the whole-BEEF reader (Beef::verify_structure, verify_valid) refuses it UnrelatedTransaction and names no entry. @bsv/sdk 3.x refuses it (its closure from S stops at the proven S; Transaction.fromAtomicBEEF: 'Atomic BEEF contains unrelated transaction data.' names no entry); @bsv/sdk 2.1.4's readers and go-sdk's NewBeefFromAtomicBytes do not judge the graph. Y's amount is the first from 1,000 up that gives this trie order. Hand-built by bsv-rs's test writer (tests/beef_atomic_graph.rs xy_pair, no sort).",
+      "input": {
+        "beef_hex": "01010101e1ef33341a5a2a6f142afdac109e74ffbf66a8971793424774e61741d7c0d3e90100beef02fe20f40e0001010002e1ef33341a5a2a6f142afdac109e74ffbf66a8971793424774e61741d7c0d3e9fe21f40e0001010002ab9e408998955ed5e944863f3cb036e58176cb6e486930da589b36b5dad005530301000000012f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f0000000000ffffffff01e80300000000000001510000000001010100000001ab9e408998955ed5e944863f3cb036e58176cb6e486930da589b36b5dad005530000000000ffffffff0101000000000000000151000000000001000000012e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e0000000000ffffffff01e8030000000000000151000000000100",
+        "headers": {
+          "980000": "e9d3c0d74117e6744742931797a866bfff749e10acfd2a146f2a5a1a3433efe1",
+          "980001": "5305d0dab5369b58da3069486ecb7681e536b03c3f8644e9d55e959889409eab"
+        },
+        "writer": "bsv-rs tests/beef_atomic_graph.rs xy_pair (hand-built, written as given)",
+        "order": [
+          "Y",
+          "X",
+          "S"
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "subject_txid": "e9d3c0d74117e6744742931797a866bfff749e10acfd2a146f2a5a1a3433efe1",
+        "error": "unrelated-transaction"
+      },
+      "tags": [
+        "brc-95",
+        "atomic-beef",
+        "error-case"
+      ]
+    }
+  ]
+}

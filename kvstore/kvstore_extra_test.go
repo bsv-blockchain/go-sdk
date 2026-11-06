@@ -354,7 +354,8 @@ const brc62BeefHex = "0100beef01fe636d0c0007021400fe507c0c7aa754cef1f7889d5fd395
 // The subject txid for brc62BeefHex (last tx)
 const brc62SubjectTxID = "157428aee67d11123203735e4c540fa1bdab3b36d5882c6f8c5ff79f07d20d1c"
 
-// pushDropBeefHex is an AtomicBEEF containing a transaction with a PushDrop output.
+// pushDropBeefHex is an AtomicBEEF containing a transaction with a PushDrop output and nothing
+// else: BRC-95 refuses an entry outside the subject's dependency graph.
 // The transaction:
 //
 //	TXID: d3fea5678c09ae4f29e2995d2e2aa54756879744a866a4449fd117e7b46e9e33
@@ -362,7 +363,7 @@ const brc62SubjectTxID = "157428aee67d11123203735e4c540fa1bdab3b36d5882c6f8c5ff7
 //
 // Generated with private key = 0x01 (secp256k1 base point)
 const (
-	pushDropBeefHex = "01010101339e6eb4e717d19f44a466a84497875647a52a2e5d99e2294fae098c67a5fed30200beef000200010000000001e803000000000000015100000000000100000001aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000ffffffff0101000000000000002f210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac097465737476616c7565756a00000000"
+	pushDropBeefHex = "01010101339e6eb4e717d19f44a466a84497875647a52a2e5d99e2294fae098c67a5fed30200beef0001000100000001aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000ffffffff0101000000000000002f210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac097465737476616c7565756a00000000"
 	pushDropTxID    = "d3fea5678c09ae4f29e2995d2e2aa54756879744a866a4449fd117e7b46e9e33"
 )
 
