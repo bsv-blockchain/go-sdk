@@ -158,7 +158,7 @@ func (w *WalletWireProcessor) processInternalizeAction(ctx context.Context, requ
 }
 
 func (w *WalletWireProcessor) processListOutputs(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {
-	args, err := serializer.DeserializeListOutputsArgs(requestFrame.Params)
+	args, spendable, err := serializer.DeserializeListOutputsArgsWithEncoding(requestFrame.Params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize list outputs args: %w", err)
 	}
@@ -166,7 +166,7 @@ func (w *WalletWireProcessor) processListOutputs(ctx context.Context, requestFra
 	if err != nil {
 		return nil, fmt.Errorf("failed to process list outputs: %w", err)
 	}
-	return serializer.SerializeListOutputsResult(result)
+	return serializer.SerializeListOutputsResultWithEncoding(result, spendable)
 }
 
 func (w *WalletWireProcessor) processRelinquishOutput(ctx context.Context, requestFrame *serializer.RequestFrame) ([]byte, error) {
