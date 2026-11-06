@@ -273,7 +273,7 @@ func ToSimplifiedHttpResponse(payload []byte, opts ...func(*HttpResponseDeserial
 	if err != nil {
 		return nil, res, fmt.Errorf("failed to read header count to create http response: %w", err)
 	}
-	responseHeaders := make(http.Header, nHeaders)
+	responseHeaders := make(http.Header)
 	for i := range nHeaders {
 		var headerKey, headerValue string
 		headerKey, err = responseReader.ReadString()

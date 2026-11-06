@@ -121,6 +121,9 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	// Read acquisition protocol
 	acquisitionProtocolFlag := r.ReadByteValue()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading acquisition protocol: %w", r.Err)
+	}
 	switch acquisitionProtocolFlag {
 	case acquisitionProtocolDirect:
 		args.AcquisitionProtocol = wallet.AcquisitionProtocolDirect
