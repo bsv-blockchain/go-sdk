@@ -1,0 +1,191 @@
+{
+  "source": {
+    "package": "@bsv/sdk",
+    "version": "3.2.1",
+    "integrity": "sha512-Xml2szbKhjMaDthC/FiDg80EchD09UXgR+lcH6BFJWoYpsROzEzBJ+C2+1zE7c0kzh6DwrxKaq90e8Rm0z0UtQ==",
+    "description": "Frozen requests and responses emitted by the published SDK 3.2.1, not the codec under test. No wallet or customer data."
+  },
+  "cases": [
+    {
+      "name": "six outputs without optional fields",
+      "args": {
+        "basket": "default"
+      },
+      "originator": "example.com",
+      "result": {
+        "totalOutputs": 6,
+        "outputs": [
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.0",
+            "satoshis": 1
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.1",
+            "satoshis": 2
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.2",
+            "satoshis": 3
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.3",
+            "satoshis": 4
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.4",
+            "satoshis": 5
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.5",
+            "satoshis": 6
+          }
+        ]
+      },
+      "requestHex": "060b6578616d706c652e636f6d0764656661756c7400ffffffffffffffffffffffffffffffffffffffffffffffff",
+      "responseHex": "0006ffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50102ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50203ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50304ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50405ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50506ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    {
+      "name": "six outputs with BEEF, scripts, instruction length boundaries, tags and labels",
+      "args": {
+        "basket": "default",
+        "include": "entire transactions",
+        "includeCustomInstructions": true,
+        "includeTags": true,
+        "includeLabels": true,
+        "limit": 6,
+        "offset": 0,
+        "seekPermission": false
+      },
+      "originator": "example.com",
+      "result": {
+        "totalOutputs": 6,
+        "BEEF": [
+          1, 0, 190, 239, 0, 1, 1, 0, 0, 0, 0, 6, 1, 0, 0, 0, 0, 0, 0, 0, 1, 81, 2, 0, 0, 0, 0, 0,
+          0, 0, 1, 81, 3, 0, 0, 0, 0, 0, 0, 0, 1, 81, 4, 0, 0, 0, 0, 0, 0, 0, 1, 81, 5, 0, 0, 0, 0,
+          0, 0, 0, 1, 81, 6, 0, 0, 0, 0, 0, 0, 0, 1, 81, 0, 0, 0, 0, 0
+        ],
+        "outputs": [
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.0",
+            "satoshis": 1,
+            "lockingScript": "51",
+            "tags": [],
+            "labels": []
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.1",
+            "satoshis": 2,
+            "lockingScript": "51",
+            "customInstructions": "",
+            "tags": [],
+            "labels": []
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.2",
+            "satoshis": 3,
+            "lockingScript": "51",
+            "customInstructions": "x",
+            "tags": ["tag-2"],
+            "labels": ["label-2"]
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.3",
+            "satoshis": 4,
+            "lockingScript": "51",
+            "customInstructions": "ü",
+            "tags": ["tag-3"],
+            "labels": ["label-3"]
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.4",
+            "satoshis": 5,
+            "lockingScript": "51",
+            "customInstructions": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "tags": ["tag-4"],
+            "labels": ["label-4"]
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.5",
+            "satoshis": 6,
+            "lockingScript": "51",
+            "customInstructions": "instructions 🧾",
+            "tags": ["tag-5"],
+            "labels": ["label-5"]
+          }
+        ]
+      },
+      "requestHex": "060b6578616d706c652e636f6d0764656661756c7400ff02010101060000",
+      "responseHex": "00064d0100beef0001010000000006010000000000000001510200000000000000015103000000000000000151040000000000000001510500000000000000015106000000000000000151000000000037f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc500010151ffffffffffffffffff000037f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50102015100000037f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc502030151017801057461672d3201076c6162656c2d3237f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50304015102c3bc01057461672d3301076c6162656c2d3337f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc504050151fdfd006161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616101057461672d3401076c6162656c2d3437f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50506015111696e737472756374696f6e7320f09fa7be01057461672d3501076c6162656c2d35"
+    },
+    {
+      "name": "historical module basket",
+      "args": {
+        "basket": "p btms assets",
+        "limit": 6
+      },
+      "originator": "example.com",
+      "result": {
+        "totalOutputs": 6,
+        "outputs": [
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.0",
+            "satoshis": 1
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.1",
+            "satoshis": 2
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.2",
+            "satoshis": 3
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.3",
+            "satoshis": 4
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.4",
+            "satoshis": 5
+          },
+          {
+            "spendable": true,
+            "outpoint": "37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc5.5",
+            "satoshis": 6
+          }
+        ]
+      },
+      "requestHex": "060b6578616d706c652e636f6d0d702062746d732061737365747300ffffffffff06ffffffffffffffffffff",
+      "responseHex": "0006ffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50102ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50203ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50304ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50405ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff37f4ecf20254a1412db4417c18f3c8543a4020004136f982d1e2677a0ffe9bc50506ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    {
+      "name": "empty page",
+      "args": {
+        "basket": "default"
+      },
+      "originator": "example.com",
+      "result": {
+        "totalOutputs": 0,
+        "outputs": []
+      },
+      "requestHex": "060b6578616d706c652e636f6d0764656661756c7400ffffffffffffffffffffffffffffffffffffffffffffffff",
+      "responseHex": "0000ffffffffffffffffff"
+    }
+  ]
+}
