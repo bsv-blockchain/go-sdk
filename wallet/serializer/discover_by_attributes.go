@@ -38,7 +38,7 @@ func DeserializeDiscoverByAttributesArgs(data []byte) (*wallet.DiscoverByAttribu
 	}
 
 	// Read attributes
-	attributesLength := r.ReadVarInt()
+	attributesLength := r.ReadVarIntCount()
 	for i := uint64(0); i < attributesLength; i++ {
 		fieldKey := string(r.ReadIntBytes())
 		fieldValue := string(r.ReadIntBytes())

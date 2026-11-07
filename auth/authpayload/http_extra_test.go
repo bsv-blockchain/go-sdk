@@ -107,10 +107,23 @@ func TestToHTTPRequestDeserializationErrorBranches(t *testing.T) {
 				w.WriteString(http.MethodGet)
 				w.WriteString("/api")
 				w.WriteOptionalString("")
-				w.WriteVarInt(1) // claim one header but write nothing
+				w.WriteVarInt(1)  // one header
+				w.WriteVarInt(10) // name length with no name bytes
 				return w.Buf
 			}(),
 			errMsg: "name from payload",
+		},
+		"header count exceeds payload": {
+			payload: func() []byte {
+				w := util.NewWriter()
+				w.WriteBytes(requestID)
+				w.WriteString(http.MethodGet)
+				w.WriteString("/api")
+				w.WriteOptionalString("")
+				w.WriteVarInt(1) // claim one header but write nothing
+				return w.Buf
+			}(),
+			errMsg: "failed to read number of headers",
 		},
 		"error reading header value": {
 			payload: func() []byte {
@@ -196,10 +209,21 @@ func TestToSimplifiedHTTPResponseErrorBranches(t *testing.T) {
 				w := util.NewWriter()
 				w.WriteBytes(requestID)
 				w.WriteVarInt(uint64(http.StatusOK))
-				w.WriteVarInt(1) // one header but no key
+				w.WriteVarInt(1)  // one header
+				w.WriteVarInt(10) // key length with no key bytes
 				return w.Buf
 			}(),
 			errMsg: "key to create http response",
+		},
+		"header count exceeds payload": {
+			payload: func() []byte {
+				w := util.NewWriter()
+				w.WriteBytes(requestID)
+				w.WriteVarInt(uint64(http.StatusOK))
+				w.WriteVarInt(1) // claim one header but write nothing
+				return w.Buf
+			}(),
+			errMsg: "failed to read header count",
 		},
 		"error reading header value": {
 			payload: func() []byte {

@@ -101,9 +101,9 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 	args.Certifier = parsedCertifier
 
 	// Read fields
-	fieldsLength := r.ReadVarInt()
+	fieldsLength := r.ReadVarIntCount()
 	if fieldsLength > 0 {
-		args.Fields = make(map[string]string, fieldsLength)
+		args.Fields = make(map[string]string)
 	}
 	for i := uint64(0); i < fieldsLength; i++ {
 		fieldName := r.ReadString()
@@ -121,6 +121,9 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 
 	// Read acquisition protocol
 	acquisitionProtocolFlag := r.ReadByteValue()
+	if r.Err != nil {
+		return nil, fmt.Errorf("error reading acquisition protocol: %w", r.Err)
+	}
 	switch acquisitionProtocolFlag {
 	case acquisitionProtocolDirect:
 		args.AcquisitionProtocol = wallet.AcquisitionProtocolDirect
@@ -169,9 +172,9 @@ func DeserializeAcquireCertificateArgs(data []byte) (*wallet.AcquireCertificateA
 		}
 
 		// Read keyring for subject
-		keyringEntriesLength := r.ReadVarInt()
+		keyringEntriesLength := r.ReadVarIntCount()
 		if keyringEntriesLength > 0 {
-			args.KeyringForSubject = make(map[string]string, keyringEntriesLength)
+			args.KeyringForSubject = make(map[string]string)
 		}
 
 		for i := uint64(0); i < keyringEntriesLength; i++ {

@@ -134,6 +134,41 @@ func (r *Reader) ReadVarInt32() (uint32, error) {
 	return uint32(varUint64), nil
 }
 
+// ReadVarIntCount reads a varint that declares how many elements follow it.
+// Every element occupies at least one byte, so a count larger than the bytes
+// remaining in the message can never be satisfied and is rejected here, before
+// any loop or allocation is driven by it. The all-ones value that marks an
+// absent slice is returned unchanged so callers can test for it with
+// IsNegativeOne.
+func (r *Reader) ReadVarIntCount() (uint64, error) {
+	count, err := r.ReadVarInt()
+	if err != nil {
+		return 0, err
+	}
+	if count == math.MaxUint64 {
+		return count, nil
+	}
+	remaining := len(r.Data) - r.Pos
+	if remaining < 0 || count > uint64(remaining) {
+		return 0, fmt.Errorf("error reading count: %d elements declared but only %d bytes remain", count, remaining)
+	}
+	return count, nil
+}
+
+// ReadVarIntCount32 is ReadVarIntCount for a count stored in a uint32 field.
+// The absent-slice sentinel is out of range for uint32 and is reported as an
+// error.
+func (r *Reader) ReadVarIntCount32() (uint32, error) {
+	count, err := r.ReadVarIntCount()
+	if err != nil {
+		return 0, err
+	}
+	if count > math.MaxUint32 {
+		return 0, fmt.Errorf("error reading count: value out of range: %d", count)
+	}
+	return uint32(count), nil
+}
+
 // Read implements the io.Reader interface
 func (r *Reader) Read(b []byte) (int, error) {
 	if r.IsComplete() {
@@ -245,7 +280,7 @@ func (r *Reader) ReadOptionalBool() (*bool, error) {
 }
 
 func (r *Reader) ReadTxidSlice() ([]chainhash.Hash, error) {
-	count, err := r.ReadVarInt()
+	count, err := r.ReadVarIntCount()
 	if err != nil {
 		return nil, fmt.Errorf("error reading slice txid count: %w", err)
 	}
@@ -253,7 +288,7 @@ func (r *Reader) ReadTxidSlice() ([]chainhash.Hash, error) {
 		return nil, nil
 	}
 
-	txIDs := make([]chainhash.Hash, 0, count)
+	txIDs := make([]chainhash.Hash, 0)
 	for i := uint64(0); i < count; i++ {
 		txIDBytes, err := r.ReadBytes(32)
 		if err != nil {
@@ -270,18 +305,15 @@ func (r *Reader) ReadTxidSlice() ([]chainhash.Hash, error) {
 }
 
 func (r *Reader) ReadStringSlice() ([]string, error) {
-	count, err := r.ReadVarInt()
+	count, err := r.ReadVarIntCount()
 	if err != nil {
 		return nil, fmt.Errorf("error reading slice string count: %w", err)
 	}
 	if count == math.MaxUint64 {
 		return nil, nil
 	}
-	if count >= math.MaxInt {
-		return nil, fmt.Errorf("slice count %d exceeds maximum int size", count)
-	}
 
-	slice := make([]string, 0, count)
+	slice := make([]string, 0)
 	for i := uint64(0); i < count; i++ {
 		str, err := r.ReadString()
 		if err != nil {
@@ -345,6 +377,24 @@ func (r *ReaderHoldError) ReadVarInt32() uint32 {
 		return 0
 	}
 	val, err := r.Reader.ReadVarInt32()
+	r.Err = err
+	return val
+}
+
+func (r *ReaderHoldError) ReadVarIntCount() uint64 {
+	if r.Err != nil {
+		return 0
+	}
+	val, err := r.Reader.ReadVarIntCount()
+	r.Err = err
+	return val
+}
+
+func (r *ReaderHoldError) ReadVarIntCount32() uint32 {
+	if r.Err != nil {
+		return 0
+	}
+	val, err := r.Reader.ReadVarIntCount32()
 	r.Err = err
 	return val
 }

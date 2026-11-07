@@ -34,11 +34,11 @@ func DeserializeDiscoverCertificatesResult(data []byte) (*wallet.DiscoverCertifi
 	result := &wallet.DiscoverCertificatesResult{}
 
 	// Read total certificates
-	result.TotalCertificates = r.ReadVarInt32()
+	result.TotalCertificates = r.ReadVarIntCount32()
 
 	// Read certificates
 	if result.TotalCertificates > 0 {
-		result.Certificates = make([]wallet.IdentityCertificate, 0, result.TotalCertificates)
+		result.Certificates = make([]wallet.IdentityCertificate, 0)
 	}
 	for i := uint32(0); i < result.TotalCertificates; i++ {
 		cert, err := DeserializeIdentityCertificate(r)

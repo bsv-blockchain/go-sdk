@@ -65,8 +65,8 @@ func DeserializeInternalizeActionArgs(data []byte) (*wallet.InternalizeActionArg
 	}
 
 	// Outputs
-	outputCount := r.ReadVarInt()
-	args.Outputs = make([]wallet.InternalizeOutput, 0, outputCount)
+	outputCount := r.ReadVarIntCount()
+	args.Outputs = make([]wallet.InternalizeOutput, 0)
 	for i := uint64(0); i < outputCount; i++ {
 		output := wallet.InternalizeOutput{
 			OutputIndex: r.ReadVarInt32(),

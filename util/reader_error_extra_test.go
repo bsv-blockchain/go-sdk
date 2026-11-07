@@ -85,9 +85,22 @@ func TestReaderReadTxidSliceCountError(t *testing.T) {
 	require.Nil(t, result)
 }
 
-// TestReaderReadStringSliceErrors covers the count-varint failure
-// (reader.go:238-239), the count-exceeds-int guard (reader.go:244-245), and the
-// per-element string read failure (reader.go:251-252).
+// TestReaderReadTxidSliceOversizedCount checks that a txid count far larger
+// than the data is rejected before any element is read.
+func TestReaderReadTxidSliceOversizedCount(t *testing.T) {
+	t.Parallel()
+
+	w := util.NewWriter()
+	w.WriteVarInt(uint64(math.MaxInt64))
+	r := util.NewReader(w.Buf)
+	result, err := r.ReadTxidSlice()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "elements declared but only 0 bytes remain")
+	require.Nil(t, result)
+}
+
+// TestReaderReadStringSliceErrors covers the count-varint failure, an
+// oversized count, and the per-element string read failure.
 func TestReaderReadStringSliceErrors(t *testing.T) {
 	t.Parallel()
 
@@ -101,17 +114,17 @@ func TestReaderReadStringSliceErrors(t *testing.T) {
 		require.Nil(t, result)
 	})
 
-	t.Run("count exceeds max int", func(t *testing.T) {
+	t.Run("oversized count with no elements", func(t *testing.T) {
 		t.Parallel()
 
-		// MaxInt64 is >= math.MaxInt on 64-bit platforms but is not the
-		// MaxUint64 "nil" sentinel, so it trips the size guard.
+		// MaxInt64 is not the MaxUint64 "nil" sentinel; the count exceeds the
+		// bytes remaining and is rejected before the loop.
 		w := util.NewWriter()
 		w.WriteVarInt(uint64(math.MaxInt64))
 		r := util.NewReader(w.Buf)
 		result, err := r.ReadStringSlice()
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "exceeds maximum int size")
+		require.Contains(t, err.Error(), "elements declared but only 0 bytes remain")
 		require.Nil(t, result)
 	})
 

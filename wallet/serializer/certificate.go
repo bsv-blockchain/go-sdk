@@ -100,9 +100,9 @@ func DeserializeCertificate(data []byte) (cert *wallet.Certificate, err error) {
 	}
 
 	// Read fields
-	fieldsLength := r.ReadVarInt()
+	fieldsLength := r.ReadVarIntCount()
 	if fieldsLength > 0 {
-		cert.Fields = make(map[string]string, fieldsLength)
+		cert.Fields = make(map[string]string)
 	}
 	for i := uint64(0); i < fieldsLength; i++ {
 		fieldName := string(r.ReadIntBytes())

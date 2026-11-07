@@ -57,9 +57,9 @@ func DeserializeSignActionArgs(data []byte) (*wallet.SignActionArgs, error) {
 	args := &wallet.SignActionArgs{}
 
 	// Deserialize spends
-	spendCount := r.ReadVarInt()
+	spendCount := r.ReadVarIntCount()
 	args.Spends = make(map[uint32]wallet.SignActionSpend)
-	for i := 0; i < int(spendCount); i++ { //nolint:gosec // G115 -- value is bounded by domain constraints
+	for i := uint64(0); i < spendCount; i++ {
 		inputIndex := r.ReadVarInt32()
 		spend := wallet.SignActionSpend{}
 

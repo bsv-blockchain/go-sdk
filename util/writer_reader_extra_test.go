@@ -521,6 +521,108 @@ func TestReaderReadVarInt32(t *testing.T) {
 	require.Equal(t, uint32(255), v)
 }
 
+func TestReaderReadVarIntCount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("count equal to remaining bytes accepted", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(3)
+		w.WriteBytes([]byte{1, 2, 3})
+		count, err := util.NewReader(w.Buf).ReadVarIntCount()
+		require.NoError(t, err)
+		require.Equal(t, uint64(3), count)
+	})
+
+	t.Run("zero count with nothing remaining accepted", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(0)
+		count, err := util.NewReader(w.Buf).ReadVarIntCount()
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), count)
+	})
+
+	t.Run("count above remaining bytes rejected", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(4)
+		w.WriteBytes([]byte{1, 2, 3})
+		count, err := util.NewReader(w.Buf).ReadVarIntCount()
+		require.ErrorContains(t, err, "4 elements declared but only 3 bytes remain")
+		require.Equal(t, uint64(0), count)
+	})
+
+	t.Run("absent sentinel passes through", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteNegativeOne()
+		count, err := util.NewReader(w.Buf).ReadVarIntCount()
+		require.NoError(t, err)
+		require.True(t, util.IsNegativeOne(count))
+	})
+
+	t.Run("truncated varint", func(t *testing.T) {
+		_, err := util.NewReader([]byte{0xfe, 0x01}).ReadVarIntCount()
+		require.Error(t, err)
+	})
+}
+
+func TestReaderReadVarIntCount32(t *testing.T) {
+	t.Parallel()
+
+	t.Run("small count accepted", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(2)
+		w.WriteBytes([]byte{1, 2})
+		count, err := util.NewReader(w.Buf).ReadVarIntCount32()
+		require.NoError(t, err)
+		require.Equal(t, uint32(2), count)
+	})
+
+	t.Run("count above remaining bytes rejected", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(1)
+		count, err := util.NewReader(w.Buf).ReadVarIntCount32()
+		require.ErrorContains(t, err, "only 0 bytes remain")
+		require.Equal(t, uint32(0), count)
+	})
+
+	t.Run("absent sentinel rejected", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteNegativeOne()
+		_, err := util.NewReader(w.Buf).ReadVarIntCount32()
+		require.ErrorContains(t, err, "out of range")
+	})
+}
+
+func TestReaderHoldErrorReadVarIntCount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("sets held error on oversized count", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(10)
+		r := util.NewReaderHoldError(w.Buf)
+		require.Equal(t, uint64(0), r.ReadVarIntCount())
+		require.ErrorContains(t, r.Err, "10 elements declared but only 0 bytes remain")
+	})
+
+	t.Run("returns zero on prior error", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(1)
+		w.WriteBytes([]byte{1})
+		r := util.NewReaderHoldError(w.Buf)
+		r.Err = errors.New("prior")
+		require.Equal(t, uint64(0), r.ReadVarIntCount())
+		require.Equal(t, uint32(0), r.ReadVarIntCount32())
+		require.EqualError(t, r.Err, "prior")
+	})
+
+	t.Run("32-bit variant sets held error", func(t *testing.T) {
+		w := util.NewWriter()
+		w.WriteVarInt(math.MaxUint32 + 1)
+		r := util.NewReaderHoldError(w.Buf)
+		require.Equal(t, uint32(0), r.ReadVarIntCount32())
+		require.Error(t, r.Err)
+	})
+}
+
 func TestReaderReadIoReader(t *testing.T) {
 	t.Parallel()
 
