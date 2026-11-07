@@ -804,29 +804,48 @@ func (b *Beef) FindAtomicTransaction(txid string) *Transaction {
 	return b.FindAtomicTransactionByHash(idHash)
 }
 
-func (b *Beef) MergeBump(bump *MerklePath) int {
+// MergeBump merges bump into a BEEF proof for the same block and root, or
+// appends it when no such proof is stored.
+//
+// Returns the index of the stored proof. On failure the index is -1, the
+// existing proof is left unchanged, and err explains the refusal. A failed
+// merge is not stored as a second proof.
+func (b *Beef) MergeBump(bump *MerklePath) (int, error) {
 	bumpIndex := -1
 	var incomingRoot *chainhash.Hash
 
 	for i, existingBump := range b.BUMPs {
 		if existingBump == bump {
-			return i
+			return i, nil
 		}
 		if existingBump.BlockHeight == bump.BlockHeight {
+			var err error
 			if incomingRoot == nil {
-				root, err := bump.ComputeRoot(nil)
+				incomingRoot, err = bump.ComputeRoot(nil)
 				if err != nil {
-					return -1
+					return -1, err
 				}
-				incomingRoot = root
 			}
-			existingRoot, err := b.bumpRoot(existingBump)
+			var existingRoot *chainhash.Hash
+			existingRoot, err = b.bumpRoot(existingBump)
 			if err != nil {
-				return -1
+				return -1, err
 			}
 			if existingRoot.IsEqual(incomingRoot) {
-				existingBump.combineVerified(bump)
-				b.derivedFor(existingBump).leaves = nil
+				var changed bool
+				changed, err = existingBump.combineVerified(bump)
+				if err != nil {
+					return -1, err
+				}
+				// The cached root and leaf set describe Path. Drop them only
+				// after a merge that actually replaced it, so a refused merge
+				// cannot leave a root the path no longer computes.
+				if changed {
+					if d, ok := b.derivedBumps[existingBump]; ok {
+						d.root = nil
+						d.leaves = nil
+					}
+				}
 				bumpIndex = i
 				break
 			}
@@ -845,7 +864,7 @@ func (b *Beef) MergeBump(bump *MerklePath) int {
 		}
 	}
 
-	return bumpIndex
+	return bumpIndex, nil
 }
 
 func (b *Beef) findTxid(txid *chainhash.Hash) *BeefTx {
@@ -940,13 +959,16 @@ func (b *Beef) MergeTransactionWithTxid(txid *chainhash.Hash, tx *Transaction) (
 		return existing, nil
 	}
 
-	b.RemoveExistingTxid(txid)
-
 	var bumpIndex *int
 	if tx.MerklePath != nil {
-		index := b.MergeBump(tx.MerklePath)
+		index, err := b.MergeBump(tx.MerklePath)
+		if err != nil {
+			return nil, err
+		}
 		bumpIndex = &index
 	}
+
+	b.RemoveExistingTxid(txid)
 
 	newTx := &BeefTx{
 		DataFormat:  RawTx,
@@ -1069,7 +1091,9 @@ func (b *Beef) MergeBeefBytes(beef []byte) error {
 
 func (b *Beef) MergeBeef(otherBeef *Beef) error {
 	for _, bump := range otherBeef.BUMPs {
-		b.MergeBump(bump)
+		if _, err := b.MergeBump(bump); err != nil {
+			return err
+		}
 	}
 
 	for txid, tx := range otherBeef.Transactions {
