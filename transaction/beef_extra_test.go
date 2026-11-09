@@ -356,6 +356,47 @@ func TestMergeBeefBytesRejectsLoneLeafOverwrite(t *testing.T) {
 	require.True(t, again.Equal(*root))
 }
 
+func TestMergeBeefBytesRejectsTxidCopiedToLowerOffset(t *testing.T) {
+	t.Parallel()
+	tx := NewTransaction()
+	tx.AddOutput(&TransactionOutput{Satoshis: 7, LockingScript: &script.Script{}})
+	txid := tx.TxID()
+	leaves := make([]*chainhash.Hash, 8)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	leaves[4] = txid
+	n23 := MerkleTreeParent(leaves[2], leaves[3])
+	n67 := MerkleTreeParent(leaves[6], leaves[7])
+	n03 := MerkleTreeParent(MerkleTreeParent(leaves[0], leaves[1]), n23)
+	n47 := MerkleTreeParent(MerkleTreeParent(leaves[4], leaves[5]), n67)
+	flag := true
+	victimPath := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 4, Hash: txid, Txid: &flag}, {Offset: 5, Hash: leaves[5]}},
+		{{Offset: 3, Hash: n67}},
+		{{Offset: 0, Hash: n03}},
+	}}
+	tx.MerklePath = victimPath
+	victim := NewBeef()
+	victim.BUMPs = []*MerklePath{victimPath}
+	victim.Transactions[*txid] = &BeefTx{DataFormat: RawTxAndBumpIndex, Transaction: tx, BumpIndex: 0}
+	require.True(t, victim.IsValid(false))
+
+	// A genuine proof of leaf 0, plus an unflagged copy of the victim's txid at offset 2.
+	attacker := NewBeef()
+	attacker.BUMPs = []*MerklePath{{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 2, Hash: txid}},
+		{{Offset: 1, Hash: n23}},
+		{{Offset: 1, Hash: n47}},
+	}}}
+	require.True(t, attacker.IsValid(false))
+	raw, err := attacker.Bytes()
+	require.NoError(t, err)
+
+	require.Error(t, victim.MergeBeefBytes(raw))
+	require.True(t, victim.IsValid(false))
+}
+
 func TestMergeBeefWithBumps(t *testing.T) {
 	t.Parallel()
 	other := NewBeef()

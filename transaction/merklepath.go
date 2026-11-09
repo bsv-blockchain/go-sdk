@@ -459,9 +459,10 @@ func (mp *MerklePath) Verify(ctx context.Context, txid *chainhash.Hash, ct chain
 // Both paths must share a block height and merkle root. The merge refuses a
 // level/offset held by both paths with different contents, and refuses to drop
 // a parent that both children can recompute unless that parent is their
-// MerkleTreeParent. Every level-0 hash of the receiver that already proved the
-// root must still do so, not only leaves marked as txids. m.Path is replaced
-// only when those checks pass. other is not modified. On error, m is left unchanged.
+// MerkleTreeParent. Every level-0 hash of either input that already proved the
+// root must still do so when climbed from the offset ComputeRoot would use.
+// m.Path is replaced only when those checks pass. other is not modified. On
+// error, m is left unchanged.
 func (m *MerklePath) Combine(other *MerklePath) error {
 	if m == nil || other == nil {
 		return errors.New("cannot combine a nil MerklePath")
@@ -560,11 +561,10 @@ func (m *MerklePath) combineVerified(other *MerklePath) (bool, error) {
 		return false, nil
 	}
 
-	// Every level-0 hash of the receiver that already proved expected must still
-	// do so. Flagged leaves are not enough: a trimmed proof computes interior
-	// nodes from unflagged siblings, and replacing one of those changes a leaf
-	// the txid flag never named. The climbs use the maps built above.
-	if err := mergedLevel0StillProves(left, levels, expected); err != nil {
+	// Every level-0 hash that already proved expected, from either input, must
+	// still do so when climbed the way ComputeRoot climbs: from the lowest
+	// offset that holds that hash, and from the lowest hashed offset overall.
+	if err := mergedLevel0StillProves(left, right, levels, expected); err != nil {
 		return false, err
 	}
 
@@ -719,22 +719,30 @@ func (c *combineClimber) upFromHash(height int, offset uint64, self *chainhash.H
 	return got, true
 }
 
-// mergedLevel0StillProves requires every level-0 hash of the receiver that
-// computed expected before the merge, and every txid-flagged level-0 hash of
-// the merged path, to still compute expected.
-func mergedLevel0StillProves(before, after []map[uint64]*PathElement, expected *chainhash.Hash) error {
+// mergedLevel0StillProves requires the merged path to keep proving every
+// level-0 hash from either input that already computed expected. ComputeRoot
+// starts at the first level-0 entry with a given hash, and the merged level is
+// sorted by offset, so that is the lowest offset holding the hash. It also
+// starts ComputeRoot(nil) at the lowest hashed offset.
+func mergedLevel0StillProves(receiver, incoming, after []map[uint64]*PathElement, expected *chainhash.Hash) error {
 	if expected == nil {
 		return errors.New("combined MerklePath has no root")
 	}
-	proving := provingLeafOffsets(before, expected)
-	afterClimb := newCombineClimber(after)
-	seen := make(map[uint64]struct{}, len(proving))
-	check := func(off uint64) error {
+	if len(after) == 0 || len(after[0]) == 0 {
+		return errors.New("combined MerklePath has no leaves")
+	}
+	lowest := lowestOffsetByHash(after[0])
+	climb := newCombineClimber(after)
+	seen := make(map[uint64]struct{})
+	checkOffset := func(off uint64) error {
 		if _, ok := seen[off]; ok {
 			return nil
 		}
 		seen[off] = struct{}{}
-		got, ok := afterClimb.rootFrom(off)
+		if loneOffsetZeroRoot(after, expected) && off == 0 {
+			return nil
+		}
+		got, ok := climb.rootFrom(off)
 		if !ok || !got.IsEqual(expected) {
 			if got == nil {
 				return fmt.Errorf("combined MerklePath no longer proves offset %d", off)
@@ -743,23 +751,78 @@ func mergedLevel0StillProves(before, after []map[uint64]*PathElement, expected *
 		}
 		return nil
 	}
-	for _, off := range proving {
-		if err := check(off); err != nil {
-			return err
+	checkHash := func(h *chainhash.Hash) error {
+		if h == nil {
+			return errors.New("combined MerklePath no longer proves a level-0 leaf")
+		}
+		off, ok := lowest[*h]
+		if !ok {
+			return errors.New("combined MerklePath no longer proves a level-0 leaf")
+		}
+		return checkOffset(off)
+	}
+	for _, side := range [][]map[uint64]*PathElement{receiver, incoming} {
+		for _, off := range provingLeafOffsets(side, expected) {
+			if len(side) == 0 {
+				continue
+			}
+			el := side[0][off]
+			if el == nil {
+				continue
+			}
+			if err := checkHash(el.Hash); err != nil {
+				return err
+			}
 		}
 	}
-	if len(after) == 0 {
-		return nil
-	}
-	for off, el := range after[0] {
+	for _, el := range after[0] {
 		if el == nil || el.Hash == nil || !pathElementTxid(el) {
 			continue
 		}
-		if err := check(off); err != nil {
+		if err := checkHash(el.Hash); err != nil {
 			return err
 		}
 	}
-	return nil
+	var start uint64
+	found := false
+	for off, el := range after[0] {
+		if el == nil || el.Hash == nil {
+			continue
+		}
+		if !found || off < start {
+			start = off
+			found = true
+		}
+	}
+	if !found {
+		return errors.New("combined MerklePath has no leaves")
+	}
+	return checkOffset(start)
+}
+
+// lowestOffsetByHash maps each level-0 hash to the smallest offset that holds
+// it, matching ComputeRoot's first-match scan of a level sorted by offset.
+func lowestOffsetByHash(level map[uint64]*PathElement) map[chainhash.Hash]uint64 {
+	out := make(map[chainhash.Hash]uint64, len(level))
+	for off, el := range level {
+		if el == nil || el.Hash == nil {
+			continue
+		}
+		if prev, ok := out[*el.Hash]; !ok || off < prev {
+			out[*el.Hash] = off
+		}
+	}
+	return out
+}
+
+// loneOffsetZeroRoot reports the coinbase shortcut: one level, one leaf at
+// offset 0, and that leaf's hash is the root. The climb has no sibling.
+func loneOffsetZeroRoot(levels []map[uint64]*PathElement, expected *chainhash.Hash) bool {
+	if expected == nil || len(levels) != 1 || len(levels[0]) != 1 {
+		return false
+	}
+	el, ok := levels[0][0]
+	return ok && el != nil && el.Hash != nil && el.Hash.Equal(*expected)
 }
 
 // provingLeafOffsets lists level-0 offsets of before whose stored hash computes

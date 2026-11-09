@@ -379,6 +379,29 @@ func TestCombineRejectsGarbageOnComputedInterior(t *testing.T) {
 	after, err := m.ComputeRoot(leaves[12])
 	require.NoError(t, err)
 	require.True(t, after.Equal(*root))
+	require.Error(t, other.Combine(m), "m's unflagged leaf 12 must still prove when other is the receiver")
+}
+
+func TestCombineRejectsTxidCopiedToLowerOffset(t *testing.T) {
+	t.Parallel()
+	leaves, root, m, other := eightLeafProofs(t)
+	// An unflagged copy of m's txid at an offset below it. ComputeRoot finds a
+	// txid by hash and takes the lowest offset, so the climb would start here.
+	other.Path[0] = append(other.Path[0], &PathElement{Offset: 2, Hash: leaves[4]})
+	require.Error(t, m.Combine(other))
+	got, err := m.ComputeRoot(leaves[4])
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
+}
+
+func TestCombineRejectsUnflaggedLoneRoot(t *testing.T) {
+	t.Parallel()
+	_, root, m, _ := eightLeafProofs(t)
+	lone := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{{{Offset: 0, Hash: root}}}}
+	require.Error(t, m.Combine(lone))
+	got, err := m.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
 }
 
 func TestMerklePathVerifyComputeRootError(t *testing.T) {
