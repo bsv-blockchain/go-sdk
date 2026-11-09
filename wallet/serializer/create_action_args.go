@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/util"
@@ -11,8 +12,14 @@ const (
 	trustSelfKnown = 1
 )
 
-// SerializeCreateActionArgs serializes a wallet.CreateActionArgs object into a byte slice
+// SerializeCreateActionArgs serializes a wallet.CreateActionArgs object into a byte slice.
+// An omitted unlocking script must carry a BRC-100 PositiveInteger length; that
+// check runs before any bytes are written.
 func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
+	if err := validateCreateActionInputs(args.Inputs); err != nil {
+		return nil, err
+	}
+
 	paramWriter := util.NewWriter()
 
 	// Serialize description & input BEEF
@@ -36,6 +43,22 @@ func SerializeCreateActionArgs(args *wallet.CreateActionArgs) ([]byte, error) {
 	}
 
 	return paramWriter.Buf, nil
+}
+
+// validateCreateActionInputs refuses an unlockingScriptLength outside the
+// BRC-100 PositiveInteger range when the unlocking script is omitted.
+// The range is 1 through 4294967295. The field is a uint32, so every value
+// except 0 is inside that range; 0 is the WERR_INVALID_PARAMETER case.
+func validateCreateActionInputs(inputs []wallet.CreateActionInput) error {
+	for i := range inputs {
+		if len(inputs[i].UnlockingScript) > 0 {
+			continue
+		}
+		if inputs[i].UnlockingScriptLength < 1 {
+			return errors.New("invalid parameter unlockingScriptLength: must be from 1 to 4294967295")
+		}
+	}
+	return nil
 }
 
 func serializeCreateActionInputs(paramWriter *util.Writer, inputs []wallet.CreateActionInput) {
