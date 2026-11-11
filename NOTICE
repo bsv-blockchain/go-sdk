@@ -1,0 +1,8 @@
+go-sdk
+Copyright 2023-2026 BSV Association
+
+This product includes software from these projects, under their own licenses:
+- btcd (chainhash, compat, script/interpreter): Copyright (c) 2013-2017 The btcsuite developers (ISC)
+- btcec (primitives/ec): Copyright 2010 The Go Authors, Copyright 2011 ThePiachu, Copyright 2013-2014 The btcsuite developers (ISC)
+- dcrd (chainhash, script/interpreter): Copyright (c) 2015-2018 The Decred developers (ISC)
+- Bitcoin Core script test data (script/interpreter/data): Copyright (c) 2012-2014 The Bitcoin Core developers (MIT)
