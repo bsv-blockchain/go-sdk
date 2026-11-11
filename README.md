@@ -8,7 +8,7 @@
 
 <a href="https://github.com/bsv-blockchain/go-sdk/releases"><img src="https://img.shields.io/github/release-pre/bsv-blockchain/go-sdk?include_prereleases&style=flat-square&logo=github&color=black" alt="Release"></a>
 <a href="https://golang.org/"><img src="https://img.shields.io/github/go-mod/go-version/bsv-blockchain/go-sdk?style=flat-square&logo=go&color=00ADD8" alt="Go Version"></a>
-<a href="https://github.com/bsv-blockchain/go-sdk/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-OpenBSV-blue?style=flat-square" alt="License"></a>
+<a href="https://github.com/bsv-blockchain/go-sdk/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square" alt="License"></a>
 
 <br/>
 
@@ -419,6 +419,6 @@ All kinds of contributions are welcome :raised_hands:! The most basic way to sho
 
 ## 📝 License
 
-The license for the code in this repository is the Open BSV License. Refer to [LICENSE](./LICENSE) for the license text.
+The license for the code in this repository is the Apache License 2.0. Refer to [LICENSE](./LICENSE) for the license text.
 
-[![License](https://img.shields.io/badge/license-OpenBSV-blue?style=flat&logo=springsecurity&logoColor=white)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat&logo=springsecurity&logoColor=white)](LICENSE)
