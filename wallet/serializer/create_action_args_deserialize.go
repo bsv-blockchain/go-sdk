@@ -58,7 +58,10 @@ func DeserializeCreateActionArgs(data []byte) (*wallet.CreateActionArgs, error) 
 
 // deserializeCreateActionInputs deserializes the inputs into a slice of wallet.CreateActionInput
 func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]wallet.CreateActionInput, error) {
-	inputsLen := messageReader.ReadVarInt()
+	inputsLen := messageReader.ReadVarIntCount()
+	if messageReader.Err != nil {
+		return nil, fmt.Errorf("error reading input count: %w", messageReader.Err)
+	}
 	if util.IsNegativeOne(inputsLen) {
 		return nil, nil
 	}
@@ -102,12 +105,15 @@ func deserializeCreateActionInputs(messageReader *util.ReaderHoldError) ([]walle
 
 // deserializeCreateActionOutputs deserializes the outputs into a slice of wallet.CreateActionOutput
 func deserializeCreateActionOutputs(messageReader *util.ReaderHoldError) ([]wallet.CreateActionOutput, error) {
-	outputsLen := messageReader.ReadVarInt()
+	outputsLen := messageReader.ReadVarIntCount()
+	if messageReader.Err != nil {
+		return nil, fmt.Errorf("error reading output count: %w", messageReader.Err)
+	}
 	if util.IsNegativeOne(outputsLen) {
 		return nil, nil
 	}
 
-	outputs := make([]wallet.CreateActionOutput, 0, outputsLen)
+	outputs := make([]wallet.CreateActionOutput, 0)
 	for i := uint64(0); i < outputsLen; i++ {
 		// Read locking script
 		lockingScriptBytes := messageReader.ReadOptionalBytes()

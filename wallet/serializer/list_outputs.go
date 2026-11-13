@@ -287,7 +287,7 @@ func DeserializeListOutputsResultWithEncoding(data []byte, spendable bool) (*wal
 		}
 	}
 
-	result.TotalOutputs = r.ReadVarInt32()
+	result.TotalOutputs = r.ReadVarIntCount32()
 
 	// Optional BEEF
 	beefLen := r.ReadVarInt()
@@ -296,7 +296,7 @@ func DeserializeListOutputsResultWithEncoding(data []byte, spendable bool) (*wal
 	}
 
 	// Outputs
-	result.Outputs = make([]wallet.Output, 0, result.TotalOutputs)
+	result.Outputs = make([]wallet.Output, 0)
 	for i := uint32(0); i < result.TotalOutputs; i++ {
 		output, err := deserializeListOutput(r, spendable)
 		if err != nil {

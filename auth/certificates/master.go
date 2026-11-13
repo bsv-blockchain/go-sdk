@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -20,6 +21,7 @@ var (
 	ErrDecryptionFailed         = errors.New("decryption failed")
 	ErrEncryptionFailed         = errors.New("encryption failed")
 	ErrFieldDecryption          = errors.New("failed to decrypt certificate fields")
+	ErrInvalidFieldEncoding     = errors.New("decrypted certificate field is not valid UTF-8")
 )
 
 // MasterCertificate extends the Certificate struct to include a master keyring
@@ -295,6 +297,10 @@ func DecryptField(
 	plaintextFieldBytes, err := symmetricKey.Decrypt(encryptedFieldBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt field %s value: %w", fieldName, ErrDecryptionFailed)
+	}
+	// Field values are text; refuse bytes that are not valid UTF-8, as the TypeScript SDK does.
+	if !utf8.Valid(plaintextFieldBytes) {
+		return nil, fmt.Errorf("%w: field %s", ErrInvalidFieldEncoding, fieldName)
 	}
 
 	return &DecryptFieldResult{

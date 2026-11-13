@@ -66,23 +66,29 @@ func DeserializeIdentityCertificate(r *util.ReaderHoldError) (*wallet.IdentityCe
 	cert.CertifierInfo.Trust = r.ReadByteValue()
 
 	// Deserialize PubliclyRevealedKeyring
-	keyringLen := r.ReadVarInt()
+	keyringLen := r.ReadVarIntCount()
 	if keyringLen > 0 {
-		cert.PubliclyRevealedKeyring = make(map[string]string, keyringLen)
+		cert.PubliclyRevealedKeyring = make(map[string]string)
 		for i := uint64(0); i < keyringLen; i++ {
 			key := r.ReadString()
 			value := r.ReadIntBytes()
+			if r.Err != nil {
+				return nil, fmt.Errorf("error reading publicly revealed keyring entry %d: %w", i, r.Err)
+			}
 			cert.PubliclyRevealedKeyring[key] = base64.StdEncoding.EncodeToString(value)
 		}
 	}
 
 	// Deserialize DecryptedFields
-	fieldsLen := r.ReadVarInt()
+	fieldsLen := r.ReadVarIntCount()
 	if fieldsLen > 0 {
-		cert.DecryptedFields = make(map[string]string, fieldsLen)
+		cert.DecryptedFields = make(map[string]string)
 		for i := uint64(0); i < fieldsLen; i++ {
 			key := r.ReadString()
 			value := r.ReadString()
+			if r.Err != nil {
+				return nil, fmt.Errorf("error reading decrypted field %d: %w", i, r.Err)
+			}
 			cert.DecryptedFields[key] = value
 		}
 	}

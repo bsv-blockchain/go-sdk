@@ -73,8 +73,9 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 			args: &wallet.CreateActionArgs{
 				Inputs: []wallet.CreateActionInput{
 					{
-						Outpoint:         *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
-						InputDescription: "input 1",
+						Outpoint:              *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0"),
+						InputDescription:      "input 1",
+						UnlockingScriptLength: 1,
 					},
 				},
 			},
@@ -151,6 +152,58 @@ func TestCreateActionArgsSerializeAndDeserialize(t *testing.T) {
 
 			// Compare
 			require.Equal(t, tt.args, args, "deserialized args should match original args")
+		})
+	}
+}
+
+func TestSerializeCreateActionArgsUnlockingScriptLength(t *testing.T) {
+	outpoint := *tu.OutpointFromString(t, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234.0")
+
+	tests := []struct {
+		name    string
+		length  uint32
+		wantErr string
+	}{
+		{
+			name:    "zero is an invalid parameter",
+			length:  0,
+			wantErr: "invalid parameter unlockingScriptLength",
+		},
+		{
+			name:   "one is accepted",
+			length: 1,
+		},
+		{
+			name:   "maximum is accepted",
+			length: 4294967295,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := &wallet.CreateActionArgs{
+				Inputs: []wallet.CreateActionInput{{
+					Outpoint:              outpoint,
+					InputDescription:      "input 1",
+					UnlockingScriptLength: tt.length,
+				}},
+			}
+
+			data, err := SerializeCreateActionArgs(args)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.wantErr)
+				require.ErrorContains(t, err, "unlockingScriptLength")
+				require.Nil(t, data)
+				return
+			}
+
+			require.NoError(t, err)
+			decoded, err := DeserializeCreateActionArgs(data)
+			require.NoError(t, err)
+			require.Equal(t, args, decoded)
+			require.Empty(t, decoded.Inputs[0].UnlockingScript)
+			require.Equal(t, tt.length, decoded.Inputs[0].UnlockingScriptLength)
 		})
 	}
 }

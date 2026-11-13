@@ -146,4 +146,4 @@ func main() {
 
 ## License
 
-Open BSV License
+Apache License 2.0
