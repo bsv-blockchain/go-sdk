@@ -601,11 +601,20 @@ func invalidateResolved(resolved map[dirtyKey]*chainhash.Hash, before, after []m
 	if len(after) > height {
 		height = len(after)
 	}
-	drop := func(h int, off uint64) {
+	forEachChangedNode(before, after, func(h int, off uint64) {
 		for hh := h; hh <= height+1; hh++ {
 			delete(resolved, dirtyKey{h: hh, off: off})
 			off >>= 1
 		}
+	})
+}
+
+// forEachChangedNode calls fn for every level/offset whose stored element
+// differs between before and after, including additions and removals.
+func forEachChangedNode(before, after []map[uint64]*PathElement, fn func(h int, off uint64)) {
+	height := len(before)
+	if len(after) > height {
+		height = len(after)
 	}
 	for h := 0; h < height; h++ {
 		var beforeLevel, afterLevel map[uint64]*PathElement
@@ -620,14 +629,14 @@ func invalidateResolved(resolved map[dirtyKey]*chainhash.Hash, before, after []m
 			seen[off] = struct{}{}
 			other, ok := afterLevel[off]
 			if !ok || !pathElementEqual(el, other) {
-				drop(h, off)
+				fn(h, off)
 			}
 		}
 		for off := range afterLevel {
 			if _, ok := seen[off]; ok {
 				continue
 			}
-			drop(h, off)
+			fn(h, off)
 		}
 	}
 }
@@ -1144,33 +1153,7 @@ func affectedLeafBits(before, after []map[uint64]*PathElement, beforeEff, afterE
 			bits[i>>3] |= 1 << (i & 7)
 		}
 	}
-	height := len(before)
-	if len(after) > height {
-		height = len(after)
-	}
-	for h := 0; h < height; h++ {
-		var beforeLevel, afterLevel map[uint64]*PathElement
-		if h < len(before) {
-			beforeLevel = before[h]
-		}
-		if h < len(after) {
-			afterLevel = after[h]
-		}
-		seen := make(map[uint64]struct{}, len(beforeLevel))
-		for off, el := range beforeLevel {
-			seen[off] = struct{}{}
-			other, ok := afterLevel[off]
-			if !ok || !pathElementEqual(el, other) {
-				mark(h, off)
-			}
-		}
-		for off := range afterLevel {
-			if _, ok := seen[off]; ok {
-				continue
-			}
-			mark(h, off)
-		}
-	}
+	forEachChangedNode(before, after, mark)
 	return bits, false
 }
 
