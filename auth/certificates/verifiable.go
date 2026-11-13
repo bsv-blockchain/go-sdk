@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	primitives "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/wallet"
@@ -146,6 +147,11 @@ func (vc *VerifiableCertificate) DecryptFields(
 		decryptedFieldBytes, err := symmetricKey.Decrypt(encryptedFieldValueBytes)
 		if err != nil {
 			return nil, fmt.Errorf("%w: symmetric decryption failed for field '%s': %w", ErrFieldDecryption, fieldName, err)
+		}
+
+		// Field values are text; refuse bytes that are not valid UTF-8, as the TypeScript SDK does.
+		if !utf8.Valid(decryptedFieldBytes) {
+			return nil, fmt.Errorf("%w: field '%s': %w", ErrFieldDecryption, fieldName, ErrInvalidFieldEncoding)
 		}
 
 		// Store the successfully decrypted plaintext value.
