@@ -931,7 +931,7 @@ func mergedLevel0StillProves(receiver, incoming, after []map[uint64]*PathElement
 		if allDirty {
 			return true
 		}
-		i := int(off >> 3) //nolint:gosec // G115 -- offset fits the bitset built from the path's own max offset
+		i := int(off >> 3)
 		return i < len(dirtyBits) && dirtyBits[i]&(1<<(off&7)) != 0
 	}
 

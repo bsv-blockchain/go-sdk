@@ -396,7 +396,7 @@ func TestMergeBeefRejectsRepeatedLevel0Offset(t *testing.T) {
 	require.NoError(t, err)
 
 	victim := NewBeef()
-	if err := victim.MergeBeefBytes(raw); err != nil {
+	if mergeErr := victim.MergeBeefBytes(raw); mergeErr != nil {
 		return // refused at parse time, as @bsv/sdk does
 	}
 	require.True(t, victim.IsValid(false))
