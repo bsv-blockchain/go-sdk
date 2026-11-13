@@ -210,6 +210,59 @@ func (k *ExtendedKey) ParentFingerprint() uint32 {
 // returned if this should occur, and the caller is expected to ignore the
 // invalid child and simply increment to the next index.
 func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
+	return k.child(i, false)
+}
+
+// ChildNonStandard returns the child that releases of this package before the
+// leading-zero fix derived, which differs from BIP32 and from Child for a
+// hardened step taken from a private key whose first byte is zero (about one in
+// 256 derived keys).
+//
+// Those releases kept a derived private key without its leading zero byte, and
+// computed the hardened children of that in-memory key from the shortened bytes.
+// Keys, addresses and funds derived that way are not the BIP32 ones, and no
+// BIP32-compliant implementation reproduces them. Use this method, step by step
+// along the original path, only to find and sweep such funds; never to derive new
+// keys. See IsPathAffectedByLeadingZero to check whether a path is affected.
+//
+// Deprecated: ChildNonStandard exists only to recover keys derived by earlier
+// releases. Use Child for BIP32-compliant derivation.
+func (k *ExtendedKey) ChildNonStandard(i uint32) (*ExtendedKey, error) {
+	return k.child(i, true)
+}
+
+// HasLeadingZeroKey reports whether this is a private extended key whose first
+// byte is zero. Hardened children of such a key differ between Child and
+// ChildNonStandard.
+func (k *ExtendedKey) HasLeadingZeroKey() bool {
+	if !k.isPrivate {
+		return false
+	}
+	return len(k.key) < 32 || (len(k.key) == 32 && k.key[0] == 0)
+}
+
+// IsPathAffectedByLeadingZero reports whether deriving the given path from this
+// key gives a different result with ChildNonStandard (the derivation of earlier
+// releases) than with Child (BIP32). When it does, keys and addresses that an
+// earlier release derived for this path are not the ones Child derives now, and
+// funds sent to them can be reached only through ChildNonStandard.
+func (k *ExtendedKey) IsPathAffectedByLeadingZero(path ...uint32) (bool, error) {
+	std, legacy := k, k
+	for _, i := range path {
+		var err error
+		if std, err = std.Child(i); err != nil {
+			return false, err
+		}
+		if legacy, err = legacy.ChildNonStandard(i); err != nil {
+			return false, err
+		}
+	}
+	return std.String() != legacy.String(), nil
+}
+
+// child derives child i. When legacy is true it reproduces the derivation of
+// releases before the leading-zero fix (see ChildNonStandard).
+func (k *ExtendedKey) child(i uint32, legacy bool) (*ExtendedKey, error) {
 	// Prevent derivation of children beyond the max allowed depth.
 	if k.depth == maxUint8 {
 		return nil, ErrDeriveBeyondMaxDepth
@@ -244,7 +297,15 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		// When the child is a hardened child, the key is known to be a
 		// private key due to the above early return.  Pad it with a
 		// leading zero as required by [BIP32] for deriving the child.
-		copy(data[1:], k.key)
+		//
+		// ser256 is 32 bytes, big-endian, so a shorter key is right-aligned.
+		// NewExtendedKey does no validation, so a caller can supply one.
+		// Earlier releases left-aligned it (legacy).
+		if !legacy && len(k.key) < 32 {
+			copy(data[1+32-len(k.key):keyLen], k.key)
+		} else {
+			copy(data[1:], k.key)
+		}
 	} else {
 		// Case #2 or #3.
 		// This is either a public or private extended key, but in
@@ -299,7 +360,13 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		keyNum := new(big.Int).SetBytes(k.key)
 		ilNum.Add(ilNum, keyNum)
 		ilNum.Mod(ilNum, ec.S256().N)
-		childKey = ilNum.Bytes()
+		// Keep the key at 32 bytes: Bytes() would drop a leading zero byte, and the
+		// hardened derivation of this key's own children needs the full ser256 form.
+		if legacy {
+			childKey = ilNum.Bytes()
+		} else {
+			childKey = ilNum.FillBytes(make([]byte, 32))
+		}
 		isPrivate = true
 	} else {
 		// Case #3.
