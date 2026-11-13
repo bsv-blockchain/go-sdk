@@ -245,6 +245,34 @@ func BenchmarkFindAtomicTransaction_SpendGraph(b *testing.B) {
 	}
 }
 
+// BenchmarkMergeBump_SequentialProofs measures merging the first n standard
+// proofs from one 16,384-leaf block, one MergeBump at a time.
+func BenchmarkMergeBump_SequentialProofs(b *testing.B) {
+	const blockLeaves = 16384
+	hashes := make([]*chainhash.Hash, 0, blockLeaves)
+	for i := 0; i < blockLeaves; i++ {
+		hashes = append(hashes, benchTx(uint32(i)).TxID())
+	}
+	levels := benchMerkleTree(hashes)
+	proofs := make([]*MerklePath, blockLeaves)
+	for i := range proofs {
+		proofs[i] = benchProofBUMP(800000, levels, i)
+	}
+	for _, n := range []int{250, 1000} {
+		b.Run(fmt.Sprintf("proofs=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				beef := NewBeef()
+				for i := 0; i < n; i++ {
+					if _, err := beef.MergeBump(proofs[i]); err != nil {
+						b.Fatal(err)
+					}
+				}
+			}
+		})
+	}
+}
+
 // BenchmarkComputeRoot_LargePath measures root computation over a path holding
 // a whole block's tree, the state a BUMP reaches after absorbing many proofs.
 func BenchmarkComputeRoot_LargePath(b *testing.B) {

@@ -137,6 +137,273 @@ func TestMerklePathCombineErrors(t *testing.T) {
 	})
 }
 
+// TestMerklePathCombineRejectsMergedRootMismatch pins the refusal to overwrite
+// a node with different contents, even when both paths compute the same root.
+// Either direction would replace offset 0; both must fail and leave the
+// receiver unchanged.
+func TestMerklePathCombineRejectsMergedRootMismatch(t *testing.T) {
+	t.Parallel()
+	left := mpHashA(t)
+	right := mpHashB(t)
+	parent := MerkleTreeParent(left, right)
+
+	two := &MerklePath{
+		BlockHeight: 10,
+		Path: [][]*PathElement{{
+			{Offset: 0, Hash: left},
+			{Offset: 1, Hash: right},
+		}},
+	}
+	root, err := two.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, root.Equal(*parent))
+
+	lone := singleLeafPath(10, parent)
+	loneRoot, err := lone.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, loneRoot.Equal(*parent))
+
+	err = two.Combine(lone)
+	require.ErrorContains(t, err, "conflicting nodes")
+	require.Len(t, two.Path[0], 2)
+	require.True(t, two.Path[0][0].Hash.Equal(*left))
+	again, err := two.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, again.Equal(*parent))
+
+	err = lone.Combine(two)
+	require.ErrorContains(t, err, "conflicting nodes")
+	require.Len(t, lone.Path[0], 1)
+	require.True(t, lone.Path[0][0].Hash.Equal(*parent))
+	loneAgain, err := lone.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, loneAgain.Equal(*parent))
+}
+
+func nthLeaf(t *testing.T, n byte) *chainhash.Hash {
+	t.Helper()
+	raw := make([]byte, 32)
+	raw[31] = n
+	h, err := chainhash.NewHash(raw)
+	require.NoError(t, err)
+	return h
+}
+
+// eightLeafProofs builds an 8-leaf tree and the sparse proofs of leaves 0 and 4.
+// m proves leaf 4; other proves leaf 0. Both compute the same root.
+func eightLeafProofs(t *testing.T) (leaves []*chainhash.Hash, root *chainhash.Hash, prove4, prove0 *MerklePath) {
+	t.Helper()
+	leaves = make([]*chainhash.Hash, 8)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	n01 := MerkleTreeParent(leaves[0], leaves[1])
+	n23 := MerkleTreeParent(leaves[2], leaves[3])
+	n45 := MerkleTreeParent(leaves[4], leaves[5])
+	n67 := MerkleTreeParent(leaves[6], leaves[7])
+	n03 := MerkleTreeParent(n01, n23)
+	n47 := MerkleTreeParent(n45, n67)
+	root = MerkleTreeParent(n03, n47)
+	txid := true
+	prove4 = &MerklePath{
+		BlockHeight: 900,
+		Path: [][]*PathElement{
+			{{Offset: 4, Hash: leaves[4], Txid: &txid}, {Offset: 5, Hash: leaves[5]}},
+			{{Offset: 3, Hash: n67}},
+			{{Offset: 0, Hash: n03}},
+		},
+	}
+	prove0 = &MerklePath{
+		BlockHeight: 900,
+		Path: [][]*PathElement{
+			{{Offset: 0, Hash: leaves[0], Txid: &txid}, {Offset: 1, Hash: leaves[1]}},
+			{{Offset: 1, Hash: n23}},
+			{{Offset: 1, Hash: n47}},
+		},
+	}
+	return leaves, root, prove4, prove0
+}
+
+// TestMerklePathCombineRejectsReviewOverwrites covers two merges whose
+// first-leaf root stays the same while another leaf stops proving: an extra
+// sibling hash, and garbage leaves that would replace a real parent.
+func TestMerklePathCombineRejectsReviewOverwrites(t *testing.T) {
+	t.Parallel()
+	leaves, root, prove4, prove0 := eightLeafProofs(t)
+
+	got, err := prove4.ComputeRoot(leaves[4])
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
+	got, err = prove0.ComputeRoot(leaves[0])
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
+
+	t.Run("honest proofs merge", func(t *testing.T) {
+		t.Parallel()
+		_, root, m, other := eightLeafProofs(t)
+		require.NoError(t, m.Combine(other))
+		for _, txid := range []*chainhash.Hash{m.Path[0][0].Hash, leaves[4], leaves[0]} {
+			got, err := m.ComputeRoot(txid)
+			require.NoError(t, err)
+			require.True(t, got.Equal(*root))
+		}
+	})
+
+	t.Run("extra sibling hash", func(t *testing.T) {
+		t.Parallel()
+		leaves, root, m, other := eightLeafProofs(t)
+		other.Path[0] = append(other.Path[0], &PathElement{Offset: 5, Hash: nthLeaf(t, 99)})
+		err := m.Combine(other)
+		require.ErrorContains(t, err, "conflicting nodes")
+		got, err := m.ComputeRoot(leaves[4])
+		require.NoError(t, err)
+		require.True(t, got.Equal(*root))
+		require.True(t, m.Path[0][1].Hash.Equal(*leaves[5]))
+	})
+
+	t.Run("garbage leaves drop a real parent", func(t *testing.T) {
+		t.Parallel()
+		leaves, root, m, other := eightLeafProofs(t)
+		parent := m.Path[1][0].Hash
+		other.Path[0] = append(other.Path[0],
+			&PathElement{Offset: 6, Hash: nthLeaf(t, 100)},
+			&PathElement{Offset: 7, Hash: nthLeaf(t, 101)},
+		)
+		err := m.Combine(other)
+		require.ErrorContains(t, err, "does not match its children")
+		got, err := m.ComputeRoot(leaves[4])
+		require.NoError(t, err)
+		require.True(t, got.Equal(*root))
+		require.True(t, m.Path[1][0].Hash.Equal(*parent))
+	})
+}
+
+func TestCombineRejectsHashOverDuplicateMarker(t *testing.T) {
+	t.Parallel()
+	// 17-leaf block. m proves the last leaf; its proof has duplicate markers at levels 0-3.
+	leaves := make([]*chainhash.Hash, 17)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	tree := [][]*chainhash.Hash{leaves}
+	for len(tree[len(tree)-1]) > 1 {
+		cur, next := tree[len(tree)-1], []*chainhash.Hash{}
+		for i := 0; i < len(cur); i += 2 {
+			right := cur[i]
+			if i+1 < len(cur) {
+				right = cur[i+1]
+			}
+			next = append(next, MerkleTreeParent(cur[i], right))
+		}
+		tree = append(tree, next)
+	}
+	root, dup, txid := tree[5][0], true, true
+	m := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 16, Hash: leaves[16]}, {Offset: 17, Duplicate: &dup}}, // proven leaf, no txid flag
+		{{Offset: 9, Duplicate: &dup}},
+		{{Offset: 5, Duplicate: &dup}},
+		{{Offset: 3, Duplicate: &dup}},
+		{{Offset: 0, Hash: tree[4][0]}},
+	}}
+	// A genuine proof of leaf 0, plus one garbage hash at level 2 offsets 4 and 5.
+	garbage := nthLeaf(t, 200)
+	other := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &txid}, {Offset: 1, Hash: leaves[1]}},
+		{{Offset: 1, Hash: tree[1][1]}},
+		{{Offset: 1, Hash: tree[2][1]}, {Offset: 4, Hash: garbage}, {Offset: 5, Hash: garbage}},
+		{{Offset: 1, Hash: tree[3][1]}},
+		{{Offset: 1, Hash: tree[4][1]}},
+	}}
+
+	err := m.Combine(other)
+	got, rerr := m.ComputeRoot(leaves[16])
+	require.NoError(t, rerr)
+	require.True(t, err != nil || got.Equal(*root), "Combine succeeded but the last leaf no longer proves the root")
+	require.ErrorContains(t, err, "conflicting nodes")
+}
+
+// TestCombineRejectsGarbageOnComputedInterior refuses a hash placed where the
+// receiver computes an interior node instead of storing it. Only one level-0
+// leaf is flagged; an unflagged sibling must still prove the root afterwards.
+func TestCombineRejectsGarbageOnComputedInterior(t *testing.T) {
+	t.Parallel()
+	const n = 16
+	leaves := make([]*chainhash.Hash, n)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	level := leaves
+	var tree [][]*chainhash.Hash
+	tree = append(tree, level)
+	for len(level) > 1 {
+		next := make([]*chainhash.Hash, 0, (len(level)+1)/2)
+		for i := 0; i < len(level); i += 2 {
+			right := level[i]
+			if i+1 < len(level) {
+				right = level[i+1]
+			}
+			next = append(next, MerkleTreeParent(level[i], right))
+		}
+		tree = append(tree, next)
+		level = next
+	}
+	root := tree[len(tree)-1][0]
+	flag := true
+	level0 := make([]*PathElement, 0, 8)
+	for i := 8; i < 16; i++ {
+		el := &PathElement{Offset: uint64(i), Hash: leaves[i]}
+		if i == 8 {
+			el.Txid = &flag
+		}
+		level0 = append(level0, el)
+	}
+	m := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		level0,
+		{},
+		{},
+		{{Offset: 0, Hash: tree[3][0]}},
+	}}
+	before, err := m.ComputeRoot(leaves[12])
+	require.NoError(t, err)
+	require.True(t, before.Equal(*root))
+
+	garbage := nthLeaf(t, 210)
+	other := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}},
+		{{Offset: 1, Hash: tree[1][1]}},
+		{{Offset: 1, Hash: tree[2][1]}, {Offset: 2, Hash: garbage}},
+		{{Offset: 1, Hash: tree[3][1]}},
+	}}
+	err = m.Combine(other)
+	require.Error(t, err)
+	after, err := m.ComputeRoot(leaves[12])
+	require.NoError(t, err)
+	require.True(t, after.Equal(*root))
+	require.Error(t, other.Combine(m), "m's unflagged leaf 12 must still prove when other is the receiver")
+}
+
+func TestCombineRejectsTxidCopiedToLowerOffset(t *testing.T) {
+	t.Parallel()
+	leaves, root, m, other := eightLeafProofs(t)
+	// An unflagged copy of m's txid at an offset below it. ComputeRoot finds a
+	// txid by hash and takes the lowest offset, so the climb would start here.
+	other.Path[0] = append(other.Path[0], &PathElement{Offset: 2, Hash: leaves[4]})
+	require.Error(t, m.Combine(other))
+	got, err := m.ComputeRoot(leaves[4])
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
+}
+
+func TestCombineRejectsUnflaggedLoneRoot(t *testing.T) {
+	t.Parallel()
+	_, root, m, _ := eightLeafProofs(t)
+	lone := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{{{Offset: 0, Hash: root}}}}
+	require.Error(t, m.Combine(lone))
+	got, err := m.ComputeRoot(nil)
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
+}
+
 func TestMerklePathVerifyComputeRootError(t *testing.T) {
 	t.Parallel()
 	a := mpHashA(t)
