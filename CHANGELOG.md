@@ -62,6 +62,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Fixed
 - `serializer.SerializeCreateActionArgs` refuses a createAction input that omits `unlockingScript` and sets `unlockingScriptLength` outside the BRC-100 PositiveInteger range of 1 through 4294967295. The error is an invalid parameter that names `unlockingScriptLength`. A supplied unlocking script, and lengths of 1 through 4294967295, are unchanged. (#403)
+- `script.DecodeScript` (and so `Script.Chunks`) now folds an `OP_RETURN` into a data chunk only at IF depth 0, as ts-stack's `Script.#parseChunks` does. After an `OP_ENDIF` with no `OP_IF` open the depth is below zero, and an `OP_RETURN` there was folded with the rest of the script as its data (`686a51` gave two chunks); it is now read as an opcode (three chunks). The node refuses such a script as unbalanced, so no verdict changes; code that reads the chunk list (data-carrier and template checks, field decoding) sees the reference's chunks.
 
 ### Changed
 - `ProtoWallet.CreateHMAC` and `ProtoWallet.VerifyHMAC` key HMAC-SHA256 with the shared point's X coordinate as a minimal-length unsigned big-endian byte array (leading zero bytes omitted), the established TypeScript SDK convention specified by BRC-56 and BRC-100. Earlier go-sdk releases used the 32-byte zero-padded encoding, so for about one key in 256 tags now differ, and tags issued by those releases for such keys no longer verify.

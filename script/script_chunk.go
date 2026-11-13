@@ -256,7 +256,9 @@ func DecodeScript(b []byte, options ...DecodeOptions) ([]*ScriptChunk, error) {
 			conditionalBlock--
 			b = b[1:]
 		case OpRETURN:
-			if slices.Contains(options, DecodeOptionsParseOpReturn) || conditionalBlock > 0 {
+			// Fold only at IF depth 0, as ts-stack does. A stray OP_ENDIF takes the
+			// depth below zero, and an OP_RETURN there is an ordinary opcode.
+			if slices.Contains(options, DecodeOptionsParseOpReturn) || conditionalBlock != 0 {
 				b = b[1:]
 			} else {
 				// Everything after the OP_RETURN opcode itself becomes this
