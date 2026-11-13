@@ -356,6 +356,54 @@ func TestMergeBeefBytesRejectsLoneLeafOverwrite(t *testing.T) {
 	require.True(t, again.Equal(*root))
 }
 
+func TestMergeBeefRejectsRepeatedLevel0Offset(t *testing.T) {
+	t.Parallel()
+	tx := NewTransaction()
+	tx.AddOutput(&TransactionOutput{Satoshis: 9, LockingScript: &script.Script{}})
+	txid := tx.TxID()
+	leaves := make([]*chainhash.Hash, 8)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	leaves[4] = txid
+	n23 := MerkleTreeParent(leaves[2], leaves[3])
+	n67 := MerkleTreeParent(leaves[6], leaves[7])
+	n03 := MerkleTreeParent(MerkleTreeParent(leaves[0], leaves[1]), n23)
+	n47 := MerkleTreeParent(MerkleTreeParent(leaves[4], leaves[5]), n67)
+	flag := true
+	// Offset 4 appears twice. ComputeRoot finds a txid by first match, so T proves.
+	// The merge indexes level 0 last-wins, so it keeps the junk entry and drops T.
+	repeated := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 4, Hash: txid, Txid: &flag}, {Offset: 4, Hash: nthLeaf(t, 66)}, {Offset: 5, Hash: leaves[5]}},
+		{{Offset: 3, Hash: n67}},
+		{{Offset: 0, Hash: n03}},
+	}}
+	tx.MerklePath = repeated
+	first := NewBeef()
+	first.BUMPs = []*MerklePath{repeated}
+	first.Transactions[*txid] = &BeefTx{DataFormat: RawTxAndBumpIndex, Transaction: tx, BumpIndex: 0}
+	raw, err := first.Bytes()
+	require.NoError(t, err)
+
+	// A genuine proof of leaf 0 from the same block.
+	honest := NewBeef()
+	honest.BUMPs = []*MerklePath{{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}},
+		{{Offset: 1, Hash: n23}},
+		{{Offset: 1, Hash: n47}},
+	}}}
+	hraw, err := honest.Bytes()
+	require.NoError(t, err)
+
+	victim := NewBeef()
+	if err := victim.MergeBeefBytes(raw); err != nil {
+		return // refused at parse time, as @bsv/sdk does
+	}
+	require.True(t, victim.IsValid(false))
+	err = victim.MergeBeefBytes(hraw)
+	require.True(t, err != nil || victim.IsValid(false), "honest merge succeeded but the stored BUMP no longer contains T")
+}
+
 func TestMergeBeefBytesRejectsTxidCopiedToLowerOffset(t *testing.T) {
 	t.Parallel()
 	tx := NewTransaction()

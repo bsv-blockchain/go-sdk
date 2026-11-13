@@ -270,6 +270,13 @@ func NewMerklePathFromReader(reader io.Reader) (*MerklePath, error) {
 		})
 	}
 
+	// @bsv/sdk rejects a repeated offset. ComputeRoot uses the first entry with
+	// a hash, while a merge keeps the last, so a repeated level-0 offset can
+	// drop a txid that still proves.
+	if err := duplicateOffsetError(bump.Path); err != nil {
+		return nil, err
+	}
+
 	// A single-level path with exactly one leaf is only valid as a block whose
 	// sole transaction is its coinbase, which sits at offset 0. A lone leaf at
 	// any other offset lacks its sibling and can never form a valid path, so
@@ -470,16 +477,24 @@ func (m *MerklePath) Combine(other *MerklePath) error {
 	if m.BlockHeight != other.BlockHeight {
 		return errors.New("cannot combine MerklePaths with different block heights")
 	}
-	_, err := m.combineVerified(other)
+	_, err := m.combineVerified(other, nil)
 	return err
 }
 
 // combineVerified merges other into m after the caller has decided the paths
 // belong to the same block. changed reports whether m.Path was replaced.
-// On error m is left unchanged.
-func (m *MerklePath) combineVerified(other *MerklePath) (bool, error) {
+// cache, when non-nil, holds the receiver's proving hashes from the last
+// merge and is updated to the merged path's proving hashes on success.
+// On error m is left unchanged and cache is not updated.
+func (m *MerklePath) combineVerified(other *MerklePath, cache *derivedBump) (bool, error) {
 	if m == nil || other == nil {
 		return false, errors.New("cannot combine a nil MerklePath")
+	}
+	if err := duplicateOffsetError(m.Path); err != nil {
+		return false, err
+	}
+	if err := duplicateOffsetError(other.Path); err != nil {
+		return false, err
 	}
 	expected, err := m.ComputeRoot(nil)
 	if err != nil {
@@ -564,12 +579,76 @@ func (m *MerklePath) combineVerified(other *MerklePath) (bool, error) {
 	// Every level-0 hash that already proved expected, from either input, must
 	// still do so when climbed the way ComputeRoot climbs: from the lowest
 	// offset that holds that hash, and from the lowest hashed offset overall.
-	if err := mergedLevel0StillProves(left, right, levels, expected); err != nil {
+	nextProving, err := mergedLevel0StillProves(left, right, levels, expected, cache)
+	if err != nil {
 		return false, err
 	}
 
 	m.Path = newPath
+	if cache != nil {
+		cache.proving = nextProving
+		cache.provingKnown = true
+		invalidateResolved(cache.resolved, left, levels)
+	}
 	return true, nil
+}
+
+func invalidateResolved(resolved map[dirtyKey]*chainhash.Hash, before, after []map[uint64]*PathElement) {
+	if len(resolved) == 0 {
+		return
+	}
+	height := len(before)
+	if len(after) > height {
+		height = len(after)
+	}
+	drop := func(h int, off uint64) {
+		for hh := h; hh <= height+1; hh++ {
+			delete(resolved, dirtyKey{h: hh, off: off})
+			off >>= 1
+		}
+	}
+	for h := 0; h < height; h++ {
+		var beforeLevel, afterLevel map[uint64]*PathElement
+		if h < len(before) {
+			beforeLevel = before[h]
+		}
+		if h < len(after) {
+			afterLevel = after[h]
+		}
+		seen := make(map[uint64]struct{}, len(beforeLevel))
+		for off, el := range beforeLevel {
+			seen[off] = struct{}{}
+			other, ok := afterLevel[off]
+			if !ok || !pathElementEqual(el, other) {
+				drop(h, off)
+			}
+		}
+		for off := range afterLevel {
+			if _, ok := seen[off]; ok {
+				continue
+			}
+			drop(h, off)
+		}
+	}
+}
+
+// duplicateOffsetError reports a repeated offset in one level. @bsv/sdk rejects
+// the same shape. A merge keeps the last entry at an offset and ComputeRoot
+// uses the first, so a repeat can drop a txid that still proves.
+func duplicateOffsetError(path [][]*PathElement) error {
+	for h, level := range path {
+		seen := make(map[uint64]struct{}, len(level))
+		for _, el := range level {
+			if el == nil {
+				continue
+			}
+			if _, ok := seen[el.Offset]; ok {
+				return fmt.Errorf("duplicate offset %d at height %d", el.Offset, h)
+			}
+			seen[el.Offset] = struct{}{}
+		}
+	}
+	return nil
 }
 
 // combineNodeKey identifies a memoized node in a merge-time climb.
@@ -596,6 +675,7 @@ type combineClimber struct {
 	eff         int
 	cache       map[combineNodeKey]combineMemo
 	above       map[aboveKey]combineMemo
+	resolved    map[dirtyKey]*chainhash.Hash
 }
 
 // aboveKey memoizes the tree root computed from a specific node hash.
@@ -608,6 +688,10 @@ type aboveKey struct {
 }
 
 func newCombineClimber(levels []map[uint64]*PathElement) *combineClimber {
+	return newCombineClimberResolved(levels, nil)
+}
+
+func newCombineClimberResolved(levels []map[uint64]*PathElement, resolved map[dirtyKey]*chainhash.Hash) *combineClimber {
 	var maxOffset uint64
 	if len(levels) > 0 {
 		for off := range levels[0] {
@@ -627,6 +711,7 @@ func newCombineClimber(levels []map[uint64]*PathElement) *combineClimber {
 		eff:         eff,
 		cache:       make(map[combineNodeKey]combineMemo),
 		above:       make(map[aboveKey]combineMemo),
+		resolved:    resolved,
 	}
 }
 
@@ -635,18 +720,34 @@ func (c *combineClimber) node(height int, offset uint64) combineMemo {
 	if memo, ok := c.cache[key]; ok {
 		return memo
 	}
-	var memo combineMemo
 	if height < len(c.levels) {
 		if el, ok := c.levels[height][offset]; ok && el != nil {
 			if pathElementIsDuplicate(el) {
-				memo = combineMemo{found: true, dup: true}
-			} else if el.Hash != nil {
-				memo = combineMemo{found: true, hash: el.Hash}
+				memo := combineMemo{found: true, dup: true}
+				c.cache[key] = memo
+				return memo
 			}
+			if el.Hash != nil {
+				memo := combineMemo{found: true, hash: el.Hash}
+				c.cache[key] = memo
+				return memo
+			}
+			c.cache[key] = combineMemo{}
+			return combineMemo{}
+		}
+	}
+	if c.resolved != nil {
+		if prev, ok := c.resolved[dirtyKey{h: height, off: offset}]; ok {
+			if prev == nil {
+				c.cache[key] = combineMemo{}
+				return combineMemo{}
+			}
+			memo := combineMemo{found: true, hash: prev}
 			c.cache[key] = memo
 			return memo
 		}
 	}
+	var memo combineMemo
 	if height == 0 {
 		c.cache[key] = memo
 		return memo
@@ -659,7 +760,7 @@ func (c *combineClimber) node(height int, offset uint64) combineMemo {
 	right := c.node(height-1, offset*2+1)
 	if right.dup || (c.singleLevel && offset*2 == offsetAtHeight(c.maxOffset, height-1) && !right.found) {
 		memo = combineMemo{found: true, hash: MerkleTreeParent(left.hash, left.hash)}
-		c.cache[key] = memo
+		c.remember(height, offset, memo)
 		return memo
 	}
 	if !right.found || right.hash == nil {
@@ -667,8 +768,16 @@ func (c *combineClimber) node(height int, offset uint64) combineMemo {
 		return memo
 	}
 	memo = combineMemo{found: true, hash: MerkleTreeParent(left.hash, right.hash)}
-	c.cache[key] = memo
+	c.remember(height, offset, memo)
 	return memo
+}
+
+func (c *combineClimber) remember(height int, offset uint64, memo combineMemo) {
+	c.cache[combineNodeKey{height, offset}] = memo
+	if c.resolved == nil || !memo.found || memo.dup || memo.hash == nil {
+		return
+	}
+	c.resolved[dirtyKey{h: height, off: offset}] = memo.hash
 }
 
 // rootFrom climbs from a level-0 offset the way ComputeRoot does.
@@ -721,17 +830,22 @@ func (c *combineClimber) upFromHash(height int, offset uint64, self *chainhash.H
 
 // mergedLevel0StillProves requires the merged path to keep proving every
 // level-0 hash from either input that already computed expected. ComputeRoot
-// starts at the first level-0 entry with a given hash, and the merged level is
-// sorted by offset, so that is the lowest offset holding the hash. It also
-// starts ComputeRoot(nil) at the lowest hashed offset.
-func mergedLevel0StillProves(receiver, incoming, after []map[uint64]*PathElement, expected *chainhash.Hash) error {
+// starts at the lowest offset holding a hash, and ComputeRoot(nil) starts at
+// the lowest hashed offset. cache, when it already knows the receiver's
+// proving hashes, skips re-climbing leaves whose sibling chain did not change.
+// The returned hashes are the ones the merged path proves, for the next merge.
+func mergedLevel0StillProves(receiver, incoming, after []map[uint64]*PathElement, expected *chainhash.Hash, cache *derivedBump) ([]chainhash.Hash, error) {
 	if expected == nil {
-		return errors.New("combined MerklePath has no root")
+		return nil, errors.New("combined MerklePath has no root")
 	}
 	if len(after) == 0 || len(after[0]) == 0 {
-		return errors.New("combined MerklePath has no leaves")
+		return nil, errors.New("combined MerklePath has no leaves")
 	}
-	lowest := lowestOffsetByHash(after[0])
+	lowest := fillHashOffsets(nil, after[0])
+	if cache != nil {
+		cache.scratchLow = fillHashOffsets(cache.scratchLow, after[0])
+		lowest = cache.scratchLow
+	}
 	climb := newCombineClimber(after)
 	seen := make(map[uint64]struct{})
 	checkOffset := func(off uint64) error {
@@ -761,17 +875,105 @@ func mergedLevel0StillProves(receiver, incoming, after []map[uint64]*PathElement
 		}
 		return checkOffset(off)
 	}
-	for _, side := range [][]map[uint64]*PathElement{receiver, incoming} {
-		for _, off := range provingLeafOffsets(side, expected) {
-			if len(side) == 0 {
+	offsetProves := func(off uint64) bool {
+		if loneOffsetZeroRoot(after, expected) && off == 0 {
+			return true
+		}
+		if _, ok := seen[off]; ok {
+			return true
+		}
+		got, ok := climb.rootFrom(off)
+		if ok && got.IsEqual(expected) {
+			seen[off] = struct{}{}
+			return true
+		}
+		return false
+	}
+
+	var receiverHashes []chainhash.Hash
+	warm := cache != nil && cache.provingKnown
+	if warm {
+		receiverHashes = cache.proving
+	} else if len(receiver) > 0 {
+		receiverHashes = provingHashes(receiver, expected)
+	}
+	receiverAt := fillHashOffsets(nil, nil)
+	if len(receiver) > 0 {
+		receiverAt = fillHashOffsets(nil, receiver[0])
+		if cache != nil {
+			cache.scratchRecv = fillHashOffsets(cache.scratchRecv, receiver[0])
+			receiverAt = cache.scratchRecv
+		}
+	}
+	beforeEff := mergeEff(receiver)
+
+	next := make([]chainhash.Hash, 0, len(receiverHashes)+8)
+	inNext := make(map[chainhash.Hash]struct{}, len(receiverHashes)+8)
+	add := func(h chainhash.Hash) {
+		if _, ok := inNext[h]; ok {
+			return
+		}
+		inNext[h] = struct{}{}
+		next = append(next, h)
+	}
+
+	dirtyBits, allDirty := affectedLeafBits(receiver, after, beforeEff, climb.eff, cache)
+	leafDirty := func(off uint64) bool {
+		if allDirty {
+			return true
+		}
+		i := int(off >> 3) //nolint:gosec // G115 -- offset fits the bitset built from the path's own max offset
+		return i < len(dirtyBits) && dirtyBits[i]&(1<<(off&7)) != 0
+	}
+
+	for _, h := range receiverHashes {
+		offBefore, okBefore := receiverAt[h]
+		offAfter, okAfter := lowest[h]
+		if !okAfter {
+			return nil, errors.New("combined MerklePath no longer proves a level-0 leaf")
+		}
+		if warm && okBefore && offBefore == offAfter && !leafDirty(offAfter) {
+			add(h)
+			continue
+		}
+		if err := checkOffset(offAfter); err != nil {
+			return nil, err
+		}
+		add(h)
+	}
+	if len(incoming) > 0 {
+		for _, h := range provingHashes(incoming, expected) {
+			if err := checkHash(&h); err != nil {
+				return nil, err
+			}
+			add(h)
+		}
+		for _, el := range incoming[0] {
+			if el == nil || el.Hash == nil {
 				continue
 			}
-			el := side[0][off]
-			if el == nil {
+			if _, ok := inNext[*el.Hash]; ok {
 				continue
 			}
-			if err := checkHash(el.Hash); err != nil {
-				return err
+			if off, ok := lowest[*el.Hash]; ok && offsetProves(off) {
+				add(*el.Hash)
+			}
+		}
+	}
+	if len(receiver) > 0 {
+		for _, el := range receiver[0] {
+			if el == nil || el.Hash == nil {
+				continue
+			}
+			if _, ok := inNext[*el.Hash]; ok {
+				continue
+			}
+			offBefore, ok := receiverAt[*el.Hash]
+			if !ok || !leafDirty(offBefore) {
+				continue
+			}
+			if off, ok := lowest[*el.Hash]; ok && offsetProves(off) {
+				add(*el.Hash)
 			}
 		}
 	}
@@ -780,8 +982,9 @@ func mergedLevel0StillProves(receiver, incoming, after []map[uint64]*PathElement
 			continue
 		}
 		if err := checkHash(el.Hash); err != nil {
-			return err
+			return nil, err
 		}
+		add(*el.Hash)
 	}
 	var start uint64
 	found := false
@@ -795,24 +998,216 @@ func mergedLevel0StillProves(receiver, incoming, after []map[uint64]*PathElement
 		}
 	}
 	if !found {
-		return errors.New("combined MerklePath has no leaves")
+		return nil, errors.New("combined MerklePath has no leaves")
 	}
-	return checkOffset(start)
+	if err := checkOffset(start); err != nil {
+		return nil, err
+	}
+	if el := after[0][start]; el != nil && el.Hash != nil {
+		add(*el.Hash)
+	}
+	return next, nil
 }
 
-// lowestOffsetByHash maps each level-0 hash to the smallest offset that holds
-// it, matching ComputeRoot's first-match scan of a level sorted by offset.
-func lowestOffsetByHash(level map[uint64]*PathElement) map[chainhash.Hash]uint64 {
-	out := make(map[chainhash.Hash]uint64, len(level))
+// provingHashes lists level-0 hashes of levels that compute expected.
+func provingHashes(levels []map[uint64]*PathElement, expected *chainhash.Hash) []chainhash.Hash {
+	offsets := provingLeafOffsets(levels, expected)
+	if len(levels) == 0 {
+		return nil
+	}
+	out := make([]chainhash.Hash, 0, len(offsets))
+	seen := make(map[chainhash.Hash]struct{}, len(offsets))
+	for _, off := range offsets {
+		el := levels[0][off]
+		if el == nil || el.Hash == nil {
+			continue
+		}
+		if _, ok := seen[*el.Hash]; ok {
+			continue
+		}
+		seen[*el.Hash] = struct{}{}
+		out = append(out, *el.Hash)
+	}
+	return out
+}
+
+type dirtyKey struct {
+	h   int
+	off uint64
+}
+
+// mergeDirty reports whether the resolved hash of a node changed between the
+// receiver and the merged path. An unchanged stored node hides its children:
+// the climb uses the stored hash. A newly stored node is clean when it equals
+// the hash the receiver already synthesized there.
+type mergeDirty struct {
+	before      []map[uint64]*PathElement
+	after       []map[uint64]*PathElement
+	memo        map[dirtyKey]bool
+	resolved    map[dirtyKey]*chainhash.Hash
+	beforeClimb *combineClimber
+	afterClimb  *combineClimber
+}
+
+func newMergeDirty(before, after []map[uint64]*PathElement, resolved map[dirtyKey]*chainhash.Hash) *mergeDirty {
+	return &mergeDirty{before: before, after: after, memo: make(map[dirtyKey]bool), resolved: resolved}
+}
+
+func storedNode(levels []map[uint64]*PathElement, h int, off uint64) (*PathElement, bool) {
+	if h < 0 || h >= len(levels) || levels[h] == nil {
+		return nil, false
+	}
+	el, ok := levels[h][off]
+	return el, ok && el != nil
+}
+
+func (d *mergeDirty) node(h int, off uint64) bool {
+	if h < 0 {
+		return false
+	}
+	key := dirtyKey{h, off}
+	if v, ok := d.memo[key]; ok {
+		return v
+	}
+	beforeEl, bok := storedNode(d.before, h, off)
+	afterEl, aok := storedNode(d.after, h, off)
+	var dirty bool
+	switch {
+	case bok && aok && pathElementEqual(beforeEl, afterEl):
+		dirty = false
+	case !bok && !aok:
+		if h == 0 {
+			dirty = false
+		} else {
+			dirty = d.node(h-1, off*2) || d.node(h-1, off*2+1)
+		}
+	case !bok && aok && h > 0 && afterEl.Hash != nil:
+		if d.beforeClimb == nil {
+			d.beforeClimb = newCombineClimberResolved(d.before, d.resolved)
+		}
+		prev := d.beforeClimb.node(h, off)
+		dirty = !prev.found || prev.hash == nil || !prev.hash.Equal(*afterEl.Hash)
+	case bok && !aok && h > 0 && beforeEl.Hash != nil:
+		if d.afterClimb == nil {
+			d.afterClimb = newCombineClimber(d.after)
+		}
+		now := d.afterClimb.node(h, off)
+		dirty = !now.found || now.hash == nil || !now.hash.Equal(*beforeEl.Hash)
+	default:
+		dirty = true
+	}
+	d.memo[key] = dirty
+	return dirty
+}
+
+// affectedLeafBits marks level-0 offsets whose climb can see a changed node.
+// all is true when every offset must be rechecked.
+func affectedLeafBits(before, after []map[uint64]*PathElement, beforeEff, afterEff int, cache *derivedBump) (bits []byte, all bool) {
+	if beforeEff != afterEff {
+		return nil, true
+	}
+	var maxOff uint64
+	for _, levels := range [][]map[uint64]*PathElement{before, after} {
+		if len(levels) == 0 {
+			continue
+		}
+		for off := range levels[0] {
+			if off > maxOff {
+				maxOff = off
+			}
+		}
+	}
+	if maxOff > 1<<20 {
+		return nil, true
+	}
+	d := newMergeDirty(before, after, nil)
+	if cache != nil {
+		if cache.resolved == nil {
+			cache.resolved = make(map[dirtyKey]*chainhash.Hash)
+		}
+		d = newMergeDirty(before, after, cache.resolved)
+	}
+	bits = make([]byte, maxOff/8+1)
+	mark := func(h int, sib uint64) {
+		if !d.node(h, sib) {
+			return
+		}
+		start := (sib ^ 1) << uint(h)
+		end := start + (uint64(1) << uint(h))
+		if start > maxOff {
+			return
+		}
+		if end > maxOff+1 {
+			end = maxOff + 1
+		}
+		for i := start; i < end; i++ {
+			bits[i>>3] |= 1 << (i & 7)
+		}
+	}
+	height := len(before)
+	if len(after) > height {
+		height = len(after)
+	}
+	for h := 0; h < height; h++ {
+		var beforeLevel, afterLevel map[uint64]*PathElement
+		if h < len(before) {
+			beforeLevel = before[h]
+		}
+		if h < len(after) {
+			afterLevel = after[h]
+		}
+		seen := make(map[uint64]struct{}, len(beforeLevel))
+		for off, el := range beforeLevel {
+			seen[off] = struct{}{}
+			other, ok := afterLevel[off]
+			if !ok || !pathElementEqual(el, other) {
+				mark(h, off)
+			}
+		}
+		for off := range afterLevel {
+			if _, ok := seen[off]; ok {
+				continue
+			}
+			mark(h, off)
+		}
+	}
+	return bits, false
+}
+
+func mergeEff(levels []map[uint64]*PathElement) int {
+	var maxOffset uint64
+	if len(levels) > 0 {
+		for off := range levels[0] {
+			if off > maxOffset {
+				maxOffset = off
+			}
+		}
+	}
+	eff := len(levels)
+	if n := bits.Len64(maxOffset); n > eff {
+		eff = n
+	}
+	return eff
+}
+
+// fillHashOffsets maps each level-0 hash to the smallest offset that holds it,
+// reusing dst when it is non-nil. This matches ComputeRoot's first-match scan
+// of a level sorted by offset.
+func fillHashOffsets(dst map[chainhash.Hash]uint64, level map[uint64]*PathElement) map[chainhash.Hash]uint64 {
+	if dst == nil {
+		dst = make(map[chainhash.Hash]uint64, len(level))
+	} else {
+		clear(dst)
+	}
 	for off, el := range level {
 		if el == nil || el.Hash == nil {
 			continue
 		}
-		if prev, ok := out[*el.Hash]; !ok || off < prev {
-			out[*el.Hash] = off
+		if prev, ok := dst[*el.Hash]; !ok || off < prev {
+			dst[*el.Hash] = off
 		}
 	}
-	return out
+	return dst
 }
 
 // loneOffsetZeroRoot reports the coinbase shortcut: one level, one leaf at
