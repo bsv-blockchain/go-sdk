@@ -62,6 +62,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Fixed
 - `serializer.SerializeCreateActionArgs` refuses a createAction input that omits `unlockingScript` and sets `unlockingScriptLength` outside the BRC-100 PositiveInteger range of 1 through 4294967295. The error is an invalid parameter that names `unlockingScriptLength`. A supplied unlocking script, and lengths of 1 through 4294967295, are unchanged. (#403)
+- `compat/bip32` `ExtendedKey.Child` no longer drops the leading zero byte of a derived private key. About one in 256 derived keys have one, and a hardened child of such a key was computed from a 31-byte key instead of `ser256(k)`, so it and all its descendants differed from BIP32 (test vector 4, `m/0H/1H`). Keys derived by earlier releases through such a parent are not the BIP32 keys; funds or identities derived under them need the derivation path re-checked against another BIP32 implementation.
 
 ### Changed
 - `ProtoWallet.CreateHMAC` and `ProtoWallet.VerifyHMAC` key HMAC-SHA256 with the shared point's X coordinate as a minimal-length unsigned big-endian byte array (leading zero bytes omitted), the established TypeScript SDK convention specified by BRC-56 and BRC-100. Earlier go-sdk releases used the 32-byte zero-padded encoding, so for about one key in 256 tags now differ, and tags issued by those releases for such keys no longer verify.

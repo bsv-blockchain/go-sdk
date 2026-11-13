@@ -299,7 +299,9 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		keyNum := new(big.Int).SetBytes(k.key)
 		ilNum.Add(ilNum, keyNum)
 		ilNum.Mod(ilNum, ec.S256().N)
-		childKey = ilNum.Bytes()
+		// Keep the key at 32 bytes: Bytes() would drop a leading zero byte, and the
+		// hardened derivation of this key's own children needs the full ser256 form.
+		childKey = ilNum.FillBytes(make([]byte, 32))
 		isPrivate = true
 	} else {
 		// Case #3.
