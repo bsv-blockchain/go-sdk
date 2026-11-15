@@ -231,14 +231,18 @@ func (k *ExtendedKey) ChildNonStandard(i uint32) (*ExtendedKey, error) {
 	return k.child(i, true)
 }
 
-// HasLeadingZeroKey reports whether this is a private extended key whose first
-// byte is zero. Hardened children of such a key differ between Child and
-// ChildNonStandard.
+// HasLeadingZeroKey reports whether this private extended key is held in memory
+// without its leading zero byte, that is, with a key shorter than 32 bytes.
+// Earlier releases kept every derived key with a leading zero byte this way, so
+// only a key derived with ChildNonStandard (or built by NewExtendedKey from
+// shortened bytes) returns true. Child, NewMaster and NewKeyFromString always
+// hold 32 bytes and return false, even when the key's first byte is zero.
+//
+// When it returns true, the hardened children of this key differ between Child
+// and ChildNonStandard. It says nothing about a key from Child: to check whether a
+// path was affected, use IsPathAffectedByLeadingZero from an ancestor.
 func (k *ExtendedKey) HasLeadingZeroKey() bool {
-	if !k.isPrivate {
-		return false
-	}
-	return len(k.key) < 32 || (len(k.key) == 32 && k.key[0] == 0)
+	return k.isPrivate && len(k.key) < 32
 }
 
 // IsPathAffectedByLeadingZero reports whether deriving the given path from this

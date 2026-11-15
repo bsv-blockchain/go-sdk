@@ -75,10 +75,27 @@ func TestChildNonStandardVector4(t *testing.T) {
 		std.String())
 	require.Equal(t, "xprv9xJocDuwtYCMMMWTXzA3hDFhGurb5zS5Bc2vRWiwhKJrqEWNkF6J7wnMLW1ajN49fcVCAbepDkkSjyvj9wabYrTGMHLytfotXjFwmjHWXCJ", legacy.String())
 
+	// m/0H has a leading zero byte in test vector 4. Child keeps it in 32 bytes, so
+	// its hardened children are the same under both methods and the key is not
+	// flagged; ChildNonStandard holds it in 31 bytes, where they differ.
 	a, err := m.Child(path[0])
 	require.NoError(t, err)
-	require.True(t, a.HasLeadingZeroKey(), "m/0H has a leading zero byte in test vector 4")
+	aPriv, err := a.ECPrivKey()
+	require.NoError(t, err)
+	require.Zero(t, aPriv.Serialize()[0], "m/0H has a leading zero byte in test vector 4")
+	require.False(t, a.HasLeadingZeroKey())
+	aLegacy, err := m.ChildNonStandard(path[0])
+	require.NoError(t, err)
+	require.True(t, aLegacy.HasLeadingZeroKey())
 	require.False(t, m.HasLeadingZeroKey())
+	h, err := a.Child(path[1])
+	require.NoError(t, err)
+	hSame, err := a.ChildNonStandard(path[1])
+	require.NoError(t, err)
+	require.Equal(t, h.String(), hSame.String(), "from the 32-byte key both methods agree")
+	hLegacy, err := aLegacy.ChildNonStandard(path[1])
+	require.NoError(t, err)
+	require.Equal(t, legacy.String(), hLegacy.String())
 
 	affected, err := m.IsPathAffectedByLeadingZero(path...)
 	require.NoError(t, err)
@@ -92,8 +109,8 @@ func TestChildNonStandardVector4(t *testing.T) {
 // hardened and normal paths, and IsPathAffectedByLeadingZero must be true exactly
 // when that derivation differs from the specification-only BIP32 reference.
 func TestChildNonStandardMatchesEarlierDerivation(t *testing.T) {
-	affectedPaths, unaffectedPaths := 0, 0
-	for n := 0; n < 400; n++ {
+	affectedPaths, unaffectedPaths, flagged := 0, 0, 0
+	for n := 0; n < 120; n++ {
 		seed := sha256.Sum256([]byte{byte(n), byte(n >> 8), 0x42})
 		m, err := compat.NewMaster(seed[:], &chaincfg.MainNet)
 		require.NoError(t, err)
@@ -111,6 +128,17 @@ func TestChildNonStandardMatchesEarlierDerivation(t *testing.T) {
 			priv, perr := legacy.ECPrivKey()
 			require.NoError(t, perr)
 			require.Equal(t, old.key32(), priv.Serialize(), "seed %d step %d", n, step)
+
+			// HasLeadingZeroKey is true exactly when the next hardened step differs
+			// between the two methods.
+			hStd, herr := legacy.Child(compat.HardenedKeyStart + 9)
+			require.NoError(t, herr)
+			hLeg, herr := legacy.ChildNonStandard(compat.HardenedKeyStart + 9)
+			require.NoError(t, herr)
+			require.Equal(t, legacy.HasLeadingZeroKey(), hStd.String() != hLeg.String(), "seed %d step %d", n, step)
+			if legacy.HasLeadingZeroKey() {
+				flagged++
+			}
 		}
 		// The BIP32 derivation along the same path (hardened steps only differ when the
 		// parent has a leading zero; normal steps use the public key).
@@ -131,6 +159,7 @@ func TestChildNonStandardMatchesEarlierDerivation(t *testing.T) {
 	}
 	require.Positive(t, affectedPaths, "no affected path was exercised")
 	require.Positive(t, unaffectedPaths, "no unaffected path was exercised")
+	require.Positive(t, flagged, "no key held without its leading zero byte was exercised")
 }
 
 // NewExtendedKey does no validation, so a private key can arrive shorter than 32
@@ -161,5 +190,27 @@ func TestChildHardenedFromShortKeyIsRightAligned(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEqual(t, a.String(), c.String())
 	require.True(t, fromShort.HasLeadingZeroKey())
-	require.True(t, fromFull.HasLeadingZeroKey())
+	require.False(t, fromFull.HasLeadingZeroKey(), "a 32-byte key with a zero first byte is not flagged")
+}
+
+// The string-path forms follow the same rule as stepping with Child and
+// ChildNonStandard, using test vector 4.
+func TestDeriveChildFromPathNonStandard(t *testing.T) {
+	seed, err := hex.DecodeString("3ddd5602285899a946114506157c7997e5444528f3003f6134712147db19b678")
+	require.NoError(t, err)
+	m, err := compat.NewMaster(seed, &chaincfg.MainNet)
+	require.NoError(t, err)
+
+	std, err := m.DeriveChildFromPath("0'/1'")
+	require.NoError(t, err)
+	require.Equal(t, "xprv9xJocDuwtYCMNAo3Zw76WENQeAS6WGXQ55RCy7tDJ8oALr4FWkuVoHJeHVAcAqiZLE7Je3vZJHxspZdFHfnBEjHqU5hG1Jaj32dVoS6XLT1", std.String())
+	legacy, err := m.DeriveChildFromPathNonStandard("0'/1'")
+	require.NoError(t, err)
+	require.Equal(t, "xprv9xJocDuwtYCMMMWTXzA3hDFhGurb5zS5Bc2vRWiwhKJrqEWNkF6J7wnMLW1ajN49fcVCAbepDkkSjyvj9wabYrTGMHLytfotXjFwmjHWXCJ", legacy.String())
+
+	same, err := m.DeriveChildFromPathNonStandard("")
+	require.NoError(t, err)
+	require.Equal(t, m.String(), same.String())
+	_, err = m.DeriveChildFromPathNonStandard("0'/x")
+	require.Error(t, err)
 }

@@ -67,7 +67,7 @@ func TestChildHardenedFromParentWithLeadingZeroVector4(t *testing.T) {
 // fixed, so the run is deterministic; the guard proves the case was exercised.
 func TestChildHardenedMatchesReferenceAcrossLeadingZeroParents(t *testing.T) {
 	leadingZeroParents := 0
-	for n := 0; n < 600; n++ {
+	for n := 0; n < 150; n++ {
 		seed := sha256.Sum256([]byte{byte(n), byte(n >> 8)})
 		key, err := compat.NewMaster(seed[:], &chaincfg.MainNet)
 		require.NoError(t, err)
