@@ -1,7 +1,7 @@
 package bip39
 
 import (
-	_ "embed"
+	_ "embed" // required so the embed directive loads the Japanese BIP-39 vectors
 	"encoding/hex"
 	"encoding/json"
 	"testing"
