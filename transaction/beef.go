@@ -32,15 +32,8 @@ type Beef struct {
 
 // derivedBump caches what merging needs to know about one MerklePath.
 type derivedBump struct {
-	root         *chainhash.Hash
-	leaves       map[chainhash.Hash]struct{}
-	proving      []chainhash.Hash
-	provingKnown bool
-	resolved     map[dirtyKey]*chainhash.Hash
-	// Reused across merges so sequential MergeBump does not allocate a new
-	// hash-to-offset map for every proof.
-	scratchLow  map[chainhash.Hash]uint64
-	scratchRecv map[chainhash.Hash]uint64
+	root   *chainhash.Hash
+	leaves map[chainhash.Hash]struct{}
 }
 
 func (b *Beef) derivedFor(bump *MerklePath) *derivedBump {
@@ -840,14 +833,13 @@ func (b *Beef) MergeBump(bump *MerklePath) (int, error) {
 			}
 			if existingRoot.IsEqual(incomingRoot) {
 				var changed bool
-				changed, err = existingBump.combineVerified(bump, b.derivedFor(existingBump))
+				changed, err = existingBump.combineVerified(bump)
 				if err != nil {
 					return -1, err
 				}
 				// The cached root and leaf set describe Path. Drop them only
-				// after a merge that actually replaced it. proving hashes are
-				// replaced inside combineVerified for the new path, so a later
-				// merge does not re-climb every stored leaf to rediscover them.
+				// after a merge that actually replaced it, so a refused merge
+				// cannot leave a root the path no longer computes.
 				if changed {
 					if d, ok := b.derivedBumps[existingBump]; ok {
 						d.root = nil

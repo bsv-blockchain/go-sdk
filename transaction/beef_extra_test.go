@@ -404,6 +404,130 @@ func TestMergeBeefRejectsRepeatedLevel0Offset(t *testing.T) {
 	require.True(t, err != nil || victim.IsValid(false), "honest merge succeeded but the stored BUMP no longer contains T")
 }
 
+func TestMergeBumpWarmRefusesSingleLevelSelfPairLoss(t *testing.T) {
+	t.Parallel()
+	// 13-leaf block. A single-level path proves leaves 8-12 through ComputeRoot's
+	// implicit self-pairing of the last unpaired node.
+	leaves := make([]*chainhash.Hash, 13)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	tree := [][]*chainhash.Hash{leaves}
+	for len(tree[len(tree)-1]) > 1 {
+		cur, next := tree[len(tree)-1], []*chainhash.Hash{}
+		for i := 0; i < len(cur); i += 2 {
+			right := cur[i]
+			if i+1 < len(cur) {
+				right = cur[i+1]
+			}
+			next = append(next, MerkleTreeParent(cur[i], right))
+		}
+		tree = append(tree, next)
+	}
+	root := tree[len(tree)-1][0]
+	flag := true
+	singleLevel := func(flag0 bool) *MerklePath {
+		lvl := make([]*PathElement, 0, len(leaves))
+		for i, h := range leaves {
+			el := &PathElement{Offset: uint64(i), Hash: h}
+			if i == 0 && flag0 {
+				el.Txid = &flag
+			}
+			lvl = append(lvl, el)
+		}
+		return &MerklePath{BlockHeight: 900, Path: [][]*PathElement{lvl}}
+	}
+	prove0 := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}},
+		{{Offset: 1, Hash: tree[1][1]}},
+		{{Offset: 1, Hash: tree[2][1]}},
+		{{Offset: 1, Hash: tree[3][1]}},
+	}}
+
+	b := NewBeef()
+	_, err := b.MergeBump(singleLevel(false))
+	require.NoError(t, err)
+	_, err = b.MergeBump(singleLevel(true)) // only adds a txid flag
+	require.NoError(t, err)
+
+	_, err = b.MergeBump(prove0)
+	got, rerr := b.BUMPs[0].ComputeRoot(leaves[8])
+	require.True(t, err != nil || (rerr == nil && got.Equal(*root)), "merge accepted but leaf 8 no longer proves")
+}
+
+func TestMergeBumpWarmProtectsLeafThatStartedProving(t *testing.T) {
+	t.Parallel()
+	leaves, root, _, _ := eightLeafProofs(t)
+	n23 := MerkleTreeParent(leaves[2], leaves[3])
+	n67 := MerkleTreeParent(leaves[6], leaves[7])
+	n03 := MerkleTreeParent(MerkleTreeParent(leaves[0], leaves[1]), n23)
+	n47 := MerkleTreeParent(MerkleTreeParent(leaves[4], leaves[5]), n67)
+	flag := true
+	b := NewBeef()
+	_, err := b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 4, Hash: leaves[4]}, {Offset: 6, Hash: leaves[6]}, {Offset: 7, Hash: leaves[7]}},
+		{{Offset: 1, Hash: n23}},
+		{{Offset: 1, Hash: n47}},
+	}})
+	require.NoError(t, err)
+	// A genuine proof of leaf 4 supplies leaf 5, so leaves 6 and 7 start proving.
+	_, err = b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 4, Hash: leaves[4]}, {Offset: 5, Hash: leaves[5]}},
+		{{Offset: 3, Hash: n67}},
+		{{Offset: 0, Hash: n03}},
+	}})
+	require.NoError(t, err)
+	got, err := b.BUMPs[0].ComputeRoot(leaves[6])
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
+
+	// A genuine proof of leaf 0 plus an unflagged copy of leaf 6 at offset 2.
+	_, err = b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 2, Hash: leaves[6]}},
+		{{Offset: 1, Hash: n23}},
+		{{Offset: 1, Hash: n47}},
+	}})
+	got, rerr := b.BUMPs[0].ComputeRoot(leaves[6])
+	require.True(t, err != nil || (rerr == nil && got.Equal(*root)), "merge accepted but leaf 6 no longer proves")
+}
+
+func TestMergeBumpAfterDirectCombineOnStoredProof(t *testing.T) {
+	t.Parallel()
+	leaves, root, _, _ := eightLeafProofs(t)
+	n23 := MerkleTreeParent(leaves[2], leaves[3])
+	n45 := MerkleTreeParent(leaves[4], leaves[5])
+	n67 := MerkleTreeParent(leaves[6], leaves[7])
+	n03 := MerkleTreeParent(MerkleTreeParent(leaves[0], leaves[1]), n23)
+	n47 := MerkleTreeParent(n45, n67)
+	flag := true
+	prove4 := func(flagged bool) *MerklePath {
+		el := &PathElement{Offset: 4, Hash: leaves[4]}
+		if flagged {
+			el.Txid = &flag
+		}
+		return &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+			{el, {Offset: 5, Hash: leaves[5]}}, {{Offset: 3, Hash: n67}}, {{Offset: 0, Hash: n03}},
+		}}
+	}
+	b := NewBeef()
+	_, err := b.MergeBump(prove4(false))
+	require.NoError(t, err)
+	_, err = b.MergeBump(prove4(true))
+	require.NoError(t, err)
+	// The stored proof is changed outside MergeBump, as tx.MerklePath.Combine would.
+	require.NoError(t, b.BUMPs[0].Combine(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 6, Hash: leaves[6]}, {Offset: 7, Hash: leaves[7]}}, {{Offset: 2, Hash: n45}}, {{Offset: 0, Hash: n03}},
+	}}))
+
+	_, err = b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 2, Hash: leaves[6]}},
+		{{Offset: 1, Hash: n23}},
+		{{Offset: 1, Hash: n47}},
+	}})
+	got, rerr := b.BUMPs[0].ComputeRoot(leaves[6])
+	require.True(t, err != nil || (rerr == nil && got.Equal(*root)), "merge accepted but leaf 6 no longer proves")
+}
+
 func TestMergeBeefBytesRejectsTxidCopiedToLowerOffset(t *testing.T) {
 	t.Parallel()
 	tx := NewTransaction()
