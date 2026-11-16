@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/bsv-blockchain/go-sdk/compat/bip39/wordlists"
 )
@@ -75,13 +76,14 @@ func init() {
 }
 
 // SetWordList sets the list of words to use for mnemonics. Currently the list
-// that is set is used package-wide.
+// that is set is used package-wide. Words are indexed in NFKD so a composed
+// or decomposed form of the same word matches.
 func SetWordList(list []string) {
 	wordList = list
 	wordMap = map[string]int{}
 
 	for i, v := range wordList {
-		wordMap[v] = i
+		wordMap[normalizeBIP39(v)] = i
 	}
 }
 
@@ -91,8 +93,9 @@ func GetWordList() []string {
 }
 
 // GetWordIndex gets word index in wordMap.
+// word is matched in NFKD, so composed and decomposed forms compare equal.
 func GetWordIndex(word string) (int, bool) {
-	idx, ok := wordMap[word]
+	idx, ok := wordMap[normalizeBIP39(word)]
 	return idx, ok
 }
 
@@ -127,7 +130,7 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 	)
 
 	for _, v := range mnemonicSlice {
-		index, found := wordMap[v]
+		index, found := GetWordIndex(v)
 		if !found {
 			return nil, fmt.Errorf("word `%v` not found in reverse map", v)
 		}
@@ -217,6 +220,9 @@ func NewMnemonic(entropy []byte) (string, error) {
 // suitable for creating another mnemonic.
 // An error is returned if the mnemonic is invalid.
 func MnemonicToByteArray(mnemonic string, raw ...bool) ([]byte, error) {
+	// NFKD turns ideographic spaces into ASCII spaces so the word count matches
+	// the sentence BIP-39 hashes. Normalization is idempotent.
+	mnemonic = normalizeBIP39(mnemonic)
 	var (
 		mnemonicSlice   = strings.Split(mnemonic, " ")
 		entropyBitSize  = len(mnemonicSlice) * 11
@@ -252,9 +258,12 @@ func NewSeedWithErrorChecking(mnemonic, password string) ([]byte, error) {
 
 // NewSeed creates a hashed seed output given a provided string and password.
 // No checking is performed to validate that the string provided is a valid mnemonic.
-// BIP39 specification mandates exactly 2048 PBKDF2 iterations for interoperability.
+// BIP-39 requires the mnemonic and the passphrase to be UTF-8 NFKD before PBKDF2.
+// ASCII input is unchanged. The iteration count is 2048, as the specification mandates.
 func NewSeed(mnemonic, password string) []byte {
-	return pbkdf2.Key([]byte(mnemonic), []byte("mnemonic"+password), 2048, 64, sha512.New) //NOSONAR 2048 iterations required by BIP39 specification
+	mnemonic = normalizeBIP39(mnemonic)
+	salt := normalizeBIP39("mnemonic" + password)
+	return pbkdf2.Key([]byte(mnemonic), []byte(salt), 2048, 64, sha512.New) //NOSONAR 2048 iterations required by BIP39 specification
 }
 
 // IsMnemonicValid attempts to verify that the provided mnemonic is valid.
@@ -340,9 +349,16 @@ func compareByteSlices(a, b []byte) bool {
 	return true
 }
 
+// normalizeBIP39 returns the NFKD form BIP-39 requires before hashing a mnemonic
+// or passphrase, or comparing a word to the wordlist. ASCII input is unchanged.
+func normalizeBIP39(s string) string {
+	return norm.NFKD.String(s)
+}
+
 func splitMnemonicWords(mnemonic string) ([]string, bool) {
-	// Create a list of all the words in the mnemonic sentence
-	words := strings.Fields(mnemonic)
+	// NFKD decomposes compatibility characters and turns ideographic spaces
+	// into ASCII spaces before the words are split and looked up.
+	words := strings.Fields(normalizeBIP39(mnemonic))
 
 	// Get num of words
 	numOfWords := len(words)
