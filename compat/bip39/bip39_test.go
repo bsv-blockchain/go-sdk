@@ -52,6 +52,19 @@ func TestNewMnemonic(t *testing.T) {
 	}
 }
 
+func TestNewSeedLatinPassphraseNFKD(t *testing.T) {
+	// NFC "pässwörd" (U+00E4, U+00F6) and the same passphrase in NFD.
+	// For these letters NFD and NFKD are the same string.
+	english := testVectors()[0]
+	const nfc = "p\u00e4ssw\u00f6rd"
+	const nfd = "pa\u0308sswo\u0308rd"
+	const seed = "f159596e1a257152783ecca3910131fb6496ae4616d76f9b4e060d0e2fead51e2ab2af2c4bb340ce6c683466324af2654b9e31bc05c93ad05025c46a83424485"
+
+	require.NotEqual(t, nfc, nfd)
+	require.Equal(t, seed, hex.EncodeToString(NewSeed(english.mnemonic, nfc)))
+	require.Equal(t, seed, hex.EncodeToString(NewSeed(english.mnemonic, nfd)))
+}
+
 func TestNewMnemonicInvalidEntropy(t *testing.T) {
 	_, err := NewMnemonic([]byte{})
 	require.Error(t, err)
