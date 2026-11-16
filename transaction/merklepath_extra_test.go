@@ -189,6 +189,48 @@ func nthLeaf(t *testing.T, n byte) *chainhash.Hash {
 	return h
 }
 
+// merkleTreeLevels returns every level of the tree over leaves, including the
+// odd last node paired with itself. Result[0] is the leaves.
+func merkleTreeLevels(leaves []*chainhash.Hash) [][]*chainhash.Hash {
+	tree := [][]*chainhash.Hash{leaves}
+	for len(tree[len(tree)-1]) > 1 {
+		cur := tree[len(tree)-1]
+		next := make([]*chainhash.Hash, 0, (len(cur)+1)/2)
+		for i := 0; i < len(cur); i += 2 {
+			right := cur[i]
+			if i+1 < len(cur) {
+				right = cur[i+1]
+			}
+			next = append(next, MerkleTreeParent(cur[i], right))
+		}
+		tree = append(tree, next)
+	}
+	return tree
+}
+
+// eightLeafParents holds the interior nodes of an 8-leaf tree.
+type eightLeafParents struct {
+	n23 *chainhash.Hash
+	n45 *chainhash.Hash
+	n67 *chainhash.Hash
+	n03 *chainhash.Hash
+	n47 *chainhash.Hash
+}
+
+func eightLeafParentsOf(leaves []*chainhash.Hash) eightLeafParents {
+	n01 := MerkleTreeParent(leaves[0], leaves[1])
+	n23 := MerkleTreeParent(leaves[2], leaves[3])
+	n45 := MerkleTreeParent(leaves[4], leaves[5])
+	n67 := MerkleTreeParent(leaves[6], leaves[7])
+	return eightLeafParents{
+		n23: n23,
+		n45: n45,
+		n67: n67,
+		n03: MerkleTreeParent(n01, n23),
+		n47: MerkleTreeParent(n45, n67),
+	}
+}
+
 // eightLeafProofs builds an 8-leaf tree and the sparse proofs of leaves 0 and 4.
 // m proves leaf 4; other proves leaf 0. Both compute the same root.
 func eightLeafProofs(t *testing.T) (leaves []*chainhash.Hash, root *chainhash.Hash, prove4, prove0 *MerklePath) {
@@ -197,28 +239,23 @@ func eightLeafProofs(t *testing.T) (leaves []*chainhash.Hash, root *chainhash.Ha
 	for i := range leaves {
 		leaves[i] = nthLeaf(t, byte(i+1))
 	}
-	n01 := MerkleTreeParent(leaves[0], leaves[1])
-	n23 := MerkleTreeParent(leaves[2], leaves[3])
-	n45 := MerkleTreeParent(leaves[4], leaves[5])
-	n67 := MerkleTreeParent(leaves[6], leaves[7])
-	n03 := MerkleTreeParent(n01, n23)
-	n47 := MerkleTreeParent(n45, n67)
-	root = MerkleTreeParent(n03, n47)
+	p := eightLeafParentsOf(leaves)
+	root = MerkleTreeParent(p.n03, p.n47)
 	txid := true
 	prove4 = &MerklePath{
 		BlockHeight: 900,
 		Path: [][]*PathElement{
 			{{Offset: 4, Hash: leaves[4], Txid: &txid}, {Offset: 5, Hash: leaves[5]}},
-			{{Offset: 3, Hash: n67}},
-			{{Offset: 0, Hash: n03}},
+			{{Offset: 3, Hash: p.n67}},
+			{{Offset: 0, Hash: p.n03}},
 		},
 	}
 	prove0 = &MerklePath{
 		BlockHeight: 900,
 		Path: [][]*PathElement{
 			{{Offset: 0, Hash: leaves[0], Txid: &txid}, {Offset: 1, Hash: leaves[1]}},
-			{{Offset: 1, Hash: n23}},
-			{{Offset: 1, Hash: n47}},
+			{{Offset: 1, Hash: p.n23}},
+			{{Offset: 1, Hash: p.n47}},
 		},
 	}
 	return leaves, root, prove4, prove0
@@ -285,18 +322,7 @@ func TestCombineRejectsHashOverDuplicateMarker(t *testing.T) {
 	for i := range leaves {
 		leaves[i] = nthLeaf(t, byte(i+1))
 	}
-	tree := [][]*chainhash.Hash{leaves}
-	for len(tree[len(tree)-1]) > 1 {
-		cur, next := tree[len(tree)-1], []*chainhash.Hash{}
-		for i := 0; i < len(cur); i += 2 {
-			right := cur[i]
-			if i+1 < len(cur) {
-				right = cur[i+1]
-			}
-			next = append(next, MerkleTreeParent(cur[i], right))
-		}
-		tree = append(tree, next)
-	}
+	tree := merkleTreeLevels(leaves)
 	root, dup, txid := tree[5][0], true, true
 	m := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
 		{{Offset: 16, Hash: leaves[16]}, {Offset: 17, Duplicate: &dup}}, // proven leaf, no txid flag
@@ -332,21 +358,7 @@ func TestCombineRejectsGarbageOnComputedInterior(t *testing.T) {
 	for i := range leaves {
 		leaves[i] = nthLeaf(t, byte(i+1))
 	}
-	level := leaves
-	var tree [][]*chainhash.Hash
-	tree = append(tree, level)
-	for len(level) > 1 {
-		next := make([]*chainhash.Hash, 0, (len(level)+1)/2)
-		for i := 0; i < len(level); i += 2 {
-			right := level[i]
-			if i+1 < len(level) {
-				right = level[i+1]
-			}
-			next = append(next, MerkleTreeParent(level[i], right))
-		}
-		tree = append(tree, next)
-		level = next
-	}
+	tree := merkleTreeLevels(leaves)
 	root := tree[len(tree)-1][0]
 	flag := true
 	level0 := make([]*PathElement, 0, 8)
