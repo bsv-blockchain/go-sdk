@@ -242,6 +242,46 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 		return fmt.Errorf("failed to get authenticated session: %w", err)
 	}
 
+	return p.sendGeneralMessage(ctx, message, peerSession)
+}
+
+// ToPeerOnSession sends a message on one specific session: the session this
+// peer knows by sessionNonce (its own nonce for that session, which is the
+// YourNonce a counterparty puts on every message it sends on it).
+//
+// Use it to answer a message on the session that message arrived on. ToPeer
+// picks a session by identity key, and when one identity holds several
+// sessions with this peer — the same wallet on two devices, or two servers
+// sharing one identity — it picks the most recently used one. A reply sent
+// that way can land on the other device's session, whose nonce the asking
+// device does not know, and it rejects the reply with session-not-found
+// although the request succeeded.
+//
+// The session must exist and be authenticated; no handshake is started,
+// since the caller is replying on a session the counterparty is already
+// using. An identity key is not accepted in place of sessionNonce.
+func (p *Peer) ToPeerOnSession(ctx context.Context, message []byte, sessionNonce string) error {
+	if sessionNonce == "" {
+		return fmt.Errorf("to peer on session: empty session nonce: %w", ErrSessionNotFound)
+	}
+	peerSession, err := p.sessionManager.GetSession(sessionNonce)
+	if err != nil || peerSession == nil || peerSession.SessionNonce != sessionNonce {
+		// GetSession falls back to treating its argument as an identity key;
+		// only an exact session-nonce match is the session that was asked for.
+		return fmt.Errorf("to peer on session %s: %w", sessionNonce, ErrSessionNotFound)
+	}
+	if !peerSession.IsAuthenticated {
+		return fmt.Errorf("to peer on session %s: %w", sessionNonce, ErrNotAuthenticated)
+	}
+	if p.autoPersistLastSession {
+		p.lastInteractedWithPeer.Store(peerSession.PeerIdentityKey)
+	}
+	return p.sendGeneralMessage(ctx, message, peerSession)
+}
+
+// sendGeneralMessage signs message for peerSession and sends it on that
+// session.
+func (p *Peer) sendGeneralMessage(ctx context.Context, message []byte, peerSession *PeerSession) error {
 	// Create a nonce for this request
 	requestNonce := string(utils.RandomBase64(32))
 
