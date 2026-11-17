@@ -1494,3 +1494,77 @@ func TestGeneralMessageRejectedBecauseCertificatesWereNotProvided(t *testing.T) 
 	// then:
 	require.Error(t, err, "Alice general message should be rejected because of missing certificates response: thanks to mock transport Alice should get info about rejected certificate")
 }
+
+// TestReplyOnRequestSessionWithSharedIdentity pins that a reply reaches the
+// device that asked when two devices share one identity. Bob holds a session
+// with each of Alice's devices; ToPeer by identity key picks the most
+// recently used one (the computer's), so a reply meant for the phone carries
+// a nonce the phone does not know and is rejected with session-not-found —
+// the failure WoC hit with two servers sharing one treasury identity.
+// ToPeerOnSession answers on the session the request arrived on.
+func TestReplyOnRequestSessionWithSharedIdentity(t *testing.T) {
+	alicePhone := NewActor(t, aliceName+"Phone", alicePrivKeyHex)
+	aliceComputer := NewActor(t, aliceName+"Computer", alicePrivKeyHex)
+	bob := NewActor(t, bobName, bobPrivKeyHex)
+	bob.ListenForGeneralMessages(func(context.Context, *ec.PublicKey, []byte) error { return nil })
+
+	phoneReplies := make(chan []byte, 2)
+	alicePhone.ListenForGeneralMessages(func(_ context.Context, _ *ec.PublicKey, payload []byte) error {
+		phoneReplies <- payload
+		return nil
+	})
+
+	// given: both devices hold an authenticated session with Bob, the
+	// computer's used most recently
+	alicePhone.ConnectWith(bob)
+	require.NoError(t, alicePhone.ToPeer(t.Context(), []byte("request from phone"), bob.IdentityKey, 5000))
+	time.Sleep(5 * time.Millisecond) // LastUpdate has millisecond resolution
+	aliceComputer.ConnectWith(bob)
+	require.NoError(t, aliceComputer.ToPeer(t.Context(), []byte("request from computer"), bob.IdentityKey, 5000))
+
+	// and: the session the phone's request arrived on, as Bob knows it (the
+	// YourNonce the phone sends Bob)
+	phoneSession, err := alicePhone.SessionManager.GetSession(bob.IdentityKey.ToDERHex())
+	require.NoError(t, err)
+	bobNonceForPhone := phoneSession.PeerNonce
+
+	// when: Bob answers the phone, picking the session by identity
+	bob.ConnectWith(alicePhone)
+	err = bob.ToPeer(t.Context(), []byte("reply by identity"), alicePhone.IdentityKey, 5000)
+
+	// then: it went out on the computer's session and the phone rejected it
+	require.ErrorIs(t, err, auth.ErrSessionNotFound, "a reply by identity lands on the most recently used session")
+	require.Empty(t, phoneReplies)
+
+	// when: Bob answers on the session the phone's request arrived on
+	require.NoError(t, bob.ToPeerOnSession(t.Context(), []byte("reply on session"), bobNonceForPhone))
+
+	// then: the phone gets it
+	select {
+	case got := <-phoneReplies:
+		assert.Equal(t, []byte("reply on session"), got)
+	case <-time.After(500 * time.Millisecond):
+		require.Fail(t, "timed out waiting for the phone to receive the reply")
+	}
+}
+
+// TestToPeerOnSessionRejectsUnknownSessions pins that ToPeerOnSession sends
+// only on the exact session asked for: an unknown nonce, an empty one, or an
+// identity key in its place fails rather than falling back to a session
+// picked by identity.
+func TestToPeerOnSessionRejectsUnknownSessions(t *testing.T) {
+	alice, bob := CreateActorsPair(t)
+	bob.ListenForGeneralMessages(func(context.Context, *ec.PublicKey, []byte) error { return nil })
+	require.NoError(t, alice.ToPeer(t.Context(), []byte("hello"), bob.IdentityKey, 5000))
+
+	for name, nonce := range map[string]string{
+		"unknown nonce":           "bm90LWEtc2Vzc2lvbg==",
+		"empty":                   "",
+		"identity key, not nonce": alice.IdentityKey.ToDERHex(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := bob.ToPeerOnSession(t.Context(), []byte("reply"), nonce)
+			require.ErrorIs(t, err, auth.ErrSessionNotFound)
+		})
+	}
+}
