@@ -61,6 +61,7 @@ All notable changes to this project will be documented in this file. The format 
 ## [Unreleased]
 
 ### Fixed
+- `ec.ParsePubKey` (and so `PublicKeyFromBytes` and `PublicKeyFromString`) refuses a compressed public key whose X coordinate is not below the field prime, as it already did for an uncompressed key and as libsecp256k1 does. Before, X was read modulo p, so `02` followed by p+1, p+2 or p+3 parsed as the keys with X = 1, 2 and 3 and kept X >= p. No key anyone can hold is affected: an X in [p, 2^256) is within about 2^32 of p, so no honestly generated key has one.
 - `serializer.SerializeCreateActionArgs` refuses a createAction input that omits `unlockingScript` and sets `unlockingScriptLength` outside the BRC-100 PositiveInteger range of 1 through 4294967295. The error is an invalid parameter that names `unlockingScriptLength`. A supplied unlocking script, and lengths of 1 through 4294967295, are unchanged. (#403)
 - `script.DecodeScript` (and so `Script.Chunks`) now folds an `OP_RETURN` into a data chunk only at IF depth 0, as ts-stack's `Script.#parseChunks` does. After an `OP_ENDIF` with no `OP_IF` open the depth is below zero, and an `OP_RETURN` there was folded with the rest of the script as its data (`686a51` gave two chunks); it is now read as an opcode (three chunks). The node refuses such a script as unbalanced, so no verdict changes; code that reads the chunk list (data-carrier and template checks, field decoding) sees the reference's chunks.
 

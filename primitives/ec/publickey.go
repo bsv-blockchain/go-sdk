@@ -121,6 +121,9 @@ func ParsePubKey(pubKeyStr []byte) (key *PublicKey, err error) {
 				"pubkey string: %d", pubKeyStr[0])
 		}
 		pubkey.X = new(big.Int).SetBytes(pubKeyStr[1:33])
+		if pubkey.X.Cmp(pubkey.Params().P) >= 0 {
+			return nil, fmt.Errorf("pubkey X parameter is >= to P")
+		}
 		pubkey.Y, err = decompressPoint(pubkey.X, ybit)
 		if err != nil {
 			return nil, err
