@@ -18,108 +18,52 @@ const (
 	tsTestFileHex = "687da27f04a112aa48f1cab2e7949f1eea4f7ba28319c1e999910cd561a634a05a3516e6db"
 )
 
+// uhrpURLPrefixes are the prefixes NormalizeURL removes in full: every form the
+// TypeScript SDK's normalizeURL accepts ("uhrp:" in any case, then an optional
+// "//"), and the same forms of the "web+uhrp:" scheme.
+var uhrpURLPrefixes = []struct {
+	name   string
+	prefix string
+}{
+	{name: "no prefix", prefix: ""},
+	{name: "uhrp with slashes", prefix: "uhrp://"},
+	{name: "uppercase uhrp with slashes", prefix: "UHRP://"},
+	{name: "uhrp without slashes", prefix: "uhrp:"},
+	{name: "mixed-case uhrp without slashes", prefix: "UhRp:"},
+	{name: "slashes without scheme", prefix: "//"},
+	{name: "web+uhrp with slashes", prefix: "web+uhrp://"},
+	{name: "uppercase web+uhrp with slashes", prefix: "WEB+UHRP://"},
+	{name: "web+uhrp without slashes", prefix: "web+uhrp:"},
+	{name: "mixed-case web+uhrp without slashes", prefix: "Web+Uhrp:"},
+}
+
 func TestNormalizeURL(t *testing.T) {
+	const encoded = "abcdef12345"
+
+	for _, tt := range uhrpURLPrefixes {
+		t.Run("removes "+tt.name, func(t *testing.T) {
+			assert.Equal(t, encoded, NormalizeURL(tt.prefix+encoded))
+		})
+	}
+
 	tests := []struct {
 		name     string
 		input    string
 		expected string
 	}{
-		{
-			name:     "already normalized",
-			input:    "abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "uhrp protocol prefix",
-			input:    "uhrp://abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "uhrp uppercase protocol prefix",
-			input:    "UHRP://abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "web+uhrp protocol prefix",
-			input:    "web+uhrp://abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "web+uhrp uppercase protocol prefix",
-			input:    "WEB+UHRP://abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "new base58check format unchanged",
-			input:    tsTestURL,
-			expected: tsTestURL,
-		},
-		{
-			name:     "uhrp scheme without slashes",
-			input:    "uhrp:abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "uhrp mixed-case scheme without slashes",
-			input:    "UhRp:abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "web+uhrp scheme without slashes",
-			input:    "web+uhrp:abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "web+uhrp uppercase scheme without slashes",
-			input:    "WEB+UHRP:abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "leading slashes without scheme",
-			input:    "//abcdef12345",
-			expected: "abcdef12345",
-		},
-		{
-			name:     "only one pair of slashes removed",
-			input:    "uhrp:////abcdef12345",
-			expected: "//abcdef12345",
-		},
-		{
-			name:     "only one scheme removed",
-			input:    "uhrp:uhrp:abcdef12345",
-			expected: "uhrp:abcdef12345",
-		},
-		{
-			name:     "scheme only",
-			input:    "uhrp:",
-			expected: "",
-		},
-		{
-			name:     "other scheme unchanged",
-			input:    "https://abcdef12345",
-			expected: "https://abcdef12345",
-		},
-		{
-			name:     "scheme not at start unchanged",
-			input:    "xuhrp:abcdef12345",
-			expected: "xuhrp:abcdef12345",
-		},
-		{
-			name:     "uhrp without colon unchanged",
-			input:    "uhrp//abcdef12345",
-			expected: "uhrp//abcdef12345",
-		},
-		{
-			name:     "empty",
-			input:    "",
-			expected: "",
-		},
+		{name: "new base58check format unchanged", input: tsTestURL, expected: tsTestURL},
+		{name: "only one pair of slashes removed", input: "uhrp:////" + encoded, expected: "//" + encoded},
+		{name: "only one scheme removed", input: "uhrp:uhrp:" + encoded, expected: "uhrp:" + encoded},
+		{name: "scheme only", input: "uhrp:", expected: ""},
+		{name: "other scheme unchanged", input: "https://" + encoded, expected: "https://" + encoded},
+		{name: "scheme not at start unchanged", input: "xuhrp:" + encoded, expected: "xuhrp:" + encoded},
+		{name: "uhrp without colon unchanged", input: "uhrp//" + encoded, expected: "uhrp//" + encoded},
+		{name: "empty", input: "", expected: ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NormalizeURL(tt.input)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expected, NormalizeURL(tt.input))
 		})
 	}
 }
@@ -169,29 +113,14 @@ func TestGetHashFromURL_WithProtocolPrefix(t *testing.T) {
 	testHash, err := hex.DecodeString(tsTestHashHex)
 	require.NoError(t, err)
 
-	// Every form the TypeScript SDK's normalizeURL accepts, plus the web+uhrp
-	// scheme, must decode to the same hash as the bare Base58Check string.
-	tests := []struct {
-		name   string
-		prefix string
-	}{
-		{name: "bare", prefix: ""},
-		{name: "uhrp with slashes", prefix: "uhrp://"},
-		{name: "uppercase uhrp with slashes", prefix: "UHRP://"},
-		{name: "uhrp without slashes", prefix: "uhrp:"},
-		{name: "uppercase uhrp without slashes", prefix: "UHRP:"},
-		{name: "slashes without scheme", prefix: "//"},
-		{name: "web+uhrp with slashes", prefix: "web+uhrp://"},
-		{name: "uppercase web+uhrp with slashes", prefix: "WEB+UHRP://"},
-		{name: "web+uhrp without slashes", prefix: "web+uhrp:"},
-		{name: "mixed-case web+uhrp without slashes", prefix: "Web+Uhrp:"},
-	}
-
-	for _, tt := range tests {
+	// Every prefix NormalizeURL removes must decode to the same hash as the bare
+	// Base58Check string.
+	for _, tt := range uhrpURLPrefixes {
 		t.Run(tt.name, func(t *testing.T) {
 			extractedHash, err := GetHashFromURL(tt.prefix + tsTestURL)
 			require.NoError(t, err)
 			assert.Equal(t, testHash, extractedHash)
+			assert.True(t, IsValidURL(tt.prefix+tsTestURL))
 		})
 	}
 }
@@ -216,36 +145,6 @@ func TestIsValidURL(t *testing.T) {
 			name:     "valid URL with web+uhrp:// prefix",
 			input:    "web+uhrp://" + tsTestURL,
 			expected: true,
-		},
-		{
-			name:     "valid URL with uhrp: prefix",
-			input:    "uhrp:" + tsTestURL,
-			expected: true,
-		},
-		{
-			name:     "valid URL with web+uhrp: prefix",
-			input:    "web+uhrp:" + tsTestURL,
-			expected: true,
-		},
-		{
-			name:     "valid URL with // prefix",
-			input:    "//" + tsTestURL,
-			expected: true,
-		},
-		{
-			name:     "invalid URL - two pairs of slashes",
-			input:    "uhrp:////" + tsTestURL,
-			expected: false,
-		},
-		{
-			name:     "invalid URL - repeated scheme",
-			input:    "uhrp:uhrp:" + tsTestURL,
-			expected: false,
-		},
-		{
-			name:     "invalid URL - other scheme",
-			input:    "https://" + tsTestURL,
-			expected: false,
 		},
 		{
 			name:     "invalid URL - empty",
@@ -297,6 +196,16 @@ func TestGetHashFromURL_InvalidInputs(t *testing.T) {
 		{
 			name:    "two pairs of slashes after scheme",
 			input:   "uhrp:////" + tsTestURL,
+			wantErr: ErrInvalidBase58,
+		},
+		{
+			name:    "repeated scheme",
+			input:   "uhrp:uhrp:" + tsTestURL,
+			wantErr: ErrInvalidBase58,
+		},
+		{
+			name:    "other scheme",
+			input:   "https://" + tsTestURL,
 			wantErr: ErrInvalidBase58,
 		},
 		{
