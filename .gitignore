@@ -44,5 +44,11 @@ testdata
 # Pinned ts-stack conformance vectors (scripts/sync-conformance-vectors.sh)
 !/internal/conformance/testdata/
 
+# Official BIP-39 Japanese vectors exercised by compat/bip39.
+# Re-include the directory, keep every other file (fuzz corpus) ignored.
+!/compat/bip39/testdata/
+/compat/bip39/testdata/*
+!/compat/bip39/testdata/test_JP_BIP39.json
+
 # Ignore files related to AI tools
 CLAUDE.md

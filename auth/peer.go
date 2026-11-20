@@ -242,6 +242,35 @@ func (p *Peer) ToPeer(ctx context.Context, message []byte, identityKey *ec.Publi
 		return fmt.Errorf("failed to get authenticated session: %w", err)
 	}
 
+	return p.sendGeneralMessage(ctx, message, peerSession)
+}
+
+// ToPeerOnSession sends a general message on one specific, already
+// authenticated session: the one whose SessionNonce (our own nonce for it) is
+// sessionNonce. It never starts a handshake and never picks another session.
+//
+// Use it to reply to a message the peer sent: pass that message's YourNonce,
+// which names the session it arrived on. ToPeer instead picks a session by
+// identity key, the most recently updated one for that key, so when one
+// identity holds several sessions at once (the same wallet running in two
+// processes or on two hosts) a reply can be signed on another of them. The
+// peer that sent the request then finds a YourNonce it never issued and drops
+// the reply with session-not-found, although the request was handled.
+func (p *Peer) ToPeerOnSession(ctx context.Context, message []byte, sessionNonce string) error {
+	session, err := p.sessionManager.GetSession(sessionNonce)
+	// GetSession falls back to reading its argument as an identity key; only
+	// an exact nonce match names the session asked for.
+	if err != nil || session == nil || session.SessionNonce != sessionNonce {
+		return ErrSessionNotFound
+	}
+	if !session.IsAuthenticated {
+		return ErrNotAuthenticated
+	}
+	return p.sendGeneralMessage(ctx, message, session)
+}
+
+// sendGeneralMessage signs message for peerSession and sends it on that session.
+func (p *Peer) sendGeneralMessage(ctx context.Context, message []byte, peerSession *PeerSession) error {
 	// Create a nonce for this request
 	requestNonce := string(utils.RandomBase64(32))
 

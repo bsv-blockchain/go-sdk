@@ -53,6 +53,23 @@ func DeriveNumber(path string) (uint64, error) {
 // Child keys must be ints or hardened keys followed by '.
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 func (k *ExtendedKey) DeriveChildFromPath(derivationPath string) (*ExtendedKey, error) {
+	return k.deriveChildFromPath(derivationPath, false)
+}
+
+// DeriveChildFromPathNonStandard is DeriveChildFromPath with ChildNonStandard at
+// every step: it reproduces the keys that releases before the leading-zero fix
+// derived for the path, which differ from BIP32 for a path with a hardened step
+// below a private key whose first byte is zero. Use it, from the original
+// ancestor, only to find and sweep funds sent to those keys. Comparing its
+// String() with that of DeriveChildFromPath tells whether the path was affected.
+//
+// Deprecated: exists only to recover keys derived by earlier releases. Use
+// DeriveChildFromPath for BIP32-compliant derivation.
+func (k *ExtendedKey) DeriveChildFromPathNonStandard(derivationPath string) (*ExtendedKey, error) {
+	return k.deriveChildFromPath(derivationPath, true)
+}
+
+func (k *ExtendedKey) deriveChildFromPath(derivationPath string, legacy bool) (*ExtendedKey, error) {
 	if derivationPath == "" {
 		return k, nil
 	}
@@ -66,7 +83,7 @@ func (k *ExtendedKey) DeriveChildFromPath(derivationPath string) (*ExtendedKey, 
 		if err != nil {
 			return nil, fmt.Errorf("derive key failed %w", err)
 		}
-		key, err = key.Child(childInt)
+		key, err = key.child(childInt, legacy)
 		if err != nil {
 			return nil, fmt.Errorf("derive key failed %w", err)
 		}
