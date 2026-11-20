@@ -235,23 +235,31 @@ func TestMergeBumpBranches(t *testing.T) {
 		t.Parallel()
 		bf := NewBeef()
 		bump := singleLeafPath(5, a)
-		first := bf.MergeBump(bump)
-		second := bf.MergeBump(bump)
+		first, err := bf.MergeBump(bump)
+		require.NoError(t, err)
+		second, err := bf.MergeBump(bump)
+		require.NoError(t, err)
 		assert.Equal(t, first, second)
 	})
 
 	t.Run("incoming-root-error", func(t *testing.T) {
 		t.Parallel()
 		bf := NewBeef()
-		bf.MergeBump(singleLeafPath(5, a))
-		assert.Equal(t, -1, bf.MergeBump(brokenTwoLevelPath(5, a)))
+		_, err := bf.MergeBump(singleLeafPath(5, a))
+		require.NoError(t, err)
+		idx, err := bf.MergeBump(brokenTwoLevelPath(5, a))
+		require.Error(t, err)
+		assert.Equal(t, -1, idx)
 	})
 
 	t.Run("existing-root-error", func(t *testing.T) {
 		t.Parallel()
 		bf := NewBeef()
-		bf.MergeBump(brokenTwoLevelPath(5, a))
-		assert.Equal(t, -1, bf.MergeBump(singleLeafPath(5, b)))
+		_, err := bf.MergeBump(brokenTwoLevelPath(5, a))
+		require.NoError(t, err)
+		idx, err := bf.MergeBump(singleLeafPath(5, b))
+		require.Error(t, err)
+		assert.Equal(t, -1, idx)
 	})
 }
 
@@ -298,10 +306,249 @@ func TestMergeNilInputs(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestMergeBeefBytesRejectsLoneLeafOverwrite refuses a one-leaf BUMP whose
+// hash is the block root. That proof parses and its root matches the victim's,
+// but merging it would overwrite the real txid at offset 0.
+func TestMergeBeefBytesRejectsLoneLeafOverwrite(t *testing.T) {
+	t.Parallel()
+	tx := NewTransaction()
+	tx.AddOutput(&TransactionOutput{Satoshis: 1, LockingScript: &script.Script{}})
+	txid := tx.TxID()
+	sibling := mpHashB(t)
+	root := MerkleTreeParent(txid, sibling)
+	flag := true
+	victimPath := &MerklePath{
+		BlockHeight: 900,
+		Path: [][]*PathElement{{
+			{Offset: 0, Hash: txid, Txid: &flag},
+			{Offset: 1, Hash: sibling},
+		}},
+	}
+	tx.MerklePath = victimPath
+	victim := NewBeef()
+	victim.BUMPs = []*MerklePath{victimPath}
+	victim.Transactions[*txid] = &BeefTx{
+		DataFormat:  RawTxAndBumpIndex,
+		Transaction: tx,
+		BumpIndex:   0,
+	}
+	require.True(t, victim.IsValid(false))
+	cached, err := victim.bumpRoot(victimPath)
+	require.NoError(t, err)
+	require.True(t, cached.Equal(*root))
+
+	attacker := NewBeef()
+	attacker.BUMPs = []*MerklePath{{
+		BlockHeight: 900,
+		Path:        [][]*PathElement{{{Offset: 0, Hash: root, Txid: &flag}}},
+	}}
+	require.True(t, attacker.IsValid(false))
+	raw, err := attacker.Bytes()
+	require.NoError(t, err)
+
+	err = victim.MergeBeefBytes(raw)
+	require.Error(t, err)
+	require.True(t, victim.IsValid(false))
+	require.True(t, victim.BUMPs[0].Path[0][0].Hash.Equal(*txid))
+	require.Len(t, victim.BUMPs, 1)
+	again, err := victim.bumpRoot(victimPath)
+	require.NoError(t, err)
+	require.True(t, again.Equal(*root))
+}
+
+// txReplacingLeaf4 builds an 8-leaf tree whose leaf 4 is tx's txid.
+func txReplacingLeaf4(t *testing.T, satoshis uint64) (*Transaction, []*chainhash.Hash, eightLeafParents) {
+	t.Helper()
+	tx := NewTransaction()
+	tx.AddOutput(&TransactionOutput{Satoshis: satoshis, LockingScript: &script.Script{}})
+	leaves := make([]*chainhash.Hash, 8)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	leaves[4] = tx.TxID()
+	return tx, leaves, eightLeafParentsOf(leaves)
+}
+
+func TestMergeBeefRejectsRepeatedLevel0Offset(t *testing.T) {
+	t.Parallel()
+	tx, leaves, p := txReplacingLeaf4(t, 9)
+	txid := tx.TxID()
+	flag := true
+	// Offset 4 appears twice. ComputeRoot finds a txid by first match, so T proves.
+	// The merge indexes level 0 last-wins, so it keeps the junk entry and drops T.
+	repeated := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 4, Hash: txid, Txid: &flag}, {Offset: 4, Hash: nthLeaf(t, 66)}, {Offset: 5, Hash: leaves[5]}},
+		{{Offset: 3, Hash: p.n67}},
+		{{Offset: 0, Hash: p.n03}},
+	}}
+	tx.MerklePath = repeated
+	first := NewBeef()
+	first.BUMPs = []*MerklePath{repeated}
+	first.Transactions[*txid] = &BeefTx{DataFormat: RawTxAndBumpIndex, Transaction: tx, BumpIndex: 0}
+	raw, err := first.Bytes()
+	require.NoError(t, err)
+
+	// A genuine proof of leaf 0 from the same block.
+	honest := NewBeef()
+	honest.BUMPs = []*MerklePath{{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}},
+		{{Offset: 1, Hash: p.n23}},
+		{{Offset: 1, Hash: p.n47}},
+	}}}
+	hraw, err := honest.Bytes()
+	require.NoError(t, err)
+
+	victim := NewBeef()
+	if mergeErr := victim.MergeBeefBytes(raw); mergeErr != nil {
+		return // refused at parse time, as @bsv/sdk does
+	}
+	require.True(t, victim.IsValid(false))
+	err = victim.MergeBeefBytes(hraw)
+	require.True(t, err != nil || victim.IsValid(false), "honest merge succeeded but the stored BUMP no longer contains T")
+}
+
+func TestMergeBumpWarmRefusesSingleLevelSelfPairLoss(t *testing.T) {
+	t.Parallel()
+	// 13-leaf block. A single-level path proves leaves 8-12 through ComputeRoot's
+	// implicit self-pairing of the last unpaired node.
+	leaves := make([]*chainhash.Hash, 13)
+	for i := range leaves {
+		leaves[i] = nthLeaf(t, byte(i+1))
+	}
+	tree := merkleTreeLevels(leaves)
+	root := tree[len(tree)-1][0]
+	flag := true
+	singleLevel := func(flag0 bool) *MerklePath {
+		lvl := make([]*PathElement, 0, len(leaves))
+		for i, h := range leaves {
+			el := &PathElement{Offset: uint64(i), Hash: h}
+			if i == 0 && flag0 {
+				el.Txid = &flag
+			}
+			lvl = append(lvl, el)
+		}
+		return &MerklePath{BlockHeight: 900, Path: [][]*PathElement{lvl}}
+	}
+	prove0 := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}},
+		{{Offset: 1, Hash: tree[1][1]}},
+		{{Offset: 1, Hash: tree[2][1]}},
+		{{Offset: 1, Hash: tree[3][1]}},
+	}}
+
+	b := NewBeef()
+	_, err := b.MergeBump(singleLevel(false))
+	require.NoError(t, err)
+	_, err = b.MergeBump(singleLevel(true)) // only adds a txid flag
+	require.NoError(t, err)
+
+	_, err = b.MergeBump(prove0)
+	got, rerr := b.BUMPs[0].ComputeRoot(leaves[8])
+	require.True(t, err != nil || (rerr == nil && got.Equal(*root)), "merge accepted but leaf 8 no longer proves")
+}
+
+func TestMergeBumpWarmProtectsLeafThatStartedProving(t *testing.T) {
+	t.Parallel()
+	leaves, root, _, _ := eightLeafProofs(t)
+	p := eightLeafParentsOf(leaves)
+	flag := true
+	b := NewBeef()
+	_, err := b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 4, Hash: leaves[4]}, {Offset: 6, Hash: leaves[6]}, {Offset: 7, Hash: leaves[7]}},
+		{{Offset: 1, Hash: p.n23}},
+		{{Offset: 1, Hash: p.n47}},
+	}})
+	require.NoError(t, err)
+	// A genuine proof of leaf 4 supplies leaf 5, so leaves 6 and 7 start proving.
+	_, err = b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 4, Hash: leaves[4]}, {Offset: 5, Hash: leaves[5]}},
+		{{Offset: 3, Hash: p.n67}},
+		{{Offset: 0, Hash: p.n03}},
+	}})
+	require.NoError(t, err)
+	got, err := b.BUMPs[0].ComputeRoot(leaves[6])
+	require.NoError(t, err)
+	require.True(t, got.Equal(*root))
+
+	// A genuine proof of leaf 0 plus an unflagged copy of leaf 6 at offset 2.
+	_, err = b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 2, Hash: leaves[6]}},
+		{{Offset: 1, Hash: p.n23}},
+		{{Offset: 1, Hash: p.n47}},
+	}})
+	got, rerr := b.BUMPs[0].ComputeRoot(leaves[6])
+	require.True(t, err != nil || (rerr == nil && got.Equal(*root)), "merge accepted but leaf 6 no longer proves")
+}
+
+func TestMergeBumpAfterDirectCombineOnStoredProof(t *testing.T) {
+	t.Parallel()
+	leaves, root, _, _ := eightLeafProofs(t)
+	p := eightLeafParentsOf(leaves)
+	flag := true
+	prove4 := func(flagged bool) *MerklePath {
+		el := &PathElement{Offset: 4, Hash: leaves[4]}
+		if flagged {
+			el.Txid = &flag
+		}
+		return &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+			{el, {Offset: 5, Hash: leaves[5]}}, {{Offset: 3, Hash: p.n67}}, {{Offset: 0, Hash: p.n03}},
+		}}
+	}
+	b := NewBeef()
+	_, err := b.MergeBump(prove4(false))
+	require.NoError(t, err)
+	_, err = b.MergeBump(prove4(true))
+	require.NoError(t, err)
+	// The stored proof is changed outside MergeBump, as tx.MerklePath.Combine would.
+	require.NoError(t, b.BUMPs[0].Combine(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 6, Hash: leaves[6]}, {Offset: 7, Hash: leaves[7]}}, {{Offset: 2, Hash: p.n45}}, {{Offset: 0, Hash: p.n03}},
+	}}))
+
+	_, err = b.MergeBump(&MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 2, Hash: leaves[6]}},
+		{{Offset: 1, Hash: p.n23}},
+		{{Offset: 1, Hash: p.n47}},
+	}})
+	got, rerr := b.BUMPs[0].ComputeRoot(leaves[6])
+	require.True(t, err != nil || (rerr == nil && got.Equal(*root)), "merge accepted but leaf 6 no longer proves")
+}
+
+func TestMergeBeefBytesRejectsTxidCopiedToLowerOffset(t *testing.T) {
+	t.Parallel()
+	tx, leaves, p := txReplacingLeaf4(t, 7)
+	txid := tx.TxID()
+	flag := true
+	victimPath := &MerklePath{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 4, Hash: txid, Txid: &flag}, {Offset: 5, Hash: leaves[5]}},
+		{{Offset: 3, Hash: p.n67}},
+		{{Offset: 0, Hash: p.n03}},
+	}}
+	tx.MerklePath = victimPath
+	victim := NewBeef()
+	victim.BUMPs = []*MerklePath{victimPath}
+	victim.Transactions[*txid] = &BeefTx{DataFormat: RawTxAndBumpIndex, Transaction: tx, BumpIndex: 0}
+	require.True(t, victim.IsValid(false))
+
+	// A genuine proof of leaf 0, plus an unflagged copy of the victim's txid at offset 2.
+	attacker := NewBeef()
+	attacker.BUMPs = []*MerklePath{{BlockHeight: 900, Path: [][]*PathElement{
+		{{Offset: 0, Hash: leaves[0], Txid: &flag}, {Offset: 1, Hash: leaves[1]}, {Offset: 2, Hash: txid}},
+		{{Offset: 1, Hash: p.n23}},
+		{{Offset: 1, Hash: p.n47}},
+	}}}
+	require.True(t, attacker.IsValid(false))
+	raw, err := attacker.Bytes()
+	require.NoError(t, err)
+
+	require.Error(t, victim.MergeBeefBytes(raw))
+	require.True(t, victim.IsValid(false))
+}
+
 func TestMergeBeefWithBumps(t *testing.T) {
 	t.Parallel()
 	other := NewBeef()
-	other.MergeBump(singleLeafPath(7, mpHashA(t)))
+	_, err := other.MergeBump(singleLeafPath(7, mpHashA(t)))
+	require.NoError(t, err)
 
 	b := NewBeef()
 	require.NoError(t, b.MergeBeef(other))
