@@ -194,6 +194,115 @@ func TestAuthMessageFromNonGeneralMessageResponse(t *testing.T) {
 	})
 }
 
+// TestSimplifiedHTTPTransportSendEmptyNonInitialReply covers a server that
+// answers a non-initialRequest message with 2xx and no AuthMessage. BRC-104
+// allows that, and it is how a handshake finishes after certificateResponse.
+func TestSimplifiedHTTPTransportSendEmptyNonInitialReply(t *testing.T) {
+	pubKeyHex := "02bbc996771abe50be940a9cfd91d6f28a70d139f340bedc8cdd4f236e5e9c9889"
+	pubKey, err := ec.PublicKeyFromString(pubKeyHex)
+	require.NoError(t, err)
+
+	const replyBody = `{"version":"0.1","messageType":"initialResponse","identityKey":"02bbc996771abe50be940a9cfd91d6f28a70d139f340bedc8cdd4f236e5e9c9889"}`
+
+	tests := []struct {
+		name            string
+		messageType     auth.MessageType
+		status          int
+		body            string
+		wantErrContains string
+		wantAuthErr     bool
+		wantHandler     bool
+	}{
+		{
+			name:        "certificateResponse with empty 200 succeeds and does not dispatch",
+			messageType: auth.MessageTypeCertificateResponse,
+			status:      http.StatusOK,
+		},
+		{
+			name:        "certificateRequest with empty 200 succeeds and does not dispatch",
+			messageType: auth.MessageTypeCertificateRequest,
+			status:      http.StatusOK,
+		},
+		{
+			name:        "initialResponse with empty 204 succeeds and does not dispatch",
+			messageType: auth.MessageTypeInitialResponse,
+			status:      http.StatusNoContent,
+		},
+		{
+			name:            "initialRequest with empty 200 still fails",
+			messageType:     auth.MessageTypeInitialRequest,
+			status:          http.StatusOK,
+			wantErrContains: "empty response body",
+		},
+		{
+			name:        "certificateResponse with non-2xx still fails",
+			messageType: auth.MessageTypeCertificateResponse,
+			status:      http.StatusUnauthorized,
+			body:        "unauthorized",
+			wantAuthErr: true,
+		},
+		{
+			name:        "certificateResponse with a JSON body is still dispatched",
+			messageType: auth.MessageTypeCertificateResponse,
+			status:      http.StatusOK,
+			body:        replyBody,
+			wantHandler: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			serverHit := false
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				serverHit = true
+				assert.Equal(t, http.MethodPost, r.Method)
+				assert.Equal(t, "/.well-known/auth", r.URL.Path)
+				w.WriteHeader(tt.status)
+				if tt.body != "" {
+					_, writeErr := w.Write([]byte(tt.body))
+					assert.NoError(t, writeErr)
+				}
+			}))
+			defer server.Close()
+
+			handlerCalled := false
+			var gotType auth.MessageType
+			transport, transportErr := NewSimplifiedHTTPTransport(&SimplifiedHTTPTransportOptions{
+				BaseURL: server.URL,
+			})
+			require.NoError(t, transportErr)
+			require.NoError(t, transport.OnData(func(_ context.Context, msg *auth.AuthMessage) error {
+				handlerCalled = true
+				gotType = msg.MessageType
+				return nil
+			}))
+
+			sendErr := transport.Send(t.Context(), &auth.AuthMessage{
+				Version:     "0.1",
+				MessageType: tt.messageType,
+				IdentityKey: pubKey,
+			})
+
+			assert.True(t, serverHit, "the message must be posted before the result is decided")
+			if tt.wantAuthErr {
+				require.ErrorIs(t, sendErr, ErrHTTPServerFailedToAuthenticate)
+				assert.False(t, handlerCalled)
+				return
+			}
+			if tt.wantErrContains != "" {
+				require.ErrorContains(t, sendErr, tt.wantErrContains)
+				assert.False(t, handlerCalled)
+				return
+			}
+			require.NoError(t, sendErr)
+			assert.Equal(t, tt.wantHandler, handlerCalled)
+			if tt.wantHandler {
+				assert.Equal(t, auth.MessageTypeInitialResponse, gotType)
+			}
+		})
+	}
+}
+
 // TestAuthMessageFromGeneralMessageResponse covers the private method via Send with general message type.
 func TestAuthMessageFromGeneralMessageResponse(t *testing.T) {
 	pubKeyHex := "02bbc996771abe50be940a9cfd91d6f28a70d139f340bedc8cdd4f236e5e9c9889"

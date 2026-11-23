@@ -228,8 +228,9 @@ func TestAuthMessageFromNonGeneralResponseNoContentLength(t *testing.T) {
 		Body:          io.NopCloser(bytes.NewReader(body)),
 	}
 
-	got, err := transport.authMessageFromNonGeneralMessageResponse(resp)
+	got, hasReply, err := transport.authMessageFromNonGeneralMessageResponse(resp, false)
 	require.NoError(t, err)
+	require.True(t, hasReply, "a non-empty body is an AuthMessage to dispatch")
 	assert.Equal(t, want.Version, got.Version, "version must be parsed from the body even without Content-Length")
 	assert.Equal(t, want.MessageType, got.MessageType)
 	require.NotNil(t, got.IdentityKey, "identity key must be parsed from the body")
@@ -249,7 +250,8 @@ func TestAuthMessageFromNonGeneralResponseEmptyBody(t *testing.T) {
 		Body:          io.NopCloser(bytes.NewReader(nil)),
 	}
 
-	_, err = transport.authMessageFromNonGeneralMessageResponse(resp)
+	_, hasReply, err := transport.authMessageFromNonGeneralMessageResponse(resp, false)
 	require.Error(t, err)
+	assert.False(t, hasReply, "an empty body answering initialRequest is not a message")
 	assert.Contains(t, err.Error(), "empty response body")
 }
