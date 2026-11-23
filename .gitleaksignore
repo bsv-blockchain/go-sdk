@@ -120,6 +120,7 @@ auth/peer_test.go:generic-api-key:30
 auth/peer_test.go:generic-api-key:31
 auth/transports/simplified_http_transport_test.go:generic-api-key:69
 auth/transports/transports_extra_test.go:generic-api-key:170
+auth/transports/transports_extra_test.go:generic-api-key:205
 c8343f223bfa6a2d1001df27df173617066a7730:primitives/aesgcm/aesgcm_test.go:generic-api-key:102
 c8343f223bfa6a2d1001df27df173617066a7730:primitives/aesgcm/aesgcm_test.go:generic-api-key:111
 c8343f223bfa6a2d1001df27df173617066a7730:primitives/aesgcm/aesgcm_test.go:generic-api-key:120
@@ -153,6 +154,7 @@ compat/bip32/hd_key_test.go:generic-api-key:647
 compat/bip32/hd_key_test.go:generic-api-key:716
 compat/bip32/hd_key_test.go:generic-api-key:834
 compat/bip32/hd_key_test.go:generic-api-key:933
+db882a275c356f4c57f456d1c4ef71297e43e3a1:auth/transports/transports_extra_test.go:generic-api-key:205
 e0fc2f1f48f1d61ef88d087553cf98f62ce2a6a4:auth/transports/transports_extra_test.go:generic-api-key:167
 e2d554a28e6af9ca60a65282dcba96cc83ca5429:transaction/template/p2pkh/p2pkh_compat_test.go:generic-api-key:19
 e43a486ba071d213c49327d0a30a03144fdbd4b7:transaction/transaction_test.go:generic-api-key:223
