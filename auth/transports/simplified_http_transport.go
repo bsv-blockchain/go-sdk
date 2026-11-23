@@ -114,20 +114,39 @@ func (t *SimplifiedHTTPTransport) sendNonGeneralMessage(ctx context.Context, mes
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	responseMsg, err := t.authMessageFromNonGeneralMessageResponse(resp)
+	// initialRequest is the only non-general message that must be answered.
+	// BRC-104 lets the peer send no further AuthMessage for the rest, and the
+	// TypeScript SimplifiedFetchTransport only reads a reply to initialRequest.
+	// A server that accepts certificateResponse therefore answers 200 with an
+	// empty body. That completes the send, and there is nothing to dispatch.
+	// A non-empty body is still parsed: the peer MAY include another message.
+	allowEmpty := message.MessageType != auth.MessageTypeInitialRequest
+	responseMsg, hasReply, err := t.authMessageFromNonGeneralMessageResponse(resp, allowEmpty)
 	if err != nil {
 		return fmt.Errorf("%s message to (%s | %s) failed: %w", message.MessageType, message.IdentityKey.ToDERHex(), requestURL, err)
+	}
+	if !hasReply {
+		return nil
 	}
 
 	return t.notifyHandlers(ctx, &responseMsg)
 }
 
-func (t *SimplifiedHTTPTransport) authMessageFromNonGeneralMessageResponse(resp *http.Response) (auth.AuthMessage, error) {
+// authMessageFromNonGeneralMessageResponse reads an AuthMessage from a
+// non-general HTTP response.
+//
+// allowEmpty reports whether a 2xx response with no body is a successful
+// exchange that carries no AuthMessage. That is true for every non-general
+// message except initialRequest. Non-2xx responses are always an error.
+//
+// On success, the boolean is false when the response has no AuthMessage to
+// dispatch. On error, the boolean is false and the AuthMessage is the zero value.
+func (t *SimplifiedHTTPTransport) authMessageFromNonGeneralMessageResponse(resp *http.Response, allowEmpty bool) (auth.AuthMessage, bool, error) {
 	var responseMsg auth.AuthMessage
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
-		return responseMsg, errors.Join(ErrHTTPServerFailedToAuthenticate, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body)))
+		return responseMsg, false, errors.Join(ErrHTTPServerFailedToAuthenticate, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body)))
 	}
 
 	// Read the body regardless of the reported Content-Length. A response
@@ -140,18 +159,21 @@ func (t *SimplifiedHTTPTransport) authMessageFromNonGeneralMessageResponse(resp 
 	// Cloudflare) even though the body is fully intact.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return responseMsg, fmt.Errorf("failed to read response body: %w", err)
+		return responseMsg, false, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	if len(body) == 0 {
-		return responseMsg, fmt.Errorf("empty response body")
+		if allowEmpty {
+			return responseMsg, false, nil
+		}
+		return responseMsg, false, fmt.Errorf("empty response body")
 	}
 
 	if err := json.Unmarshal(body, &responseMsg); err != nil {
-		return responseMsg, fmt.Errorf("failed to unmarshal authmessage from body (%q): %w", string(body), err)
+		return responseMsg, false, fmt.Errorf("failed to unmarshal authmessage from body (%q): %w", string(body), err)
 	}
 
-	return responseMsg, nil
+	return responseMsg, true, nil
 }
 
 func (t *SimplifiedHTTPTransport) sendGeneralMessage(ctx context.Context, message *auth.AuthMessage) error {
