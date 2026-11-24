@@ -682,6 +682,10 @@ func TestMerklePathLoneLeafOffsetZeroStillValid(t *testing.T) {
 	root, err := mp.ComputeRoot(txid)
 	require.NoError(t, err, "a single leaf at offset 0 is the block's only transaction; its txid is the root")
 	require.Equal(t, loneLeafTxidHex, root.String())
+
+	ok, err := mp.Verify(t.Context(), txid, loneLeafTracker{root: txid, height: mp.BlockHeight})
+	require.NoError(t, err)
+	require.True(t, ok)
 }
 
 func TestMerklePathLoneLeafNonZeroOffsetRejected(t *testing.T) {
@@ -692,25 +696,54 @@ func TestMerklePathLoneLeafNonZeroOffsetRejected(t *testing.T) {
 
 	// Parse-time refusal: the offset-1 vector no longer decodes.
 	_, err = NewMerklePathFromHex(loneLeafOffset1Hex)
-	require.Error(t, err, "a lone leaf at offset 1 must be refused at parse time")
+	require.EqualError(t, err, "invalid merkle path: a lone leaf must be at offset 0, found offset 1")
 
 	// Path is exported and NewMerklePath does no validation, so an in-memory
 	// lone leaf at a nonzero offset can still reach ComputeRoot and Combine;
 	// both must refuse it directly.
+	tracker := loneLeafTracker{root: txid, height: 1234}
 	for _, offset := range []uint64{1, 5} {
 		forged := NewMerklePath(1234, [][]*PathElement{{{Offset: offset, Hash: txid}}})
 		_, err = forged.ComputeRoot(txid)
-		require.Error(t, err, "offset %d must not yield a root", offset)
+		require.ErrorContains(t, err, "a lone leaf must be at offset 0")
+
+		ok, verr := forged.Verify(t.Context(), txid, tracker)
+		require.Error(t, verr)
+		require.False(t, ok)
 
 		zero := NewMerklePath(1234, [][]*PathElement{{{Offset: 0, Hash: txid}}})
 		require.Error(t, zero.Combine(forged), "combining a lone leaf at offset %d must fail", offset)
+		require.Equal(t, uint64(0), zero.Path[0][0].Offset)
 	}
 
 	// BEEF parsing runs the same check: the 47-byte lone-leaf BEEF is refused,
-	// while its offset-0 109-byte control still parses.
+	// while its offset-0 109-byte control still parses and verifies.
 	_, err = NewBeefFromHex(loneLeafBeef47Hex)
-	require.Error(t, err, "a BEEF carrying a lone leaf at offset 1 must be refused")
+	require.EqualError(t, err, "invalid merkle path: a lone leaf must be at offset 0, found offset 1")
+	_, err = NewTransactionFromBEEFHex(loneLeafBeef47Hex)
+	require.EqualError(t, err, "invalid merkle path: a lone leaf must be at offset 0, found offset 1")
 
-	_, err = NewBeefFromHex(loneLeafBeef109Hex)
+	const beefTxid = "f5eedbcaed2b12685bfc046c04ae7827e47ba6b75cb09342a5ec062ee4c4997f"
+	beef, err := NewBeefFromHex(loneLeafBeef109Hex)
 	require.NoError(t, err, "the offset-0 control BEEF must still parse")
+	require.True(t, beef.IsValid(false))
+	beefHash, err := chainhash.NewHashFromHex(beefTxid)
+	require.NoError(t, err)
+	ok, err := beef.Verify(t.Context(), loneLeafTracker{root: beefHash, height: 800005}, false)
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+// loneLeafTracker accepts one merkle root at one block height.
+type loneLeafTracker struct {
+	root   *chainhash.Hash
+	height uint32
+}
+
+func (lt loneLeafTracker) IsValidRootForHeight(_ context.Context, root *chainhash.Hash, height uint32) (bool, error) {
+	return root != nil && lt.root != nil && root.Equal(*lt.root) && height == lt.height, nil
+}
+
+func (lt loneLeafTracker) CurrentHeight(context.Context) (uint32, error) {
+	return lt.height + 6, nil
 }

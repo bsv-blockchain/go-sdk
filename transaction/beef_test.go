@@ -680,7 +680,8 @@ func TestBeefMergeBump(t *testing.T) {
 
 	// Test MergeBump. The bump proves the same block as one beef1 already
 	// holds, so it is combined into it rather than stored a second time.
-	index := beef1.MergeBump(bumpToMerge)
+	index, err := beef1.MergeBump(bumpToMerge)
+	require.NoError(t, err)
 	require.GreaterOrEqual(t, index, 0)
 
 	require.Len(t, beef1.BUMPs, initialBumpCount, "An equivalent BUMP should be combined, not appended")
@@ -719,7 +720,8 @@ func TestBeefMergeBumpAppendsDifferentBlock(t *testing.T) {
 	foreign := other.BUMPs[0]
 	foreign.BlockHeight = 999999
 
-	index := beef.MergeBump(foreign)
+	index, err := beef.MergeBump(foreign)
+	require.NoError(t, err)
 	require.Equal(t, initialBumpCount, index, "should be appended at the end")
 	require.Len(t, beef.BUMPs, initialBumpCount+1, "a BUMP for another block is a separate proof")
 }
