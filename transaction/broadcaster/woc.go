@@ -2,7 +2,6 @@ package broadcaster
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -76,20 +75,20 @@ func (b *WhatsOnChain) BroadcastCtx(ctx context.Context, t *transaction.Transact
 		}
 	}
 
+	// BroadcastTx returns an error for every non-200 response (go-whatsonchain
+	// v1.4.0+ no longer treats HTTP 404 as a non-error), so a nil error means the
+	// broadcast was accepted.
 	if _, err = wocClient.BroadcastTx(ctx, t.Hex()); err != nil {
-		return nil, &transaction.BroadcastFailure{
-			Code:        strconv.Itoa(http.StatusInternalServerError),
-			Description: err.Error(),
+		code := http.StatusInternalServerError
+		// The error carries the HTTP status only as text. Keep reporting a 404
+		// as such (the endpoint or transaction was not found) instead of
+		// collapsing it into a generic 500.
+		if last := wocClient.LastRequest(); last != nil && last.StatusCode == http.StatusNotFound {
+			code = http.StatusNotFound
 		}
-	}
-
-	// go-whatsonchain's BroadcastTx treats HTTP 404 as a non-error, so a rejected
-	// broadcast can return without an error. Reject any non-200 status as a failure
-	// rather than reporting a false success.
-	if last := wocClient.LastRequest(); last != nil && last.StatusCode != http.StatusOK {
 		return nil, &transaction.BroadcastFailure{
-			Code:        strconv.Itoa(last.StatusCode),
-			Description: fmt.Sprintf("broadcast rejected: HTTP %d", last.StatusCode),
+			Code:        strconv.Itoa(code),
+			Description: err.Error(),
 		}
 	}
 

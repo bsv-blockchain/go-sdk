@@ -6,8 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bsv-blockchain/go-sdk/chainhash"
 )
 
 // BRC-95: every transaction in an Atomic BEEF must be the subject or in its
