@@ -48,8 +48,8 @@ func (m *MockBadRequestClient) Do(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-// MockNotFoundClient returns HTTP 404, which go-whatsonchain's BroadcastTx treats
-// as a non-error. The broadcaster must still report a failure, not a false success.
+// MockNotFoundClient returns HTTP 404. go-whatsonchain's BroadcastTx reports it as
+// an error, and the broadcaster must surface it as a failure with code 404.
 type MockNotFoundClient struct{}
 
 func (m *MockNotFoundClient) Do(req *http.Request) (*http.Response, error) {
@@ -214,8 +214,8 @@ func TestWhatsOnChainBroadcastNotFound(t *testing.T) {
 		Client:  &MockNotFoundClient{},
 	}
 
-	// A 404 must be a failure (go-whatsonchain treats 404 as a non-error), not a
-	// false BroadcastSuccess.
+	// A 404 must be a failure that keeps its 404 code, never a false
+	// BroadcastSuccess and not a generic 500.
 	success, failure := b.Broadcast(tx)
 	require.Nil(t, success)
 	require.NotNil(t, failure)
